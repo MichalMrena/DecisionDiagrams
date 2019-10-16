@@ -1,13 +1,16 @@
 #include <iostream>
 #include "graph.hpp"
+#include "truth_table.hpp"
+#include "utils/math_utils.hpp"
 
 using namespace mix::dd;
+using namespace mix::utils;
 
 auto main() -> int
 {
-    std::array<int*, 3> ar {};
+    auto table {truth_table::load_from_file("sample_table.txt")};
 
-    int x{1};
+    table.to_string(std::cout);
 
     return 0;
 }
