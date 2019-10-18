@@ -17,10 +17,21 @@ namespace mix::dd
         std::vector<log_val_t> values;
 
     public:
+        using var_names_iterator = typename std::vector<std::string>::const_iterator;
+
         static auto load_from_file (const std::string& filePath) -> truth_table;
 
     public:
-        auto get_function_value (input_t input) -> log_val_t;
+        truth_table(const truth_table& other);
+        truth_table(truth_table&& other);
+
+        // BEGIN must have interface
+        auto operator[] (input_t input) -> log_val_t;
+
+        auto begin () const -> var_names_iterator;
+        auto end   () const -> var_names_iterator;
+        // END must have interface
+
         auto to_string (std::ostream& ostr) -> void;
 
     private:

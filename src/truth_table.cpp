@@ -22,12 +22,18 @@ namespace mix::dd
         reader.next_line_except(line);
 
         auto varNames  {utils::to_words(line)};
-        auto lineCount {utils::pow(static_cast<size_t>(2), varNames.size())};
+
+        if (varNames.size() > 63)
+        {
+            throw utils::io_exception("Too many variables.");
+        }
+
+        auto lineCount {utils::pow(static_cast<uint64_t>(2), varNames.size())};
 
         x_y_pair_v functionValues;
         functionValues.reserve(lineCount);
 
-        for (size_t i {0}; i < lineCount; ++i)
+        for (uint64_t i {0}; i < lineCount; ++i)
         {
             reader.next_line_except(line);
             auto tokens {utils::to_words(line)};
@@ -57,6 +63,23 @@ namespace mix::dd
         return truth_table {std::move(varNames), std::move(values)};
     }
 
+    truth_table::truth_table(const truth_table& other) :
+        varNames {other.varNames}
+      , values   {other.values}
+    {
+    }
+
+    truth_table::truth_table(truth_table&& other) :
+        varNames {std::move(other.varNames)}
+      , values   {std::move(other.values)}
+    {
+    }
+
+    auto truth_table::operator[] (input_t input) -> log_val_t
+    {
+        return this->values[input];
+    }
+
     auto truth_table::to_string(std::ostream& ostr) -> void
     {
         ostr << "Variables: " << '\n';
@@ -72,6 +95,16 @@ namespace mix::dd
             ostr << static_cast<int>(val) << ' ';
         }
         ostr << '\n';
+    }
+
+    auto truth_table::begin () const -> var_names_iterator
+    {
+        return this->varNames.cbegin();
+    }
+
+    auto truth_table::end () const -> var_names_iterator
+    {
+        return this->varNames.cend();
     }
 
     auto truth_table::str_to_log_val (const std::string& str) -> log_val_t
