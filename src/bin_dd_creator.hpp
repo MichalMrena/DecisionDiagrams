@@ -2,9 +2,10 @@
 #define MIX_DD_BIN_DD_CREATOR
 
 #include <vector>
-#include <stack>
 #include "typedefs.hpp"
 #include "utils/math_utils.hpp"
+#include "utils/double_top_stack.hpp"
+#include "utils/boost.hpp"
 #include "graph.hpp"
 #include "bin_decision_diagram.hpp"
 
@@ -21,6 +22,18 @@ namespace mix::dd
             int level;
         };
 
+        template<class vertex_t>
+        struct vertex_key
+        {
+            int level;
+            vertex_t* left;
+            vertex_t* right;
+
+            auto operator== (const vertex_key& rhs) const -> bool;
+        };
+        // TODO hash for vertex_key
+
+    private:
         const std::vector<var_name_t> variableNames;
         const size_t  inputCount;
         InputFunction inputFunction;
@@ -49,7 +62,7 @@ namespace mix::dd
         using arc     = typename graph<int, int>::arc;
         using s_frame = stack_frame<int, int>;
 
-        std::stack<s_frame> stack;
+        utils::double_top_stack<s_frame> stack;
         
         size_t inputIndex {0};
         while (inputIndex < inputCount)
@@ -63,6 +76,15 @@ namespace mix::dd
         }
 
         return bin_decision_diagram {};
+    }
+
+    template<class InputFunction>
+    template<class vertex_t>
+    auto bin_dd_creator<InputFunction>::vertex_key<vertex_t>::operator== (const vertex_key& other) const -> bool
+    {
+        return this->level == other.level
+            && this->left  == other.left
+            && this->right == other.right;
     }
 }
 

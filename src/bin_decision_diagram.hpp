@@ -24,8 +24,6 @@ namespace mix::dd
         std::map<log_val_t, vertex*> valToLeaf;
         std::map<vertex*, log_val_t> leafToVal;
 
-        int dummy {10};
-
     public:
         template<typename U>
         friend class bin_dd_creator;
