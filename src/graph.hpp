@@ -17,9 +17,16 @@ namespace mix::dd
             const std::string label;
             VertexData data;
             std::array<arc*, N> forwardStar; // TODO arc by nemuseli byť dynamicky, stačili by prázdne s null targetom
+            size_t level;
 
-            explicit vertex(std::string pLabel);
-            vertex(std::string pLabel, std::array<arc*, N> pForwardStar);
+            vertex(std::string pLabel
+                 , size_t pLevel);
+            
+            vertex(std::string pLabel
+                 , std::array<arc*, N> pForwardStar
+                 , size_t pLevel);
+
+            auto is_leaf () const -> bool;
         };
 
         struct arc
@@ -32,16 +39,35 @@ namespace mix::dd
     };
 
     template<class VertexData, class ArcData, size_t N>
-    graph<VertexData, ArcData, N>::vertex::vertex(std::string pLabel) :
+    graph<VertexData, ArcData, N>::vertex::vertex(std::string pLabel
+                                                , size_t pLevel) :
         label {pLabel}
+      , level {pLevel}
     {
     }
 
     template<class VertexData, class ArcData, size_t N>
-    graph<VertexData, ArcData, N>::vertex::vertex(std::string pLabel, std::array<arc*, N> pForwardStar) :
+    graph<VertexData, ArcData, N>::vertex::vertex(std::string pLabel
+                                                , std::array<arc*, N> pForwardStar
+                                                , size_t pLevel) :
         label {pLabel}
       , forwardStar {pForwardStar}
+      , level       {pLevel}
     {
+    }
+
+    template<class VertexData, class ArcData, size_t N>
+    auto graph<VertexData, ArcData, N>::vertex::is_leaf () const -> bool
+    {
+        for (arc* a : this->forwardStar)
+        {
+            if (a)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     template<class VertexData, class ArcData, size_t N>

@@ -28,11 +28,13 @@ namespace mix::dd
         template<typename U>
         friend class bin_dd_creator;
 
-    private:
-        bin_decision_diagram() = default;
-        //bin_decision_diagram(); parametrizovany
-    };    
-}
+    public:
+        bin_decision_diagram(vertex* pRoot
+                           , std::map<log_val_t, vertex*>&& pValToLeaf
+                           , std::map<vertex*, log_val_t>&& leafToVal);
 
+        auto to_dot_graph () -> std::string;
+    };
+}
 
 #endif

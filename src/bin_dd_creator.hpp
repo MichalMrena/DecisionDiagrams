@@ -77,7 +77,7 @@ namespace mix::dd
     auto bin_dd_creator<InputFunction>::create_diagram () -> bin_decision_diagram
     {
     // TODO map interface ano ale za tým by stačil list
-        std::map<log_val_t, vertex*> valToLeaf { {0, new vertex {"0"}}, {1, new vertex {"1"}} };
+        std::map<log_val_t, vertex*> valToLeaf { {0, new vertex {"0", this->currentLevel + 1}}, {1, new vertex {"1", this->currentLevel + 1}} };
         std::map<vertex*, log_val_t> leafToVal { {valToLeaf[0], 0}, {valToLeaf[1], 1} };
 
         size_t inputIndex {0};
@@ -98,9 +98,8 @@ namespace mix::dd
                 // TODO 01 alebo 10 ale je to to isté asi ich bude treba swapnut?
                 vertex* negativeTarget {valToLeaf[currInputVal]};
                 vertex* positiveTarget {valToLeaf[nextInputVal]};
-                vertex_key vertexKey {negativeTarget, positiveTarget};
 
-                son = this->try_insert_vertex(vertexKey);
+                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget});
             }
             
             stack.push(stack_frame {son, currentLevel});
@@ -111,12 +110,27 @@ namespace mix::dd
                 {
                     break;
                 }
+
+                if (stack.top().vertexPtr == stack.under_top().vertexPtr)
+                {
+                    vertex* v {stack.top().vertexPtr};
+
+                    stack.pop();
+                    stack.pop();
+
+                    stack.push(stack_frame {v, this->currentLevel - 1});
+                    continue;
+                }
                 
+                // TODO tu treba asi checknúť, ktorý ma byť ľavý a pravý
                 vertex* negativeTarget {stack.under_top().vertexPtr};
                 vertex* positiveTarget {stack.top().vertexPtr};
-                vertex_key vertexKey {negativeTarget, positiveTarget};
-                
-                son = this->try_insert_vertex(vertexKey);
+
+                stack.pop();
+                stack.pop();
+
+                --this->currentLevel;
+                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget});
 
                 stack.push(stack_frame {son, this->currentLevel});
             }
@@ -124,7 +138,7 @@ namespace mix::dd
             inputIndex += 2;
         }
 
-        return bin_decision_diagram {};
+        return bin_decision_diagram {stack.top().vertexPtr, std::move(valToLeaf), std::move(leafToVal)};
     }
 
     template<class InputFunction>
@@ -136,8 +150,7 @@ namespace mix::dd
             return (*inGraphIt).second;            
         }
 
-        --this->currentLevel;
-        auto newVertex {new vertex {this->variable_name(), {new arc {key.negative}, new arc {key.positive}}}};
+        auto newVertex {new vertex {this->variable_name(), {new arc {key.negative}, new arc {key.positive}}, this->currentLevel}};
         levels[currentLevel][key] = newVertex;
         
         return newVertex;

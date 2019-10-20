@@ -15,5 +15,7 @@ auto main() -> int
 
     auto diagram {creator.create_diagram()};
 
+    std::cout << diagram.to_dot_graph();
+
     return 0;
 }
