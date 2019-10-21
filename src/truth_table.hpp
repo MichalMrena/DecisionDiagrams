@@ -26,13 +26,13 @@ namespace mix::dd
         truth_table(truth_table&& other);
 
         // BEGIN must have interface
-        auto operator[] (input_t input) -> log_val_t;
+        auto operator[] (const input_t input) const -> log_val_t;
 
         auto begin () const -> var_names_iterator;
         auto end   () const -> var_names_iterator;
         // END must have interface
 
-        auto to_string (std::ostream& ostr) -> void;
+        auto to_string (std::ostream& ostr) const -> void;
 
     private:
         static auto str_to_log_val (const std::string& str) -> log_val_t;

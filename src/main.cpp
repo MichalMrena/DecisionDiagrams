@@ -15,7 +15,16 @@ auto main() -> int
 
     auto diagram {creator.create_diagram()};
 
-    std::cout << diagram.to_dot_graph();
+    std::cout << diagram.to_dot_graph() << '\n';
+    
+    std::cout << static_cast<unsigned>(diagram.get_value(0)) << '\n';
+    std::cout << static_cast<unsigned>(diagram.get_value(1)) << '\n';
+    std::cout << static_cast<unsigned>(diagram.get_value(2)) << '\n';
+    std::cout << static_cast<unsigned>(diagram.get_value(3)) << '\n';
+    std::cout << static_cast<unsigned>(diagram.get_value(4)) << '\n';
+    std::cout << static_cast<unsigned>(diagram.get_value(5)) << '\n';
+    std::cout << static_cast<unsigned>(diagram.get_value(6)) << '\n';
+    std::cout << static_cast<unsigned>(diagram.get_value(7)) << '\n';
 
     return 0;
 }

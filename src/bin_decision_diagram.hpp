@@ -31,9 +31,12 @@ namespace mix::dd
     public:
         bin_decision_diagram(vertex* pRoot
                            , std::map<log_val_t, vertex*>&& pValToLeaf
-                           , std::map<vertex*, log_val_t>&& leafToVal);
+                           , std::map<vertex*, log_val_t>&& pLeafToVal);
+        ~bin_decision_diagram();
 
-        auto to_dot_graph () -> std::string;
+        auto to_dot_graph () const -> std::string;
+
+        auto get_value (const input_t input) const -> log_val_t;
     };
 }
 

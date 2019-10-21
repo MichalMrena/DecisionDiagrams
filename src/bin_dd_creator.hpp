@@ -17,13 +17,13 @@ namespace mix::dd
     class bin_dd_creator
     {
     private:
-        using vertex    = typename graph<int, int>::vertex;
-        using arc       = typename graph<int, int>::arc;
+        using vertex = typename graph<int, int>::vertex;
+        using arc    = typename graph<int, int>::arc;
         
         struct stack_frame
         {
             vertex* vertexPtr;
-            int level;
+            size_t level;
         };
 
         struct vertex_key
@@ -56,10 +56,11 @@ namespace mix::dd
 
         // možno template na Vertex a Arc data
         auto create_diagram () -> bin_decision_diagram;
+        // TODO keď vytvorí jeden sú atribúty v neznámom stave, resetovať?
 
     private:
-        auto try_insert_vertex (vertex_key key) -> vertex*; 
-        auto variable_name     ()               -> std::string;
+        auto try_insert_vertex (const vertex_key key) -> vertex*; 
+        auto variable_name     (const size_t level) const -> std::string;
     };
 
     template<class InputFunction>
@@ -68,9 +69,9 @@ namespace mix::dd
         variableNames {pInputFunction.begin(), pInputFunction.end()}
       , inputCount    {utils::pow(static_cast<size_t>(2), variableNames.size())}
       , inputFunction {std::forward<InFuncRef>(pInputFunction)}
-      , currentLevel  {this->variableNames.size()}
+      , currentLevel  {this->variableNames.size() - 1}
     {
-        levels.resize(this->variableNames.size() + 1);
+        levels.resize(this->variableNames.size());
     }
 
     template<class InputFunction>
@@ -90,14 +91,13 @@ namespace mix::dd
 
             if (currInputVal == nextInputVal)
             {
-                // obe hrany sú rovnaké
                 son = valToLeaf[currInputVal];
             }
             else
             {
                 // TODO 01 alebo 10 ale je to to isté asi ich bude treba swapnut?
-                vertex* negativeTarget {valToLeaf[currInputVal]};
-                vertex* positiveTarget {valToLeaf[nextInputVal]};
+                vertex* const negativeTarget {valToLeaf[currInputVal]};
+                vertex* const positiveTarget {valToLeaf[nextInputVal]};
 
                 son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget});
             }
@@ -123,8 +123,8 @@ namespace mix::dd
                 }
                 
                 // TODO tu treba asi checknúť, ktorý ma byť ľavý a pravý
-                vertex* negativeTarget {stack.under_top().vertexPtr};
-                vertex* positiveTarget {stack.top().vertexPtr};
+                vertex* const negativeTarget {stack.under_top().vertexPtr};
+                vertex* const positiveTarget {stack.top().vertexPtr};
 
                 stack.pop();
                 stack.pop();
@@ -142,24 +142,33 @@ namespace mix::dd
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::try_insert_vertex (vertex_key key) -> vertex*
+    auto bin_dd_creator<InputFunction>::try_insert_vertex (const vertex_key key) -> vertex*
     {
+        // https://www.boost.org/doc/libs/1_71_0/libs/pool/doc/html/boost/object_pool.html
+        // dalo by sa vyskúšať na alokovanie vrcholov
+
         auto inGraphIt {levels[currentLevel].find(key)};
         if (inGraphIt != levels[currentLevel].end())
         {
             return (*inGraphIt).second;            
         }
 
-        auto newVertex {new vertex {this->variable_name(), {new arc {key.negative}, new arc {key.positive}}, this->currentLevel}};
-        levels[currentLevel][key] = newVertex;
+        auto newVertex {new vertex {
+            this->variable_name(this->currentLevel)
+          , this->currentLevel
+          , {arc {key.negative}, arc {key.positive}}
+        }};
+        levels[this->currentLevel][key] = newVertex;
         
         return newVertex;
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::variable_name () -> std::string
+    auto bin_dd_creator<InputFunction>::variable_name (const size_t level) const -> std::string
     {
-        return this->variableNames[this->currentLevel - 1];
+        return this->variableNames[level]
+             + "_" 
+             + std::to_string(this->levels[level].size());
     }
 
     template<class InputFunction>
@@ -183,6 +192,5 @@ namespace mix::dd
         return seed;
     }
 }
-
 
 #endif

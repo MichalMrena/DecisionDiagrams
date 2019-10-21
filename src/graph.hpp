@@ -10,70 +10,72 @@ namespace mix::dd
     template<class VertexData, class ArcData, size_t N = 2>
     struct graph
     {
-        struct arc;
-
-        struct vertex
-        {
-            const std::string label;
-            VertexData data;
-            std::array<arc*, N> forwardStar; // TODO arc by nemuseli byť dynamicky, stačili by prázdne s null targetom
-            size_t level;
-
-            vertex(std::string pLabel
-                 , size_t pLevel);
-            
-            vertex(std::string pLabel
-                 , std::array<arc*, N> pForwardStar
-                 , size_t pLevel);
-
-            auto is_leaf () const -> bool;
-        };
+        struct vertex;
 
         struct arc
         {
             ArcData data;
-            vertex* target;
+            vertex* target {nullptr};
 
-            explicit arc(vertex* pTarget);
+            arc() = default;
+            explicit arc(vertex* const pTarget);
+        };
+
+        struct vertex
+        {
+            const std::string label;
+            const size_t level;
+            VertexData data;
+            std::array<arc, N> forwardStar;
+
+            vertex(const std::string pLabel
+                 , const size_t pLevel);
+            
+            vertex(const std::string pLabel
+                 , const size_t pLevel
+                 , std::array<arc, N> pForwardStar);
+
+            auto is_leaf () const -> bool;
         };
     };
 
     template<class VertexData, class ArcData, size_t N>
-    graph<VertexData, ArcData, N>::vertex::vertex(std::string pLabel
-                                                , size_t pLevel) :
-        label {pLabel}
-      , level {pLevel}
+    graph<VertexData, ArcData, N>::arc::arc(vertex* const pTarget) :
+        target {pTarget}
     {
     }
 
     template<class VertexData, class ArcData, size_t N>
-    graph<VertexData, ArcData, N>::vertex::vertex(std::string pLabel
-                                                , std::array<arc*, N> pForwardStar
-                                                , size_t pLevel) :
-        label {pLabel}
-      , forwardStar {pForwardStar}
+    graph<VertexData, ArcData, N>::vertex::vertex(const std::string pLabel
+                                                , const size_t pLevel) :
+        label       {std::move(pLabel)}
       , level       {pLevel}
+      , forwardStar {}
+    {
+    }
+
+    template<class VertexData, class ArcData, size_t N>
+    graph<VertexData, ArcData, N>::vertex::vertex(const std::string pLabel
+                                                , const size_t pLevel
+                                                , std::array<arc, N> pForwardStar) :
+        label       {std::move(pLabel)}
+      , level       {pLevel}
+      , forwardStar {pForwardStar}
     {
     }
 
     template<class VertexData, class ArcData, size_t N>
     auto graph<VertexData, ArcData, N>::vertex::is_leaf () const -> bool
     {
-        for (arc* a : this->forwardStar)
+        for (const arc& a : this->forwardStar)
         {
-            if (a)
+            if (a.target)
             {
                 return false;
             }
         }
 
         return true;
-    }
-
-    template<class VertexData, class ArcData, size_t N>
-    graph<VertexData, ArcData, N>::arc::arc(vertex* pTarget) :
-        target {pTarget}
-    {
     }
 }
 
