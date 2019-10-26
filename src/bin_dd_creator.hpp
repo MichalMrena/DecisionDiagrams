@@ -48,7 +48,6 @@ namespace mix::dd
 
         utils::double_top_stack<stack_frame> stack;
         std::vector<level_map> levels;
-        size_t currentLevel;
 
     public:
         template<class InFuncRef>
@@ -59,7 +58,8 @@ namespace mix::dd
         // TODO keď vytvorí jeden sú atribúty v neznámom stave, resetovať?
 
     private:
-        auto try_insert_vertex (const vertex_key key) -> vertex*; 
+        auto try_insert_vertex (const vertex_key key
+                              , const size_t level) -> vertex*; 
         auto variable_name     (const size_t level) const -> std::string;
     };
 
@@ -69,7 +69,6 @@ namespace mix::dd
         variableNames {pInputFunction.begin(), pInputFunction.end()}
       , inputCount    {utils::pow(static_cast<size_t>(2), variableNames.size())}
       , inputFunction {std::forward<InFuncRef>(pInputFunction)}
-      , currentLevel  {this->variableNames.size() - 1}
     {
         levels.resize(this->variableNames.size());
     }
@@ -78,7 +77,9 @@ namespace mix::dd
     auto bin_dd_creator<InputFunction>::create_diagram () -> bin_decision_diagram
     {
     // TODO map interface ano ale za tým by stačil list
-        std::map<log_val_t, vertex*> valToLeaf { {0, new vertex {"0", this->currentLevel + 1}}, {1, new vertex {"1", this->currentLevel + 1}} };
+        const size_t lastVarLevel {this->variableNames.size() - 1};
+
+        std::map<log_val_t, vertex*> valToLeaf { {0, new vertex {"0", lastVarLevel + 1}}, {1, new vertex {"1", lastVarLevel + 1}} };
         std::map<vertex*, log_val_t> leafToVal { {valToLeaf[0], 0}, {valToLeaf[1], 1} };
 
         size_t inputIndex {0};
@@ -99,10 +100,10 @@ namespace mix::dd
                 vertex* const negativeTarget {valToLeaf[currInputVal]};
                 vertex* const positiveTarget {valToLeaf[nextInputVal]};
 
-                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget});
+                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget}, lastVarLevel);
             }
             
-            stack.push(stack_frame {son, currentLevel});
+            stack.push(stack_frame {son, lastVarLevel});
             
             while (stack.size() > 1)
             {
@@ -115,10 +116,11 @@ namespace mix::dd
                 {
                     vertex* v {stack.top().vertexPtr};
 
+                    const size_t stackLevel {stack.top().level};
                     stack.pop();
                     stack.pop();
 
-                    stack.push(stack_frame {v, this->currentLevel - 1});
+                    stack.push(stack_frame {v, stackLevel - 1});
                     continue;
                 }
                 
@@ -126,13 +128,13 @@ namespace mix::dd
                 vertex* const negativeTarget {stack.under_top().vertexPtr};
                 vertex* const positiveTarget {stack.top().vertexPtr};
 
+                const size_t stackLevel {stack.top().level};
                 stack.pop();
                 stack.pop();
 
-                --this->currentLevel;
-                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget});
+                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget}, stackLevel - 1);
 
-                stack.push(stack_frame {son, this->currentLevel});
+                stack.push(stack_frame {son, stackLevel - 1});
             }
 
             inputIndex += 2;
@@ -142,23 +144,24 @@ namespace mix::dd
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::try_insert_vertex (const vertex_key key) -> vertex*
+    auto bin_dd_creator<InputFunction>::try_insert_vertex (const vertex_key key
+                                                         , const size_t level) -> vertex*
     {
         // https://www.boost.org/doc/libs/1_71_0/libs/pool/doc/html/boost/object_pool.html
         // dalo by sa vyskúšať na alokovanie vrcholov
 
-        auto inGraphIt {levels[currentLevel].find(key)};
-        if (inGraphIt != levels[currentLevel].end())
+        auto inGraphIt {levels[level].find(key)};
+        if (inGraphIt != levels[level].end())
         {
             return (*inGraphIt).second;            
         }
 
         auto newVertex {new vertex {
-            this->variable_name(this->currentLevel)
-          , this->currentLevel
+            this->variable_name(level)
+          , level
           , {arc {key.negative}, arc {key.positive}}
         }};
-        levels[this->currentLevel][key] = newVertex;
+        levels[level][key] = newVertex;
         
         return newVertex;
     }
