@@ -94,12 +94,11 @@ namespace mix::dd
 
         vertex* currentVertex {this->root};
 
+        const size_t variableCount {this->valToLeaf.at(0)->level};
+
         while (! currentVertex->is_leaf())
         {
-            // TODO nejako treba v diagrame vediet pocet premenných
-            // casom asi aj vsetky premenne...
-            // zatial len napevno 3
-            const size_t    bitIndex {3 - currentVertex->level - 1};
+            const size_t    bitIndex {variableCount - currentVertex->level - 1};
             const log_val_t variableValue {inputBitSet[bitIndex]};
             currentVertex = currentVertex->forwardStar[variableValue].target;
         }

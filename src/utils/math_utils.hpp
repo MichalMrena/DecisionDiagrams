@@ -2,6 +2,7 @@
 #define MIX_UTILS_MATH_UTILS
 
 #include <type_traits>
+#include <cstdint>
 
 namespace mix::utils
 {
@@ -27,6 +28,12 @@ namespace mix::utils
         }
 
         return result;
+    }
+
+    template<class N> // TODO is integral
+    inline auto two_pow (N exponent) -> int64_t
+    {
+        return 1 << exponent;
     }
 }
 
