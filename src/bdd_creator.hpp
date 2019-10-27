@@ -1,5 +1,5 @@
-#ifndef MIX_DD_BIN_DD_CREATOR
-#define MIX_DD_BIN_DD_CREATOR
+#ifndef MIX_DD_BDD_CREATOR
+#define MIX_DD_BDD_CREATOR
 
 #include <vector>
 #include <unordered_map>
@@ -9,12 +9,12 @@
 #include "utils/double_top_stack.hpp"
 #include "utils/hash.hpp"
 #include "graph.hpp"
-#include "bin_decision_diagram.hpp"
+#include "bdd.hpp"
 
 namespace mix::dd
 {
     template<class InputFunction>
-    class bin_dd_creator
+    class bdd_creator
     {
     private:
         using vertex = typename graph<int, int>::vertex;
@@ -43,7 +43,7 @@ namespace mix::dd
         using level_map = std::unordered_map<vertex_key, vertex*, vertex_key_hash>;
 
         const std::vector<var_name_t> variableNames;
-        const size_t  inputCount;
+        const size_t  inputsCount;
         InputFunction inputFunction;
 
         utils::double_top_stack<stack_frame> stack;
@@ -51,39 +51,48 @@ namespace mix::dd
 
     public:
         template<class InFuncRef>
-        bin_dd_creator(InFuncRef&& pInputFunction);
+        bdd_creator(InFuncRef&& pInputFunction);
 
         // možno template na Vertex a Arc data
-        auto create_diagram () -> bin_decision_diagram;
+        auto create_diagram () -> bdd;
         // TODO keď vytvorí jeden sú atribúty v neznámom stave, resetovať?
 
     private:
         auto try_insert_vertex (const vertex_key key
                               , const size_t level) -> vertex*; 
+                              
         auto variable_name     (const size_t level) const -> std::string;
     };
 
     template<class InputFunction>
     template<class InFuncRef>
-    bin_dd_creator<InputFunction>::bin_dd_creator(InFuncRef&& pInputFunction) :
+    bdd_creator<InputFunction>::bdd_creator(InFuncRef&& pInputFunction) :
         variableNames {pInputFunction.begin(), pInputFunction.end()}
-      , inputCount    {utils::pow(static_cast<size_t>(2), variableNames.size())}
+      , inputsCount   {utils::pow(static_cast<size_t>(2), variableNames.size())}
       , inputFunction {std::forward<InFuncRef>(pInputFunction)}
     {
         levels.resize(this->variableNames.size());
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::create_diagram () -> bin_decision_diagram
+    auto bdd_creator<InputFunction>::create_diagram () -> bdd
     {
-    // TODO map interface ano ale za tým by stačil list
         const size_t lastVarLevel {this->variableNames.size() - 1};
 
-        std::map<log_val_t, vertex*> valToLeaf { {0, new vertex {"0", lastVarLevel + 1}}, {1, new vertex {"1", lastVarLevel + 1}} };
-        std::map<vertex*, log_val_t> leafToVal { {valToLeaf[0], 0}, {valToLeaf[1], 1} };
+        // TODO map interface ano ale za tým by stačil list
+        std::map<log_val_t, vertex*> valToLeaf 
+        { 
+            {0, new vertex {"0", lastVarLevel + 1}}
+          , {1, new vertex {"1", lastVarLevel + 1}} 
+        };
+        std::map<vertex*, log_val_t> leafToVal 
+        { 
+            {valToLeaf[0], 0}
+          , {valToLeaf[1], 1} 
+        };
 
         size_t inputIndex {0};
-        while (inputIndex < inputCount)
+        while (inputIndex < inputsCount)
         {
             const log_val_t currInputVal {this->inputFunction[inputIndex]};
             const log_val_t nextInputVal {this->inputFunction[inputIndex + 1]};
@@ -140,11 +149,11 @@ namespace mix::dd
             inputIndex += 2;
         }
 
-        return bin_decision_diagram {stack.top().vertexPtr, std::move(valToLeaf), std::move(leafToVal)};
+        return bdd {stack.top().vertexPtr, std::move(valToLeaf), std::move(leafToVal)};
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::try_insert_vertex (const vertex_key key
+    auto bdd_creator<InputFunction>::try_insert_vertex (const vertex_key key
                                                          , const size_t level) -> vertex*
     {
         // https://www.boost.org/doc/libs/1_71_0/libs/pool/doc/html/boost/object_pool.html
@@ -167,7 +176,7 @@ namespace mix::dd
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::variable_name (const size_t level) const -> std::string
+    auto bdd_creator<InputFunction>::variable_name (const size_t level) const -> std::string
     {
         return this->variableNames[level]
              + "_" 
@@ -175,14 +184,14 @@ namespace mix::dd
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::vertex_key::operator== (const vertex_key& other) const -> bool
+    auto bdd_creator<InputFunction>::vertex_key::operator== (const vertex_key& other) const -> bool
     {
         return this->negative == other.negative
             && this->positive == other.positive;
     }
 
     template<class InputFunction>
-    auto bin_dd_creator<InputFunction>::vertex_key_hash::operator() (const vertex_key& key) const -> size_t
+    auto bdd_creator<InputFunction>::vertex_key_hash::operator() (const vertex_key& key) const -> size_t
     {
         size_t seed {0};
 

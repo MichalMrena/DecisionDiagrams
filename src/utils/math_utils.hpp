@@ -30,8 +30,9 @@ namespace mix::utils
         return result;
     }
 
-    template<class N> // TODO is integral
-    inline auto two_pow (N exponent) -> int64_t
+    template<class N
+           , typename std::enable_if<std::is_integral<N>::value, N>::type* = nullptr>
+    inline auto two_pow (const N exponent) -> int64_t
     {
         return 1 << exponent;
     }

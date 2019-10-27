@@ -1,7 +1,7 @@
 #include <iostream>
 #include "graph.hpp"
 #include "truth_table.hpp"
-#include "bin_dd_creator.hpp"
+#include "bdd_creator.hpp"
 #include "utils/math_utils.hpp"
 #include "test/diagram_tests.hpp"
 
@@ -12,7 +12,7 @@ auto main() -> int
 {
     auto table {truth_table::load_from_file("sample_table_2.txt")};
     
-    bin_dd_creator<decltype(table)> creator {std::move(table)};
+    bdd_creator<decltype(table)> creator {std::move(table)};
 
     auto diagram {creator.create_diagram()};
 

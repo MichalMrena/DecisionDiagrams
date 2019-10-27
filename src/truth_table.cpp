@@ -20,7 +20,7 @@ namespace mix::dd
         std::string line;
         reader.next_line_except(line);
 
-        auto varNames  {utils::to_words(line)};
+        auto varNames {utils::to_words(line)};
 
         if (varNames.size() > 63)
         {

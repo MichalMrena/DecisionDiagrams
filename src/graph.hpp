@@ -27,7 +27,7 @@ namespace mix::dd
             const size_t level;
             VertexData data;
             std::array<arc, N> forwardStar;
-            bool mark; // TODO toto je vlastne relevantné až pri diagrame, teoreticky by to tu nemalo byť
+            bool mark;
 
             vertex(const std::string pLabel
                  , const size_t pLevel);

@@ -1,4 +1,4 @@
-#include "bin_decision_diagram.hpp"
+#include "bdd.hpp"
 
 #include <sstream>
 #include <set>
@@ -7,16 +7,16 @@
 
 namespace mix::dd
 {
-    bin_decision_diagram::bin_decision_diagram(vertex* pRoot
-                      , std::map<log_val_t, vertex*>&& pValToLeaf
-                      , std::map<vertex*, log_val_t>&& pLeafToVal) :
+    bdd::bdd(vertex* pRoot
+           , std::map<log_val_t, vertex*>&& pValToLeaf
+           , std::map<vertex*, log_val_t>&& pLeafToVal) :
         root {pRoot}
       , valToLeaf {std::move(pValToLeaf)}
       , leafToVal {std::move(pLeafToVal)}
     {
     }
 
-    bin_decision_diagram::~bin_decision_diagram()
+    bdd::~bdd()
     {
         // TODO foreach metodu
         std::set<vertex*> processed;
@@ -50,7 +50,7 @@ namespace mix::dd
         }        
     }
 
-    auto bin_decision_diagram::to_dot_graph () const -> std::string
+    auto bdd::to_dot_graph () const -> std::string
     {
         std::ostringstream ost;
 
@@ -88,7 +88,7 @@ namespace mix::dd
         return ost.str();
     }
 
-    auto bin_decision_diagram::get_value (const input_t input) const -> log_val_t
+    auto bdd::get_value (const input_t input) const -> log_val_t
     {
         const std::bitset<sizeof(input_t)> inputBitSet {input};
 

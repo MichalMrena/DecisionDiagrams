@@ -9,7 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include "../bin_decision_diagram.hpp"
+#include "../bdd.hpp"
 #include "../utils/math_utils.hpp"
 #include "../typedefs.hpp"
 
@@ -21,7 +21,7 @@ namespace mix::dd
     }
     
     template<class InputFunction>
-    auto compare_results (const InputFunction& function, const bin_decision_diagram& diagram)
+    auto compare_results (const InputFunction& function, const bdd& diagram)
     {
         // TODO compare results for each input
     }
@@ -37,7 +37,7 @@ namespace mix::dd
         }
         ostr << ' ' << 'f' << '\n';
 
-        for (input_t input {0}; input < utils::pow(2, 6); input++)
+        for (input_t input {0}; input < utils::pow(2, VarCount); input++)
         {
             std::bitset<VarCount> inputBits {input};
             for (size_t i {VarCount}; i > 0;)
