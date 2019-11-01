@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <cmath>
 #include "typedefs.hpp"
+#include "bool_function.hpp"
 #include "utils/math_utils.hpp"
 #include "utils/double_top_stack.hpp"
 #include "utils/hash.hpp"
@@ -13,12 +14,12 @@
 
 namespace mix::dd
 {
-    template<class InputFunction>
+    template<class VertexData = int8_t, class ArcData = int8_t>
     class bdd_creator
     {
     private:
-        using vertex = typename graph<int, int>::vertex;
-        using arc    = typename graph<int, int>::arc;
+        using vertex = typename graph<VertexData, ArcData>::vertex;
+        using arc    = typename graph<VertexData, ArcData>::arc;
         
         struct stack_frame
         {
@@ -42,48 +43,33 @@ namespace mix::dd
     private:
         using level_map = std::unordered_map<vertex_key, vertex*, vertex_key_hash>;
 
-        const std::vector<var_name_t> variableNames;
-        const size_t  inputsCount;
-        InputFunction inputFunction;
-
         utils::double_top_stack<stack_frame> stack;
         std::vector<level_map> levels;
+        id_t nextId {1};
 
     public:
-        template<class InFuncRef>
-        bdd_creator(InFuncRef&& pInputFunction);
-
-        // možno template na Vertex a Arc data
-        auto create_diagram () -> bdd;
-        // TODO keď vytvorí jeden sú atribúty v neznámom stave, resetovať?
+        auto create_diagram (const bool_function& input) -> bdd<VertexData, ArcData>;
+        // TODO keď vytvorí jeden sú atribúty v neznámom stave, resetovať
 
     private:
-        auto try_insert_vertex (const vertex_key key
-                              , const size_t level) -> vertex*; 
-                              
-        auto variable_name     (const size_t level) const -> std::string;
+        auto try_insert (const vertex_key key
+                       , const size_t level) -> vertex*; 
     };
 
-    template<class InputFunction>
-    template<class InFuncRef>
-    bdd_creator<InputFunction>::bdd_creator(InFuncRef&& pInputFunction) :
-        variableNames {pInputFunction.begin(), pInputFunction.end()}
-      , inputsCount   {utils::pow(static_cast<size_t>(2), variableNames.size())}
-      , inputFunction {std::forward<InFuncRef>(pInputFunction)}
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::create_diagram 
+        (const bool_function& input) -> bdd<VertexData, ArcData>
     {
-        levels.resize(this->variableNames.size());
-    }
+        const size_t leafLevel   {input.variable_count() + 1};
+        const size_t inputsCount {utils::pow(2UL, input.variable_count())};
 
-    template<class InputFunction>
-    auto bdd_creator<InputFunction>::create_diagram () -> bdd
-    {
-        const size_t lastVarLevel {this->variableNames.size() - 1};
+        this->levels.resize(leafLevel + 1);
 
         // TODO map interface ano ale za tým by stačil list
         std::map<log_val_t, vertex*> valToLeaf 
         { 
-            {0, new vertex {"0", lastVarLevel + 1}}
-          , {1, new vertex {"1", lastVarLevel + 1}} 
+            {0, new vertex {nextId++, leafLevel}}
+          , {1, new vertex {nextId++, leafLevel}} 
         };
         std::map<vertex*, log_val_t> leafToVal 
         { 
@@ -94,8 +80,8 @@ namespace mix::dd
         size_t inputIndex {0};
         while (inputIndex < inputsCount)
         {
-            const log_val_t currInputVal {this->inputFunction[inputIndex]};
-            const log_val_t nextInputVal {this->inputFunction[inputIndex + 1]};
+            const log_val_t currInputVal {input[inputIndex]};
+            const log_val_t nextInputVal {input[inputIndex + 1]};
 
             vertex* son {nullptr};
 
@@ -105,14 +91,14 @@ namespace mix::dd
             }
             else
             {
-                // TODO 01 alebo 10 ale je to to isté asi ich bude treba swapnut?
+                // TODO 01 alebo 10 je to to isté ?
                 vertex* const negativeTarget {valToLeaf[currInputVal]};
                 vertex* const positiveTarget {valToLeaf[nextInputVal]};
 
-                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget}, lastVarLevel);
+                son = this->try_insert(vertex_key {negativeTarget, positiveTarget}, leafLevel - 1);
             }
             
-            stack.push(stack_frame {son, lastVarLevel});
+            stack.push(stack_frame {son, leafLevel - 1});
             
             while (stack.size() > 1)
             {
@@ -121,40 +107,44 @@ namespace mix::dd
                     break;
                 }
 
+                const size_t stackLevel {stack.top().level};
+
                 if (stack.top().vertexPtr == stack.under_top().vertexPtr)
                 {
-                    vertex* v {stack.top().vertexPtr};
+                    vertex* const v {stack.top().vertexPtr};
 
-                    const size_t stackLevel {stack.top().level};
                     stack.pop();
                     stack.pop();
 
                     stack.push(stack_frame {v, stackLevel - 1});
-                    continue;
                 }
-                
-                // TODO tu treba asi checknúť, ktorý ma byť ľavý a pravý
-                vertex* const negativeTarget {stack.under_top().vertexPtr};
-                vertex* const positiveTarget {stack.top().vertexPtr};
+                else
+                {
+                    vertex* const negativeTarget {stack.under_top().vertexPtr};
+                    vertex* const positiveTarget {stack.top().vertexPtr};
+                    
+                    stack.pop();
+                    stack.pop();
 
-                const size_t stackLevel {stack.top().level};
-                stack.pop();
-                stack.pop();
+                    son = this->try_insert(vertex_key {negativeTarget, positiveTarget}, stackLevel - 1);
 
-                son = this->try_insert_vertex(vertex_key {negativeTarget, positiveTarget}, stackLevel - 1);
-
-                stack.push(stack_frame {son, stackLevel - 1});
+                    stack.push(stack_frame {son, stackLevel - 1});
+                }
             }
 
             inputIndex += 2;
         }
 
-        return bdd {stack.top().vertexPtr, std::move(valToLeaf), std::move(leafToVal)};
+        return bdd<VertexData, ArcData> {
+            stack.top().vertexPtr
+          , input.variable_count()
+          , std::move(leafToVal)
+        };
     }
 
-    template<class InputFunction>
-    auto bdd_creator<InputFunction>::try_insert_vertex (const vertex_key key
-                                                         , const size_t level) -> vertex*
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::try_insert 
+        (const vertex_key key, const size_t level) -> vertex*
     {
         // https://www.boost.org/doc/libs/1_71_0/libs/pool/doc/html/boost/object_pool.html
         // dalo by sa vyskúšať na alokovanie vrcholov
@@ -166,7 +156,7 @@ namespace mix::dd
         }
 
         auto newVertex {new vertex {
-            this->variable_name(level)
+            this->nextId++
           , level
           , {arc {key.negative}, arc {key.positive}}
         }};
@@ -175,23 +165,17 @@ namespace mix::dd
         return newVertex;
     }
 
-    template<class InputFunction>
-    auto bdd_creator<InputFunction>::variable_name (const size_t level) const -> std::string
-    {
-        return this->variableNames[level]
-             + "_" 
-             + std::to_string(this->levels[level].size());
-    }
-
-    template<class InputFunction>
-    auto bdd_creator<InputFunction>::vertex_key::operator== (const vertex_key& other) const -> bool
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::vertex_key::operator== 
+        (const vertex_key& other) const -> bool
     {
         return this->negative == other.negative
             && this->positive == other.positive;
     }
 
-    template<class InputFunction>
-    auto bdd_creator<InputFunction>::vertex_key_hash::operator() (const vertex_key& key) const -> size_t
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::vertex_key_hash::operator() 
+        (const vertex_key& key) const -> size_t
     {
         size_t seed {0};
 

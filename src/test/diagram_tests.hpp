@@ -20,8 +20,8 @@ namespace mix::dd
         return bv ? '1' : '0';
     }
     
-    template<class InputFunction>
-    auto compare_results (const InputFunction& function, const bdd& diagram)
+    template<class InputFunction, class BDD>
+    auto compare_results (const InputFunction& function, const BDD& diagram)
     {
         // TODO compare results for each input
     }

@@ -3,7 +3,7 @@
 
 #include <string>
 #include <array>
-#include <initializer_list>
+#include "typedefs.hpp"
 
 namespace mix::dd
 {
@@ -23,16 +23,16 @@ namespace mix::dd
 
         struct vertex
         {
-            const std::string label;
-            const size_t level;
+            const id_t   id;
+            const size_t level; // TODO rename to index
             VertexData data;
             std::array<arc, N> forwardStar;
-            bool mark;
+            bool mark {false};
 
-            vertex(const std::string pLabel
+            vertex(const id_t pId
                  , const size_t pLevel);
             
-            vertex(const std::string pLabel
+            vertex(const id_t pId
                  , const size_t pLevel
                  , std::array<arc, N> pForwardStar);
 
@@ -47,19 +47,19 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, size_t N>
-    graph<VertexData, ArcData, N>::vertex::vertex(const std::string pLabel
+    graph<VertexData, ArcData, N>::vertex::vertex(const id_t pId
                                                 , const size_t pLevel) :
-        label       {std::move(pLabel)}
+        id          {pId}
       , level       {pLevel}
       , forwardStar {}
     {
     }
 
     template<class VertexData, class ArcData, size_t N>
-    graph<VertexData, ArcData, N>::vertex::vertex(const std::string pLabel
+    graph<VertexData, ArcData, N>::vertex::vertex(const id_t pId
                                                 , const size_t pLevel
                                                 , std::array<arc, N> pForwardStar) :
-        label       {std::move(pLabel)}
+        id          {pId}
       , level       {pLevel}
       , forwardStar {pForwardStar}
     {

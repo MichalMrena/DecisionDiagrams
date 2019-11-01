@@ -1,5 +1,5 @@
-#ifndef MIX_DD_TRUTH_TABLE
-#define MIX_DD_TRUTH_TABLE
+#ifndef MIX_DD_BOOL_FUNCTION
+#define MIX_DD_BOOL_FUNCTION
 
 #include <string>
 #include <vector>
@@ -10,7 +10,7 @@
 
 namespace mix::dd
 {
-    class truth_table
+    class bool_function
     {
     private:
         std::vector<std::string> varNames;
@@ -19,14 +19,15 @@ namespace mix::dd
     public:
         using var_names_iterator = typename std::vector<std::string>::const_iterator;
 
-        static auto load_from_file (const std::string& filePath) -> truth_table;
+        static auto load_from_file (const std::string& filePath) -> bool_function;
 
     public:
-        truth_table(const truth_table& other);
-        truth_table(truth_table&& other);
+        bool_function(const bool_function& other);
+        bool_function(bool_function&& other);
 
         // BEGIN must have interface
-        auto operator[] (const input_t input) const -> log_val_t;
+        auto operator[]     (const input_t input) const -> log_val_t;
+        auto variable_count () const -> size_t;
 
         auto begin () const -> var_names_iterator;
         auto end   () const -> var_names_iterator;
@@ -41,12 +42,12 @@ namespace mix::dd
         static auto raw_vals_to_input (InputIt begin, InputIt end, size_t varsCount) -> input_t;
 
     private:
-        truth_table(std::vector<std::string>&& pVarNames
+        bool_function(std::vector<std::string>&& pVarNames
                   , std::vector<log_val_t>&&  pValues);
     };
 
     template<class InputIt>
-    auto truth_table::raw_vals_to_input (InputIt begin, InputIt end, size_t varsCount) -> input_t
+    auto bool_function::raw_vals_to_input (InputIt begin, InputIt end, size_t varsCount) -> input_t
     {
         std::ostringstream ostr;
 

@@ -1,5 +1,5 @@
-#ifndef DD_FUNCTIONS
-#define DD_FUNCTIONS
+#ifndef DD_OPERATORS
+#define DD_OPERATORS
 
 #include "typedefs.hpp"
 
@@ -27,6 +27,14 @@ namespace mix::dd
     };
 
     struct NOR
+    {
+
+    };
+
+    /**
+        If - then - else ternary function.
+     */
+    struct ITE
     {
 
     };

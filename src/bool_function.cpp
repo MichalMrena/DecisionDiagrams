@@ -1,4 +1,4 @@
-#include "truth_table.hpp"
+#include "bool_function.hpp"
 
 #include <fstream>
 #include <utility>
@@ -10,7 +10,7 @@
 
 namespace mix::dd
 {
-    auto truth_table::load_from_file (const std::string& filePath) -> truth_table
+    auto bool_function::load_from_file (const std::string& filePath) -> bool_function
     {
         using x_y_pair = std::pair<input_t, log_val_t>;
         
@@ -18,6 +18,7 @@ namespace mix::dd
         reader.throw_if_cant_read();
 
         std::string line;
+        reader.next_line_except(line); // comment with function
         reader.next_line_except(line);
 
         auto varNames {utils::to_words(line)};
@@ -37,7 +38,7 @@ namespace mix::dd
             reader.next_line_except(line);
             const auto tokens {utils::to_words(line)};
 
-            const log_val_t functionValue {truth_table::str_to_log_val(tokens.back())};
+            const log_val_t functionValue {bool_function::str_to_log_val(tokens.back())};
 
             // TODO treba sa rozhodnúť či tu toto vôbec bude
             functionValues.push_back(std::make_pair(
@@ -59,27 +60,32 @@ namespace mix::dd
             values.push_back(pair.second);
         }
 
-        return truth_table {std::move(varNames), std::move(values)};
+        return bool_function {std::move(varNames), std::move(values)};
     }
 
-    truth_table::truth_table(const truth_table& other) :
+    bool_function::bool_function(const bool_function& other) :
         varNames {other.varNames}
       , values   {other.values}
     {
     }
 
-    truth_table::truth_table(truth_table&& other) :
+    bool_function::bool_function(bool_function&& other) :
         varNames {std::move(other.varNames)}
       , values   {std::move(other.values)}
     {
     }
 
-    auto truth_table::operator[] (const input_t input) const -> log_val_t
+    auto bool_function::operator[] (const input_t input) const -> log_val_t
     {
         return this->values[input];
     }
 
-    auto truth_table::to_string(std::ostream& ostr) const -> void
+    auto bool_function::variable_count () const -> size_t
+    {
+        return this->varNames.size();
+    }
+
+    auto bool_function::to_string(std::ostream& ostr) const -> void
     {
         ostr << "Variables: " << '\n';
         for (auto& var : this->varNames)
@@ -96,17 +102,17 @@ namespace mix::dd
         ostr << '\n';
     }
 
-    auto truth_table::begin () const -> var_names_iterator
+    auto bool_function::begin () const -> var_names_iterator
     {
         return this->varNames.cbegin();
     }
 
-    auto truth_table::end () const -> var_names_iterator
+    auto bool_function::end () const -> var_names_iterator
     {
         return this->varNames.cend();
     }
 
-    auto truth_table::str_to_log_val (const std::string& str) -> log_val_t
+    auto bool_function::str_to_log_val (const std::string& str) -> log_val_t
     {
         if ("0" == str) return 0;
         if ("1" == str) return 1;
@@ -114,7 +120,7 @@ namespace mix::dd
         throw utils::io_exception("Unexpected function value: " + str);
     }
 
-    truth_table::truth_table(std::vector<std::string>&& pVarNames
+    bool_function::bool_function(std::vector<std::string>&& pVarNames
                            , std::vector<log_val_t>&&  pValues) :
         varNames {pVarNames}
       , values   {pValues}
