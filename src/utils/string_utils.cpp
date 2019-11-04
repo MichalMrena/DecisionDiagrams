@@ -17,4 +17,16 @@ namespace mix::utils
 
         return words;
     }
+
+    auto to_bit_string (unsigned long long number) -> std::string
+    {
+        std::bitset<sizeof(unsigned long long)> bits {number};
+        std::string bitsStr {bits.to_string()};
+        const size_t firstOne {bitsStr.find('1')};
+
+        if (firstOne == std::string::npos)
+            return "0";
+        else
+            return bitsStr.substr(firstOne);
+    }
 }

@@ -1,8 +1,13 @@
 #include <iostream>
-#include "graph.hpp"
-#include "bool_function.hpp"
+
+#include "truth_table.hpp"
+#include "half_symbolic_f.hpp"
+
 #include "bdd_creator.hpp"
+#include "bdd_merger.hpp"
+
 #include "utils/math_utils.hpp"
+#include "utils/string_utils.hpp"
 #include "test/diagram_tests.hpp"
 
 using namespace mix::dd;
@@ -10,19 +15,21 @@ using namespace mix::utils;
 
 auto main() -> int
 {
-    auto table {bool_function::load_from_file("sample_table_2.txt")};
+    auto table {truth_table::load_from_file("sample_table_2.txt")};
     
-    bdd_creator creator {};
+    auto inputF {create_hs<4>([](xs<4> x) {
+        return (x[1] and x[2]) or x[4];
+    })};
 
-    auto diagram {creator.create_diagram(table)};
+    bdd_creator creator;
+    bdd diagram1 {creator.create_diagram(table)};
+    bdd diagram2 {creator.create_diagram(inputF)};
 
-    std::cout << diagram.to_dot_graph() << '\n';
+    compare_results(table, diagram1);
+    compare_results(inputF, diagram2);
 
-    // generate_bool_function<6>(std::cout, [](const std::bitset<6>& x) {
-    //     // x1.x2 + x3.x4 + x5.x6        
-    //     // x1.x4 + x2.x5 + x3.x6        
-    //     return (x[5] and x[2]) or (x[4] and x[1]) or (x[3] and x[0]);
-    // });
+    // std::cout << diagram1.to_dot_graph() << '\n';
+    // std::cout << diagram2.to_dot_graph() << '\n';
 
     return 0;
 }

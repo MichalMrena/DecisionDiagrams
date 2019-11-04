@@ -13,7 +13,8 @@ namespace mix::dd
 
     struct OR
     {
-
+        auto operator() (const log_val_t lhs
+                       , const log_val_t rhs) const -> log_val_t;
     };
 
     struct XOR

@@ -2,6 +2,7 @@
 #define MIX_UTILS_HASH
 
 #include <functional>
+#include <cmath>
 
 namespace mix::utils
 {

@@ -10,7 +10,9 @@
 #include <vector>
 #include <cmath>
 #include "../bdd.hpp"
+#include "../bool_function.hpp"
 #include "../utils/math_utils.hpp"
+#include "../utils/string_utils.hpp"
 #include "../typedefs.hpp"
 
 namespace mix::dd
@@ -20,10 +22,30 @@ namespace mix::dd
         return bv ? '1' : '0';
     }
     
-    template<class InputFunction, class BDD>
-    auto compare_results (const InputFunction& function, const BDD& diagram)
+    template<class VertexData = int8_t, class ArcData = int8_t>
+    auto compare_results (const bool_function& function
+                        , const bdd<VertexData, ArcData>& diagram) -> bool
     {
-        // TODO compare results for each input
+        const size_t inputCount {utils::pow(2UL, function.variable_count())};
+        for (size_t i {0}; i < inputCount; ++i)
+        {
+            const log_val_t expectedValue {function[i]};
+            const log_val_t diagramValue  {diagram.get_value(i)};
+
+            if (expectedValue != diagramValue)
+            {
+                std::cout << "Wrong answer for input " << utils::to_bit_string(i)
+                          << " expected " << std::to_string(expectedValue)
+                          << " got "      << std::to_string(diagramValue)
+                          << '\n';
+
+                return false;
+            }
+        }
+
+        std::cout << "Diagram is correct." << '\n';
+
+        return true;
     }
 
     template<size_t VarCount, class InputFunction>
@@ -51,6 +73,5 @@ namespace mix::dd
         }
     }
 }
-
 
 #endif

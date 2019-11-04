@@ -27,7 +27,7 @@ namespace mix::dd
             size_t level;
         };
 
-        struct vertex_key
+        struct vertex_key // TODO replace with vertex pair from graph
         {
             vertex* negative;
             vertex* positive;
@@ -49,11 +49,13 @@ namespace mix::dd
 
     public:
         auto create_diagram (const bool_function& input) -> bdd<VertexData, ArcData>;
-        // TODO keď vytvorí jeden sú atribúty v neznámom stave, resetovať
+        // TODO ak by to malo byť rýchle bool_function by nemusel byť virtuálny ale dal by sa dať ako template
 
     private:
         auto try_insert (const vertex_key key
                        , const size_t level) -> vertex*; 
+
+        auto reset () -> void;
     };
 
     template<class VertexData, class ArcData>
@@ -135,8 +137,11 @@ namespace mix::dd
             inputIndex += 2;
         }
 
+        vertex* root {stack.top().vertexPtr};
+        this->reset();
+
         return bdd<VertexData, ArcData> {
-            stack.top().vertexPtr
+            root
           , input.variable_count()
           , std::move(leafToVal)
         };
@@ -163,6 +168,15 @@ namespace mix::dd
         levels[level][key] = newVertex;
         
         return newVertex;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::reset
+        () -> void
+    {
+        this->levels.clear();
+        this->stack.clear();
+        this->nextId = 1;
     }
 
     template<class VertexData, class ArcData>

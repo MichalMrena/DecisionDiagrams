@@ -1,9 +1,9 @@
 #ifndef MIX_DD_GRAPH
 #define MIX_DD_GRAPH
 
-#include <string>
 #include <array>
 #include "typedefs.hpp"
+#include "utils/hash.hpp"
 
 namespace mix::dd
 {
@@ -38,6 +38,20 @@ namespace mix::dd
 
             auto is_leaf () const -> bool;
         };
+
+        struct vertex_pair
+        {
+            vertex* first;
+            vertex* second;
+
+            auto operator== (const vertex_pair& rhs) const -> bool;
+        };
+        
+        struct vertex_pair_hash
+        {
+            auto operator() (const vertex_pair& key) const -> size_t;
+        };
+
     };
 
     template<class VertexData, class ArcData, size_t N>
@@ -77,6 +91,29 @@ namespace mix::dd
         }
 
         return true;
+    }
+
+    template<class VertexData, class ArcData, size_t N>
+    auto graph<VertexData, ArcData, N>::vertex_pair::operator== 
+        (const vertex_pair& other) const -> bool
+    {
+        return this->first  == other.first
+            && this->second == other.second;
+    }
+
+    template<class VertexData, class ArcData, size_t N>
+    auto graph<VertexData, ArcData, N>::vertex_pair_hash::operator() 
+        (const vertex_pair& key) const -> size_t
+    {
+        size_t seed {0};
+
+        // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.negative);
+        // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.positive);
+
+        utils::boost::hash_combine<vertex*, std::hash<vertex*>>(seed, key.negative);
+        utils::boost::hash_combine<vertex*, std::hash<vertex*>>(seed, key.positive);
+
+        return seed;
     }
 }
 
