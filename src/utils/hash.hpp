@@ -23,10 +23,10 @@ namespace mix::utils
     namespace boost
     {
         template <class T, class Hasher>
-        auto hash_combine(std::size_t& seed, T const& v) -> void
+        auto hash_combine(std::size_t& seed, const T& v) -> void
         {
             Hasher hasher;
-            seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + ( seed >> 2);
         }
     }
 }

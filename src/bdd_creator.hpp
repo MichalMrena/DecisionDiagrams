@@ -73,7 +73,7 @@ namespace mix::dd
             {0, new vertex {nextId++, leafLevel}}
           , {1, new vertex {nextId++, leafLevel}} 
         };
-        std::map<vertex*, log_val_t> leafToVal 
+        std::map<const vertex*, log_val_t> leafToVal 
         { 
             {valToLeaf[0], 0}
           , {valToLeaf[1], 1} 

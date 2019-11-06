@@ -28,7 +28,7 @@ namespace mix::dd
     private:    
         vertex* root;
         size_t variableCount;
-        std::map<vertex*, log_val_t> leafToVal;
+        std::map<const vertex*, log_val_t> leafToVal;
         // TODO map interface ano ale za tým by stačil list
 
     public:
@@ -38,6 +38,7 @@ namespace mix::dd
     public:
         static auto TRUE  () -> bdd;
         static auto FALSE () -> bdd;
+        static auto VARIABLE (const size_t index) -> bdd;
 
     public:
         bdd(const bdd& other); // not yet implemented
@@ -48,13 +49,10 @@ namespace mix::dd
         // TODO na vstupe asi bitset keby mala funkcia > ako 64 premenných
         auto get_value (const input_t input) const -> log_val_t;
 
-        // template<class BinaryBoolOperator>
-        // auto apply (const bdd& other) const -> bdd;
-
     private:
         bdd(vertex* pRoot
           , size_t pVariableCount
-          , std::map<vertex*, log_val_t>&& pLeafToVal);
+          , std::map<const vertex*, log_val_t>&& pLeafToVal);
 
         auto reduce () -> void;  // not yet implemented
 
@@ -63,6 +61,9 @@ namespace mix::dd
 
         template<class UnaryFunction>
         auto traverse (vertex* const v, UnaryFunction f) const -> void;
+
+        static auto low  (const vertex* const v) -> vertex*;
+        static auto high (const vertex* const v) -> vertex*;
     };
 
     template<class VertexData, class ArcData>
@@ -70,7 +71,7 @@ namespace mix::dd
         () -> bdd
     {
         vertex* const trueLeaf {new vertex {1, 1}};
-        std::map<vertex*, log_val_t> leafValMap
+        std::map<const vertex*, log_val_t> leafValMap
         {
             {trueLeaf, 1}
         };
@@ -83,7 +84,7 @@ namespace mix::dd
         () -> bdd
     {
         vertex* const falseLeaf {new vertex {1, 1}};
-        std::map<vertex*, log_val_t> leafValMap
+        std::map<const vertex*, log_val_t> leafValMap
         {
             {falseLeaf, 0}
         };
@@ -92,9 +93,25 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::VARIABLE
+        (const size_t index) -> bdd
+    {
+        vertex* const falseLeaf {new vertex {1, index + 1}};
+        vertex* const trueLeaf  {new vertex {2, index + 1}};
+        vertex* const varVertex {new vertex {3, index, {arc {falseLeaf}, arc {trueLeaf}}}};
+        std::map<const vertex*, log_val_t> leafValMap
+        {
+            {falseLeaf, 0}
+          , {trueLeaf, 1}
+        };
+
+        return bdd {varVertex, index, std::move(leafValMap)};
+    }
+
+    template<class VertexData, class ArcData>
     bdd<VertexData, ArcData>::bdd(vertex* pRoot
                                 , size_t pVariableCount
-                                , std::map<vertex*, log_val_t>&& pLeafToVal) :
+                                , std::map<const vertex*, log_val_t>&& pLeafToVal) :
         root          {pRoot}
       , variableCount {pVariableCount}  
       , leafToVal     {std::move(pLeafToVal)}
@@ -139,7 +156,7 @@ namespace mix::dd
 
                 vertexOst << "    " 
                           << std::to_string(v->id) 
-                          << " [label = " << ('x' + std::to_string(v->level) ) << "];" 
+                          << " [label = " << ('x' + std::to_string(v->level)) << "];" 
                           << '\n';
 
                 arcOst << "    " << v->id << " -> " << negativeTarget->id << " [style = dashed];" << '\n';
@@ -157,7 +174,7 @@ namespace mix::dd
         });
 
         graphOst << "digraph D {"                    << '\n'
-                 << "    node [shape = square] 1 2;" << '\n'
+                 << "    node [shape = square] 1 2;" << '\n' // TODO square shape pre všetky leafy preiterovat
                  << "    node [shape = circle];"     << "\n\n"
                  << vertexOst.str() << '\n'
                  << arcOst.str()    << '\n';
@@ -195,7 +212,7 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::value 
         (const vertex* const v) const -> log_val_t
     {
-        return this->is_leaf(v) ? this->leafToVal(v) : X;
+        return this->is_leaf(v) ? this->leafToVal.at(v) : X;
     }
 
     template<class VertexData, class ArcData>
@@ -228,6 +245,28 @@ namespace mix::dd
         {
             this->traverse(v->forwardStar[1].target, f);
         }
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::low
+        (const vertex* const v) -> vertex*
+    {
+        return v->forwardStar[0].target;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::high
+        (const vertex* const v) -> vertex*
+    {
+        return v->forwardStar[1].target;
+    }
+
+
+
+    template<class VertexData = int8_t, class ArcData = int8_t>
+    auto x (const size_t index) -> bdd<VertexData, ArcData>
+    {
+        return bdd<VertexData, ArcData>::VARIABLE(index);
     }
 }
 

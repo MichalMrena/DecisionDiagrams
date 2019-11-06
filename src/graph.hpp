@@ -41,8 +41,8 @@ namespace mix::dd
 
         struct vertex_pair
         {
-            vertex* first;
-            vertex* second;
+            const vertex* first;
+            const vertex* second;
 
             auto operator== (const vertex_pair& rhs) const -> bool;
         };
@@ -110,8 +110,8 @@ namespace mix::dd
         // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.negative);
         // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.positive);
 
-        utils::boost::hash_combine<vertex*, std::hash<vertex*>>(seed, key.negative);
-        utils::boost::hash_combine<vertex*, std::hash<vertex*>>(seed, key.positive);
+        utils::boost::hash_combine<const vertex*, std::hash<const vertex*>>(seed, key.first);
+        utils::boost::hash_combine<const vertex*, std::hash<const vertex*>>(seed, key.second);
 
         return seed;
     }
