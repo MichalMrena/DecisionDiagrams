@@ -5,15 +5,18 @@
 #include <map>
 #include <algorithm>
 #include "bdd.hpp"
+#include "bdd_reducer.hpp"
 #include "operators.hpp"
 
 namespace mix::dd
 {
-    template<class VertexData = int8_t, class ArcData = int8_t>
+    template<class VertexData = def_vertex_data_t
+           , class ArcData = def_arc_data_t>
     class bdd_merger
     {
     private:
         using bdd_t            = bdd<VertexData, ArcData>;
+        using bdd_reducer_t    = bdd_reducer<VertexData, ArcData>;
         using arc              = typename graph<VertexData, ArcData>::arc;
         using vertex           = typename graph<VertexData, ArcData>::vertex;
         using vertex_pair      = typename graph<VertexData, ArcData>::vertex_pair;
@@ -55,8 +58,6 @@ namespace mix::dd
     auto bdd_merger<VertexData, ArcData>::merge
         (const bdd_t& d1, const bdd_t& d2, BinaryBoolOperator op) -> bdd_t
     {
-        this->reset();
-
         this->diagram1 = &d1;
         this->diagram2 = &d2;
 
@@ -64,11 +65,18 @@ namespace mix::dd
             this->merge_internal(d1.root, d2.root, op)
         };
 
-        return bdd_t {
+        bdd_t newDiagram {
             newRoot
           , this->leaf_index() - 1
           , std::move(this->leafToVal)
         };
+
+        this->reset();
+        
+        bdd_reducer_t{}.reduce(newDiagram);
+
+        // TODO skontrolovať či sa robí move !!!
+        return newDiagram;
     }
 
     template<class VertexData, class ArcData>

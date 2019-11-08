@@ -21,9 +21,9 @@ auto main() -> int
         return (x[1] and x[2]) or x[4];
     })};
 
-    // bdd_creator creator;
-    // bdd diagram1 {creator.create_diagram(table)};
-    // bdd diagram2 {creator.create_diagram(inputF)};
+    bdd_creator creator;
+    bdd diagram1 {creator.create_diagram(table)};
+    bdd diagram2 {creator.create_diagram(inputF)};
 
     // compare_results(table, diagram1);
     // compare_results(inputF, diagram2);
@@ -31,19 +31,56 @@ auto main() -> int
     // std::cout << diagram1.to_dot_graph() << '\n';
     // std::cout << diagram2.to_dot_graph() << '\n';
 
-    // bdd diagram3 {x(1) and x(2)};
-
-    bdd_merger merger;
+    // bdd_merger merger;
     // bdd merged {diagram1 && diagram2};
+    // std::cout << merged.to_dot_graph() << '\n';
 
-    using t_bdd = bdd<int, int>;
+    // bdd x1orx2 {x(1) or x(2)};
+    // std::cout << x1orx2.to_dot_graph() << '\n';
 
-    bdd x1 {t_bdd::VARIABLE(1)};
-    bdd x2 {t_bdd::VARIABLE(2)};
+    using vertex = graph<def_vertex_data_t, def_arc_data_t>::vertex;
 
-    bdd x1orx2 {x1 || x2};
+    vertex* const v0 {new vertex {0, 1}};
+    
+    vertex* const v1 {new vertex {1, 2}};
+    vertex* const v2 {new vertex {2, 2}};
 
-    std::cout << x1orx2.to_dot_graph() << '\n';
+    vertex* const v3 {new vertex {3, 3}};
+    vertex* const v4 {new vertex {4, 3}};
+
+    vertex* const v5 {new vertex {5, 4}};
+    vertex* const v6 {new vertex {6, 4}};
+    vertex* const v7 {new vertex {7, 4}};
+    vertex* const v8 {new vertex {8, 4}};
+    
+    std::map<const vertex*, log_val_t> ltv
+    {
+        {v5, 0}
+      , {v6, 1}
+      , {v7, 0}
+      , {v8, 1}
+    };
+
+    v0->forwardStar[0].target = v1;
+    v0->forwardStar[1].target = v2;
+
+    v1->forwardStar[0].target = v5;
+    v1->forwardStar[1].target = v3;
+
+    v2->forwardStar[0].target = v3;
+    v2->forwardStar[1].target = v4;
+
+    v3->forwardStar[0].target = v7;
+    v3->forwardStar[1].target = v6;
+
+    v4->forwardStar[0].target = v7;
+    v4->forwardStar[1].target = v8;
+    
+    bdd notreduced {v0, 3, std::move(ltv)};
+
+    bdd_reducer{}.reduce(notreduced);
+
+    std::cout << notreduced.to_dot_graph() << '\n';
 
     return 0;
 }

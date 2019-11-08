@@ -14,7 +14,8 @@
 
 namespace mix::dd
 {
-    template<class VertexData = int8_t, class ArcData = int8_t>
+    template<class VertexData = def_vertex_data_t
+           , class ArcData = def_arc_data_t>
     class bdd_creator
     {
     private:

@@ -23,8 +23,8 @@ namespace mix::dd
 
         struct vertex
         {
-            const id_t   id;
-            const size_t level; // TODO rename to index
+            id_t       id;
+            size_t     level; // TODO rename to index
             VertexData data;
             std::array<arc, N> forwardStar;
             bool mark {false};

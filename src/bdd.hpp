@@ -19,6 +19,10 @@ namespace mix::dd
     class bdd_merger;
 
     template<class VertexData, class ArcData>
+    class bdd_reducer;
+
+    template<class VertexData = def_vertex_data_t
+           , class ArcData = def_arc_data_t>
     class bdd
     {
     private:
@@ -29,11 +33,12 @@ namespace mix::dd
         vertex* root;
         size_t variableCount;
         std::map<const vertex*, log_val_t> leafToVal;
-        // TODO map interface ano ale za tým by stačil list
+        // TODO map interface ano ale za tým by asi stačila menej monštrózna implementácia
 
     public:
         friend class bdd_creator<VertexData, ArcData>;
         friend class bdd_merger<VertexData, ArcData>;
+        friend class bdd_reducer<VertexData, ArcData>;
 
     public:
         static auto TRUE  () -> bdd;
@@ -49,12 +54,10 @@ namespace mix::dd
         // TODO na vstupe asi bitset keby mala funkcia > ako 64 premenných
         auto get_value (const input_t input) const -> log_val_t;
 
-    private:
+    public: // just tmp private later
         bdd(vertex* pRoot
           , size_t pVariableCount
           , std::map<const vertex*, log_val_t>&& pLeafToVal);
-
-        auto reduce () -> void;  // not yet implemented
 
         auto value   (const vertex* const v) const -> log_val_t;
         auto is_leaf (const vertex* const v) const -> bool;
@@ -137,57 +140,67 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::to_dot_graph 
         () const -> std::string
     {
-        std::ostringstream graphOst;
+        std::ostringstream finalGraphOstr;
         std::ostringstream arcOst;
-        std::ostringstream vertexOst;
+        std::ostringstream vertexLabelOstr;
+        std::ostringstream leafShapeOstr;
         std::vector<std::ostringstream> levels;
         levels.resize(this->variableCount + 2);
+
+        leafShapeOstr << "    node [shape = square] ";
 
         for (auto& levelOst : levels)
         {
             levelOst << "    {rank = same; ";
         }
 
-        this->traverse(this->root, [&](vertex* const v) {
+        this->traverse(this->root, [&](const vertex* const v) {
             if (! v->is_leaf())
             {
-                vertex* const negativeTarget {v->forwardStar[0].target};
-                vertex* const positiveTarget {v->forwardStar[1].target};
+                const vertex* const negativeTarget {bdd::low(v)};
+                const vertex* const positiveTarget {bdd::high(v)};
 
-                vertexOst << "    " 
-                          << std::to_string(v->id) 
-                          << " [label = " << ('x' + std::to_string(v->level)) << "];" 
-                          << '\n';
+                vertexLabelOstr 
+                    << "    " 
+                    << std::to_string(v->id) 
+                    << " [label = " << ('x' + std::to_string(v->level)) << "];" 
+                    << '\n';
 
                 arcOst << "    " << v->id << " -> " << negativeTarget->id << " [style = dashed];" << '\n';
                 arcOst << "    " << v->id << " -> " << positiveTarget->id << " [style = solid];"  << '\n';
             }
             else
             {
-                vertexOst << "    " 
-                          << std::to_string(v->id) 
-                          << " [label = " << std::to_string(this->leafToVal.at(v)) << "];" 
-                          << '\n';
+                vertexLabelOstr 
+                    << "    " 
+                    << std::to_string(v->id) 
+                    << " [label = " << std::to_string(this->leafToVal.at(v)) << "];" 
+                    << '\n';
+
+                leafShapeOstr << v->id << ' ';
             }
 
             levels[v->level] << std::to_string(v->id) << "; ";
         });
 
-        graphOst << "digraph D {"                    << '\n'
-                 << "    node [shape = square] 1 2;" << '\n' // TODO square shape pre všetky leafy preiterovat
-                 << "    node [shape = circle];"     << "\n\n"
-                 << vertexOst.str() << '\n'
-                 << arcOst.str()    << '\n';
+        leafShapeOstr << ';';
+
+        finalGraphOstr 
+            << "digraph D {"                << '\n'
+            << leafShapeOstr.str()          << '\n'
+            << "    node [shape = circle];" << "\n\n"
+            << vertexLabelOstr.str()        << '\n'
+            << arcOst.str()                 << '\n';
 
         for (auto& levelOst : levels)
         {
             levelOst << "}" << '\n';
-            graphOst << levelOst.str();
+            finalGraphOstr << levelOst.str();
         }
 
-        graphOst << '}' << '\n';
+        finalGraphOstr << '}' << '\n';
 
-        return graphOst.str();
+        return finalGraphOstr.str();
     }
 
     template<class VertexData, class ArcData>
@@ -236,14 +249,14 @@ namespace mix::dd
             return;
         }
 
-        if (v->mark != v->forwardStar[0].target->mark)
+        if (v->mark != bdd::low(v)->mark)
         {
-            this->traverse(v->forwardStar[0].target, f);
+            this->traverse(bdd::low(v), f);
         }
 
-        if (v->mark != v->forwardStar[1].target->mark)
+        if (v->mark != bdd::high(v)->mark)
         {
-            this->traverse(v->forwardStar[1].target, f);
+            this->traverse(bdd::high(v), f);
         }
     }
 
