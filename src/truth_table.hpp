@@ -1,5 +1,5 @@
-#ifndef MIX_DD_TRUTH_TABLE
-#define MIX_DD_TRUTH_TABLE
+#ifndef _MIX_DD_TRUTH_TABLE_
+#define _MIX_DD_TRUTH_TABLE_
 
 #include <string>
 #include <vector>

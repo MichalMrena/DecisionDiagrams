@@ -58,7 +58,7 @@ namespace mix::dd
     auto bdd_merger<VertexData, ArcData>::merge
         (const bdd_t& d1, const bdd_t& d2, BinaryBoolOperator op) -> bdd_t
     {
-        this->diagram1 = &d1;
+        this->diagram1 = &d1; // TODO reference wrapper
         this->diagram2 = &d2;
 
         vertex* newRoot {
@@ -94,7 +94,7 @@ namespace mix::dd
 
         vertex* u {nullptr};
 
-        if (val != X)
+        if (val != X) // TODO ak su oba listy a je X v .pla tak nechať list s X hodnotou
         {
             u = new vertex {this->nextId++, this->leaf_index()};
             this->leafToVal[u] = val;
@@ -219,7 +219,24 @@ namespace mix::dd
     auto operator^ (const bdd<VertexData, ArcData>& lhs
                   , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
     {
+        bdd_merger<VertexData, ArcData> merger;
+        return merger.merge(lhs, rhs, XOR {});
+    }
 
+    template<class VertexData, class ArcData>
+    auto nand (const bdd<VertexData, ArcData>& lhs
+             , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
+    {
+        bdd_merger<VertexData, ArcData> merger;
+        return merger.merge(lhs, rhs, NAND {});
+    }
+
+    template<class VertexData, class ArcData>
+    auto nor (const bdd<VertexData, ArcData>& lhs
+            , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
+    {
+        bdd_merger<VertexData, ArcData> merger;
+        return merger.merge(lhs, rhs, NOR {});
     }
 
     template<class VertexData, class ArcData>

@@ -24,9 +24,8 @@ namespace mix::utils
         std::string bitsStr {bits.to_string()};
         const size_t firstOne {bitsStr.find('1')};
 
-        if (firstOne == std::string::npos)
-            return "0";
-        else
-            return bitsStr.substr(firstOne);
+        return firstOne != std::string::npos 
+                   ? bitsStr.substr(firstOne)
+                   : "0";
     }
 }

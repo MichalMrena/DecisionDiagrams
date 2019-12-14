@@ -1,5 +1,5 @@
-#ifndef MIX_DD_BDD_CREATOR
-#define MIX_DD_BDD_CREATOR
+#ifndef _MIX_DD_BDD_CREATOR_
+#define _MIX_DD_BDD_CREATOR_
 
 #include <vector>
 #include <unordered_map>

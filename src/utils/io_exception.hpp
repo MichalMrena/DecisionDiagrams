@@ -1,5 +1,5 @@
-#ifndef MIX_DD_IO_EXCEPTION
-#define MIX_DD_IO_EXCEPTION
+#ifndef _MIX_DD_IO_EXCEPTION_
+#define _MIX_DD_IO_EXCEPTION_
 
 #include <exception>
 #include <string>

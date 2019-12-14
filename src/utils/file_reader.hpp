@@ -1,5 +1,5 @@
-#ifndef MIX_DD_FILE_READER
-#define MIX_DD_FILE_READER
+#ifndef _MIX_DD_FILE_READER_
+#define _MIX_DD_FILE_READER_
 
 #include <string>
 #include <fstream>
@@ -17,6 +17,7 @@ namespace mix::utils
 
         auto throw_if_cant_read () -> void;
         auto next_line_except   (std::string& out) -> void;
+        auto next_line_except   () -> std::string;
     };
 }
 

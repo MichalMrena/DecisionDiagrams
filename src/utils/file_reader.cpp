@@ -1,6 +1,6 @@
 #include "file_reader.hpp"
 
-#include "io_exception.hpp"
+#include <stdexcept>
 
 namespace mix::utils
 {
@@ -13,7 +13,7 @@ namespace mix::utils
     {
         if (not this->istr.is_open())
         {
-            throw io_exception {"File can't be read."};
+            throw std::runtime_error {"File can't be read."};
         }
     }
 
@@ -21,7 +21,14 @@ namespace mix::utils
     {
         if (not std::getline(this->istr, out))
         {
-            throw io_exception {"Unexpected end of file."};
+            throw std::runtime_error {"Unexpected end of file."};
         }
+    }
+
+    auto file_reader::next_line_except () -> std::string
+    {
+        std::string line;
+        this->next_line_except(line);
+        return line;
     }
 }

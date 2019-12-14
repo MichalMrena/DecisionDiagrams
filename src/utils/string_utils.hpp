@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_STRING_UTILS
-#define MIX_UTILS_STRING_UTILS
+#ifndef _MIX_UTILS_STRING_UTILS_
+#define _MIX_UTILS_STRING_UTILS_
 
 #include <string>
 #include <vector>

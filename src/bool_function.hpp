@@ -1,5 +1,5 @@
-#ifndef MIX_DD_BOOL_FUNCTION
-#define MIX_DD_BOOL_FUNCTION
+#ifndef _MIX_DD_BOOL_FUNCTION_
+#define _MIX_DD_BOOL_FUNCTION_
 
 
 #include "typedefs.hpp"

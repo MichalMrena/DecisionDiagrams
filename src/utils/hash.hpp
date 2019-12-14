@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_HASH
-#define MIX_UTILS_HASH
+#ifndef _MIX_UTILS_HASH_
+#define _MIX_UTILS_HASH_
 
 #include <functional>
 #include <cmath>

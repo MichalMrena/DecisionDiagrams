@@ -1,5 +1,5 @@
-#ifndef MIX_DD_BDD
-#define MIX_DD_BDD
+#ifndef _MIX_DD_BDD_
+#define _MIX_DD_BDD_
 
 #include <string>
 #include <vector>
@@ -21,6 +21,9 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     class bdd_reducer;
 
+    template<class VertexData, class ArcData>
+    class bdds_from_pla;
+
     template<class VertexData = def_vertex_data_t
            , class ArcData = def_arc_data_t>
     class bdd
@@ -30,24 +33,30 @@ namespace mix::dd
         using arc    = typename graph<VertexData, ArcData>::arc;
 
     private:    
-        vertex* root;
-        size_t variableCount;
-        std::map<const vertex*, log_val_t> leafToVal;
+        vertex* root {nullptr};
+        size_t variableCount {0};
+        std::map<const vertex*, log_val_t> leafToVal; // TODO asi by som to tam dal explicitne...
         // TODO map interface ano ale za tým by asi stačila menej monštrózna implementácia
 
     public:
         friend class bdd_creator<VertexData, ArcData>;
         friend class bdd_merger<VertexData, ArcData>;
         friend class bdd_reducer<VertexData, ArcData>;
+        friend class bdds_from_pla<VertexData, ArcData>;
 
     public:
-        static auto TRUE  () -> bdd;
-        static auto FALSE () -> bdd;
+        static auto TRUE     () -> bdd;
+        static auto FALSE    () -> bdd;
         static auto VARIABLE (const size_t index) -> bdd;
 
     public:
-        bdd(const bdd& other); // not yet implemented
+        bdd() = default;
+        bdd(const bdd& other) = delete; // not yet implemented
+        bdd(bdd&& other);
         ~bdd();
+
+        // TODO copy swap
+        auto operator= (bdd&& rhs) -> bdd&;
 
         auto to_dot_graph () const -> std::string;
         
@@ -112,6 +121,15 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    bdd<VertexData, ArcData>::bdd(bdd&& other) :
+        root          {other.root}
+      , variableCount {other.variableCount}  
+      , leafToVal     {std::move(other.leafToVal)}
+    {
+        other.root = nullptr;
+    }
+
+    template<class VertexData, class ArcData>
     bdd<VertexData, ArcData>::bdd(vertex* pRoot
                                 , size_t pVariableCount
                                 , std::map<const vertex*, log_val_t>&& pLeafToVal) :
@@ -124,16 +142,31 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     bdd<VertexData, ArcData>::~bdd()
     {
-        std::vector<vertex*> toDelete;
-
-        this->traverse(this->root, [&toDelete](vertex* const  v) {
-            toDelete.push_back(v);
-        });
-
-        for (vertex* v : toDelete)
+        if (this->root)
         {
-            delete v;
-        }        
+            std::vector<vertex*> toDelete;
+
+            this->traverse(this->root, [&toDelete](vertex* const  v) {
+                toDelete.push_back(v);
+            });
+
+            for (vertex* v : toDelete)
+            {
+                delete v;
+            }        
+        }
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::operator= (bdd&& rhs) -> bdd&
+    {
+        this->root          = rhs.root;
+        this->variableCount = rhs.variableCount;
+        this->leafToVal     = std::move(rhs.leafToVal);
+
+        rhs.root = nullptr;
+
+        return *this;
     }
 
     template<class VertexData, class ArcData>
@@ -174,7 +207,7 @@ namespace mix::dd
                 vertexLabelOstr 
                     << "    " 
                     << std::to_string(v->id) 
-                    << " [label = " << std::to_string(this->leafToVal.at(v)) << "];" 
+                    << " [label = " << log_val_to_char(this->leafToVal.at(v)) << "];" 
                     << '\n';
 
                 leafShapeOstr << v->id << ' ';

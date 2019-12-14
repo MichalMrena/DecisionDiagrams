@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_DOUBLE_TOP_STACK
-#define MIX_UTILS_DOUBLE_TOP_STACK
+#ifndef _MIX_UTILS_DOUBLE_TOP_STACK_
+#define _MIX_UTILS_DOUBLE_TOP_STACK_
 
 #include <vector>
 #include <utility>

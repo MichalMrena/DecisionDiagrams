@@ -1,5 +1,5 @@
-#ifndef MIX_DD_HALF_SYMBOLIC_F
-#define MIX_DD_HALF_SYMBOLIC_F
+#ifndef _MIX_DD_HALF_SYMBOLIC_F_
+#define _MIX_DD_HALF_SYMBOLIC_F_
 
 #include <bitset>
 #include "typedefs.hpp"
@@ -67,7 +67,7 @@ namespace mix::dd
     using xs = const std::bitset<VariableCount + 1>&;
 
     template<size_t VariableCount, class Function>
-    auto create_hs (Function f) -> half_symbolic_f<VariableCount, Function>
+    auto f (Function f) -> half_symbolic_f<VariableCount, Function>
     {
         return half_symbolic_f<VariableCount, Function> {f};
     }

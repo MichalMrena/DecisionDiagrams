@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_MATH_UTILS
-#define MIX_UTILS_MATH_UTILS
+#ifndef _MIX_UTILS_MATH_UTILS_
+#define _MIX_UTILS_MATH_UTILS_
 
 #include <type_traits>
 #include <cstdint>

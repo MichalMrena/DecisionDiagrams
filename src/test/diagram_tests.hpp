@@ -1,5 +1,5 @@
-#ifndef MIX_DD_DIAGRAM_TESTS
-#define MIX_DD_DIAGRAM_TESTS
+#ifndef _MIX_DD_DIAGRAM_TESTS_
+#define _MIX_DD_DIAGRAM_TESTS_
 
 #include <string>
 #include <sstream>
@@ -28,7 +28,7 @@ namespace mix::dd
     {
         const size_t inputCount {utils::pow(2UL, function.variable_count())};
         for (size_t i {0}; i < inputCount; ++i)
-        {
+           {
             const log_val_t expectedValue {function[i]};
             const log_val_t diagramValue  {diagram.get_value(i)};
 

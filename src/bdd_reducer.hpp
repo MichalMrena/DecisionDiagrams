@@ -1,5 +1,5 @@
-#ifndef MIX_DD_BDD_REDUCER
-#define MIX_DD_BDD_REDUCER
+#ifndef _MIX_DD_BDD_REDUCER_
+#define _MIX_DD_BDD_REDUCER_
 
 #include <vector>
 #include <utility>
@@ -114,7 +114,6 @@ namespace mix::dd
 
         // TODO remove unused vertices MEMMORY leak !!
         this->reset();
-
     }
 
     template<class VertexData, class ArcData>

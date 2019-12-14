@@ -1,5 +1,5 @@
-#ifndef MIX_DD_GRAPH
-#define MIX_DD_GRAPH
+#ifndef _MIX_DD_GRAPH_
+#define _MIX_DD_GRAPH_
 
 #include <array>
 #include "typedefs.hpp"
@@ -24,7 +24,7 @@ namespace mix::dd
         struct vertex
         {
             id_t       id;
-            size_t     level; // TODO rename to index
+            size_t     level; // TODO rename to index, typ by asi stačil 32u bit
             VertexData data;
             std::array<arc, N> forwardStar;
             bool mark {false};
