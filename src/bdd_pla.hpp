@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
+#include <algorithm>
 #include "typedefs.hpp"
 #include "bdd.hpp"
 #include "graph.hpp"
@@ -59,7 +61,7 @@ namespace mix::dd
         auto create_diagram (const std::vector<log_val_t>& varVals
                            , const log_val_t fVal) -> bdd_t;
         
-        auto merge_diagrams (const std::vector<bdd_t>& diagrams) -> bdd_t;
+        auto merge_diagrams (std::vector<bdd_t> diagrams) -> bdd_t;
     };
 
     template<class VertexData, class ArcData>
@@ -71,24 +73,25 @@ namespace mix::dd
         std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
 
         const auto& plaLines {file.get_lines()};
-        auto lineIt         {plaLines.begin()};
+
         // https://stackoverflow.com/questions/13357065/how-does-openmp-handle-nested-loops
+        // parallelizable for
         for (int32_t li {0}; li < file.line_count(); ++li)
         {
+            // parallelizable for
             for (int32_t fi {0}; fi < file.function_count(); ++fi)
             {
                 subDiagrams[fi].emplace_back(
-                    this->create_diagram( (*lineIt).varVals, (*lineIt).fVals[fi] )
+                    this->create_diagram( plaLines[li].varVals, plaLines[li].fVals[fi] )
                 );
             }
-
-            ++lineIt;
         }
         
         std::vector<bdd_t> finalDiagrams(file.function_count());
+        // parallelizable for
         for (int32_t fi {0}; fi < file.function_count(); ++fi)
         {
-            finalDiagrams[fi] = this->merge_diagrams(subDiagrams[fi]);
+            finalDiagrams[fi] = this->merge_diagrams(std::move(subDiagrams[fi]));
         }
         
         return finalDiagrams;
@@ -160,10 +163,41 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdds_from_pla<VertexData, ArcData>::merge_diagrams
-        (const std::vector<bdd_t>& diagrams) -> bdd_t
+        (std::vector<bdd_t> diagrams) -> bdd_t
     {
-        // just tmp
-        return bdd_t {};
+        const auto numOfSteps 
+        {
+            static_cast<size_t>(std::ceil(std::log2(diagrams.size())))
+        };
+
+        size_t diagramCount {diagrams.size()};
+
+        std::vector<bdd_t> auxDiagrams2((diagrams.size() >> 1) + 1);
+
+        std::vector<bdd_t>* src {&diagrams};
+        std::vector<bdd_t>* dst {&auxDiagrams2};
+
+        for (size_t step {0}; step < numOfSteps; ++step)
+        {
+            diagramCount = (diagramCount >> 1) + (diagramCount & 1);
+
+            // parallelizable for
+            for (int32_t i {0}; i < diagramCount; ++i)
+            {
+                if (i < diagramCount - 1)
+                {
+                    (*dst)[i] = (*src)[i << 1] || (*src)[(i << 1) + 1];
+                }
+                else // TODO toto by možno išlo aj bez toho ifu vnútri
+                {
+                    (*dst)[i] = (*src)[i];
+                }
+            }
+
+            std::swap(src, dst);
+        }
+
+        return dst->front();
     }
 }
 
