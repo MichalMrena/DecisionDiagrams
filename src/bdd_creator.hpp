@@ -14,24 +14,23 @@
 
 namespace mix::dd
 {
-    template<class VertexData = def_vertex_data_t
-           , class ArcData = def_arc_data_t>
+    template<class VertexData, class ArcData>
     class bdd_creator
     {
     private:
-        using vertex = typename graph<VertexData, ArcData>::vertex;
-        using arc    = typename graph<VertexData, ArcData>::arc;
+        using vertex_t = vertex<VertexData, ArcData, 2>;
+        using arc_t    = vertex<VertexData, ArcData, 2>;
         
         struct stack_frame
         {
-            vertex* vertexPtr;
+            vertex_t* vertexPtr;
             size_t level;
         };
 
         struct vertex_key // TODO replace with vertex pair from graph
         {
-            vertex* negative;
-            vertex* positive;
+            vertex_t* negative;
+            vertex_t* positive;
 
             auto operator== (const vertex_key& rhs) const -> bool;
         };
@@ -42,7 +41,7 @@ namespace mix::dd
         };
 
     private:
-        using level_map = std::unordered_map<vertex_key, vertex*, vertex_key_hash>;
+        using level_map = std::unordered_map<vertex_key, vertex_t*, vertex_key_hash>;
 
         utils::double_top_stack<stack_frame> stack;
         std::vector<level_map> levels;
@@ -54,7 +53,7 @@ namespace mix::dd
 
     private:
         auto try_insert (const vertex_key key
-                       , const size_t level) -> vertex*; 
+                       , const index_t level) -> vertex_t*; 
 
         auto reset () -> void;
     };
@@ -63,18 +62,19 @@ namespace mix::dd
     auto bdd_creator<VertexData, ArcData>::create_diagram 
         (const bool_function& input) -> bdd<VertexData, ArcData>
     {
-        const size_t leafLevel   {input.variable_count() + 1};
+        const index_t leafLevel  {static_cast<index_t>(input.variable_count() + 1)};
         const size_t inputsCount {utils::pow(2UL, input.variable_count())};
+        // TODO mocnia 2 ide este rychlejsie shiftom...
 
         this->levels.resize(leafLevel + 1);
 
         // TODO map interface ano ale za tým by stačil list
-        std::map<log_val_t, vertex*> valToLeaf 
+        std::map<log_val_t, vertex_t*> valToLeaf 
         { 
-            {0, new vertex {nextId++, leafLevel}}
-          , {1, new vertex {nextId++, leafLevel}} 
+            {0, new vertex_t {nextId++, leafLevel}}
+          , {1, new vertex_t {nextId++, leafLevel}} 
         };
-        std::map<const vertex*, log_val_t> leafToVal 
+        std::map<const vertex_t*, log_val_t> leafToVal 
         { 
             {valToLeaf[0], 0}
           , {valToLeaf[1], 1} 
@@ -86,7 +86,7 @@ namespace mix::dd
             const log_val_t currInputVal {input[inputIndex]};
             const log_val_t nextInputVal {input[inputIndex + 1]};
 
-            vertex* son {nullptr};
+            vertex_t* son {nullptr};
 
             if (currInputVal == nextInputVal)
             {
@@ -95,8 +95,8 @@ namespace mix::dd
             else
             {
                 // TODO 01 alebo 10 je to to isté ?
-                vertex* const negativeTarget {valToLeaf[currInputVal]};
-                vertex* const positiveTarget {valToLeaf[nextInputVal]};
+                vertex_t* const negativeTarget {valToLeaf[currInputVal]};
+                vertex_t* const positiveTarget {valToLeaf[nextInputVal]};
 
                 son = this->try_insert(vertex_key {negativeTarget, positiveTarget}, leafLevel - 1);
             }
@@ -114,7 +114,7 @@ namespace mix::dd
 
                 if (stack.top().vertexPtr == stack.under_top().vertexPtr)
                 {
-                    vertex* const v {stack.top().vertexPtr};
+                    vertex_t* const v {stack.top().vertexPtr};
 
                     stack.pop();
                     stack.pop();
@@ -123,8 +123,8 @@ namespace mix::dd
                 }
                 else
                 {
-                    vertex* const negativeTarget {stack.under_top().vertexPtr};
-                    vertex* const positiveTarget {stack.top().vertexPtr};
+                    vertex_t* const negativeTarget {stack.under_top().vertexPtr};
+                    vertex_t* const positiveTarget {stack.top().vertexPtr};
                     
                     stack.pop();
                     stack.pop();
@@ -138,19 +138,19 @@ namespace mix::dd
             inputIndex += 2;
         }
 
-        vertex* root {stack.top().vertexPtr};
+        vertex_t* root {stack.top().vertexPtr};
         this->reset();
 
         return bdd<VertexData, ArcData> {
             root
-          , input.variable_count()
+          , static_cast<index_t>(input.variable_count())
           , std::move(leafToVal)
         };
     }
 
     template<class VertexData, class ArcData>
     auto bdd_creator<VertexData, ArcData>::try_insert 
-        (const vertex_key key, const size_t level) -> vertex*
+        (const vertex_key key, const index_t level) -> vertex_t*
     {
         // https://www.boost.org/doc/libs/1_71_0/libs/pool/doc/html/boost/object_pool.html
         // dalo by sa vyskúšať na alokovanie vrcholov
@@ -161,7 +161,7 @@ namespace mix::dd
             return (*inGraphIt).second;            
         }
 
-        auto newVertex {new vertex {
+        auto newVertex {new vertex_t {
             this->nextId++
           , level
           , {arc {key.negative}, arc {key.positive}}
@@ -194,11 +194,11 @@ namespace mix::dd
     {
         size_t seed {0};
 
-        // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.negative);
-        // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.positive);
+        // utils::boost::hash_combine<vertex_t*, utils::pointer_hash<vertex>>(seed, key.negative);
+        // utils::boost::hash_combine<vertex_t*, utils::pointer_hash<vertex>>(seed, key.positive);
 
-        utils::boost::hash_combine<vertex*, std::hash<vertex*>>(seed, key.negative);
-        utils::boost::hash_combine<vertex*, std::hash<vertex*>>(seed, key.positive);
+        utils::boost::hash_combine<vertex_t*, std::hash<vertex_t*>>(seed, key.negative);
+        utils::boost::hash_combine<vertex_t*, std::hash<vertex_t*>>(seed, key.positive);
 
         return seed;
     }

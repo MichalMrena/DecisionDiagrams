@@ -1,6 +1,7 @@
 #include "string_utils.hpp"
 
 #include <sstream>
+#include <bitset>
 
 namespace mix::utils
 {

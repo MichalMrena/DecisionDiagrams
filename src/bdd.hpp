@@ -7,8 +7,10 @@
 #include <unordered_map>
 #include <bitset>
 #include <sstream>
+#include <tuple>
 #include "graph.hpp"
 #include "typedefs.hpp"
+#include "utils/string_utils.hpp"
 
 namespace mix::dd
 {   
@@ -24,19 +26,17 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     class bdds_from_pla;
 
-    template<class VertexData = def_vertex_data_t
-           , class ArcData = def_arc_data_t>
+    template<class VertexData, class ArcData>
     class bdd
     {
     private:
-        using vertex = typename graph<VertexData, ArcData>::vertex;
-        using arc    = typename graph<VertexData, ArcData>::arc;
+        using vertex_t = vertex<VertexData, ArcData, 2>;
+        using arc_t    = arc<VertexData, ArcData, 2>;
 
     private:    
-        vertex* root {nullptr};
-        size_t variableCount {0};
-        std::map<const vertex*, log_val_t> leafToVal; // TODO asi by som to tam dal explicitne...
-        // TODO map interface ano ale za tým by asi stačila menej monštrózna implementácia
+        vertex_t* root          {nullptr};
+        index_t   variableCount {0};
+        std::map<const vertex_t*, log_val_t> leafToVal;
 
     public:
         friend class bdd_creator<VertexData, ArcData>;
@@ -55,6 +55,8 @@ namespace mix::dd
         bdd(bdd&& other);
         ~bdd();
 
+        // TODO use vertex allocator insted of new
+
         // TODO copy swap
         auto operator= (bdd&& rhs) -> bdd&;
 
@@ -63,27 +65,35 @@ namespace mix::dd
         // TODO na vstupe asi bitset keby mala funkcia > ako 64 premenných
         auto get_value (const input_t input) const -> log_val_t;
 
-    public: // just tmp private later
-        bdd(vertex* pRoot
-          , size_t pVariableCount
-          , std::map<const vertex*, log_val_t>&& pLeafToVal);
+        auto get_value (const std::vector<bool>& varVals) const -> log_val_t;
+        
+        template<size_t N>
+        auto get_value (const std::bitset<N>& varVals) const -> log_val_t;
 
-        auto value   (const vertex* const v) const -> log_val_t;
-        auto is_leaf (const vertex* const v) const -> bool;
+    public: // just tmp private later
+        bdd(vertex_t* const pRoot
+          , const index_t   pVariableCount
+          , std::map<const vertex_t*, log_val_t>&& pLeafToVal);
+          // TODO nie rval ref ale value, ktora sa vytvori move construtom
+
+        auto value   (const vertex_t* const v) const -> log_val_t;
+        auto is_leaf (const vertex_t* const v) const -> bool;
+
+        auto leaf_index () const -> index_t;
 
         template<class UnaryFunction>
-        auto traverse (vertex* const v, UnaryFunction f) const -> void;
+        auto traverse (vertex_t* const v, UnaryFunction f) const -> void;
 
-        static auto low  (const vertex* const v) -> vertex*;
-        static auto high (const vertex* const v) -> vertex*;
+        static auto low  (const vertex_t* const v) -> vertex_t*;
+        static auto high (const vertex_t* const v) -> vertex_t*;
     };
 
     template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::TRUE
         () -> bdd
     {
-        vertex* const trueLeaf {new vertex {1, 1}};
-        std::map<const vertex*, log_val_t> leafValMap
+        vertex_t* const trueLeaf {new vertex_t {1, 1}};
+        std::map<const vertex_t*, log_val_t> leafValMap
         {
             {trueLeaf, 1}
         };
@@ -95,8 +105,8 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::FALSE
         () -> bdd
     {
-        vertex* const falseLeaf {new vertex {1, 1}};
-        std::map<const vertex*, log_val_t> leafValMap
+        vertex_t* const falseLeaf {new vertex_t {1, 1}};
+        std::map<const vertex_t*, log_val_t> leafValMap
         {
             {falseLeaf, 0}
         };
@@ -108,10 +118,10 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::VARIABLE
         (const size_t index) -> bdd
     {
-        vertex* const falseLeaf {new vertex {1, index + 1}};
-        vertex* const trueLeaf  {new vertex {2, index + 1}};
-        vertex* const varVertex {new vertex {3, index, {arc {falseLeaf}, arc {trueLeaf}}}};
-        std::map<const vertex*, log_val_t> leafValMap
+        vertex_t* const falseLeaf {new vertex_t {1, index + 1}};
+        vertex_t* const trueLeaf  {new vertex_t {2, index + 1}};
+        vertex_t* const varVertex {new vertex_t {3, index, {arc_t {falseLeaf}, arc_t {trueLeaf}}}};
+        std::map<const vertex_t*, log_val_t> leafValMap
         {
             {falseLeaf, 0}
           , {trueLeaf, 1}
@@ -130,9 +140,9 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    bdd<VertexData, ArcData>::bdd(vertex* pRoot
-                                , size_t pVariableCount
-                                , std::map<const vertex*, log_val_t>&& pLeafToVal) :
+    bdd<VertexData, ArcData>::bdd(vertex_t* const pRoot
+                                , const index_t pVariableCount
+                                , std::map<const vertex_t*, log_val_t>&& pLeafToVal) :
         root          {pRoot}
       , variableCount {pVariableCount}  
       , leafToVal     {std::move(pLeafToVal)}
@@ -144,13 +154,13 @@ namespace mix::dd
     {
         if (this->root)
         {
-            std::vector<vertex*> toDelete;
+            std::vector<vertex_t*> toDelete;
 
-            this->traverse(this->root, [&toDelete](vertex* const  v) {
+            this->traverse(this->root, [&toDelete](vertex_t* const  v) {
                 toDelete.push_back(v);
             });
 
-            for (vertex* v : toDelete)
+            for (vertex_t* v : toDelete)
             {
                 delete v;
             }        
@@ -174,64 +184,91 @@ namespace mix::dd
         () const -> std::string
     {
         std::ostringstream finalGraphOstr;
-        std::ostringstream arcOst;
-        std::ostringstream vertexLabelOstr;
-        std::ostringstream leafShapeOstr;
-        std::vector<std::ostringstream> levels;
-        levels.resize(this->variableCount + 2);
 
-        leafShapeOstr << "    node [shape = square] ";
+        std::vector< std::vector<const vertex_t*> > levelGroups(this->variableCount + 2);
+        std::vector< std::tuple<id_t, id_t, bool> > arcs;
 
-        for (auto& levelOst : levels)
-        {
-            levelOst << "    {rank = same; ";
-        }
-
-        this->traverse(this->root, [&](const vertex* const v) {
+        this->traverse(this->root, [&](const vertex_t* const v) {
             if (! v->is_leaf())
             {
-                const vertex* const negativeTarget {bdd::low(v)};
-                const vertex* const positiveTarget {bdd::high(v)};
+                arcs.push_back(std::make_tuple( v->id
+                                              , bdd::low(v)->id
+                                              , false));
 
-                vertexLabelOstr 
-                    << "    " 
-                    << std::to_string(v->id) 
-                    << " [label = " << ('x' + std::to_string(v->level)) << "];" 
-                    << '\n';
-
-                arcOst << "    " << v->id << " -> " << negativeTarget->id << " [style = dashed];" << '\n';
-                arcOst << "    " << v->id << " -> " << positiveTarget->id << " [style = solid];"  << '\n';
-            }
-            else
-            {
-                vertexLabelOstr 
-                    << "    " 
-                    << std::to_string(v->id) 
-                    << " [label = " << log_val_to_char(this->leafToVal.at(v)) << "];" 
-                    << '\n';
-
-                leafShapeOstr << v->id << ' ';
+                arcs.push_back(std::make_tuple( v->id
+                                              , bdd::high(v)->id
+                                              , true));                                              
             }
 
-            levels[v->level] << std::to_string(v->id) << "; ";
+            levelGroups[v->index].push_back(v);
         });
 
-        leafShapeOstr << ';';
+        finalGraphOstr << "digraph D {" << utils::EOL;
 
-        finalGraphOstr 
-            << "digraph D {"                << '\n'
-            << leafShapeOstr.str()          << '\n'
-            << "    node [shape = circle];" << "\n\n"
-            << vertexLabelOstr.str()        << '\n'
-            << arcOst.str()                 << '\n';
-
-        for (auto& levelOst : levels)
+    // node shape
+        finalGraphOstr << "    "
+                       << "node [shape = square] ";
+        for (auto& kvpair : this->leafToVal)
         {
-            levelOst << "}" << '\n';
-            finalGraphOstr << levelOst.str();
+            finalGraphOstr << kvpair.first->id << ' ';
+        }
+        finalGraphOstr << ";"                      << utils::EOL
+                       << "    " 
+                       << "node [shape = circle];" << utils::EOL << utils::EOL;
+
+    // labels
+        for (size_t level {0}; level < levelGroups.size(); ++level)
+        {
+            for (auto v : levelGroups[level])
+            {
+                const std::string label 
+                {
+                    level != this->leaf_index() ? ("x" + std::to_string(level))
+                                                : log_val_to_string(this->leafToVal.at(v))
+                };
+                
+                finalGraphOstr << "    "
+                               << v->id 
+                               << " [label = " << label << "];" 
+                               << utils::EOL;
+            }
+        }
+        finalGraphOstr << utils::EOL;
+    
+    // arcs
+        for (auto& arc : arcs)
+        {
+            const auto from  {std::get<0>(arc)};
+            const auto to    {std::get<1>(arc)};
+            const auto style {std::get<2>(arc) ? "solid" : "dashed"};
+
+            finalGraphOstr << "    "
+                           << std::to_string(from) 
+                           << " -> "
+                           << std::to_string(to)
+                           << " [style = " << style << "];"
+                           << utils::EOL;
         }
 
-        finalGraphOstr << '}' << '\n';
+    // same rank
+        for (size_t level {0}; level < levelGroups.size(); ++level)
+        {
+            if (levelGroups[level].empty())
+            {
+                continue;
+            }
+            
+            finalGraphOstr << "    {rank = same; ";
+
+            for (auto v : levelGroups[level])
+            {
+                finalGraphOstr << v->id << "; ";
+            }
+
+            finalGraphOstr << "}" << utils::EOL;
+        }
+
+        finalGraphOstr << '}' << utils::EOL;
 
         return finalGraphOstr.str();
     }
@@ -242,7 +279,7 @@ namespace mix::dd
     {
         const std::bitset<sizeof(input_t)> inputBitSet {input};
 
-        vertex* currentVertex {this->root};
+        vertex_t* currentVertex {this->root};
 
         while (! this->is_leaf(currentVertex))
         {
@@ -256,22 +293,30 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::value 
-        (const vertex* const v) const -> log_val_t
+        (const vertex_t* const v) const -> log_val_t
     {
-        return this->is_leaf(v) ? this->leafToVal.at(v) : X;
+        return this->is_leaf(v) ? this->leafToVal.at(v) 
+                                : X;
     }
 
     template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::is_leaf
-        (const vertex* const v) const -> bool
+        (const vertex_t* const v) const -> bool
     {
-        return v->level == this->variableCount + 1;
+        return v->index == this->leaf_index();
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::leaf_index
+        () const -> index_t
+    {
+        return this->variableCount + 1;
     }
 
     template<class VertexData, class ArcData>
     template<class UnaryFunction>
     auto bdd<VertexData, ArcData>::traverse 
-        (vertex* const v, UnaryFunction f) const -> void
+        (vertex_t* const v, UnaryFunction f) const -> void
     {
         v->mark = ! v->mark;
 
@@ -295,14 +340,14 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::low
-        (const vertex* const v) -> vertex*
+        (const vertex_t* const v) -> vertex_t*
     {
         return v->forwardStar[0].target;
     }
 
     template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::high
-        (const vertex* const v) -> vertex*
+        (const vertex_t* const v) -> vertex_t*
     {
         return v->forwardStar[1].target;
     }

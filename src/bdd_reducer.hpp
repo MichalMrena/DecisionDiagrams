@@ -10,18 +10,17 @@
 
 namespace mix::dd
 {
-    template<class VertexData = def_vertex_data_t
-           , class ArcData = def_arc_data_t>
+    template<class VertexData, class ArcData>
     class bdd_reducer
     {
     private:
         using bdd_t           = bdd<VertexData, ArcData>;
-        using arc             = typename graph<VertexData, ArcData>::arc;
-        using vertex          = typename graph<VertexData, ArcData>::vertex;
-        using key_vertex_pair = std::pair<std::pair<id_t, id_t>, vertex*>;
+        using arc_t           = arc<VertexData, ArcData, 2>;
+        using vertex_t        = vertex<VertexData, ArcData, 2>;
+        using key_vertex_pair = std::pair< std::pair<id_t, id_t >, vertex_t*>;
 
-        std::vector<std::vector<vertex*>> levels;
-        std::map<id_t, vertex*> subgraph;
+        std::vector< std::vector<vertex_t*> > levels;
+        std::map<id_t, vertex_t*> subgraph;
         size_t nextId {0};
 
     public:
@@ -39,14 +38,14 @@ namespace mix::dd
     {
         this->fill_levels(diagram);
 
-        std::vector<vertex*> notUsedAnymore;
+        std::vector<vertex_t*> notUsedAnymore;
 
         for (size_t i {levels.size()}; i > 0;)
         {
             --i;
             std::vector<key_vertex_pair> keyedVertices;
             
-            for (vertex* u : this->levels[i])
+            for (vertex_t* u : this->levels[i])
             {
                 if (diagram.is_leaf(u))
                 {
@@ -81,7 +80,7 @@ namespace mix::dd
             for (auto& kvPair : keyedVertices)
             {
                 auto& key {kvPair.first};
-                vertex* u {kvPair.second};
+                vertex_t* u {kvPair.second};
                 if (key == oldKey)
                 {
                     u->id = this->nextId;
@@ -105,8 +104,8 @@ namespace mix::dd
             }
         }
         
-        // TODO moc velka zlozitost, konzultovat explicitne ulozenie value
-        for (vertex* v : notUsedAnymore)
+        // TODO moc velka zlozitost stacilo by listy prejst nejako individualne
+        for (vertex_t* v : notUsedAnymore)
         {
             diagram.leafToVal.erase(v);
             delete v;
@@ -122,8 +121,8 @@ namespace mix::dd
     {
         levels.resize(diagram.variableCount + 2);
 
-        diagram.traverse(diagram.root, [this](vertex* const v) {
-            levels[v->level].push_back(v);
+        diagram.traverse(diagram.root, [this](vertex_t* const v) {
+            levels[v->index].push_back(v);
         });
     }
 

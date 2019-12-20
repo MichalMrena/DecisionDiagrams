@@ -10,21 +10,20 @@
 
 namespace mix::dd
 {
-    template<class VertexData = def_vertex_data_t
-           , class ArcData = def_arc_data_t>
+    template<class VertexData, class ArcData>
     class bdd_merger
     {
     private:
-        using bdd_t            = bdd<VertexData, ArcData>;
-        using bdd_reducer_t    = bdd_reducer<VertexData, ArcData>;
-        using arc              = typename graph<VertexData, ArcData>::arc;
-        using vertex           = typename graph<VertexData, ArcData>::vertex;
-        using vertex_pair      = typename graph<VertexData, ArcData>::vertex_pair;
-        using vertex_pair_hash = typename graph<VertexData, ArcData>::vertex_pair_hash;
+        using bdd_t              = bdd<VertexData, ArcData>;
+        using bdd_reducer_t      = bdd_reducer<VertexData, ArcData>;
+        using vertex_t           = vertex<VertexData, ArcData, 2>;
+        using arc_t              = arc<VertexData, ArcData, 2>;
+        using vertex_pair_t      = vertex_pair<VertexData, ArcData, 2>;
+        using vertex_pair_hash_t = vertex_pair_hash<VertexData, ArcData, 2>;
 
     private:
-        std::unordered_map<vertex_pair, vertex*, vertex_pair_hash> memo;
-        std::map<const vertex*, log_val_t> leafToVal;
+        std::unordered_map<vertex_pair_t, vertex_t*, vertex_pair_hash_t> memo;
+        std::map<const vertex_t*, log_val_t> leafToVal;
 
         const bdd_t* diagram1 {nullptr};
         const bdd_t* diagram2 {nullptr};
@@ -39,16 +38,16 @@ namespace mix::dd
 
     private:
         template<class BinaryBoolOperator>
-        auto merge_internal (const vertex* const v1
-                           , const vertex* const v2
-                           , BinaryBoolOperator op) -> vertex*;
+        auto merge_internal (const vertex_t* const v1
+                           , const vertex_t* const v2
+                           , BinaryBoolOperator op) -> vertex_t*;
 
-        auto leaf_index () const -> size_t;
+        auto leaf_index () const -> index_t;
 
-        auto index1 (const vertex* const v1) const -> size_t;
-        auto index2 (const vertex* const v2) const -> size_t;
-        auto value1 (const vertex* const v1) const -> log_val_t;
-        auto value2 (const vertex* const v2) const -> log_val_t;
+        auto index1 (const vertex_t* const v1) const -> index_t;
+        auto index2 (const vertex_t* const v2) const -> index_t;
+        auto value1 (const vertex_t* const v1) const -> log_val_t;
+        auto value2 (const vertex_t* const v2) const -> log_val_t;
 
         auto reset () -> void;
     };
@@ -61,7 +60,7 @@ namespace mix::dd
         this->diagram1 = &d1; // TODO reference wrapper
         this->diagram2 = &d2;
 
-        vertex* newRoot {
+        vertex_t* newRoot {
             this->merge_internal(d1.root, d2.root, op)
         };
 
@@ -82,31 +81,31 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     template<class BinaryBoolOperator>
     auto bdd_merger<VertexData, ArcData>::merge_internal 
-        (const vertex* const v1, const vertex* const v2, BinaryBoolOperator op) -> vertex*
+        (const vertex_t* const v1, const vertex_t* const v2, BinaryBoolOperator op) -> vertex_t*
     {
-        auto uit {this->memo.find(vertex_pair {v1, v2})};
+        auto uit {this->memo.find(vertex_pair_t {v1, v2})};
         if (uit != this->memo.end())
         {
             return (*uit).second;
         }
 
-        log_val_t val {op(this->value1(v1), this->value2(v2))};
+        const log_val_t val {op(this->value1(v1), this->value2(v2))};
 
-        vertex* u {nullptr};
+        vertex_t* u {nullptr};
 
-        if (val != X) // TODO ak su oba listy a je X v .pla tak nechať list s X hodnotou
+        if (val != X)
         {
-            u = new vertex {this->nextId++, this->leaf_index()};
+            u = new vertex_t {this->nextId++, this->leaf_index()};
             this->leafToVal[u] = val;
         }
         else
         {
-            const vertex* vlow1  {nullptr};
-            const vertex* vlow2  {nullptr};
-            const vertex* vhigh1 {nullptr};
-            const vertex* vhigh2 {nullptr};
+            const vertex_t* vlow1  {nullptr};
+            const vertex_t* vlow2  {nullptr};
+            const vertex_t* vhigh1 {nullptr};
+            const vertex_t* vhigh2 {nullptr};
 
-            const size_t index {std::min(this->index1(v1), this->index2(v2))};
+            const auto index {std::min(this->index1(v1), this->index2(v2))};
             if (this->index1(v1) == index)
             {
                 vlow1  = bdd_t::low(v1);
@@ -129,22 +128,22 @@ namespace mix::dd
                 vhigh2 = v2;
             }
 
-            u = new vertex {
+            u = new vertex_t {
                 this->nextId++
               , index
-              , { arc {this->merge_internal(vlow1, vlow2, op)}
-                , arc {this->merge_internal(vhigh1, vhigh2, op)}}
+              , { arc_t {this->merge_internal(vlow1, vlow2, op)}
+                , arc_t {this->merge_internal(vhigh1, vhigh2, op)}}
             };
         }
 
-        this->memo[vertex_pair {v1, v2}] = u;
+        this->memo[vertex_pair_t {v1, v2}] = u;
 
         return u;
     }
 
     template<class VertexData, class ArcData>
     auto bdd_merger<VertexData, ArcData>::leaf_index
-        () const -> size_t
+        () const -> index_t
     {
         return 1 + std::max(this->diagram1->variableCount
                           , this->diagram2->variableCount);
@@ -152,38 +151,38 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_merger<VertexData, ArcData>::index1
-        (const vertex* const v1) const -> size_t
+        (const vertex_t* const v1) const -> index_t
     {
         if (this->diagram1->is_leaf(v1))
         {
             return this->leaf_index();
         }
         
-        return v1->level;
+        return v1->index;
     }
 
     template<class VertexData, class ArcData>
     auto bdd_merger<VertexData, ArcData>::index2
-        (const vertex* const v2) const -> size_t
+        (const vertex_t* const v2) const -> index_t
     {
         if (this->diagram2->is_leaf(v2))
         {
             return this->leaf_index();
         }
         
-        return v2->level;
+        return v2->index;
     }
 
     template<class VertexData, class ArcData>
     auto bdd_merger<VertexData, ArcData>::value1
-        (const vertex* const v1)  const -> log_val_t
+        (const vertex_t* const v1)  const -> log_val_t
     {
         return this->diagram1->value(v1);
     }
 
     template<class VertexData, class ArcData>
     auto bdd_merger<VertexData, ArcData>::value2
-        (const vertex* const v2)  const -> log_val_t
+        (const vertex_t* const v2)  const -> log_val_t
     {
         return this->diagram2->value(v2);
     }

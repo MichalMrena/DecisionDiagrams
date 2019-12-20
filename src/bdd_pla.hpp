@@ -41,17 +41,17 @@ namespace mix::dd
     private:
         static auto char_to_log_val (const char c) -> log_val_t;
 
+        // TODO nie rval ref ale value, ktora sa vytvori move construtom
         pla_file(std::vector<pla_line>&& pLines);
     };
 
-    template<class VertexData = def_vertex_data_t
-           , class ArcData = def_arc_data_t>
+    template<class VertexData, class ArcData>
     class bdds_from_pla
     {
     public:
         using bdd_t  = bdd<VertexData, ArcData>;
-        using vertex = typename graph<VertexData, ArcData>::vertex;
-        using arc    = typename graph<VertexData, ArcData>::arc;
+        using vertex_t = vertex<VertexData, ArcData, 2>;
+        using arc_t    = arc<VertexData, ArcData, 2>;
 
     public:
         auto create (const std::string& filePath) -> std::vector<bdd_t>;
@@ -68,7 +68,7 @@ namespace mix::dd
     auto bdds_from_pla<VertexData, ArcData>::create 
         (const std::string& filePath) -> std::vector<bdd_t>
     {
-        const pla_file file {pla_file::read(filePath)};
+        const auto file {pla_file::read(filePath)};
 
         std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
 
@@ -101,21 +101,26 @@ namespace mix::dd
     auto bdds_from_pla<VertexData, ArcData>::create_diagram
         (const std::vector<log_val_t>& varVals, const log_val_t fVal) -> bdd_t
     {
-        const size_t leafLevel {varVals.size() + 1};
-        size_t level  {1};
-        id_t   nextId {1};
+        if (0 == fVal)
+        {
+            return bdd_t::FALSE();
+        }
 
-        std::vector<vertex*> relevantVariables;
+        const index_t leafLevel {static_cast<index_t>(varVals.size() + 1)};
+        index_t index  {1};
+        id_t    nextId {1};
+
+        std::vector<vertex_t*> relevantVariables;
         relevantVariables.reserve(varVals.size());
 
         for (auto val : varVals)
         {
             if (val != X)
             {
-                relevantVariables.push_back(new vertex {nextId++, level});
+                relevantVariables.push_back(new vertex_t {nextId++, index});
             }
 
-            ++level;
+            ++index;
         }
 
         if (relevantVariables.empty())
@@ -123,8 +128,8 @@ namespace mix::dd
             throw std::runtime_error {"Invalid pla line."};
         }
 
-        auto valLeaf {new vertex {nextId++, leafLevel}};
-        auto xLeaf   {new vertex {nextId++, leafLevel}};
+        auto valLeaf {new vertex_t {nextId++, leafLevel}};
+        auto xLeaf   {new vertex_t {nextId++, leafLevel}};
 
         auto b {relevantVariables.begin()};
         auto e {relevantVariables.end()};
@@ -133,7 +138,7 @@ namespace mix::dd
         while (b != e)
         {
             const auto v      {*b};
-            const auto varVal {varVals[v->level - 1]};
+            const auto varVal {varVals[v->index - 1]};
             
             ++b;
             
@@ -142,15 +147,16 @@ namespace mix::dd
         }
 
         const auto v      {*b};
-        const auto varVal {varVals[v->level - 1]};
+        const auto varVal {varVals[v->index - 1]};
 
         v->forwardStar[varVal].target  = valLeaf;
         v->forwardStar[!varVal].target = xLeaf;
         
-        std::map<const vertex*, log_val_t> leafToVal 
+        std::map<const vertex_t*, log_val_t> leafToVal 
         { 
             {valLeaf, fVal}
-          , {xLeaf, X} 
+        //   , {xLeaf, X} 
+          , {xLeaf, 0} 
         };
 
         return bdd_t 
@@ -170,34 +176,40 @@ namespace mix::dd
             static_cast<size_t>(std::ceil(std::log2(diagrams.size())))
         };
 
-        size_t diagramCount {diagrams.size()};
+        auto diagramCount 
+        {
+            static_cast<int32_t>(diagrams.size())
+        };
 
-        std::vector<bdd_t> auxDiagrams2((diagrams.size() >> 1) + 1);
-
+        std::vector<bdd_t> auxDiagrams((diagrams.size() >> 1) + 1);
         std::vector<bdd_t>* src {&diagrams};
-        std::vector<bdd_t>* dst {&auxDiagrams2};
+        std::vector<bdd_t>* dst {&auxDiagrams};
 
         for (size_t step {0}; step < numOfSteps; ++step)
         {
+            const bool justMoveLast {diagramCount & 1};
+            
             diagramCount = (diagramCount >> 1) + (diagramCount & 1);
 
             // parallelizable for
             for (int32_t i {0}; i < diagramCount; ++i)
             {
-                if (i < diagramCount - 1)
+                if (i < diagramCount - 1 || !justMoveLast)
                 {
                     (*dst)[i] = (*src)[i << 1] || (*src)[(i << 1) + 1];
                 }
-                else // TODO toto by možno išlo aj bez toho ifu vnútri
+                else
                 {
-                    (*dst)[i] = (*src)[i];
+                    (*dst)[i] = std::move((*src)[i]);
                 }
             }
 
             std::swap(src, dst);
         }
 
-        return dst->front();
+        std::swap(src, dst);
+
+        return bdd_t {std::move(dst->front())};
     }
 }
 

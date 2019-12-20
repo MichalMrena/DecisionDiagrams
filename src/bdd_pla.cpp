@@ -38,7 +38,7 @@ namespace mix::dd
             }
 
             const std::string variablesStr {std::move(lineWords[0])};
-            const std::string valuesStr    {std::move(lineWords[1])};
+            const std::string valuesStr    {std::move(lineWords[1])}; // TODO ak je tu 0 netreba nič parsovať asi je to len list 0
 
             if (variablesStr.size() != varCount || valuesStr.size() != diagramCount)
             {
