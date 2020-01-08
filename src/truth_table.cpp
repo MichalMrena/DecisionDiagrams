@@ -21,8 +21,8 @@ namespace mix::dd
         reader.throw_if_cant_read();
 
         std::string line;
-        reader.next_line_except(line); // comment with function
-        reader.next_line_except(line);
+        reader.read_line_except(line); // comment with function
+        reader.read_line_except(line);
 
         auto varNames {utils::to_words(line)};
 
@@ -38,7 +38,7 @@ namespace mix::dd
 
         for (size_t i {0}; i < lineCount; ++i)
         {
-            reader.next_line_except(line);
+            reader.read_line_except(line);
             const auto tokens {utils::to_words(line)};
 
             const log_val_t functionValue {truth_table::str_to_log_val(tokens.back())};

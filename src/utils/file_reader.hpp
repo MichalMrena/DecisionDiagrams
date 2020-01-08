@@ -9,17 +9,27 @@ namespace mix::utils
     class file_reader
     {
     private:
+        const std::string filePath;
+
         std::ifstream istr;
+        
+        bool needRead;
+        std::string cachedLine;
 
     public:
         file_reader(const std::string& filePath);
         ~file_reader() = default;
 
         auto throw_if_cant_read () -> void;
-        auto next_line_except   (std::string& out) -> void;
-        auto next_line_except   () -> std::string;
+        auto read_line_except (std::string& out) -> void;
+        
+        auto read_line_except () -> std::string;
+        auto peek_line_except () -> const std::string&;
 
-        auto peek_line () -> const std::string&;
+    private:
+        auto cache_next_line     () -> bool;
+        auto throw_no_more_lines () -> void;
+        auto throw_cant_read     () -> void;
     };
 }
 

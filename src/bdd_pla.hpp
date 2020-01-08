@@ -1,5 +1,5 @@
-#ifndef _BDD_PLA_
-#define _BDD_PLA_
+#ifndef _MIX_DD_BDDS_FROM_PLA_
+#define _MIX_DD_BDDS_FROM_PLA_
 
 #include <string>
 #include <vector>
@@ -8,78 +8,49 @@
 #include "typedefs.hpp"
 #include "bdd.hpp"
 #include "graph.hpp"
+#include "pla_file.hpp"
 
 namespace mix::dd
 {
-    struct pla_line
-    {
-        // TODO použiť 2-bit set aby to bolo viac memmory friendly
-        std::vector<log_val_t> varVals; 
-        // TODO použiť 1-bit set aby to bolo viac memmory friendly
-        std::vector<log_val_t> fVals;
-
-        pla_line(const pla_line&) = delete;
-        pla_line(pla_line&&) = default;
-    };
-
-    class pla_file
-    {
-    private:
-        std::vector<pla_line> lines;
-
-    public:
-        pla_file(const pla_file&) = delete;
-        pla_file(pla_file&&) = default;
-
-        static auto read (const std::string& filePath) -> pla_file;
-
-        auto variable_count () const -> int32_t;
-        auto function_count () const -> int32_t;
-        auto line_count     () const -> int32_t;
-        auto get_lines      () const -> const std::vector<pla_line>&;
-
-    private:
-        static auto char_to_log_val (const char c) -> log_val_t;
-
-        // TODO nie rval ref ale value, ktora sa vytvori move construtom
-        pla_file(std::vector<pla_line>&& pLines);
-    };
+// declarations:
 
     template<class VertexData, class ArcData>
     class bdds_from_pla
     {
     public:
-        using bdd_t  = bdd<VertexData, ArcData>;
+        using bdd_t    = bdd<VertexData, ArcData>;
         using vertex_t = vertex<VertexData, ArcData, 2>;
         using arc_t    = arc<VertexData, ArcData, 2>;
 
     public:
-        auto create (const std::string& filePath) -> std::vector<bdd_t>;
+        auto create (const pla_file& file) -> std::vector<bdd_t>;
 
     // TMP later private
     public: 
-        auto create_diagram (const std::vector<log_val_t>& varVals
-                           , const log_val_t fVal) -> bdd_t;
+        auto create_diagram ( const std::vector<log_val_t>& varVals
+                            , const log_val_t fVal) -> bdd_t;
         
-        auto merge_diagrams (std::vector<bdd_t> diagrams) -> bdd_t;
+        auto or_merge_diagrams (std::vector<bdd_t> diagrams) -> bdd_t;
     };
+
+// definitions:
 
     template<class VertexData, class ArcData>
     auto bdds_from_pla<VertexData, ArcData>::create 
-        (const std::string& filePath) -> std::vector<bdd_t>
+        (const pla_file& file) -> std::vector<bdd_t>
     {
-        const auto file {pla_file::read(filePath)};
-
         std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
 
-        const auto& plaLines {file.get_lines()};
+        const auto& plaLines      {file.get_lines()};
+        const auto  lineCount     {file.line_count()};
+        const auto  functionCount {file.function_count()};
 
         // https://stackoverflow.com/questions/13357065/how-does-openmp-handle-nested-loops
         // parallelizable for
-        for (int32_t li {0}; li < file.line_count(); ++li)
+        for (int32_t li {0}; li < lineCount; ++li)
         {
             // parallelizable for
-            for (int32_t fi {0}; fi < file.function_count(); ++fi)
+            for (int32_t fi {0}; fi < functionCount; ++fi)
             {
                 subDiagrams[fi].emplace_back(
                     this->create_diagram( plaLines[li].varVals, plaLines[li].fVals[fi] )
@@ -88,10 +59,11 @@ namespace mix::dd
         }
         
         std::vector<bdd_t> finalDiagrams(file.function_count());
+        
         // parallelizable for
-        for (int32_t fi {0}; fi < file.function_count(); ++fi)
+        for (int32_t fi {0}; fi < functionCount; ++fi)
         {
-            finalDiagrams[fi] = this->merge_diagrams(std::move(subDiagrams[fi]));
+            finalDiagrams[fi] = this->or_merge_diagrams(std::move(subDiagrams[fi]));
         }
         
         return finalDiagrams;
@@ -155,7 +127,6 @@ namespace mix::dd
         std::map<const vertex_t*, log_val_t> leafToVal 
         { 
             {valLeaf, fVal}
-        //   , {xLeaf, X} 
           , {xLeaf, 0} 
         };
 
@@ -168,7 +139,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdds_from_pla<VertexData, ArcData>::merge_diagrams
+    auto bdds_from_pla<VertexData, ArcData>::or_merge_diagrams
         (std::vector<bdd_t> diagrams) -> bdd_t
     {
         const auto numOfSteps 

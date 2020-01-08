@@ -9,6 +9,9 @@ namespace mix::utils
     template<class T>
     class double_top_stack
     {
+    public:
+        using size_type = typename std::vector<T>::size_type;
+
     private:
         std::vector<T> data;
 
@@ -18,7 +21,7 @@ namespace mix::utils
         auto pop       ()         -> void;
         auto top       () const   -> const T&;
         auto under_top () const   -> const T&;
-        auto size      () const   -> size_t;
+        auto size      () const   -> size_type;
         auto clear     ()         -> void;  
     };    
 
@@ -53,7 +56,7 @@ namespace mix::utils
 
     template<class T>
     auto double_top_stack<T>::size 
-        () const  -> size_t
+        () const  -> size_type
     {
         return this->data.size();
     }

@@ -13,6 +13,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, size_t N>
     struct vertex;
 
+    /** general arc */
     template<class VertexData, class ArcData, size_t N>
     struct arc
     {
@@ -24,6 +25,7 @@ namespace mix::dd
         arc(vertex_t* const pTarget = nullptr);
     };
 
+    /** general vertex */
     template<class VertexData, class ArcData, size_t N>
     struct vertex
     {
@@ -45,7 +47,7 @@ namespace mix::dd
         auto is_leaf () const -> bool;
     };
 
-    /* partial specialisation with no data */
+    /** arc partial specialisation with no data */
     template<size_t N>
     struct arc<empty, empty, N>
     {
@@ -56,7 +58,7 @@ namespace mix::dd
         arc(vertex_t* const pTarget = nullptr);
     };
 
-    /* partial specialisation with no data */
+    /** vertex partial specialisation with no data */
     template<size_t N>
     struct vertex<empty, empty, N>
     {
@@ -87,21 +89,21 @@ namespace mix::dd
         auto operator() (const vertex_pair<VertexData, ArcData, N>& key) const -> size_t;
     };
 
-    /* arc constructor */
+    /** arc constructor */
     template<class VertexData, class ArcData, size_t N>
     arc<VertexData, ArcData, N>::arc(vertex_t* const pTarget) :
         target {pTarget}
     {
     }
 
-    /* specialised arc constructor */
+    /** specialised arc constructor */
     template<size_t N>
     arc<empty, empty, N>::arc(vertex_t* const pTarget) :
         target {pTarget}
     {
     }
 
-    /* vertex first constructor */
+    /** vertex first constructor */
     template<class VertexData, class ArcData, size_t N>
     vertex<VertexData, ArcData, N>::vertex( const id_t pId
                                           , const index_t pIndex) :
@@ -112,7 +114,7 @@ namespace mix::dd
     {
     }
 
-    /* specialised vertex first constructor */
+    /** specialised vertex first constructor */
     template<size_t N>
     vertex<empty, empty, N>::vertex( const id_t pId
                                    , const index_t pIndex) :
@@ -123,7 +125,7 @@ namespace mix::dd
     {
     }
 
-    /* vertex second constructor */
+    /** vertex second constructor */
     template<class VertexData, class ArcData, size_t N>
     vertex<VertexData, ArcData, N>::vertex( const id_t pId
                                           , const index_t pIndex
@@ -135,7 +137,7 @@ namespace mix::dd
     {
     }
 
-    /* specialised vertex second constructor */
+    /** specialised vertex second constructor */
     template<size_t N>
     vertex<empty, empty, N>::vertex( const id_t pId
                                    , const index_t pIndex
@@ -147,14 +149,14 @@ namespace mix::dd
     {
     }
 
-    /* vertex::is_leaf */
+    /** vertex::is_leaf */
     template<class VertexData, class ArcData, size_t N>
     auto vertex<VertexData, ArcData, N>::is_leaf () const -> bool
     {
         return nullptr == this->forwardStar[0].target;
     }
 
-    /* specialised vertex::is_leaf */
+    /** specialised vertex::is_leaf */
     template<size_t N>
     auto vertex<empty, empty, N>::is_leaf () const -> bool
     {

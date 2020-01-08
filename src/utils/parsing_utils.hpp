@@ -33,8 +33,22 @@ namespace mix::utils
            , class = typename std::enable_if<std::is_arithmetic<N>::value, N>::type>
     auto parse (const std::string& in, N& out) -> bool
     {
+        if (in.empty())
+        {
+            return false;
+        }
+
         size_t idx;
-        out = just_parse<N>(in, &idx);
+        
+        try 
+        {
+            out = just_parse<N>(in, &idx);
+        }
+        catch (...)
+        {
+            return false;
+        }
+
         return idx == in.size();
     }
 
@@ -44,20 +58,13 @@ namespace mix::utils
     {
         N out;
         
-        if (not parse<N>(in, out))
+        if (! parse<N>(in, out))
         {
             throw std::invalid_argument {"Failed to parse number."};
         }
 
         return out;
     }
-
-
-    // auto parse_int  (const std::string& in, int32_t& out)  -> bool;
-    // auto parse_uint (const std::string& in, uint32_t& out) -> bool;
-    
-    // auto parse_int_except  (const std::string& in) -> int32_t;
-    // auto parse_uint_except (const std::string& in) -> uint32_t;
 }
 
 #endif

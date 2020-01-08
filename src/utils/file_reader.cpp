@@ -4,31 +4,92 @@
 
 namespace mix::utils
 {
-    file_reader::file_reader(const std::string& filePath) :
-        istr {filePath}
+    file_reader::file_reader(const std::string& pFilePath) :
+        filePath {pFilePath}
+      , istr     {pFilePath}
+      , needRead {true}
     {
     }
 
-    auto file_reader::throw_if_cant_read () -> void
+    auto file_reader::throw_if_cant_read 
+        () -> void
     {
-        if (not this->istr.is_open())
+        if (! this->istr.is_open())
         {
-            throw std::runtime_error {"File can't be read."};
+            this->throw_cant_read();
         }
     }
 
-    auto file_reader::next_line_except (std::string& out) -> void
+    auto file_reader::read_line_except 
+        (std::string& out) -> void
     {
-        if (not std::getline(this->istr, out))
+        if (! this->needRead)
         {
-            throw std::runtime_error {"Unexpected end of file."};
+           this->needRead = true;
+            out = this->cachedLine;
+            return;
         }
+
+        if (! std::getline(this->istr, out))
+        {
+            this->throw_no_more_lines();
+        }
+
+        this->needRead = true;
     }
 
-    auto file_reader::next_line_except () -> std::string
+    auto file_reader::read_line_except 
+        () -> std::string
     {
-        std::string line;
-        this->next_line_except(line);
-        return line;
+
+        if (! this->needRead)
+        {
+            this->needRead = true;
+            return this->cachedLine;
+        }
+        
+        if (! this->cache_next_line())
+        {
+            this->throw_no_more_lines();
+        }
+
+        this->needRead = true;
+        return this->cachedLine;
+    }
+
+    auto file_reader::peek_line_except 
+        () -> const std::string&
+    {
+        if (! this->needRead)
+        {
+            return this->cachedLine;    
+        }
+
+        if (! this->cache_next_line())
+        {
+            this->throw_no_more_lines();
+        }
+
+        this->needRead = false;
+
+        return this->cachedLine;
+    }
+
+    auto file_reader::throw_no_more_lines
+        () -> void
+    {
+        throw std::runtime_error {"No more lines in: " + this->filePath};
+    }
+
+    auto file_reader::throw_cant_read
+        () -> void
+    {
+        throw std::runtime_error {"Cannot read file: " + this->filePath};
+    }
+
+    auto file_reader::cache_next_line 
+        () -> bool
+    {
+        return std::getline(this->istr, this->cachedLine).operator bool();
     }
 }

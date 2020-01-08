@@ -118,7 +118,7 @@ namespace mix::dd
     auto bit_vector<RecordBitSize, ValueType, EnableIfPolicy<RecordBitSize>>::get
         (const size_t i, std::true_type) const -> ValueType
     {
-        const size_t  recordsInBlock {(sizeof(int64_t) << 3) / RecordBitSize};
+        const size_t  recordsInBlock {(sizeof(int64_t) * 8) / RecordBitSize};
         const size_t  blockIndex     {i / recordsInBlock};
         const size_t  recordOffset   {i % recordsInBlock};
         const int64_t mask           {RecordBitSize | (RecordBitSize - 1)};

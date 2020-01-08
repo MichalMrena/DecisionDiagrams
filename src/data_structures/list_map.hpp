@@ -1,3 +1,6 @@
+#ifndef _MIX_DD_LIST_MAP_
+#define _MIX_DD_LIST_MAP_
+
 #include <functional>
 #include <vector>
 #include <initializer_list>
@@ -138,3 +141,5 @@ namespace mix::dd
         return this->data.cend();
     }
 }
+
+#endif

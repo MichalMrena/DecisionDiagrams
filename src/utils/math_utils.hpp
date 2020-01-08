@@ -3,6 +3,7 @@
 
 #include <type_traits>
 #include <cstdint>
+#include <cstddef>
 
 namespace mix::utils
 {
@@ -32,10 +33,16 @@ namespace mix::utils
 
     template<class N
            , typename std::enable_if<std::is_integral<N>::value, N>::type* = nullptr>
-    inline auto two_pow (const N exponent) -> int64_t
+    constexpr auto two_pow (const N exponent) -> int64_t
     {
         return 1 << exponent;
     }
+
+    template<size_t N>
+    struct is_power_of_two
+    {
+        static constexpr bool value {!((N - 1) & N)};
+    };
 }
 
 #endif

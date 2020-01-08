@@ -11,6 +11,7 @@
 #include "graph.hpp"
 #include "typedefs.hpp"
 #include "utils/string_utils.hpp"
+#include "data_structures/list_map.hpp"
 
 namespace mix::dd
 {   
@@ -30,8 +31,9 @@ namespace mix::dd
     class bdd
     {
     private:
-        using vertex_t = vertex<VertexData, ArcData, 2>;
-        using arc_t    = arc<VertexData, ArcData, 2>;
+        using vertex_t     = vertex<VertexData, ArcData, 2>;
+        using arc_t        = arc<VertexData, ArcData, 2>;
+        using leaf_val_map = list_map<const vertex_t*, log_val_t>;
 
     private:    
         vertex_t* root          {nullptr};
