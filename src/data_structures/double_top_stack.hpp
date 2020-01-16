@@ -17,12 +17,15 @@ namespace mix::utils
 
     public:
         template<class U>
-        auto push      (U&& item) -> void;
-        auto pop       ()         -> void;
-        auto top       () const   -> const T&;
-        auto under_top () const   -> const T&;
-        auto size      () const   -> size_type;
-        auto clear     ()         -> void;  
+        auto push      (U&& item)       -> void;
+        
+        template<class... Args>
+        auto emplace   (Args&&... args) -> void;
+        auto pop       ()               -> void;
+        auto top       () const         -> const T&;
+        auto under_top () const         -> const T&;
+        auto size      () const         -> size_type;
+        auto clear     ()               -> void;  
     };    
 
     template<class T>
@@ -31,6 +34,14 @@ namespace mix::utils
         (U&& item) -> void
     {
         this->data.push_back(std::forward<U>(item));
+    }
+
+    template<class T>
+    template<class... Args>
+    auto double_top_stack<T>::emplace
+        (Args&&... args) -> void
+    {
+        this->data.emplace_back(std::forward<Args>(args)...);
     }
 
     template<class T>

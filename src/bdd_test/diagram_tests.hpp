@@ -1,77 +1,104 @@
 #ifndef _MIX_DD_DIAGRAM_TESTS_
 #define _MIX_DD_DIAGRAM_TESTS_
 
-#include <string>
-#include <sstream>
-#include <array>
-#include <bitset>
-#include <iomanip>
 #include <iostream>
-#include <vector>
-#include <cmath>
-#include "../bdd.hpp"
-#include "../bool_function.hpp"
+#include <bitset>
+#include <stdexcept>
+#include "../dd/typedefs.hpp"
+#include "../bdd/bdd.hpp"
+#include "../bdd/bool_function.hpp"
 #include "../utils/math_utils.hpp"
-#include "../utils/string_utils.hpp"
-#include "../typedefs.hpp"
+#include "../utils/bits.hpp"
+#include "../utils/random_uniform.hpp"
+#include "../utils/stopwatch.hpp"
+#include "../utils/io.hpp"
 
 namespace mix::dd
 {
-    inline auto bool_to_char (bool bv) -> char
+    template< class BoolFunction
+            , class GetFVal  = get_f_val<BoolFunction>
+            , class VarCount = var_count<BoolFunction> >
+    auto full_test_diagram 
+        ( const BoolFunction&      function
+        , const bdd<empty, empty>& diagram) -> bool
     {
-        return bv ? '1' : '0';
-    }
-    
-    template<class VertexData = int8_t, class ArcData = int8_t>
-    auto compare_results (const bool_function& function
-                        , const bdd<VertexData, ArcData>& diagram) -> bool
-    {
-        const size_t inputCount {utils::pow(2UL, function.variable_count())};
-        for (size_t i {0}; i < inputCount; ++i)
-           {
-            const log_val_t expectedValue {function[i]};
-            const log_val_t diagramValue  {diagram.get_value(i)};
+        GetFVal get_f_val;
+        VarCount var_count;
 
-            if (expectedValue != diagramValue)
-            {
-                std::cout << "Wrong answer for input " << utils::to_bit_string(i)
-                          << " expected " << std::to_string(expectedValue)
-                          << " got "      << std::to_string(diagramValue)
-                          << '\n';
-
-                return false;
-            }
+        if (var_count(function) > 25)
+        {
+            throw std::invalid_argument {"Too many variables."};
         }
 
-        std::cout << "Diagram is correct." << '\n';
+        const auto maxVarVals {utils::two_pow(var_count(function))};
+        var_vals_t varVals    {0};
 
+        while (varVals < maxVarVals)
+        {
+            const auto expectedVal {get_f_val(function, varVals)};
+            const auto diagramVal  {diagram.get_value(varVals)};
+
+            if (expectedVal != diagramVal)
+            {
+                utils::printl("Output missmatch for input:");
+                utils::printl(utils::to_string(varVals, var_count(function)));
+                return false;
+            }
+
+            ++varVals;
+        }
+
+        utils::printl("Diagram is correct.");
         return true;
     }
 
-    template<size_t VarCount, class InputFunction>
-    auto generate_truth_table (std::ostream& ostr, InputFunction f) -> void
+    template< class BoolFunction
+            , class GetFVal  = get_f_val<BoolFunction>
+            , class VarCount = var_count<BoolFunction> >
+    auto random_test_diagram 
+        ( const BoolFunction&      function
+        , const bdd<empty, empty>& diagram
+        , const uint32_t           runSeconds = 5) -> bool
     {
-        std::array<size_t, VarCount> colWidths;
-        for (size_t i {0}; i < VarCount; i++)
-        {
-            ostr << 'x' << (i + 1) << ' ';
-            colWidths[i] = 2 + std::ceil(std::log10(i + 1.001));
-        }
-        ostr << ' ' << 'f' << '\n';
+        using watch_t    = utils::stopwatch;
+        using millis_t   = typename utils::stopwatch::milliseconds;
+        using rng_vals_t = utils::random_uniform_int<var_vals_t>;
 
-        for (input_t input {0}; input < utils::pow(2, VarCount); input++)
+        GetFVal get_f_val;
+        VarCount var_count;
+
+        const auto batchSize      {1'000};
+        const auto maxVarVals     {utils::two_pow(var_count(function)) - 1};
+        const millis_t maxRunTime {runSeconds * 1000};
+        
+        rng_vals_t rng {0, maxVarVals};
+        watch_t watch;
+
+        do
         {
-            std::bitset<VarCount> inputBits {input};
-            for (size_t i {VarCount}; i > 0;)
+            for (size_t i {0}; i < batchSize; ++i)
             {
-                --i;
-                ostr << std::setw(colWidths[i]) 
-                     << std::left 
-                     << bool_to_char(inputBits[i]);
+                const auto varVals     {rng.next_int()};
+                const auto expectedVal {get_f_val(function, varVals)};
+                const auto diagramVal  {diagram.get_value(varVals)};
+
+                if (expectedVal != diagramVal)
+                {
+                    utils::printl("Output missmatch for input:");
+                    utils::printl(utils::to_string(varVals, var_count(function)));
+                    return false;
+                }
             }
-            ostr << ' ' << bool_to_char(f(inputBits)) << '\n';
-        }
+        } while (watch.elapsed_time() < maxRunTime);
+
+        utils::printl("Diagram is correct.");
+        return true;
     }
+
+    inline auto print_diagram (const bdd<empty, empty>& diagram) -> void
+    {
+        std::cout << diagram.to_dot_graph() << '\n';
+    } 
 }
 
 #endif

@@ -33,9 +33,9 @@ namespace mix::utils
 
     template<class N
            , typename std::enable_if<std::is_integral<N>::value, N>::type* = nullptr>
-    constexpr auto two_pow (const N exponent) -> int64_t
+    constexpr auto two_pow (const N exponent) -> uint64_t
     {
-        return 1 << exponent;
+        return static_cast<uint64_t>(1) << exponent;
     }
 
     template<size_t N>

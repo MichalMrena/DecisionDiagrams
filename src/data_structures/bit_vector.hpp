@@ -41,6 +41,7 @@ namespace mix::dd
     private:
         using is_two_pow = std::integral_constant<bool, utils::is_power_of_two<RecordBitSize>::value>;
 
+        // TODO skúsiť použiť nejaký fast typ
         std::vector<int64_t> blocks;
         size_t recordCount;
 
@@ -118,7 +119,7 @@ namespace mix::dd
     auto bit_vector<RecordBitSize, ValueType, EnableIfPolicy<RecordBitSize>>::get
         (const size_t i, std::true_type) const -> ValueType
     {
-        const size_t  recordsInBlock {(sizeof(int64_t) * 8) / RecordBitSize};
+        const size_t  recordsInBlock {(sizeof(int64_t) << 3) / RecordBitSize};
         const size_t  blockIndex     {i / recordsInBlock};
         const size_t  recordOffset   {i % recordsInBlock};
         const int64_t mask           {RecordBitSize | (RecordBitSize - 1)};

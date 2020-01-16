@@ -30,6 +30,9 @@ namespace mix::dd
         auto at (const Key& k)       -> T&;
         auto at (const Key& k) const -> const T&;
 
+        auto find (const Key& k)       -> iterator;
+        auto find (const Key& k) const -> const_iterator;
+
         auto operator[] (Key&& k) -> T&;
 
         auto begin () -> iterator;
@@ -66,11 +69,11 @@ namespace mix::dd
     {
         KeyEqual eq;
 
-        for (auto& pair : this->data)
+        for (auto& [key, val] : this->data)
         {
-            if (eq(pair.first, k))
+            if (eq(key, k))
             {
-                return pair.second;
+                return val;
             }
         }
 
@@ -83,15 +86,59 @@ namespace mix::dd
     {
         KeyEqual eq;
 
-        for (auto& pair : this->data)
+        for (auto& [key, val] : this->data)
         {
-            if (eq(pair.first, k))
+            if (eq(key, k))
             {
-                return pair.second;
+                return val;
             }
         }
 
         throw std::out_of_range {"Key not found."};
+    }
+
+    template<class Key, class T, class KeyEqual>
+    auto list_map<Key, T, KeyEqual>::find
+        (const Key& k) -> iterator
+    {
+        auto b {this->begin()};
+        auto e {this->end()};
+
+        KeyEqual eq;
+
+        while (b != e)
+        {
+            if (eq((*b).first, k))
+            {
+                return b;
+            }
+
+            ++b;
+        }
+
+        return b;
+    }
+
+    template<class Key, class T, class KeyEqual>
+    auto list_map<Key, T, KeyEqual>::find
+        (const Key& k) const -> const_iterator
+    {
+        auto b {this->begin()};
+        auto e {this->end()};
+
+        KeyEqual eq;
+
+        while (b != e)
+        {
+            if (eq((*b).first, k))
+            {
+                return b;
+            }
+
+            ++b;
+        }
+
+        return b;
     }
 
     template<class Key, class T, class KeyEqual>
@@ -100,11 +147,11 @@ namespace mix::dd
     {
         KeyEqual eq;
 
-        for (auto& pair : this->data)
+        for (auto& [key, val] : this->data)
         {
-            if (eq(pair.first, k))
+            if (eq(key, k))
             {
-                return pair.second;
+                return val;
             }
         }
 

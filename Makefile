@@ -13,10 +13,10 @@ SRC_DIRS ?= ./src
 
 # TODO add -Wshadow and fix warnings...
 ifdef DEBUG
-	CPPFLAGS += -g -Wall -Wextra -Wnon-virtual-dtor -pedantic -std=c++17
+	CPPFLAGS += -g -Wall -Wextra -pedantic -std=c++17
 	BUILD_DIR ?= $(DEBUG_BUILD_DIR)
 else
-	CPPFLAGS += -Ofast -Wall -Wextra -Wnon-virtual-dtor -pedantic -std=c++17
+	CPPFLAGS += -Ofast -Wall -Wextra -pedantic -std=c++17
 	BUILD_DIR ?= $(RELEASE_BUILD_DIR)
 endif
 

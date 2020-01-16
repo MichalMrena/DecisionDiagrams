@@ -15,9 +15,10 @@ namespace mix::utils
     template<class T>
     auto pointer_hash<T>::operator() (const T* vptr) const -> size_t
     {
-        // TODO na toto sa treba ešte pozrieť
+        // static const size_t shift {(size_t)std::log2(1 + sizeof(T))};
         static const size_t shift {static_cast<size_t>(std::log2(1 + sizeof(T)))};
-        return static_cast<size_t>(vptr) >> shift;
+        return (size_t)vptr >> shift;
+        // return static_cast<size_t>(vptr) >> shift;
     }
 
     namespace boost

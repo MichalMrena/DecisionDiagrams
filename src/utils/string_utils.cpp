@@ -8,7 +8,7 @@
 
 namespace mix::utils
 {
-    auto to_words (const std::string& s) -> std::vector<std::string>
+    auto to_words (std::string s) -> std::vector<std::string>
     {
         std::istringstream istr {s};
         std::vector<std::string> words;
@@ -61,14 +61,9 @@ namespace mix::utils
         return s;
     }
 
-    auto to_bit_string (unsigned long long number) -> std::string
+    auto reverse (std::string s) -> std::string
     {
-        std::bitset<sizeof(unsigned long long)> bits {number};
-        std::string bitsStr {bits.to_string()};
-        const size_t firstOne {bitsStr.find('1')};
-
-        return firstOne != std::string::npos 
-                   ? bitsStr.substr(firstOne)
-                   : "0";
+        std::reverse(s.begin(), s.end());
+        return s;
     }
 }
