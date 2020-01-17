@@ -12,6 +12,7 @@
 #include "utils/file_reader.hpp"
 #include "utils/bits.hpp"
 #include "utils/random_uniform.hpp"
+#include "utils/stopwatch.hpp"
 
 #include "data_structures/list_map.hpp"
 #include "data_structures/bit_vector.hpp"
@@ -31,6 +32,8 @@ using namespace mix::utils;
 */
 auto main() -> int
 {
+    stopwatch watch;
+
     bdd_creator<empty, empty> creator;
     bdds_from_pla<empty, empty> placreator;
 
@@ -50,10 +53,12 @@ auto main() -> int
     pla_file plaFile
     {
         // pla_function::load_from_file("C:\\Users\\mrena\\Desktop\\pla_files\\LGSynth91\\pla\\con1.pla")
-        pla_file::load_from_file("/mnt/c/Users/mrena/Desktop/pla_files/LGSynth91/pla/con1.pla")
+        pla_file::load_from_file("/mnt/c/Users/mrena/Desktop/pla_files/LGSynth91/pla/apex2.pla")
     };
 
-    test_pla_creator(plaFile);
+    auto pla {placreator.create(plaFile)};
+
+    // test_pla_creator(plaFile);
     // test_constructors(plaFile);    
 
     // auto bddFromTable  {creator.create_from(table)};
@@ -63,7 +68,10 @@ auto main() -> int
     // full_test_diagram(lambda, bddFromLambda);
 
     // print_diagram(bddFromTable);
-    // print_diagram(bddFromLambda);
-    
+    // print_diagram(bddFromLambda);    
+
+    printl("Done.");
+    printl("Time taken: " + std::to_string(watch.elapsed_time().count()) + " ms");
+
     return 0;
 }

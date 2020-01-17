@@ -60,10 +60,10 @@ namespace mix::dd
         static auto VARIABLE (const index_t index) -> bdd;
 
     public:
-        bdd() = default;
-        bdd(const bdd& other);
-        bdd(bdd&& other);
-        ~bdd();
+        bdd  () = default;
+        bdd  (const bdd& other);
+        bdd  (bdd&& other);
+        ~bdd ();
 
         auto operator=  (bdd rhs)              -> bdd&;
         auto operator== (const bdd& rhs) const -> bool;
@@ -343,8 +343,9 @@ namespace mix::dd
             {
                 const std::string label 
                 {
-                    level != this->leaf_index() ? ("x" + to_string(level))
-                                                : to_string(this->leafToVal.at(v))
+                    level != this->leaf_index() 
+                        ? ("x" + to_string(level))
+                        : to_string(this->leafToVal.at(v))
                 };
                 
                 finalGraphOstr << "    "
@@ -441,8 +442,7 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::fill_levels
         () const -> std::vector< std::vector<vertex_t*> >
     {
-        std::vector< std::vector<vertex_t*> > levels;
-        levels.resize(this->variableCount + 1);
+        std::vector< std::vector<vertex_t*> > levels(this->variableCount + 1);
 
         this->traverse(this->root, [this, &levels](vertex_t* const v) 
         {
@@ -522,23 +522,37 @@ namespace mix::dd
 
         const auto canV1DescendLeft  {v1->mark != v1->son(0)->mark};
         const auto canV2DescendLeft  {v2->mark != v2->son(0)->mark};
-        const auto canDescendLeft    {canV1DescendLeft && canV2DescendLeft};
 
-        const auto canV1DescendRight {v1->mark != v1->son(1)->mark};
-        const auto canV2DescendRight {v2->mark != v2->son(1)->mark};
-        const auto canDescendRight   {canV1DescendRight && canV2DescendRight};
-
-        if (canV1DescendLeft != canV2DescendLeft || canV1DescendRight != canV2DescendRight)
+        if (canV1DescendLeft != canV2DescendLeft)
         {
-            // Can descend only into one son. Can't be equal.
+            // Different state on the left so they can't be equal.
             return false;
         }
 
-        if (canDescendLeft && canDescendRight)
+        const auto equalOnTheLeft 
         {
-            // Descend into both sons.
-            return are_equal(v1->son(0), v2->son(0), d1, d2)
-                && are_equal(v1->son(1), v2->son(1), d1, d2);
+            // Possibly search left subtree.
+            canV1DescendLeft ? are_equal(v1->son(0), v2->son(0), d1, d2) : true
+        };
+
+        const auto canV1DescendRight {v1->mark != v1->son(1)->mark};
+        const auto canV2DescendRight {v2->mark != v2->son(1)->mark};
+
+        if (canV1DescendRight != canV2DescendRight)
+        {
+            // Different state on the right so they can't be equal.
+            return false;
+        }
+
+        const auto equalOnTheRight 
+        {
+            // Possibly search right subtree.
+            canV1DescendRight ? are_equal(v1->son(1), v2->son(1), d1, d2) : true
+        };
+
+        if (! equalOnTheLeft || ! equalOnTheRight)
+        {
+            return false;
         }
 
         // Can't descend to either. Decision will be made somewhere else.

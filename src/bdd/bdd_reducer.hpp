@@ -20,7 +20,6 @@ namespace mix::dd
         using key_vertex_pair = std::pair< std::pair<id_t, id_t>, vertex_t*>;
 
     private:
-        std::vector< std::vector<vertex_t*> > levels;
         std::map<id_t, vertex_t*> subgraph;
         id_t nextId {0};
 
@@ -28,7 +27,6 @@ namespace mix::dd
         auto reduce (bdd_t& diagram) -> void;
 
     private:
-        auto fill_levels (const bdd_t& diagram) -> void;
         auto reset       () -> void;
     };    
 
@@ -36,8 +34,7 @@ namespace mix::dd
     auto bdd_reducer<VertexData, ArcData>::reduce
         (bdd_t& diagram) -> void
     {
-        this->fill_levels(diagram);
-
+        const auto levels {diagram.fill_levels()};
         std::vector<vertex_t*> notUsedAnymore;
 
         for (size_t i {levels.size()}; i > 0;)
@@ -45,7 +42,7 @@ namespace mix::dd
             --i;
             std::vector<key_vertex_pair> keyedVertices;
             
-            for (vertex_t* u : this->levels[i])
+            for (vertex_t* u : levels[i])
             {
                 if (diagram.is_leaf(u))
                 {
@@ -76,6 +73,7 @@ namespace mix::dd
                 {
                     u->id = this->nextId;
                     notUsedAnymore.push_back(u);
+                    if (diagram.is_leaf(u)) diagram.leafToVal.erase(u);
                 }
                 else
                 {
@@ -95,10 +93,8 @@ namespace mix::dd
             }
         }
         
-        // TODO moc velka zlozitost stacilo by listy prejst nejako individualne
         for (vertex_t* v : notUsedAnymore)
         {
-            diagram.leafToVal.erase(v);
             delete v;
         }
 
@@ -107,21 +103,9 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd_reducer<VertexData, ArcData>::fill_levels
-        (const bdd_t& diagram) -> void
-    {
-        levels.resize(diagram.variableCount + 1);
-
-        diagram.traverse(diagram.root, [this](vertex_t* const v) {
-            levels[v->index].push_back(v);
-        });
-    }
-
-    template<class VertexData, class ArcData>
     auto bdd_reducer<VertexData, ArcData>::reset
         () -> void
     {
-        this->levels.clear();
         this->subgraph.clear();
         this->nextId = 0;
     }
