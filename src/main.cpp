@@ -20,6 +20,7 @@
 #include "bdd_test/diagram_tests.hpp"
 #include "bdd_test/pla_tests.hpp"
 #include "bdd_test/other_tests.hpp"
+#include "bdd/bool_f_input.hpp"
 
 using namespace mix::dd;
 using namespace mix::utils;
@@ -34,6 +35,8 @@ auto main() -> int
 {
     stopwatch watch;
 
+    // ku každému diagramu by sa dal pridať ešte jeden, ktorý by mal 1 pre každý definovaný vstup,
+    // vedel by potom vrátiť 0 1 alebo X
     bdd_creator<empty, empty> creator;
     bdds_from_pla<empty, empty> placreator;
 
@@ -56,19 +59,21 @@ auto main() -> int
         pla_file::load_from_file("/mnt/c/Users/mrena/Desktop/pla_files/LGSynth91/pla/apex2.pla")
     };
 
-    auto pla {placreator.create(plaFile)};
+    // auto pla {placreator.create(plaFile)};
 
     // test_pla_creator(plaFile);
     // test_constructors(plaFile);    
 
     // auto bddFromTable  {creator.create_from(table)};
-    // auto bddFromLambda {creator.create_from(lambda)};
+    auto bddFromLambda {creator.create_from(lambda)};
 
     // full_test_diagram(table, bddFromTable);
     // full_test_diagram(lambda, bddFromLambda);
 
     // print_diagram(bddFromTable);
     // print_diagram(bddFromLambda);    
+
+    bddFromLambda.get_value(static_cast<var_vals_t>(0));
 
     printl("Done.");
     printl("Time taken: " + std::to_string(watch.elapsed_time().count()) + " ms");

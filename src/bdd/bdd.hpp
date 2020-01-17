@@ -7,6 +7,7 @@
 #include <bitset>
 #include <sstream>
 #include <tuple>
+#include "bool_f_input.hpp"
 #include "../dd/graph.hpp"
 #include "../dd/typedefs.hpp"
 #include "../utils/io.hpp"
@@ -71,10 +72,8 @@ namespace mix::dd
 
         auto to_dot_graph () const -> std::string;
         
-        template<size_t N>
-        auto get_value (const std::bitset<N>& varVals)    const -> bool_t;
-        auto get_value (const std::vector<bool>& varVals) const -> bool_t;
-        auto get_value (const var_vals_t varVals)         const -> bool_t;
+        template<class BoolFunctionInput>
+        auto get_value (const BoolFunctionInput& input) const -> bool_t;
 
     private:
         bdd( vertex_t* const pRoot
@@ -85,9 +84,6 @@ namespace mix::dd
         auto is_leaf     (const vertex_t* const v) const -> bool;
         auto leaf_index  () const -> index_t;
         auto fill_levels () const -> std::vector< std::vector<vertex_t*> >;
-
-        template<class InputT>
-        auto get_value_internal (const InputT& in) const -> bool_t;
 
         template<class UnaryFunction>
         auto traverse ( vertex_t* const v
@@ -108,22 +104,6 @@ namespace mix::dd
         swap(lhs.root,          rhs.root);
         swap(lhs.variableCount, rhs.variableCount);
         swap(lhs.leafToVal,     rhs.leafToVal);
-    }
-
-    template<size_t N>
-    auto get_var_val (const std::bitset<N>& in, const index_t i) -> bool_t
-    {
-        return in[i];
-    }
-
-    inline auto get_var_val (const std::vector<bool>& in, const index_t i) -> bool_t
-    {
-        return in[i];
-    }
-
-    inline auto get_var_val (const var_vals_t in, const index_t i) -> bool_t
-    {
-        return (in >> i) & 1;
     }
 
     template<class VertexData, class ArcData>
@@ -395,25 +375,20 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    template<size_t N>
-    auto bdd<VertexData, ArcData>::get_value
-        (const std::bitset<N>& varVals) const -> bool_t
-    {
-        return this->get_value_internal(varVals);
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::get_value
-        (const std::vector<bool>& varVals) const -> bool_t
-    {
-        return this->get_value_internal(varVals);
-    }
-
-    template<class VertexData, class ArcData>
+    template<class BoolFunctionInput>
     auto bdd<VertexData, ArcData>::get_value 
-        (const var_vals_t varVals) const -> bool_t
+        (const BoolFunctionInput& input) const -> bool_t
     {
-        return this->get_value_internal(varVals);
+        get_var_val<BoolFunctionInput> get_val;
+
+        auto v {this->root};
+
+        while (! this->is_leaf(v))
+        {
+            v = v->son(get_val(input, v->index));
+        }
+        
+        return this->leafToVal.at(v);
     }
 
     template<class VertexData, class ArcData>
@@ -450,21 +425,6 @@ namespace mix::dd
         });
 
         return levels;
-    }
-
-    template<class VertexData, class ArcData>
-    template<class InputT>
-    auto bdd<VertexData, ArcData>::get_value_internal
-        (const InputT& in) const -> bool_t
-    {
-        auto v {this->root};
-
-        while (! this->is_leaf(v))
-        {
-            v = v->son(get_var_val(in, v->index));
-        }
-        
-        return this->leafToVal.at(v);
     }
 
     template<class VertexData, class ArcData>

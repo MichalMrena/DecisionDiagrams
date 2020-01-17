@@ -63,7 +63,7 @@ namespace mix::dd
             for (int32_t fi {0}; fi < functionCount; ++fi)
             {
                 subDiagrams[fi].emplace_back(
-                    creator.create_simple( plaLines[li].varVals, plaLines[li].fVals[fi] )
+                    creator.create_product( plaLines[li].varVals, plaLines[li].fVals[fi] )
                 );
             }
         }

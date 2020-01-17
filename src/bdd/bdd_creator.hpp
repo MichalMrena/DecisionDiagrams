@@ -54,8 +54,8 @@ namespace mix::dd
                 , class VarCount = var_count<BoolFunction> >
         auto create_from (const BoolFunction& in) -> bdd_t;
 
-        auto create_simple ( const std::vector<bool_t>& varVals
-                           , const bool_t fVal) -> bdd_t;
+        auto create_product ( const std::vector<bool_t>& varVals
+                            , const bool_t fVal) -> bdd_t;
 
     private:
         auto try_insert ( const vertex_key key
@@ -157,7 +157,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd_creator<VertexData, ArcData>::create_simple
+    auto bdd_creator<VertexData, ArcData>::create_product
         (const std::vector<bool_t>& varVals, const bool_t fVal) -> bdd_t
     {
         if (0 == fVal)
