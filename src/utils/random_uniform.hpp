@@ -18,32 +18,33 @@ namespace mix::utils
     template<> struct is_valid_int_type<int64_t>  : public std::true_type  {};
     template<> struct is_valid_int_type<uint64_t> : public std::true_type  {};
 
-    template< class IntType
-            , class Enable = typename std::enable_if<is_valid_int_type<IntType>::value, IntType>::type>
+    template<class IntType>
     class random_uniform_int : private random_base
     {
+        static_assert(is_valid_int_type<IntType>::value, "IntType is not supported.");
+
     private:
         std::uniform_int_distribution<IntType> dist;
 
     public:
         random_uniform_int( const IntType min  = std::numeric_limits<IntType>::min()
                           , const IntType max  = std::numeric_limits<IntType>::max()
-                          , unsigned long seed = std::random_device {} ());
+                          , unsigned long seed = std::random_device {} () );
 
         auto next_int () -> IntType;
     };
 
-    template<class IntType, class Enable>
-    random_uniform_int<IntType, Enable>::random_uniform_int ( const IntType min
-                                                            , const IntType max
-                                                            , unsigned long seed) :
+    template<class IntType>
+    random_uniform_int<IntType>::random_uniform_int ( const IntType min
+                                                    , const IntType max
+                                                    , unsigned long seed ) :
         random_base {seed}
       , dist {min, max}
     {
     }
     
-    template<class IntType, class Enable>
-    auto random_uniform_int<IntType, Enable>::next_int
+    template<class IntType>
+    auto random_uniform_int<IntType>::next_int
         () -> IntType
     {
         return this->dist(random_base::generator);

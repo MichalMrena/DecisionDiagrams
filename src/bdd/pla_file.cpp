@@ -5,6 +5,7 @@
 #include "../utils/string_utils.hpp"
 #include "../utils/parsing_utils.hpp"
 #include "../utils/file_reader.hpp"
+#include "../data_structures/bit_vector.hpp"
 
 namespace mix::dd
 {
@@ -95,15 +96,13 @@ namespace mix::dd
                     throw std::runtime_error {"Invalid pla line: " + std::to_string(row)};
                 }
 
-                std::vector<bool_t> variables;
-                variables.reserve(varCount);
+                bit_vector<2, bool_t> variables {varCount};
                 for (const auto c : variablesStr)
                 {
                     variables.push_back(char_to_bool_t(c));
                 }
 
-                std::vector<bool_t> values;
-                values.reserve(diagramCount);
+                bit_vector<2, bool_t> values {diagramCount};
                 for (const auto c : valuesStr)
                 {
                     values.push_back(char_to_bool_t(c));
@@ -114,6 +113,13 @@ namespace mix::dd
 
             return lines;
         }
+    }
+    
+    auto swap (pla_line& lhs, pla_line& rhs) -> void
+    {
+        using std::swap;
+        swap(lhs.varVals, rhs.varVals);
+        swap(lhs.fVals, rhs.fVals);
     }
 
     auto pla_file::load_from_file 
@@ -133,9 +139,10 @@ namespace mix::dd
         const auto diagramCount {utils::parse_except<uint32_t>(options.at(".o"))};
         const auto lineCount    {utils::parse_except<uint32_t>(options.at(".p"))};
 
-        auto lines {read_data(reader, varCount, diagramCount, lineCount)};
-
-        return pla_file {std::move(lines)};
+        return pla_file 
+        {
+            read_data(reader, varCount, diagramCount, lineCount)
+        };
     }
 
     pla_file::pla_file(std::vector<pla_line> pLines) :

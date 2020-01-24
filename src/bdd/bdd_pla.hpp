@@ -28,8 +28,7 @@ namespace mix::dd
     public:
         auto create (const pla_file& file) -> std::vector<bdd_t>;
 
-    // TMP later private
-    public: 
+    private: 
         auto or_merge_diagrams (std::vector<bdd_t> diagrams) -> bdd_t;
     };
 
@@ -63,7 +62,9 @@ namespace mix::dd
             for (int32_t fi {0}; fi < functionCount; ++fi)
             {
                 subDiagrams[fi].emplace_back(
-                    creator.create_product( plaLines[li].varVals, plaLines[li].fVals[fi] )
+                    creator.create_product( plaLines[li].varVals.begin()
+                                          , plaLines[li].varVals.end()
+                                          , plaLines[li].fVals.at(fi) )
                 );
             }
         }
@@ -93,10 +94,6 @@ namespace mix::dd
             static_cast<int32_t>(diagrams.size())
         };
 
-        std::vector<bdd_t> auxDiagrams((diagrams.size() >> 1) + 1);
-        std::vector<bdd_t>* src {&diagrams};
-        std::vector<bdd_t>* dst {&auxDiagrams};
-
         for (size_t step {0}; step < numOfSteps; ++step)
         {
             const bool justMoveLast {diagramCount & 1};
@@ -108,18 +105,16 @@ namespace mix::dd
             {
                 if (i < diagramCount - 1 || !justMoveLast)
                 {
-                    (*dst)[i] = (*src)[i << 1] || (*src)[(i << 1) + 1];
+                    diagrams[i] = diagrams[i << 1] || diagrams[(i << 1) + 1];
                 }
                 else
                 {
-                    (*dst)[i] = std::move((*src)[i << 1]);
+                    diagrams[i] = std::move(diagrams[i << 1]);
                 }
             }
-
-            std::swap(src, dst);
         }
 
-        return bdd_t {std::move(src->front())};
+        return bdd_t {std::move(diagrams.front())};
     }
 }
 

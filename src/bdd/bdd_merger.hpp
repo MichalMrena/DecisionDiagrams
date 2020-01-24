@@ -74,9 +74,11 @@ namespace mix::dd
 
         this->reset();
         
-        bdd_reducer_t{}.reduce(newDiagram);
+        // bdd_reducer_t{}.reduce(newDiagram);
+        bdd_reducer_t reducer;
+        reducer.reduce(newDiagram);
 
-        return newDiagram;
+        return bdd_t {std::move(newDiagram)};
     }
 
     template<class VertexData, class ArcData>

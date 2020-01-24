@@ -4,19 +4,20 @@
 #include <vector>
 #include <string>
 #include "../dd/typedefs.hpp"
+#include "../data_structures/bit_vector.hpp"
 
 namespace mix::dd
 {
     struct pla_line
     {
-        // TODO použiť 2-bit set aby to bolo viac memmory friendly
-        std::vector<bool_t> varVals; 
-        // TODO použiť 1-bit set aby to bolo viac memmory friendly
-        std::vector<bool_t> fVals;
+        bit_vector<2, bool_t> varVals; 
+        bit_vector<2, bool_t> fVals;
 
         pla_line(const pla_line&) = delete;
         pla_line(pla_line&&) = default;
     };
+
+    auto swap (pla_line& lhs, pla_line& rhs) -> void;
 
     class pla_file
     {

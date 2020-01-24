@@ -54,7 +54,9 @@ namespace mix::dd
                 , class VarCount = var_count<BoolFunction> >
         auto create_from (const BoolFunction& in) -> bdd_t;
 
-        auto create_product ( const std::vector<bool_t>& varVals
+        template<class InputIt>
+        auto create_product ( InputIt varValsBegin
+                            , InputIt varValsEnd
                             , const bool_t fVal) -> bdd_t;
 
     private:
@@ -157,34 +159,38 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    template<class InputIt>
     auto bdd_creator<VertexData, ArcData>::create_product
-        (const std::vector<bool_t>& varVals, const bool_t fVal) -> bdd_t
+        (InputIt varValsBegin, InputIt varValsEnd, const bool_t fVal) -> bdd_t
     {
         if (0 == fVal)
         {
-            return bdd_t::FALSE();
+            return bdd_t::just_false();
         }
 
-        const index_t leafIndex {static_cast<index_t>(varVals.size())};
+        const auto varCount  {varValsEnd - varValsBegin};
+        const auto leafIndex {static_cast<index_t>(varCount)};
         index_t index  {0};
         id_t    nextId {0};
 
         std::vector<vertex_t*> relevantVariables;
-        relevantVariables.reserve(varVals.size());
+        relevantVariables.reserve(varCount);
 
-        for (auto val : varVals)
+        auto varValsIt {varValsBegin};
+        while (varValsIt != varValsEnd)
         {
-            if (val != X)
+            if (*varValsIt != X)
             {
                 relevantVariables.push_back(new vertex_t {nextId++, index});
             }
 
             ++index;
+            ++varValsIt;
         }
 
         if (relevantVariables.empty())
         {
-            return bdd_t::TRUE();
+            return bdd_t::just_true();
         }
 
         auto trueLeaf  {new vertex_t {nextId++, leafIndex}};
@@ -197,7 +203,7 @@ namespace mix::dd
         while (b != e)
         {
             const auto v      {*b};
-            const auto varVal {varVals[v->index]};
+            const auto varVal {*(varValsBegin + v->index)};
             
             ++b;
             
@@ -206,7 +212,7 @@ namespace mix::dd
         }
 
         const auto v      {*b};
-        const auto varVal {varVals[v->index]};
+        const auto varVal {*(varValsBegin + v->index)};
 
         v->son(varVal)  = trueLeaf;
         v->son(!varVal) = falseLeaf;
@@ -220,7 +226,7 @@ namespace mix::dd
         return bdd_t 
         {
             relevantVariables.front()
-          , static_cast<index_t>(varVals.size())
+          , static_cast<index_t>(varCount)
           , std::move(leafToVal)
         };
     }

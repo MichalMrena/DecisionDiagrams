@@ -37,16 +37,6 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     class bdd
     {
-    private:
-        using vertex_t     = vertex<VertexData, ArcData, 2>;
-        using arc_t        = arc<VertexData, ArcData, 2>;
-        using leaf_val_map = std::map<const vertex_t*, bool_t>;
-
-    private:    
-        vertex_t*    root          {nullptr};
-        index_t      variableCount {0};
-        leaf_val_map leafToVal;
-
     public:
         friend class bdd_creator<VertexData, ArcData>;
         friend class bdd_merger<VertexData, ArcData>;
@@ -55,10 +45,20 @@ namespace mix::dd
         friend auto swap<VertexData, ArcData> ( bdd<VertexData, ArcData>& lhs
                                               , bdd<VertexData, ArcData>& rhs ) noexcept -> void;
 
+    private:
+        using vertex_t     = vertex<VertexData, ArcData, 2>;
+        using arc_t        = arc<VertexData, ArcData, 2>;
+        using leaf_val_map = std::map<const vertex_t*, bool_t>;
+
+    private:
+        vertex_t*    root          {nullptr};
+        index_t      variableCount {0};
+        leaf_val_map leafToVal;
+
     public:
-        static auto TRUE     () -> bdd;
-        static auto FALSE    () -> bdd;
-        static auto VARIABLE (const index_t index) -> bdd;
+        static auto just_true  () -> bdd;
+        static auto just_false () -> bdd;
+        static auto just_var   (const index_t index) -> bdd;
 
     public:
         bdd  () = default;
@@ -71,14 +71,16 @@ namespace mix::dd
         auto operator!= (const bdd& rhs) const -> bool;
 
         auto to_dot_graph () const -> std::string;
-        
+        auto vertex_count () const -> size_t;
+        auto negate       ()       -> bdd&;
+
         template<class BoolFunctionInput>
         auto get_value (const BoolFunctionInput& input) const -> bool_t;
 
     private:
-        bdd( vertex_t* const pRoot
-           , const index_t   pVariableCount
-           , leaf_val_map    pLeafToVal);
+        bdd ( vertex_t* const pRoot
+            , const index_t   pVariableCount
+            , leaf_val_map    pLeafToVal );
 
         auto value       (const vertex_t* const v) const -> bool_t;
         auto is_leaf     (const vertex_t* const v) const -> bool;
@@ -107,7 +109,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::TRUE
+    auto bdd<VertexData, ArcData>::just_true
         () -> bdd
     {
         vertex_t* const trueLeaf {new vertex_t {1, 0}};
@@ -121,7 +123,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::FALSE
+    auto bdd<VertexData, ArcData>::just_false
         () -> bdd
     {
         vertex_t* const falseLeaf {new vertex_t {1, 0}};
@@ -135,7 +137,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::VARIABLE
+    auto bdd<VertexData, ArcData>::just_var
         (const index_t index) -> bdd
     {
         vertex_t* const falseLeaf {new vertex_t {1, index + 1}};
@@ -148,7 +150,7 @@ namespace mix::dd
           , {trueLeaf, 1}
         };
 
-        return bdd {varVertex, index, std::move(leafValMap)};
+        return bdd {varVertex, index + 1, std::move(leafValMap)};
     }
 
     template<class VertexData, class ArcData>
@@ -218,18 +220,12 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     bdd<VertexData, ArcData>::~bdd()
     {
-        if (this->root)
+        for (const auto& level : this->fill_levels())
         {
-            std::vector<vertex_t*> toDelete;
-
-            this->traverse(this->root, [&toDelete](vertex_t* const  v) {
-                toDelete.push_back(v);
-            });
-
-            for (vertex_t* v : toDelete)
+            for (const auto v : level)
             {
                 delete v;
-            }        
+            }
         }
     }
 
@@ -375,6 +371,55 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::vertex_count
+        () const -> size_t
+    {
+        size_t size {0};
+
+        this->traverse(this->root, [&size](const vertex_t* const)
+        {
+            ++size;
+        });
+
+        return size;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::negate
+        () -> bdd&
+    {
+        const vertex_t* trueLeaf  {nullptr};
+        const vertex_t* falseLeaf {nullptr};
+
+        for (const auto& [leaf, val] : this->leafToVal)
+        {
+            if (0 == val)
+            {
+                falseLeaf = leaf;
+            }
+
+            if (1 == val)
+            {
+                trueLeaf = leaf;
+            }
+        }
+
+        this->leafToVal.clear();
+        
+        if (trueLeaf)
+        {
+            this->leafToVal.emplace(trueLeaf, 0);
+        }
+
+        if (falseLeaf)
+        {
+            this->leafToVal.emplace(falseLeaf, 1);
+        }
+
+        return *this;
+    }
+
+    template<class VertexData, class ArcData>
     template<class BoolFunctionInput>
     auto bdd<VertexData, ArcData>::get_value 
         (const BoolFunctionInput& input) const -> bool_t
@@ -419,10 +464,13 @@ namespace mix::dd
     {
         std::vector< std::vector<vertex_t*> > levels(this->variableCount + 1);
 
-        this->traverse(this->root, [this, &levels](vertex_t* const v) 
+        if (this->root)
         {
-            levels[v->index].push_back(v);
-        });
+            this->traverse(this->root, [this, &levels](vertex_t* const v) 
+            {
+                levels[v->index].push_back(v);
+            });
+        }
 
         return levels;
     }
@@ -491,9 +539,14 @@ namespace mix::dd
 
         const auto equalOnTheLeft 
         {
-            // Possibly search left subtree.
+            // Possibly search the left subtree.
             canV1DescendLeft ? are_equal(v1->son(0), v2->son(0), d1, d2) : true
         };
+
+        if (! equalOnTheLeft)
+        {
+            return false;
+        }
 
         const auto canV1DescendRight {v1->mark != v1->son(1)->mark};
         const auto canV2DescendRight {v2->mark != v2->son(1)->mark};
@@ -506,11 +559,11 @@ namespace mix::dd
 
         const auto equalOnTheRight 
         {
-            // Possibly search right subtree.
+            // Possibly search the right subtree.
             canV1DescendRight ? are_equal(v1->son(1), v2->son(1), d1, d2) : true
         };
 
-        if (! equalOnTheLeft || ! equalOnTheRight)
+        if (! equalOnTheRight)
         {
             return false;
         }
@@ -523,7 +576,7 @@ namespace mix::dd
     template<class VertexData = empty, class ArcData = empty>
     auto x (const index_t index) -> bdd<VertexData, ArcData>
     {
-        return bdd<VertexData, ArcData>::VARIABLE(index);
+        return bdd<VertexData, ArcData>::just_var(index);
     }
 }
 

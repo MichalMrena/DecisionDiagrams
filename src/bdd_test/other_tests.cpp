@@ -23,7 +23,7 @@ namespace mix::dd
         }
 
         // copy assign
-        bdd_t d2;
+        bdd_t d2 {bdd_t::just_false()};
         d2 = d1;
         if (d1 != d2)
         {
@@ -46,7 +46,7 @@ namespace mix::dd
         }
 
         // empty copy
-        bdd_t e1;
+        bdd_t e1 {bdd_t::just_false()};
         bdd_t e2 {e1};
         if (e1 != e2)
         {

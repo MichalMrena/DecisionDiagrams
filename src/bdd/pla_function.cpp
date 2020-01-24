@@ -24,7 +24,9 @@ namespace mix::dd
             for (const auto fVal : line.fVals)
             {
                 lineDiagrams[currentLine].emplace_back(
-                    creator.create_product(line.varVals, fVal)
+                    creator.create_product( line.varVals.begin()
+                                          , line.varVals.end()
+                                          , fVal )
                 );
             }
 

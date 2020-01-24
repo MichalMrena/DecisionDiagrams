@@ -74,6 +74,9 @@ namespace mix::dd
         rng_vals_t rng {0, maxVarVals};
         watch_t watch;
 
+        size_t exp0 {0};
+        size_t exp1 {0};
+
         do
         {
             for (size_t i {0}; i < batchSize; ++i)
@@ -81,6 +84,9 @@ namespace mix::dd
                 const auto varVals     {rng.next_int()};
                 const auto expectedVal {get_f_val(function, varVals)};
                 const auto diagramVal  {diagram.get_value(varVals)};
+
+                exp0 += 0 == expectedVal;
+                exp1 += 1 == expectedVal;
 
                 if (expectedVal != diagramVal)
                 {
@@ -90,6 +96,9 @@ namespace mix::dd
                 }
             }
         } while (watch.elapsed_time() < maxRunTime);
+
+        // utils::printl("Zero outputs tested: " + std::to_string(exp0));
+        // utils::printl("One outputs tested: " + std::to_string(exp1));
 
         utils::printl("Diagram is correct.");
         return true;

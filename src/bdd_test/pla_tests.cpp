@@ -22,7 +22,7 @@ namespace mix::dd
             
             const auto testResult 
             {
-                random_test_diagram(plaFunctions.at(i), diagrams.at(i), 60)
+                random_test_diagram(plaFunctions.at(i), diagrams.at(i), 10)
             };
 
             if (! testResult)

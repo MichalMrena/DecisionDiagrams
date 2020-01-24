@@ -51,6 +51,7 @@ namespace mix::dd
                 }
                 else if (u->son(0)->id == u->son(1)->id)
                 {
+                    // ak je u root, treba nastaviť nový root, bude v subgraph[u->id]
                     u->id = u->son(0)->id;
                     notUsedAnymore.push_back(u);
                 }
@@ -73,14 +74,17 @@ namespace mix::dd
                 {
                     u->id = this->nextId;
                     notUsedAnymore.push_back(u);
-                    if (diagram.is_leaf(u)) diagram.leafToVal.erase(u);
+                    if (diagram.is_leaf(u))
+                    {
+                        diagram.leafToVal.erase(u);
+                    }
                 }
                 else
                 {
                     ++this->nextId;
                     u->id = this->nextId;
 
-                    subgraph.emplace(this->nextId, u);
+                    this->subgraph.emplace(this->nextId, u);
                     
                     if (! diagram.is_leaf(u))
                     {
@@ -93,12 +97,13 @@ namespace mix::dd
             }
         }
         
+        diagram.root = this->subgraph.at(diagram.root->id);
+
         for (vertex_t* v : notUsedAnymore)
         {
             delete v;
         }
 
-        // TODO remove unused vertices MEMMORY leak !!
         this->reset();
     }
 
