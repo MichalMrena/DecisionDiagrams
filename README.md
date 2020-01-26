@@ -41,3 +41,20 @@ Pla is a specific format of a file that can store multiple Boolean functions. At
 ...
 ```
 Above example uses method ```bdds_from_pla::create```. This method first creates diagrams for each line and then combines them into one for each function. Result is a vector of diagrams. This approach can be parallelized in multiple places. However diagram construction times were not a problem for functions whose diagrams are not exponential in the number of variables *(I will write about this later below)*.
+  
+**build_from_expression()**  
+This option is similar to lambda function mentioned above. What is different is that function ```x(i)``` creates diagram for each variable and then merges them using overloaded logical and bitwise operators and functions. For further details please see section about merging below.
+  
+### Other options
+Class ```bdd``` provides static methods for creating simple diagrams:
+- ```just_true``` creates diagram with single leaf with value true. 
+- ```just_false``` creates diagram with single leaf with value false. 
+- ```just_var(index_t)``` creates diagram that represents single variable.  
+
+Class ```bdd_creator``` provides method ```create_product``` for creating diagram representing logical product of variables.
+
+## Merging diagrams
+Algorithm for merging [?] is implemented in the class ```bdd_merger``` in its method ```merge```. This method takes two diagrams and binary logical operator and merges them using that operator. The result is a new diagram. Operators are simple functor classes declared in ```./src/bdd/operators.hpp```. If you just want to play around using merger directly is not very comfortable. For this purpose operators ```&&, ||, ^, !``` are overloaded for diagrams. There are also functions ```nand()``` and ```nor()```. You can see it in this example **build_from_expression()**.
+
+## Other
+Public methods of the diagram are documented in ```"./src/bdd/bdd.hpp"```. Some of them are used in the example **use_diagram()**.

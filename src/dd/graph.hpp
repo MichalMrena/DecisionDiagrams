@@ -8,7 +8,7 @@
 
 namespace mix::dd
 {
-    struct empty {};
+    struct empty_t {};
 
     template<class VertexData, class ArcData, size_t N>
     struct vertex;
@@ -41,9 +41,9 @@ namespace mix::dd
 
     /** arc with no data */
     template<class VertexData, size_t N>
-    struct arc<VertexData, empty, N> : public arc_base<VertexData, empty, N>
+    struct arc<VertexData, empty_t, N> : public arc_base<VertexData, empty_t, N>
     {
-        using vertex_t = typename arc_base<VertexData, empty, N>::vertex_t;
+        using vertex_t = typename arc_base<VertexData, empty_t, N>::vertex_t;
 
         arc() = default;
         arc(vertex_t* const pTarget);
@@ -109,9 +109,9 @@ namespace mix::dd
 
     /** vertex with no data */
     template<class ArcData, size_t N>
-    struct vertex<empty, ArcData, N> : public vertex_base<empty, ArcData, N>
+    struct vertex<empty_t, ArcData, N> : public vertex_base<empty_t, ArcData, N>
     {
-        using forward_star_arr = typename vertex_base<empty, ArcData, N>::forward_star_arr;
+        using forward_star_arr = typename vertex_base<empty_t, ArcData, N>::forward_star_arr;
 
         vertex( const id_t pId
               , const index_t pIndex);
@@ -167,14 +167,14 @@ namespace mix::dd
     }
 
     template<class VertexData, size_t N>
-    arc<VertexData, empty, N>::arc(vertex_t* const pTarget) :
-        arc_base<VertexData, empty, N> {pTarget}
+    arc<VertexData, empty_t, N>::arc(vertex_t* const pTarget) :
+        arc_base<VertexData, empty_t, N> {pTarget}
     {
     }
 
     template<class VertexData, size_t N>
-    arc<VertexData, empty, N>::arc(const arc& other) :
-        arc_base<VertexData, empty, N> {other}
+    arc<VertexData, empty_t, N>::arc(const arc& other) :
+        arc_base<VertexData, empty_t, N> {other}
     {
     }
 
@@ -258,23 +258,23 @@ namespace mix::dd
 // specialized empty vertex definitions:
 
     template<class ArcData, size_t N>
-    vertex<empty, ArcData, N>::vertex( const id_t pId
+    vertex<empty_t, ArcData, N>::vertex( const id_t pId
                                      , const index_t pIndex) :
-        vertex_base<empty, ArcData, N> {pId, pIndex}
+        vertex_base<empty_t, ArcData, N> {pId, pIndex}
     {
     }
 
     template<class ArcData, size_t N>
-    vertex<empty, ArcData, N>::vertex( const id_t pId
+    vertex<empty_t, ArcData, N>::vertex( const id_t pId
                                      , const index_t pIndex
                                      , forward_star_arr pForwardStar) :
-        vertex_base<empty, ArcData, N> {pId, pIndex, pForwardStar}
+        vertex_base<empty_t, ArcData, N> {pId, pIndex, pForwardStar}
     {
     }
     
     template<class ArcData, size_t N>
-    vertex<empty, ArcData, N>::vertex(const vertex& other) :
-        vertex_base<empty, ArcData, N> {other}
+    vertex<empty_t, ArcData, N>::vertex(const vertex& other) :
+        vertex_base<empty_t, ArcData, N> {other}
     {
     }
 

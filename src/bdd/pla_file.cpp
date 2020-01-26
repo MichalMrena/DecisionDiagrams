@@ -55,7 +55,7 @@ namespace mix::dd
         }
 
         auto has_keys ( const option_map& map
-                    , std::initializer_list<std::string> keys) -> bool
+                      , std::initializer_list<std::string> keys ) -> bool
         {
             for (const auto k : keys)
             {
@@ -69,9 +69,9 @@ namespace mix::dd
         }
 
         auto read_data ( utils::file_reader& reader
-                    , const uint32_t varCount    
-                    , const uint32_t diagramCount
-                    , const uint32_t lineCount) -> std::vector<pla_line>
+                       , const uint32_t varCount    
+                       , const uint32_t diagramCount
+                       , const uint32_t lineCount ) -> std::vector<pla_line>
         {
             std::vector<pla_line> lines;
             lines.reserve(lineCount);
@@ -96,13 +96,13 @@ namespace mix::dd
                     throw std::runtime_error {"Invalid pla line: " + std::to_string(row)};
                 }
 
-                bit_vector<2, bool_t> variables {varCount};
+                bit_vector<2, bool_t> variables (varCount);
                 for (const auto c : variablesStr)
                 {
                     variables.push_back(char_to_bool_t(c));
                 }
 
-                bit_vector<2, bool_t> values {diagramCount};
+                bit_vector<2, bool_t> values (diagramCount);
                 for (const auto c : valuesStr)
                 {
                     values.push_back(char_to_bool_t(c));

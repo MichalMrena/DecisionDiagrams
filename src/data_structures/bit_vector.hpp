@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <cmath>
 #include <stdexcept>
+#include <functional>
+#include <initializer_list>
 #include "../utils/math_utils.hpp"
 
 namespace mix::dd
@@ -18,7 +20,7 @@ namespace mix::dd
               , bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> void;
 
     /**
-        Proxy ref.
+        This class is used to implement operator[] of the vector.
     */
     template<size_t RecordBitSize, class ValueType>
     class proxy_ref
@@ -27,12 +29,16 @@ namespace mix::dd
         using vec_t = bit_vector<RecordBitSize, ValueType>;
 
     private:
-        vec_t& vec;
+        std::reference_wrapper<vec_t> vector;
         size_t recordIndex;
         
     public:
-        proxy_ref(const size_t pRecordIndex, vec_t& pVec);
+        proxy_ref (const proxy_ref&) = default;
 
+        proxy_ref ( const size_t pRecordIndex
+                  , vec_t& pVec );
+
+        auto operator= (const proxy_ref&)    -> proxy_ref& = default;
         auto operator= (const ValueType val) -> proxy_ref&;
         operator ValueType () const;
     };
@@ -44,34 +50,45 @@ namespace mix::dd
     class bit_v_iterator
     {
     private:
-        using bit_v_t = bit_vector<RecordBitSize, ValueType>;
+        using vec_t = bit_vector<RecordBitSize, ValueType>;
 
     private:
-        const bit_vector<RecordBitSize, ValueType>& vector;
+        std::reference_wrapper<const vec_t> vector;
         size_t currentPos;
 
     public:
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type        = ValueType;
+        using difference_type   = std::ptrdiff_t;
+        using pointer           = proxy_ref<RecordBitSize, ValueType>*;
+        using reference         = proxy_ref<RecordBitSize, ValueType>&;
+
+    public:
         bit_v_iterator (const bit_v_iterator&) = default;
-        bit_v_iterator (bit_v_iterator&&)      = default;
         
-        bit_v_iterator ( const bit_v_t& vector
+        bit_v_iterator ( const vec_t& vector
                        , const size_t initialPos );
 
+        auto operator=  (const bit_v_iterator& other)       -> bit_v_iterator& = default;
         auto operator!= (const bit_v_iterator& other) const -> bool;
         auto operator== (const bit_v_iterator& other) const -> bool;
-        auto operator-  (const bit_v_iterator& other) const -> size_t;
-        auto operator+  (const size_t i)              const -> bit_v_iterator;
+        auto operator-  (const bit_v_iterator& other) const -> difference_type;
+        auto operator+  (const difference_type i)     const -> bit_v_iterator;
+        auto operator+= (const difference_type i)           -> bit_v_iterator&;   
         auto operator*  () const -> ValueType;
+        auto operator-- ()       -> bit_v_iterator&;
         auto operator++ ()       -> bit_v_iterator&;
     };
 
     /**
-        Bit vector.
+        Vector like class for storing data that require only small amout of bits.
+        For now only bit sizes that are power of 2 are supported.
     */
     template<size_t RecordBitSize, class ValueType>
     class bit_vector
     {
-        static_assert(RecordBitSize <= 32, "Bit size of a record must be less than 32.");
+        static_assert(RecordBitSize <= 32, "Bit size of a record must be less than 33.");
+        static_assert(RecordBitSize > 0, "Bit size of a record must be at least 1.");
         static_assert(RecordBitSize <= sizeof(ValueType) << 3, "Value type must fit into given bit count.");
         static_assert(std::is_integral_v<ValueType>, "ValueType must be of integral type.");
 
@@ -105,6 +122,7 @@ namespace mix::dd
     public:
         bit_vector ();
         bit_vector (const size_t initialSize);
+        bit_vector (std::initializer_list<ValueType> init);
         bit_vector (const bit_vector& other);
         bit_vector (bit_vector&& other);
 
@@ -152,6 +170,17 @@ namespace mix::dd
                 std::ceil((initialSize * RecordBitSize) / static_cast<double>(sizeof(word_t)))
             )
         );
+    }
+
+    template<size_t RecordBitSize, class ValueType>
+    bit_vector<RecordBitSize, ValueType>::bit_vector
+        (std::initializer_list<ValueType> init) :
+        bit_vector<RecordBitSize, ValueType>(init.size())
+    {
+        for (const auto val : init)
+        {
+            this->push_back(val);
+        }        
     }
 
     template<size_t RecordBitSize, class ValueType>
@@ -286,9 +315,9 @@ namespace mix::dd
 
     template<size_t RecordBitSize, class ValueType>
     bit_v_iterator<RecordBitSize, ValueType>::bit_v_iterator
-        ( const bit_v_t& pVector
+        ( const vec_t& pVector
         , const size_t pInitialPos ) :
-        vector {pVector}
+        vector     {pVector}
       , currentPos {pInitialPos}
     {
     }
@@ -309,23 +338,31 @@ namespace mix::dd
 
     template<size_t RecordBitSize, class ValueType>
     auto bit_v_iterator<RecordBitSize, ValueType>::operator-
-        (const bit_v_iterator& other) const -> size_t
+        (const bit_v_iterator& other) const -> difference_type
     {
         return this->currentPos - other.currentPos;
     }
 
     template<size_t RecordBitSize, class ValueType>
     auto bit_v_iterator<RecordBitSize, ValueType>::operator+
-        (const size_t i) const -> bit_v_iterator
+        (const difference_type i) const -> bit_v_iterator
     {
         return bit_v_iterator {this->vector, this->currentPos + i};
+    }
+
+    template<size_t RecordBitSize, class ValueType>
+    auto bit_v_iterator<RecordBitSize, ValueType>::operator+=
+        (const difference_type i) -> bit_v_iterator&
+    {
+        this->currentPos += i;
+        return *this;
     }
 
     template<size_t RecordBitSize, class ValueType>
     auto bit_v_iterator<RecordBitSize, ValueType>::operator*
         () const -> ValueType
     {
-        return this->vector.at(this->currentPos);
+        return this->vector.get().at(this->currentPos);
     }
 
     template<size_t RecordBitSize, class ValueType>
@@ -336,12 +373,20 @@ namespace mix::dd
         return *this;
     }
 
+    template<size_t RecordBitSize, class ValueType>
+    auto bit_v_iterator<RecordBitSize, ValueType>::operator--
+        () -> bit_v_iterator&
+    {
+        --this->currentPos;
+        return *this;
+    }
+
     // proxy_ref:
 
     template<size_t RecordBitSize, class ValueType>
     proxy_ref<RecordBitSize, ValueType>::proxy_ref
         (const size_t pRecordIndex, vec_t& pVec) :
-        vec         {pVec}
+        vector      {pVec}
       , recordIndex {pRecordIndex}
     {
     }
@@ -351,7 +396,7 @@ namespace mix::dd
         (const ValueType val) -> proxy_ref&
     {
         using itp = typename vec_t::is_two_pow;
-        this->vec.set(this->recordIndex, val, itp {});
+        this->vector.get().set(this->recordIndex, val, itp {});
         return *this;
     }
 
@@ -359,7 +404,7 @@ namespace mix::dd
     proxy_ref<RecordBitSize, ValueType>::operator ValueType
         () const
     {
-        return this->vec.at(this->recordIndex);
+        return this->vector.get().at(this->recordIndex);
     }
 }
 

@@ -7,6 +7,7 @@
 #include <bitset>
 #include <sstream>
 #include <tuple>
+#include <iterator>
 #include "bool_f_input.hpp"
 #include "../dd/graph.hpp"
 #include "../dd/typedefs.hpp"
@@ -34,6 +35,14 @@ namespace mix::dd
     auto swap ( bdd<VertexData, ArcData>& lhs
               , bdd<VertexData, ArcData>& rhs ) noexcept -> void;
 
+    /**
+        Ordered Binary Decision Diagram.
+
+        @tparam VertexData - type of the data that will be stored in vertices of the diagram.
+                Use empty_t defined in "./src/dd/graph.hpp" if you don't need to store any data.
+        @tparam ArcData - type of the data that will be stored in arcs of the diagram.
+                Use empty_t defined in "./src/dd/graph.hpp" if you don't need to store any data.
+    */
     template<class VertexData, class ArcData>
     class bdd
     {
@@ -56,25 +65,95 @@ namespace mix::dd
         leaf_val_map leafToVal;
 
     public:
-        static auto just_true  () -> bdd;
+        /**
+            @return diagram with single leaf that has value true.
+        */
+        static auto just_true () -> bdd;
+
+        /**
+            @return diagram with single leaf that has value false.
+        */
         static auto just_false () -> bdd;
-        static auto just_var   (const index_t index) -> bdd;
+
+        /**
+            @param  index - index of the variable.
+            @return diagram representing single variable.
+        */
+        static auto just_var (const index_t index) -> bdd;
 
     public:
+        /**
+            Default constructed diagram is empty.
+            Don't use diagram created this way.
+        */
         bdd  () = default;
+
+        /**
+            Copy constructor.
+        */
         bdd  (const bdd& other);
+
+        /**
+            Move constructor.
+        */
         bdd  (bdd&& other);
+
+        /**
+            Desctructor.
+        */
         ~bdd ();
 
-        auto operator=  (bdd rhs)              -> bdd&;
+        /**
+            Copy and move assign operator.
+            See. https://stackoverflow.com/questions/3279543/what-is-the-copy-and-swap-idiom
+           
+            @param rhs - diagram that is to be asigned into this one.
+        */
+        auto operator= (bdd rhs) -> bdd&;
+        
+        /**
+            @param  rhs   - other diagram that should be compared with this.
+            @return true  if this and rhs diagrams represent the same function.
+                    false otherwise
+        */
         auto operator== (const bdd& rhs) const -> bool;
+
+        /**
+            @param  rhs   - other diagram that should be compared with this.
+            @return false if this and rhs diagrams represents the same function.
+                    true  otherwise.
+        */
         auto operator!= (const bdd& rhs) const -> bool;
 
+        /**
+            Picture can be viewed here http://www.webgraphviz.com/.
+           
+            @return string with dot representation of this diagram.
+        */
         auto to_dot_graph () const -> std::string;
-        auto vertex_count () const -> size_t;
-        auto negate       ()       -> bdd&;
 
-        template<class BoolFunctionInput>
+        /**
+            @return Number of vertices in the diagram.
+        */
+        auto vertex_count () const -> size_t;
+        
+        /**
+            Performs logical not over this diagram.
+            
+            @return reference to this diagram.
+        */
+        auto negate () -> bdd&;
+
+        /**
+            @tparam BoolFunctionInput - values of variables.
+            @tparam GetVarVal - functor that returns value of i-th variable
+                    from the input. std::vector<bool>, std::bitset<N>, bit_vector<N, bool_t>, 
+                    var_vals_t are supported by default. 
+                    See "bool_f_input.hpp" for implementation details.  
+            @return value of the function for given input. 
+        */
+        template< class BoolFunctionInput
+                , class GetVarVal = get_var_val<BoolFunctionInput> >
         auto get_value (const BoolFunctionInput& input) const -> bool_t;
 
     private:
@@ -189,7 +268,7 @@ namespace mix::dd
         }
 
         // set new root:
-        this->root = newVerticesMap.at(levels.front().front()->id);
+        this->root = newVerticesMap.at(levels.at(other.root->index).front()->id);
 
         // fill leafToVal map:
         for (const auto [leaf, val] : other.leafToVal)
@@ -420,11 +499,11 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    template<class BoolFunctionInput>
+    template<class BoolFunctionInput, class GetVarVal>
     auto bdd<VertexData, ArcData>::get_value 
         (const BoolFunctionInput& input) const -> bool_t
     {
-        get_var_val<BoolFunctionInput> get_val;
+        GetVarVal get_val;
 
         auto v {this->root};
 
@@ -573,7 +652,7 @@ namespace mix::dd
     }
 
 
-    template<class VertexData = empty, class ArcData = empty>
+    template<class VertexData = empty_t, class ArcData = empty_t>
     auto x (const index_t index) -> bdd<VertexData, ArcData>
     {
         return bdd<VertexData, ArcData>::just_var(index);

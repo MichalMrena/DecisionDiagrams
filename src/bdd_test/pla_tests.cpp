@@ -10,7 +10,7 @@ namespace mix::dd
 {
     auto test_pla_creator (const pla_file& file) -> bool
     {
-        bdds_from_pla<empty, empty> plaCreator;
+        bdds_from_pla<empty_t, empty_t> plaCreator;
         
         const auto diagrams      {plaCreator.create(file)};
         const auto functionCount {file.function_count()};

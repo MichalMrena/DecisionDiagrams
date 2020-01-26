@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <bitset>
+#include "../data_structures/bit_vector.hpp"
 #include "../dd/typedefs.hpp"
 
 namespace mix::dd
@@ -36,7 +37,16 @@ namespace mix::dd
     {
         auto operator() (const std::bitset<N>& in, const index_t i) const -> bool_t
         {
-            return (in >> i) & 1;
+            return in[i];
+        }
+    };
+    
+    template<size_t N>
+    struct get_var_val< bit_vector<N, bool_t> >
+    {
+        auto operator() (const bit_vector<N, bool_t>& in, const index_t i) const -> bool_t
+        {
+            return in.at(i);
         }
     };
 }

@@ -8,31 +8,31 @@ namespace mix::dd
     struct AND
     {
         auto operator() ( const bool_t lhs
-                        , const bool_t rhs) const -> bool_t;
+                        , const bool_t rhs ) const -> bool_t;
     };
 
     struct OR
     {
         auto operator() ( const bool_t lhs
-                        , const bool_t rhs) const -> bool_t;
+                        , const bool_t rhs ) const -> bool_t;
     };
 
     struct XOR
     {
         auto operator() ( const bool_t lhs
-                        , const bool_t rhs) const -> bool_t;
+                        , const bool_t rhs ) const -> bool_t;
     };
 
     struct NAND
     {
         auto operator() ( const bool_t lhs
-                        , const bool_t rhs) const -> bool_t;
+                        , const bool_t rhs ) const -> bool_t;
     };
 
     struct NOR
     {
         auto operator() ( const bool_t lhs
-                        , const bool_t rhs) const -> bool_t;
+                        , const bool_t rhs ) const -> bool_t;
     };
 }
 

@@ -6,8 +6,8 @@
 
 namespace mix::dd
 {
-    using creator_t = bdds_from_pla<empty, empty>;
-    using bdd_t     = bdd<empty, empty>;
+    using creator_t = bdds_from_pla<empty_t, empty_t>;
+    using bdd_t     = bdd<empty_t, empty_t>;
 
     auto test_constructors (const pla_file& file) -> bool
     {

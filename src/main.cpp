@@ -1,54 +1,18 @@
-#include <iostream>
-
 #include "bdd/truth_table.hpp"
 #include "bdd/lambda_bool_f.hpp"
 #include "bdd/bdd_creator.hpp"
 #include "bdd/bdd_merger.hpp"
 #include "bdd/bdd_pla.hpp"
 #include "bdd/pla_function.hpp"
-
-#include "utils/math_utils.hpp"
-#include "utils/string_utils.hpp"
-#include "utils/file_reader.hpp"
-#include "utils/bits.hpp"
-#include "utils/random_uniform.hpp"
+#include "utils/io.hpp"
 #include "utils/stopwatch.hpp"
-
-#include "data_structures/list_map.hpp"
 #include "data_structures/bit_vector.hpp"
-
-#include "bdd_test/diagram_tests.hpp"
-#include "bdd_test/pla_tests.hpp"
-#include "bdd_test/other_tests.hpp"
-#include "bdd/bool_f_input.hpp"
 
 using namespace mix::dd;
 using namespace mix::utils;
 
-using VertexDataType = empty;
-using ArcDataType    = empty;
-
-auto print_sizes (std::vector< bdd<empty, empty> >& diagrams) -> void
-{
-    for (auto& d : diagrams)
-    {
-        printl(std::to_string(d.vertex_count()));
-    }
-}
-
-auto find_bug (const pla_file& file) -> void
-{
-    using bdd_t = bdd<empty, empty>;
-    bdd_creator<empty, empty> creator;
-    bdd_merger<empty, empty> merger;
-
-    auto& lines         {file.get_lines()};
-    size_t diagramCount {lines.size()};
-
-    print_diagram(creator.create_product( lines.at(61).varVals.begin()
-                                        , lines.at(61).varVals.end()
-                                        , lines.at(61).fVals.at(0) ));
-}
+using VertexDataType = empty_t;
+using ArcDataType    = empty_t;
 
 auto create_from_truth_table ()
 {
@@ -89,7 +53,7 @@ auto create_from_pla_file ()
 
     const auto plaFile
     {
-        pla_file::load_from_file("apex1.pla")
+        pla_file::load_from_file("apex4.pla")
     };
 
     auto plaFunction
@@ -123,18 +87,54 @@ auto build_from_pla_file ()
     };
 }
 
-auto just_build ()
+auto build_from_expression ()
 {
-    bdd_creator<VertexDataType, ArcDataType> creator;
-    // creator.create_product()
+    auto bddFromExpression 
+    {
+        (nand(x(0), x(2)) or nor(x(1), x(3))) and (x(2) xor not x(3))
+    };
 }
 
-/*
-    heuristiky na poradnie premenny
-    generalisation of shannons expansion
-    multiple val logic case
-    decision diagrams case
-*/
+auto merge_example ()
+{
+    bdd<VertexDataType, ArcDataType> d1 {x(0) and x(1)};
+    bdd<VertexDataType, ArcDataType> d2 {x(2) and x(3)};
+
+    bdd_merger<VertexDataType, ArcDataType> merger;
+
+    bdd<VertexDataType, ArcDataType> mergedDiagram {merger.merge(d1, d2, OR {})};
+
+    // Same as above but much cleaner.
+    auto mergedDiagramEasier {d1 || d2};
+}
+
+auto use_diagram ()
+{
+    const auto diagram 
+    {
+        (nand(x(0), x(2)) or nor(x(1), x(3))) and (x(2) xor not x(3))
+    };
+
+    const auto vertexCount {diagram.vertex_count()};
+    const auto dotString   {diagram.to_dot_graph()};
+
+    // x0 = 0, x1 = 0, x2 = 1, x3 = 1
+    const std::vector<bool>     varValsVector {false, false, true, true};
+    const std::bitset<4>        varValsBitset {"1100"};
+    const var_vals_t            varValsNumber {0b1100};
+    const bit_vector<1, bool_t> varValsBitVec {0, 0, 1, 1};
+
+    const auto fValVector {diagram.get_value(varValsVector)};
+    const auto fValBitset {diagram.get_value(varValsBitset)};
+    const auto fValNumber {diagram.get_value(varValsNumber)};
+    const auto fValBitVec {diagram.get_value(varValsBitVec)};
+
+    if (!(fValVector == fValBitset && fValBitset == fValNumber && fValNumber == fValBitVec))
+    {
+        printl("Not good.");
+    }
+}
+
 auto main() -> int
 {
     stopwatch watch;
@@ -144,40 +144,10 @@ auto main() -> int
     create_from_pla_file();
 
     build_from_pla_file();
+    build_from_expression();
 
-    // ku každému diagramu by sa dal pridať ešte jeden, ktorý by mal 1 pre každý definovaný vstup,
-    // vedel by potom vrátiť 0 1 alebo X
-    // bdd_creator<empty, empty> creator;
-    bdds_from_pla<empty, empty> plaCreator;
-
-    pla_file plaFile
-    {
-        // pla_file::load_from_file("C:\\Users\\mrena\\Desktop\\pla_files\\LGSynth91\\pla\\apex1.pla")
-        pla_file::load_from_file("/mnt/c/Users/mrena/Desktop/pla_files/LGSynth91/pla/apex4.pla")
-    };
-
-    // test_pla_creator(plaFile);
-    // test_constructors(plaFile);    
-
-    // auto bddFromTable  {creator.create_from(table)};
-    // auto bddFromLambda {creator.create_from(lambda)};
-    // auto bddFromDirect {( x(0) and x(3) ) or ( x(1) and x(2) )};
-    auto bddsFromPla {plaCreator.create(plaFile)};
-
-    // full_test_diagram(table, bddFromTable);
-    // full_test_diagram(lambda, bddFromLambda);
-
-    for (size_t i {0}; i < bddsFromPla.size(); i++)
-    {
-        printl(std::to_string(bddsFromPla.at(i).vertex_count()));
-    }
+    use_diagram();
     
-
-    // printl(bdd<empty, empty>::just_var(1).negate().negate().to_dot_graph());
-    // print_diagram(bddsFromPla.at(0));
-
-    // find_bug(plaFile);
-
     printl("Done.");
     printl("Time taken: " + std::to_string(watch.elapsed_time().count()) + " ms");
 

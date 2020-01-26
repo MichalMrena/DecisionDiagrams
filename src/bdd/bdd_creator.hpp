@@ -6,6 +6,7 @@
 #include <array>
 #include <cmath>
 #include <utility>
+#include <iterator>
 #include "bdd.hpp"
 #include "bool_function.hpp"
 #include "../dd/typedefs.hpp"
@@ -57,11 +58,11 @@ namespace mix::dd
         template<class InputIt>
         auto create_product ( InputIt varValsBegin
                             , InputIt varValsEnd
-                            , const bool_t fVal) -> bdd_t;
+                            , const bool_t fVal ) -> bdd_t;
 
     private:
         auto try_insert ( const vertex_key key
-                        , const index_t level) -> vertex_t*; 
+                        , const index_t level ) -> vertex_t*; 
 
         auto reset () -> void;
     };
@@ -168,7 +169,7 @@ namespace mix::dd
             return bdd_t::just_false();
         }
 
-        const auto varCount  {varValsEnd - varValsBegin};
+        const auto varCount  {std::distance(varValsBegin, varValsEnd)};
         const auto leafIndex {static_cast<index_t>(varCount)};
         index_t index  {0};
         id_t    nextId {0};
@@ -196,26 +197,32 @@ namespace mix::dd
         auto trueLeaf  {new vertex_t {nextId++, leafIndex}};
         auto falseLeaf {new vertex_t {nextId++, leafIndex}};
 
-        auto b {relevantVariables.begin()};
-        auto e {relevantVariables.end()};
-        --e;
+        auto relevantVarsIt  {relevantVariables.begin()};
+        auto relevantVarsEnd {relevantVariables.end()};
+        --relevantVarsEnd;
 
-        while (b != e)
+        varValsIt = varValsBegin;
+        while (relevantVarsIt != relevantVarsEnd)
         {
-            const auto v      {*b};
-            const auto varVal {*(varValsBegin + v->index)};
+            const auto varIndex {std::distance(varValsBegin, varValsIt)};
+            const auto vertex   {*relevantVarsIt};
+
+            std::advance(varValsIt, vertex->index - varIndex);
             
-            ++b;
+            const auto varVal {*varValsIt};
             
-            v->son(varVal)  = *b;
-            v->son(!varVal) = falseLeaf;
+            ++relevantVarsIt;
+            
+            vertex->son(varVal)  = *relevantVarsIt;
+            vertex->son(!varVal) = falseLeaf;
         }
 
-        const auto v      {*b};
-        const auto varVal {*(varValsBegin + v->index)};
-
-        v->son(varVal)  = trueLeaf;
-        v->son(!varVal) = falseLeaf;
+        const auto varIndex {std::distance(varValsBegin, varValsIt)};
+        const auto vertex   {*relevantVarsIt};
+        std::advance(varValsIt, vertex->index - varIndex);
+        const auto varVal   {*varValsIt};
+        vertex->son(varVal)  = trueLeaf;
+        vertex->son(!varVal) = falseLeaf;
         
         leaf_val_map_t leafToVal 
         { 
@@ -249,7 +256,6 @@ namespace mix::dd
                 , {arc_t {key.first}, arc_t {key.second}}
             }
         };
-        // levels[level][key] = newVertex;
         levels[level].emplace(key, newVertex);
         
         return newVertex;
@@ -261,7 +267,7 @@ namespace mix::dd
     {
         this->levels.clear();
         this->stack.clear();
-        this->nextId = 1;
+        this->nextId = 0;
     }
 
     template<class VertexData, class ArcData>
@@ -281,9 +287,6 @@ namespace mix::dd
 
         utils::boost::hash_combine<vertex_t*, utils::pointer_hash<vertex_t>>(seed, key.first);
         utils::boost::hash_combine<vertex_t*, utils::pointer_hash<vertex_t>>(seed, key.second);
-
-        // utils::boost::hash_combine<vertex_t*, std::hash<vertex_t*>>(seed, key.first);
-        // utils::boost::hash_combine<vertex_t*, std::hash<vertex_t*>>(seed, key.second);
 
         return seed;
     }

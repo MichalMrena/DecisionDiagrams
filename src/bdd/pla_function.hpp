@@ -12,8 +12,8 @@ namespace mix::dd
     class pla_function
     {
     private:
-        using bdd_t     = bdd<empty, empty>;
-        using creator_t = bdd_creator<empty, empty>;
+        using bdd_t     = bdd<empty_t, empty_t>;
+        using creator_t = bdd_creator<empty_t, empty_t>;
 
     private:
         index_t variableCount;

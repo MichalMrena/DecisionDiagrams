@@ -196,7 +196,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto operator&& ( const bdd<VertexData, ArcData>& lhs
-                    , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
+                    , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
         bdd_merger<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, AND {});
@@ -204,7 +204,7 @@ namespace mix::dd
     
     template<class VertexData, class ArcData>
     auto operator|| ( const bdd<VertexData, ArcData>& lhs
-                    , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
+                    , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
         bdd_merger<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, OR {});
@@ -212,7 +212,7 @@ namespace mix::dd
     
     template<class VertexData, class ArcData>
     auto operator^ ( const bdd<VertexData, ArcData>& lhs
-                   , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
+                   , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
         bdd_merger<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, XOR {});
@@ -220,7 +220,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto nand ( const bdd<VertexData, ArcData>& lhs
-              , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
+              , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
         bdd_merger<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, NAND {});
@@ -228,7 +228,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto nor ( const bdd<VertexData, ArcData>& lhs
-             , const bdd<VertexData, ArcData>& rhs) -> bdd<VertexData, ArcData>
+             , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
         bdd_merger<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, NOR {});
@@ -237,7 +237,9 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     auto operator! (const bdd<VertexData, ArcData>& lhs) -> bdd<VertexData, ArcData>
     {
-
+        bdd<VertexData, ArcData> copy {lhs};
+        copy.negate();
+        return copy;
     }
 }
 

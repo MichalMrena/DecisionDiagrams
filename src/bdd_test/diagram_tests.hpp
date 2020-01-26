@@ -20,7 +20,7 @@ namespace mix::dd
             , class VarCount = var_count<BoolFunction> >
     auto full_test_diagram 
         ( const BoolFunction&      function
-        , const bdd<empty, empty>& diagram) -> bool
+        , const bdd<empty_t, empty_t>& diagram) -> bool
     {
         GetFVal get_f_val;
         VarCount var_count;
@@ -57,7 +57,7 @@ namespace mix::dd
             , class VarCount = var_count<BoolFunction> >
     auto random_test_diagram 
         ( const BoolFunction&      function
-        , const bdd<empty, empty>& diagram
+        , const bdd<empty_t, empty_t>& diagram
         , const uint32_t           runSeconds = 5) -> bool
     {
         using watch_t    = utils::stopwatch;
@@ -104,7 +104,7 @@ namespace mix::dd
         return true;
     }
 
-    inline auto print_diagram (const bdd<empty, empty>& diagram) -> void
+    inline auto print_diagram (const bdd<empty_t, empty_t>& diagram) -> void
     {
         std::cout << diagram.to_dot_graph() << '\n';
     } 
