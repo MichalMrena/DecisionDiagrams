@@ -145,7 +145,7 @@ namespace mix::dd
 
         template<class UnaryFunction>
         auto traverse ( vertex_t* const v
-                      , UnaryFunction f ) const -> void; // TODO asi nie const
+                      , UnaryFunction f ) const -> void;
 
         template<class Container>
         auto fill_container () const -> Container;
