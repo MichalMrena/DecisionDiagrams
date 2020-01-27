@@ -103,9 +103,13 @@ namespace mix::dd
             // parallelizable for
             for (int32_t i {0}; i < diagramCount; ++i)
             {
+                bdd_merger<VertexData, ArcData> merger;
+                
                 if (i < diagramCount - 1 || !justMoveLast)
                 {
-                    diagrams[i] = diagrams[i << 1] || diagrams[(i << 1) + 1];
+                    diagrams[i] = merger.merge( diagrams[i << 1]
+                                              , diagrams[(i << 1) + 1]
+                                              , OR {} );
                 }
                 else
                 {

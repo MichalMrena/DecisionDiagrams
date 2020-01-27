@@ -50,6 +50,10 @@ namespace mix::dd
         id_t nextId {0};
 
     public:
+        static auto just_true  () -> bdd_t;
+        static auto just_false () -> bdd_t;
+        static auto just_var   (const index_t index) -> bdd_t;
+
         template< class BoolFunction
                 , class GetFVal  = get_f_val_r<BoolFunction>
                 , class VarCount = var_count<BoolFunction> >
@@ -66,6 +70,51 @@ namespace mix::dd
 
         auto reset () -> void;
     };
+
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::just_true
+        () -> bdd_t
+    {
+        vertex_t* const trueLeaf {new vertex_t {1, 0}};
+        
+        leaf_val_map_t leafValMap
+        {
+            {trueLeaf, 1}
+        };
+        
+        return bdd_t {trueLeaf, 0, std::move(leafValMap)};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::just_false
+        () -> bdd_t
+    {
+        vertex_t* const falseLeaf {new vertex_t {1, 0}};
+       
+        leaf_val_map_t leafValMap
+        {
+            {falseLeaf, 0}
+        };
+
+        return bdd_t {falseLeaf, 0, std::move(leafValMap)};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::just_var
+        (const index_t index) -> bdd_t
+    {
+        vertex_t* const falseLeaf {new vertex_t {1, index + 1}};
+        vertex_t* const trueLeaf  {new vertex_t {2, index + 1}};
+        vertex_t* const varVertex {new vertex_t {3, index, {arc_t {falseLeaf}, arc_t {trueLeaf}}}};
+        
+        leaf_val_map_t leafValMap
+        {
+            {falseLeaf, 0}
+          , {trueLeaf, 1}
+        };
+
+        return bdd_t {varVertex, index + 1, std::move(leafValMap)};
+    }
 
     template<class VertexData, class ArcData>
     template<class BoolFunction, class GetFVal, class VarCount>
@@ -164,9 +213,15 @@ namespace mix::dd
     auto bdd_creator<VertexData, ArcData>::create_product
         (InputIt varValsBegin, InputIt varValsEnd, const bool_t fVal) -> bdd_t
     {
+        static_assert(
+            std::is_same_v<bool_t, typename std::iterator_traits<InputIt>::value_type>
+         || std::is_same_v<bool, typename std::iterator_traits<InputIt>::value_type>
+          , "Variable values must be of type bool or bool_t"
+        );
+
         if (0 == fVal)
         {
-            return bdd_t::just_false();
+            return just_false();
         }
 
         const auto varCount  {std::distance(varValsBegin, varValsEnd)};
@@ -191,7 +246,7 @@ namespace mix::dd
 
         if (relevantVariables.empty())
         {
-            return bdd_t::just_true();
+            return just_true();
         }
 
         auto trueLeaf  {new vertex_t {nextId++, leafIndex}};

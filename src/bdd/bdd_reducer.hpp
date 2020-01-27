@@ -27,7 +27,7 @@ namespace mix::dd
         auto reduce (bdd_t& diagram) -> void;
 
     private:
-        auto reset       () -> void;
+        auto reset () -> void;
     };    
 
     template<class VertexData, class ArcData>
@@ -51,7 +51,6 @@ namespace mix::dd
                 }
                 else if (u->son(0)->id == u->son(1)->id)
                 {
-                    // ak je u root, treba nastaviť nový root, bude v subgraph[u->id]
                     u->id = u->son(0)->id;
                     notUsedAnymore.push_back(u);
                 }

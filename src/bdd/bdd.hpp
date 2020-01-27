@@ -32,12 +32,14 @@ namespace mix::dd
     class bdds_from_pla;
 
     template<class VertexData, class ArcData>
+    class bdd_tools;
+
+    template<class VertexData, class ArcData>
     auto swap ( bdd<VertexData, ArcData>& lhs
               , bdd<VertexData, ArcData>& rhs ) noexcept -> void;
 
     /**
         Ordered Binary Decision Diagram.
-
         @tparam VertexData - type of the data that will be stored in vertices of the diagram.
                 Use empty_t defined in "./src/dd/graph.hpp" if you don't need to store any data.
         @tparam ArcData - type of the data that will be stored in arcs of the diagram.
@@ -51,6 +53,7 @@ namespace mix::dd
         friend class bdd_merger<VertexData, ArcData>;
         friend class bdd_reducer<VertexData, ArcData>;
         friend class bdds_from_pla<VertexData, ArcData>;
+        friend class bdd_tools<VertexData, ArcData>;
         friend auto swap<VertexData, ArcData> ( bdd<VertexData, ArcData>& lhs
                                               , bdd<VertexData, ArcData>& rhs ) noexcept -> void;
 
@@ -63,23 +66,6 @@ namespace mix::dd
         vertex_t*    root          {nullptr};
         index_t      variableCount {0};
         leaf_val_map leafToVal;
-
-    public:
-        /**
-            @return diagram with single leaf that has value true.
-        */
-        static auto just_true () -> bdd;
-
-        /**
-            @return diagram with single leaf that has value false.
-        */
-        static auto just_false () -> bdd;
-
-        /**
-            @param  index - index of the variable.
-            @return diagram representing single variable.
-        */
-        static auto just_var (const index_t index) -> bdd;
 
     public:
         /**
@@ -106,7 +92,6 @@ namespace mix::dd
         /**
             Copy and move assign operator.
             See. https://stackoverflow.com/questions/3279543/what-is-the-copy-and-swap-idiom
-           
             @param rhs - diagram that is to be asigned into this one.
         */
         auto operator= (bdd rhs) -> bdd&;
@@ -127,7 +112,6 @@ namespace mix::dd
 
         /**
             Picture can be viewed here http://www.webgraphviz.com/.
-           
             @return string with dot representation of this diagram.
         */
         auto to_dot_graph () const -> std::string;
@@ -136,13 +120,6 @@ namespace mix::dd
             @return Number of vertices in the diagram.
         */
         auto vertex_count () const -> size_t;
-        
-        /**
-            Performs logical not over this diagram.
-            
-            @return reference to this diagram.
-        */
-        auto negate () -> bdd&;
 
         /**
             @tparam BoolFunctionInput - values of variables.
@@ -168,7 +145,10 @@ namespace mix::dd
 
         template<class UnaryFunction>
         auto traverse ( vertex_t* const v
-                      , UnaryFunction f ) const -> void;
+                      , UnaryFunction f ) const -> void; // TODO asi nie const
+
+        template<class Container>
+        auto fill_container () const -> Container;
 
         static auto are_equal ( vertex_t* const v1
                               , vertex_t* const v2
@@ -185,51 +165,6 @@ namespace mix::dd
         swap(lhs.root,          rhs.root);
         swap(lhs.variableCount, rhs.variableCount);
         swap(lhs.leafToVal,     rhs.leafToVal);
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::just_true
-        () -> bdd
-    {
-        vertex_t* const trueLeaf {new vertex_t {1, 0}};
-        
-        leaf_val_map leafValMap
-        {
-            {trueLeaf, 1}
-        };
-        
-        return bdd {trueLeaf, 0, std::move(leafValMap)};
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::just_false
-        () -> bdd
-    {
-        vertex_t* const falseLeaf {new vertex_t {1, 0}};
-       
-        leaf_val_map leafValMap
-        {
-            {falseLeaf, 0}
-        };
-
-        return bdd {falseLeaf, 0, std::move(leafValMap)};
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::just_var
-        (const index_t index) -> bdd
-    {
-        vertex_t* const falseLeaf {new vertex_t {1, index + 1}};
-        vertex_t* const trueLeaf  {new vertex_t {2, index + 1}};
-        vertex_t* const varVertex {new vertex_t {3, index, {arc_t {falseLeaf}, arc_t {trueLeaf}}}};
-        
-        leaf_val_map leafValMap
-        {
-            {falseLeaf, 0}
-          , {trueLeaf, 1}
-        };
-
-        return bdd {varVertex, index + 1, std::move(leafValMap)};
     }
 
     template<class VertexData, class ArcData>
@@ -464,41 +399,6 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd<VertexData, ArcData>::negate
-        () -> bdd&
-    {
-        const vertex_t* trueLeaf  {nullptr};
-        const vertex_t* falseLeaf {nullptr};
-
-        for (const auto& [leaf, val] : this->leafToVal)
-        {
-            if (0 == val)
-            {
-                falseLeaf = leaf;
-            }
-
-            if (1 == val)
-            {
-                trueLeaf = leaf;
-            }
-        }
-
-        this->leafToVal.clear();
-        
-        if (trueLeaf)
-        {
-            this->leafToVal.emplace(trueLeaf, 0);
-        }
-
-        if (falseLeaf)
-        {
-            this->leafToVal.emplace(falseLeaf, 1);
-        }
-
-        return *this;
-    }
-
-    template<class VertexData, class ArcData>
     template<class BoolFunctionInput, class GetVarVal>
     auto bdd<VertexData, ArcData>::get_value 
         (const BoolFunctionInput& input) const -> bool_t
@@ -580,6 +480,23 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    template<class Container>
+    auto bdd<VertexData, ArcData>::fill_container
+        () const -> Container
+    {
+        Container c;
+
+        auto outIt {std::inserter(c, std::end(c))};
+
+        this->traverse(this->root, [&c, &outIt](vertex_t* const v)
+        {
+            outIt = v;
+        });
+
+        return c;
+    }
+
+    template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::are_equal 
         ( vertex_t* const v1
         , vertex_t* const v2
@@ -649,13 +566,6 @@ namespace mix::dd
 
         // Can't descend to either. Decision will be made somewhere else.
         return true;
-    }
-
-
-    template<class VertexData = empty_t, class ArcData = empty_t>
-    auto x (const index_t index) -> bdd<VertexData, ArcData>
-    {
-        return bdd<VertexData, ArcData>::just_var(index);
     }
 }
 

@@ -60,8 +60,8 @@ namespace mix::dd
         using iterator_category = std::random_access_iterator_tag;
         using value_type        = ValueType;
         using difference_type   = std::ptrdiff_t;
-        using pointer           = proxy_ref<RecordBitSize, ValueType>*;
-        using reference         = proxy_ref<RecordBitSize, ValueType>&;
+        using pointer           = proxy_ref<RecordBitSize, ValueType>;
+        using reference         = proxy_ref<RecordBitSize, ValueType>;
 
     public:
         bit_v_iterator (const bit_v_iterator&) = default;

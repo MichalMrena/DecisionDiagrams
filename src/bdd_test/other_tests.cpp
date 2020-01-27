@@ -6,12 +6,13 @@
 
 namespace mix::dd
 {
-    using creator_t = bdds_from_pla<empty_t, empty_t>;
-    using bdd_t     = bdd<empty_t, empty_t>;
+    using pla_creator_t = bdds_from_pla<empty_t, empty_t>;
+    using creator_t     = bdd_creator<empty_t, empty_t>;
+    using bdd_t         = bdd<empty_t, empty_t>;
 
     auto test_constructors (const pla_file& file) -> bool
     {
-        creator_t creator;
+        pla_creator_t creator;
         const auto diagrams {creator.create(file)};
 
         // copy constructor
@@ -23,7 +24,7 @@ namespace mix::dd
         }
 
         // copy assign
-        bdd_t d2 {bdd_t::just_false()};
+        bdd_t d2 {creator_t::just_false()};
         d2 = d1;
         if (d1 != d2)
         {
@@ -46,7 +47,7 @@ namespace mix::dd
         }
 
         // empty copy
-        bdd_t e1 {bdd_t::just_false()};
+        bdd_t e1 {creator_t::just_false()};
         bdd_t e2 {e1};
         if (e1 != e2)
         {

@@ -11,7 +11,6 @@ RELEASE_BUILD_DIR ?= ./buildRelease
 
 SRC_DIRS ?= ./src
 
-# TODO add -Wshadow and fix warnings...
 ifdef DEBUG
 	CPPFLAGS += -g -Wall -Wextra -pedantic -std=c++17
 	BUILD_DIR ?= $(DEBUG_BUILD_DIR)

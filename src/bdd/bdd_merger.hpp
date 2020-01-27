@@ -34,7 +34,7 @@ namespace mix::dd
         template<class BinaryBoolOperator>
         auto merge ( const bdd_t& d1
                    , const bdd_t& d2
-                   , BinaryBoolOperator op) -> bdd_t;
+                   , BinaryBoolOperator op ) -> bdd_t;
 
     private:
         template<class BinaryBoolOperator>
@@ -74,7 +74,6 @@ namespace mix::dd
 
         this->reset();
         
-        // bdd_reducer_t{}.reduce(newDiagram);
         bdd_reducer_t reducer;
         reducer.reduce(newDiagram);
 
@@ -192,54 +191,6 @@ namespace mix::dd
         this->diagram1 = nullptr;
         this->diagram2 = nullptr;
         this->nextId   = 0;
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator&& ( const bdd<VertexData, ArcData>& lhs
-                    , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
-    {
-        bdd_merger<VertexData, ArcData> merger;
-        return merger.merge(lhs, rhs, AND {});
-    }
-    
-    template<class VertexData, class ArcData>
-    auto operator|| ( const bdd<VertexData, ArcData>& lhs
-                    , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
-    {
-        bdd_merger<VertexData, ArcData> merger;
-        return merger.merge(lhs, rhs, OR {});
-    }
-    
-    template<class VertexData, class ArcData>
-    auto operator^ ( const bdd<VertexData, ArcData>& lhs
-                   , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
-    {
-        bdd_merger<VertexData, ArcData> merger;
-        return merger.merge(lhs, rhs, XOR {});
-    }
-
-    template<class VertexData, class ArcData>
-    auto nand ( const bdd<VertexData, ArcData>& lhs
-              , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
-    {
-        bdd_merger<VertexData, ArcData> merger;
-        return merger.merge(lhs, rhs, NAND {});
-    }
-
-    template<class VertexData, class ArcData>
-    auto nor ( const bdd<VertexData, ArcData>& lhs
-             , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
-    {
-        bdd_merger<VertexData, ArcData> merger;
-        return merger.merge(lhs, rhs, NOR {});
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator! (const bdd<VertexData, ArcData>& lhs) -> bdd<VertexData, ArcData>
-    {
-        bdd<VertexData, ArcData> copy {lhs};
-        copy.negate();
-        return copy;
     }
 }
 
