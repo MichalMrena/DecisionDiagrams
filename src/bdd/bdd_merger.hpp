@@ -22,18 +22,19 @@ namespace mix::dd
         static utils::averager avg;
 
     private:
-        using bdd_t              = bdd<VertexData, ArcData>;
-        using bdd_reducer_t      = bdd_reducer<VertexData, ArcData>;
-        using bdd_creator_t      = bdd_creator<VertexData, ArcData>;
-        using vertex_t           = typename bdd_t::vertex_t;
-        using arc_t              = typename bdd_t::arc_t;
-        using vertex_pair_t      = std::pair<const vertex_t*, const vertex_t*>;
-        using vertex_pair_hash_t = utils::pair_hash<const vertex_t*, const vertex_t*>;
-        using yet_in_triplet_t   = std::tuple<index_t, id_t, id_t>;
+        using bdd_t                = bdd<VertexData, ArcData>;
+        using bdd_reducer_t        = bdd_reducer<VertexData, ArcData>;
+        using bdd_creator_t        = bdd_creator<VertexData, ArcData>;
+        using vertex_t             = typename bdd_t::vertex_t;
+        using arc_t                = typename bdd_t::arc_t;
+        using vertex_pair_t        = std::pair<const vertex_t*, const vertex_t*>;
+        using vertex_pair_hash_t   = utils::pair_hash<const vertex_t*, const vertex_t*>;
+        using yet_in_triplet_t     = std::tuple<index_t, id_t, id_t>;
+        using yet_in_triplet_hasht = utils::tuple_hash<index_t, id_t, id_t>;
 
     private:
         std::unordered_map<vertex_pair_t, vertex_t*, vertex_pair_hash_t> recursionMemo;
-        std::map<const yet_in_triplet_t, vertex_t*> inGraphMemo; // TODO hash map
+        std::unordered_map<const yet_in_triplet_t, vertex_t*, yet_in_triplet_hasht> inGraphMemo;
         std::map<const vertex_t*, bool_t> leafToVal;
         std::array<vertex_t*, 2> valToLeaf {nullptr, nullptr};
 
