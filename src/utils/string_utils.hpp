@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <sstream>
 
 namespace mix::utils
 {
@@ -12,6 +13,29 @@ namespace mix::utils
     auto shrink_spaces (std::string s) -> std::string;
     auto trim          (std::string s) -> std::string;
     auto reverse       (std::string s) -> std::string;
+
+    auto starts_with   ( const std::string& s
+                       , const std::string& pattern ) -> bool;
+
+    auto concat ( const std::vector<std::string>& strs
+                , const std::string glue = " " ) -> std::string;
+
+    template<class InputIt>
+    auto concat (InputIt it, InputIt end, const std::string glue = " ") -> std::string
+    {
+        std::ostringstream ost;
+
+        ost << *it;
+        ++it;
+
+        while (it != end)
+        {
+            ost << glue << *it;
+            ++it;
+        }
+
+        return ost.str();
+    }
 }
 
 #endif

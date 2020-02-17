@@ -29,7 +29,7 @@ namespace mix::dd
 
     public:
         lambda_bool_f( const index_t pVariableCount
-                     , lambda_t pLambda);
+                     , lambda_t pLambda );
 
         auto get_f_val      (const var_vals_t input) const -> bool_t;
         auto get_f_val_r    (const var_vals_t input) const -> bool_t;

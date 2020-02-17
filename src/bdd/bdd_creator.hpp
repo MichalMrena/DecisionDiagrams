@@ -21,29 +21,21 @@ namespace mix::dd
     class bdd_creator
     {
     private:
-        using bdd_t          = bdd<VertexData, ArcData>;
-        using vertex_t       = typename bdd_t::vertex_t;
-        using arc_t          = typename bdd_t::arc_t;
-        using leaf_val_map_t = typename bdd_t::leaf_val_map;
-        
+        using bdd_t           = bdd<VertexData, ArcData>;
+        using vertex_t        = typename bdd_t::vertex_t;
+        using arc_t           = typename bdd_t::arc_t;
+        using leaf_val_map_t  = typename bdd_t::leaf_val_map;
+        using vertex_key      = std::pair<vertex_t*, vertex_t*>;
+        using vertex_key_hash = utils::pair_hash<vertex_t*, vertex_t*>;
+        using level_map       = std::unordered_map<vertex_key, vertex_t*, vertex_key_hash>;
+
         struct stack_frame
         {
             vertex_t* vertexPtr;
             size_t    level;
-
-            stack_frame( vertex_t* const pVertexPtr
-                       , const size_t pLevel);
-        };
-
-        using vertex_key = std::pair<vertex_t*, vertex_t*>;
-
-        struct vertex_key_hash
-        {
-            auto operator() (const vertex_key& key) const -> size_t;
         };
 
     private:
-        using level_map = std::unordered_map<vertex_key, vertex_t*, vertex_key_hash>;
 
         utils::double_top_stack<stack_frame> stack;
         std::vector<level_map> levels;
@@ -53,6 +45,7 @@ namespace mix::dd
         static auto just_true  () -> bdd_t;
         static auto just_false () -> bdd_t;
         static auto just_var   (const index_t index) -> bdd_t;
+        static auto just_val   (const bool_t  value) -> bdd_t;
 
         template< class BoolFunction
                 , class GetFVal  = get_f_val_r<BoolFunction>
@@ -114,6 +107,13 @@ namespace mix::dd
         };
 
         return bdd_t {varVertex, index + 1, std::move(leafValMap)};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::just_val
+        (const bool_t value) -> bdd_t
+    {
+        return 0 == value ? just_false() : just_true();
     }
 
     template<class VertexData, class ArcData>
@@ -213,13 +213,10 @@ namespace mix::dd
     auto bdd_creator<VertexData, ArcData>::create_product
         (InputIt varValsBegin, InputIt varValsEnd, const bool_t fVal) -> bdd_t
     {
-        static_assert(
-            std::is_same_v<bool_t, typename std::iterator_traits<InputIt>::value_type>
-         || std::is_same_v<bool, typename std::iterator_traits<InputIt>::value_type>
-          , "Variable values must be of type bool or bool_t"
-        );
+        static_assert( std::is_same_v<bool_t, typename std::iterator_traits<InputIt>::value_type>
+                     , "Variable values must be of type bool_t" );
 
-        if (0 == fVal)
+        if (1 != fVal)
         {
             return just_false();
         }
@@ -325,26 +322,14 @@ namespace mix::dd
         this->nextId = 0;
     }
 
-    template<class VertexData, class ArcData>
-    bdd_creator<VertexData, ArcData>::stack_frame::stack_frame
-        ( vertex_t* const pVertexPtr
-        , const size_t pLevel) :
-        vertexPtr {pVertexPtr}
-      , level     {pLevel} 
-    {
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd_creator<VertexData, ArcData>::vertex_key_hash::operator() 
-        (const vertex_key& key) const -> size_t
-    {
-        size_t seed {0};
-
-        utils::boost::hash_combine<vertex_t*, utils::pointer_hash<vertex_t>>(seed, key.first);
-        utils::boost::hash_combine<vertex_t*, utils::pointer_hash<vertex_t>>(seed, key.second);
-
-        return seed;
-    }
+    // template<class VertexData, class ArcData>
+    // bdd_creator<VertexData, ArcData>::stack_frame::stack_frame
+    //     ( vertex_t* const pVertexPtr
+    //     , const size_t pLevel) :
+    //     vertexPtr {pVertexPtr}
+    //   , level     {pLevel} 
+    // {
+    // }
 }
 
 #endif

@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <set>
 #include <bitset>
 #include <sstream>
 #include <tuple>
@@ -142,6 +143,9 @@ namespace mix::dd
         auto is_leaf     (const vertex_t* const v) const -> bool;
         auto leaf_index  () const -> index_t;
         auto fill_levels () const -> std::vector< std::vector<vertex_t*> >;
+        auto indices     () const -> std::set<index_t>;
+        auto true_leaf   ()       -> vertex_t*;
+        auto false_leaf  ()       -> vertex_t*;
 
         template<class UnaryFunction>
         auto traverse ( vertex_t* const v
@@ -183,7 +187,7 @@ namespace mix::dd
             newVerticesMap.emplace(v->id, new vertex_t {*v});
         });
 
-        // now we iterate other diagram from the bottom level:
+        // now we iterate the other diagram from the bottom level:
         const auto levels {other.fill_levels()};
         auto levelsIt     {levels.rbegin()};
         auto levelsItEnd  {levels.rend()};
@@ -222,9 +226,9 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    bdd<VertexData, ArcData>::bdd(vertex_t* const pRoot
-                                , const index_t   pVariableCount
-                                , leaf_val_map    pLeafToVal) :
+    bdd<VertexData, ArcData>::bdd( vertex_t* const pRoot
+                                 , const index_t   pVariableCount
+                                 , leaf_val_map    pLeafToVal ) :
         root          {pRoot}
       , variableCount {pVariableCount}  
       , leafToVal     {std::move(pLeafToVal)}
@@ -452,6 +456,53 @@ namespace mix::dd
         }
 
         return levels;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::indices
+        () const -> std::set<index_t>
+    {
+        std::set<index_t> indices;
+
+        this->traverse(this->root, [this, &indices](const vertex_t* const v)
+        {
+            if (! this->is_leaf(v))
+            {
+                indices.insert(v->index);
+            }
+        });
+
+        return indices;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::true_leaf
+        () -> vertex_t*
+    {
+        for (auto [key, val] : this->leafToVal)
+        {
+            if (1 == val)
+            {
+                return const_cast<vertex_t*>(key);
+            }
+        }
+
+        return nullptr;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::false_leaf
+        () -> vertex_t*
+    {
+        for (auto [key, val] : this->leafToVal)
+        {
+            if (0 == val)
+            {
+                return const_cast<vertex_t*>(key);
+            }
+        }
+
+        return nullptr;
     }
 
     template<class VertexData, class ArcData>

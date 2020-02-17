@@ -1,6 +1,8 @@
 #ifndef _MIX_DD_BDDS_FROM_PLA_
 #define _MIX_DD_BDDS_FROM_PLA_
 
+#include <iostream>
+
 #include <string>
 #include <vector>
 #include <cmath>
@@ -9,6 +11,7 @@
 #include "bdd_merger.hpp"
 #include "bdd_creator.hpp"
 #include "pla_file.hpp"
+#include "pla_heuristic.hpp"
 #include "../dd/graph.hpp"
 #include "../dd/typedefs.hpp"
 
@@ -26,16 +29,26 @@ namespace mix::dd
         using arc_t          = arc<VertexData, ArcData, 2>;
 
     public:
-        auto create (const pla_file& file) -> std::vector<bdd_t>;
+        auto create_i  (const pla_file& file) -> std::vector<bdd_t>;
+        auto create_s  (const pla_file& file) -> std::vector<bdd_t>;
+        auto create_ip (const pla_file& file) -> std::vector<bdd_t>;
+
+        auto create_smart (pla_file file) -> std::vector<bdd_t>;
 
     private: 
-        auto or_merge_diagrams (std::vector<bdd_t> diagrams) -> bdd_t;
+        auto or_merge_iterative (std::vector<bdd_t> diagrams) -> bdd_t;
+        auto or_merge_iterative_parallel (std::vector<bdd_t> diagrams) -> bdd_t;
+        auto or_merge_sequential (std::vector<bdd_t> diagrams) -> bdd_t;
+
+        auto products_sizes   (const pla_file& file) -> std::vector<size_t>;
+        auto all_swap_pairs   (const std::vector<index_t>& is) -> std::vector<std::pair<index_t, index_t>>;
     };
 
 // definitions:
+    
 
     template<class VertexData, class ArcData>
-    auto bdds_from_pla<VertexData, ArcData>::create 
+    auto bdds_from_pla<VertexData, ArcData>::create_i 
         (const pla_file& file) -> std::vector<bdd_t>
     {
         using creator_t = bdd_creator<VertexData, ArcData>;
@@ -54,36 +67,145 @@ namespace mix::dd
 
         creator_t creator;
 
-        // https://stackoverflow.com/questions/13357065/how-does-openmp-handle-nested-loops
-        // parallelizable for
-        for (int32_t li {0}; li < lineCount; ++li)
+        for (int32_t li = 0; li < lineCount; ++li)
         {
-            // parallelizable for
-            for (int32_t fi {0}; fi < functionCount; ++fi)
+            for (int32_t fi = 0; fi < functionCount; ++fi)
             {
+                if (plaLines[li].fVals.at(fi) != 1)
+                {
+                    continue;
+                }
+
                 subDiagrams[fi].emplace_back(
                     creator.create_product( plaLines[li].varVals.begin()
                                           , plaLines[li].varVals.end()
-                                          , plaLines[li].fVals.at(fi) )
-                );
+                                          , 1 ) );
             }
         }
         
         std::vector<bdd_t> finalDiagrams(file.function_count());
         
-        // parallelizable for
-        for (int32_t fi {0}; fi < functionCount; ++fi)
+        for (int32_t fi = 0; fi < functionCount; ++fi)
         {
-            finalDiagrams[fi] = this->or_merge_diagrams(std::move(subDiagrams[fi]));
+            finalDiagrams[fi] = this->or_merge_iterative(std::move(subDiagrams[fi]));
         }
         
         return finalDiagrams;
     }
 
     template<class VertexData, class ArcData>
-    auto bdds_from_pla<VertexData, ArcData>::or_merge_diagrams
+    auto bdds_from_pla<VertexData, ArcData>::create_ip 
+        (const pla_file& file) -> std::vector<bdd_t>
+    {
+        using creator_t = bdd_creator<VertexData, ArcData>;
+
+        // It is important to resize both vectors at the begining.
+        // Otherwise expensive copies would have been made during the construction. 
+        std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
+        for (auto& subVector : subDiagrams)
+        {
+            subVector.reserve(file.line_count());
+        }
+
+        const auto& plaLines      {file.get_lines()};
+        const auto  lineCount     {file.line_count()};
+        const auto  functionCount {file.function_count()};
+
+        creator_t creator;
+
+        // #pragma omp parallel for
+        for (int32_t fi = 0; fi < functionCount; ++fi)
+        {
+            for (int32_t li = 0; li < lineCount; ++li)
+            {
+                if (plaLines[li].fVals.at(fi) != 1)
+                {
+                    continue;
+                }
+
+                subDiagrams[fi].emplace_back(
+                    creator.create_product( plaLines[li].varVals.begin()
+                                          , plaLines[li].varVals.end()
+                                          , 1 ));
+            }
+        }
+        
+        std::vector<bdd_t> finalDiagrams(file.function_count());
+        
+        #pragma omp parallel for schedule(dynamic, 1)
+        for (int32_t fi = 0; fi < functionCount; ++fi)
+        {
+            finalDiagrams[fi] = this->or_merge_iterative(std::move(subDiagrams[fi]));
+        }
+        
+        return finalDiagrams;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdds_from_pla<VertexData, ArcData>::create_s 
+        (const pla_file& file) -> std::vector<bdd_t>
+    {
+        using creator_t = bdd_creator<VertexData, ArcData>;
+
+        // It is important to resize both vectors at the begining.
+        // Otherwise expensive copies would have been made during the construction. 
+        std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
+        for (auto& subVector : subDiagrams)
+        {
+            subVector.reserve(file.line_count());
+        }
+
+        const auto& plaLines      {file.get_lines()};
+        const auto  lineCount     {file.line_count()};
+        const auto  functionCount {file.function_count()};
+
+        creator_t creator;
+
+        for (int32_t li {0}; li < lineCount; ++li)
+        {
+            for (int32_t fi {0}; fi < functionCount; ++fi)
+            {
+                if (plaLines[li].fVals.at(fi) != 1)
+                {
+                    continue;
+                }
+
+                subDiagrams[fi].emplace_back(
+                    creator.create_product( plaLines[li].varVals.begin()
+                                          , plaLines[li].varVals.end()
+                                          , 1 ) );
+            }
+        }
+        
+        std::vector<bdd_t> finalDiagrams(file.function_count());
+        
+        for (int32_t fi = 0; fi < functionCount; ++fi)
+        {
+            finalDiagrams[fi] = this->or_merge_sequential(std::move(subDiagrams[fi]));
+        }
+        
+        return finalDiagrams;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdds_from_pla<VertexData, ArcData>::create_smart
+        (pla_file file) -> std::vector<bdd_t>
+    {
+        return this->create_i(improve_ordering(file));
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdds_from_pla<VertexData, ArcData>::or_merge_iterative
         (std::vector<bdd_t> diagrams) -> bdd_t
     {
+        using merger_t  = bdd_merger<VertexData, ArcData>;
+        using creator_t = bdd_creator<VertexData, ArcData>;
+
+        if (diagrams.empty())
+        {
+            return creator_t::just_false();
+        }
+
         const auto numOfSteps 
         {
             static_cast<size_t>(std::ceil(std::log2(diagrams.size())))
@@ -94,20 +216,19 @@ namespace mix::dd
             static_cast<int32_t>(diagrams.size())
         };
 
+        merger_t merger;
         for (size_t step {0}; step < numOfSteps; ++step)
         {
             const bool justMoveLast {diagramCount & 1};
             
             diagramCount = (diagramCount >> 1) + (diagramCount & 1);
 
-            // parallelizable for
-            for (int32_t i {0}; i < diagramCount; ++i)
+            for (int32_t i = 0; i < diagramCount; ++i)
             {
-                bdd_merger<VertexData, ArcData> merger;
-                
                 if (i < diagramCount - 1 || !justMoveLast)
                 {
-                    diagrams[i] = merger.merge( diagrams[i << 1]
+                    diagrams[i] = merger.merge_reduced( diagrams[i << 1]
+                    // diagrams[i] = merger.merge( diagrams[i << 1]
                                               , diagrams[(i << 1) + 1]
                                               , OR {} );
                 }
@@ -116,6 +237,89 @@ namespace mix::dd
                     diagrams[i] = std::move(diagrams[i << 1]);
                 }
             }
+        }
+
+        return bdd_t {std::move(diagrams.front())};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdds_from_pla<VertexData, ArcData>::or_merge_iterative_parallel
+        (std::vector<bdd_t> diagrams) -> bdd_t
+    {
+        using merger_t  = bdd_merger<VertexData, ArcData>;
+        using creator_t = bdd_creator<VertexData, ArcData>;
+
+        if (diagrams.empty())
+        {
+            return creator_t::just_false();
+        }
+
+        const auto numOfSteps 
+        {
+            static_cast<size_t>(std::ceil(std::log2(diagrams.size())))
+        };
+
+        auto diagramCount 
+        {
+            static_cast<int32_t>(diagrams.size())
+        };
+
+        std::vector<bdd_t> auxDiagrams((diagrams.size() >> 1) + 1);
+        std::vector<bdd_t>* src {&diagrams};
+        std::vector<bdd_t>* dst {&auxDiagrams};
+
+        for (size_t step {0}; step < numOfSteps; ++step)
+        {
+            const bool justMoveLast {diagramCount & 1};
+            
+            diagramCount = (diagramCount >> 1) + (diagramCount & 1);
+
+            // #pragma omp parallel for schedule(dynamic, 1)
+            #pragma omp parallel for
+            for (int32_t i = 0; i < diagramCount; ++i)
+            {
+                merger_t merger;
+                auto dstptr {dst->data() + i};
+                if (i < diagramCount - 1 || !justMoveLast)
+                {
+                    // *dstptr = merger.merge_reduced( (*src)[i << 1]
+                    *dstptr = merger.merge( (*src)[i << 1]
+                                                  , (*src)[(i << 1) + 1]
+                                                  , OR {} );
+                }
+                else
+                {
+                    *dstptr = std::move((*src)[i << 1]);
+                }
+            }
+
+            std::swap(src, dst);
+        }
+
+        return bdd_t {std::move(src->front())};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdds_from_pla<VertexData, ArcData>::or_merge_sequential
+        (std::vector<bdd_t> diagrams) -> bdd_t
+    {
+        using merger_t  = bdd_merger<VertexData, ArcData>;
+        using creator_t = bdd_creator<VertexData, ArcData>;
+
+        if (diagrams.empty())
+        {
+            return creator_t::just_false();
+        }
+
+        auto it  {diagrams.begin() + 1};
+        auto end {diagrams.end()};
+
+        merger_t merger;
+
+        while (it != end)
+        {
+            diagrams.front() = merger.merge(diagrams.front(), *it, OR {});
+            ++it;
         }
 
         return bdd_t {std::move(diagrams.front())};

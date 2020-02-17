@@ -13,7 +13,7 @@ namespace mix::dd
     auto test_constructors (const pla_file& file) -> bool
     {
         pla_creator_t creator;
-        const auto diagrams {creator.create(file)};
+        const auto diagrams {creator.create_i(file)};
 
         // copy constructor
         bdd_t d1 {diagrams.at(0)};

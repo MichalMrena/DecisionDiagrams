@@ -25,6 +25,8 @@ namespace mix::dd
 
     public:
         auto reduce (bdd_t& diagram) -> void;
+        
+        auto reduce_unordered (bdd_t& diagram) -> void;
 
     private:
         auto reset () -> void;
@@ -104,6 +106,13 @@ namespace mix::dd
         }
 
         this->reset();
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd_reducer<VertexData, ArcData>::reduce_unordered
+        (bdd_t& diagram) -> void
+    {
+        // std::map<const vertex_t*, >
     }
 
     template<class VertexData, class ArcData>

@@ -10,7 +10,7 @@ namespace mix::utils
 {
     auto to_words (std::string s) -> std::vector<std::string>
     {
-        std::istringstream istr {s};
+        std::istringstream istr {std::move(s)};
         std::vector<std::string> words;
         std::string word;
         
@@ -51,11 +51,11 @@ namespace mix::utils
     auto trim (std::string s) -> std::string
     {
         s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-            return !std::isspace(ch);
+            return ! std::isspace(ch);
         }));
 
         s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-            return !std::isspace(ch);
+            return ! std::isspace(ch);
         }).base(), s.end());
 
         return s;
@@ -65,5 +65,44 @@ namespace mix::utils
     {
         std::reverse(s.begin(), s.end());
         return s;
+    }
+
+    auto starts_with ( const std::string& s
+                     , const std::string& pattern ) -> bool
+    {
+        if (s.size() < pattern.size())
+        {
+            return false;
+        }
+
+        auto sit  {s.begin()};
+        auto send {s.end()};
+
+        while (std::isspace(*sit))
+        {
+            ++sit;
+        }
+
+        auto pit  {pattern.begin()};
+        auto pend {pattern.end()};
+
+        while (sit != send && pit != pend)
+        {
+            if (*sit != *pit)
+            {
+                return false;
+            }
+
+            ++sit;
+            ++pit;
+        }
+
+        return true;
+    }
+
+    auto concat ( const std::vector<std::string>& strs
+                , const std::string glue ) -> std::string
+    {
+        return concat(strs.begin(), strs.end(), glue);
     }
 }

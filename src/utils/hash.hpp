@@ -3,33 +3,60 @@
 
 #include <functional>
 #include <cmath>
+#include <utility>
+#include <tuple>
 
 namespace mix::utils
 {
-    template<class T>
-    struct pointer_hash
+    struct hash_accumulator
     {
-        auto operator() (const T* vptr) const -> size_t;
+        size_t seed {0};
+
+        auto operator() (const size_t hash) -> void
+        {
+            seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        };
     };
 
-    template<class T>
-    auto pointer_hash<T>::operator() (const T* vptr) const -> size_t
+    template<size_t I, class... Ts>
+    auto hash_each_in_tuple 
+        (const std::tuple<Ts...>& tuple, hash_accumulator& acc) -> std::enable_if_t<0 != I> 
     {
-        // static const size_t shift {(size_t)std::log2(1 + sizeof(T))};
-        static const size_t shift {static_cast<size_t>(std::log2(1 + sizeof(T)))};
-        return (size_t)vptr >> shift;
-        // return static_cast<size_t>(vptr) >> shift;
+        std::hash<std::tuple_element_t<I, std::tuple<Ts...>>> hash;
+        acc(hash(std::get<I>(tuple)));
+        hash_each_in_tuple<I - 1, Ts...>(tuple, acc);
     }
 
-    namespace boost
+    template<size_t I, class... Ts>
+    auto hash_each_in_tuple
+        (const std::tuple<Ts...>& tuple, hash_accumulator& acc) -> std::enable_if_t<0 == I>
     {
-        template <class T, class Hasher>
-        auto hash_combine(std::size_t& seed, const T& v) -> void
-        {
-            Hasher hasher;
-            seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + ( seed >> 2);
-        }
+        std::hash<std::tuple_element_t<I, std::tuple<Ts...>>> hash;
+        acc(hash(std::get<0>(tuple)));
     }
+
+    template<class... Ts>
+    struct tuple_hash
+    {
+        auto operator() (const std::tuple<Ts...>& key) const -> size_t
+        {
+            hash_accumulator acc;
+            hash_each_in_tuple< std::tuple_size_v<std::tuple<Ts...>> - 1 >(key, acc);
+            return acc.seed;
+        }
+    };
+
+    template<class T1, class T2>
+    struct pair_hash
+    {
+        auto operator() (const std::pair<T1, T2>& key) const -> size_t
+        {
+            hash_accumulator acc;
+            acc(std::hash<T1> {} (key.first));
+            acc(std::hash<T2> {} (key.second));
+            return acc.seed;
+        }
+    };
 }
 
 #endif

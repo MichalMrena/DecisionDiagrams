@@ -190,7 +190,7 @@ namespace mix::dd
         (const std::string& filePath) -> std::vector<bdd_t>
     {
         bdds_from_pla<VertexData, ArcData> plaCreator;
-        return plaCreator.create(pla_file::load_from_file(filePath));
+        return plaCreator.create_i(pla_file::load_from_file(filePath));
     }
 
     template<class VertexData, class ArcData>
@@ -298,7 +298,7 @@ namespace mix::dd
             }
         });   
 
-        // possibly change root
+        // possibly change the root
         if (i == diagram.root->index)
         {
             diagram.root = diagram.root->son(val);
@@ -393,7 +393,7 @@ namespace mix::dd
     auto operator! (const bdd<VertexData, ArcData>& lhs) -> bdd<VertexData, ArcData>
     {
         bdd<VertexData, ArcData> copy {lhs};
-        copy.negate();
+        bdd_tools<VertexData, ArcData>::negate(copy);
         return copy;
     }
 }

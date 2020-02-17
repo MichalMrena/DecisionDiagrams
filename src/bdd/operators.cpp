@@ -34,7 +34,7 @@ namespace mix::dd
         if (0 == lhs || 0 == rhs) return 1;
         if (X == lhs || X == rhs) return X;
         
-        return !(lhs && rhs);
+        return ! (lhs && rhs);
     }
 
     auto NOR::operator() 
@@ -43,6 +43,6 @@ namespace mix::dd
         if (1 == lhs || 1 == rhs) return 0;
         if (X == lhs || X == rhs) return X;
         
-        return !(lhs || rhs);
+        return ! (lhs || rhs);
     }
 }

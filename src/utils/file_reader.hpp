@@ -23,8 +23,9 @@ namespace mix::utils
         auto throw_if_cant_read () -> void;
         auto read_line_except (std::string& out) -> void;
         
-        auto read_line_except () -> std::string;
+        auto read_line_except () -> std::string&&;
         auto peek_line_except () -> const std::string&;
+        auto has_next_line    () -> bool;
 
     private:
         auto cache_next_line     () -> bool;

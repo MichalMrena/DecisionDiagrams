@@ -15,10 +15,6 @@ namespace mix::dd
     template<size_t RecordBitSize, class ValueType>
     class bit_vector;
 
-    template<size_t RecordBitSize, class ValueType>
-    auto swap ( bit_vector<RecordBitSize, ValueType>& lhs
-              , bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> void;
-
     /**
         This class is used to implement operator[] of the vector.
     */
@@ -42,6 +38,24 @@ namespace mix::dd
         auto operator= (const ValueType val) -> proxy_ref&;
         operator ValueType () const;
     };
+
+    // Non-member functions:
+
+    template<size_t RecordBitSize, class ValueType>
+    auto swap ( proxy_ref<RecordBitSize, ValueType> lhs
+              , proxy_ref<RecordBitSize, ValueType> rhs ) noexcept -> void;
+
+    template<size_t RecordBitSize, class ValueType>
+    auto swap ( bit_vector<RecordBitSize, ValueType>& lhs
+              , bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> void;
+
+    template<size_t RecordBitSize, class ValueType>
+    auto operator== ( const bit_vector<RecordBitSize, ValueType>& lhs
+                    , const bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> bool;
+
+    template<size_t RecordBitSize, class ValueType>
+    auto operator!= ( const bit_vector<RecordBitSize, ValueType>& lhs
+                    , const bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> bool;
 
     /**
         Iterator.
@@ -89,7 +103,7 @@ namespace mix::dd
     {
         static_assert(RecordBitSize <= 32, "Bit size of a record must be less than 33.");
         static_assert(RecordBitSize > 0, "Bit size of a record must be at least 1.");
-        static_assert(RecordBitSize <= sizeof(ValueType) << 3, "Value type must fit into given bit count.");
+        static_assert(RecordBitSize <= sizeof(ValueType) << 3, "Value type must fit into the given bit count.");
         static_assert(std::is_integral_v<ValueType>, "ValueType must be of integral type.");
 
     public:
@@ -97,6 +111,9 @@ namespace mix::dd
         friend auto swap<RecordBitSize, ValueType> 
                         ( bit_vector<RecordBitSize, ValueType>& lhs
                         , bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> void;
+        friend auto operator==<RecordBitSize, ValueType> 
+                        ( const bit_vector<RecordBitSize, ValueType>& lhs
+                        , const bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> bool;
 
     private:
         using is_two_pow   = std::integral_constant<bool, utils::is_power_of_two(RecordBitSize)>;
@@ -117,14 +134,14 @@ namespace mix::dd
 
     private:
         size_t recordCount;
-        std::vector<word_t> blocks;
+        std::vector<word_t> words;
 
     public:
         bit_vector ();
         bit_vector (const size_t initialSize);
         bit_vector (std::initializer_list<ValueType> init);
-        bit_vector (const bit_vector& other);
-        bit_vector (bit_vector&& other);
+        bit_vector (const bit_vector& other) = default;
+        bit_vector (bit_vector&& other)      = default;
 
         auto at         (const size_t i) const -> ValueType;
         auto push_back  (const ValueType val)  -> void;
@@ -150,7 +167,30 @@ namespace mix::dd
               , bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> void
     {
         using std::swap;
-        swap(lhs.blocks, rhs.blocks);
+        swap(lhs.words, rhs.words);
+    }
+
+    template<size_t RecordBitSize, class ValueType>
+    auto swap ( proxy_ref<RecordBitSize, ValueType> lhs
+              , proxy_ref<RecordBitSize, ValueType> rhs ) noexcept -> void
+    {
+        const ValueType tmp {lhs};
+        lhs = rhs.operator ValueType();
+        rhs = tmp;
+    }
+
+    template<size_t RecordBitSize, class ValueType>
+    auto operator== ( const bit_vector<RecordBitSize, ValueType>& lhs
+                    , const bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> bool
+    {
+        return lhs.recordCount == rhs.recordCount && lhs.words == rhs.words;
+    }
+
+    template<size_t RecordBitSize, class ValueType>
+    auto operator!= ( const bit_vector<RecordBitSize, ValueType>& lhs
+                    , const bit_vector<RecordBitSize, ValueType>& rhs ) noexcept -> bool
+    {
+        return ! (lhs == rhs);
     }
 
     template<size_t RecordBitSize, class ValueType>
@@ -165,7 +205,7 @@ namespace mix::dd
         (const size_t initialSize) :
         recordCount {0}
     {
-        this->blocks.reserve(
+        this->words.reserve(
             static_cast<size_t>(
                 std::ceil((initialSize * RecordBitSize) / static_cast<double>(sizeof(word_t)))
             )
@@ -181,22 +221,6 @@ namespace mix::dd
         {
             this->push_back(val);
         }        
-    }
-
-    template<size_t RecordBitSize, class ValueType>
-    bit_vector<RecordBitSize, ValueType>::bit_vector
-        (const bit_vector& other) :
-        recordCount {other.recordCount}
-      , blocks      {other.blocks}
-    {
-    }
-
-    template<size_t RecordBitSize, class ValueType>
-    bit_vector<RecordBitSize, ValueType>::bit_vector
-        (bit_vector&& other) :
-        recordCount {other.recordCount}
-      , blocks      {std::move(other.blocks)}
-    {
     }
 
     template<size_t RecordBitSize, class ValueType>
@@ -266,7 +290,7 @@ namespace mix::dd
         const word_t  mask           {RecordBitSize | (RecordBitSize - 1)};
 
         return static_cast<ValueType>(
-            (this->blocks[blockIndex] >> (recordOffset * RecordBitSize)) & mask
+            (this->words[blockIndex] >> (recordOffset * RecordBitSize)) & mask
         );
     }
 
@@ -287,8 +311,8 @@ namespace mix::dd
         const word_t mask           {RecordBitSize | (RecordBitSize - 1)};
         const word_t valMask        {val & mask};
 
-        this->blocks[blockIndex] &= ~(mask << recordOffset * RecordBitSize);        
-        this->blocks[blockIndex] |= valMask << recordOffset * RecordBitSize;
+        this->words[blockIndex] &= ~(mask << recordOffset * RecordBitSize);        
+        this->words[blockIndex] |= valMask << recordOffset * RecordBitSize;
     }
 
     template<size_t RecordBitSize, class ValueType>
@@ -302,12 +326,12 @@ namespace mix::dd
     auto bit_vector<RecordBitSize, ValueType>::ensure_capacity
         () -> void
     {
-        const auto bitsAvaliable {(sizeof(word_t) << 3) * this->blocks.size()};
+        const auto bitsAvaliable {(sizeof(word_t) << 3) * this->words.size()};
         const auto bitsNeeded    {(1 + this->recordCount) * RecordBitSize};
 
         if (bitsNeeded > bitsAvaliable)
         {
-            this->blocks.push_back(0);
+            this->words.push_back(0);
         }
     }
 

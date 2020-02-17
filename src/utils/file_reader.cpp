@@ -25,7 +25,7 @@ namespace mix::utils
     {
         if (! this->needRead)
         {
-           this->needRead = true;
+            this->needRead = true;
             out = this->cachedLine;
             return;
         }
@@ -39,13 +39,13 @@ namespace mix::utils
     }
 
     auto file_reader::read_line_except 
-        () -> std::string
+        () -> std::string&&
     {
 
         if (! this->needRead)
         {
             this->needRead = true;
-            return this->cachedLine;
+            return std::move(this->cachedLine);
         }
         
         if (! this->cache_next_line())
@@ -54,7 +54,7 @@ namespace mix::utils
         }
 
         this->needRead = true;
-        return this->cachedLine;
+        return std::move(this->cachedLine);
     }
 
     auto file_reader::peek_line_except 
@@ -73,6 +73,19 @@ namespace mix::utils
         this->needRead = false;
 
         return this->cachedLine;
+    }
+
+    auto file_reader::has_next_line
+        () -> bool
+    {
+        if (! this->needRead)
+        {
+            return true;
+        }
+
+        const auto ret {this->cache_next_line()};
+        this->needRead = !ret;
+        return ret;
     }
 
     auto file_reader::throw_no_more_lines

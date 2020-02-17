@@ -12,10 +12,10 @@ RELEASE_BUILD_DIR ?= ./buildRelease
 SRC_DIRS ?= ./src
 
 ifdef DEBUG
-	CPPFLAGS += -g -Wall -Wextra -pedantic -std=c++17
+	CPPFLAGS += -g -Wall -Wextra -pedantic -std=c++17 -fopenmp
 	BUILD_DIR ?= $(DEBUG_BUILD_DIR)
 else
-	CPPFLAGS += -Ofast -Wall -Wextra -pedantic -std=c++17
+	CPPFLAGS += -Ofast -Wall -Wextra -pedantic -std=c++17 -fopenmp
 	BUILD_DIR ?= $(RELEASE_BUILD_DIR)
 endif
 
@@ -24,7 +24,7 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
-	$(CXX) $(OBJS) -o $@ $(LDFLAGS)
+	$(CXX) $(OBJS) -o $@ $(LDFLAGS) -fopenmp
 
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	$(MKDIR_P) $(dir $@)

@@ -2,6 +2,7 @@
 #define _MIX_UTILS_STOPWATCH_
 
 #include <chrono>
+#include <functional>
 
 namespace mix::utils
 {
@@ -15,9 +16,13 @@ namespace mix::utils
         std::chrono::time_point<clock> timeZero;
 
     public:
+        static auto avg_run_time ( const size_t replications
+                                 , std::function<void()> code ) -> milliseconds;
+
         stopwatch();
 
         auto elapsed_time () -> milliseconds;
+
     };
 }
 

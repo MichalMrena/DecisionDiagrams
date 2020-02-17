@@ -13,4 +13,14 @@ namespace mix::utils
     {
         std::cout << s << EOL;
     }
+
+    auto print (const char* s) -> void
+    {
+        std::cout << s;
+    }
+
+    auto printl (const char* s) -> void
+    {
+        std::cout << s << EOL;
+    }
 }

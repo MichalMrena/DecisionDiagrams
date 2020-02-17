@@ -127,17 +127,17 @@ namespace mix::dd
         vertex(const vertex& other);
     };
 
-    /** pair of pointers to vertices */
-    template<class VertexData, class ArcData, size_t N>
-    using vertex_pair = std::pair< const vertex<VertexData, ArcData, N>*
-                                 , const vertex<VertexData, ArcData, N>* >;
+    // /** pair of pointers to const vertices */
+    // template<class VertexData, class ArcData, size_t N>
+    // using vertex_pair = std::pair< const vertex<VertexData, ArcData, N>*
+    //                              , const vertex<VertexData, ArcData, N>* >;
     
-    /** hash of the pair declared above */
-    template<class VertexData, class ArcData, size_t N>
-    struct vertex_pair_hash
-    {
-        auto operator() (const vertex_pair<VertexData, ArcData, N>& key) const -> size_t;
-    };
+    // /** hash of the pair declared above */
+    // template<class VertexData, class ArcData, size_t N>
+    // struct vertex_pair_hash
+    // {
+    //     auto operator() (const vertex_pair<VertexData, ArcData, N>& key) const -> size_t;
+    // };
 
 // arc_base, arc definitions:
 
@@ -280,21 +280,21 @@ namespace mix::dd
 
 // vertex_pair_hash definitions:
 
-    template<class VertexData, class ArcData, size_t N>
-    auto vertex_pair_hash<VertexData, ArcData, N>::operator() 
-        (const vertex_pair<VertexData, ArcData, N>& key) const -> size_t
-    {
-        using vertex_t = vertex<VertexData, ArcData, N>;
-        size_t seed {0};
+    // template<class VertexData, class ArcData, size_t N>
+    // auto vertex_pair_hash<VertexData, ArcData, N>::operator() 
+    //     (const vertex_pair<VertexData, ArcData, N>& key) const -> size_t
+    // {
+    //     using vertex_t = vertex<VertexData, ArcData, N>;
+    //     size_t seed {0};
 
-        // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.negative);
-        // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.positive);
+    //     // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.negative);
+    //     // utils::boost::hash_combine<vertex*, utils::pointer_hash<vertex>>(seed, key.positive);
 
-        utils::boost::hash_combine<const vertex_t*, std::hash<const vertex_t*>>(seed, key.first);
-        utils::boost::hash_combine<const vertex_t*, std::hash<const vertex_t*>>(seed, key.second);
+    //     utils::boost::hash_combine<const vertex_t*, std::hash<const vertex_t*>>(seed, key.first);
+    //     utils::boost::hash_combine<const vertex_t*, std::hash<const vertex_t*>>(seed, key.second);
 
-        return seed;
-    }
+    //     return seed;
+    // }
 }
 
 #endif

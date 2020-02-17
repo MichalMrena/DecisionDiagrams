@@ -12,7 +12,7 @@ namespace mix::dd
     {
         bdds_from_pla<empty_t, empty_t> plaCreator;
         
-        const auto diagrams      {plaCreator.create(file)};
+        const auto diagrams      {plaCreator.create_i(file)};
         const auto functionCount {file.function_count()};
         auto       plaFunctions  {pla_function::create_from_file(file)};
 
