@@ -177,7 +177,7 @@ auto test_big_pla ()
 
     const auto iterativeDiagrams
     {
-        creator.create_ip(plaFile)
+        creator.create_i(plaFile)
     };
 
     // const auto sequentialDiagrams

@@ -53,41 +53,32 @@ namespace mix::dd
     {
         using creator_t = bdd_creator<VertexData, ArcData>;
 
-        // It is important to resize both vectors at the begining.
-        // Otherwise expensive copies would have been made during the construction. 
-        std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
-        for (auto& subVector : subDiagrams)
-        {
-            subVector.reserve(file.line_count());
-        }
-
         const auto& plaLines      {file.get_lines()};
         const auto  lineCount     {file.line_count()};
         const auto  functionCount {file.function_count()};
 
+        std::vector<bdd_t> finalDiagrams(functionCount);
         creator_t creator;
 
-        for (int32_t li = 0; li < lineCount; ++li)
+        for (int32_t fi = 0; fi < functionCount; ++fi)
         {
-            for (int32_t fi = 0; fi < functionCount; ++fi)
+            std::vector<bdd_t> diagrams;
+            diagrams.reserve(lineCount);
+
+            for (int32_t li = 0; li < lineCount; ++li)
             {
                 if (plaLines[li].fVals.at(fi) != 1)
                 {
                     continue;
                 }
 
-                subDiagrams[fi].emplace_back(
+                diagrams.emplace_back(
                     creator.create_product( plaLines[li].varVals.begin()
                                           , plaLines[li].varVals.end()
-                                          , 1 ) );
+                                          , 1 ));
             }
-        }
-        
-        std::vector<bdd_t> finalDiagrams(file.function_count());
-        
-        for (int32_t fi = 0; fi < functionCount; ++fi)
-        {
-            finalDiagrams[fi] = this->or_merge_iterative(std::move(subDiagrams[fi]));
+
+            finalDiagrams[fi] = this->or_merge_iterative(diagrams);
         }
         
         return finalDiagrams;
@@ -99,23 +90,19 @@ namespace mix::dd
     {
         using creator_t = bdd_creator<VertexData, ArcData>;
 
-        // It is important to resize both vectors at the begining.
-        // Otherwise expensive copies would have been made during the construction. 
-        std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
-        for (auto& subVector : subDiagrams)
-        {
-            subVector.reserve(file.line_count());
-        }
-
         const auto& plaLines      {file.get_lines()};
         const auto  lineCount     {file.line_count()};
         const auto  functionCount {file.function_count()};
 
+        std::vector<bdd_t> finalDiagrams(functionCount);
         creator_t creator;
 
-        // #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic, 1)
         for (int32_t fi = 0; fi < functionCount; ++fi)
         {
+            std::vector<bdd_t> diagrams;
+            diagrams.reserve(lineCount);
+
             for (int32_t li = 0; li < lineCount; ++li)
             {
                 if (plaLines[li].fVals.at(fi) != 1)
@@ -123,19 +110,13 @@ namespace mix::dd
                     continue;
                 }
 
-                subDiagrams[fi].emplace_back(
+                diagrams.emplace_back(
                     creator.create_product( plaLines[li].varVals.begin()
                                           , plaLines[li].varVals.end()
                                           , 1 ));
             }
-        }
-        
-        std::vector<bdd_t> finalDiagrams(file.function_count());
-        
-        #pragma omp parallel for schedule(dynamic, 1)
-        for (int32_t fi = 0; fi < functionCount; ++fi)
-        {
-            finalDiagrams[fi] = this->or_merge_iterative(std::move(subDiagrams[fi]));
+
+            finalDiagrams[fi] = this->or_merge_iterative(diagrams);
         }
         
         return finalDiagrams;
@@ -147,41 +128,32 @@ namespace mix::dd
     {
         using creator_t = bdd_creator<VertexData, ArcData>;
 
-        // It is important to resize both vectors at the begining.
-        // Otherwise expensive copies would have been made during the construction. 
-        std::vector< std::vector<bdd_t> > subDiagrams(file.function_count());
-        for (auto& subVector : subDiagrams)
-        {
-            subVector.reserve(file.line_count());
-        }
-
         const auto& plaLines      {file.get_lines()};
         const auto  lineCount     {file.line_count()};
         const auto  functionCount {file.function_count()};
 
+        std::vector<bdd_t> finalDiagrams(functionCount);
         creator_t creator;
 
-        for (int32_t li {0}; li < lineCount; ++li)
+        for (int32_t fi = 0; fi < functionCount; ++fi)
         {
-            for (int32_t fi {0}; fi < functionCount; ++fi)
+            std::vector<bdd_t> diagrams;
+            diagrams.reserve(lineCount);
+
+            for (int32_t li = 0; li < lineCount; ++li)
             {
                 if (plaLines[li].fVals.at(fi) != 1)
                 {
                     continue;
                 }
 
-                subDiagrams[fi].emplace_back(
+                diagrams.emplace_back(
                     creator.create_product( plaLines[li].varVals.begin()
                                           , plaLines[li].varVals.end()
-                                          , 1 ) );
+                                          , 1 ));
             }
-        }
-        
-        std::vector<bdd_t> finalDiagrams(file.function_count());
-        
-        for (int32_t fi = 0; fi < functionCount; ++fi)
-        {
-            finalDiagrams[fi] = this->or_merge_sequential(std::move(subDiagrams[fi]));
+
+            finalDiagrams[fi] = this->or_merge_sequential(diagrams);
         }
         
         return finalDiagrams;
@@ -227,10 +199,9 @@ namespace mix::dd
             {
                 if (i < diagramCount - 1 || !justMoveLast)
                 {
-                    diagrams[i] = merger.merge_reduced( diagrams[i << 1]
-                    // diagrams[i] = merger.merge( diagrams[i << 1]
-                                              , diagrams[(i << 1) + 1]
-                                              , OR {} );
+                    diagrams[i] = merger.merge_recycling( std::move(diagrams[i << 1])
+                                                        , std::move(diagrams[(i << 1) + 1])
+                                                        , OR {} );
                 }
                 else
                 {
@@ -274,7 +245,6 @@ namespace mix::dd
             
             diagramCount = (diagramCount >> 1) + (diagramCount & 1);
 
-            // #pragma omp parallel for schedule(dynamic, 1)
             #pragma omp parallel for
             for (int32_t i = 0; i < diagramCount; ++i)
             {
@@ -282,9 +252,8 @@ namespace mix::dd
                 auto dstptr {dst->data() + i};
                 if (i < diagramCount - 1 || !justMoveLast)
                 {
-                    // *dstptr = merger.merge_reduced( (*src)[i << 1]
-                    *dstptr = merger.merge( (*src)[i << 1]
-                                                  , (*src)[(i << 1) + 1]
+                    *dstptr = merger.merge_reduced( std::move((*src)[i << 1])
+                                                  , std::move((*src)[(i << 1) + 1])
                                                   , OR {} );
                 }
                 else
