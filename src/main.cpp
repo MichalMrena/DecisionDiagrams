@@ -2,19 +2,22 @@
 #include <fstream>
 #include <iomanip>
 #include <stdexcept>
+#include <type_traits>
 
 #include "bdd/bdd_tools.hpp"
 #include "bdd_test/diagram_tests.hpp"
 #include "utils/stopwatch.hpp"
 
+#include "dd/level_iterator.hpp"
+
 using namespace mix::dd;
 using namespace mix::utils;
 
-using VertexDataType = empty_t;
-using ArcDataType    = empty_t;
-using bdd_t          = bdd<VertexDataType, ArcDataType>;
-using merger_t       = bdd_merger<VertexDataType, ArcDataType>;
-using diagram_tools  = bdd_tools<VertexDataType, ArcDataType>;
+// using VertexDataType = double;
+// using ArcDataType    = empty_t;
+// using bdd_t          = bdd<VertexDataType, ArcDataType>;
+// using merger_t       = bdd_merger<VertexDataType, ArcDataType>;
+// using diagram_tools  = bdd_tools<VertexDataType, ArcDataType>;
 
 auto pla_path () -> std::string
 {
@@ -132,7 +135,7 @@ auto compare_merges ()
 
 auto pla_max_size (const std::string& name)
 {
-    bdds_from_pla<VertexDataType, ArcDataType> creator;
+    bdds_from_pla<empty_t, empty_t> creator;
 
     auto plaFile
     {
@@ -161,7 +164,7 @@ auto pla_max_size (const std::string& name)
 
 auto test_big_pla ()
 {
-    bdds_from_pla<VertexDataType, ArcDataType> creator;
+    bdds_from_pla<empty_t, empty_t> creator;
 
     auto plaFile
     {
@@ -209,6 +212,8 @@ auto test_big_pla ()
 
 auto unordered_merge_test ()
 {
+    using merger_t = bdd_merger<double, empty_t>;
+
     auto d1 {x(1) + x(2) + x(3)};
     auto d2 {x(4) * x(2) * x(6)};
 
@@ -226,15 +231,50 @@ auto iter_vs_seq_test ()
 
 auto better_merger_test ()
 {
+    using merger_t = bdd_merger<double, empty_t>;
+    merger_t merger;
+   
     // const auto d1 {!(x(1) * x(3))};
     const auto d1 {((x(1) + x(2)) * x(3)) + x(4)};
     // const auto d2 { (x(2) * x(3))};
     const auto d2 {(x(1) * (!x(3))) + x(4)};
-    merger_t merger;
 
     const auto dd {merger.merge_reduced(d1, d2, OR{})};
 
     printl(dd.to_dot_graph());
+}
+
+auto test_level_iterator ()
+{
+    // using vertex_t   = vertex<double, empty_t, 2>;
+    // using iter_t     = dd_level_iterator<double, empty_t, 2, const vertex_t>;
+    // iter_t it {nullptr, 0};
+    // static_assert(std::is_same_v<const vertex_t&, typename iter_t::reference>);
+
+    auto diagram {(x(1) * x(4)) + (x(2) * x(5)) + (x(3) * x(6))};
+    
+    auto b1 {diagram.begin()};
+    auto b2 {b1++};
+    auto e  {diagram.end()};
+    ++b2;
+    ++b2;
+    ++b2;
+    auto b3 {std::move(b2)};
+
+    while (b1 != e)
+    {
+        b1->data = 3.14;
+        printl(b1->index);
+        ++b1;
+    }
+
+    printl("---");
+
+    while (b3 != e)
+    {
+        printl(b3->index);
+        ++b3;
+    }
 }
 
 auto main() -> int
@@ -246,8 +286,10 @@ auto main() -> int
     // std::ostream& ost  {fout};
 
     // unordered_merge_test();
-    test_big_pla();
+    // test_big_pla();
     // better_merger_test();        
+
+    test_level_iterator();
 
     const auto timeTaken {watch.elapsed_time().count()};
     printl("Done.");

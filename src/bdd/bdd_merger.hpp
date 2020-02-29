@@ -581,8 +581,6 @@ namespace mix::dd
         std::vector<std::pair<vertex_t*, bool_t>> toAbsorbing;
         std::vector<std::pair<vertex_t*, bool_t>> toOtherRoot;
 
-        // TODO copy d2 for each one going toOtherRoot, then restrict d2 for shared variable values from that branch
-
         auto repoint_leaf_ptr {[&toAbsorbing, &toOtherRoot, &d1, op]
             (vertex_t* const v, const bool_t val) mutable
         {

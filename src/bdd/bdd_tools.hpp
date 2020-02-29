@@ -111,7 +111,7 @@ namespace mix::dd
         @param i - index of the variable.
         @return diagram representing variable with index @p i .
     */
-    template<class VertexData = empty_t, class ArcData = empty_t>
+    template<class VertexData = double, class ArcData = empty_t>
     auto x (const index_t i) -> bdd<VertexData, ArcData>;
 
     /**
@@ -179,7 +179,7 @@ namespace mix::dd
         return ost;
     }
 
-    template<class VertexData = empty_t, class ArcData = empty_t>
+    template<class VertexData, class ArcData>
     auto x (const index_t i) -> bdd<VertexData, ArcData>
     {
         return bdd_tools<VertexData, ArcData>::create_var(i);

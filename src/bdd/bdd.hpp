@@ -11,6 +11,7 @@
 #include <iterator>
 #include "bool_f_input.hpp"
 #include "../dd/graph.hpp"
+#include "../dd/level_iterator.hpp"
 #include "../dd/typedefs.hpp"
 #include "../utils/io.hpp"
 #include "../utils/string_utils.hpp"
@@ -62,6 +63,10 @@ namespace mix::dd
         using vertex_t     = vertex<VertexData, ArcData, 2>;
         using arc_t        = arc<VertexData, ArcData, 2>;
         using leaf_val_map = std::map<const vertex_t*, bool_t>;
+
+    public:
+        using iterator       = dd_level_iterator<VertexData, ArcData, 2, vertex_t>;
+        using const_iterator = dd_level_iterator<VertexData, ArcData, 2, const vertex_t>;
 
     private:
         vertex_t*    root          {nullptr};
@@ -123,16 +128,29 @@ namespace mix::dd
         auto vertex_count () const -> size_t;
 
         /**
-            @tparam BoolFunctionInput - values of variables.
+            @tparam BoolFunctionInput - type that stores values of the variables.
             @tparam GetVarVal - functor that returns value of i-th variable
                     from the input. std::vector<bool>, std::bitset<N>, bit_vector<N, bool_t>, 
                     var_vals_t are supported by default. 
-                    See "bool_f_input.hpp" for implementation details.  
+                    See "bool_f_input.hpp" for implementation details. 
+            @param  input values of the variables. 
             @return value of the function for given input. 
         */
         template< class BoolFunctionInput
                 , class GetVarVal = get_var_val<BoolFunctionInput> >
         auto get_value (const BoolFunctionInput& input) const -> bool_t;
+
+        /**
+            @return level order iterator. 
+            // TODO lepsi popis
+        */
+        auto begin () -> iterator;
+        
+        auto end () -> iterator;
+        
+        auto begin () const -> const_iterator;
+        
+        auto end () const -> const_iterator;
 
     private:
         bdd ( vertex_t* const pRoot
@@ -417,6 +435,20 @@ namespace mix::dd
         }
         
         return this->leafToVal.at(v);
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::begin
+        () -> iterator
+    {
+        return iterator {this->root, this->variableCount};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::end
+        () -> iterator
+    {
+        return iterator {nullptr, this->variableCount};
     }
 
     template<class VertexData, class ArcData>
