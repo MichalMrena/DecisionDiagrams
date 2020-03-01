@@ -116,8 +116,34 @@ namespace mix::dd
     auto dd_level_iterator<VertexData, ArcData, N, ValueType>::operator==
         (const dd_level_iterator& rhs) const -> bool
     {
-        return (levelIterator_ == levels_.end() && rhs.levelIterator_ == rhs.levels_.end())
-            || (levelIterator_ == rhs.levelIterator_ && vertexIterator_ == rhs.vertexIterator_);
+        const auto bothEnded
+        {
+            levelIterator_ == levels_.end() && rhs.levelIterator_ == rhs.levels_.end()
+        };
+
+        if (bothEnded)
+        {
+            return true;
+        }
+
+        const auto levelItDistanceIsEqual  
+        {
+            std::distance(const_cast<level_container_t&>(levels_).begin(), levelIterator_) 
+         == std::distance(const_cast<level_container_t&>(rhs.levels_).begin(), rhs.levelIterator_)
+        };
+
+        if (! levelItDistanceIsEqual)
+        {
+            return false;
+        }
+        
+        const auto vertexItDistanceIsEqual 
+        {
+            std::distance((*levelIterator_).begin(), vertexIterator_) 
+         == std::distance((*rhs.levelIterator_).begin(), rhs.vertexIterator_)
+        };
+
+        return vertexItDistanceIsEqual;
     }
 
     template<class VertexData, class ArcData, size_t N, class ValueType>

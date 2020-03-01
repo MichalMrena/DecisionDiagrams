@@ -256,10 +256,8 @@ auto test_level_iterator ()
     auto b1 {diagram.begin()};
     auto b2 {b1++};
     auto e  {diagram.end()};
-    ++b2;
-    ++b2;
-    ++b2;
-    auto b3 {std::move(b2)};
+
+    printl(b1 == ++b2 ? "good" : "not good");
 
     while (b1 != e)
     {
@@ -268,13 +266,7 @@ auto test_level_iterator ()
         ++b1;
     }
 
-    printl("---");
-
-    while (b3 != e)
-    {
-        printl(b3->index);
-        ++b3;
-    }
+    printl(b1 == diagram.end() ? "good" : "not good");
 }
 
 auto main() -> int
