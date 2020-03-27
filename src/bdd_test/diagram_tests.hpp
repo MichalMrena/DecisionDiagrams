@@ -15,99 +15,54 @@
 
 namespace mix::dd
 {
+    class pla_file;
+    class pla_function;
+
     template< class BoolFunction
-            , class GetFVal  = get_f_val<BoolFunction>
-            , class VarCount = var_count<BoolFunction> >
+            , class GetFunctionValue = get_f_val<BoolFunction> >
     auto full_test_diagram 
-        ( const BoolFunction&      function
+        ( const BoolFunction&          function
         , const bdd<empty_t, empty_t>& diagram) -> bool
     {
-        GetFVal get_f_val;
-        VarCount var_count;
+        GetFunctionValue get_f_val;
 
-        if (var_count(function) > 25)
+        if (diagram.variable_count() > 31)
         {
-            throw std::invalid_argument {"Too many variables."};
+            throw std::invalid_argument {"Too many variables for full test."};
         }
 
-        const auto maxVarVals {utils::two_pow(var_count(function))};
-        var_vals_t varVals    {0};
+        const auto maxVarVals {static_cast<int64_t>(utils::two_pow(diagram.variable_count()))};
+        bool testPassed {true};
 
-        while (varVals < maxVarVals)
+        #pragma omp parallel for
+        for (int64_t varVals = 0; varVals < maxVarVals; ++varVals)
         {
             const auto expectedVal {get_f_val(function, varVals)};
-            const auto diagramVal  {diagram.get_value(varVals)};
+            const auto diagramVal  {diagram.get_value(static_cast<var_vals_t>(varVals))};
 
+            testPassed &= expectedVal == diagramVal;
             if (expectedVal != diagramVal)
             {
                 utils::printl("Output missmatch for input:");
-                utils::printl(utils::to_string(varVals, var_count(function)));
-                return false;
+                utils::printl(utils::to_string(varVals, diagram.variable_count()));
             }
-
-            ++varVals;
         }
 
-        utils::printl("Diagram is correct.");
-        return true;
-    }
-
-    template< class BoolFunction
-            , class GetFVal  = get_f_val<BoolFunction>
-            , class VarCount = var_count<BoolFunction> >
-    auto random_test_diagram 
-        ( const BoolFunction&      function
-        , const bdd<empty_t, empty_t>& diagram
-        , const uint32_t           runSeconds = 5) -> bool
-    {
-        using watch_t    = utils::stopwatch;
-        using millis_t   = typename utils::stopwatch::milliseconds;
-        using rng_vals_t = utils::random_uniform_int<var_vals_t>;
-
-        GetFVal get_f_val;
-        VarCount var_count;
-
-        const auto batchSize      {1'000};
-        const auto maxVarVals     {utils::two_pow(var_count(function)) - 1};
-        const millis_t maxRunTime {runSeconds * 1000};
-        
-        rng_vals_t rng {0, maxVarVals};
-        watch_t watch;
-
-        size_t exp0 {0};
-        size_t exp1 {0};
-
-        do
+        if (testPassed)
         {
-            for (size_t i {0}; i < batchSize; ++i)
-            {
-                const auto varVals     {rng.next_int()};
-                const auto expectedVal {get_f_val(function, varVals)};
-                const auto diagramVal  {diagram.get_value(varVals)};
+            utils::printl("Diagram is correct.");
+        }
 
-                exp0 += 0 == expectedVal;
-                exp1 += 1 == expectedVal;
-
-                if (expectedVal != diagramVal)
-                {
-                    utils::printl("Output missmatch for input:");
-                    utils::printl(utils::to_string(varVals, var_count(function)));
-                    return false;
-                }
-            }
-        } while (watch.elapsed_time() < maxRunTime);
-
-        // utils::printl("Zero outputs tested: " + std::to_string(exp0));
-        // utils::printl("One outputs tested: " + std::to_string(exp1));
-
-        utils::printl("Diagram is correct.");
         return true;
     }
 
-    inline auto print_diagram (const bdd<empty_t, empty_t>& diagram) -> void
-    {
-        std::cout << diagram.to_dot_graph() << '\n';
-    } 
+    auto test_pla_creator  ( const pla_file& file ) -> bool;
+    auto test_constructors ( const pla_file& file ) -> bool;
+    auto random_pla_test   ( const pla_function&          function
+                           , const bdd<empty_t, empty_t>& diagram
+                           , const uint32_t               runSeconds = 5) -> bool;
+    auto test_satisfy_all  ( bdd<double, empty_t>& diagram ) -> bool;
+        
 }
 
 #endif

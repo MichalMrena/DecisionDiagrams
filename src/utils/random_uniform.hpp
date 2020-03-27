@@ -23,23 +23,23 @@ namespace mix::utils
     {
         static_assert(is_valid_int_type<IntType>::value, "IntType is not supported.");
 
-    private:
-        std::uniform_int_distribution<IntType> dist;
-
     public:
         random_uniform_int( const IntType min  = std::numeric_limits<IntType>::min()
                           , const IntType max  = std::numeric_limits<IntType>::max()
                           , unsigned long seed = std::random_device {} () );
 
         auto next_int () -> IntType;
+
+    private:
+        std::uniform_int_distribution<IntType> distribution_;
     };
 
     template<class IntType>
     random_uniform_int<IntType>::random_uniform_int ( const IntType min
                                                     , const IntType max
                                                     , unsigned long seed ) :
-        random_base {seed}
-      , dist {min, max}
+        random_base   {seed}
+      , distribution_ {min, max}
     {
     }
     
@@ -47,7 +47,7 @@ namespace mix::utils
     auto random_uniform_int<IntType>::next_int
         () -> IntType
     {
-        return this->dist(random_base::generator);
+        return this->distribution_(random_base::generator_);
     }
 }
 

@@ -2,58 +2,63 @@
 
 #include <stdexcept>
 #include "pla_file.hpp"
+#include "bdd_creator.hpp"
 
 namespace mix::dd
 {
     auto pla_function::create_from_file
         (const pla_file& file) -> pla_function
     {
-        const auto& lines {file.get_lines()};
-
-        std::vector< std::vector<bdd_t> > lineDiagrams(file.line_count());
-        for (auto& subVector : lineDiagrams)
-        {
-            subVector.reserve(file.function_count());
-        }
-
+        using creator_t = bdd_creator<empty_t, empty_t>;
         creator_t creator;
-        size_t currentLine {0};
+        std::vector< std::vector<bdd_t> > functionsAsSops(file.function_count());
 
-        for (const auto& line : lines)
+        for (int32_t fi {0}; fi < file.function_count(); ++fi)
         {
-            for (const auto fVal : line.fVals)
+            for (auto& line : file.get_lines())
             {
-                lineDiagrams[currentLine].emplace_back(
-                    creator.create_product( line.varVals.begin()
-                                          , line.varVals.end()
-                                          , fVal )
-                );
+                if (1 == line.fVals.at(fi))
+                {
+                    functionsAsSops.at(fi).emplace_back(creator.create_product(line.cube.begin(), line.cube.end(), 1));
+                }
             }
-
-            ++currentLine;
         }
 
         return pla_function 
         {
             static_cast<index_t>(file.variable_count())
-          , std::move(lineDiagrams)
+          , std::move(functionsAsSops)
         };
     }
 
     pla_function::pla_function( const index_t pVariableCount
-                              , std::vector< std::vector<bdd_t> > pLines) :
-        variableCount {pVariableCount}
-      , activeOutput  {0}
-      , lines         {std::move(pLines)}
+                              , std::vector< std::vector<bdd_t> > functionsAsSops) :
+        variableCount    {pVariableCount}
+      , functionsAsSops_ {std::move(functionsAsSops)}
+      , activeFunction_  {std::ref(functionsAsSops_.front())}
     {
+    }
+
+    auto pla_function::get_f_val
+        (const input_bits_t& input) const -> bool_t
+    {
+        for (auto& productDiagram : activeFunction_.get())
+        {
+            if (1 == productDiagram.get_value(input))
+            {
+                return 1;
+            }
+        }
+
+        return 0;
     }
 
     auto pla_function::get_f_val
         (const var_vals_t input) const -> bool_t
     {
-        for (const auto& line : this->lines)
+        for (auto& productDiagram : activeFunction_.get())
         {
-            if (1 == line.at(this->activeOutput).get_value(input))
+            if (1 == productDiagram.get_value(input))
             {
                 return 1;
             }
@@ -77,13 +82,7 @@ namespace mix::dd
     auto pla_function::at
         (const index_t fIndex) -> pla_function&
     {
-        if (fIndex >= this->lines.at(0).size())
-        {
-            throw std::invalid_argument {"Function index out of bounds."};
-        }
-
-        this->activeOutput = fIndex;
-
+        activeFunction_ = std::ref(functionsAsSops_.at(fIndex));
         return *this;
     }
 

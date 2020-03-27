@@ -41,7 +41,7 @@ namespace mix::dd
 
     /**
         Auxiliary function for reversing order of the bits.
-        It is useful for implementation of get_f_val and get_f_val_r.
+        It is useful for the implementation of get_f_val and get_f_val_r.
     */
     inline auto reverse_vals ( const var_vals_t varVals
                              , const index_t varCount ) -> var_vals_t

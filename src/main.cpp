@@ -4,286 +4,122 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "bdd/bdd_tools.hpp"
-#include "bdd_test/diagram_tests.hpp"
 #include "utils/stopwatch.hpp"
+#include "utils/io.hpp"
+#include "utils/string_utils.hpp"
 
-#include "dd/level_iterator.hpp"
+#include "bdd_test/diagram_tests.hpp"
+#include "bdd/bdd_creator.hpp"
+#include "bdd/pla_file.hpp"
+#include "bdd/pla_function.hpp"
+#include "dd/mdd_creator.hpp"
+
+#include "dd/mdd.hpp"
+
+#include "reliability.hpp"
 
 using namespace mix::dd;
 using namespace mix::utils;
 
-// using VertexDataType = double;
-// using ArcDataType    = empty_t;
-// using bdd_t          = bdd<VertexDataType, ArcDataType>;
-// using merger_t       = bdd_merger<VertexDataType, ArcDataType>;
-// using diagram_tools  = bdd_tools<VertexDataType, ArcDataType>;
-
-auto pla_path () -> std::string
+auto pla_dir_path () -> std::string
 {
-    return "/mnt/c/Users/mrena/Desktop/pla_files/LGSynth91/pla/";
+    return "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
 }
 
-auto pla_adder_path () -> std::string
+auto test_string_utils ()
 {
-    return "/mnt/c/Users/mrena/Desktop/pla_files/Adders/";
-}
+    // const auto file {pla_file::load_from_file(pla_dir_path() + "01-adder.pla")};
+    // pla_file::save_to_file("testout.txt", file);
 
-auto compare_merges ()
-{
-    using bdd_pla_t = bdds_from_pla<empty_t, empty_t>;
+    using namespace std::string_literals;
 
-    const auto fileNames = {"apex5", "pdc", "spla", "seq", "ex4", "cps", "misex3", "apex2",
-                            "cordic", "alu4", "ex1010", "apex1",};
-    const auto iterations {1};
-    const auto colWidth   {14};
+    // const auto str {"  foo    boo  moo"s};
+    // printl(shrink_spaces(str));
 
-    std::map<std::string, stopwatch::milliseconds> sequentialTimes;
-    std::map<std::string, stopwatch::milliseconds> iterativeTimes;
-    std::map<std::string, stopwatch::milliseconds> parallelTimes;
-    std::map<std::string, stopwatch::milliseconds> smartTimes;
-    std::map<std::string, size_t> iterativeMaxSizes;
-    std::map<std::string, size_t> smartMaxSizes;
-    bdd_pla_t plaCreator;
-
-    for (const auto& fileName : fileNames)
+    const auto s {" foo boo   moo"s};
+    const auto ws {to_words(s)};
+    for (auto& w : ws)
     {
-        const auto plaFile
-        {
-            pla_file::load_from_file(pla_path() + fileName + ".pla")
-        };
-
-        // {
-        //     const auto ds  {plaCreator.create_s(plaFile)};
-        //     const auto di  {plaCreator.create_i(plaFile)};
-        //     const auto dip {plaCreator.create_ip(plaFile)};
-
-        //     for (size_t i {0}; i < ds.size(); i++)
-        //     {
-        //         if (ds.at(i) != di.at(i) || di.at(i) != dip.at(i))
-        //         {
-        //             std::cout << "!!! error not equal" << '\n';
-        //             return;
-        //         }
-        //     }
-        // }
-
-        // const auto timeSequential {stopwatch::avg_run_time(iterations, [&plaFile, &plaCreator]()
-        // {
-        //     plaCreator.create_s(plaFile);
-        // })};
-
-        // const auto timeIterative {stopwatch::avg_run_time(iterations, [&plaFile, &plaCreator]()
-        // {
-        //     plaCreator.create_i(plaFile);
-        // })};
-
-        // const auto timeParallel {stopwatch::avg_run_time(iterations, [&plaFile, &plaCreator]()
-        // {
-        //     plaCreator.create_ip(plaFile);
-        // })};
-
-        const auto timeSmart {stopwatch::avg_run_time(iterations, [&plaFile, &plaCreator]()
-        {
-            plaCreator.create_smart(plaFile);
-        })};
-
-        const auto diagramsIterative {plaCreator.create_i(plaFile)};
-        const auto diagramsSmart     {plaCreator.create_smart(plaFile)};
-
-        size_t maxSizeIterative {0};
-        for (const auto& d : diagramsIterative)
-        {
-            maxSizeIterative = std::max(maxSizeIterative, d.vertex_count());
-        }
-
-        size_t maxSizeSmart {0};
-        for (const auto& d : diagramsSmart)
-        {
-            maxSizeSmart = std::max(maxSizeSmart, d.vertex_count());
-        }
-
-        // sequentialTimes.emplace(fileName, timeSequential);
-        // iterativeTimes.emplace(fileName, timeIterative);
-        // parallelTimes.emplace(fileName, timeParallel);
-        smartTimes.emplace(fileName, timeSmart);
-        iterativeMaxSizes.emplace(fileName, maxSizeIterative);
-        smartMaxSizes.emplace(fileName, maxSizeSmart);
-    }
-
-    std::cout << std::left;
-    std::cout << std::setw(colWidth) << "pla file" 
-            //   << std::setw(colWidth) << "sequential" 
-              << std::setw(colWidth) << "iterative sz" 
-            //   << std::setw(colWidth) << "parallel" 
-              << std::setw(colWidth) << "smart" 
-              << std::setw(colWidth) << "smart sz" 
-              << '\n';
-
-    for (const auto& fileName : fileNames)
-    {
-        std::cout << std::setw(colWidth) << fileName
-                //   << std::setw(colWidth) << sequentialTimes.at(fileName).count()
-                //   << std::setw(colWidth) << iterativeTimes.at(fileName).count()
-                //   << std::setw(colWidth) << parallelTimes.at(fileName).count()
-                  << std::setw(colWidth) << iterativeMaxSizes.at(fileName)
-                  << std::setw(colWidth) << smartTimes.at(fileName).count()
-                  << std::setw(colWidth) << smartMaxSizes.at(fileName)
-                  << '\n';
+        printl(w);
     }
 }
 
-auto pla_max_size (const std::string& name)
+auto test_adders ()
 {
-    bdds_from_pla<empty_t, empty_t> creator;
-
-    auto plaFile
-    {
-        pla_file::load_from_file(pla_path() + name + ".pla")
-    };
-
-    const auto betterFile
-    {
-        improve_ordering(plaFile)
-    };
-
-    const auto diagrams
-    {
-        creator.create_i(betterFile)
-    };
-
-    const auto maxSize {std::max_element(diagrams.begin(), diagrams.end(), 
-        [](const auto& lhs, const auto& rhs) 
-    { 
-        return lhs.vertex_count() < rhs.vertex_count();
-    })};
-
-    pla_file::save_to_file(name + "_changed.pla", plaFile);
-    printl((*maxSize).vertex_count());
-}
-
-auto test_big_pla ()
-{
-    bdds_from_pla<empty_t, empty_t> creator;
-
-    auto plaFile
-    {
-        pla_file::load_from_file(pla_adder_path() + "16-adder_col.pla")
-    };
-
-    // const auto improvedFile
-    // {
-    //     improve_ordering(plaFile)
-    // };
-
-    // pla_file::save_to_file("10-adder_col_reordered.pla", improvedFile);
-
-    const auto iterativeDiagrams
-    {
-        creator.create_i(plaFile)
-    };
-
-    // const auto sequentialDiagrams
-    // {
-    //     creator.create_p(plaFile)
-    // };
-
-    // for (size_t i {0}; i < iterativeDiagrams.size(); ++i)
-    // {
-    //     if (iterativeDiagrams.at(i) != sequentialDiagrams.at(i))
-    //     {
-    //         printl("Not good.");
-    //     }
-    //     else
-    //     {
-    //         printl("Ok.");
-    //     }
-    // }
-
-    for (const auto& diagram : iterativeDiagrams)
-    {
-        printl(diagram.vertex_count());
-    }
-
-    // printl(iterativeDiagrams.back().to_dot_graph());
-
-    // printl(bdd_merger<VertexDataType, ArcDataType>::avg.average());
-}
-
-auto unordered_merge_test ()
-{
-    using merger_t = bdd_merger<double, empty_t>;
-
-    auto d1 {x(1) + x(2) + x(3)};
-    auto d2 {x(4) * x(2) * x(6)};
-
-    merger_t merger;
-
-    auto newDiagram {merger.merge_unordered(d1, d2, AND {})};
-
-    printl(newDiagram.to_dot_graph());
-}
-
-auto iter_vs_seq_test ()
-{
-    const auto files = {""};
-}
-
-auto better_merger_test ()
-{
-    using merger_t = bdd_merger<double, empty_t>;
-    merger_t merger;
-   
-    // const auto d1 {!(x(1) * x(3))};
-    const auto d1 {((x(1) + x(2)) * x(3)) + x(4)};
-    // const auto d2 { (x(2) * x(3))};
-    const auto d2 {(x(1) * (!x(3))) + x(4)};
-
-    const auto dd {merger.merge_reduced(d1, d2, OR{})};
-
-    printl(dd.to_dot_graph());
-}
-
-auto test_level_iterator ()
-{
-    // using vertex_t   = vertex<double, empty_t, 2>;
-    // using iter_t     = dd_level_iterator<double, empty_t, 2, const vertex_t>;
-    // iter_t it {nullptr, 0};
-    // static_assert(std::is_same_v<const vertex_t&, typename iter_t::reference>);
-
-    auto diagram {(x(1) * x(4)) + (x(2) * x(5)) + (x(3) * x(6))};
+    const auto fileNames = { "01-adder.pla"
+                           , "02-adder_col.pla"
+                           , "03-adder_col.pla"
+                           , "04-adder_col.pla"
+                           , "05-adder_col.pla"
+                           , "06-adder_col.pla"
+                           , "07-adder_col.pla"
+                           , "08-adder_col.pla"
+                           , "09-adder_col.pla" };
+                        //    , "10-adder_col.pla"
+                        //    , "11-adder_col.pla"
+                        //    , "12-adder_col.pla"
+                        //    , "13-adder_col.pla"
+                        //    , "14-adder_col.pla"
+                        //    , "15-adder_col.pla"
+                        //    , "16-adder_col.pla" };
     
-    auto b1 {diagram.begin()};
-    auto b2 {b1++};
-    auto e  {diagram.end()};
-
-    printl(b1 == ++b2 ? "good" : "not good");
-
-    while (b1 != e)
+    for (auto fileName : fileNames)
     {
-        b1->data = 3.14;
-        printl(b1->index);
-        ++b1;
+        const auto plaFile {pla_file::load_from_file(pla_dir_path() + fileName)};
+    
+        printl("Testing " + std::string {fileName});
+        if (! test_pla_creator(plaFile))
+        {
+            break;
+        }
+        printl("");
     }
+}
 
-    printl(b1 == diagram.end() ? "good" : "not good");
+auto test_plas ()
+{
+    const auto fileNames = { "apex5.pla" };
+                        //    , "pdc.pla"
+                        //    , "spla.pla" };
+
+    for (const auto& filename : fileNames)
+    {
+        const auto plaFile {pla_file::load_from_file(pla_dir_path() + filename)};
+        test_pla_creator(plaFile);
+    }
+}
+
+auto test_mdd ()
+{
+    mdd_creator<empty_t, empty_t, 3> creator;
+
+    const auto firstMdd {creator.just_var(0)};
+    printl(firstMdd.to_dot_graph());
+}
+
+auto test_satisfy ()
+{
+    bdd_creator<double, empty_t> creator;
+    const auto plaFile  = pla_file::load_from_file(pla_dir_path() + "07-adder_col.pla");
+          auto diagrams = creator.create_from_pla(plaFile, merge_mode_e::iterative);
+
+    for (size_t i (0); i < diagrams.size(); ++i)
+    {
+        test_satisfy_all(diagrams.at(i));
+    }
 }
 
 auto main() -> int
 {
     stopwatch watch;
 
-    std::ofstream fout {"output.txt"};
-    std::ostream& ost  {std::cout};
-    // std::ostream& ost  {fout};
+    mix::solve_examples_week_5();
 
-    // unordered_merge_test();
-    // test_big_pla();
-    // better_merger_test();        
+    // auto dd = (x(1) * x(2)) + (x(1) * x(3)) + (x(2) * x(3));
+    // printl(dd.truth_density());
+    // printl(dd.to_dot_graph());
 
-    test_level_iterator();
-
-    const auto timeTaken {watch.elapsed_time().count()};
+    auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");
     printl("Time taken: " + std::to_string(timeTaken) + " ms");
 

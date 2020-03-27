@@ -139,9 +139,9 @@ namespace mix::dd
         }
 
         auto read_data ( utils::file_reader& reader
-                       , const size_t varCount    
-                       , const size_t diagramCount
-                       , const size_t lineCount ) -> std::vector<pla_line>
+                       , const size_t        varCount    
+                       , const size_t        diagramCount
+                       , const size_t        lineCount ) -> std::vector<pla_line>
         {
             std::vector<pla_line> lines;
             if (ncount != lineCount)
@@ -199,13 +199,13 @@ namespace mix::dd
     auto swap (pla_line& lhs, pla_line& rhs) -> void
     {
         using std::swap;
-        swap(lhs.varVals, rhs.varVals);
+        swap(lhs.cube, rhs.cube);
         swap(lhs.fVals, rhs.fVals);
     }
 
     auto operator== (const pla_line& lhs, const pla_line& rhs) -> bool
     {
-        return (lhs.fVals == rhs.fVals) && (lhs.varVals == rhs.varVals);
+        return (lhs.fVals == rhs.fVals) && (lhs.cube == rhs.cube);
     }
 
     auto operator!= (const pla_line& lhs, const pla_line& rhs) -> bool
@@ -256,17 +256,19 @@ namespace mix::dd
     auto pla_file::save_to_file
         (const std::string& filePath, const pla_file& file) -> void
     {
+        using utils::concat_range;
+
         std::ofstream ost {filePath};
 
-        ost << ".i "   << file.variable_count()                   << '\n';
-        ost << ".o "   << file.function_count()                   << '\n';
-        ost << ".ilb " << utils::concat(file.get_input_labels())  << '\n';
-        ost << ".ob "  << utils::concat(file.get_output_labels()) << '\n';
-        ost << ".p "   << file.line_count()                       << '\n';
+        ost << ".i "   << file.variable_count()                       << '\n';
+        ost << ".o "   << file.function_count()                       << '\n';
+        ost << ".ilb " << concat_range(file.get_input_labels(), " ")  << '\n';
+        ost << ".ob "  << concat_range(file.get_output_labels(), " ") << '\n';
+        ost << ".p "   << file.line_count()                           << '\n';
 
-        for (const auto& line : file.lines)
+        for (const auto& line : file.lines_)
         {
-            for (const auto var : line.varVals)
+            for (const auto var : line.cube)
             {
                 ost << bool_t_to_char(var);
             }
@@ -287,34 +289,34 @@ namespace mix::dd
     pla_file::pla_file( std::vector<pla_line> pLines
                       , std::vector<std::string> pInputLabels
                       , std::vector<std::string> pOutputLabels ) :
-        lines        {std::move(pLines)}
-      , inputLabels  {pInputLabels}
-      , outputLabels {pOutputLabels}
+        lines_        {std::move(pLines)}
+      , inputLabels_  {pInputLabels}
+      , outputLabels_ {pOutputLabels}
     {
     }
 
     auto pla_file::variable_count
         () const -> int32_t
     {
-        return this->lines.front().varVals.size();
+        return this->lines_.front().cube.size();
     }
 
     auto pla_file::function_count
         () const -> int32_t
     {
-        return this->lines.front().fVals.size();
+        return this->lines_.front().fVals.size();
     }
 
     auto pla_file::line_count
         () const -> int32_t
     {
-        return static_cast<int32_t>(this->lines.size());
+        return static_cast<int32_t>(this->lines_.size());
     }
 
     auto pla_file::get_lines
         () const -> const std::vector<pla_line>&
     {
-        return this->lines;
+        return this->lines_;
     }
 
     auto pla_file::get_indices
@@ -322,10 +324,10 @@ namespace mix::dd
     {
         std::set<index_t> indices;
 
-        for (const auto& line : this->lines)
+        for (const auto& line : this->lines_)
         {
             index_t index {0};
-            for (const auto& var : line.varVals)
+            for (const auto& var : line.cube)
             {
                 if (X != var)
                 {
@@ -341,13 +343,13 @@ namespace mix::dd
     auto pla_file::get_input_labels
         () const -> const std::vector<std::string>&
     {
-        return this->inputLabels;
+        return this->inputLabels_;
     }
 
     auto pla_file::get_output_labels
         () const -> const std::vector<std::string>&
     {
-        return this->outputLabels;
+        return this->outputLabels_;
     }
 
     auto pla_file::swap_vars
@@ -355,11 +357,11 @@ namespace mix::dd
     {
         using std::swap;
         
-        for (auto& line : this->lines)
+        for (auto& line : this->lines_)
         {
-            swap(line.varVals[i1], line.varVals[i2]);
+            swap(line.cube[i1], line.cube[i2]);
         }
 
-        swap(inputLabels[i1], inputLabels[i2]);
+        swap(inputLabels_[i1], inputLabels_[i2]);
     }
 }

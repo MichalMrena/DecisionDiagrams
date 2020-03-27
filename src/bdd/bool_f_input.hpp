@@ -37,6 +37,15 @@ namespace mix::dd
     {
         auto operator() (const std::bitset<N>& in, const index_t i) const -> bool_t
         {
+            return in.test(i);
+        }
+    };
+    
+    template<size_t N>
+    struct get_var_val< std::array<bool_t, N> >
+    {
+        auto operator() (const std::array<bool_t, N>& in, const index_t i) const -> bool_t
+        {
             return in[i];
         }
     };
@@ -47,6 +56,26 @@ namespace mix::dd
         auto operator() (const bit_vector<N, bool_t>& in, const index_t i) const -> bool_t
         {
             return in.at(i);
+        }
+    };
+
+
+    template<class VariableValues>
+    struct set_var_val
+    {
+        auto operator() ( VariableValues& vars
+                        , const index_t i
+                        , const bool_t  val ) const -> void;
+    };
+
+    template<size_t N> 
+    struct set_var_val<std::bitset<N>>
+    {
+        auto operator() ( std::bitset<N>& vars
+                        , const index_t   i
+                        , const bool_t    val ) const -> void
+        {
+            vars[i] = val;
         }
     };
 }

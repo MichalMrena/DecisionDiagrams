@@ -8,7 +8,7 @@ namespace mix::utils
     class random_base
     {
     protected:
-        std::mt19937 generator;
+        std::mt19937 generator_;
 
     public:
         explicit random_base(unsigned long seed);

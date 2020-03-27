@@ -9,7 +9,7 @@
 #include "bdd.hpp"
 #include "bdd_reducer.hpp"
 #include "bdd_pla.hpp"
-#include "bdd_merger.hpp"
+#include "bdd_manipulator.hpp"
 
 namespace mix::dd
 {
@@ -189,7 +189,7 @@ namespace mix::dd
     auto bdd_tools<VertexData, ArcData>::create_from_pla
         (const std::string& filePath) -> std::vector<bdd_t>
     {
-        bdds_from_pla<VertexData, ArcData> plaCreator;
+        bdd_creator<VertexData, ArcData> plaCreator;
         return plaCreator.create_i(pla_file::load_from_file(filePath));
     }
 
@@ -204,21 +204,21 @@ namespace mix::dd
     auto bdd_tools<VertexData, ArcData>::create_true
         () -> bdd_t
     {
-        return bdd_creator<VertexData, ArcData>::just_true();
+        return bdd_creator_alt<VertexData, ArcData>::just_true();
     }
 
     template<class VertexData, class ArcData>
     auto bdd_tools<VertexData, ArcData>::create_false
         () -> bdd_t
     {
-        return bdd_creator<VertexData, ArcData>::just_false();
+        return bdd_creator_alt<VertexData, ArcData>::just_false();
     }
 
     template<class VertexData, class ArcData>
     auto bdd_tools<VertexData, ArcData>::create_var
         (const index_t i) -> bdd_t
     {
-        return bdd_creator<VertexData, ArcData>::just_var(i);
+        return bdd_creator_alt<VertexData, ArcData>::just_var(i);
     }
 
     template<class VertexData, class ArcData>
@@ -226,7 +226,7 @@ namespace mix::dd
     auto bdd_tools<VertexData, ArcData>::merge
         (const bdd_t& d1, const bdd_t& d2, BinaryBoolOperator op) -> bdd_t
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(d1, d2, op);
     }
 
@@ -280,7 +280,7 @@ namespace mix::dd
         };
 
         // "skip" all vertices with given index
-        diagram.traverse(diagram.root, [i, val](vertex_t* const v)
+        diagram.traverse(diagram.root_, [i, val](vertex_t* const v)
         {
             if (v->is_leaf())
             {
@@ -299,9 +299,9 @@ namespace mix::dd
         });   
 
         // possibly change the root
-        if (i == diagram.root->index)
+        if (i == diagram.root_->index)
         {
-            diagram.root = diagram.root->son(val);
+            diagram.root_ = diagram.root_->son(val);
         }
 
         // identify now unreachable vertices
@@ -337,7 +337,7 @@ namespace mix::dd
     auto operator&& ( const bdd<VertexData, ArcData>& lhs
                     , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, AND {});
     }
 
@@ -345,7 +345,7 @@ namespace mix::dd
     auto operator* ( const bdd<VertexData, ArcData>& lhs
                    , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, AND {});
     }
     
@@ -353,7 +353,7 @@ namespace mix::dd
     auto operator|| ( const bdd<VertexData, ArcData>& lhs
                     , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, OR {});
     }
     
@@ -361,7 +361,7 @@ namespace mix::dd
     auto operator+ ( const bdd<VertexData, ArcData>& lhs
                    , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, OR {});
     }
     
@@ -369,7 +369,7 @@ namespace mix::dd
     auto operator^ ( const bdd<VertexData, ArcData>& lhs
                    , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, XOR {});
     }
 
@@ -377,7 +377,7 @@ namespace mix::dd
     auto nand ( const bdd<VertexData, ArcData>& lhs
               , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, NAND {});
     }
 
@@ -385,7 +385,7 @@ namespace mix::dd
     auto nor ( const bdd<VertexData, ArcData>& lhs
              , const bdd<VertexData, ArcData>& rhs ) -> bdd<VertexData, ArcData>
     {
-        bdd_merger<VertexData, ArcData> merger;
+        bdd_manipulator<VertexData, ArcData> merger;
         return merger.merge(lhs, rhs, NOR {});
     }
 

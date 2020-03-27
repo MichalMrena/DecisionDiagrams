@@ -227,6 +227,8 @@ namespace mix::dd
     auto bit_vector<RecordBitSize, ValueType>::at
         (const size_t i) const -> ValueType
     {
+        // TODO range check
+
         return this->get(i, is_two_pow {});
     }
 

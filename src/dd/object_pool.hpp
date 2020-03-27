@@ -3,28 +3,27 @@
 
 #include <deque>
 #include <utility>
-#include "graph.hpp"
 
 namespace mix::dd
 {
     template<class T>
     class object_pool
     {
-    private:
-        std::deque<T*> pool;
-
     public:
         ~object_pool();
 
         template<class... Args>
-        auto get_object (Args&&... args) -> T*;
-        auto put_object (T* const p)     -> void;
+        auto create_object  (Args&&... args) -> T*;
+        auto release_object (T* const p)     -> void;
+
+    private:
+        std::deque<T*> pool_;
     };    
 
     template<class T>
     object_pool<T>::~object_pool()
     {
-        for (auto ptr : this->pool)
+        for (auto ptr : pool_)
         {
             delete ptr;
         }
@@ -32,25 +31,25 @@ namespace mix::dd
 
     template<class T>
     template<class... Args>
-    auto object_pool<T>::get_object
+    auto object_pool<T>::create_object
         (Args&&... args) -> T*
     {
-        if (this->pool.empty())
+        if (pool_.empty())
         {
             return new T {std::forward<Args>(args)...};
         }
         
-        const auto objptr {this->pool.back()};
-        this->pool.pop_back();
+        const auto objptr {pool_.back()};
+        pool_.pop_back();
         *objptr = T {std::forward<Args>(args)...};
         return objptr;
     }
 
     template<class T>
-    auto object_pool<T>::put_object
+    auto object_pool<T>::release_object
         (T* const p) -> void
     {
-        this->pool.push_back(p);
+        pool_.push_back(p);
     }
 }
 

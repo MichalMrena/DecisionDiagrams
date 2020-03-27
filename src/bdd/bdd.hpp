@@ -9,6 +9,7 @@
 #include <sstream>
 #include <tuple>
 #include <iterator>
+#include <initializer_list>
 #include "bool_f_input.hpp"
 #include "../dd/graph.hpp"
 #include "../dd/level_iterator.hpp"
@@ -18,23 +19,15 @@
 
 namespace mix::dd
 {   
-    template<class VertexData, class ArcData>
-    class bdd;
-    
-    template<class VertexData, class ArcData>
-    class bdd_creator;
+    template<class VertexData, class ArcData> class bdd;
+    template<class VertexData, class ArcData> class bdd_creator;
+    template<class VertexData, class ArcData> class bdd_manipulator;
 
-    template<class VertexData, class ArcData>
-    class bdd_merger;
+        template<class VertexData, class ArcData>
+        class bdd_creator_alt;
 
-    template<class VertexData, class ArcData>
-    class bdd_reducer;
-
-    template<class VertexData, class ArcData>
-    class bdds_from_pla;
-
-    template<class VertexData, class ArcData>
-    class bdd_tools;
+        template<class VertexData, class ArcData>
+        class bdd_tools;
 
     template<class VertexData, class ArcData>
     auto swap ( bdd<VertexData, ArcData>& lhs
@@ -51,27 +44,28 @@ namespace mix::dd
     class bdd
     {
     public:
+        friend class bdd_manipulator<VertexData, ArcData>;
         friend class bdd_creator<VertexData, ArcData>;
-        friend class bdd_merger<VertexData, ArcData>;
-        friend class bdd_reducer<VertexData, ArcData>;
-        friend class bdds_from_pla<VertexData, ArcData>;
-        friend class bdd_tools<VertexData, ArcData>;
+            friend class bdd_creator_alt<VertexData, ArcData>;
+            friend class bdd_tools<VertexData, ArcData>;
         friend auto swap<VertexData, ArcData> ( bdd<VertexData, ArcData>& lhs
                                               , bdd<VertexData, ArcData>& rhs ) noexcept -> void;
 
-    private:
+    public:
         using vertex_t     = vertex<VertexData, ArcData, 2>;
         using arc_t        = arc<VertexData, ArcData, 2>;
         using leaf_val_map = std::map<const vertex_t*, bool_t>;
+        using labels_v     = std::vector<std::string>;
 
     public:
         using iterator       = dd_level_iterator<VertexData, ArcData, 2, vertex_t>;
         using const_iterator = dd_level_iterator<VertexData, ArcData, 2, const vertex_t>;
 
     private:
-        vertex_t*    root          {nullptr};
+        vertex_t*    root_         {nullptr};
         index_t      variableCount {0};
         leaf_val_map leafToVal;
+        labels_v     labels;
 
     public:
         /**
@@ -141,8 +135,36 @@ namespace mix::dd
         auto get_value (const BoolFunctionInput& input) const -> bool_t;
 
         /**
+            TODO doc 
+        */
+        template< class BoolFunctionInput
+                , class Container = std::vector<BoolFunctionInput>
+                , class SetVarVal = set_var_val<BoolFunctionInput> >
+        auto satisfy_all () const -> Container;
+
+        /**
+            TODO doc 
+        */
+        template< class BoolFunctionInput
+                , class OutputIt
+                , class SetVarVal = set_var_val<BoolFunctionInput> >
+        auto satisfy_all (OutputIt out) const -> void;
+
+        /**
+            TODO doc 
+        */
+        auto truth_density () -> size_t;
+
+        /**
+            TODO doc 
+            Doesn't use data field of the vertices but uses hash map internally,
+            hence might be slower.
+        */
+        auto truth_density () const -> size_t;
+
+        /**
             @return level order iterator. 
-            // TODO lepsi popis
+            // TODO doc
         */
         auto begin () -> iterator;
         
@@ -152,18 +174,32 @@ namespace mix::dd
         
         auto end () const -> const_iterator;
 
+        auto clone () const -> bdd;
+
+        auto variable_count() const -> index_t;
+
+        // TMP
+        // auto leaf (const bool_t value) -> vertex_t*;
+        auto true_leaf   () -> vertex_t*;
+        auto false_leaf  () -> vertex_t*;
+        auto get_root    () -> vertex_t*;
+
+        auto set_labels (labels_v labels) -> void;
+        auto set_labels (std::initializer_list<std::string> labels) -> void;
+
     private:
         bdd ( vertex_t* const pRoot
             , const index_t   pVariableCount
             , leaf_val_map    pLeafToVal );
 
-        auto value       (const vertex_t* const v) const -> bool_t;
-        auto is_leaf     (const vertex_t* const v) const -> bool;
-        auto leaf_index  () const -> index_t;
-        auto fill_levels () const -> std::vector< std::vector<vertex_t*> >;
-        auto indices     () const -> std::set<index_t>;
-        auto true_leaf   ()       -> vertex_t*;
-        auto false_leaf  ()       -> vertex_t*;
+        auto value            (const vertex_t* const v) const -> bool_t;
+        auto is_leaf          (const vertex_t* const v) const -> bool;
+        auto leaf_index       () const -> index_t;
+        auto fill_levels      () const -> std::vector< std::vector<vertex_t*> >;
+        auto indices          () const -> std::set<index_t>;
+        auto calculate_alpha  (vertex_t* const v) -> size_t;
+
+        auto label (const vertex_t* v) const -> std::string;
 
         template<class UnaryFunction>
         auto traverse ( vertex_t* const v
@@ -172,10 +208,18 @@ namespace mix::dd
         template<class Container>
         auto fill_container () const -> Container;
 
+        template< class BoolFunctionInput
+                , class InsertIterator
+                , class SetVarVal = set_var_val<BoolFunctionInput> >
+        auto satisfy_all_step ( const index_t         i
+                              , const vertex_t* const v
+                              , BoolFunctionInput&    xs
+                              , InsertIterator&       out) const -> void;
+
         static auto are_equal ( vertex_t* const v1
                               , vertex_t* const v2
-                              , const bdd& d1
-                              , const bdd& d2 ) -> bool;
+                              , const bdd&      d1
+                              , const bdd&      d2 ) -> bool;
     };
 
     template<class VertexData, class ArcData>
@@ -184,7 +228,7 @@ namespace mix::dd
     {
         using std::swap;
         
-        swap(lhs.root,          rhs.root);
+        swap(lhs.root_,          rhs.root_);
         swap(lhs.variableCount, rhs.variableCount);
         swap(lhs.leafToVal,     rhs.leafToVal);
     }
@@ -193,14 +237,14 @@ namespace mix::dd
     bdd<VertexData, ArcData>::bdd(const bdd& other) :
         variableCount {other.variableCount}
     {
-        if (! other.root)
+        if (! other.root_)
         {
             return;
         }
 
         // first we copy each vertex:
         std::map<const id_t, vertex_t*> newVerticesMap;
-        other.traverse(other.root, [&newVerticesMap](const vertex_t* const v) 
+        other.traverse(other.root_, [&newVerticesMap](const vertex_t* const v) 
         {
             newVerticesMap.emplace(v->id, new vertex_t {*v});
         });
@@ -225,7 +269,7 @@ namespace mix::dd
         }
 
         // set new root:
-        this->root = newVerticesMap.at(levels.at(other.root->index).front()->id);
+        this->root_ = newVerticesMap.at(levels.at(other.root_->index).front()->id);
 
         // fill leafToVal map:
         for (const auto [leaf, val] : other.leafToVal)
@@ -236,18 +280,18 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     bdd<VertexData, ArcData>::bdd(bdd&& other) :
-        root          {other.root}
+        root_          {other.root_}
       , variableCount {other.variableCount}  
       , leafToVal     {std::move(other.leafToVal)}
     {
-        other.root = nullptr;
+        other.root_ = nullptr;
     }
 
     template<class VertexData, class ArcData>
     bdd<VertexData, ArcData>::bdd( vertex_t* const pRoot
                                  , const index_t   pVariableCount
                                  , leaf_val_map    pLeafToVal ) :
-        root          {pRoot}
+        root_          {pRoot}
       , variableCount {pVariableCount}  
       , leafToVal     {std::move(pLeafToVal)}
     {
@@ -277,26 +321,26 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::operator==
         (const bdd& other) const -> bool 
     {
-        if (this->root == other.root)
+        if (this->root_ == other.root_)
         {
             // Catches comparison with self and also case when both diagrams are empty.
             return true;
         }
 
-        if (! this->root || ! other.root)
+        if (! this->root_ || ! other.root_)
         {
             // Case when one of the roots is null.
             return false;
         }
 
-        const auto areEqual {are_equal(this->root, other.root, *this, other)};
+        const auto areEqual {are_equal(this->root_, other.root_, *this, other)};
 
         if (! areEqual)
         {
             // Traverse both trees in order to correctly set marks.
             // Since they are not equal only a part of each tree was traversed.
-            this->traverse(this->root, [](auto) {});
-            this->traverse(other.root, [](auto) {});
+            this->traverse(this->root_, [](auto) {});
+            this->traverse(other.root_, [](auto) {});
         }
 
         return areEqual;
@@ -313,23 +357,16 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::to_dot_graph 
         () const -> std::string
     {
-        using std::to_string;
-
         std::ostringstream finalGraphOstr;
 
         std::vector< std::vector<const vertex_t*> > levelGroups(this->variableCount + 1);
         std::vector< std::tuple<id_t, id_t, bool> > arcs;
 
-        this->traverse(this->root, [&](const vertex_t* const v) {
+        this->traverse(this->root_, [&](const vertex_t* const v) {
             if (! v->is_leaf())
             {
-                arcs.push_back(std::make_tuple( v->id
-                                              , v->son(0)->id
-                                              , false));
-
-                arcs.push_back(std::make_tuple( v->id
-                                              , v->son(1)->id
-                                              , true));                                              
+                arcs.push_back(std::make_tuple(v->id, v->son(0)->id, false));
+                arcs.push_back(std::make_tuple(v->id, v->son(1)->id, true));                                              
             }
 
             levelGroups[v->index].push_back(v);
@@ -338,32 +375,20 @@ namespace mix::dd
         finalGraphOstr << "digraph D {" << utils::EOL;
 
         // node shape
-        finalGraphOstr << "    "
-                       << "node [shape = square] ";
+        finalGraphOstr << "    node [shape = square] ";
         for (auto& [key, val] : this->leafToVal)
         {
             finalGraphOstr << key->id << ' ';
         }
-        finalGraphOstr << ";"                      << utils::EOL
-                       << "    " 
-                       << "node [shape = circle];" << utils::EOL << utils::EOL;
+        finalGraphOstr << ";"                          << utils::EOL
+                       << "    node [shape = circle];" << utils::EOL << utils::EOL;
 
         // labels
         for (size_t level {0}; level < levelGroups.size(); ++level)
         {
             for (auto v : levelGroups[level])
             {
-                const std::string label 
-                {
-                    level != this->leaf_index() 
-                        ? ("x" + to_string(level))
-                        : to_string(this->leafToVal.at(v))
-                };
-                
-                finalGraphOstr << "    "
-                               << v->id 
-                               << " [label = " << label << "];" 
-                               << utils::EOL;
+                finalGraphOstr << "    " << v->id << " [label = " << label(v) << "];" << utils::EOL;
             }
         }
         finalGraphOstr << utils::EOL;
@@ -375,13 +400,10 @@ namespace mix::dd
             const auto to    {std::get<1>(arc)};
             const auto style {std::get<2>(arc) ? "solid" : "dashed"};
 
-            finalGraphOstr << "    "
-                           << to_string(from) 
-                           << " -> "
-                           << to_string(to)
-                           << " [style = " << style << "];"
-                           << utils::EOL;
+            finalGraphOstr << "    " << from << " -> " << to << " [style = " << style << "];" << utils::EOL;
         }
+
+        finalGraphOstr << utils::EOL;
 
         // same rank
         for (size_t level {0}; level < levelGroups.size(); ++level)
@@ -412,7 +434,7 @@ namespace mix::dd
     {
         size_t size {0};
 
-        this->traverse(this->root, [&size](const vertex_t* const)
+        this->traverse(this->root_, [&size](const vertex_t* const)
         {
             ++size;
         });
@@ -427,7 +449,7 @@ namespace mix::dd
     {
         GetVarVal get_val;
 
-        auto v {this->root};
+        auto v {this->root_};
 
         while (! this->is_leaf(v))
         {
@@ -438,10 +460,57 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    template<class BoolFunctionInput, class Container, class SetVarVal>
+    auto bdd<VertexData, ArcData>::satisfy_all
+        () const -> Container
+    {
+        auto c   = Container {};
+        auto xs  = BoolFunctionInput {};
+        auto out = std::inserter(c, std::end(c));
+        
+        satisfy_all_step(0, root_, xs, out);
+        
+        return c;
+    }
+
+    template<class VertexData, class ArcData>
+    template<class BoolFunctionInput, class OutputIt, class SetVarVal>
+    auto bdd<VertexData, ArcData>::satisfy_all
+        (OutputIt out) const -> void
+    {
+        auto xs {BoolFunctionInput {}};
+        satisfy_all_step(0, root_, xs, out);
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::truth_density
+        () -> size_t
+    {
+        // TODO maybe add another numberic types
+        if constexpr (! std::is_same_v<double, VertexData>)
+        {
+            return const_cast<const bdd&>(*this).truth_density();
+        }
+        else
+        {
+            this->calculate_alpha(root_);
+            // return root_->data * utils::two_pow(0 == root_->index ? 0 : root_->index - 1);
+            return root_->data * utils::two_pow(root_->index);
+        }
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::truth_density
+        () const -> size_t
+    {
+        throw "Not supported yet!";
+    }
+
+    template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::begin
         () -> iterator
     {
-        return iterator {this->root, this->variableCount};
+        return iterator {this->root_, this->variableCount};
     }
 
     template<class VertexData, class ArcData>
@@ -449,6 +518,20 @@ namespace mix::dd
         () -> iterator
     {
         return iterator {nullptr, this->variableCount};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::clone
+        () const -> bdd
+    {
+        return bdd {*this};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::variable_count
+        () const -> index_t
+    {
+        return variableCount;
     }
 
     template<class VertexData, class ArcData>
@@ -479,9 +562,9 @@ namespace mix::dd
     {
         std::vector< std::vector<vertex_t*> > levels(this->variableCount + 1);
 
-        if (this->root)
+        if (this->root_)
         {
-            this->traverse(this->root, [this, &levels](vertex_t* const v) 
+            this->traverse(this->root_, [this, &levels](vertex_t* const v) 
             {
                 levels[v->index].push_back(v);
             });
@@ -496,7 +579,7 @@ namespace mix::dd
     {
         std::set<index_t> indices;
 
-        this->traverse(this->root, [this, &indices](const vertex_t* const v)
+        this->traverse(this->root_, [this, &indices](const vertex_t* const v)
         {
             if (! this->is_leaf(v))
             {
@@ -505,6 +588,42 @@ namespace mix::dd
         });
 
         return indices;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::calculate_alpha
+        (vertex_t* const v) -> size_t
+    {
+        using utils::two_pow;
+
+        v->mark = ! v->mark;
+
+        if (! this->is_leaf(v) && v->mark != v->son(0)->mark)
+        {
+            this->calculate_alpha(v->son(0));
+        }
+
+        if (! this->is_leaf(v) && v->mark != v->son(1)->mark)
+        {
+            this->calculate_alpha(v->son(1));
+        }
+
+        v->data = this->is_leaf(v) ? this->value(v)
+                                   : v->son(0)->data * two_pow(v->son(0)->index - v->index - 1)
+                                   + v->son(1)->data * two_pow(v->son(1)->index - v->index - 1);
+        
+        return v->data;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::label
+        (const vertex_t* v) const -> std::string
+    {
+        using std::to_string;
+        const auto i {v->index};
+        return i < this->labels.size() ? this->labels.at(i) : 
+               i == this->leaf_index() ? to_string(this->leafToVal.at(v)) :
+                                         "x" + std::to_string(i);
     }
 
     template<class VertexData, class ArcData>
@@ -535,6 +654,27 @@ namespace mix::dd
         }
 
         return nullptr;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::get_root
+        () -> vertex_t*
+    {
+        return this->root_;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::set_labels
+        (labels_v ls) -> void
+    {
+        this->labels = std::move(ls);
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd<VertexData, ArcData>::set_labels
+        (std::initializer_list<std::string> ls) -> void
+    {
+        this->labels = ls;
     }
 
     template<class VertexData, class ArcData>
@@ -571,7 +711,7 @@ namespace mix::dd
 
         auto outIt {std::inserter(c, std::end(c))};
 
-        this->traverse(this->root, [&c, &outIt](vertex_t* const v)
+        this->traverse(this->root_, [&c, &outIt](vertex_t* const v)
         {
             outIt = v;
         });
@@ -580,11 +720,46 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    template<class BoolFunctionInput, class InsertIterator, class SetVarVal>
+    auto bdd<VertexData, ArcData>::satisfy_all_step 
+        ( const index_t         i
+        , const vertex_t* const v
+        , BoolFunctionInput&    xs
+        , InsertIterator&       out ) const -> void
+    {
+        SetVarVal set_var;
+
+        if (0 == this->value(v))
+        {
+            return;
+        }
+        else if (i == this->leaf_index() && 1 == this->value(v))
+        {
+            out = xs;
+            return;
+        }
+        else if (v->index > i)
+        {
+            set_var(xs, i, 0);
+            satisfy_all_step(i + 1, v, xs, out);
+            set_var(xs, i, 1);
+            satisfy_all_step(i + 1, v, xs, out);
+        }
+        else
+        {
+            set_var(xs, i, 0);
+            satisfy_all_step(i + 1, v->son(0), xs, out);
+            set_var(xs, i, 1);
+            satisfy_all_step(i + 1, v->son(1), xs, out);
+        }
+    }
+
+    template<class VertexData, class ArcData>
     auto bdd<VertexData, ArcData>::are_equal 
         ( vertex_t* const v1
         , vertex_t* const v2
-        , const bdd& d1
-        , const bdd& d2 ) -> bool
+        , const bdd&      d1
+        , const bdd&      d2 ) -> bool
     {
         if (v1->index != v2->index)
         {

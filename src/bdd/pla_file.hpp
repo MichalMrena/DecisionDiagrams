@@ -10,29 +10,23 @@ namespace mix::dd
 {
     struct pla_line
     {
-        bit_vector<2, bool_t> varVals; 
+        bit_vector<2, bool_t> cube; 
         bit_vector<2, bool_t> fVals;
 
         pla_line(const pla_line&) = default;
-        pla_line(pla_line&&) = default;
+        pla_line(pla_line&&)      = default;
     };
 
     class pla_file
     {
-    private:
-        std::vector<pla_line>    lines;
-        std::vector<std::string> inputLabels;
-        std::vector<std::string> outputLabels;
-
     public:
         static auto load_from_file (const std::string& filePath) -> pla_file;
         static auto save_to_file   (const std::string& filePath, const pla_file& file) -> void;
 
-    public:
         pla_file(const pla_file&) = default;
-        pla_file(pla_file&&) = default;
+        pla_file(pla_file&&)      = default;
 
-        pla_file( std::vector<pla_line> pLines
+        pla_file( std::vector<pla_line>    pLines
                 , std::vector<std::string> pInputLabels
                 , std::vector<std::string> pOutputLabels );
 
@@ -45,6 +39,11 @@ namespace mix::dd
         auto get_output_labels () const -> const std::vector<std::string>&;
 
         auto swap_vars (const size_t i1, const size_t i2) -> void;
+
+    private:
+        std::vector<pla_line>    lines_;
+        std::vector<std::string> inputLabels_;
+        std::vector<std::string> outputLabels_;
     };
 
     auto swap (pla_line& lhs, pla_line& rhs) -> void;

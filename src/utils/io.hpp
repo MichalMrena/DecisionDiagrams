@@ -3,28 +3,26 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
+#include <type_traits>
 
 namespace mix::utils
 {
     constexpr auto EOL {"\n"};
 
-    auto print  (const std::string& s) -> void;
-    auto printl (const std::string& s) -> void;
-    auto print  (const char* s)        -> void;
-    auto printl (const char* s)        -> void;
+    auto print  (std::string_view s) -> void;
+    auto printl (std::string_view s) -> void;
 
-    template<class T>
+    template<class T, class = std::enable_if_t<std::is_arithmetic_v<T>>>
     auto print (const T& t) -> void
     {
-        using std::to_string;
-        print(to_string(t));
+        print(std::to_string(t));
     }
 
-    template<class T>
+    template<class T, class = std::enable_if_t<std::is_arithmetic_v<T>>>
     auto printl (const T& t) -> void
     {
-        using std::to_string;
-        printl(to_string(t));
+        printl(std::to_string(t));
     }
 }
 

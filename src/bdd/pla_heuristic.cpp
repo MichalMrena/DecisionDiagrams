@@ -46,7 +46,7 @@ namespace mix::dd
             {
                 size_t varCount {0};
 
-                for (const auto var : line.varVals)
+                for (const auto var : line.cube)
                 {
                     if (X != var)
                     {
@@ -68,7 +68,7 @@ namespace mix::dd
             for (const auto& line : file.get_lines())
             {
                 index_t index {0};
-                for (const auto var : line.varVals)
+                for (const auto var : line.cube)
                 {
                     if (X != var)
                     {
@@ -117,28 +117,6 @@ namespace mix::dd
             return metric * metric;
         }
 
-        // auto product_metric_p ( index_iterator pit
-        //                       , index_iterator pend
-        //                       , const mapper& map ) -> metric_t
-        // {
-        //     std::vector<index_t> auxv {pit, pend};
-        //     std::sort(auxv.begin(), auxv.end(), map_compare {map});
-            
-        //     auto metric    {0u};
-        //     auto it        {auxv.begin()};
-        //     auto next      {it + 1};
-        //     const auto end {auxv.end()};
-
-        //     while (next != end)
-        //     {
-        //         metric = std::max(metric, map(*next) - map(*it) - 1);
-        //         ++it;
-        //         ++next;
-        //     }
-
-        //     return metric * metric;
-        // }
-
         auto total_metric ( std::vector<index_t>& sopIndices
                           , const std::vector<size_t>& prodSizes
                           , const mapper& map ) -> metric_t
@@ -155,23 +133,6 @@ namespace mix::dd
 
             return maxesSum / prodSizes.size();
         }
-
-        // auto total_metric_p ( std::vector<index_t>& sopIndices
-        //                     , const std::vector<size_t>& prodSizes
-        //                     , const mapper& map ) -> metric_t
-        // {
-        //     auto productIt {sopIndices.begin()};
-        //     auto maxesSum  {0.0};
-
-        //     for (auto prodSize : prodSizes)
-        //     {
-        //         auto productEnd {productIt + prodSize};
-        //         maxesSum += product_metric_p(productIt, productEnd, map);
-        //         productIt = productEnd;
-        //     }
-
-        //     return maxesSum / prodSizes.size();
-        // }
 
         auto swap_indices ( std::vector<index_t>& sopIndices
                           , const mapper& map ) -> void
@@ -206,7 +167,7 @@ namespace mix::dd
     {
         const auto productSizes {products_sizes(file)};
         auto sopIndices         {sop_as_indices(file)};
-        auto possibleSwaps      {all_swap_pairs(file.get_indices())};
+        auto possibleSwaps      {all_swap_pairs(file.get_indices())}; // TODO nestačil by počet premenných?
         auto currentMetric      {total_metric(sopIndices, productSizes, std::make_pair(0u, 0u))};
 
         swap_pairs_v swaps;
@@ -224,7 +185,7 @@ namespace mix::dd
 
                 if (possibleMetric < proposedMetric)
                 {
-                    proposedMetric = possibleMetric;
+                    proposedMetric   = possibleMetric;
                     bestSwapIterator = swapsIt;
                 }
 
@@ -255,53 +216,4 @@ namespace mix::dd
 
         return file;
     }
-
-    // auto improve_ordering_p (pla_file& file) -> pla_file&
-    // {
-    //     const auto productSizes {products_sizes(file)};
-    //     auto possibleSwaps      {all_swap_pairs(file.get_indices())};
-    //     auto sopIndices         {sop_as_indices(file)};
-    //     auto currentMetric      {total_metric(sopIndices, productSizes, mapper {std::make_pair(0, 0)})};
-
-    //     swap_pairs_v swaps;
-        
-    //     for(;;)
-    //     {
-    //         std::vector<metric_t> metrics(possibleSwaps.size());
-            
-    //         #pragma omp parallel for
-    //         for (int32_t i = 0; i < possibleSwaps.size(); i++)
-    //         {
-    //             metrics[i] = total_metric_p(sopIndices, productSizes, possibleSwaps.at(i));
-    //         }
-
-    //         const auto bestMetricIt {std::min_element(metrics.begin(), metrics.end())};
-            
-    //         if (currentMetric <= *bestMetricIt)
-    //         {
-    //             break;
-    //         }
-
-    //         currentMetric = *bestMetricIt;
-
-    //         const auto bestSwapIndex {bestMetricIt - metrics.begin()};
-
-    //         swap_indices(sopIndices, possibleSwaps.at(bestSwapIndex));
-    //         swaps.push_back(possibleSwaps.at(bestSwapIndex));
-
-    //         // using std::swap;
-    //         // std::swap(possibleSwaps[bestSwapIndex], possibleSwaps.back());
-    //         // possibleSwaps.pop_back();
-    //     }
-
-    //     // const auto original {file};        
-    //     apply_swaps(swaps, file);
-
-    //     // if (! verify_changes(original, swaps, file))
-    //     // {
-    //     //     throw std::runtime_error {"Not good."};
-    //     // }
-
-    //     return file;
-    // }
 }

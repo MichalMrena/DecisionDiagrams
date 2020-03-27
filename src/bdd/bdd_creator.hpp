@@ -1,211 +1,83 @@
 #ifndef _MIX_DD_BDD_CREATOR_
 #define _MIX_DD_BDD_CREATOR_
 
+#include <string>
 #include <vector>
-#include <unordered_map>
-#include <array>
 #include <cmath>
-#include <utility>
+#include <algorithm>
 #include <iterator>
 #include "bdd.hpp"
-#include "bool_function.hpp"
-#include "../dd/typedefs.hpp"
+#include "bdd_manipulator.hpp"
+#include "pla_file.hpp"
 #include "../dd/graph.hpp"
-#include "../utils/math_utils.hpp"
-#include "../utils/hash.hpp"
-#include "../data_structures/double_top_stack.hpp"
+#include "../dd/dd_manipulator_base.hpp"
 
 namespace mix::dd
 {
+    enum merge_mode_e {sequential, iterative};
+
     template<class VertexData, class ArcData>
-    class bdd_creator
+    class bdd_creator : public dd_manipulator_base<VertexData, ArcData, 2>
     {
-    private:
-        using bdd_t           = bdd<VertexData, ArcData>;
-        using vertex_t        = typename bdd_t::vertex_t;
-        using arc_t           = typename bdd_t::arc_t;
-        using leaf_val_map_t  = typename bdd_t::leaf_val_map;
-        using vertex_key      = std::pair<vertex_t*, vertex_t*>;
-        using vertex_key_hash = utils::pair_hash<vertex_t*, vertex_t*>;
-        using level_map       = std::unordered_map<vertex_key, vertex_t*, vertex_key_hash>;
-
-        struct stack_frame
-        {
-            vertex_t* vertexPtr;
-            size_t    level;
-        };
-
-    private:
-
-        utils::double_top_stack<stack_frame> stack;
-        std::vector<level_map> levels;
-        id_t nextId {0};
-
     public:
-        static auto just_true  () -> bdd_t;
-        static auto just_false () -> bdd_t;
-        static auto just_var   (const index_t index) -> bdd_t;
-        static auto just_val   (const bool_t  value) -> bdd_t;
+        using bdd_t        = bdd<VertexData, ArcData>;
+        using leaf_val_map = typename bdd_t::leaf_val_map;
+        using vertex_t     = typename bdd_t::vertex_t;
+        using arc_t        = typename bdd_t::arc_t;
+        using arc_arr_t    = typename vertex_t::forward_star_arr;
 
-        template< class BoolFunction
-                , class GetFVal  = get_f_val_r<BoolFunction>
-                , class VarCount = var_count<BoolFunction> >
-        auto create_from (const BoolFunction& in) -> bdd_t;
+        auto just_val (const bool_t  value) -> bdd_t;
+        auto just_var (const index_t index) -> bdd_t;
 
         template<class InputIt>
-        auto create_product ( InputIt varValsBegin
-                            , InputIt varValsEnd
-                            , const bool_t fVal ) -> bdd_t;
+        auto create_product (InputIt varsBegin, InputIt varsEnd, const bool_t fVal) -> bdd_t;
 
-    private:
-        auto try_insert ( const vertex_key key
-                        , const index_t level ) -> vertex_t*; 
+        auto create_from_pla   (const pla_file& file, merge_mode_e mm) -> std::vector<bdd_t>;
+        auto create_from_pla_p (const pla_file& file, merge_mode_e mm) -> std::vector<bdd_t>;
 
-        auto reset () -> void;
+        virtual ~bdd_creator() = default;
+
+    private: 
+        auto or_merge_iterative  (std::vector<bdd_t> diagrams) -> bdd_t;
+        auto or_merge_sequential (std::vector<bdd_t> diagrams) -> bdd_t;
     };
 
-    template<class VertexData, class ArcData>
-    auto bdd_creator<VertexData, ArcData>::just_true
-        () -> bdd_t
+    template<class VertexData = double, class ArcData = empty_t>
+    auto x (const index_t i) -> bdd<VertexData, ArcData>
     {
-        vertex_t* const trueLeaf {new vertex_t {1, 0}};
-        
-        leaf_val_map_t leafValMap
-        {
-            {trueLeaf, 1}
-        };
-        
-        return bdd_t {trueLeaf, 0, std::move(leafValMap)};
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd_creator<VertexData, ArcData>::just_false
-        () -> bdd_t
-    {
-        vertex_t* const falseLeaf {new vertex_t {1, 0}};
-       
-        leaf_val_map_t leafValMap
-        {
-            {falseLeaf, 0}
-        };
-
-        return bdd_t {falseLeaf, 0, std::move(leafValMap)};
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd_creator<VertexData, ArcData>::just_var
-        (const index_t index) -> bdd_t
-    {
-        vertex_t* const falseLeaf {new vertex_t {1, index + 1}};
-        vertex_t* const trueLeaf  {new vertex_t {2, index + 1}};
-        vertex_t* const varVertex {new vertex_t {3, index, {arc_t {falseLeaf}, arc_t {trueLeaf}}}};
-        
-        leaf_val_map_t leafValMap
-        {
-            {falseLeaf, 0}
-          , {trueLeaf, 1}
-        };
-
-        return bdd_t {varVertex, index + 1, std::move(leafValMap)};
+        bdd_creator<VertexData, ArcData> creator;
+        return creator.just_var(i);
     }
 
     template<class VertexData, class ArcData>
     auto bdd_creator<VertexData, ArcData>::just_val
         (const bool_t value) -> bdd_t
     {
-        return 0 == value ? just_false() : just_true();
+        const auto leaf {this->create_vertex(0, 0u)};
+       
+        leaf_val_map leafValMap
+        {
+            {leaf, value}
+        };
+
+        return bdd_t {leaf, 0, std::move(leafValMap)};
     }
 
     template<class VertexData, class ArcData>
-    template<class BoolFunction, class GetFVal, class VarCount>
-    auto bdd_creator<VertexData, ArcData>::create_from
-        (const BoolFunction& in) -> bdd_t
+    auto bdd_creator<VertexData, ArcData>::just_var
+        (const index_t index) -> bdd_t
     {
-        const index_t leafLevel  {VarCount {} (in)};
-        const var_vals_t maxInput 
+        const auto falseLeaf {this->create_vertex(0, index + 1)};
+        const auto trueLeaf  {this->create_vertex(1, index + 1)};
+        const auto varVertex {this->create_vertex(2, index, arc_arr_t {arc_t {falseLeaf}, arc_t {trueLeaf}})};
+        
+        leaf_val_map leafValMap
         {
-            utils::two_pow(static_cast<var_vals_t>(VarCount {} (in)))
+            {falseLeaf, 0}
+          , {trueLeaf,  1}
         };
 
-        this->levels.resize(leafLevel + 1);
-
-        std::array<vertex_t*, 2> valToLeaf 
-        {
-            new vertex_t {nextId++, leafLevel}
-          , new vertex_t {nextId++, leafLevel}
-        };
-
-        leaf_val_map_t leafToVal 
-        { 
-            {valToLeaf[0], 0}
-          , {valToLeaf[1], 1} 
-        };
-
-        var_vals_t varVals {0};
-        while (varVals < maxInput)
-        {
-            const bool_t currInputVal {GetFVal {} (in, varVals)};
-            const bool_t nextInputVal {GetFVal {} (in, varVals + 1)};
-
-            vertex_t* son {nullptr};
-
-            if (currInputVal == nextInputVal)
-            {
-                son = valToLeaf[currInputVal];
-            }
-            else
-            {
-                vertex_t* const negativeTarget {valToLeaf[currInputVal]};
-                vertex_t* const positiveTarget {valToLeaf[nextInputVal]};
-
-                son = this->try_insert(vertex_key {negativeTarget, positiveTarget}, leafLevel - 1);
-            }
-            
-            stack.emplace(son, leafLevel - 1);
-            
-            while (stack.size() > 1)
-            {
-                if (stack.top().level != stack.under_top().level)
-                {
-                    break;
-                }
-
-                const size_t stackLevel {stack.top().level};
-
-                if (stack.top().vertexPtr == stack.under_top().vertexPtr)
-                {
-                    vertex_t* const v {stack.top().vertexPtr};
-
-                    stack.pop();
-                    stack.pop();
-
-                    stack.emplace(v, stackLevel - 1);
-                }
-                else
-                {
-                    vertex_t* const negativeTarget {stack.under_top().vertexPtr};
-                    vertex_t* const positiveTarget {stack.top().vertexPtr};
-                    
-                    stack.pop();
-                    stack.pop();
-
-                    son = this->try_insert(vertex_key {negativeTarget, positiveTarget}, stackLevel - 1);
-
-                    stack.emplace(son, stackLevel - 1);
-                }
-            }
-
-            varVals += 2;
-        }
-
-        vertex_t* root {stack.top().vertexPtr};
-        this->reset();
-
-        return bdd_t {
-            root
-          , VarCount {} (in)
-          , std::move(leafToVal)
-        };
+        return bdd_t {varVertex, index + 1, std::move(leafValMap)};
     }
 
     template<class VertexData, class ArcData>
@@ -218,7 +90,7 @@ namespace mix::dd
 
         if (1 != fVal)
         {
-            return just_false();
+            return this->just_val(0);
         }
 
         const auto varCount  {std::distance(varValsBegin, varValsEnd)};
@@ -234,7 +106,7 @@ namespace mix::dd
         {
             if (*varValsIt != X)
             {
-                relevantVariables.push_back(new vertex_t {nextId++, index});
+                relevantVariables.push_back(this->create_vertex(nextId++, index));
             }
 
             ++index;
@@ -243,17 +115,17 @@ namespace mix::dd
 
         if (relevantVariables.empty())
         {
-            return just_true();
+            return this->just_val(1);
         }
 
-        auto trueLeaf  {new vertex_t {nextId++, leafIndex}};
-        auto falseLeaf {new vertex_t {nextId++, leafIndex}};
+        auto trueLeaf  {this->create_vertex(nextId++, leafIndex)};
+        auto falseLeaf {this->create_vertex(nextId++, leafIndex)};
 
         auto relevantVarsIt  {relevantVariables.begin()};
         auto relevantVarsEnd {relevantVariables.end()};
         --relevantVarsEnd;
 
-        varValsIt = varValsBegin;
+        varValsIt = varValsBegin; // TODO moc škaredé
         while (relevantVarsIt != relevantVarsEnd)
         {
             const auto varIndex {std::distance(varValsBegin, varValsIt)};
@@ -275,8 +147,8 @@ namespace mix::dd
         const auto varVal   {*varValsIt};
         vertex->son(varVal)  = trueLeaf;
         vertex->son(!varVal) = falseLeaf;
-        
-        leaf_val_map_t leafToVal 
+
+        leaf_val_map leafToVal 
         { 
             {trueLeaf,  1}
           , {falseLeaf, 0} 
@@ -291,45 +163,152 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd_creator<VertexData, ArcData>::try_insert 
-        (const vertex_key key, const index_t level) -> vertex_t*
+    auto bdd_creator<VertexData, ArcData>::create_from_pla 
+        (const pla_file& file, merge_mode_e mm) -> std::vector<bdd_t>
     {
-        auto inGraphIt {levels[level].find(key)};
-        if (inGraphIt != levels[level].end())
-        {
-            return (*inGraphIt).second;            
-        }
+        const auto& plaLines      {file.get_lines()};
+        const auto  lineCount     {file.line_count()};
+        const auto  functionCount {file.function_count()};
 
-        auto newVertex 
+        std::vector<bdd_t> finalDiagrams(functionCount);
+
+        for (int32_t fi = 0; fi < functionCount; ++fi)
         {
-            new vertex_t {
-                this->nextId++
-                , level
-                , {arc_t {key.first}, arc_t {key.second}}
+            std::vector<bdd_t> diagrams;
+            diagrams.reserve(lineCount);
+
+            for (int32_t li = 0; li < lineCount; ++li)
+            {
+                if (plaLines[li].fVals.at(fi) == 1)
+                {
+                    diagrams.emplace_back(
+                    this->create_product( plaLines[li].cube.begin()
+                                        , plaLines[li].cube.end(), 1 ));
+                }
             }
-        };
-        levels[level].emplace(key, newVertex);
+
+            if (merge_mode_e::sequential == mm) finalDiagrams[fi] = this->or_merge_sequential(diagrams);
+            if (merge_mode_e::iterative  == mm) finalDiagrams[fi] = this->or_merge_iterative(diagrams);
+            
+            finalDiagrams[fi].set_labels(file.get_input_labels());
+        }
         
-        return newVertex;
+        return finalDiagrams;
     }
 
     template<class VertexData, class ArcData>
-    auto bdd_creator<VertexData, ArcData>::reset
-        () -> void
+    auto bdd_creator<VertexData, ArcData>::create_from_pla_p 
+        (const pla_file& file, merge_mode_e mm) -> std::vector<bdd_t>
     {
-        this->levels.clear();
-        this->stack.clear();
-        this->nextId = 0;
+        const auto& plaLines      {file.get_lines()};
+        const auto  lineCount     {file.line_count()};
+        const auto  functionCount {file.function_count()};
+
+        std::vector<bdd_t> finalDiagrams(functionCount);
+
+        #pragma omp parallel for schedule(dynamic, 1)
+        for (int32_t fi = 0; fi < functionCount; ++fi)
+        {
+            std::vector<bdd_t> diagrams;
+            diagrams.reserve(lineCount);
+
+            for (int32_t li = 0; li < lineCount; ++li)
+            {
+                if (plaLines[li].fVals.at(fi) == 1)
+                {
+                    diagrams.emplace_back(
+                    this->create_product( plaLines[li].cube.begin()
+                                        , plaLines[li].cube.end(), 1 ));
+                }
+            }
+
+            if (merge_mode_e::sequential == mm) finalDiagrams[fi] = this->or_merge_sequential(diagrams);
+            if (merge_mode_e::iterative  == mm) finalDiagrams[fi] = this->or_merge_iterative(diagrams);
+            
+            finalDiagrams[fi].set_labels(file.get_input_labels());
+        }
+        
+        return finalDiagrams;
     }
 
-    // template<class VertexData, class ArcData>
-    // bdd_creator<VertexData, ArcData>::stack_frame::stack_frame
-    //     ( vertex_t* const pVertexPtr
-    //     , const size_t pLevel) :
-    //     vertexPtr {pVertexPtr}
-    //   , level     {pLevel} 
-    // {
-    // }
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::or_merge_iterative
+        (std::vector<bdd_t> diagrams) -> bdd_t
+    {
+        using manipulator_t = bdd_manipulator<VertexData, ArcData>;
+
+        if (diagrams.empty())
+        {
+            return this->just_val(0);
+        }
+
+        const auto numOfSteps 
+        {
+            static_cast<size_t>(std::ceil(std::log2(diagrams.size())))
+        };
+
+        auto diagramCount 
+        {
+            static_cast<int32_t>(diagrams.size())
+        };
+
+        manipulator_t manipulator;
+        for (size_t step {0}; step < numOfSteps; ++step)
+        {
+            const bool justMoveLast {diagramCount & 1};
+            
+            diagramCount = (diagramCount >> 1) + (diagramCount & 1);
+
+            // TODO bez ifu v cykle...
+            for (int32_t i = 0; i < diagramCount; ++i)
+            {
+                if (i < diagramCount - 1 || !justMoveLast)
+                {
+                    diagrams[i] = manipulator.apply( std::move(diagrams[2 * i])
+                                                   , OR {}
+                                                   , std::move(diagrams[2 * i + 1]) );
+                }
+                else
+                {
+                    diagrams[i] = std::move(diagrams[2 * i]);
+                }
+            }
+
+            // if (diagramCount & 1)
+            // {
+            //     diagrams[diagramCount - 1] = std::move(diagrams[2 * (diagramCount - 1)]);
+            // }
+        }
+
+        return bdd_t {std::move(diagrams.front())};
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd_creator<VertexData, ArcData>::or_merge_sequential
+        (std::vector<bdd_t> diagrams) -> bdd_t
+    {
+        using manipulator_t = bdd_manipulator<VertexData, ArcData>;
+
+        if (diagrams.empty())
+        {
+            return this->just_val(0);
+        }
+
+        auto it  {diagrams.begin() + 1};
+        auto end {diagrams.end()};
+
+        manipulator_t manipulator;
+
+        while (it != end)
+        {
+            diagrams.front() = manipulator.apply( std::move(diagrams.front())
+                                                , OR {}
+                                                , std::move(*it) );
+            ++it;
+        }
+
+        return bdd_t {std::move(diagrams.front())};
+    }
 }
 
 #endif

@@ -1,7 +1,6 @@
 #include "bits.hpp"
 
 #include <array>
-#include <bitset>
 
 namespace mix::utils
 {
@@ -49,10 +48,16 @@ namespace mix::utils
         return c;
     }
 
-    auto to_string ( const uint64_t n
-                   , const size_t take) -> std::string
+    auto to_string ( const uint64_t bits
+                   , const size_t   take ) -> std::string
     {
-        return std::bitset<8 * sizeof(uint64_t)> {n}.to_string()
-                                               .substr(8 * sizeof(uint64_t) - take);
+        return std::bitset<8 * sizeof(uint64_t)> {bits}.to_string()
+                                                       .substr(8 * sizeof(uint64_t) - take);
+    }
+
+    auto to_string ( const std::bitset<128> bits
+                   , const size_t           take ) -> std::string
+    {
+        return bits.to_string().substr(8 * sizeof(uint64_t) - take);
     }
 }

@@ -3,7 +3,7 @@
 namespace mix::utils
 {
     random_base::random_base(unsigned long seed) :
-        generator {seed}
+        generator_ {seed}
     {
     }
 }
