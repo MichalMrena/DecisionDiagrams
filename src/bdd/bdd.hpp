@@ -321,29 +321,26 @@ namespace mix::dd
     auto bdd<VertexData, ArcData>::operator==
         (const bdd& other) const -> bool 
     {
-        if (this->root_ == other.root_)
+        if (root_ == other.root_)
         {
             // Catches comparison with self and also case when both diagrams are empty.
             return true;
         }
 
-        if (! this->root_ || ! other.root_)
+        if (! root_ || ! other.root_)
         {
             // Case when one of the roots is null.
             return false;
         }
 
-        const auto areEqual {are_equal(this->root_, other.root_, *this, other)};
-
-        if (! areEqual)
+        if (variableCount != other.variableCount)
         {
-            // Traverse both trees in order to correctly set marks.
-            // Since they are not equal only a part of each tree was traversed.
-            this->traverse(this->root_, [](auto) {});
-            this->traverse(other.root_, [](auto) {});
+            // Different number of variables. Can't be equal.
+            return false;
         }
 
-        return areEqual;
+        // Compare trees.
+        return bdd::are_equal(root_, other.root_, *this, other);
     }
 
     template<class VertexData, class ArcData>
@@ -449,7 +446,7 @@ namespace mix::dd
     {
         GetVarVal get_val;
 
-        auto v {this->root_};
+        auto v = root_;
 
         while (! this->is_leaf(v))
         {
@@ -769,60 +766,31 @@ namespace mix::dd
 
         if (d1.is_leaf(v1) != d2.is_leaf(v2))
         {
-            // One of them is not leaf.
+            // One of them is not leaf, can't be equal.
             return false;
         }
 
-        v1->mark = ! v1->mark;
-        v2->mark = ! v2->mark;
-
-        if (d1.is_leaf(v1) && d2.is_leaf(v2))
+        if (d1.is_leaf(v1))
         {
-            // Both are leafs so their values should match.
+            // Both are leafs so their values must match.
             return d1.leafToVal.at(v1) == d2.leafToVal.at(v2);
         }
 
-        const auto canV1DescendLeft  {v1->mark != v1->son(0)->mark};
-        const auto canV2DescendLeft  {v2->mark != v2->son(0)->mark};
-
-        if (canV1DescendLeft != canV2DescendLeft)
-        {
-            // Different state on the left so they can't be equal.
-            return false;
-        }
-
-        const auto equalOnTheLeft 
-        {
-            // Possibly search the left subtree.
-            canV1DescendLeft ? are_equal(v1->son(0), v2->son(0), d1, d2) : true
-        };
-
+        auto const equalOnTheLeft = are_equal(v1->son(0), v2->son(0), d1, d2);
         if (! equalOnTheLeft)
         {
+            // Left subtrees aren't equal => can't be equal.
             return false;
         }
 
-        const auto canV1DescendRight {v1->mark != v1->son(1)->mark};
-        const auto canV2DescendRight {v2->mark != v2->son(1)->mark};
-
-        if (canV1DescendRight != canV2DescendRight)
-        {
-            // Different state on the right so they can't be equal.
-            return false;
-        }
-
-        const auto equalOnTheRight 
-        {
-            // Possibly search the right subtree.
-            canV1DescendRight ? are_equal(v1->son(1), v2->son(1), d1, d2) : true
-        };
-
+        auto equalOnTheRight = are_equal(v1->son(1), v2->son(1), d1, d2);
         if (! equalOnTheRight)
         {
+            // Right subtrees aren't equal => can't be equal.
             return false;
         }
 
-        // Can't descend to either. Decision will be made somewhere else.
+        // A this point, the trees are equal.
         return true;
     }
 }
