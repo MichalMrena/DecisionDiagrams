@@ -8,54 +8,44 @@
 
 namespace mix::utils
 {
-    struct hash_accumulator
+    /**
+     *  Computes a hash value for std::tuple, std::pair, std::array
+     *  using std::hash and boost::hash_combine formula.
+    */
+    inline auto tuple_hash = [](auto&& tuple)
     {
-        size_t seed {0};
+        auto seed = 0ull;
 
-        auto operator() (const size_t hash) -> void
+        auto acc = [&seed](auto hash)
         {
             seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         };
+
+        auto app = [&acc](auto&&... e) 
+        { 
+            (acc(std::hash<std::decay_t<decltype(e)>> {} (std::forward<decltype(e)>(e))), ...); 
+        };
+        
+        std::apply(app, std::forward<decltype(tuple)>(tuple));
+        
+        return seed;
     };
 
-    template<size_t I, class... Ts>
-    auto hash_each_in_tuple 
-        (const std::tuple<Ts...>& tuple, hash_accumulator& acc) -> std::enable_if_t<0 != I> 
+    /**
+     *  Helper wrapper so that the above lambda can be easily used as template parameter.
+     * 
+     *  Example:
+     *  using key_t = const std::tuple<const int, const int, const char>;
+     *  using val_t = double;
+     *  using map_t = std::unordered_map<key_t, val_t, tuple_hash_t<key_t>>; 
+     *  auto myMap  = map_t {};
+     *  myMap.emplace(std::make_tuple(1, 2, 'a'), 3.14); 
+     *  auto pi     = myMap.at(std::make_tuple(1, 2, 'a'));
+    */
+    template<class Tuple>
+    struct tuple_hash_t
     {
-        std::hash<std::tuple_element_t<I, std::tuple<Ts...>>> hash;
-        acc(hash(std::get<I>(tuple)));
-        hash_each_in_tuple<I - 1, Ts...>(tuple, acc);
-    }
-
-    template<size_t I, class... Ts>
-    auto hash_each_in_tuple
-        (const std::tuple<Ts...>& tuple, hash_accumulator& acc) -> std::enable_if_t<0 == I>
-    {
-        std::hash<std::tuple_element_t<I, std::tuple<Ts...>>> hash;
-        acc(hash(std::get<0>(tuple)));
-    }
-
-    template<class... Ts>
-    struct tuple_hash
-    {
-        auto operator() (const std::tuple<Ts...>& key) const -> size_t
-        {
-            hash_accumulator acc;
-            hash_each_in_tuple< std::tuple_size_v<std::tuple<Ts...>> - 1 >(key, acc);
-            return acc.seed;
-        }
-    };
-
-    template<class T1, class T2>
-    struct pair_hash
-    {
-        auto operator() (const std::pair<T1, T2>& key) const -> size_t
-        {
-            hash_accumulator acc;
-            acc(std::hash<T1> {} (key.first));
-            acc(std::hash<T2> {} (key.second));
-            return acc.seed;
-        }
+        auto operator() (const Tuple& t) const { return tuple_hash(t); }
     };
 }
 
