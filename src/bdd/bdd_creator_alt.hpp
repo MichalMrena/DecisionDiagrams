@@ -26,8 +26,7 @@ namespace mix::dd
         using arc_t           = typename bdd_t::arc_t;
         using leaf_val_map_t  = typename bdd_t::leaf_val_map;
         using vertex_key      = std::pair<vertex_t*, vertex_t*>;
-        using vertex_key_hash = utils::pair_hash<vertex_t*, vertex_t*>;
-        using level_map       = std::unordered_map<vertex_key, vertex_t*, vertex_key_hash>;
+        using level_map       = std::unordered_map<const vertex_key, vertex_t*, utils::tuple_hash_t<const vertex_key>>;
 
         struct stack_frame
         {

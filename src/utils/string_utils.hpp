@@ -25,7 +25,7 @@ namespace mix::utils
                       , InputIt end
                       , std::string_view glue ) -> std::string
     {
-        std::ostringstream ost;
+        auto ost = std::ostringstream {};
 
         ost << *it;
         ++it;

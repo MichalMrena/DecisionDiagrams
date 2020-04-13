@@ -13,14 +13,12 @@ namespace mix::dd
     using id_t       = int32_t;
     using index_t    = uint32_t;
 
-    // using log_t = int8_t;
-
     template<size_t P>
     struct log_val_traits
     {
         using value_t = uint8_t;
 
-        static constexpr value_t X {P};
+        inline static constexpr value_t X = P;
     };
 
     /** 

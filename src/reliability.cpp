@@ -45,8 +45,8 @@ namespace mix
             {
                 if (! vertex.is_leaf())
                 {
-                    vertex.son(0)->data += vertex.data * (1 - probabilities[vertex.index]);
-                    vertex.son(1)->data += vertex.data * (probabilities[vertex.index]);
+                    vertex.son(0)->data += vertex.data * (1 - probabilities.at(vertex.index));
+                    vertex.son(1)->data += vertex.data * (probabilities.at(vertex.index));
                 }
             }
 
@@ -230,18 +230,18 @@ namespace mix
                                   , probs_v          probabilities
                                   , std::string_view exampleName )
         {
-            const auto varCount        {structureFunction.variable_count()};
-                  auto derivatives     {calculate_derivatives(structureFunction)};
-            const auto criticalStates  {critical_states(derivatives)};
-            const auto critStatesProbs {crit_states_probabilities(derivatives, probabilities)};
-            const auto minimalCuts     {minimal_cuts(derivatives, varCount)};
-            const auto minimalPaths    {minimal_paths(derivatives, varCount)};
+            auto const varCount        = structureFunction.variable_count();
+            auto       derivatives     = calculate_derivatives(structureFunction);
+            auto const criticalStates  = critical_states(derivatives);
+            auto const critStatesProbs = crit_states_probabilities(derivatives, probabilities);
+            auto const minimalCuts     = minimal_cuts(derivatives, varCount);
+            auto const minimalPaths    = minimal_paths(derivatives, varCount);
 
             std::cout << exampleName                                     << '\n'
                       << "Availiability = "
                       << availiability(structureFunction, probabilities) << '\n'
                       << "Critical states:"                              << '\n';
-            for (size_t i {0}; i < varCount; ++i)
+            for (auto i = 0u; i < varCount; ++i)
             {
                 std::cout << "  x" << i << " " << labels.at(i)           
                           << " ; p = " << critStatesProbs.at(i)          << '\n'
@@ -310,6 +310,13 @@ namespace mix
                             , {"Hospital_registry", "Department_1", "Department_2", "Department_3", "Pharmacy", "Pharmacy_1"}
                             , {0.8, 0.9, 0.9, 0.8, 0.7, 0.7}
                             , "# Example 5.1" );
+
+        // auto       diagram1 = !x(1) * x(2) * !x(3) + x(1) * !x(2) * !x(3) + x(1) * !x(2) * x(3) + x(1) * x(2) * !x(3);
+        // auto const ps       = probs_v { 0, 0.7, 0.8, 0.5 };
+        // auto const qs       = probs_v { 0, 0.3, 0.2, 0.5 };
+        // std::cout << availiability(diagram1, ps) << '\n';
+        // std::cout << qs[1] * ps[2] * qs[3] + ps[1] * qs[2] * qs[3] + ps[1] * qs[2] * ps[3] + ps[1] * ps[2] * qs[3] << '\n';
+        // std::cout << qs[1] * ps[2] * qs[3] + ps[1] * qs[2]                                 + ps[1] * ps[2] * qs[3] << '\n';
     }
 
     auto solve_examples_week_5 () -> void

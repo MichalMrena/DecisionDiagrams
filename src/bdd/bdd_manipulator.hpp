@@ -20,6 +20,7 @@ namespace mix::dd
         using vertex_t = typename bdd_t::vertex_t;
         using arc_t    = typename bdd_t::arc_t;
 
+    public:
         template<class BinOp> auto apply (bdd_t&&      d1, BinOp op, bdd_t&&      d2) -> bdd_t;
         template<class BinOp> auto apply (const bdd_t& d1, BinOp op, bdd_t&&      d2) -> bdd_t;
         template<class BinOp> auto apply (bdd_t&&      d1, BinOp op, const bdd_t& d2) -> bdd_t;
@@ -37,14 +38,12 @@ namespace mix::dd
         virtual ~bdd_manipulator() = default;
 
     private:
-        using vertex_pair_t         = std::pair<const vertex_t*, const vertex_t*>;
-        using vertex_pair_hash_t    = utils::pair_hash<const vertex_t*, const vertex_t*>;
-        using yet_in_triplet_t      = std::tuple<index_t, id_t, id_t>;
-        using yet_in_triplet_hash_t = utils::tuple_hash<index_t, id_t, id_t>;
-        using recursion_memo_map    = std::unordered_map<const vertex_pair_t, vertex_t*, vertex_pair_hash_t>;
-        using in_graph_memo_map     = std::unordered_map<const yet_in_triplet_t, vertex_t*, yet_in_triplet_hash_t>;
-        using leaf_val_map          = typename bdd_t::leaf_val_map;
-        using val_leaf_arr          = std::array<vertex_t*, 2>;
+        using vertex_pair_t      = std::pair<const vertex_t*, const vertex_t*>;
+        using yet_in_triplet_t   = std::tuple<index_t, id_t, id_t>;
+        using recursion_memo_map = std::unordered_map<const vertex_pair_t, vertex_t*, utils::tuple_hash_t<const vertex_pair_t>>;
+        using in_graph_memo_map  = std::unordered_map<const yet_in_triplet_t, vertex_t*, utils::tuple_hash_t<const yet_in_triplet_t>>;
+        using leaf_val_map       = typename bdd_t::leaf_val_map;
+        using val_leaf_arr       = std::array<vertex_t*, 2>;
 
         template<class BinOp>
         auto apply_step ( const vertex_t* const v1
@@ -218,18 +217,18 @@ namespace mix::dd
     auto bdd_manipulator<VertexData, ArcData>::negate
         (bdd_t& diagram) -> bdd_t&
     {
-        const auto trueLeaf  {diagram.true_leaf()};
-        const auto falseLeaf {diagram.false_leaf()};
+        auto const trueLeaf  = diagram.true_leaf();
+        auto const falseLeaf = diagram.false_leaf();
 
         if (trueLeaf)
         {
-            auto& val {diagram.leafToVal.at(trueLeaf)};
+            auto& val = diagram.leafToVal.at(trueLeaf);
             val = ! val;
         }
 
         if (falseLeaf)
         {
-            auto& val {diagram.leafToVal.at(falseLeaf)};
+            auto& val = diagram.leafToVal.at(falseLeaf);
             val = ! val;
         }
 

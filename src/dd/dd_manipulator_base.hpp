@@ -13,6 +13,7 @@ namespace mix::dd
     public:
         using vertex_t = vertex<VertexData, ArcData, N>;
 
+    public:
         virtual ~dd_manipulator_base() = default;
         
     protected:
@@ -27,7 +28,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, size_t N>
     template<class... Args>
     auto dd_manipulator_base<VertexData, ArcData, N>::create_vertex    
-        (Args&&... args)    -> vertex_t*
+        (Args&&... args) -> vertex_t*
     {
         return pool_.create_object(std::forward<Args>(args)...);
     }

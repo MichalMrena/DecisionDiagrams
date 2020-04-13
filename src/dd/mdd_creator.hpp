@@ -25,19 +25,18 @@ namespace mix::dd
     auto mdd_creator<VertexData, ArcData, P>::just_var
         (const index_t index) -> mdd_t
     {
-        auto id   (0);
-        auto root (this->create_vertex(id++, index));
-        
-        leaf_val_map leafToVal;
+        auto       id        = 0;
+        auto const root      = this->create_vertex(id++, index);
+        auto       leafToVal = leaf_val_map {};
 
-        for (auto val (0u); val < P; ++val)
+        for (auto val = 0u; val < P; ++val)
         {
-            auto leaf {this->create_vertex(id++, index + 1)};
+            auto const leaf = this->create_vertex(id++, index + 1);
             leafToVal.emplace(leaf, val);
             root->son(val) = leaf;
         }
 
-        return mdd_t (root, index + 1, std::move(leafToVal));
+        return mdd_t {root, index + 1, std::move(leafToVal)};
     }
 }
 
