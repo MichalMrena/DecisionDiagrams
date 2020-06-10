@@ -7,28 +7,10 @@
 
 namespace mix::utils
 {
-    template<class N>
-    inline constexpr auto is_signed_integral_v
+    template<class Base, class Exponent>
+    auto constexpr int_pow (Base base, Exponent exponent) -> Base
     {
-        std::integral_constant< bool
-                              , std::is_integral<N>::value 
-                                && std::is_signed<N>::value>::value
-    };
-    
-    template<class N>
-    inline constexpr auto is_unsigned_integral_v
-    {
-        std::integral_constant< bool
-                              , std::is_integral<N>::value 
-                                && std::is_unsigned<N>::value>::value
-    };
-
-    template< class BaseT
-            , class ExponentT
-            , class = typename std::enable_if<std::is_integral<ExponentT>::value, ExponentT>::type >
-    constexpr auto pow (BaseT base, ExponentT exponent) -> BaseT
-    {
-        BaseT result {1};
+        auto result = static_cast<Base>(1);
 
         for (;;)
         {
@@ -47,16 +29,14 @@ namespace mix::utils
         return result;
     }
     
-    template< class N
-            , class = typename std::enable_if<std::is_integral<N>::value, N>::type >
-    constexpr auto two_pow (const N exponent) -> uint64_t
+    template<class Exponent, class Result = uint64_t>
+    auto constexpr two_pow (Exponent const exponent) -> Result
     {
-        return static_cast<uint64_t>(1) << exponent;
+        return static_cast<Result>(1) << exponent;
     }
 
-    template< class N
-            , class = typename std::enable_if<std::is_integral<N>::value, N>::type >
-    constexpr auto is_power_of_two (const N num) -> bool
+    template<class N>
+    constexpr auto is_power_of_two (N const num) -> bool
     {
         return !( (num - 1) & num );
     }

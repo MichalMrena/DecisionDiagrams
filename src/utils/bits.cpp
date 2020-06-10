@@ -6,7 +6,7 @@ namespace mix::utils
 {
     namespace
     {
-        constexpr std::array<const uint8_t, 256> lookupTable
+        constexpr auto lookupTable = std::array<const uint8_t, 256>
         {
             0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0, 
             0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8, 
@@ -34,7 +34,7 @@ namespace mix::utils
 
     auto reverse_bits (const uint64_t n) -> uint64_t
     {
-        uint64_t c {0};
+        auto c = static_cast<uint64_t>(0);
 
         c = (lookup( (n)       & 0xff ) << 56)
           | (lookup( (n >> 8)  & 0xff ) << 48)

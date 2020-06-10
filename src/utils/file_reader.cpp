@@ -4,10 +4,10 @@
 
 namespace mix::utils
 {
-    file_reader::file_reader(const std::string& pFilePath) :
-        filePath_ {pFilePath}
-      , istr_     {pFilePath}
-      , needRead_ {true}
+    file_reader::file_reader(std::string pFilePath) :
+        istr_     {pFilePath},
+        filePath_ {std::move(pFilePath)},
+        needRead_ {true}
     {
     }
 
@@ -16,7 +16,7 @@ namespace mix::utils
     {
         if (! istr_.is_open())
         {
-            this->throw_cant_read();
+            throw_cant_read();
         }
     }
 
@@ -25,7 +25,7 @@ namespace mix::utils
     {
         if (needRead_)
         {
-            this->cache_next_line_except();
+            cache_next_line_except();
         }
         
         out = std::move(cachedLine_);
@@ -37,7 +37,7 @@ namespace mix::utils
     {
         if (needRead_)
         {
-            this->cache_next_line_except();
+            cache_next_line_except();
         }
         else
         {
@@ -48,14 +48,14 @@ namespace mix::utils
     }
 
     auto file_reader::peek_line_except 
-        () -> const std::string&
+        () -> std::string_view
     {
         if (! needRead_)
         {
             return cachedLine_;    
         }
 
-        this->cache_next_line_except();
+        cache_next_line_except();
         needRead_ = false;
 
         return cachedLine_;
@@ -69,7 +69,7 @@ namespace mix::utils
             return true;
         }
 
-        const auto ret {this->cache_next_line()};
+        auto const ret = cache_next_line();
         needRead_ = !ret;
         return ret;
     }
@@ -95,9 +95,9 @@ namespace mix::utils
     auto file_reader::cache_next_line_except 
         () -> void
     {
-        if (! this->cache_next_line())
+        if (! cache_next_line())
         {
-            this->throw_no_more_lines();
+            throw_no_more_lines();
         }
     }
 }

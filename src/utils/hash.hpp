@@ -1,9 +1,7 @@
-#ifndef _MIX_UTILS_HASH_
-#define _MIX_UTILS_HASH_
+#ifndef MIX_UTILS_HASH_
+#define MIX_UTILS_HASH_
 
-#include <functional>
-#include <cmath>
-#include <utility>
+#include <type_traits>
 #include <tuple>
 
 namespace mix::utils
@@ -12,7 +10,7 @@ namespace mix::utils
      *  Computes a hash value for std::tuple, std::pair, std::array
      *  using std::hash and boost::hash_combine formula.
     */
-    inline auto tuple_hash = [](auto&& tuple)
+    inline auto tuple_hash = [](auto const& tuple)
     {
         auto seed = 0ull;
 
@@ -23,10 +21,10 @@ namespace mix::utils
 
         auto app = [&acc](auto&&... e) 
         { 
-            (acc(std::hash<std::decay_t<decltype(e)>> {} (std::forward<decltype(e)>(e))), ...); 
+            (acc(std::hash<std::decay_t<decltype(e)>> {} (e)), ...); 
         };
         
-        std::apply(app, std::forward<decltype(tuple)>(tuple));
+        std::apply(app, tuple);
         
         return seed;
     };
@@ -45,7 +43,7 @@ namespace mix::utils
     template<class Tuple>
     struct tuple_hash_t
     {
-        auto operator() (const Tuple& t) const { return tuple_hash(t); }
+        auto operator() (Tuple const& t) const { return tuple_hash(t); }
     };
 }
 

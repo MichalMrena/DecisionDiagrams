@@ -1,69 +1,41 @@
 #ifndef _MIX_UTILS_PARSING_UTILS_
 #define _MIX_UTILS_PARSING_UTILS_
 
-#include <cstdint>
-#include <string>
+#include <string_view>
 #include <stdexcept>
+#include <charconv>
 
 namespace mix::utils
 {
     template<class N>
-    auto just_parse (const std::string& in, size_t* idx) -> N;
-
-    template<> 
-    auto just_parse<int32_t> (const std::string& in, size_t* idx) -> int32_t
+    struct parse_result
     {
-        return std::stoi(in, idx);
-    }
+        N    value;
+        bool isValid;
+        operator N    () const { return value; }
+        operator bool () const { return isValid; }
+    };
 
-    template<> 
-    auto just_parse<uint32_t> (const std::string& in, size_t* idx) -> uint32_t
+    template<class N>
+    auto parse (std::string_view in) -> parse_result<N>
     {
-        const auto ul {std::stoul(in, idx)};
+        auto ret    = N {};
+        auto result = std::from_chars(in.data(), in.data() + in.size(), ret);
 
-        if (ul > std::numeric_limits<uint32_t>::max())
-        {
-            *idx = 0;
-        }
-
-        return static_cast<uint32_t>(ul);
+        return {ret, std::errc {} == result.ec && result.ptr == in.data() + in.size()};
     }
 
     template<class N>
-    auto parse (const std::string& in, N& out) -> bool
+    auto parse_except (std::string_view in) -> N
     {
-        static_assert(std::is_arithmetic_v<N>, "Given type is not arithmetic.");
-
-        if (in.empty())
-        {
-            return false;
-        }
-
-        size_t idx;
+        auto const res = parse<N>(in);
         
-        try 
-        {
-            out = just_parse<N>(in, &idx);
-        }
-        catch (...)
-        {
-            return false;
-        }
-
-        return idx == in.size();
-    }
-
-    template<class N>
-    auto parse_except (const std::string& in) -> N
-    {
-        N out;
-        
-        if (! parse<N>(in, out))
+        if (!res.isValid)
         {
             throw std::invalid_argument {"Failed to parse number."};
         }
 
-        return out;
+        return res;
     }
 }
 
