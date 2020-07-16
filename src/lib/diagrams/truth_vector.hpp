@@ -1,0 +1,266 @@
+#ifndef MIX_DD_TRUTH_VECTOR_
+#define MIX_DD_TRUTH_VECTOR_
+
+#include "../utils/math_utils.hpp"
+#include "../utils/bits.hpp"
+#include "../utils/string_utils.hpp"
+
+#include <vector>
+#include <string_view>
+#include <filesystem>
+#include <fstream>
+#include <type_traits>
+#include <utility>
+#include <functional>
+#include <stdexcept>
+
+namespace mix::dd
+{
+    template<class Lambda>
+    class lambda_wrap_iterator
+    {
+    public:
+        using value_type        = bool;
+        using difference_type   = std::ptrdiff_t;
+        using iterator_category = std::random_access_iterator_tag;
+        using pointer           = void;
+        using reference         = void;
+
+    public:
+        lambda_wrap_iterator ( Lambda     const& lambda
+                             , index_t    const  varCount
+                             , var_vals_t const  curr );
+
+        auto operator*  () const -> value_type;
+        auto operator++ ()       -> lambda_wrap_iterator&;
+        auto operator-- ()       -> lambda_wrap_iterator&;
+        auto operator++ (int)    -> lambda_wrap_iterator;
+        auto operator-- (int)    -> lambda_wrap_iterator;
+        auto operator!= (lambda_wrap_iterator const& other) -> bool;
+        auto operator-  (lambda_wrap_iterator const& other) -> difference_type;
+
+    private:
+        using lambda_cref = std::reference_wrapper<Lambda const>;
+        lambda_cref lambda_;
+        index_t     varCount_;
+        var_vals_t  curr_;
+    };
+
+    template<class Lambda>
+    class lambda_wrap
+    {
+    public:
+        using lambda_t = std::decay_t<Lambda>;
+        using iterator = lambda_wrap_iterator<lambda_t>;
+
+        lambda_wrap (Lambda&& lambda);
+
+        auto begin ()       -> iterator;
+        auto end   ()       -> iterator;
+        auto begin () const -> iterator;
+        auto end   () const -> iterator;
+    
+    private:
+        index_t  varCount_;
+        lambda_t lambda_;
+    };
+
+    struct truth_vector
+    {
+        template<class Lambda>
+        static auto from_lambda      (Lambda&& function) -> decltype(lambda_wrap {std::forward<Lambda>(function)});
+        static auto from_text_file   (std::string_view path, std::size_t const varCount = 0) -> std::vector<bool>;
+        static auto from_binary_file (std::string_view path, std::size_t const varCount = 0) -> std::vector<bool>;
+    };
+
+// definitions:
+
+    namespace aux_impl
+    {
+        struct vcf {};
+
+        struct var_count_finder
+        {
+            index_t maxIndex {0};
+            
+            auto operator() (index_t const i)
+            {
+                maxIndex = std::max(maxIndex, i);
+                return vcf {};
+            }
+            
+            auto operator[] (index_t const i)
+            {
+                return (*this)(i);
+            }
+        };
+
+        // note: While deducing variable count from a lambda expression
+        // it is important that all calls to the var_count_finder are evaluated.
+        // However when using built-in && and || operators some calls might be skipped.
+        // example: x(0) && x(1) would deduce variable count 1, since value returned
+        // from operator() is false so maxIndex would be 0.
+        // Overloading these two operators prevents built-in short circuit evaluation.
+
+        inline auto operator!  (vcf const&) { return vcf {}; }
+        inline auto operator&& (vcf const&, vcf const&) { return vcf {}; }
+        inline auto operator&& (vcf const&, bool const) { return vcf {}; }
+        inline auto operator&& (bool const, vcf const&) { return vcf {}; }
+        inline auto operator|| (vcf const&, vcf const&) { return vcf {}; }
+        inline auto operator|| (vcf const&, bool const) { return vcf {}; }
+        inline auto operator|| (bool const, vcf const&) { return vcf {}; }
+
+        template<class Lambda>
+        auto var_count (Lambda const& lambda) -> index_t
+        {
+            auto finder = var_count_finder {};
+            lambda(finder);
+            return 1 + finder.maxIndex;
+        }
+    }
+
+    template<class Lambda>
+    lambda_wrap_iterator<Lambda>::lambda_wrap_iterator
+        (Lambda const& lambda, index_t const varCount, var_vals_t const curr) :
+        lambda_   {std::cref(lambda)},
+        varCount_ {varCount},
+        curr_     {curr}
+    {
+    }
+
+    template<class Lambda>
+    auto lambda_wrap_iterator<Lambda>::operator++ 
+        () -> lambda_wrap_iterator&
+    {
+        ++curr_;
+        return *this;
+    }
+
+    template<class Lambda>
+    auto lambda_wrap_iterator<Lambda>::operator-- 
+        () -> lambda_wrap_iterator&
+    {
+        if (0 == curr_)
+        {
+            throw std::out_of_range {"Cannot decrement begin iterator."};
+        }
+
+        --curr_;
+        return *this;
+    }
+
+    template<class Lambda>
+    auto lambda_wrap_iterator<Lambda>::operator++ 
+        (int) -> lambda_wrap_iterator
+    {
+        auto const copy = *this;
+        ++(*this);
+        return copy;
+    }
+
+    template<class Lambda>
+    auto lambda_wrap_iterator<Lambda>::operator-- 
+        (int) -> lambda_wrap_iterator
+    {
+        auto const copy = *this;
+        --(*this);
+        return copy;
+    }
+
+    template<class Lambda>
+    auto lambda_wrap_iterator<Lambda>::operator!= 
+        (lambda_wrap_iterator const& other) -> bool
+    {
+        return curr_ != other.curr_;
+    }
+
+    template<class Lambda>
+    auto lambda_wrap_iterator<Lambda>::operator-
+        (lambda_wrap_iterator const& other) -> difference_type
+    {
+        return curr_ - other.curr_;
+    }
+
+    template<class Lambda>
+    auto lambda_wrap_iterator<Lambda>::operator* 
+        () const -> bool
+    {
+        auto const shift = 8 * sizeof(var_vals_t) - varCount_;
+        return lambda_(utils::bit_accesser {utils::reverse_bits(curr_) >> shift});
+    }
+
+    template<class Lambda>
+    lambda_wrap<Lambda>::lambda_wrap(Lambda&& lambda) :
+        varCount_ {aux_impl::var_count(lambda)},
+        lambda_   {std::forward<Lambda>(lambda)}
+    {
+    }
+
+    template<class Lambda>
+    auto lambda_wrap<Lambda>::begin
+        () -> iterator
+    {
+        return iterator {lambda_,  varCount_, 0};
+    }
+
+    template<class Lambda>
+    auto lambda_wrap<Lambda>::end
+        () -> iterator
+    {
+        return iterator {lambda_, varCount_, utils::two_pow(varCount_)};
+    }
+
+    template<class Lambda>
+    auto lambda_wrap<Lambda>::begin
+        () const -> iterator
+    {
+        return iterator {lambda_,  varCount_, 0};
+    }
+
+    template<class Lambda>
+    auto lambda_wrap<Lambda>::end
+        () const -> iterator
+    {
+        return iterator {lambda_, varCount_, utils::two_pow(varCount_)};
+    }
+
+    template<class Lambda>
+    auto truth_vector::from_lambda (Lambda&& function) -> decltype(lambda_wrap {std::forward<Lambda>(function)})
+    {
+        // TODO min max index, potom by sa dal posunúť k 0 a po vytvorení zase posunúť naspäť
+        return lambda_wrap {std::forward<Lambda>(function)};
+    }
+
+    inline auto truth_vector::from_text_file
+        (std::string_view path, std::size_t const varCount) -> std::vector<bool>
+    {
+        auto c    = char {'_'};
+        auto istr = std::fstream {std::filesystem::path {path}};
+        auto vals = std::vector<bool> {};
+
+        if (! istr.is_open())
+        {
+            throw std::runtime_error {utils::concat("Failed to open file " , path)};
+        }
+
+        if (0 != varCount)
+        {
+            vals.reserve(utils::two_pow(varCount));
+        }
+
+        while (istr >> c)
+        {
+            vals.push_back(c == '1');
+        }
+        
+        return vals;
+    }
+
+    inline auto truth_vector::from_binary_file
+        (std::string_view, std::size_t const) -> std::vector<bool>
+    {
+        throw "not supported yet";
+    }
+}
+
+#endif
