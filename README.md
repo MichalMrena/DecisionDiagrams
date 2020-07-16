@@ -1,3 +1,2 @@
 # Binary decision diagrams
-Welcome visitor. This repository contains a C++ library for creating and manipulating Ordered Binary Decision Diagrams. 
-The library is still in the developement so everything is quite messy. This is public just because I wanted to show it to someone. Feel free to look around. Biggest things are happening inside ```./src/bdd/bdd.hpp```, ```./src/bdd/bdd_creator.hpp``` and ```./src/bdd/bdd_manipulator.hpp```.
+Comming soon...
