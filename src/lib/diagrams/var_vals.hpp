@@ -128,7 +128,7 @@ namespace mix::dd
             {
                 throw std::out_of_range {"Bit index out of range."};
             }
-            vars |= 1 << i;
+            vars = (vars & ~(1UL << i)) | (v << i);
         }
     };
 }

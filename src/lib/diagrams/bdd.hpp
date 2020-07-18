@@ -354,7 +354,7 @@ namespace mix::dd
         auto c = Container {};
         auto outIt = std::inserter(c, std::end(c));
 
-        this->traverse_pre(this->root_, [&c, &outIt](auto const v)
+        this->traverse_pre(base::root_, [&outIt](auto const v)
         {
             outIt = v;
         });

@@ -241,7 +241,7 @@ namespace mix::dd
     auto bdd_reliability<VertexData, ArcData, Allocator>::criticality_importance
         (bdd_t&& dpbd, std::vector<double> const& ps, double const U, index_t const i) -> double
     {
-        return this->criticality_importance(dpbd, ps, U);
+        return this->criticality_importance(dpbd, ps, U, i);
     }
 
     template<class VertexData, class ArcData, class Allocator>

@@ -299,7 +299,7 @@ namespace mix::dd
 
     template<size_t RecordBitSize, class ValueType>
     auto bit_vector<RecordBitSize, ValueType>::get
-        (const size_t i, case_general) const -> ValueType
+        (const size_t /*i*/, case_general) const -> ValueType
     {
         throw std::runtime_error {"Not supported yet."};
     }
@@ -320,7 +320,7 @@ namespace mix::dd
 
     template<size_t RecordBitSize, class ValueType>
     auto bit_vector<RecordBitSize, ValueType>::set
-        (const size_t i, const ValueType val, case_general)  -> void
+        (const size_t /*i*/, const ValueType /*val*/, case_general)  -> void
     {
         throw std::runtime_error {"Not supported yet."};
     }

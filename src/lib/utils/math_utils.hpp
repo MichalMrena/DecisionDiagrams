@@ -40,6 +40,7 @@ namespace mix::utils
     template<class N>
     auto constexpr is_power_of_two (N const num) -> bool
     {
+        // TODO C++20 std::has_single_bit
         return !( (num - 1) & num );
     }
 }

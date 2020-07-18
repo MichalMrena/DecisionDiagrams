@@ -3,13 +3,11 @@ TARGET_EXEC ?= main.exe
 
 INC_DIRS := $(shell find ./src -type d)
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
-
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
-
 DEBUG_BUILD_DIR ?= ./buildDebug
 RELEASE_BUILD_DIR ?= ./buildRelease
-
 SRC_DIRS ?= ./src
+CXX = clang++-10
 
 ifdef DEBUG
 	CPPFLAGS += -g -Wall -Wextra -Wpedantic -std=c++17 -fopenmp

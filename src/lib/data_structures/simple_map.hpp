@@ -459,7 +459,7 @@ namespace mix::ds
     auto simple_map<Key, T, KeyEqual, Container>::insert_impl
         (V&& v) -> std::pair<iterator, bool>
     {
-        auto const ins = [this](auto&& k, auto&& v) 
+        auto const ins = [this](auto&&, auto&& v) 
         { this->data_.emplace_back(std::forward<V>(v)); };
         return this->possibly_insert(v.first, ins, std::forward<V>(v));
     }
@@ -525,7 +525,7 @@ namespace mix::ds
     }
 
 
-    template<class Key, class T, class KeyEqual = std::equal_to<T>>
+    template<class Key, class T, class KeyEqual>
     auto make_simple_map (std::size_t const initialSize) -> simple_map<Key, T, KeyEqual, std::vector<std::pair<const Key, T>>>
     {
         auto vec = std::vector<std::pair<const Key, T>> {};
