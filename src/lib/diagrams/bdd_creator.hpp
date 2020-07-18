@@ -42,11 +42,10 @@ namespace mix::dd
         template<class Range>
         auto product (Range&& range) -> bdd_t;
 
-        auto from_pla   (pla_file const& file, merge_mode_e mm = merge_mode_e::iterative) -> std::vector<bdd_t>;
-        auto from_pla_p (pla_file const& file, merge_mode_e mm = merge_mode_e::iterative) -> std::vector<bdd_t>;
+        auto from_pla (pla_file const& file, merge_mode_e mm = merge_mode_e::iterative) -> std::vector<bdd_t>;
 
         template<class Range>
-        auto from_vector (Range&& range) -> bdd_t;
+        auto from_vector (Range const& range) -> bdd_t;
 
         template<class InputIt>
         auto from_vector (InputIt first, InputIt last) -> bdd_t;
@@ -95,7 +94,7 @@ namespace mix::dd
     }
 
     template<class VertexData = double, class ArcData = void>
-    auto x (const index_t i) -> bdd<VertexData, ArcData>
+    auto x (index_t const i) -> bdd<VertexData, ArcData>
     {
         using creator_t = bdd_creator<VertexData, ArcData>;
         auto creator = creator_t {};
@@ -179,42 +178,9 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, class Allocator>
-    auto bdd_creator<VertexData, ArcData, Allocator>::from_pla_p 
-        (pla_file const& file, merge_mode_e mm) -> std::vector<bdd_t>
-    {
-        auto& plaLines        = file.get_lines();
-        auto  lineCount       = static_cast<int>(file.line_count());
-        auto  functionCount   = static_cast<int>(file.function_count());
-        auto functionDiagrams = std::vector<bdd_t>(functionCount, bdd_t {base::manager_.alloc_()});
-
-        #pragma omp parallel for schedule(dynamic, 1)
-        for (auto fi = 0; fi < functionCount; ++fi)
-        {
-            auto productDiagrams = utils::vector<bdd_t>(lineCount);
-            for (auto li = 0; li < lineCount; ++li)
-            {
-                if (plaLines[li].fVals.at(fi) == 1)
-                {
-                    productDiagrams.emplace_back(this->line_to_product(plaLines[li]));
-                }
-            }
-
-            if (productDiagrams.empty())
-            {
-                productDiagrams.emplace_back(this->just_val(0));
-            }
-
-            functionDiagrams.emplace_back(this->or_merge(std::move(productDiagrams), mm));
-            functionDiagrams.back().set_labels(file.get_input_labels());
-        }
-        
-        return functionDiagrams;
-    }
-
-    template<class VertexData, class ArcData, class Allocator>
     template<class Range>
     auto bdd_creator<VertexData, ArcData, Allocator>::from_vector
-        (Range&& range) -> bdd_t
+        (Range const& range) -> bdd_t
     {
         return this->from_vector(std::begin(range), std::end(range));
     }
@@ -300,7 +266,9 @@ namespace mix::dd
             base::manager_.release(valToLeaf.at(0));
         }
 
-        return bdd_t {root, std::move(leafToVal), base::manager_.get_alloc()};
+        return bdd_t { root
+                     , std::move(leafToVal)
+                     , base::manager_.get_alloc() };
     }
 
     template<class VertexData, class ArcData, class Allocator>

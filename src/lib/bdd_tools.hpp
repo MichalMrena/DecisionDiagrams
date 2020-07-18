@@ -25,7 +25,7 @@ namespace mix::dd
     public:
         auto creator     () -> creator_t;
         auto manipulator () -> manipulator_t;
-        auto reliability () -> reliability_t;
+        auto reliability () -> reliability_t; // TODO only if VertexData is double
 
     private:
         pool_t pool_;

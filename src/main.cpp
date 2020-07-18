@@ -115,10 +115,7 @@ auto vec_create()
     auto const xs1 = std::vector {0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     auto const xs2 = (x(0) * x(1)) + ((x(2) * x(3)) + x(4));
     auto const xs3 = truth_vector::from_text_file("input_func.txt");
-    // auto const vec = truth_vector::from_lambda([](auto&& x) 
-    // { 
-    //     return (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
-    // });
+    auto const xs4 = truth_vector::from_string("01010111");
     auto const vec = truth_vector::from_lambda([](auto&& x) 
     { 
         return (x(1) && x(2)) || x(3);
@@ -126,10 +123,11 @@ auto vec_create()
  
     auto const d = creator.from_vector(xs3);
 
-    creator.from_vector(xs3).to_dot_graph(std::cout);
-    creator.from_vector(xs1).to_dot_graph(std::cout);
-    creator.from_vector(vec).to_dot_graph(std::cout);
-    xs2.to_dot_graph(std::cout);
+    // creator.from_vector(xs3).to_dot_graph(std::cout);
+    // creator.from_vector(xs1).to_dot_graph(std::cout);
+    // creator.from_vector(vec).to_dot_graph(std::cout);
+    creator.from_vector(xs4).to_dot_graph(std::cout);
+    // xs2.to_dot_graph(std::cout);
 }
 
 auto pla_alloc_speed_pooled()
@@ -258,11 +256,11 @@ auto main() -> int
     // alloc();
     // vec_create();
     // pla_alloc_speed_default();
-    // pla_alloc_speed_pooled();
+    pla_alloc_speed_pooled();
     // sanity_check();
     // map_test();
     // reliability_test();
-    satisfy_test();
+    // satisfy_test();
 
     // auto tools   = bdd_tools {};
     // auto creator = tools.creator();
@@ -276,10 +274,10 @@ auto main() -> int
 
     // auto tools   = bdd_tools {};
     // auto creator = tools.creator();
-    // auto file    = pla_file::load_file("inc.pla");
+    // auto file    = pla_file::load_file("/mnt/c/Users/mrena/Desktop/abc-master/example.pla");
     // auto ds      = creator.from_pla(file, merge_mode_e::iterative);
 
-    // printl(ds.at(0).to_dot_graph());
+    // ds[0].to_dot_graph(std::cout);
 
     // auto tools   = bdd_tools {};
     // auto creator = tools.creator();

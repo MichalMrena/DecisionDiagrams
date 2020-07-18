@@ -68,7 +68,8 @@ namespace mix::dd
     struct truth_vector
     {
         template<class Lambda>
-        static auto from_lambda      (Lambda&& function) -> decltype(lambda_wrap {std::forward<Lambda>(function)});
+        static auto from_lambda      (Lambda&& function)    -> decltype(lambda_wrap {std::forward<Lambda>(function)});
+        static auto from_string      (std::string_view vec) -> std::vector<bool>;
         static auto from_text_file   (std::string_view path, std::size_t const varCount = 0) -> std::vector<bool>;
         static auto from_binary_file (std::string_view path, std::size_t const varCount = 0) -> std::vector<bool>;
     };
@@ -109,6 +110,9 @@ namespace mix::dd
         inline auto operator|| (vcf const&, vcf const&) { return vcf {}; }
         inline auto operator|| (vcf const&, bool const) { return vcf {}; }
         inline auto operator|| (bool const, vcf const&) { return vcf {}; }
+        inline auto operator!= (vcf const&, vcf const&) { return vcf {}; }
+        inline auto operator!= (vcf const&, bool const) { return vcf {}; }
+        inline auto operator!= (bool const, vcf const&) { return vcf {}; }
 
         template<class Lambda>
         auto var_count (Lambda const& lambda) -> index_t
@@ -116,6 +120,14 @@ namespace mix::dd
             auto finder = var_count_finder {};
             lambda(finder);
             return 1 + finder.maxIndex;
+        }
+
+        inline auto val_check_except (char const c) -> void
+        {
+            if ('0' != c && '1' != c)
+            {
+                throw std::logic_error {utils::concat("Invalid value in a truth vector: ", std::string(1, c))};
+            }
         }
     }
 
@@ -227,8 +239,28 @@ namespace mix::dd
     template<class Lambda>
     auto truth_vector::from_lambda (Lambda&& function) -> decltype(lambda_wrap {std::forward<Lambda>(function)})
     {
-        // TODO min max index, potom by sa dal posunúť k 0 a po vytvorení zase posunúť naspäť
         return lambda_wrap {std::forward<Lambda>(function)};
+    }
+
+    auto truth_vector::from_string (std::string_view vec) -> std::vector<bool>
+    {
+        if (!utils::is_power_of_two(vec.size()))
+        {
+            throw std::logic_error {"Size of the vector must be power of two."};
+        }
+
+        auto vals = utils::vector<bool>(static_cast<std::size_t>(std::log2(vec.size())));
+        auto it   = std::begin(vec);
+        auto end  = std::end(vec);
+        
+        while (it != end)
+        {
+            auto const val = *it++;
+            aux_impl::val_check_except(val);
+            vals.push_back(val == '1');
+        }
+
+        return vals;
     }
 
     inline auto truth_vector::from_text_file
@@ -250,6 +282,7 @@ namespace mix::dd
 
         while (istr >> c)
         {
+            aux_impl::val_check_except(c);
             vals.push_back(c == '1');
         }
         

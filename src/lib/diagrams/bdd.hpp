@@ -23,6 +23,7 @@ namespace mix::dd
     class bdd : public mdd<VertexData, ArcData, 2, Allocator>
     {
     public:
+        using base     = mdd<VertexData, ArcData, 2, Allocator>;
         using vertex_t = typename base::vertex_t;
         using arc_t    = typename base::arc_t;
         using log_t    = bool_t;
@@ -110,6 +111,14 @@ namespace mix::dd
         auto clone () const -> bdd;
 
         /**
+            Creates new diagrams by moving this diagram into to new one.
+            This diagram is left empty.
+
+            @return new diagram with content of this diagram.
+         */
+        auto move () -> bdd;
+
+        /**
             @return Pointer to the leaf vertex that represents true value.
                     nullptr if there is no such vertex.
          */
@@ -134,8 +143,7 @@ namespace mix::dd
 
     private:
         using leaf_val_map = typename base::leaf_val_map;
-        using manager_t    = typename base::manager_t;
-        using base         = mdd<VertexData, ArcData, 2, Allocator>;
+        using manager_t    = typename base::manager_t;        
 
     private:
         bdd ( vertex_t* const  root
@@ -282,6 +290,13 @@ namespace mix::dd
         () const -> bdd
     {
         return bdd {*this};
+    }
+
+    template<class VertexData, class ArcData, class Allocator>
+    auto bdd<VertexData, ArcData, Allocator>::move
+        () -> bdd
+    {
+        return bdd {std::move(*this)};
     }
 
     template<class VertexData, class ArcData, class Allocator>

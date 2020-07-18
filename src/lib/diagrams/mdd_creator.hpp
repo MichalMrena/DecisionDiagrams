@@ -20,8 +20,9 @@ namespace mix::dd
     public:
         mdd_creator (Allocator const& alloc = Allocator {});
 
-        auto just_val (log_t   const val)   -> mdd_t;
-        auto just_var (index_t const index) -> mdd_t;
+        auto just_val   (log_t   const val)   -> mdd_t;
+        auto just_var   (index_t const index) -> mdd_t;
+        auto operator() (index_t const index) -> mdd_t;
 
     protected:
         using leaf_val_map = typename mdd_t::leaf_val_map;
@@ -53,7 +54,16 @@ namespace mix::dd
             root->son(val) = leaf;
         }
 
-        return mdd_t {root, std::move(leafToVal), manager_.get_alloc()};
+        return mdd_t { root
+                     , std::move(leafToVal)
+                     , manager_.get_alloc() };
+    }
+
+    template<class VertexData, class ArcData, size_t P, class Allocator>
+    auto mdd_creator<VertexData, ArcData, P, Allocator>::operator()
+        (index_t const index) -> mdd_t
+    {
+        return this->just_var(index);
     }
 
     template<class VertexData, class ArcData, size_t P, class Allocator>

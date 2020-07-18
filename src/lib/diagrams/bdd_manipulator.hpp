@@ -24,35 +24,69 @@ namespace mix::dd
         auto restrict_var (bdd_t&  diagram, index_t const i, bool_t const val) -> bdd_t&;
         auto restrict_var (bdd_t&& diagram, index_t const i, bool_t const val) -> bdd_t;
 
+        /**
+            Performs logical not on the @p diagram with constant complexity.
+            Operation negates referenced diagram and doesn't created new one.
+            @return @p diagram .
+         */
         auto negate (bdd_t&  diagram) -> bdd_t&;
+
+        /**
+            Performs logical not on the @p diagram with constant complexity.
+            @return new negated move constructed diagram.
+         */
         auto negate (bdd_t&& diagram) -> bdd_t;
 
     private:
         using base = mdd_manipulator<VertexData, ArcData, 2, Allocator>;
     };
 
+    /**
+        Performs apply AND.
+     */
     template<class VertexData, class ArcData, class Allocator>
-    auto operator&& ( bdd<VertexData, ArcData, Allocator> lhs
-                    , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>;
+    auto operator&& ( bdd<VertexData, ArcData, Allocator> const& lhs
+                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
     
+    /**
+        Performs apply AND.
+     */
     template<class VertexData, class ArcData, class Allocator>
-    auto operator* ( bdd<VertexData, ArcData, Allocator> lhs
-                   , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>;
+    auto operator* ( bdd<VertexData, ArcData, Allocator> const& lhs
+                   , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
 
+    /**
+        Performs apply OR.
+     */
     template<class VertexData, class ArcData, class Allocator>
-    auto operator|| ( bdd<VertexData, ArcData, Allocator> lhs
-                    , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>;
+    auto operator|| ( bdd<VertexData, ArcData, Allocator> const& lhs
+                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
 
+    /**
+        Performs apply OR.
+     */
     template<class VertexData, class ArcData, class Allocator>
-    auto operator+ ( bdd<VertexData, ArcData, Allocator> lhs
-                   , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>;
+    auto operator+ ( bdd<VertexData, ArcData, Allocator> const& lhs
+                   , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
     
+    /**
+        Performs apply XOR.
+     */
     template<class VertexData, class ArcData, class Allocator>
-    auto operator^ ( bdd<VertexData, ArcData, Allocator> lhs
-                   , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>;
+    auto operator^ ( bdd<VertexData, ArcData, Allocator> const& lhs
+                   , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
     
+    /**
+        Performs negate.
+     */
     template<class VertexData, class ArcData, class Allocator>
-    auto operator! ( bdd<VertexData, ArcData, Allocator> lhs ) -> bdd<VertexData, ArcData, Allocator>;
+    auto operator! ( bdd<VertexData, ArcData, Allocator>& lhs ) -> bdd<VertexData, ArcData, Allocator>&;
+    
+    /**
+        Performs negate.
+     */
+    template<class VertexData, class ArcData, class Allocator>
+    auto operator! ( bdd<VertexData, ArcData, Allocator>&& lhs ) -> bdd<VertexData, ArcData, Allocator>;
 
 // definitions:
 
@@ -153,47 +187,54 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, class Allocator>
-    auto operator&& ( bdd<VertexData, ArcData, Allocator> lhs
-                    , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>
+    auto operator&& ( bdd<VertexData, ArcData, Allocator> const& lhs
+                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>
     {
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), AND {}, std::move(rhs));
     }
 
     template<class VertexData, class ArcData, class Allocator>
-    auto operator* ( bdd<VertexData, ArcData, Allocator> lhs
-                   , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>
+    auto operator* ( bdd<VertexData, ArcData, Allocator> const& lhs
+                   , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>
     {
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), AND {}, std::move(rhs));
     }
     
     template<class VertexData, class ArcData, class Allocator>
-    auto operator|| ( bdd<VertexData, ArcData, Allocator> lhs
-                    , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>
+    auto operator|| ( bdd<VertexData, ArcData, Allocator> const& lhs
+                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>
     {
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), OR {}, std::move(rhs));
     }
     
     template<class VertexData, class ArcData, class Allocator>
-    auto operator+ ( bdd<VertexData, ArcData, Allocator> lhs
-                   , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>
+    auto operator+ ( bdd<VertexData, ArcData, Allocator> const& lhs
+                   , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>
     {
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), OR {}, std::move(rhs));
     }
     
     template<class VertexData, class ArcData, class Allocator>
-    auto operator^ ( bdd<VertexData, ArcData, Allocator> lhs
-                   , bdd<VertexData, ArcData, Allocator> rhs ) -> bdd<VertexData, ArcData, Allocator>
+    auto operator^ ( bdd<VertexData, ArcData, Allocator> const& lhs
+                   , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>
     {
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), XOR {}, std::move(rhs));
     }
 
     template<class VertexData, class ArcData, class Allocator>
-    auto operator! ( bdd<VertexData, ArcData, Allocator> lhs ) -> bdd<VertexData, ArcData, Allocator>
+    auto operator! ( bdd<VertexData, ArcData, Allocator>& lhs ) -> bdd<VertexData, ArcData, Allocator>&
+    {
+        auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
+        return manipulator.negate(lhs);
+    }
+
+    template<class VertexData, class ArcData, class Allocator>
+    auto operator! ( bdd<VertexData, ArcData, Allocator>&& lhs ) -> bdd<VertexData, ArcData, Allocator>
     {
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.negate(std::move(lhs));
