@@ -4,8 +4,6 @@
 #include "mdd.hpp"
 #include "../utils/math_utils.hpp"
 
-#include <vector>
-#include <set>
 #include <type_traits>
 
 namespace mix::dd
@@ -222,35 +220,35 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd<VertexData, ArcData, Allocator>::operator==
-        (const bdd& other) const -> bool 
+        (const bdd& rhs) const -> bool 
     {
-        if (base::root_ == other.root_)
+        if (base::root_ == rhs.root_)
         {
             // Catches comparison with self and also case when both diagrams are empty.
             return true;
         }
 
-        if (! base::root_ || ! other.root_)
+        if (! base::root_ || ! rhs.root_)
         {
             // Case when one of the roots is null.
             return false;
         }
 
-        if (this->variable_count() != other.variable_count())
+        if (this->variable_count() != rhs.variable_count())
         {
             // Different number of variables. Can't be equal.
             return false;
         }
 
         // Compare trees.
-        return bdd::are_equal(base::root_, other.root_, *this, other);
+        return bdd::are_equal(base::root_, rhs.root_, *this, rhs);
     }
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd<VertexData, ArcData, Allocator>::operator!=
-        (bdd const& other) const -> bool 
+        (bdd const& rhs) const -> bool 
     {
-        return ! (*this == other);
+        return ! (*this == rhs);
     }
 
     template<class VertexData, class ArcData, class Allocator>

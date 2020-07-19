@@ -6,11 +6,9 @@
 #include "../utils/string_utils.hpp"
 
 #include <vector>
-#include <string_view>
 #include <filesystem>
 #include <fstream>
 #include <type_traits>
-#include <utility>
 #include <functional>
 #include <stdexcept>
 
@@ -242,7 +240,7 @@ namespace mix::dd
         return lambda_wrap {std::forward<Lambda>(function)};
     }
 
-    auto truth_vector::from_string (std::string_view vec) -> std::vector<bool>
+    inline auto truth_vector::from_string (std::string_view vec) -> std::vector<bool>
     {
         if (!utils::is_power_of_two(vec.size()))
         {

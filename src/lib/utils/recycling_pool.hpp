@@ -33,7 +33,7 @@ namespace mix::utils
 
     private:
         [[nodiscard]]
-        auto allocate_new   () -> pointer;
+        auto allocate_new () -> pointer;
 
     private:
         std::size_t maxSize_;

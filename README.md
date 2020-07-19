@@ -88,7 +88,7 @@ Diagram itself has a couple of useful methods. Most of them are pretty straight 
 auto& x      = creator;
 auto diagram = (x(0) && x(1)) || x(2);
 ```
-Get value of the function for given values of variables. As you can see there are different ways to pass values of variables. You can even provide your own type as long as you provide functor that extract a value of i-th variable from it. See [var_vals.hpp](./src/lib/diagrams/var_vals.hpp) for details.
+Get value of the function for given values of variables. As you can see there are different ways to pass values of variables. You can even provide your own type as long as you provide functor that extracts a value of i-th variable from it. See [var_vals.hpp](./src/lib/diagrams/var_vals.hpp) for details.
 ```C++
 auto value1 = diagram.get_value(std::vector {false, true, true});
 auto value2 = diagram.get_value(std::array {0, 1, 1});

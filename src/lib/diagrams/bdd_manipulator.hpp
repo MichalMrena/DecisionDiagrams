@@ -4,9 +4,7 @@
 #include "mdd_manipulator.hpp"
 #include "operators.hpp"
 
-#include <unordered_map>
 #include <algorithm>
-#include <tuple>
 
 namespace mix::dd
 {
@@ -19,7 +17,7 @@ namespace mix::dd
         using arc_t    = typename bdd_t::arc_t;
 
     public:
-        bdd_manipulator (Allocator const& alloc = Allocator {});
+        explicit bdd_manipulator (Allocator const& alloc = Allocator {});
 
         auto restrict_var (bdd_t&  diagram, index_t const i, bool_t const val) -> bdd_t&;
         auto restrict_var (bdd_t&& diagram, index_t const i, bool_t const val) -> bdd_t;
@@ -27,7 +25,7 @@ namespace mix::dd
         /**
             Performs logical not on the @p diagram with constant complexity.
             Operation negates referenced diagram and doesn't created new one.
-            @return @p diagram .
+            @return @p diagram
          */
         auto negate (bdd_t&  diagram) -> bdd_t&;
 

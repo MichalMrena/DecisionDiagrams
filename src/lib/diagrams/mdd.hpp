@@ -99,7 +99,7 @@ namespace mix::dd
 
         /**
             Prints the diagram in a dot format to the output stream.
-            @param os output stream e.g. std::cout or std::fstream.
+            @param ost output stream e.g. std::cout or std::fstream.
         */
         auto to_dot_graph (std::ostream& ost) const -> void;
 
@@ -295,9 +295,9 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     auto mdd<VertexData, ArcData, P, Allocator>::operator=
-        (mdd other) noexcept -> mdd&
+        (mdd rhs) noexcept -> mdd&
     {
-        this->swap(other);
+        this->swap(rhs);
         return *this;
     }
 
@@ -400,14 +400,14 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     template<class VariableValues, class GetIthVal>
     auto mdd<VertexData, ArcData, P, Allocator>::get_value
-        (VariableValues const& input) const -> log_t
+        (VariableValues const& vars) const -> log_t
     {
         auto get_var = GetIthVal {};
         auto v       = root_;
 
         while (! this->is_leaf(v))
         {
-            v = v->son(get_var(input, v->index));
+            v = v->son(get_var(vars, v->index));
         }
         
         return leafToVal_.at(v);

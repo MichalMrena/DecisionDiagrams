@@ -35,7 +35,7 @@ namespace mix::dd
        
         Example: "--1001" -> { {2, false}, {3, true}, {4, true}, {5, false} }
      */
-    auto cube_to_pairs (typename pla_line::cube_t const& cube) -> std::vector<std::pair<index_t, bool>>;
+    auto cube_to_pairs (pla_line::cube_t const& cube) -> std::vector<std::pair<index_t, bool>>;
 
     class pla_file
     {
@@ -66,7 +66,7 @@ namespace mix::dd
         std::vector<std::string> outputLabels_;
     };
 
-    auto swap (pla_line& lhs, pla_line& rhs) -> void;
+    auto swap (pla_line& lhs, pla_line& rhs) noexcept -> void;
 
     auto operator== (pla_line const& lhs, pla_line const& rhs) -> bool;
     auto operator!= (pla_line const& lhs, pla_line const& rhs) -> bool;
@@ -90,7 +90,7 @@ namespace mix::dd
             {
                 case '0': return 0;
                 case '1': return 1;
-                case '-': return U;
+                case '-':
                 case '~': return U;
                 default:
                     throw std::runtime_error {"Invalid pla line. Unknown variable value."};
@@ -250,7 +250,7 @@ namespace mix::dd
     }
 
     inline auto cube_to_pairs 
-        (typename pla_line::cube_t const& cube) -> std::vector<std::pair<index_t, bool>>
+        (pla_line::cube_t const& cube) -> std::vector<std::pair<index_t, bool>>
     {
         auto vars = utils::vector<std::pair<index_t, bool>>(cube.size());
         auto is   = utils::range(0u, vars.size());
@@ -264,7 +264,7 @@ namespace mix::dd
         return vars;
     }
 
-    inline auto swap (pla_line& lhs, pla_line& rhs) -> void
+    inline auto swap (pla_line& lhs, pla_line& rhs) noexcept -> void
     {
         using std::swap;
         swap(lhs.cube, rhs.cube);

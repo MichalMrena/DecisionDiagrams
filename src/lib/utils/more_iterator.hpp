@@ -82,7 +82,9 @@ namespace mix::utils
         class iterator_base
         {
         public:
-            using value_type = decltype(std::apply(deref, std::declval<ItTuple&>()));
+            using value_type        = decltype(std::apply(deref, std::declval<ItTuple&>()));
+            using difference_type   = std::ptrdiff_t;
+            using iterator_category = std::forward_iterator_tag;
 
             template<class ItTupleRef>
             iterator_base(ItTupleRef&& its, ItTupleRef&& ends);
@@ -97,6 +99,9 @@ namespace mix::utils
             ItTuple ends_;
         };
 
+        /**
+            Zip iterator. 
+         */
         template<class ItTuple>
         class zip_iterator : public iterator_base<ItTuple>
         {
@@ -106,6 +111,9 @@ namespace mix::utils
             auto operator++ () -> zip_iterator&;
         };
 
+        /**
+            Cartesian product iterator.
+         */
         template<class ItTuple>
         class product_iterator : public iterator_base<ItTuple>
         {
@@ -115,10 +123,19 @@ namespace mix::utils
             auto operator++ () -> product_iterator&;
         };
 
+        /**
+            Range iterator.
+         */
         template<class IntType>
         class range_iterator
         {
         public:
+            using difference_type   = std::ptrdiff_t;
+            using value_type        = IntType;
+            using pointer           = IntType*;
+            using reference         = IntType&;
+            using iterator_category = std::forward_iterator_tag;
+
             range_iterator(IntType const curr);
 
             auto operator== (range_iterator const& o) const -> bool;
@@ -395,7 +412,7 @@ namespace mix::utils
     }
 
     template<class... Cs>
-    auto product(Cs const&... cs)
+    auto product(Cs&&... cs)
     {
         using tuple_t = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
         using base_t  = aux_impl::wrap_impl<aux_impl::product_iterator, tuple_t>;

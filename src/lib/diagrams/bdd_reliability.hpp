@@ -7,11 +7,9 @@
 #include "../utils/alloc_manager.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_vector.hpp"
-#include "../utils/more_algorithm.hpp"
 
 #include <limits>
 #include <utility>
-#include <set>
 #include <iterator>
 
 namespace mix::dd
@@ -25,7 +23,7 @@ namespace mix::dd
         using arc_t    = typename bdd_t::arc_t;
 
     public:
-        bdd_reliability (Allocator const& alloc = Allocator {});
+        explicit bdd_reliability (Allocator const& alloc = Allocator {});
 
         auto availability   (bdd_t&  f, std::vector<double> const& ps) -> double;
         auto availability   (bdd_t&& f, std::vector<double> const& ps) -> double;
@@ -83,6 +81,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, class Allocator>
     bdd_reliability<VertexData, ArcData, Allocator>::bdd_reliability
         (Allocator const& alloc) :
+        nextId_  {0},
         manager_ {alloc}
     {
     }
@@ -148,11 +147,11 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd_reliability<VertexData, ArcData, Allocator>::dpbd   
-        (bdd_t structureFunction, index_t const i) -> bdd_t
+        (bdd_t sf, index_t const i) -> bdd_t
     {
         auto m      = manipulator_t {manager_.get_alloc()};
-        auto sfCopy = structureFunction.clone();
-        return m.apply( m.negate(m.restrict_var(std::move(structureFunction), i, 0))
+        auto sfCopy = sf.clone();
+        return m.apply( m.negate(m.restrict_var(std::move(sf), i, 0))
                       , AND {}
                       , m.restrict_var(std::move(sfCopy), i, 1) );
     }

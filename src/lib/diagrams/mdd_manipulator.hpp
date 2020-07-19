@@ -24,7 +24,7 @@ namespace mix::dd
         using log_t    = typename mdd_t::log_t;
 
     public:
-        mdd_manipulator (Allocator const& = Allocator {});
+        explicit mdd_manipulator (Allocator const& = Allocator {});
 
     public:
         template<class BinOp> auto apply (mdd_t&&      d1, BinOp op, mdd_t&&      d2) -> mdd_t;
@@ -53,7 +53,7 @@ namespace mix::dd
 
         auto terminal_vertex ( log_t   const  val )  -> vertex_t*;
         auto internal_vertex ( index_t const  index
-                             , son_arr const& sons ) -> vertex_t*;
+                             , son_arr const& arcs ) -> vertex_t*;
 
         auto value1       (vertex_t* const v1) const -> log_t;
         auto value2       (vertex_t* const v2) const -> log_t;
@@ -212,9 +212,9 @@ namespace mix::dd
                     
                     if (! diagram.is_leaf(u))
                     {
-                        for (auto i = 0u; i < P; ++i)
+                        for (auto j = 0u; j < P; ++j)
                         {
-                            u->son(i) = newDiagramMap.at(u->son(i)->id);
+                            u->son(j) = newDiagramMap.at(u->son(j)->id);
                         }
                     }
 

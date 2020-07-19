@@ -5,20 +5,15 @@
 #include "bdd_manipulator.hpp"
 #include "mdd_creator.hpp"
 #include "pla_file.hpp"
-#include "graph.hpp"
 #include "../utils/hash.hpp"
-#include "../utils/alloc_manager.hpp"
-#include "../utils/more_iterator.hpp"
 #include "../utils/more_vector.hpp"
 #include "../utils/more_algorithm.hpp"
 #include "../data_structures/peekable_stack.hpp"
 
-#include <string>
 #include <vector>
 #include <cmath>
 #include <algorithm>
 #include <iterator>
-#include <memory>
 
 namespace mix::dd
 {
@@ -34,15 +29,15 @@ namespace mix::dd
         using manipulator_t = bdd_manipulator<VertexData, ArcData, Allocator>;
 
     public:
-        bdd_creator (Allocator const& alloc = Allocator {});
+        explicit bdd_creator (Allocator const& alloc = Allocator {});
 
         template<class InputIt>
-        auto product (InputIt varsBegin, InputIt varsEnd) -> bdd_t;
+        auto product (InputIt varsIt, InputIt varsEnd) -> bdd_t;
 
         template<class Range>
         auto product (Range&& range) -> bdd_t;
 
-        auto from_pla (pla_file const& file, merge_mode_e mm = merge_mode_e::iterative) -> std::vector<bdd_t>;
+        auto from_pla (pla_file const& file, merge_mode_e const mm = merge_mode_e::iterative) -> std::vector<bdd_t>;
 
         template<class Range>
         auto from_vector (Range const& range) -> bdd_t;
@@ -89,7 +84,8 @@ namespace mix::dd
     template<class VertexData, class ArcData, class Allocator>
     bdd_creator<VertexData, ArcData, Allocator>::bdd_creator
         (Allocator const& alloc) :
-        base {alloc}
+        base    {alloc},
+        nextId_ {0}
     {
     }
 
@@ -142,8 +138,16 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, class Allocator>
+    template<class Range>
+    auto bdd_creator<VertexData, ArcData, Allocator>::product
+        (Range&& range) -> bdd_t
+    {
+        return this->product(std::begin(range), std::end(range));
+    }
+
+    template<class VertexData, class ArcData, class Allocator>
     auto bdd_creator<VertexData, ArcData, Allocator>::from_pla 
-        (pla_file const& file, merge_mode_e mm) -> std::vector<bdd_t>
+        (pla_file const& file, merge_mode_e const mm) -> std::vector<bdd_t>
     {
         auto const& plaLines      = file.get_lines();
         auto const  lineCount     = file.line_count();

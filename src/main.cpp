@@ -123,11 +123,11 @@ auto vec_create()
  
     auto const d = creator.from_vector(xs3);
 
-    // creator.from_vector(xs3).to_dot_graph(std::cout);
-    // creator.from_vector(xs1).to_dot_graph(std::cout);
-    // creator.from_vector(vec).to_dot_graph(std::cout);
+    creator.from_vector(xs3).to_dot_graph(std::cout);
+    creator.from_vector(xs1).to_dot_graph(std::cout);
+    creator.from_vector(vec).to_dot_graph(std::cout);
     creator.from_vector(xs4).to_dot_graph(std::cout);
-    // xs2.to_dot_graph(std::cout);
+    xs2.to_dot_graph(std::cout);
 }
 
 auto pla_alloc_speed_pooled()
@@ -248,6 +248,38 @@ auto satisfy_test()
     printl(concat("const:   ", countConstant));
 }
 
+auto mvl_test()
+{
+    using log_t = typename log_val_traits<4>::type;
+    auto constexpr P = log_t {4};
+    auto plusMod4 = [](log_t const lhs, log_t const rhs)
+    {
+        auto constexpr N = log_val_traits<P>::nondetermined;
+        if (N == lhs || N == rhs) return N;
+        return static_cast<log_t>((lhs + rhs) % P);
+    };
+
+    auto x = mdd_creator<void, void, P> {};
+    auto m = mdd_manipulator<void, void, P> {};
+    
+    // f(x) = x0 + x1 + x2 + x3
+    auto f = m.apply( m.apply(x(0), plusMod4, x(1))
+                    , plusMod4
+                    , m.apply(x(2), plusMod4, x(3)) );
+
+    auto xs = range(0, 4);
+    for (auto&& [v1, v2, v3, v4] : product(xs, xs, xs, xs))
+    {
+        auto const correctResult = (v1 + v2 + v3 + v4) % P;
+        auto const diagramResult = f.get_value(std::array {v1, v2, v3, v4});
+        if (correctResult != diagramResult)
+        {
+            printl(concat("!!! not good : ", v1, " ", v2, " ", v3, " ", v4));
+        }
+    }
+    f.to_dot_graph(std::cout);
+}
+
 auto main() -> int
 {
     auto watch = stopwatch {};
@@ -261,53 +293,7 @@ auto main() -> int
     // map_test();
     // reliability_test();
     // satisfy_test();
-
-    // auto tools   = bdd_tools {};
-    // auto creator = tools.creator();
-    // auto ds      = creator.from_pla(pla_file::load_file("15-adder_col.pla")) ;
-
-    // for (auto& d : ds)
-    // {
-    //     // printl(d.to_dot_graph());
-    //     printl(d.vertex_count());
-    // }
-
-    // auto tools   = bdd_tools {};
-    // auto creator = tools.creator();
-    // auto file    = pla_file::load_file("/mnt/c/Users/mrena/Desktop/abc-master/example.pla");
-    // auto ds      = creator.from_pla(file, merge_mode_e::iterative);
-
-    // ds[0].to_dot_graph(std::cout);
-
-    // auto tools   = bdd_tools {};
-    // auto creator = tools.creator();
-    // auto file    = pla_file::load_file("10-adder_col.pla");
-    // auto ds      = creator.from_pla(file, merge_mode_e::iterative);
-
-    // for (auto& d : ds)
-    // {
-    //     printl(d.vertex_count());
-    // }
-
-// examples
-    auto tools       = bdd_tools {};
-    auto creator     = tools.creator();
-    auto manipulator = tools.manipulator();
-
-    auto& x      = creator;
-    auto diagram = (x(0) && x(1)) || x(2);
-    auto value1 = diagram.get_value(std::vector {false, true, true});
-    auto value2 = diagram.get_value(std::array {0, 1, 1});
-    auto value3 = diagram.get_value(0b110);
-
-    std::cout << (int)value1 << (int)value2 << (int)value3 << std::endl;
-
-    auto satisfyingSet = std::vector<std::bitset<3>> {};
-    diagram.satisfy_all<std::bitset<3>>(std::back_inserter(satisfyingSet));
-
-    diagram.to_dot_graph(std::cout);
-
-/// end examples
+    mvl_test();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

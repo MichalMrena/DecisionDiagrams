@@ -2,7 +2,6 @@
 #define _MIX_DD_TYPEDEFS_
 
 #include <cstdint>
-#include <cmath>
 #include <limits>
 #include <string>
 
@@ -24,18 +23,18 @@ namespace mix::dd
         inline static constexpr auto valuecount    = type {P + 1};
     };
     
-    using bool_t = typename log_val_traits<2>::type;
+    using bool_t = log_val_traits<2>::type;
 
     template<std::size_t P>
     constexpr auto is_undefined(typename log_val_traits<P>::type v)
     {
-        return log_val_traits<2>::undefined == v;
+        return log_val_traits<P>::undefined == v;
     }
 
     template<std::size_t P>
     constexpr auto is_nondetermined(typename log_val_traits<P>::type v)
     {
-        return log_val_traits<2>::nondetermined == v;
+        return log_val_traits<P>::nondetermined == v;
     }
 }
 
