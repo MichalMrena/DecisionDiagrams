@@ -256,7 +256,7 @@ auto main() -> int
     // alloc();
     // vec_create();
     // pla_alloc_speed_default();
-    pla_alloc_speed_pooled();
+    // pla_alloc_speed_pooled();
     // sanity_check();
     // map_test();
     // reliability_test();
@@ -288,6 +288,26 @@ auto main() -> int
     // {
     //     printl(d.vertex_count());
     // }
+
+// examples
+    auto tools       = bdd_tools {};
+    auto creator     = tools.creator();
+    auto manipulator = tools.manipulator();
+
+    auto& x      = creator;
+    auto diagram = (x(0) && x(1)) || x(2);
+    auto value1 = diagram.get_value(std::vector {false, true, true});
+    auto value2 = diagram.get_value(std::array {0, 1, 1});
+    auto value3 = diagram.get_value(0b110);
+
+    std::cout << (int)value1 << (int)value2 << (int)value3 << std::endl;
+
+    auto satisfyingSet = std::vector<std::bitset<3>> {};
+    diagram.satisfy_all<std::bitset<3>>(std::back_inserter(satisfyingSet));
+
+    diagram.to_dot_graph(std::cout);
+
+/// end examples
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

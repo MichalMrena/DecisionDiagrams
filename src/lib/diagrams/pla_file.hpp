@@ -47,13 +47,16 @@ namespace mix::dd
                 , std::vector<std::string> pInputLabels
                 , std::vector<std::string> pOutputLabels );
 
-        auto variable_count    () const -> index_t;
-        auto function_count    () const -> index_t;
-        auto line_count        () const -> index_t;
-        auto get_lines         () const -> std::vector<pla_line> const&;
-        auto get_indices       () const -> std::vector<index_t>;
-        auto get_input_labels  () const -> std::vector<std::string> const&;
-        auto get_output_labels () const -> std::vector<std::string> const&;
+        auto variable_count    () const    -> index_t;
+        auto function_count    () const    -> index_t;
+        auto line_count        () const    -> index_t;
+        auto get_lines         () const &  -> std::vector<pla_line> const&;
+        auto get_lines         () const && -> std::vector<pla_line>;
+        auto get_indices       () const    -> std::vector<index_t>;
+        auto get_input_labels  () const &  -> std::vector<std::string> const&;
+        auto get_input_labels  () const && -> std::vector<std::string>;
+        auto get_output_labels () const &  -> std::vector<std::string> const&;
+        auto get_output_labels () const && -> std::vector<std::string>;
 
         auto swap_vars (std::size_t const i1, std::size_t const i2) -> void;
 
@@ -373,7 +376,13 @@ namespace mix::dd
     }
 
     inline auto pla_file::get_lines
-        () const -> std::vector<pla_line> const&
+        () const & -> std::vector<pla_line> const&
+    {
+        return lines_;
+    }
+
+    inline auto pla_file::get_lines
+        () const && -> std::vector<pla_line>
     {
         return lines_;
     }
@@ -401,13 +410,25 @@ namespace mix::dd
     }
 
     inline auto pla_file::get_input_labels
-        () const -> std::vector<std::string> const&
+        () const & -> std::vector<std::string> const&
+    {
+        return inputLabels_;
+    }
+
+    inline auto pla_file::get_input_labels
+        () const && -> std::vector<std::string>
     {
         return inputLabels_;
     }
 
     inline auto pla_file::get_output_labels
-        () const -> std::vector<std::string> const&
+        () const & -> std::vector<std::string> const&
+    {
+        return outputLabels_;
+    }
+
+    inline auto pla_file::get_output_labels
+        () const && -> std::vector<std::string>
     {
         return outputLabels_;
     }
