@@ -1,5 +1,5 @@
-#ifndef MIX_DD_VAR_VALS_
-#define MIX_DD_VAR_VALS_
+#ifndef MIX_DD_VAR_VALS_HPP
+#define MIX_DD_VAR_VALS_HPP
 
 #include "typedefs.hpp"
 #include "../utils/more_type_traits.hpp"
@@ -46,7 +46,7 @@ namespace mix::dd
         {
             if (i >= sizeof(VarVals))
             {
-                throw std::out_of_range {"Bit index out of range."};
+                throw std::out_of_range("Bit index out of range.");
             }
             return (in >> i) & 1;
         }
@@ -121,9 +121,9 @@ namespace mix::dd
         {
             if (i >= sizeof(VarVals))
             {
-                throw std::out_of_range {"Bit index out of range."};
+                throw std::out_of_range("Bit index out of range.") ;
             }
-            vars = (vars & ~(1UL << i)) | (v << i);
+            vars = (vars & ~(1ul << i)) | (v << i);
         }
     };
 }

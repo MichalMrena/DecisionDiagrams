@@ -8,28 +8,6 @@
 namespace mix::utils
 {
     /**
-        Provides member type definition that is equal to either
-        the first or the second type based on bool value.
-     */
-    template<bool, class IfTrue, class IfFalse>
-    struct either_or;
-
-    template<class IfTrue, class IfFalse>
-    struct either_or<true, IfTrue, IfFalse>
-    {
-        using type = IfTrue;
-    };
-
-    template<class IfTrue, class IfFalse>
-    struct either_or<false, IfTrue, IfFalse>
-    {
-        using type = IfFalse;
-    };
-
-    template<bool Cond, class IfTrue, class IfFalse>
-    using either_or_t = typename either_or<Cond, IfTrue, IfFalse>::type;
-
-    /**
         Provides member constant that is equal to true if the
         type of T is std::array and is false otherwise.
      */

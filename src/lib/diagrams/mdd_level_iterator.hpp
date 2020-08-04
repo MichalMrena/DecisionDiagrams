@@ -1,35 +1,28 @@
-#ifndef MIX_DD_MDD_LEVEL_ITERATOR_
-#define MIX_DD_MDD_LEVEL_ITERATOR_
+#ifndef MIX_DD_MDD_LEVEL_ITERATOR_HPP
+#define MIX_DD_MDD_LEVEL_ITERATOR_HPP
 
 #include "graph.hpp"
-#include "../utils/more_type_traits.hpp"
 
 #include <vector>
 #include <set>
 #include <iterator>
+#include <type_traits>
 
 namespace mix::dd
 {
-    template<class VertexData, class ArcData, size_t N, bool IsConst>
-    class mdd_level_iterator;
-
-    template<class VertexData, class ArcData, size_t N, bool IsConst>
-    auto swap( mdd_level_iterator<VertexData, ArcData, N, IsConst>&
-             , mdd_level_iterator<VertexData, ArcData, N, IsConst>& ) noexcept -> void;
-
     template<class VertexData, class ArcData, size_t N, bool IsConst>
     class mdd_level_iterator
     {
     public:
         using vertex_t          = vertex<VertexData, ArcData, N>;
-        using value_type        = utils::either_or_t<IsConst, vertex_t const, vertex_t>;
+        using value_type        = std::conditional_t<IsConst, vertex_t const, vertex_t>;
         using reference         = value_type&;
         using pointer           = value_type*;
         using iterator_category = std::forward_iterator_tag;
         using difference_type   = std::ptrdiff_t;
 
     public:
-        mdd_level_iterator ( pointer const        root
+        mdd_level_iterator ( vertex_t* const      root
                            , std::size_t const    variableCount );
         mdd_level_iterator ( mdd_level_iterator const&  other );
         mdd_level_iterator ( mdd_level_iterator&& other );
@@ -43,9 +36,7 @@ namespace mix::dd
         auto operator++ ()       -> mdd_level_iterator&;
         auto operator++ (int)    -> mdd_level_iterator;
 
-        friend auto swap<VertexData, ArcData, N, IsConst>
-            ( mdd_level_iterator<VertexData, ArcData, N, IsConst>& lhs
-            , mdd_level_iterator<VertexData, ArcData, N, IsConst>& rhs ) noexcept -> void;
+        auto swap (mdd_level_iterator& rhs) -> void;
 
     private:
         using vertex_container_t = std::set<vertex_t*>; // TODO ak sa použije mark, stačil by tu vektor
@@ -63,14 +54,18 @@ namespace mix::dd
     };    
 
     template<class VertexData, class ArcData, size_t N, bool IsConst>
+    auto swap( mdd_level_iterator<VertexData, ArcData, N, IsConst>&
+             , mdd_level_iterator<VertexData, ArcData, N, IsConst>& ) noexcept -> void;
+
+    template<class VertexData, class ArcData, size_t N, bool IsConst>
     mdd_level_iterator<VertexData, ArcData, N, IsConst>::mdd_level_iterator
-        (pointer const root, std::size_t const variableCount) :
-        levels_ {variableCount + 1}
+        (vertex_t* const root, std::size_t const variableCount) :
+        levels_ (variableCount + 1)
     {
         if (root)
         {
-            levels_.at(root->index).insert(root);
-            levelIterator_  = levels_.begin() + root->index;
+            levels_[root->index].insert(root);
+            levelIterator_  = levels_.begin() + root->index; // advance...
             vertexIterator_ = (*levelIterator_).begin();
         }
         else
@@ -204,13 +199,20 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, size_t N, bool IsConst>
+    auto mdd_level_iterator<VertexData, ArcData, N, IsConst>::swap
+        (mdd_level_iterator& rhs) -> void
+    {
+        using std::swap;
+        swap(levels_,         rhs.levels_        );
+        swap(levelIterator_,  rhs.levelIterator_ );
+        swap(vertexIterator_, rhs.vertexIterator_);
+    }
+
+    template<class VertexData, class ArcData, size_t N, bool IsConst>
     auto swap( mdd_level_iterator<VertexData, ArcData, N, IsConst>& lhs
              , mdd_level_iterator<VertexData, ArcData, N, IsConst>& rhs ) noexcept -> void
     {
-        using std::swap;
-        swap(lhs.levels_,         rhs.levels_        );
-        swap(lhs.levelIterator_,  rhs.levelIterator_ );
-        swap(lhs.vertexIterator_, rhs.vertexIterator_);
+        lhs.swap(rhs);
     }
 }
 

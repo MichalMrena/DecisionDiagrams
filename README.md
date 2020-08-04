@@ -1,16 +1,20 @@
 # Binary decision diagrams
 NAME GOES HERE is a small library for manipulation of decision diagrams. It is written in C++17.    
 For now, we focus on Binary Decision Diagrams as described by Bryant [here](https://ieeexplore.ieee.org/document/1676819) and [here](https://dl.acm.org/doi/10.1145/136035.136043). Diagrams and algorithms are implemented in a simple straightforward way using mostly the OOP paradigm.  
-Interesting thing about our diagrams is that you can store some data in vertices and arcs. Type of the data is a template paramter of the diagram so that you can choose an arbitraty data type and you will have a member variable of that type in each vertex/arc. If you choose ```void``` there won't be any member variable. We use this feature in algoritms from Realiability theory where we store probabilities.
+Interesting thing about our diagrams is that they can store arbitrary data in vertices and arcs. Type of the data is a template paramter of the diagram so that you can choose any data type and you will have a member variable of that type in each vertex/arc with no runtime overhead. If you choose ```void``` there won't be any member variable. We use this feature in algoritms from Realiability theory where we store probabilities in vertices.
 
 ## How to install
-Since we use templates in most files the whole library as header only. Using it is therefore very simple. All you need to do is to include [lib](./src/lib/) folder in your project and include [bdd_tools.hpp](./src/lib/bdd_tools.hpp) header. You might need to set your compiler to use C++17 explicitly. Also some compilers might require you to link [filesystem library](https://stackoverflow.com/questions/33149878/experimentalfilesystem-linker-error) explicitly.
+Since we use templates in most files the whole library as header only. Using it is therefore very simple. All you need to do is to include [lib](./src/lib/) folder in your project and include [bdd_tools.hpp](./src/lib/bdd_tools.hpp) header. You might need to set your compiler to use C++17 explicitly. Also some compilers might require you to link [filesystem library](https://stackoverflow.com/questions/33149878/experimentalfilesystem-linker-error) explicitly. Here is an example of how we compile and link the library:
+```
+clang++-10 -MMD -MP -Wall -Wextra -pedantic -std=c++17 -O3 -c src/main.cpp -o build/release/./src/main.cpp.o
+clang++-10 ./build/release/./src/main.cpp.o -lstdc++fs -o build/release/main
+```
 
 ## Basic usage
 This piece of code is the same for all examples so we will just post it once here at the begining. It creates instances of two classes that provide different kinds of algorithms. The instance ```bdd_tools``` holds a simple memory pool. All diagrams created from it use this pool so their lifetime should not extend the lifetime of the tools instance.  
 Note that we use so called "[~~Almost~~ Always Auto style](http://cginternals.github.io/guidelines/articles/almost-always-auto/)" because it looks nice and helps us to avoid typing heavily templated typenames. C++17 made it even better. See [copy elision](https://en.cppreference.com/w/cpp/language/copy_elision).
 ```C++
-#include "/lib/bdd_tools.hpp"
+#include "./lib/bdd_tools.hpp"
 
 int main()
 {

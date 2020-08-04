@@ -142,6 +142,11 @@ namespace mix::dd
         // and release them
         for (auto v : unreachableVertices)
         {
+            if (diagram.is_leaf(v))
+            {
+                diagram.leafToVal_.erase(v);
+            }
+
             base::manager_.release(v);
         }     
 

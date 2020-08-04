@@ -9,6 +9,7 @@
 #include <iterator>
 #include <functional>
 #include <utility>
+#include <type_traits>
 
 namespace mix::dd
 {
@@ -16,7 +17,7 @@ namespace mix::dd
     class mdd_manipulator
     {
     public:
-        using mdd_t    = utils::either_or_t< 2 == P
+        using mdd_t    = std::conditional_t< 2 == P
                                            , bdd<VertexData, ArcData, Allocator>
                                            , mdd<VertexData, ArcData, P, Allocator> >;
         using vertex_t = typename mdd_t::vertex_t;
