@@ -132,6 +132,7 @@ auto vec_create()
 
 auto pla_alloc_speed_pooled()
 {
+    auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
     // auto files = {"16-adder_col.pla", "seq.pla", "apex2.pla", "apex1.pla"};
     // auto files = {"10-adder_col.pla", "11-adder_col.pla", "12-adder_col.pla", "13-adder_col.pla", "14-adder_col.pla"};
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
@@ -140,21 +141,29 @@ auto pla_alloc_speed_pooled()
     // auto files = {"10-adder_col.pla"};
     // auto files   = {"apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla"};
     auto files = { "16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"
-                 , "apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla" };
+                 , "apex1.pla", "apex5.pla", "seq.pla", "spla.pla" };
 
-    auto load_pla = [](auto&& fileName)
+    auto load_pla = [](auto&& filePath)
     {
-        auto tools   = bdd_tools {};
+        auto tools   = bdd_tools();
         auto creator = tools.creator();
-        auto file    = pla_file::load_file(fileName);
-        (void)creator.from_pla(file, merge_mode_e::iterative);
+        auto file    = pla_file::load_file(filePath);
+        // (void)creator.from_pla(file, merge_mode_e::iterative);
         // (void)creator.from_pla(file, merge_mode_e::sequential);
+        auto const ds = creator.from_pla(file, merge_mode_e::iterative);
+        auto sum = 0u;
+        for (auto d : ds)
+        {
+            sum += d.vertex_count();
+        }
+        std::cout << filePath << " [" << sum << "] " << std::endl;
     };
 
     for (auto fileName : files)
     {
-        auto et = avg_run_time(1, std::bind(load_pla, fileName));
-        printl(concat(fileName , " -> " , et , "ms [" , "-" , "]"));
+        std::bind(load_pla, mix::utils::concat(plaDir , fileName)) ();
+        // auto et = avg_run_time(1, std::bind(load_pla, mix::utils::concat(plaDir , fileName)));
+        // printl(concat(fileName , " -> " , et , "ms [" , "-" , "]"));
     }
 }
 
@@ -189,7 +198,7 @@ auto pla_alloc_speed_default()
 
 auto reliability_test()
 {
-    auto tools    = bdd_tools {};
+    auto tools    = bdd_tools();
     auto relTools = tools.reliability();
     auto creator  = tools.creator();
     

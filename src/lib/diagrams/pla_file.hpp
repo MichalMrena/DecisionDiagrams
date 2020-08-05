@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <map>
+#include <set>
 
 namespace mix::dd
 {

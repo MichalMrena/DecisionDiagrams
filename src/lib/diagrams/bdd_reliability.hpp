@@ -320,7 +320,7 @@ namespace mix::dd
     auto bdd_reliability<VertexData, ArcData, Allocator>::mnf
         (bdd_t dpbd) -> bdd_t
     {
-        auto redundantVs = std::vector<vertex_t*> {};
+        auto redundantVs = std::vector<vertex_t*>();
         auto const maybe_skip_son = [this, &dpbd](auto const v, auto const i)
         {
             if (!dpbd.is_leaf(v) && !dpbd.is_leaf(v->son(i)) && this->is_redundant(v->son(i)))

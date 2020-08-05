@@ -456,7 +456,7 @@ namespace mix::dd
     auto mdd<VertexData, ArcData, P, Allocator>::end
         () -> iterator
     {
-        return iterator {nullptr, this->variable_count()};
+        return iterator();
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -470,7 +470,7 @@ namespace mix::dd
     auto mdd<VertexData, ArcData, P, Allocator>::end
         () const -> const_iterator
     {
-        return const_iterator {nullptr, this->variable_count()};
+        return const_iterator();
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>

@@ -5,6 +5,7 @@
 #include "operators.hpp"
 
 #include <algorithm>
+#include <set>
 
 namespace mix::dd
 {
