@@ -1,5 +1,5 @@
-#ifndef MIX_DD_MORE_ALGORITHM_
-#define MIX_DD_MORE_ALGORITHM_
+#ifndef MIX_DD_MORE_ALGORITHM_HPP
+#define MIX_DD_MORE_ALGORITHM_HPP
 
 #include "../utils/more_vector.hpp"
 

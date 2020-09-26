@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_MORE_RANDOM_
-#define MIX_UTILS_MORE_RANDOM_
+#ifndef MIX_UTILS_MORE_RANDOM_HPP
+#define MIX_UTILS_MORE_RANDOM_HPP
 
 #include <random>
 
@@ -10,13 +10,15 @@ namespace mix::utils
         class random_base
         {
         public:
-            explicit random_base(unsigned long seed);
+            using seed_t = unsigned long;
+
+            explicit random_base(seed_t const seed);
 
         protected:
             std::mt19937 generator_;
-        };  
+        };
 
-        inline random_base::random_base(unsigned long seed) :
+        inline random_base::random_base(seed_t const seed) :
             generator_ {seed}
         {
         }
@@ -26,24 +28,29 @@ namespace mix::utils
     class random_uniform_int : private aux_impl::random_base
     {
     public:
+        using base_t = aux_impl::random_base;
+        using seed_t = typename base_t::seed_t;
+        using dist_t = std::uniform_int_distribution<IntType>;
+
         random_uniform_int( IntType const min  = std::numeric_limits<IntType>::min()
                           , IntType const max  = std::numeric_limits<IntType>::max()
-                          , unsigned long seed = std::random_device {} () );
+                          , seed_t  const seed = std::random_device {} () );
+
         auto next_int () -> IntType;
 
     private:
-        std::uniform_int_distribution<IntType> distribution_;
+        dist_t distribution_;
     };
 
     template<class IntType>
-    random_uniform_int<IntType>::random_uniform_int ( const IntType min
-                                                    , const IntType max
-                                                    , unsigned long seed ) :
+    random_uniform_int<IntType>::random_uniform_int ( IntType const min
+                                                    , IntType const max
+                                                    , seed_t  const seed ) :
         random_base   {seed}
       , distribution_ {min, max}
     {
     }
-    
+
     template<class IntType>
     auto random_uniform_int<IntType>::next_int
         () -> IntType

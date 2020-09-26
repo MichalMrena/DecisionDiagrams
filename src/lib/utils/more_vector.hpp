@@ -1,5 +1,5 @@
-#ifndef MIX_DD_MORE_VECTOR_
-#define MIX_DD_MORE_VECTOR_
+#ifndef MIX_DD_MORE_VECTOR_HPP
+#define MIX_DD_MORE_VECTOR_HPP
 
 #include <vector>
 
@@ -11,7 +11,7 @@ namespace mix::utils
     template<class T, class Allocator = std::allocator<T>>
     auto vector(typename std::vector<T, Allocator>::size_type initCapacity)
     {
-        auto v = std::vector<T, Allocator> {};
+        auto v = std::vector<T, Allocator>();
         v.reserve(initCapacity);
         return v;
     }

@@ -51,21 +51,20 @@ namespace mix::utils
             return any_equal_impl(std::make_index_sequence<std::tuple_size_v<Tuple>>(), t1, t2);
         }
 
+        /**
+            Container holder.
+         */
         template<template<class> class ItType, class ContainerTuple>
-        class wrap_impl
+        class container_holder
         {
         public:
-            using ItTuple                = decltype(std::apply(get_begin,  std::declval<ContainerTuple&>()));
-            using CItTuple               = decltype(std::apply(get_cbegin, std::declval<ContainerTuple&>()));
-            using RItTuple               = decltype(std::apply(get_begin,  std::declval<ContainerTuple&>()));
-            using RCItTuple              = decltype(std::apply(get_cbegin, std::declval<ContainerTuple&>()));
-            using iterator               = ItType<ItTuple>;
-            using const_iterator         = ItType<CItTuple>;
-            using reverse_iterator       = ItType<RItTuple>;
-            using const_reverse_iterator = ItType<RCItTuple>;
+            using ItTuple        = decltype(std::apply(get_begin,  std::declval<ContainerTuple&>()));
+            using CItTuple       = decltype(std::apply(get_cbegin, std::declval<ContainerTuple&>()));
+            using iterator       = ItType<ItTuple>;
+            using const_iterator = ItType<CItTuple>;
 
             template<class CTupleHelper>
-            wrap_impl(CTupleHelper&& cs);
+            container_holder(CTupleHelper&& cs);
 
             auto begin  ()       -> iterator;
             auto end    ()       -> iterator;
@@ -73,13 +72,16 @@ namespace mix::utils
             auto end    () const -> const_iterator;
             auto cbegin () const -> const_iterator;
             auto cend   () const -> const_iterator;
-        
+
         private:
             ContainerTuple cs_;
         };
 
+        /**
+            Iterator holder.
+         */
         template<class ItTuple>
-        class iterator_base
+        class iterator_holder
         {
         public:
             using value_type        = decltype(std::apply(deref, std::declval<ItTuple&>()));
@@ -87,10 +89,10 @@ namespace mix::utils
             using iterator_category = std::forward_iterator_tag;
 
             template<class ItTupleRef>
-            iterator_base(ItTupleRef&& its, ItTupleRef&& ends);
+            iterator_holder(ItTupleRef&& its, ItTupleRef&& ends);
 
-            auto operator== (iterator_base const& o) const -> bool;
-            auto operator!= (iterator_base const& o) const -> bool;
+            auto operator== (iterator_holder const& o) const -> bool;
+            auto operator!= (iterator_holder const& o) const -> bool;
             auto operator*  () const -> value_type;
 
         protected:
@@ -103,7 +105,7 @@ namespace mix::utils
             Zip iterator. 
          */
         template<class ItTuple>
-        class zip_iterator : public iterator_base<ItTuple>
+        class zip_iterator : public iterator_holder<ItTuple>
         {
         public:
             template<class ItTupleRef>
@@ -115,7 +117,7 @@ namespace mix::utils
             Cartesian product iterator.
          */
         template<class ItTuple>
-        class product_iterator : public iterator_base<ItTuple>
+        class product_iterator : public iterator_holder<ItTuple>
         {
         public:
             template<class ItTupleRef>
@@ -147,14 +149,17 @@ namespace mix::utils
             IntType curr_;
         };
 
+        /**
+            Range holder.
+         */
         template<class IntType>
-        class range_impl
+        class range_holder
         {
         public:
             using iterator       = range_iterator<IntType>;
             using const_iterator = range_iterator<IntType>;
 
-            range_impl(IntType const first, IntType const last);
+            range_holder(IntType const first, IntType const last);
 
             auto begin ()       -> iterator;
             auto end   ()       -> iterator;
@@ -168,48 +173,48 @@ namespace mix::utils
 
         template<template<class> class ItType, class ContainerTuple>
         template<class CTupleHelper>
-        wrap_impl<ItType, ContainerTuple>::wrap_impl(CTupleHelper&& cs) :
+        container_holder<ItType, ContainerTuple>::container_holder(CTupleHelper&& cs) :
             cs_ {std::forward<CTupleHelper>(cs)}
         {
         }
 
         template<template<class> class ItType, class ContainerTuple>
-        auto wrap_impl<ItType, ContainerTuple>::begin
+        auto container_holder<ItType, ContainerTuple>::begin
             () -> iterator
         {
             return iterator {std::apply(get_begin, cs_), std::apply(get_end, cs_)};
         }
 
         template<template<class> class ItType, class ContainerTuple>
-        auto wrap_impl<ItType, ContainerTuple>::end
+        auto container_holder<ItType, ContainerTuple>::end
             () -> iterator
         {
             return iterator {std::apply(get_end, cs_), std::apply(get_end, cs_)};
         }
 
         template<template<class> class ItType, class ContainerTuple>
-        auto wrap_impl<ItType, ContainerTuple>::begin
+        auto container_holder<ItType, ContainerTuple>::begin
             () const -> const_iterator
         {
             return const_iterator {std::apply(get_cbegin, cs_), std::apply(get_cend, cs_)};
         }
 
         template<template<class> class ItType, class ContainerTuple>
-        auto wrap_impl<ItType, ContainerTuple>::end
+        auto container_holder<ItType, ContainerTuple>::end
             () const -> const_iterator
         {
             return const_iterator {std::apply(get_cbegin, cs_), std::apply(get_cend, cs_)};
         }
 
         template<template<class> class ItType, class ContainerTuple>
-        auto wrap_impl<ItType, ContainerTuple>::cbegin
+        auto container_holder<ItType, ContainerTuple>::cbegin
             () const -> const_iterator
         {
             return const_iterator {std::apply(get_cbegin, cs_), std::apply(get_cend, cs_)};
         }
 
         template<template<class> class ItType, class ContainerTuple>
-        auto wrap_impl<ItType, ContainerTuple>::cend
+        auto container_holder<ItType, ContainerTuple>::cend
             () const -> const_iterator
         {
             return const_iterator {std::apply(get_cbegin, cs_), std::apply(get_cend, cs_)};
@@ -217,7 +222,7 @@ namespace mix::utils
 
         template<class ItTuple>
         template<class ItTupleRef>
-        iterator_base<ItTuple>::iterator_base
+        iterator_holder<ItTuple>::iterator_holder
             (ItTupleRef&& its, ItTupleRef&& ends) :
             its_    {std::forward<ItTupleRef>(its)},
             begins_ {its_},
@@ -226,21 +231,21 @@ namespace mix::utils
         }
 
         template<class ItTuple>
-        auto iterator_base<ItTuple>::operator==
-            (iterator_base const& o) const -> bool
+        auto iterator_holder<ItTuple>::operator==
+            (iterator_holder const& o) const -> bool
         {
             return its_ == o.its_;
         }
 
         template<class ItTuple>
-        auto iterator_base<ItTuple>::operator!=
-            (iterator_base const& o) const -> bool
+        auto iterator_holder<ItTuple>::operator!=
+            (iterator_holder const& o) const -> bool
         {
             return ! (*this == o);
         }
 
         template<class ItTuple>
-        auto iterator_base<ItTuple>::operator*
+        auto iterator_holder<ItTuple>::operator*
             () const -> value_type
         {
             return std::apply(aux_impl::deref, its_);
@@ -250,7 +255,7 @@ namespace mix::utils
         template<class ItTupleRef>
         zip_iterator<ItTuple>::zip_iterator
             (ItTupleRef&& its, ItTupleRef&& ends) :
-            iterator_base<ItTuple> {its, ends}
+            iterator_holder<ItTuple> {its, ends}
         {
         }
 
@@ -258,14 +263,14 @@ namespace mix::utils
         auto zip_iterator<ItTuple>::operator++
             () -> zip_iterator&
         {
-            using base_t = iterator_base<ItTuple>;
+            using base_t = iterator_holder<ItTuple>;
 
             std::apply(prefix_inc, base_t::its_);
             if (any_equal(base_t::its_, base_t::ends_))
             {
                 base_t::its_ = base_t::ends_;
             }
-            
+
             return *this;
         }
 
@@ -273,7 +278,7 @@ namespace mix::utils
         template<class ItTupleRef>
         product_iterator<ItTuple>::product_iterator
             (ItTupleRef&& its, ItTupleRef&& ends) :
-            iterator_base<ItTuple> {its, ends}
+            iterator_holder<ItTuple> {its, ends}
         {
         }
 
@@ -309,8 +314,8 @@ namespace mix::utils
         auto product_iterator<ItTuple>::operator++
             () -> product_iterator&
         {
-            using base_t = iterator_base<ItTuple>;
-            
+            using base_t = iterator_holder<ItTuple>;
+
             if (! advance_iterators<0, std::tuple_size_v<ItTuple>>(base_t::its_, base_t::begins_, base_t::ends_))
             {
                 base_t::its_ = base_t::ends_;
@@ -320,35 +325,35 @@ namespace mix::utils
         }
 
         template<class IntType>
-        range_impl<IntType>::range_impl(IntType const first, IntType const last) :
+        range_holder<IntType>::range_holder(IntType const first, IntType const last) :
             first_ {first},
             last_  {last}
         {
         }
 
         template<class IntType>
-        auto range_impl<IntType>::begin
+        auto range_holder<IntType>::begin
             () -> iterator
         {
             return iterator {first_};
         }
 
         template<class IntType>
-        auto range_impl<IntType>::end
+        auto range_holder<IntType>::end
             () -> iterator
         {
             return iterator {last_};
         }
 
         template<class IntType>
-        auto range_impl<IntType>::begin
+        auto range_holder<IntType>::begin
             () const -> const_iterator
         {
             return const_iterator {first_};
         }
 
         template<class IntType>
-        auto range_impl<IntType>::end
+        auto range_holder<IntType>::end
             () const -> const_iterator
         {
             return const_iterator {last_};
@@ -398,7 +403,7 @@ namespace mix::utils
             }
             else
             {
-                return C {std::move(c)};
+                return C(std::move(c));
             }
         }
     }
@@ -407,7 +412,7 @@ namespace mix::utils
     auto zip(Cs&&... cs)
     {
         using tuple_t = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
-        using base_t  = aux_impl::wrap_impl<aux_impl::zip_iterator, tuple_t>;
+        using base_t  = aux_impl::container_holder<aux_impl::zip_iterator, tuple_t>;
         return base_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
     }
 
@@ -415,7 +420,7 @@ namespace mix::utils
     auto product(Cs&&... cs)
     {
         using tuple_t = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
-        using base_t  = aux_impl::wrap_impl<aux_impl::product_iterator, tuple_t>;
+        using base_t  = aux_impl::container_holder<aux_impl::product_iterator, tuple_t>;
         return base_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
     }
 
@@ -423,7 +428,7 @@ namespace mix::utils
     auto range(FirstType const first, SecondType const last)
     {
         using ctype = std::common_type_t<FirstType, SecondType>;
-        return aux_impl::range_impl<ctype> {first, last};
+        return aux_impl::range_holder<ctype> {first, last};
     }
 }
 

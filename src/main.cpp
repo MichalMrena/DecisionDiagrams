@@ -250,7 +250,7 @@ auto satisfy_test()
 {
     auto       mutableF  = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
     auto const constantF = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
-    
+
     auto const countMutable  = mutableF.satisfy_count();
     auto const countConstant = constantF.satisfy_count();
     printl(concat("mutable: ", countMutable));
@@ -261,16 +261,16 @@ auto mvl_test()
 {
     using log_t = typename log_val_traits<4>::type;
     auto constexpr P = log_t {4};
-    auto plusMod4 = [](log_t const lhs, log_t const rhs)
+    auto plusMod4 = [](auto const lhs, auto const rhs)
     {
         auto constexpr N = log_val_traits<P>::nondetermined;
-        if (N == lhs || N == rhs) return N;
-        return static_cast<log_t>((lhs + rhs) % P);
+        return (N == lhs || N == rhs) 
+            ? N : static_cast<log_t>((lhs + rhs) % P);
     };
 
     auto x = mdd_creator<void, void, P> {};
     auto m = mdd_manipulator<void, void, P> {};
-    
+
     // f(x) = x0 + x1 + x2 + x3
     auto f = m.apply( m.apply(x(0), plusMod4, x(1))
                     , plusMod4
@@ -291,7 +291,7 @@ auto mvl_test()
 
 auto main() -> int
 {
-    auto watch = stopwatch {};
+    auto watch = stopwatch();
 
     // graph();
     // alloc();
@@ -300,7 +300,7 @@ auto main() -> int
     // pla_alloc_speed_pooled();
     // sanity_check();
     // map_test();
-    reliability_test();
+    // reliability_test();
     // satisfy_test();
     // mvl_test();
 

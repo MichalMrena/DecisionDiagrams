@@ -1,5 +1,5 @@
-#ifndef MIX_DD_OPERATORS_
-#define MIX_DD_OPERATORS_
+#ifndef MIX_DD_OPERATORS_HPP
+#define MIX_DD_OPERATORS_HPP
 
 #include "typedefs.hpp"
 
@@ -48,7 +48,7 @@ namespace mix::dd
 
         if (0 == lhs || 0 == rhs) return 0;
         if (N == lhs || N == rhs) return N;
-        
+
         return lhs && rhs;
     }
 
@@ -59,7 +59,7 @@ namespace mix::dd
 
         if (1 == lhs || 1 == rhs) return 1;
         if (N == lhs || N == rhs) return N;
-        
+
         return lhs || rhs;
     }
 
@@ -80,7 +80,7 @@ namespace mix::dd
 
         if (0 == lhs || 0 == rhs) return 1;
         if (N == lhs || N == rhs) return N;
-        
+
         return ! (lhs && rhs);
     }
 
@@ -91,7 +91,7 @@ namespace mix::dd
 
         if (1 == lhs || 1 == rhs) return 0;
         if (N == lhs || N == rhs) return N;
-        
+
         return ! (lhs || rhs);
     }
 
@@ -100,11 +100,11 @@ namespace mix::dd
     {
         using namespace aux_impl::bool_t_constants;
 
-        if (0 == lhs || 0 == rhs) return 0;       
+        if (0 == lhs || 0 == rhs) return 0;
         if (N == lhs || N == rhs) return N;
         if (U == lhs && U == rhs) return U;
 
-        return 1;       
+        return 1;
     }
 }
 

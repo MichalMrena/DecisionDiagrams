@@ -1,5 +1,5 @@
-#ifndef MIX_DD_LIST_MAP_
-#define MIX_DD_LIST_MAP_
+#ifndef MIX_DD_LIST_MAP_HPP
+#define MIX_DD_LIST_MAP_HPP
 
 #include <vector>
 #include <initializer_list>
@@ -217,7 +217,7 @@ namespace mix::ds
 
         if (this->end() == it)
         {
-            throw std::out_of_range {"Key not found."};
+            throw std::out_of_range("Key not found.");
         }
 
         return it->second;
@@ -480,9 +480,10 @@ namespace mix::ds
     auto simple_map<Key, T, KeyEqual, Container>::to_iterator
         (const_iterator cit) -> iterator
     {
-        auto it = this->begin();
-        std::advance(it, std::distance(this->cbegin(), cit));
-        return it;
+        // auto it = this->begin();
+        // std::advance(it, std::distance(this->cbegin(), cit));
+        // return it;
+        return std::next(this->begin(), std::distance(this->cbegin(), cit));
     }
 
     template<class Key, class T, class KeyEqual, class Container>

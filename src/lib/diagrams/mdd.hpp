@@ -1,5 +1,5 @@
-#ifndef MIX_DD_MDD_
-#define MIX_DD_MDD_
+#ifndef MIX_DD_MDD_HPP
+#define MIX_DD_MDD_HPP
 
 #include "graph.hpp"
 #include "mdd_level_iterator.hpp"

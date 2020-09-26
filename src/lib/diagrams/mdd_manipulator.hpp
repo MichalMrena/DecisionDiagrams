@@ -1,5 +1,5 @@
-#ifndef MIX_DD_MDD_MANIPULATOR_
-#define MIX_DD_MDD_MANIPULATOR_
+#ifndef MIX_DD_MDD_MANIPULATOR_HPP
+#define MIX_DD_MDD_MANIPULATOR_HPP
 
 #include "bdd.hpp"
 #include "../utils/hash.hpp"
@@ -33,6 +33,10 @@ namespace mix::dd
         template<class BinOp> auto apply (mdd_t&&      d1, BinOp op, mdd_t const& d2) -> mdd_t;
         template<class BinOp> auto apply (mdd_t const& d1, BinOp op, mdd_t const& d2) -> mdd_t;
 
+        // TODO
+        template<class BinOp>
+        auto intersperse_apply (std::vector<mdd_t> ds, BinOp op) -> mdd_t;
+
         auto reduce (mdd_t&  diagram) -> mdd_t&;
         auto reduce (mdd_t&& diagram) -> mdd_t;
 
@@ -64,7 +68,7 @@ namespace mix::dd
         auto leaf_index  () const   -> index_t;
         auto recycle     (mdd_t& d) -> void;
         auto apply_reset ()         -> void;
-        
+
         static auto is_redundant (vertex_t const* const v ) -> bool;
 
     protected:
@@ -98,7 +102,7 @@ namespace mix::dd
         this->recycle(d2);
         return newDiagram;
     }
-    
+
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     template<class BinOp>
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::apply
@@ -108,7 +112,7 @@ namespace mix::dd
         this->recycle(d1);
         return newDiagram;
     }
-    
+
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     template<class BinOp>
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::apply
@@ -171,7 +175,7 @@ namespace mix::dd
         {
             --i;
             auto keyedVertices = std::vector<std::pair<vertex_key_t, vertex_t*>> {};
-            
+
             for (auto const u : levels[i])
             {
                 if (diagram.is_leaf(u))
@@ -210,7 +214,7 @@ namespace mix::dd
                     u->id = nextId;
 
                     newDiagramMap.emplace(nextId, u);
-                    
+
                     if (! diagram.is_leaf(u))
                     {
                         for (auto j = 0u; j < P; ++j)
@@ -223,7 +227,7 @@ namespace mix::dd
                 }
             }
         }
-        
+
         diagram.root_ = newDiagramMap.at(diagram.root_->id);
 
         for (auto const v : redundantVertices)
@@ -248,7 +252,7 @@ namespace mix::dd
         auto const val = op(this->value1(v1), this->value2(v2));
         auto       u   = static_cast<vertex_t*>(nullptr);
 
-        if (! is_nondetermined<P>(val))
+        if (!is_nondetermined<P>(val))
         {
             u = this->terminal_vertex(val);
         }
@@ -256,7 +260,7 @@ namespace mix::dd
         {
             auto       arcs  = son_arr {};
             auto const index = std::min(this->index1(v1), this->index2(v2));
-            
+
             for (auto i = 0u; i < P; ++i)
             {
                 auto const first  = this->index1(v1) == index ? v1->son(i) : v1;
@@ -279,24 +283,25 @@ namespace mix::dd
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::terminal_vertex
         (log_t const val) -> vertex_t*
     {
-        if (! valToLeaf_.at(val))
+        if (! valToLeaf_[val])
         {
             valToLeaf_[val] = manager_.create(nextId_++, this->leaf_index());
-            leafToVal_.emplace(valToLeaf_.at(val), val);
+            leafToVal_.emplace(valToLeaf_[val], val);
         }
 
-        return valToLeaf_.at(val);
+        return valToLeaf_[val];
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::internal_vertex
         (index_t const index, son_arr const& arcs) -> vertex_t*
     {
+        // TODO this->is_redundant()?
         if (std::all_of( std::begin(arcs), std::end(arcs)
-                       , [fid = arcs.at(0).target->id] (auto const& arc)
+                       , [fid = arcs[0].target->id] (auto const& arc)
                          { return arc.target->id == fid; } ))
         {
-            return arcs.at(0).target;
+            return arcs[0].target;
         }
 
         auto key = in_graph_key_t {index};
@@ -306,7 +311,7 @@ namespace mix::dd
         auto const inGraphIt = inGraphMemo_.find(key);
         if (inGraphIt != inGraphMemo_.end())
         {
-            return (*inGraphIt).second;
+            return inGraphIt->second;
         }
 
         auto const newVertex = manager_.create(nextId_++, index, arcs);
@@ -317,7 +322,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::index1
-        (const vertex_t* const v1) const -> index_t
+        (vertex_t const* const v1) const -> index_t
     {
         return diagram1_->is_leaf(v1) ? this->leaf_index()
                                       : v1->index;
@@ -325,7 +330,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::index2
-        (const vertex_t* const v2) const -> index_t
+        (vertex_t const* const v2) const -> index_t
     {
         return diagram2_->is_leaf(v2) ? this->leaf_index()
                                       : v2->index;
@@ -386,12 +391,12 @@ namespace mix::dd
         leafToVal_.clear();
         recursionMemo_.clear();
         inGraphMemo_.clear();
-        
+
         std::fill(std::begin(valToLeaf_), std::end(valToLeaf_), nullptr);
-        
-        diagram1_  = nullptr;
-        diagram2_  = nullptr;
-        nextId_    = 0;
+
+        diagram1_ = nullptr;
+        diagram2_ = nullptr;
+        nextId_   = 0;
     }
 }
 

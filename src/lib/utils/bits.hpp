@@ -1,5 +1,5 @@
-#ifndef _MIX_UTILS_BITS_
-#define _MIX_UTILS_BITS_
+#ifndef MIX_UTILS_BITS_HPP
+#define MIX_UTILS_BITS_HPP
 
 #include <cstdint>
 #include <bitset>
@@ -12,7 +12,7 @@ namespace mix::utils
         template<class IntType> 
         using bit_keeper = std::bitset<8 * sizeof(IntType)>;
     } 
-    
+
     template<class IntType>
     class bit_accesser
     { 
@@ -26,13 +26,13 @@ namespace mix::utils
         bits_t bits_;
     }; 
 
-    auto constexpr reverse_bits (uint64_t const n ) -> uint64_t;
-    
+    auto constexpr reverse_bits (std::uint64_t const n ) -> std::uint64_t;
+
 // definitions:
 
     template<class IntType>
     bit_accesser<IntType>::bit_accesser(IntType const bits) :
-        bits_{bits}
+        bits_ {bits}
     {
     }
 
@@ -52,7 +52,7 @@ namespace mix::utils
 
     namespace aux_impl
     {
-        inline auto constexpr lookupTable = std::array<uint8_t const, 256>
+        inline auto constexpr lookupTable = std::array<std::uint8_t const, 256>
         {
             0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0, 
             0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8, 
@@ -72,15 +72,15 @@ namespace mix::utils
             0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
         };
 
-        inline auto constexpr lookup (uint64_t const i) -> uint64_t
+        inline auto constexpr lookup (std::uint64_t const i) -> std::uint64_t
         {
             return lookupTable.at(i);
         }
     }
 
-    inline auto constexpr reverse_bits (uint64_t const n) -> uint64_t
+    inline auto constexpr reverse_bits (std::uint64_t const n) -> std::uint64_t
     {
-        auto c = static_cast<uint64_t>(0);
+        auto c = static_cast<std::uint64_t>(0);
 
         c = (aux_impl::lookup( (n)       & 0xff ) << 56)
           | (aux_impl::lookup( (n >> 8)  & 0xff ) << 48)

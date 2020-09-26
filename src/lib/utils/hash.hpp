@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_HASH_
-#define MIX_UTILS_HASH_
+#ifndef MIX_UTILS_HASH_HPP
+#define MIX_UTILS_HASH_HPP
 
 #include <type_traits>
 #include <tuple>
@@ -20,12 +20,12 @@ namespace mix::utils
         };
 
         auto app = [&acc](auto&&... e) 
-        { 
+        {
             (acc(std::hash<std::decay_t<decltype(e)>> {} (e)), ...); 
         };
-        
+
         std::apply(app, tuple);
-        
+
         return seed;
     };
 

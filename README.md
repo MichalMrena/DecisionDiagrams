@@ -28,7 +28,7 @@ int main()
 ### Creating diagrams
 Simplest diagrams that you can create are ones that represent a Boolean constant or a single Boolean variable.
 ```C++
-auto cFalse = creator.just_val(1);
+auto cFalse = creator.just_val(0);
 auto x1     = creator.just_var(1);
 ```
 In the above example variables ```cFalse``` and ```x1``` are instances of the ```bdd``` class. This class manages the lifecycle of the diagram. In its copy constructor it creates a deep copy of the diagram so it might be an expensive operation. However, its move constructor is cheap since the class only manages a pointer to the diagram.

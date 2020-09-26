@@ -65,7 +65,7 @@ namespace mix::dd
                 vertexPtr {pVertexPtr},
                 level     {pLevel} {}
         };
-        
+
     private:
         using arc_t      = typename bdd_t::arc_t;
         using arc_arr_t  = typename vertex_t::star_arr;

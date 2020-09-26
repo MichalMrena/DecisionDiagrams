@@ -9,7 +9,7 @@ namespace mix::utils
 {
     /**
         Provides member constant that is equal to true if the
-        type of T is std::array and is false otherwise.
+        T is std::array and is false otherwise.
      */
     template<class T>
     struct is_std_array : public std::false_type {};

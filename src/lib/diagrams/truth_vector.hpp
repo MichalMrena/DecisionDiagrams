@@ -1,5 +1,5 @@
-#ifndef MIX_DD_TRUTH_VECTOR_
-#define MIX_DD_TRUTH_VECTOR_
+#ifndef MIX_DD_TRUTH_VECTOR_HPP
+#define MIX_DD_TRUTH_VECTOR_HPP
 
 #include "../utils/math_utils.hpp"
 #include "../utils/bits.hpp"
@@ -45,19 +45,19 @@ namespace mix::dd
     };
 
     template<class Lambda>
-    class lambda_wrap
+    class lambda_holder
     {
     public:
         using lambda_t = std::decay_t<Lambda>;
         using iterator = lambda_wrap_iterator<lambda_t>;
 
-        lambda_wrap (Lambda&& lambda);
+        lambda_holder (Lambda&& lambda);
 
         auto begin ()       -> iterator;
         auto end   ()       -> iterator;
         auto begin () const -> iterator;
         auto end   () const -> iterator;
-    
+
     private:
         index_t  varCount_;
         lambda_t lambda_;
@@ -66,7 +66,7 @@ namespace mix::dd
     struct truth_vector
     {
         template<class Lambda>
-        static auto from_lambda      (Lambda&& function)    -> decltype(lambda_wrap {std::forward<Lambda>(function)});
+        static auto from_lambda      (Lambda&& function)    -> decltype(lambda_holder {std::forward<Lambda>(function)});
         static auto from_string      (std::string_view vec) -> std::vector<bool>;
         static auto from_text_file   (std::string_view path, std::size_t const varCount = 0) -> std::vector<bool>;
         static auto from_binary_file (std::string_view path, std::size_t const varCount = 0) -> std::vector<bool>;
@@ -81,13 +81,13 @@ namespace mix::dd
         struct var_count_finder
         {
             index_t maxIndex {0};
-            
+
             auto operator() (index_t const i)
             {
                 maxIndex = std::max(maxIndex, i);
                 return vcf {};
             }
-            
+
             auto operator[] (index_t const i)
             {
                 return (*this)(i);
@@ -101,7 +101,7 @@ namespace mix::dd
         // from operator() is false so maxIndex would be 0.
         // Overloading these two operators prevents built-in short circuit evaluation.
 
-        inline auto operator!  (vcf const&) { return vcf {}; }
+        inline auto operator!  (vcf const&)             { return vcf {}; }
         inline auto operator&& (vcf const&, vcf const&) { return vcf {}; }
         inline auto operator&& (vcf const&, bool const) { return vcf {}; }
         inline auto operator&& (bool const, vcf const&) { return vcf {}; }
@@ -150,11 +150,6 @@ namespace mix::dd
     auto lambda_wrap_iterator<Lambda>::operator-- 
         () -> lambda_wrap_iterator&
     {
-        if (0 == curr_)
-        {
-            throw std::out_of_range {"Cannot decrement begin iterator."};
-        }
-
         --curr_;
         return *this;
     }
@@ -200,44 +195,44 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    lambda_wrap<Lambda>::lambda_wrap(Lambda&& lambda) :
+    lambda_holder<Lambda>::lambda_holder(Lambda&& lambda) :
         varCount_ {aux_impl::var_count(lambda)},
         lambda_   {std::forward<Lambda>(lambda)}
     {
     }
 
     template<class Lambda>
-    auto lambda_wrap<Lambda>::begin
+    auto lambda_holder<Lambda>::begin
         () -> iterator
     {
         return iterator {lambda_,  varCount_, 0};
     }
 
     template<class Lambda>
-    auto lambda_wrap<Lambda>::end
+    auto lambda_holder<Lambda>::end
         () -> iterator
     {
         return iterator {lambda_, varCount_, utils::two_pow(varCount_)};
     }
 
     template<class Lambda>
-    auto lambda_wrap<Lambda>::begin
+    auto lambda_holder<Lambda>::begin
         () const -> iterator
     {
         return iterator {lambda_,  varCount_, 0};
     }
 
     template<class Lambda>
-    auto lambda_wrap<Lambda>::end
+    auto lambda_holder<Lambda>::end
         () const -> iterator
     {
         return iterator {lambda_, varCount_, utils::two_pow(varCount_)};
     }
 
     template<class Lambda>
-    auto truth_vector::from_lambda (Lambda&& function) -> decltype(lambda_wrap {std::forward<Lambda>(function)})
+    auto truth_vector::from_lambda (Lambda&& function) -> decltype(lambda_holder {std::forward<Lambda>(function)})
     {
-        return lambda_wrap {std::forward<Lambda>(function)};
+        return lambda_holder {std::forward<Lambda>(function)};
     }
 
     inline auto truth_vector::from_string (std::string_view vec) -> std::vector<bool>
@@ -250,7 +245,7 @@ namespace mix::dd
         auto vals = utils::vector<bool>(static_cast<std::size_t>(std::log2(vec.size())));
         auto it   = std::begin(vec);
         auto end  = std::end(vec);
-        
+
         while (it != end)
         {
             auto const val = *it++;
@@ -264,11 +259,11 @@ namespace mix::dd
     inline auto truth_vector::from_text_file
         (std::string_view path, std::size_t const varCount) -> std::vector<bool>
     {
-        auto c    = char {'_'};
+        auto c    = '_';
         auto istr = std::fstream {std::filesystem::path {path}};
-        auto vals = std::vector<bool> {};
+        auto vals = std::vector<bool>();
 
-        if (! istr.is_open())
+        if (!istr.is_open())
         {
             throw std::runtime_error {utils::concat("Failed to open file " , path)};
         }
@@ -283,7 +278,7 @@ namespace mix::dd
             aux_impl::val_check_except(c);
             vals.push_back(c == '1');
         }
-        
+
         return vals;
     }
 

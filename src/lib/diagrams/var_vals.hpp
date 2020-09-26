@@ -18,7 +18,7 @@ namespace mix::dd
 
         template<class T>
         using array_type = std::enable_if_t< utils::is_std_array_v<T>
-                                          && std::is_integral_v<typename T::value_type> >;                                            
+                                          && std::is_integral_v<typename T::value_type> >;
 
         template<class T>
         using bitset_type = std::enable_if_t< utils::is_std_bitset_v<T> >;
