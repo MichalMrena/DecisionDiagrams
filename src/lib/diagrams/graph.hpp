@@ -49,11 +49,11 @@ namespace mix::dd
         index_t index;
         bool    mark; // TODO mark could be highest bit of the id
         star_arr forwardStar;
-        
+
         vertex_base( id_t    const pId
                    , index_t const pIndex
                    , bool    const mark = false );
-        
+
         vertex_base( id_t     const pId
                    , index_t  const pIndex
                    , star_arr const pForwardStar
@@ -75,7 +75,7 @@ namespace mix::dd
         vertex( id_t    const pId
               , index_t const pIndex
               , bool    const mark = false );
-        
+
         vertex( id_t     const pId
               , index_t  const pIndex
               , star_arr const pForwardStar
@@ -92,7 +92,7 @@ namespace mix::dd
         vertex( id_t    const pId
               , index_t const pIndex
               , bool    const mark = false );
-        
+
         vertex( id_t     const pId
               , index_t  const pIndex
               , star_arr const pForwardStar
@@ -155,7 +155,7 @@ namespace mix::dd
     {
         return this->forwardStar.at(i).target;
     }
-    
+
 // normal vertex definitions:
 
     template<class VertexData, class ArcData, std::size_t P>

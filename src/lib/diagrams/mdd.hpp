@@ -28,6 +28,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P, class Allocator = std::allocator<vertex<VertexData, ArcData, P>>> class mdd;
     template<class VertexData, class ArcData, std::size_t P, class Allocator = std::allocator<vertex<VertexData, ArcData, P>>> class mdd_creator;
     template<class VertexData, class ArcData, std::size_t P, class Allocator = std::allocator<vertex<VertexData, ArcData, P>>> class mdd_manipulator;
+    template<class VertexData, class ArcData, std::size_t P, class Allocator = std::allocator<vertex<VertexData, ArcData, P>>> class mdd_reliability;
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
     class mdd
@@ -41,6 +42,7 @@ namespace mix::dd
 
         friend class mdd_creator<VertexData, ArcData, P, Allocator>;
         friend class mdd_manipulator<VertexData, ArcData, P>;
+        friend class mdd_reliability<VertexData, ArcData, P, Allocator>;
         friend class bdd_reliability<VertexData, ArcData, Allocator>;
 
     public:
@@ -107,7 +109,7 @@ namespace mix::dd
             @return Pointer to the vertex node of the diagram.
          */
         auto get_root () const -> vertex_t*;
-        
+
         /**
             @return Pointer to the leaf vertex that represents given value.
                     nullptr if there is no such vertex.
@@ -138,7 +140,7 @@ namespace mix::dd
             @return begin forward level order iterator.
          */
         auto begin () -> iterator;
-        
+
         /**
             @return end forward level order iterator.
          */
@@ -148,7 +150,7 @@ namespace mix::dd
             @return begin forward level order const iterator.
          */
         auto begin () const -> const_iterator;
-        
+
         /**
             @return end forward level order const iterator.
          */
@@ -176,12 +178,12 @@ namespace mix::dd
 
         template<class UnaryFunction>
         auto traverse_post (vertex_t* const v, UnaryFunction&& f) const -> void;
-    
+
     protected:
         leaf_val_map leafToVal_;
         vertex_t*    root_;
         manager_t    manager_;
-    };    
+    };
 
     /**
         Swaps rhs and lhs using their member function.
@@ -195,7 +197,7 @@ namespace mix::dd
     {
         template<class Alloc, class = std::void_t<>>
         struct is_recycling : public std::false_type { };
-        
+
         template<class Alloc>
         struct is_recycling<Alloc, std::void_t<typename Alloc::is_recycling>> : public std::true_type { };
 
@@ -317,14 +319,15 @@ namespace mix::dd
         using utils::concat_range;
         using utils::EOL;
 
-        auto labels       = std::vector<std::string> {};
-        auto arcs         = std::vector<std::string> {};
-        auto ranks        = std::vector<std::string> {};
-        auto squareShapes = std::vector<std::string> {};
-        auto make_label   = [this](vertex_t* const v)
+        auto labels       = std::vector<std::string>();
+        auto arcs         = std::vector<std::string>();
+        auto ranks        = std::vector<std::string>();
+        auto squareShapes = std::vector<std::string>();
+        auto make_label   = [this](auto const v)
         {
             using std::to_string;
-            return v->index == this->leaf_index() ? to_string(leafToVal_.at(v))
+            using traits_t = log_val_traits<P>;
+            return v->index == this->leaf_index() ? traits_t::to_string(leafToVal_.at(v))
                                                   : "x" + to_string(v->index);
         };
 
@@ -341,7 +344,7 @@ namespace mix::dd
                 labels.emplace_back(concat(v->id , " [label = " , make_label(v) , "];"));
                 ranksLocal.emplace_back(concat(v->id , ";"));
 
-                if (! this->is_leaf(v))
+                if (!this->is_leaf(v))
                 {
                     for (auto val = 0u; val < P; ++val)
                     {
@@ -367,7 +370,7 @@ namespace mix::dd
             squareShapes.emplace_back(to_string(leaf->id));
         }
         squareShapes.emplace_back(";");
-        
+
         ost << concat( "digraph D {"                                                      , EOL
                      , "    " , "node [shape = square] ", concat_range(squareShapes, " ") , EOL
                      , "    " , "node [shape = circle];"                                  , EOL , EOL

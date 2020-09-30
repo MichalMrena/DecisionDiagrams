@@ -19,9 +19,11 @@ namespace mix::dd
         static_assert(P < std::numeric_limits<type>::max(), "Max for P is 254.");
 
         inline static constexpr auto undefined     = type {P};      // * in extended dpbds
-        inline static constexpr auto nondetermined = type {P + 1};  // internal vertex in apply
-        inline static constexpr auto nodomain      = type {P + 2};  // non homogenous functions
+        inline static constexpr auto nodomain      = type {P + 1};  // non homogenous functions
+        inline static constexpr auto nondetermined = type {P + 2};  // internal vertex in apply
         inline static constexpr auto valuecount    = type {P + 2};
+
+        static auto to_string (type const t) -> std::string;
     };
 
     using bool_t = typename log_val_traits<2>::type;
@@ -42,6 +44,21 @@ namespace mix::dd
     constexpr auto is_nodomain(typename log_val_traits<P>::type const v)
     {
         return log_val_traits<P>::nodomain == v;
+    }
+
+    template<std::size_t P>
+    auto log_val_traits<P>::to_string
+        (type const t) -> std::string
+    {
+        auto constexpr U  = log_val_traits::undefined;
+        auto constexpr ND = log_val_traits::nodomain;
+
+        switch (t)
+        {
+            case U:  return "*";
+            case ND: return "N";
+            default: return std::to_string(t);
+        }
     }
 }
 

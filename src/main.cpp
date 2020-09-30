@@ -6,6 +6,7 @@
 // #include <algorithm>
 // #include <vector>
 // #include <iterator>
+#include "lib/diagrams/mdd_reliability.hpp"
 
 using namespace mix::dd;
 using namespace mix::utils;
@@ -201,14 +202,14 @@ auto reliability_test()
     auto tools    = bdd_tools();
     auto relTools = tools.reliability();
     auto creator  = tools.creator();
-    
+
     auto sfVector = truth_vector::from_lambda([](auto&& x)
     {
         return (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
     });
     auto structureFunction = creator.from_vector(sfVector);
     auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
-    
+
     auto const A    = relTools.availability(structureFunction, ps);
     auto const U    = relTools.unavailability(structureFunction, ps);
     auto dpbds      = relTools.dpbds(std::move(structureFunction));
@@ -289,6 +290,79 @@ auto mvl_test()
     f.to_dot_graph(std::cout);
 }
 
+auto mvl_non_homogenous()
+{
+    using namespace mix::utils;
+    using log_t      = typename log_val_traits<3>::type;    
+    using prob_table = typename mdd_reliability<double, void, 3>::prob_table;
+
+    auto const serial_c = [](auto const x1val, auto const x2val) -> log_t
+    {
+        auto constexpr N     = log_val_traits<3>::nondetermined;
+        auto constexpr ND    = log_val_traits<3>::nodomain;
+        auto constexpr table = std::array<std::array<log_t, 3>, 2>
+        {{
+            {0, 0, 0},
+            {0, 1, 2},
+        }};
+        return N == x1val  or N == x2val  ? N  :
+               ND == x1val or ND == x2val ? ND : table.at(x1val).at(x2val);
+    };
+
+    auto const parallel_d = [](auto const x3val, auto const x5val) -> log_t
+    {
+        auto constexpr N     = log_val_traits<3>::nondetermined;
+        auto constexpr ND    = log_val_traits<3>::nodomain;
+        auto constexpr table = std::array<std::array<log_t, 3>, 2>
+        {{
+            {0, 1, 2},
+            {1, 1, 2},
+        }};
+        return N == x3val  or N == x5val  ? N  :
+               ND == x3val or ND == x5val ? ND : table.at(x3val).at(x5val);
+    };
+
+    auto const parallel_f = [](auto const cval, auto const dval)
+    {
+        auto constexpr N     = log_val_traits<3>::nondetermined;
+        auto constexpr ND    = log_val_traits<3>::nodomain;
+        auto constexpr table = std::array<std::array<log_t, 3>, 3>
+        {{
+            {0, 1, 1},
+            {1, 2, 2},
+            {1, 2, 2},
+        }};
+        return N == cval  or N == dval  ? N  :
+               ND == cval or ND == dval ? ND : table.at(cval).at(dval);
+    };
+
+    auto x  = mdd_creator<double, void, 3>();
+    auto m  = mdd_manipulator<double, void, 3>();
+    auto r  = mdd_reliability<double, void, 3>();
+    auto x1 = x(1, 2);
+    auto x2 = x(2);
+    auto x3 = x(3, 2);
+    auto x5 = x(5);
+    auto c  = m.apply(x1, serial_c, x2);
+    auto d  = m.apply(x3, parallel_d, x5);
+    auto f  = m.apply(c, parallel_f, d);
+
+    f.to_dot_graph(std::cout);
+
+    auto const ps = prob_table{ {0, 0, 0}
+                              , {0.1, 0.9, 0.0}
+                              , {0.2, 0.6, 0.2}
+                              , {0.3, 0.7, 0.0}
+                              , {0, 0, 0}
+                              , {0.1, 0.6, 0.3} };
+
+    auto const A1 = r.availability(f, 1, ps);
+    auto const A2 = r.availability(f, 2, ps);
+
+    printl(concat("A1 = " , A1));
+    printl(concat("A2 = " , A2));
+}
+
 auto main() -> int
 {
     auto watch = stopwatch();
@@ -303,6 +377,7 @@ auto main() -> int
     // reliability_test();
     // satisfy_test();
     // mvl_test();
+    mvl_non_homogenous();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");
