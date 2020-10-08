@@ -1,11 +1,10 @@
-#ifndef MIX_DD_BDD_MANIPULATOR_
-#define MIX_DD_BDD_MANIPULATOR_
+#ifndef MIX_DD_BDD_MANIPULATOR_HPP
+#define MIX_DD_BDD_MANIPULATOR_HPP
 
 #include "mdd_manipulator.hpp"
 #include "operators.hpp"
 
 #include <algorithm>
-#include <set>
 
 namespace mix::dd
 {
@@ -37,7 +36,7 @@ namespace mix::dd
         auto negate (bdd_t&& diagram) -> bdd_t;
 
     private:
-        using base = mdd_manipulator<VertexData, ArcData, 2, Allocator>;
+        using base_t = mdd_manipulator<VertexData, ArcData, 2, Allocator>;
     };
 
     /**
@@ -46,7 +45,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, class Allocator>
     auto operator&& ( bdd<VertexData, ArcData, Allocator> const& lhs
                     , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
-    
+
     /**
         Performs apply AND.
      */
@@ -67,20 +66,20 @@ namespace mix::dd
     template<class VertexData, class ArcData, class Allocator>
     auto operator+ ( bdd<VertexData, ArcData, Allocator> const& lhs
                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
-    
+
     /**
         Performs apply XOR.
      */
     template<class VertexData, class ArcData, class Allocator>
     auto operator^ ( bdd<VertexData, ArcData, Allocator> const& lhs
                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>;
-    
+
     /**
         Performs negate.
      */
     template<class VertexData, class ArcData, class Allocator>
     auto operator! ( bdd<VertexData, ArcData, Allocator>& lhs ) -> bdd<VertexData, ArcData, Allocator>&;
-    
+
     /**
         Performs negate.
      */
@@ -92,7 +91,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, class Allocator>
     bdd_manipulator<VertexData, ArcData, Allocator>::bdd_manipulator
         (Allocator const& alloc) :
-        base {alloc}
+        base_t {alloc}
     {
     }
 
@@ -125,7 +124,7 @@ namespace mix::dd
             {
                 v->son(1) = v->son(1)->son(val);
             }
-        });   
+        });
 
         // possibly change the root
         if (i == diagram.root_->index)
@@ -148,8 +147,8 @@ namespace mix::dd
                 diagram.leafToVal_.erase(v);
             }
 
-            base::manager_.release(v);
-        }     
+            base_t::manager_.release(v);
+        }
 
         return this->reduce(diagram);
     }
@@ -205,7 +204,7 @@ namespace mix::dd
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), AND {}, std::move(rhs));
     }
-    
+
     template<class VertexData, class ArcData, class Allocator>
     auto operator|| ( bdd<VertexData, ArcData, Allocator> const& lhs
                     , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>
@@ -213,7 +212,7 @@ namespace mix::dd
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), OR {}, std::move(rhs));
     }
-    
+
     template<class VertexData, class ArcData, class Allocator>
     auto operator+ ( bdd<VertexData, ArcData, Allocator> const& lhs
                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>
@@ -221,7 +220,7 @@ namespace mix::dd
         auto manipulator = bdd_manipulator<VertexData, ArcData, Allocator> {lhs.get_allocator()};
         return manipulator.apply(std::move(lhs), OR {}, std::move(rhs));
     }
-    
+
     template<class VertexData, class ArcData, class Allocator>
     auto operator^ ( bdd<VertexData, ArcData, Allocator> const& lhs
                    , bdd<VertexData, ArcData, Allocator> const& rhs ) -> bdd<VertexData, ArcData, Allocator>

@@ -168,7 +168,7 @@ namespace mix::dd
         auto m      = manipulator_t {base_t::manager_.get_alloc()};
         auto sfCopy = sf.clone();
         return m.apply( m.negate(m.restrict_var(std::move(sf), i, 0))
-                      , AND {}
+                      , AND()
                       , m.restrict_var(std::move(sfCopy), i, 1) );
     }
 

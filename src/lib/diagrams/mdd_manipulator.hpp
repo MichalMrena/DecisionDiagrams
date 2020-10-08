@@ -2,6 +2,7 @@
 #define MIX_DD_MDD_MANIPULATOR_HPP
 
 #include "bdd.hpp"
+#include "operators_static_check.hpp"
 #include "../utils/hash.hpp"
 
 #include <iterator>
@@ -10,6 +11,7 @@
 #include <functional>
 #include <utility>
 #include <type_traits>
+#include <set>
 
 namespace mix::dd
 {
@@ -33,9 +35,11 @@ namespace mix::dd
         template<class BinOp> auto apply (mdd_t&&      d1, BinOp op, mdd_t const& d2) -> mdd_t;
         template<class BinOp> auto apply (mdd_t const& d1, BinOp op, mdd_t const& d2) -> mdd_t;
 
-        // TODO
+        auto restrict_var (mdd_t&  diagram, index_t const i, log_t const val) -> mdd_t&;
+        auto restrict_var (mdd_t&& diagram, index_t const i, log_t const val) -> mdd_t;
+
         template<class BinOp>
-        auto intersperse_apply (std::vector<mdd_t> ds, BinOp op) -> mdd_t;
+        auto concat (std::vector<mdd_t> ds, BinOp op) -> mdd_t;
 
         auto reduce (mdd_t&  diagram) -> mdd_t&;
         auto reduce (mdd_t&& diagram) -> mdd_t;
@@ -60,10 +64,10 @@ namespace mix::dd
         auto internal_vertex ( index_t const  index
                              , son_arr const& arcs ) -> vertex_t*;
 
-        auto value1       (vertex_t* const v1) const -> log_t;
-        auto value2       (vertex_t* const v2) const -> log_t;
-        auto index1       (vertex_t const* const v1) const -> index_t;
-        auto index2       (vertex_t const* const v2) const -> index_t;
+        auto value1 (vertex_t* const v1) const -> log_t;
+        auto value2 (vertex_t* const v2) const -> log_t;
+        auto index1 (vertex_t const* const v1) const -> index_t;
+        auto index2 (vertex_t const* const v2) const -> index_t;
 
         auto leaf_index  () const   -> index_t;
         auto recycle     (mdd_t& d) -> void;
@@ -128,6 +132,8 @@ namespace mix::dd
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::apply
         (mdd_t const& d1, BinOp op, mdd_t const& d2) -> mdd_t
     {
+        static_assert(check_op_v<P, BinOp>, "Operator P doesn't mach manipulator P.");
+
         diagram1_ = &d1;
         diagram2_ = &d2;
 
@@ -137,6 +143,69 @@ namespace mix::dd
         this->apply_reset();
 
         return newDiagram;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_manipulator<VertexData, ArcData, P, Allocator>::restrict_var
+        (mdd_t& diagram, index_t const i, log_t const val) -> mdd_t&
+    {
+        using vertex_set = std::set<vertex_t*>;
+
+        if (i >= diagram.variable_count())
+        {
+            return diagram;
+        }
+
+        auto const oldVertices = diagram.template fill_container<vertex_set>();
+
+        // "skip" all vertices with given index
+        diagram.traverse_pre(diagram.root_, [i, val, &diagram](auto const v)
+        {
+            if (diagram.is_leaf(v))
+            {
+                return;
+            }
+
+            for (auto j = 0u; j < P; ++j)
+            {
+                if (!diagram.is_leaf(v->son(j)) && i == v->son(j)->index)
+                {
+                    v->son(j) = v->son(j)->son(val);
+                }
+            }
+        });
+
+        // possibly change the root
+        if (i == diagram.root_->index)
+        {
+            diagram.root_ = diagram.root_->son(val);
+        }
+
+        // identify now unreachable vertices
+        auto const newVertices   = diagram.template fill_container<vertex_set>();
+        auto unreachableVertices = std::vector<vertex_t*>();
+        std::set_difference( std::begin(oldVertices), std::end(oldVertices)
+                           , std::begin(newVertices), std::end(newVertices)
+                           , std::inserter(unreachableVertices, std::begin(unreachableVertices)) );
+
+        // and release them
+        for (auto v : unreachableVertices)
+        {
+            if (diagram.is_leaf(v))
+            {
+                diagram.leafToVal_.erase(v);
+            }
+            manager_.release(v);
+        }
+
+        return this->reduce(diagram);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_manipulator<VertexData, ArcData, P, Allocator>::restrict_var
+        (mdd_t&& diagram, index_t const i, log_t const val) -> mdd_t
+    {
+        return mdd_t(std::move(this->restrict_var(diagram, i, val)));
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -153,7 +222,7 @@ namespace mix::dd
         using vertex_key_t     = std::array<id_t, P>;
         auto const levels      = diagram.fill_levels();
         auto redundantVertices = std::vector<vertex_t*> {};
-        auto newDiagramMap     = std::unordered_map<id_t, vertex_t*> {};
+        auto newDiagramMap     = std::unordered_map<id_t, vertex_t*>();
         auto nextId            = static_cast<id_t>(0);
 
         auto make_leaf_key = [](auto val)
@@ -174,7 +243,7 @@ namespace mix::dd
         for (auto i = levels.size(); i > 0;)
         {
             --i;
-            auto keyedVertices = std::vector<std::pair<vertex_key_t, vertex_t*>> {};
+            auto keyedVertices = std::vector<std::pair<vertex_key_t, vertex_t*>>();
 
             for (auto const u : levels[i])
             {
@@ -371,17 +440,19 @@ namespace mix::dd
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::recycle
         (mdd_t& d) -> void
     {
-        if (! d.root_)
-        {
-            return;
-        }
+        d.clear(); // TODO check performance
 
-        d.traverse_pre(d.root_, [this](vertex_t* const v) 
-        {
-            this->manager_.release(v);
-        });
+        // if (! d.root_)
+        // {
+        //     return;
+        // }
 
-        d.root_ = nullptr;
+        // d.traverse_pre(d.root_, [this](vertex_t* const v) 
+        // {
+        //     this->manager_.release(v);
+        // });
+
+        // d.root_ = nullptr;
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>

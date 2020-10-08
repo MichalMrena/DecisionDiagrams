@@ -1,7 +1,7 @@
 #ifndef MIX_DD_TRUTH_VECTOR_HPP
 #define MIX_DD_TRUTH_VECTOR_HPP
 
-#include "../utils/math_utils.hpp"
+#include "../utils/more_math.hpp"
 #include "../utils/bits.hpp"
 #include "../utils/string_utils.hpp"
 

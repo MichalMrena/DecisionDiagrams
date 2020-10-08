@@ -1,5 +1,5 @@
-#ifndef _MIX_DD_BIT_VECTOR_
-#define _MIX_DD_BIT_VECTOR_
+#ifndef MIX_DD_BIT_VECTOR_HPP
+#define MIX_DD_BIT_VECTOR_HPP
 
 #include <type_traits>
 #include <vector>
@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <functional>
 #include <initializer_list>
-#include "../utils/math_utils.hpp"
+#include "../utils/more_math.hpp"
 
 namespace mix::dd
 {
@@ -27,7 +27,7 @@ namespace mix::dd
     private:
         std::reference_wrapper<vec_t> vector;
         size_t recordIndex;
-        
+
     public:
     //  TODO treba to explicitne, asi skôr nie...?
         proxy_ref (const proxy_ref&) = default;

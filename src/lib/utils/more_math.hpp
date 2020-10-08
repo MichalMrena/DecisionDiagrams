@@ -1,12 +1,9 @@
-#ifndef _MIX_UTILS_MATH_UTILS_
-#define _MIX_UTILS_MATH_UTILS_
+#ifndef MIX_UTILS_MATH_UTILS_HPP
+#define MIX_UTILS_MATH_UTILS_HPP
 
-#include <type_traits>
 #include <cstdint>
 #include <cstddef>
 
-
-// TODO rename header to more_math.hpp
 namespace mix::utils
 {
     template<class Base, class Exponent>
@@ -22,16 +19,16 @@ namespace mix::utils
             }
 
             exponent >>= 1;
-            
+
             if (0 == exponent) break;
-            
+
             base *= base;
         }
 
         return result;
     }
-    
-    template<class Exponent, class Result = uint64_t>
+
+    template<class Exponent, class Result = std::uint64_t>
     auto constexpr two_pow (Exponent const exponent) -> Result
     {
         return static_cast<Result>(1) << exponent;

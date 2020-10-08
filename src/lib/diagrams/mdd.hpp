@@ -6,6 +6,7 @@
 #include "var_vals.hpp"
 #include "../utils/string_utils.hpp"
 #include "../utils/alloc_manager.hpp"
+#include "../utils/more_math.hpp"
 #include "../utils/print.hpp"
 #include "../data_structures/simple_map.hpp"
 
@@ -17,6 +18,7 @@
 #include <utility>
 #include <algorithm>
 #include <iterator>
+#include <type_traits>
 
 namespace mix::dd
 {
@@ -81,6 +83,21 @@ namespace mix::dd
         auto operator= (mdd rhs) noexcept -> mdd&;
 
         /**
+            Creates copy of this diagram using the copy constructor.
+
+            @return deep copy of this diagram.
+         */
+        auto clone () const -> mdd;
+
+        /**
+            Creates new diagrams by moving this diagram into to new one.
+            This diagram is left empty.
+
+            @return new diagram with content of this diagram.
+         */
+        auto move () -> mdd;
+
+        /**
             @return the allocator associated with the diagram.
          */
         auto get_allocator () const -> Allocator;
@@ -137,28 +154,52 @@ namespace mix::dd
         auto dependency_set (OutputIt out) const -> void;
 
         /**
-            @return begin forward level order iterator.
+            Calculates the size size of the satisfying set of the function
+            for given value @p val of the function.
+            Uses data member of vertices to store intermediated results if possible.
+            It is possible when VertexData is floating or at least 32bit integral type.
+            Otherwise it uses a map which might be a bit slower.
+            @param val value of the function for which the count should be calculated
+            @return size of the satisfying set of the function.
+        */
+        auto satisfy_count (log_t const val) -> std::size_t;
+
+        /**
+            Calculates the size size of the satisfying set of the function
+            for given value @p val of the function.
+            Uses map to store intermediated results.
+            @param val value of the function for which the count should be calculated
+            @return size of the satisfying set of the function.
+         */
+        auto satisfy_count (log_t const val) const -> std::size_t;
+
+        /**
+            @return begin level order forward iterator.
          */
         auto begin () -> iterator;
 
         /**
-            @return end forward level order iterator.
+            @return end level order forward iterator.
          */
         auto end () -> iterator;
 
         /**
-            @return begin forward level order const iterator.
+            @return begin level order forward const iterator.
          */
         auto begin () const -> const_iterator;
 
         /**
-            @return end forward level order const iterator.
+            @return end level order forward const iterator.
          */
         auto end () const -> const_iterator;
 
     protected:
         using leaf_val_map = ds::simple_map<vertex_t*, log_t>;
         using manager_t    = utils::alloc_manager<Allocator>;
+
+    private:
+        struct use_data_member {};
+        struct use_map {};
 
     protected:
         mdd ( vertex_t* const  root
@@ -172,6 +213,12 @@ namespace mix::dd
 
         auto is_leaf (vertex_t const* const v) const -> bool;
         auto value   (vertex_t* const v)       const -> log_t;
+
+        auto root_alpha (log_t const val, use_data_member) -> std::size_t;
+        auto root_alpha (log_t const val, use_map) const   -> std::size_t;
+
+        template<class Container>
+        auto fill_container () const -> Container;
 
         template<class UnaryFunction>
         auto traverse_pre (vertex_t* const v, UnaryFunction&& f) const -> void;
@@ -203,6 +250,9 @@ namespace mix::dd
 
         template<class Alloc>
         inline constexpr auto is_recycling_v = is_recycling<Alloc>::value; 
+
+        template<class T>
+        inline constexpr auto can_use_data_member_v = std::is_arithmetic_v<T> && sizeof(T) >= 32;
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -224,8 +274,7 @@ namespace mix::dd
         }
 
         // first we copy each vertex:
-        auto newVerticesMap = std::unordered_map<id_t, vertex_t*> {};
-        // std::unordered_map<id_t, vertex_t*> newVerticesMap;
+        auto newVerticesMap = std::unordered_map<id_t, vertex_t*>();
         other.traverse_pre(other.root_, [&](auto v) 
         {
             newVerticesMap.emplace(v->id, manager_.create(*v));
@@ -301,6 +350,20 @@ namespace mix::dd
     {
         this->swap(rhs);
         return *this;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd<VertexData, ArcData, P, Allocator>::clone
+        () const -> mdd
+    {
+        return mdd(*this);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd<VertexData, ArcData, P, Allocator>::move
+        () -> mdd
+    {
+        return mdd(std::move(*this));
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -412,7 +475,7 @@ namespace mix::dd
         {
             v = v->son(get_var(vars, v->index));
         }
-        
+
         return leafToVal_.at(v);
     }
 
@@ -446,6 +509,29 @@ namespace mix::dd
                 yetIn[v->index] = true;
             }
         });
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd<VertexData, ArcData, P, Allocator>::satisfy_count
+        (log_t const val) -> std::size_t
+    {
+        if constexpr (aux_impl::can_use_data_member_v<VertexData>)
+        {
+            auto const rootAlpha = this->root_alpha(val, use_data_member {});
+            return rootAlpha * utils::int_pow(P, root_->index);
+        }
+        else
+        {
+            return const_cast<mdd const&>(*this).satisfy_count(val);
+        }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd<VertexData, ArcData, P, Allocator>::satisfy_count
+        (log_t const val) const -> std::size_t
+    {
+        auto const rootAlpha = this->root_alpha(val, use_map {});
+        return rootAlpha * utils::int_pow(P, root_->index);
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -492,11 +578,14 @@ namespace mix::dd
         }
         else
         {
-            for (auto const& level : this->fill_levels())
+            if (root_)
             {
-                for (auto const v : level)
+                for (auto const& level : this->fill_levels())
                 {
-                    manager_.release(v);
+                    for (auto const v : level)
+                    {
+                        manager_.release(v);
+                    }
                 }
             }
         }
@@ -547,6 +636,71 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd<VertexData, ArcData, P, Allocator>::root_alpha
+        (log_t const val, use_data_member) -> std::size_t
+    {
+        this->traverse_post(root_, [this, val](auto const v)
+        {
+            if (this->is_leaf(v))
+            {
+                v->data = this->value(v) == val ? 1 : 0;
+            }
+            else
+            {
+                v->data = 0;
+                for (auto i = 0u; i < P; ++i)
+                {
+                    v->data += v->son(i)->data * utils::int_pow(P, v->son(i)->index - v->index - 1);
+                }
+            }
+        });
+
+        return root_->data;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd<VertexData, ArcData, P, Allocator>::root_alpha
+        (log_t const val, use_map) const -> std::size_t
+    {
+        auto dataMap = std::unordered_map<vertex_t*, std::size_t>();
+
+        this->traverse_post(root_, [this, &dataMap, val](auto const v)
+        {
+            auto alpha = VertexData {0};
+            if (this->is_leaf(v))
+            {
+                alpha = this->value(v) == val ? 1 : 0;
+            }
+            else
+            {
+                for (auto i = 0u; i < P; ++i)
+                {
+                    alpha += dataMap.at(v->son(i)) * utils::int_pow(P, v->son(i)->index - v->index - 1);
+                }
+            }
+            dataMap.emplace(v, alpha);
+        });
+
+        return dataMap.at(root_);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    template<class Container>
+    auto mdd<VertexData, ArcData, P, Allocator>::fill_container
+        () const -> Container
+    {
+        auto c = Container();
+        auto outIt = std::inserter(c, std::end(c));
+
+        this->traverse_pre(root_, [&outIt](auto const v)
+        {
+            outIt = v;
+        });
+
+        return c;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
     template<class UnaryFunction>
     auto mdd<VertexData, ArcData, P, Allocator>::traverse_pre
         (vertex_t* const v, UnaryFunction&& f) const -> void
@@ -578,7 +732,7 @@ namespace mix::dd
                 this->traverse_post(v->son(i), f);
             }
         }
-        
+
         f(v);
     }
 

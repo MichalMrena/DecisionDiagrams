@@ -1,13 +1,13 @@
-#ifndef MIX_DD_BDD_
-#define MIX_DD_BDD_
+#ifndef MIX_DD_BDD_HPP
+#define MIX_DD_BDD_HPP
 
 #include "mdd.hpp"
-#include "../utils/math_utils.hpp"
+#include "../utils/more_math.hpp"
 
 #include <type_traits>
 
 namespace mix::dd
-{   
+{
     /**
         Ordered Binary Decision Diagram.
         @tparam VertexData - type of the data that will be stored in vertices of the diagram.
@@ -21,9 +21,9 @@ namespace mix::dd
     class bdd : public mdd<VertexData, ArcData, 2, Allocator>
     {
     public:
-        using base     = mdd<VertexData, ArcData, 2, Allocator>;
-        using vertex_t = typename base::vertex_t;
-        using arc_t    = typename base::arc_t;
+        using base_t     = mdd<VertexData, ArcData, 2, Allocator>;
+        using vertex_t = typename base_t::vertex_t;
+        using arc_t    = typename base_t::arc_t;
         using log_t    = bool_t;
 
     public:
@@ -55,7 +55,22 @@ namespace mix::dd
             @param rhs - diagram that is to be asigned into this one.
         */
         auto operator= (bdd rhs) noexcept -> bdd&;
-        
+
+        /**
+            Creates copy of this diagram using the copy constructor.
+
+            @return deep copy of this diagram.
+         */
+        auto clone () const -> bdd;
+
+        /**
+            Creates new diagrams by moving this diagram into to new one.
+            This diagram is left empty.
+
+            @return new diagram with content of this diagram.
+         */
+        auto move () -> bdd;
+
         /**
             @param  rhs   - other diagram that should be compared with this.
             @return true  if this and rhs diagrams represent the same function.
@@ -102,21 +117,6 @@ namespace mix::dd
         auto satisfy_count () const -> std::size_t;
 
         /**
-            Creates copy of this diagram using the copy constructor.
-
-            @return deep copy of this diagram.
-         */
-        auto clone () const -> bdd;
-
-        /**
-            Creates new diagrams by moving this diagram into to new one.
-            This diagram is left empty.
-
-            @return new diagram with content of this diagram.
-         */
-        auto move () -> bdd;
-
-        /**
             @return Pointer to the leaf vertex that represents true value.
                     nullptr if there is no such vertex.
          */
@@ -136,23 +136,13 @@ namespace mix::dd
         friend class mdd_creator<VertexData, ArcData, 2, Allocator>;
 
     private:
-        struct use_data_member {};
-        struct use_map {};
-
-    private:
-        using leaf_val_map = typename base::leaf_val_map;
-        using manager_t    = typename base::manager_t;        
+        using leaf_val_map = typename base_t::leaf_val_map;
+        using manager_t    = typename base_t::manager_t;
 
     private:
         bdd ( vertex_t* const  root
             , leaf_val_map     leafToVal
             , Allocator const& alloc );
-
-        auto root_alpha (use_data_member) -> std::size_t;
-        auto root_alpha (use_map) const   -> std::size_t;
-
-        template<class Container>
-        auto fill_container () const -> Container;
 
         template< class VariableValues
                 , class InsertIterator
@@ -168,29 +158,23 @@ namespace mix::dd
                               , bdd const&      d2 ) -> bool;
     };
 
-    namespace aux_impl
-    {
-        template<class T>
-        inline constexpr auto can_use_data_member_v = std::is_arithmetic_v<T> && sizeof(T) >= 32;
-    }
-
     template<class VertexData, class ArcData, class Allocator>
     bdd<VertexData, ArcData, Allocator>::bdd
         (Allocator const& alloc) :
-        base {alloc}
+        base_t {alloc}
     {
     }
 
     template<class VertexData, class ArcData, class Allocator>
     bdd<VertexData, ArcData, Allocator>::bdd(bdd const& other) :
-        base {other}
+        base_t {other}
     {
     }
 
     template<class VertexData, class ArcData, class Allocator>
     bdd<VertexData, ArcData, Allocator>::bdd
         (bdd&& other) noexcept :
-        base {std::move(other)}
+        base_t {std::move(other)}
     {
     }
 
@@ -199,7 +183,7 @@ namespace mix::dd
         ( vertex_t* const  root
         , leaf_val_map     leafToVal
         , Allocator const& alloc ) :
-        base {root, std::move(leafToVal), alloc}
+        base_t {root, std::move(leafToVal), alloc}
     {
     }
 
@@ -207,14 +191,14 @@ namespace mix::dd
     auto bdd<VertexData, ArcData, Allocator>::swap
         (bdd& other) noexcept -> void
     {
-        base::swap(other);
+        base_t::swap(other);
     }
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd<VertexData, ArcData, Allocator>::operator= 
         (bdd rhs) noexcept -> bdd&
     {
-        base::operator= (std::move(rhs));
+        base_t::operator= (std::move(rhs));
         return *this;
     }
 
@@ -222,13 +206,13 @@ namespace mix::dd
     auto bdd<VertexData, ArcData, Allocator>::operator==
         (const bdd& rhs) const -> bool 
     {
-        if (base::root_ == rhs.root_)
+        if (base_t::root_ == rhs.root_)
         {
             // Catches comparison with self and also case when both diagrams are empty.
             return true;
         }
 
-        if (! base::root_ || ! rhs.root_)
+        if (!base_t::root_ || ! rhs.root_)
         {
             // Case when one of the roots is null.
             return false;
@@ -241,7 +225,7 @@ namespace mix::dd
         }
 
         // Compare trees.
-        return bdd::are_equal(base::root_, rhs.root_, *this, rhs);
+        return bdd::are_equal(base_t::root_, rhs.root_, *this, rhs);
     }
 
     template<class VertexData, class ArcData, class Allocator>
@@ -257,30 +241,21 @@ namespace mix::dd
         (OutputIt out) const -> void
     {
         auto xs = VariableValues {};
-        this->satisfy_all_step(0, base::root_, xs, out);
+        this->satisfy_all_step(0, base_t::root_, xs, out);
     }
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd<VertexData, ArcData, Allocator>::satisfy_count
         () -> std::size_t
     {
-        if constexpr (aux_impl::can_use_data_member_v<VertexData>)
-        {
-            auto const rootAlpha = this->root_alpha(use_data_member {});
-            return rootAlpha * utils::two_pow(base::root_->index);
-        }
-        else
-        {
-            return const_cast<bdd const&>(*this).satisfy_count();
-        }
+        return base_t::satisfy_count(1);
     }
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd<VertexData, ArcData, Allocator>::satisfy_count
         () const -> std::size_t
     {
-        auto const rootAlpha = this->root_alpha(use_map {});
-        return rootAlpha * utils::two_pow(base::root_->index);
+        return base_t::satisfy_count(1);
     }
 
     template<class VertexData, class ArcData, class Allocator>
@@ -298,66 +273,17 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, class Allocator>
-    auto bdd<VertexData, ArcData, Allocator>::root_alpha
-        (use_data_member) -> std::size_t
-    {  
-        this->traverse_post(base::root_, [this](auto v)
-        {
-            v->data = this->is_leaf(v) 
-                ? this->value(v)
-                : v->son(0)->data * utils::two_pow(v->son(0)->index - v->index - 1)
-                + v->son(1)->data * utils::two_pow(v->son(1)->index - v->index - 1);
-        });
-
-        return base::root_->data;
-    }
-
-    template<class VertexData, class ArcData, class Allocator>
-    auto bdd<VertexData, ArcData, Allocator>::root_alpha
-        (use_map) const -> std::size_t
-    {
-        auto dataMap = std::unordered_map<vertex_t*, std::size_t> {};
-
-        this->traverse_post(base::root_, [this, &dataMap](auto v)
-        {
-            auto const alpha = this->is_leaf(v) 
-                ? this->value(v)
-                : dataMap.at(v->son(0)) * utils::two_pow(v->son(0)->index - v->index - 1)
-                + dataMap.at(v->son(1)) * utils::two_pow(v->son(1)->index - v->index - 1);
-            dataMap.emplace(v, alpha);
-        });
-
-        return dataMap.at(base::root_);
-    }
-
-    template<class VertexData, class ArcData, class Allocator>
     auto bdd<VertexData, ArcData, Allocator>::true_leaf
         () -> vertex_t*
     {
-        return base::get_leaf(1u);
+        return base_t::get_leaf(1u);
     }
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd<VertexData, ArcData, Allocator>::false_leaf
         () -> vertex_t*
     {
-        return base::get_leaf(0u);
-    }
-
-    template<class VertexData, class ArcData, class Allocator>
-    template<class Container>
-    auto bdd<VertexData, ArcData, Allocator>::fill_container
-        () const -> Container
-    {
-        auto c = Container {};
-        auto outIt = std::inserter(c, std::end(c));
-
-        this->traverse_pre(base::root_, [&outIt](auto const v)
-        {
-            outIt = v;
-        });
-
-        return c;
+        return base_t::get_leaf(0u);
     }
 
     template<class VertexData, class ArcData, class Allocator>

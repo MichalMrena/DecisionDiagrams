@@ -249,44 +249,28 @@ auto sanity_check()
 
 auto satisfy_test()
 {
-    auto       mutableF  = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
-    auto const constantF = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
+    // auto       mutableF  = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
+    // auto const constantF = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
 
-    auto const countMutable  = mutableF.satisfy_count();
-    auto const countConstant = constantF.satisfy_count();
-    printl(concat("mutable: ", countMutable));
-    printl(concat("const:   ", countConstant));
+    // auto const countMutable  = mutableF.satisfy_count();
+    // auto const countConstant = constantF.satisfy_count();
+    // printl(concat("mutable: ", countMutable));
+    // printl(concat("const:   ", countConstant));
+
+    auto x = mdd_creator<double, void, 2>();
+    auto f = (x(0) * x(1) + x(2));
+    f.to_dot_graph(std::cout);
 }
 
 auto mvl_test()
 {
-    using log_t = typename log_val_traits<4>::type;
-    auto constexpr P = log_t {4};
-    auto plusMod4 = [](auto const lhs, auto const rhs)
-    {
-        auto constexpr N = log_val_traits<P>::nondetermined;
-        return (N == lhs || N == rhs) 
-            ? N : static_cast<log_t>((lhs + rhs) % P);
-    };
+    auto constexpr P = 4;
+    auto x = mdd_creator<void, void, P>();
+    auto m = mdd_manipulator<void, void, P>();
 
-    auto x = mdd_creator<void, void, P> {};
-    auto m = mdd_manipulator<void, void, P> {};
+    auto x1 = x(P, 3);
+    auto f  = m.apply(x1, EQUAL_TO<P, domain_e::homogenous>(), x.just_val(1));
 
-    // f(x) = x0 + x1 + x2 + x3
-    auto f = m.apply( m.apply(x(0), plusMod4, x(1))
-                    , plusMod4
-                    , m.apply(x(2), plusMod4, x(3)) );
-
-    auto xs = range(0, 4);
-    for (auto&& [v1, v2, v3, v4] : product(xs, xs, xs, xs))
-    {
-        auto const correctResult = (v1 + v2 + v3 + v4) % P;
-        auto const diagramResult = f.get_value(std::array {v1, v2, v3, v4});
-        if (correctResult != diagramResult)
-        {
-            printl(concat("!!! not good : ", v1, " ", v2, " ", v3, " ", v4));
-        }
-    }
     f.to_dot_graph(std::cout);
 }
 
@@ -347,8 +331,6 @@ auto mvl_non_homogenous()
     auto d  = m.apply(x3, parallel_d, x5);
     auto f  = m.apply(c, parallel_f, d);
 
-    f.to_dot_graph(std::cout);
-
     auto const ps = prob_table{ {0, 0, 0}
                               , {0.1, 0.9, 0.0}
                               , {0.2, 0.6, 0.2}
@@ -359,8 +341,33 @@ auto mvl_non_homogenous()
     auto const A1 = r.availability(f, 1, ps);
     auto const A2 = r.availability(f, 2, ps);
 
-    printl(concat("A1 = " , A1));
-    printl(concat("A2 = " , A2));
+    auto dpbds = r.dpbds_integrated_1(f, {1, 0}, 1);
+    auto const bis1 = r.birnbaum_importances(dpbds, ps);
+
+    for (auto const i : {1, 2, 3, 5})
+    {
+        printl(concat("x" , i , " = " , bis1[i]));
+    }
+
+    for (auto const i : {1, 2, 3, 5})
+    {
+        auto const& d = dpbds[i];
+        auto const p0  = d.get_leaf(0)->data;
+        auto const p1  = d.get_leaf(1)->data;
+        printl(concat("d" , i , ": p0=" , p0 , " p1=" , p1));
+    }
+    printl("----------");
+
+    dpbds[1].to_dot_graph(std::cout);
+
+    // for (auto& d : dpbds)
+    // {
+    //     d.to_dot_graph(std::cout);
+    //     printl("----------");
+    // }
+
+    // printl(concat("A1 = " , A1));
+    // printl(concat("A2 = " , A2));
 }
 
 auto main() -> int
@@ -375,9 +382,9 @@ auto main() -> int
     // sanity_check();
     // map_test();
     // reliability_test();
-    // satisfy_test();
+    satisfy_test();
     // mvl_test();
-    mvl_non_homogenous();
+    // mvl_non_homogenous();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

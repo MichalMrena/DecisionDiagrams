@@ -73,7 +73,7 @@ namespace mix::dd
         using level_map  = std::unordered_map<vertex_key const, vertex_t*, utils::tuple_hash_t<vertex_key const>>;
         using levels_v   = std::vector<level_map>;
         using stack_t    = ds::peekable_stack<stack_frame>;
-        using base       = mdd_creator<VertexData, ArcData, 2, Allocator>;
+        using base_t       = mdd_creator<VertexData, ArcData, 2, Allocator>;
 
     private:
         levels_v  levels_;
@@ -84,7 +84,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, class Allocator>
     bdd_creator<VertexData, ArcData, Allocator>::bdd_creator
         (Allocator const& alloc) :
-        base    {alloc},
+        base_t    {alloc},
         nextId_ {0}
     {
     }
@@ -105,14 +105,14 @@ namespace mix::dd
         // Create vertex for each variable and point false arc to the false leaf.
         // (Or true arc in case the variable is complemented(negated).)
         auto const varCount  = 1 + (*std::prev(varsEnd)).first;
-        auto const falseLeaf = base::manager_.create(0, varCount);
-        auto const trueLeaf  = base::manager_.create(1, varCount);
+        auto const falseLeaf = base_t::manager_.create(0, varCount);
+        auto const trueLeaf  = base_t::manager_.create(1, varCount);
         auto nextId   = id_t {2};
         auto vertices = utils::map(varsIt, varsEnd, [&](auto const& pair)
         {
             auto const index       = std::get<0>(pair);
             auto const isNegated   = std::get<1>(pair);
-            auto const vertex      = base::manager_.create(nextId++, index);
+            auto const vertex      = base_t::manager_.create(nextId++, index);
             vertex->son(isNegated) = falseLeaf;
             return vertex;
         });
@@ -134,7 +134,7 @@ namespace mix::dd
         // Finally just create the diagram.
         return bdd_t { vertices.front()
                      , { {trueLeaf, 1}, {falseLeaf, 0} }
-                     , base::manager_.get_alloc() };
+                     , base_t::manager_.get_alloc() };
     }
 
     template<class VertexData, class ArcData, class Allocator>
@@ -198,8 +198,8 @@ namespace mix::dd
         auto const varCount  = static_cast<index_t>(std::log2(std::distance(first, last)));
         auto const valToLeaf = std::array<vertex_t*, 2>
         {
-            base::manager_.create(nextId_++, varCount), 
-            base::manager_.create(nextId_++, varCount)
+            base_t::manager_.create(nextId_++, varCount), 
+            base_t::manager_.create(nextId_++, varCount)
         };
         
         auto leafToVal = leaf_val_map 
@@ -261,18 +261,18 @@ namespace mix::dd
         if (root == valToLeaf.at(0))
         {
             leafToVal.erase(valToLeaf.at(1));
-            base::manager_.release(valToLeaf.at(1));
+            base_t::manager_.release(valToLeaf.at(1));
         }
 
         if (root == valToLeaf.at(1))
         {
             leafToVal.erase(valToLeaf.at(0));
-            base::manager_.release(valToLeaf.at(0));
+            base_t::manager_.release(valToLeaf.at(0));
         }
 
         return bdd_t { root
                      , std::move(leafToVal)
-                     , base::manager_.get_alloc() };
+                     , base_t::manager_.get_alloc() };
     }
 
     template<class VertexData, class ArcData, class Allocator>
@@ -298,7 +298,7 @@ namespace mix::dd
     {
         auto const numOfSteps = static_cast<std::size_t>(std::ceil(std::log2(diagrams.size())));
         auto diagramCount     = diagrams.size();
-        auto m = manipulator_t {base::manager_.get_alloc()};
+        auto m = manipulator_t {base_t::manager_.get_alloc()};
 		
         for (auto step = 0u; step < numOfSteps; ++step)
         {
@@ -326,7 +326,7 @@ namespace mix::dd
     auto bdd_creator<VertexData, ArcData, Allocator>::or_merge_sequential
         (std::vector<bdd_t> diagrams) -> bdd_t
     {
-        auto m   = manipulator_t {base::manager_.get_alloc()};
+        auto m   = manipulator_t {base_t::manager_.get_alloc()};
         auto it  = std::next(std::begin(diagrams));
         auto end = std::end(diagrams);
         while (it != end)
@@ -362,7 +362,7 @@ namespace mix::dd
             return (*inGraphIt).second;            
         }
 
-        auto const newVertex = base::manager_.create( nextId_++
+        auto const newVertex = base_t::manager_.create( nextId_++
                                                     , level
                                                     , arc_arr_t {arc_t {falseSon}, arc_t {trueSon}} );
         levels_.at(level).emplace(key, newVertex);
