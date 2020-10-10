@@ -23,58 +23,6 @@ namespace mix::dd
         };
 
         template<std::size_t P>
-        struct min
-        {
-            using log_t = typename log_val_traits<P>::type;
-
-            [[nodiscard]]
-            constexpr auto operator() 
-                (log_t const lhs, log_t const rhs) const noexcept -> log_t
-            {
-                return std::min(lhs, rhs);
-            }
-        };
-
-        template<std::size_t P>
-        struct max
-        {
-            using log_t = typename log_val_traits<P>::type;
-
-            [[nodiscard]]
-            constexpr auto operator() 
-                (log_t const lhs, log_t const rhs) const noexcept -> log_t
-            {
-                return std::max(lhs, rhs);
-            }
-        };
-
-        template<std::size_t P>
-        struct plus_mod
-        {
-            using log_t = typename log_val_traits<P>::type;
-
-            [[nodiscard]]
-            constexpr auto operator() 
-                (log_t const lhs, log_t const rhs) const noexcept -> log_t
-            {
-                return (lhs + rhs) % P;
-            }
-        };
-
-        template<std::size_t P>
-        struct multiplies_mod
-        {
-            using log_t = typename log_val_traits<P>::type;
-
-            [[nodiscard]]
-            constexpr auto operator() 
-                (log_t const lhs, log_t const rhs) const noexcept -> log_t
-            {
-                return (lhs * rhs) % P;
-            }
-        };
-
-        template<std::size_t P>
         using type = typename log_val_traits<P>::type;
     }
 
@@ -173,16 +121,16 @@ namespace mix::dd
     struct GREATER_EQUAL : public bin_op<std::greater_equal<>, P, Domain, log_val_traits<P>::undefined> {};
 
     template<std::size_t P, domain_e Domain = domain_e::nonhomogenous>
-    struct MIN : public bin_op<impl::min<P>, P, Domain, 0> {};
+    struct MIN : public bin_op<utils::min, P, Domain, 0> {};
 
     template<std::size_t P, domain_e Domain = domain_e::nonhomogenous>
-    struct MAX : public bin_op<impl::max<P>, P, Domain, P - 1> {};
+    struct MAX : public bin_op<utils::max, P, Domain, P - 1> {};
 
     template<std::size_t P, domain_e Domain = domain_e::nonhomogenous>
-    struct PLUS_MOD : public bin_op<impl::plus_mod<P>, P, Domain, log_val_traits<P>::undefined> {};
+    struct PLUS_MOD : public bin_op<utils::plus_mod<P>, P, Domain, log_val_traits<P>::undefined> {};
 
     template<std::size_t P, domain_e Domain = domain_e::nonhomogenous>
-    struct MULTIPLIES_MOD : public bin_op<impl::multiplies_mod<P>, P, Domain, log_val_traits<P>::undefined> {};
+    struct MULTIPLIES_MOD : public bin_op<utils::multiplies_mod<P>, P, Domain, log_val_traits<P>::undefined> {};
 }
 
 #endif

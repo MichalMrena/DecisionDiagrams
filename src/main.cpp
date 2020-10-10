@@ -2,11 +2,9 @@
 #include "lib/utils/more_random.hpp"
 #include "lib//bdd_tools.hpp"
 
-// #include <iostream>
-// #include <algorithm>
-// #include <vector>
-// #include <iterator>
 #include "lib/diagrams/mdd_reliability.hpp"
+
+    #include "lib/utils/more_iterator.hpp"
 
 using namespace mix::dd;
 using namespace mix::utils;
@@ -257,9 +255,19 @@ auto satisfy_test()
     // printl(concat("mutable: ", countMutable));
     // printl(concat("const:   ", countConstant));
 
-    auto x = mdd_creator<double, void, 2>();
-    auto f = (x(0) * x(1) + x(2));
-    f.to_dot_graph(std::cout);
+    using mul_t = MULTIPLIES_MOD<4>;
+    using add_t = PLUS_MOD<4>;
+
+    auto x = mdd_creator<double, void, 4>();
+    auto m = mdd_manipulator<double, void, 4>();
+    auto const f = m.apply( m.apply(x(0), mul_t(), x(1))
+                          , add_t()
+                          , m.apply(x(2), mul_t(), x(3)) );
+    // f.to_dot_graph(std::cout);
+    printl(concat("sc0 = " , f.satisfy_count(0)));
+    printl(concat("sc1 = " , f.satisfy_count(1)));
+    printl(concat("sc2 = " , f.satisfy_count(2)));
+    printl(concat("sc3 = " , f.satisfy_count(3)));
 }
 
 auto mvl_test()
@@ -323,19 +331,15 @@ auto mvl_non_homogenous()
     auto x  = mdd_creator<double, void, 3>();
     auto m  = mdd_manipulator<double, void, 3>();
     auto r  = mdd_reliability<double, void, 3>();
-    auto x1 = x(1, 2);
-    auto x2 = x(2);
-    auto x3 = x(3, 2);
-    auto x5 = x(5);
-    auto c  = m.apply(x1, serial_c, x2);
-    auto d  = m.apply(x3, parallel_d, x5);
+    auto ds = std::vector<log_t> {2, 3, 2, 3};
+    auto xs = x.just_vars(ds);
+    auto c  = m.apply(xs[0], serial_c, xs[1]);
+    auto d  = m.apply(xs[2], parallel_d, xs[3]);
     auto f  = m.apply(c, parallel_f, d);
 
-    auto const ps = prob_table{ {0, 0, 0}
-                              , {0.1, 0.9, 0.0}
+    auto const ps = prob_table{ {0.1, 0.9, 0.0}
                               , {0.2, 0.6, 0.2}
                               , {0.3, 0.7, 0.0}
-                              , {0, 0, 0}
                               , {0.1, 0.6, 0.3} };
 
     auto const A1 = r.availability(f, 1, ps);
@@ -343,31 +347,26 @@ auto mvl_non_homogenous()
 
     auto dpbds = r.dpbds_integrated_1(f, {1, 0}, 1);
     auto const bis1 = r.birnbaum_importances(dpbds, ps);
+    auto const sis1 = r.structural_importances(dpbds, ds);
 
-    for (auto const i : {1, 2, 3, 5})
+    for (auto const i : {0, 1, 2, 3})
     {
-        printl(concat("x" , i , " = " , bis1[i]));
+        printl(concat("BI" , i , " = " , bis1[i]));
     }
 
-    for (auto const i : {1, 2, 3, 5})
-    {
-        auto const& d = dpbds[i];
-        auto const p0  = d.get_leaf(0)->data;
-        auto const p1  = d.get_leaf(1)->data;
-        printl(concat("d" , i , ": p0=" , p0 , " p1=" , p1));
-    }
     printl("----------");
 
-    dpbds[1].to_dot_graph(std::cout);
+    for (auto const i : {0, 1, 2, 3})
+    {
+        printl(concat("SI" , i , " = " , sis1[i]));
+    }
 
-    // for (auto& d : dpbds)
-    // {
-    //     d.to_dot_graph(std::cout);
-    //     printl("----------");
-    // }
+    printl(concat("A1 = " , A1));
+    printl(concat("A2 = " , A2));
+    printl("----------");
 
-    // printl(concat("A1 = " , A1));
-    // printl(concat("A2 = " , A2));
+    dpbds[0].to_dot_graph(std::cout);
+    printl(dpbds[0].satisfy_count(1));
 }
 
 auto main() -> int
@@ -382,9 +381,10 @@ auto main() -> int
     // sanity_check();
     // map_test();
     // reliability_test();
-    satisfy_test();
+    // satisfy_test();
     // mvl_test();
-    // mvl_non_homogenous();
+    mvl_non_homogenous();
+	// TODO add MIT Licence in master
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

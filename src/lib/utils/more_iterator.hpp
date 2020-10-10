@@ -161,10 +161,12 @@ namespace mix::utils
 
             range_holder(IntType const first, IntType const last);
 
-            auto begin ()       -> iterator;
-            auto end   ()       -> iterator;
-            auto begin () const -> const_iterator;
-            auto end   () const -> const_iterator;
+            auto begin  ()       -> iterator;
+            auto end    ()       -> iterator;
+            auto begin  () const -> const_iterator;
+            auto end    () const -> const_iterator;
+            auto cbegin () const -> const_iterator;
+            auto cend   () const -> const_iterator;
 
         private:
             IntType first_;
@@ -203,7 +205,7 @@ namespace mix::utils
         auto container_holder<ItType, ContainerTuple>::end
             () const -> const_iterator
         {
-            return const_iterator {std::apply(get_cbegin, cs_), std::apply(get_cend, cs_)};
+            return const_iterator {std::apply(get_cend, cs_), std::apply(get_cend, cs_)};
         }
 
         template<template<class> class ItType, class ContainerTuple>
@@ -217,7 +219,7 @@ namespace mix::utils
         auto container_holder<ItType, ContainerTuple>::cend
             () const -> const_iterator
         {
-            return const_iterator {std::apply(get_cbegin, cs_), std::apply(get_cend, cs_)};
+            return const_iterator {std::apply(get_cend, cs_), std::apply(get_cend, cs_)};
         }
 
         template<class ItTuple>
@@ -282,8 +284,9 @@ namespace mix::utils
         {
         }
 
-        template<size_t I, size_t N, class ItTuple, class CItTuple>
-        auto advance_iterators (ItTuple& its, CItTuple&& begins, CItTuple&& ends) -> std::enable_if_t<I == N - 1, bool>
+        template<std::size_t I, std::size_t N, class ItTuple, class CItTuple>
+        auto advance_iterators
+            (ItTuple& its, CItTuple&& begins, CItTuple&& ends) -> std::enable_if_t<I == N - 1, bool>
         {
             std::advance(std::get<I>(its), 1);
 
@@ -296,8 +299,9 @@ namespace mix::utils
             return true;
         }
 
-        template<size_t I, size_t N, class ItTuple>
-        auto advance_iterators (ItTuple& its, ItTuple const& begins, ItTuple const& ends) -> std::enable_if_t<I < N - 1, bool>
+        template<std::size_t I, std::size_t N, class ItTuple>
+        auto advance_iterators
+            (ItTuple& its, ItTuple const& begins, ItTuple const& ends) -> std::enable_if_t<I < N - 1, bool>
         {
             std::advance(std::get<I>(its), 1);
 
@@ -316,7 +320,7 @@ namespace mix::utils
         {
             using base_t = iterator_holder<ItTuple>;
 
-            if (! advance_iterators<0, std::tuple_size_v<ItTuple>>(base_t::its_, base_t::begins_, base_t::ends_))
+            if (!advance_iterators<0, std::tuple_size_v<ItTuple>>(base_t::its_, base_t::begins_, base_t::ends_))
             {
                 base_t::its_ = base_t::ends_;
             }
@@ -354,6 +358,20 @@ namespace mix::utils
 
         template<class IntType>
         auto range_holder<IntType>::end
+            () const -> const_iterator
+        {
+            return const_iterator {last_};
+        }
+
+        template<class IntType>
+        auto range_holder<IntType>::cbegin
+            () const -> const_iterator
+        {
+            return const_iterator {first_};
+        }
+
+        template<class IntType>
+        auto range_holder<IntType>::cend
             () const -> const_iterator
         {
             return const_iterator {last_};
@@ -411,17 +429,17 @@ namespace mix::utils
     template<class... Cs>
     auto zip(Cs&&... cs)
     {
-        using tuple_t = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
-        using base_t  = aux_impl::container_holder<aux_impl::zip_iterator, tuple_t>;
-        return base_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
+        using tuple_t  = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
+        using holder_t = aux_impl::container_holder<aux_impl::zip_iterator, tuple_t>;
+        return holder_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
     }
 
     template<class... Cs>
     auto product(Cs&&... cs)
     {
-        using tuple_t = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
-        using base_t  = aux_impl::container_holder<aux_impl::product_iterator, tuple_t>;
-        return base_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
+        using tuple_t  = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
+        using holder_t = aux_impl::container_holder<aux_impl::product_iterator, tuple_t>;
+        return holder_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
     }
 
     template<class FirstType, class SecondType>

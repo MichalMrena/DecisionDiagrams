@@ -3,6 +3,9 @@
 
 #include "bdd.hpp"
 
+#include <numeric>
+#include <functional>
+
 namespace mix::dd
 {
     template<std::size_t P>
@@ -46,6 +49,13 @@ namespace mix::dd
         auto dpbds_integrated_1 (mdd_t sf, val_change<P> const var, log_t const fVal)      -> std::vector<mdd_t>;
         auto dpbds_integrated_2 (mdd_t sf, val_change<P> const var)                        -> std::vector<mdd_t>;
         auto dpbds_integrated_3 (mdd_t sf, val_change<P> const var, log_t const fVal)      -> std::vector<mdd_t>;
+
+        auto structural_importance  (mdd_t&  dpbd, std::size_t const domainSize)                       -> double;
+        auto structural_importance  (mdd_t&& dpbd, std::size_t const domainSize)                       -> double;
+        auto structural_importance  (mdd_t&  dpbd, index_t const i, std::vector<log_t> const& domains) -> double;
+        auto structural_importance  (mdd_t&& dpbd, index_t const i, std::vector<log_t> const& domains) -> double;
+        auto structural_importances (std::vector<mdd_t>&  dpbds, std::vector<log_t> const& domains)    -> std::vector<double>;
+        auto structural_importances (std::vector<mdd_t>&& dpbds, std::vector<log_t> const& domains)    -> std::vector<double>;
 
         auto birnbaum_importance  (mdd_t&  dpbd, prob_table const& ps) -> double;
         auto birnbaum_importance  (mdd_t&& dpbd, prob_table const& ps) -> double;
@@ -259,6 +269,58 @@ namespace mix::dd
         using namespace std::placeholders;
         auto const d = std::bind(&mdd_reliability::dpbd_integrated_3, this, _1, _2, var, fVal);
         return this->dpbds_impl(sf, d);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_reliability<VertexData, ArcData, P, Allocator>::structural_importance
+        (mdd_t& dpbd, std::size_t const domainSize) -> double
+    {
+        auto const onesCount = static_cast<double>(dpbd.satisfy_count(1) / P);
+        return domainSize ? onesCount / domainSize : 0;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_reliability<VertexData, ArcData, P, Allocator>::structural_importance
+        (mdd_t&& dpbd, std::size_t const domainSize) -> double
+    {
+        return this->structural_importance(dpbd, domainSize);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_reliability<VertexData, ArcData, P, Allocator>::structural_importance
+        (mdd_t& dpbd, index_t const i, std::vector<log_t> const& domains) -> double
+    {
+        auto const domProduct = std::reduce( std::begin(domains), std::end(domains)
+                                           , std::size_t {1}, std::multiplies() );
+        return domains[i] ? this->structural_importance(dpbd, i, domProduct / domains[i]) : 0;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_reliability<VertexData, ArcData, P, Allocator>::structural_importance
+        (mdd_t&& dpbd, index_t const i, std::vector<log_t> const& domains) -> double
+    {
+        return this->structural_importance(dpbd, i, domains);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_reliability<VertexData, ArcData, P, Allocator>::structural_importances
+        (std::vector<mdd_t>& dpbds, std::vector<log_t> const& domains) -> std::vector<double>
+    {
+        auto const domProduct = std::reduce( std::begin(domains), std::end(domains)
+                                           , std::size_t {1}, std::multiplies() );
+        auto zs = utils::zip(utils::range(0u, dpbds.size()), dpbds);
+        return utils::map(zs, dpbds.size(), [this, domProduct, &domains](auto&& pair)
+        {
+            auto&& [i, d] = pair;
+            return domains[i] ? this->structural_importance(d, domProduct / domains[i]) : 0;
+        });
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_reliability<VertexData, ArcData, P, Allocator>::structural_importances
+        (std::vector<mdd_t>&& dpbds, std::vector<log_t> const& domains) -> std::vector<double>
+    {
+        return this->structural_importances(dpbds, domains);
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>

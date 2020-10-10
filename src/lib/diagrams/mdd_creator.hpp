@@ -4,6 +4,10 @@
 #include "bdd.hpp"
 #include "../utils/more_type_traits.hpp"
 #include "../utils/alloc_manager.hpp"
+#include "../utils/more_iterator.hpp"
+#include "../utils/more_algorithm.hpp"
+
+#include <stdexcept>
 
 namespace mix::dd
 {
@@ -25,6 +29,7 @@ namespace mix::dd
         auto operator() (index_t const index) -> mdd_t;
         auto just_var   (index_t const index, std::size_t const domain) -> mdd_t;
         auto operator() (index_t const index, std::size_t const domain) -> mdd_t;
+        auto just_vars  (std::vector<log_t> const& domains)             -> std::vector<mdd_t>;
 
     protected:
         using leaf_val_map = typename mdd_t::leaf_val_map;
@@ -59,6 +64,11 @@ namespace mix::dd
     auto mdd_creator<VertexData, ArcData, P, Allocator>::just_var
         (index_t const index, std::size_t const domain) -> mdd_t
     {
+        if (domain > P)
+        {
+            throw std::logic_error("Invalid domain.");
+        }
+
         auto const root = manager_.create(id_t {0}, index);
         auto id         = 1;
         auto leafToVal  = leaf_val_map {};
@@ -106,6 +116,18 @@ namespace mix::dd
         return mdd_t { root
                      , std::move(leafToVal)
                      , manager_.get_alloc() };
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    auto mdd_creator<VertexData, ArcData, P, Allocator>::just_vars
+        (std::vector<log_t> const& domains) -> std::vector<mdd_t>
+    {
+        auto const zs = utils::zip(utils::range(0u, domains.size()), domains);
+        return utils::map(zs, domains.size(), [this](auto&& pair)
+        {
+            auto const [i, d] = pair;
+            return this->just_var(i, d);
+        });
     }
 }
 
