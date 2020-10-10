@@ -132,6 +132,3 @@ auto const CIs  = relTools.criticality_importances(dpbds, ps, U);
 auto const FIs  = relTools.fussell_vesely_importances(dpbds, ps, U);
 auto const MCVs = relTools.mcvs<std::bitset<5>>(std::move(dpbds));
 ```
-
-## Licence
-Will provide formal one really soon. For now, just do whatever you want with it, but please keep a reference to this page.
