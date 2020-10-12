@@ -305,7 +305,7 @@ namespace mix::dd
             out = xs;
             return;
         }
-        else if (v->index > i)
+        else if (v->get_index() > i)
         {
             set_var(xs, i, 0);
             satisfy_all_step(i + 1, v, xs, out);
@@ -315,9 +315,9 @@ namespace mix::dd
         else
         {
             set_var(xs, i, 0);
-            satisfy_all_step(i + 1, v->son(0), xs, out);
+            satisfy_all_step(i + 1, v->get_son(0), xs, out);
             set_var(xs, i, 1);
-            satisfy_all_step(i + 1, v->son(1), xs, out);
+            satisfy_all_step(i + 1, v->get_son(1), xs, out);
         }
     }
 
@@ -328,7 +328,7 @@ namespace mix::dd
         , const bdd&      d1
         , const bdd&      d2 ) -> bool
     {
-        if (v1->index != v2->index)
+        if (v1->get_index() != v2->get_index())
         {
             // Different indices, can't be equal.
             return false;
@@ -346,14 +346,14 @@ namespace mix::dd
             return d1.leafToVal.at(v1) == d2.leafToVal.at(v2);
         }
 
-        auto const equalOnTheLeft = are_equal(v1->son(0), v2->son(0), d1, d2);
+        auto const equalOnTheLeft = are_equal(v1->get_son(0), v2->get_son(0), d1, d2);
         if (! equalOnTheLeft)
         {
             // Left subtrees aren't equal => can't be equal.
             return false;
         }
 
-        auto equalOnTheRight = are_equal(v1->son(1), v2->son(1), d1, d2);
+        auto equalOnTheRight = are_equal(v1->get_son(1), v2->get_son(1), d1, d2);
         if (! equalOnTheRight)
         {
             // Right subtrees aren't equal => can't be equal.

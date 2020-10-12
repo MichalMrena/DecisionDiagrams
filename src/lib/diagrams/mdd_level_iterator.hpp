@@ -74,7 +74,7 @@ namespace mix::dd
         (vertex_t* const root, std::size_t const variableCount) :
         isEnd_          (false),
         levels_         (variableCount + 1),
-        levelIterator_  (std::next(std::begin(levels_), root->index))
+        levelIterator_  (std::next(std::begin(levels_), root->get_index()))
     {
         (*levelIterator_).insert(root);
         vertexIterator_ = std::begin(*levelIterator_);
@@ -111,7 +111,7 @@ namespace mix::dd
         swap(*this, rhs);
         return *this;
     }
-    
+
     template<class VertexData, class ArcData, std::size_t N, bool IsConst>
     auto mdd_level_iterator<VertexData, ArcData, N, IsConst>::operator!=
         (mdd_level_iterator const& rhs) const -> bool
@@ -166,13 +166,13 @@ namespace mix::dd
 
         for (auto i = 0u; i < N; ++i)
         {
-            auto const son = currVertex->son(i);
+            auto const son = currVertex->get_son(i);
             if (son)
             {
-                levels_[son->index].insert(son);
+                levels_[son->get_index()].insert(son);
             }
         }
-        
+
         ++vertexIterator_;
         if (vertexIterator_ == std::end(*levelIterator_))
         {

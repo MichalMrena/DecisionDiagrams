@@ -277,7 +277,7 @@ namespace mix::dd
         auto newVerticesMap = std::unordered_map<id_t, vertex_t*>();
         other.traverse_pre(other.root_, [&](auto v) 
         {
-            newVerticesMap.emplace(v->id, manager_.create(*v));
+            newVerticesMap.emplace(v->get_id(), manager_.create(*v));
         });
 
         // now we iterate the other diagram from the bottom level:
@@ -290,21 +290,21 @@ namespace mix::dd
         {
             for (auto const otherVertex : *levelsIt++)
             {
-                auto newVertex = newVerticesMap.at(otherVertex->id);
+                auto newVertex = newVerticesMap.at(otherVertex->get_id());
                 for (auto i = 0u; i < P; ++i)
                 {
-                    newVertex->son(i) = newVerticesMap.at(otherVertex->son(i)->id);
+                    newVertex->set_son(i, newVerticesMap.at(otherVertex->get_son(i)->get_id()));
                 }
             }
         }
 
         // set new root:
-        root_ = newVerticesMap.at(levels.at(other.root_->index).front()->id);
+        root_ = newVerticesMap.at(levels.at(other.root_->get_index()).front()->get_id());
 
         // fill leafToVal map:
         for (auto const [leaf, val] : other.leafToVal_)
         {
-            leafToVal_.emplace(newVerticesMap.at(leaf->id), val);
+            leafToVal_.emplace(newVerticesMap.at(leaf->get_id()), val);
         }
     }
 
@@ -390,8 +390,8 @@ namespace mix::dd
         {
             using std::to_string;
             using traits_t = log_val_traits<P>;
-            return v->index == this->leaf_index() ? traits_t::to_string(leafToVal_.at(v))
-                                                  : "x" + to_string(v->index);
+            return v->get_index() == this->leaf_index() ? traits_t::to_string(leafToVal_.at(v))
+                                                        : "x" + to_string(v->get_index());
         };
 
         for (auto const& level : this->fill_levels())
@@ -404,8 +404,8 @@ namespace mix::dd
             auto ranksLocal = std::vector<std::string> {"{rank = same;"};
             for (auto const v : level)
             {
-                labels.emplace_back(concat(v->id , " [label = " , make_label(v) , "];"));
-                ranksLocal.emplace_back(concat(v->id , ";"));
+                labels.emplace_back(concat(v->get_id() , " [label = " , make_label(v) , "];"));
+                ranksLocal.emplace_back(concat(v->get_id() , ";"));
 
                 if (!this->is_leaf(v))
                 {
@@ -414,11 +414,11 @@ namespace mix::dd
                         if constexpr (2 == P)
                         {
                             auto const style = 0 == val ? "dashed" : "solid";
-                            arcs.emplace_back(concat(v->id , " -> " , v->son(val)->id , " [style = " , style , "];"));
+                            arcs.emplace_back(concat(v->get_id() , " -> " , v->get_son(val)->get_id() , " [style = " , style , "];"));
                         }
                         else
                         {
-                            arcs.emplace_back(concat(v->id , " -> " , v->son(val)->id , " [label = \"" , val , "\"];"));
+                            arcs.emplace_back(concat(v->get_id() , " -> " , v->get_son(val)->get_id() , " [label = \"" , val , "\"];"));
                         }
                     }
                 }
@@ -430,7 +430,7 @@ namespace mix::dd
 
         for (auto const& [leaf, val] : leafToVal_)
         {
-            squareShapes.emplace_back(to_string(leaf->id));
+            squareShapes.emplace_back(to_string(leaf->get_id()));
         }
         squareShapes.emplace_back(";");
 
@@ -473,7 +473,7 @@ namespace mix::dd
 
         while (! this->is_leaf(v))
         {
-            v = v->son(get_var(vars, v->index));
+            v = v->get_son(get_var(vars, v->get_index()));
         }
 
         return leafToVal_.at(v);
@@ -492,7 +492,7 @@ namespace mix::dd
     auto mdd<VertexData, ArcData, P, Allocator>::variable_count
         () const -> index_t
     {
-        return std::begin(leafToVal_)->first->index;
+        return std::begin(leafToVal_)->first->get_index();
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -503,10 +503,10 @@ namespace mix::dd
         auto yetIn = std::vector<bool>(this->variable_count(), false);
         this->traverse_pre(root_, [&yetIn, &out](auto const v)
         {
-            if (!yetIn[v->index])
+            if (!yetIn[v->get_index()])
             {
                 *out++ = v;
-                yetIn[v->index] = true;
+                yetIn[v->get_index()] = true;
             }
         });
     }
@@ -518,7 +518,7 @@ namespace mix::dd
         if constexpr (aux_impl::can_use_data_member_v<VertexData>)
         {
             auto const rootAlpha = this->root_alpha(val, use_data_member {});
-            return rootAlpha * utils::int_pow(P, root_->index);
+            return rootAlpha * utils::int_pow(P, root_->get_index());
         }
         else
         {
@@ -531,7 +531,7 @@ namespace mix::dd
         (log_t const val) const -> std::size_t
     {
         auto const rootAlpha = this->root_alpha(val, use_map {});
-        return rootAlpha * utils::int_pow(P, root_->index);
+        return rootAlpha * utils::int_pow(P, root_->get_index());
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -607,7 +607,7 @@ namespace mix::dd
 
         this->traverse_pre(root_, [&levels](vertex_t* const v) 
         {
-            levels[v->index].push_back(v);
+            levels[v->get_index()].push_back(v);
         });
 
         return levels;
@@ -624,7 +624,7 @@ namespace mix::dd
     auto mdd<VertexData, ArcData, P, Allocator>::is_leaf
         (vertex_t const* const v) const -> bool
     {
-        return v->index == this->leaf_index();
+        return v->get_index() == this->leaf_index();
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -650,7 +650,8 @@ namespace mix::dd
                 v->data = 0;
                 for (auto i = 0u; i < P; ++i)
                 {
-                    v->data += v->son(i)->data * utils::int_pow(P, v->son(i)->index - v->index - 1);
+                    v->data += v->get_son(i)->data
+                             * utils::int_pow(P, v->get_son(i)->get_index() - v->get_index() - 1);
                 }
             }
         });
@@ -675,7 +676,8 @@ namespace mix::dd
             {
                 for (auto i = 0u; i < P; ++i)
                 {
-                    alpha += dataMap.at(v->son(i)) * utils::int_pow(P, v->son(i)->index - v->index - 1);
+                    alpha += dataMap.at(v->get_son(i)) 
+                           * utils::int_pow(P, v->get_son(i)->get_index() - v->get_index() - 1);
                 }
             }
             dataMap.emplace(v, alpha);
@@ -705,15 +707,14 @@ namespace mix::dd
     auto mdd<VertexData, ArcData, P, Allocator>::traverse_pre
         (vertex_t* const v, UnaryFunction&& f) const -> void
     {
-        v->mark = ! v->mark;
-
+        v->toggle_mark();
         f(v);
 
         for (auto i = 0u; i < P; ++i)
         {
-            if (! this->is_leaf(v) && v->mark != v->son(i)->mark)
+            if (! this->is_leaf(v) && v->get_mark() != v->get_son(i)->get_mark())
             {
-                this->traverse_pre(v->son(i), f);
+                this->traverse_pre(v->get_son(i), f);
             }
         }
     }
@@ -723,13 +724,13 @@ namespace mix::dd
     auto mdd<VertexData, ArcData, P, Allocator>::traverse_post
         (vertex_t* const v, UnaryFunction&& f) const -> void
     {
-        v->mark = ! v->mark;
+        v->toggle_mark();
 
         for (auto i = 0u; i < P; ++i)
         {
-            if (! this->is_leaf(v) && v->mark != v->son(i)->mark)
+            if (! this->is_leaf(v) && v->get_mark() != v->get_son(i)->get_mark())
             {
-                this->traverse_post(v->son(i), f);
+                this->traverse_post(v->get_son(i), f);
             }
         }
 

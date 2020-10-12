@@ -115,21 +115,21 @@ namespace mix::dd
                 return;
             }
 
-            if (! diagram.is_leaf(v->son(0)) && i == v->son(0)->index)
+            if (!diagram.is_leaf(v->get_son(0)) && i == v->get_son(0)->get_index())
             {
-                v->son(0) = v->son(0)->son(val);
+                v->set_son(0, v->get_son(0)->get_son(val));
             }
 
-            if (! diagram.is_leaf(v->son(1)) && i == v->son(1)->index)
+            if (!diagram.is_leaf(v->get_son(1)) && i == v->get_son(1)->get_index())
             {
-                v->son(1) = v->son(1)->son(val);
+                v->set_son(1, v->get_son(1)->get_son(val));
             }
         });
 
         // possibly change the root
-        if (i == diagram.root_->index)
+        if (i == diagram.root_->get_index())
         {
-            diagram.root_ = diagram.root_->son(val);
+            diagram.root_ = diagram.root_->get_son(val);
         }
 
         // identify now unreachable vertices

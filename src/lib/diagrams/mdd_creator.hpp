@@ -77,7 +77,7 @@ namespace mix::dd
         {
             auto const leaf = manager_.create(id++, index + 1);
             leafToVal.emplace(leaf, val);
-            root->son(val) = leaf;
+            root->set_son(val, leaf);
         }
 
         if (domain < P)
@@ -87,7 +87,7 @@ namespace mix::dd
             leafToVal.emplace(ndleaf, ND);
             for (auto val = domain; val < P; ++val)
             {
-                root->son(val) = ndleaf;
+                root->set_son(val, ndleaf);
             }
         }
 

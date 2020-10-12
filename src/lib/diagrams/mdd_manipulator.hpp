@@ -4,6 +4,7 @@
 #include "bdd.hpp"
 #include "operators_static_check.hpp"
 #include "../utils/hash.hpp"
+#include "../utils/more_iterator.hpp"
 
 #include <iterator>
 #include <algorithm>
@@ -44,6 +45,8 @@ namespace mix::dd
         auto reduce (mdd_t&  diagram) -> mdd_t&;
         auto reduce (mdd_t&& diagram) -> mdd_t;
 
+        static auto is_redundant (vertex_t const* const v ) -> bool;
+
     private:
         using leaf_val_map       = typename mdd_t::leaf_val_map;
         using val_leaf_arr       = std::array<vertex_t*, log_val_traits<P>::valuecount>;
@@ -72,8 +75,6 @@ namespace mix::dd
         auto leaf_index  () const   -> index_t;
         auto recycle     (mdd_t& d) -> void;
         auto apply_reset ()         -> void;
-
-        static auto is_redundant (vertex_t const* const v ) -> bool;
 
     protected:
         leaf_val_map       leafToVal_;
@@ -168,17 +169,17 @@ namespace mix::dd
 
             for (auto j = 0u; j < P; ++j)
             {
-                if (!diagram.is_leaf(v->son(j)) && i == v->son(j)->index)
+                if (!diagram.is_leaf(v->get_son(j)) && i == v->get_son(j)->get_index())
                 {
-                    v->son(j) = v->son(j)->son(val);
+                    v->set_son(j, v->get_son(j)->get_son(val));
                 }
             }
         });
 
         // possibly change the root
-        if (i == diagram.root_->index)
+        if (i == diagram.root_->get_index())
         {
-            diagram.root_ = diagram.root_->son(val);
+            diagram.root_ = diagram.root_->get_son(val);
         }
 
         // identify now unreachable vertices
@@ -227,17 +228,18 @@ namespace mix::dd
 
         auto make_leaf_key = [](auto val)
         {
-            auto arr = vertex_key_t {val};
-            std::fill(std::next(std::begin(arr)), std::end(arr), -1);
-            return arr;
+            auto key = vertex_key_t {val};
+            std::fill(std::next(std::begin(key)), std::end(key), -1);
+            return key;
         };
 
         auto make_internal_key = [](auto v)
         {
-            auto arr = vertex_key_t {};
-            std::transform( std::begin(v->forwardStar), std::end(v->forwardStar), std::begin(arr)
-                          , [](auto const& arc) { return arc.target->id; } );
-            return arr;
+            auto key = vertex_key_t {};
+            auto is  = utils::range(0u, P);
+            std::transform( std::begin(is), std::end(is), std::begin(key)
+                          , [v](auto const i) { return v->get_son(i)->get_id(); } );
+            return key;
         };
 
         for (auto i = levels.size(); i > 0;)
@@ -253,7 +255,7 @@ namespace mix::dd
                 }
                 else if (mdd_manipulator::is_redundant(u))
                 {
-                    u->id = u->son(0)->id;
+                    u->set_id(u->get_son(0)->get_id());
                     redundantVertices.emplace_back(u);
                 }
                 else
@@ -270,7 +272,7 @@ namespace mix::dd
             {
                 if (key == oldKey)
                 {
-                    u->id = nextId;
+                    u->set_id(nextId);
                     redundantVertices.emplace_back(u);
                     if (diagram.is_leaf(u))
                     {
@@ -280,7 +282,7 @@ namespace mix::dd
                 else
                 {
                     nextId++;
-                    u->id = nextId;
+                    u->set_id(nextId);
 
                     newDiagramMap.emplace(nextId, u);
 
@@ -288,7 +290,7 @@ namespace mix::dd
                     {
                         for (auto j = 0u; j < P; ++j)
                         {
-                            u->son(j) = newDiagramMap.at(u->son(j)->id);
+                            u->set_son(j, newDiagramMap.at(u->get_son(j)->get_id()));
                         }
                     }
 
@@ -297,7 +299,7 @@ namespace mix::dd
             }
         }
 
-        diagram.root_ = newDiagramMap.at(diagram.root_->id);
+        diagram.root_ = newDiagramMap.at(diagram.root_->get_id());
 
         for (auto const v : redundantVertices)
         {
@@ -332,8 +334,8 @@ namespace mix::dd
 
             for (auto i = 0u; i < P; ++i)
             {
-                auto const first  = this->index1(v1) == index ? v1->son(i) : v1;
-                auto const second = this->index2(v2) == index ? v2->son(i) : v2;
+                auto const first  = this->index1(v1) == index ? v1->get_son(i) : v1;
+                auto const second = this->index2(v2) == index ? v2->get_son(i) : v2;
 
                 arcs[i].target = this->apply_step(first, op, second);
             }
@@ -365,17 +367,16 @@ namespace mix::dd
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::internal_vertex
         (index_t const index, son_arr const& arcs) -> vertex_t*
     {
-        // TODO this->is_redundant()?
         if (std::all_of( std::begin(arcs), std::end(arcs)
-                       , [fid = arcs[0].target->id] (auto const& arc)
-                         { return arc.target->id == fid; } ))
+                       , [fid = arcs[0].target->get_id()] (auto const& arc)
+                         { return arc.target->get_id() == fid; } ))
         {
             return arcs[0].target;
         }
 
         auto key = in_graph_key_t {index};
         std::transform( std::begin(arcs), std::end(arcs), std::next(std::begin(key))
-                      , [](auto&& a) { return a.target->id; } );
+                      , [](auto&& a) { return a.target->get_id(); } );
 
         auto const inGraphIt = inGraphMemo_.find(key);
         if (inGraphIt != inGraphMemo_.end())
@@ -394,7 +395,7 @@ namespace mix::dd
         (vertex_t const* const v1) const -> index_t
     {
         return diagram1_->is_leaf(v1) ? this->leaf_index()
-                                      : v1->index;
+                                      : v1->get_index();
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -402,7 +403,7 @@ namespace mix::dd
         (vertex_t const* const v2) const -> index_t
     {
         return diagram2_->is_leaf(v2) ? this->leaf_index()
-                                      : v2->index;
+                                      : v2->get_index();
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>
@@ -423,9 +424,10 @@ namespace mix::dd
     auto mdd_manipulator<VertexData, ArcData, P, Allocator>::is_redundant
         (vertex_t const* const v) -> bool
     {
-        return std::all_of( std::begin(v->forwardStar), std::end(v->forwardStar)
-                          , [fid = v->son(0)->id] (auto&& arc) 
-                            { return arc.target->id == fid; } );
+        auto is = utils::range(1u, P);
+        return std::all_of( std::begin(is), std::end(is)
+                          , [fst = v->get_son(0), &v] (auto const i)
+                            { return v->get_son(i) == fst; } );
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>

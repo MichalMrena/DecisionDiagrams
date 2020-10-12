@@ -110,10 +110,10 @@ namespace mix::dd
         auto nextId   = id_t {2};
         auto vertices = utils::map(varsIt, varsEnd, [&](auto const& pair)
         {
-            auto const index       = std::get<0>(pair);
-            auto const isNegated   = std::get<1>(pair);
-            auto const vertex      = base_t::manager_.create(nextId++, index);
-            vertex->son(isNegated) = falseLeaf;
+            auto const index     = std::get<0>(pair);
+            auto const isNegated = std::get<1>(pair);
+            auto const vertex    = base_t::manager_.create(nextId++, index);
+            vertex->set_son(isNegated, falseLeaf);
             return vertex;
         });
 
@@ -126,9 +126,9 @@ namespace mix::dd
         auto end = std::prev(std::end(vertices));
         while (it != end)
         {
-             auto const vertex  = *it++;
-             auto const value   = static_cast<bool>(vertex->son(0));
-             vertex->son(value) = *it;
+             auto const vertex = *it++;
+             auto const value  = static_cast<bool>(vertex->get_son(0));
+             vertex->set_son(value, *it);
         }
 
         // Finally just create the diagram.
@@ -177,7 +177,7 @@ namespace mix::dd
             // Then merge products using OR.
             functionDiagrams.emplace_back(this->or_merge(std::move(productDiagrams), mm));
         }
-        
+
         return functionDiagrams;
     }
 
@@ -201,7 +201,7 @@ namespace mix::dd
             base_t::manager_.create(nextId_++, varCount), 
             base_t::manager_.create(nextId_++, varCount)
         };
-        
+
         auto leafToVal = leaf_val_map 
         { 
             {valToLeaf.at(0), 0}
@@ -283,7 +283,7 @@ namespace mix::dd
         {
         case merge_mode_e::iterative:
             return this->or_merge_iterative(std::move(diagrams));
-        
+
         case merge_mode_e::sequential:
             return this->or_merge_sequential(std::move(diagrams));
 
@@ -299,26 +299,26 @@ namespace mix::dd
         auto const numOfSteps = static_cast<std::size_t>(std::ceil(std::log2(diagrams.size())));
         auto diagramCount     = diagrams.size();
         auto m = manipulator_t {base_t::manager_.get_alloc()};
-		
+
         for (auto step = 0u; step < numOfSteps; ++step)
         {
             auto const justMoveLast = diagramCount & 1;
             diagramCount = (diagramCount >> 1) + (diagramCount & 1);
             auto const iterCount    = diagramCount - justMoveLast;
-		
+
             for (auto i = 0u; i < iterCount; ++i)
             {
                 diagrams[i] = m.apply( std::move(diagrams[2 * i])
                                      , OR {}
                                      , std::move(diagrams[2 * i + 1]) );
             }
-		
+
             if (justMoveLast)
             {
                 diagrams[diagramCount - 1] = std::move(diagrams[2 * (diagramCount - 1)]);
             }
         }
-		
+
         return bdd_t {std::move(diagrams.front())};
     }
 
@@ -366,7 +366,7 @@ namespace mix::dd
                                                     , level
                                                     , arc_arr_t {arc_t {falseSon}, arc_t {trueSon}} );
         levels_.at(level).emplace(key, newVertex);
-        
+
         return newVertex;
     }
 

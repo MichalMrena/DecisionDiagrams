@@ -100,7 +100,7 @@ namespace mix::dd
             {
                 for (auto i = 0u; i < P; ++i)
                 {
-                    vertex.son(i)->data += vertex.data * ps[vertex.index][i];
+                    vertex.get_son(i)->data += vertex.data * ps[vertex.get_index()][i];
                 }
             }
         }

@@ -77,9 +77,6 @@ namespace mix::dd
                             , vertex_t* const high
                             , index_t   const i
                             , bool      const mark) -> vertex_t*;
- 
-        // TODO static from manipulator
-        auto is_redundant (vertex_t const* const v ) const -> bool;
 
     private:
         memo_map memo_;
@@ -347,11 +344,11 @@ namespace mix::dd
         (bdd_t dpbd) -> bdd_t
     {
         auto redundantVs = std::vector<vertex_t*>();
-        auto const maybe_skip_son = [this, &dpbd](auto const v, auto const i)
+        auto const maybe_skip_son = [&dpbd](auto const v, auto const i)
         {
-            if (!dpbd.is_leaf(v) && !dpbd.is_leaf(v->son(i)) && this->is_redundant(v->son(i)))
+            if (!dpbd.is_leaf(v) && !dpbd.is_leaf(v->get_son(i)) && manipulator_t::is_redundant(v->get_son(i)))
             {
-                v->son(i) = v->son(i)->son(0);
+                v->set_son(i, v->get_son(i)->get_son(0));
             }
         };
 
@@ -362,22 +359,22 @@ namespace mix::dd
         {
             maybe_skip_son(v, 0);
             maybe_skip_son(v, 1);
-            if (!dpbd.is_leaf(v) && falseLeaf == v->son(0))
+            if (!dpbd.is_leaf(v) && falseLeaf == v->get_son(0))
             {
-                v->son(0) = v->son(1);
+                v->set_son(0, v->get_son(1));
                 redundantVs.emplace_back(v);
                 ++falseLeafInputDegree;
             }
 
-            if (!dpbd.is_leaf(v) && falseLeaf == v->son(1))
+            if (!dpbd.is_leaf(v) && falseLeaf == v->get_son(1))
             {
                 ++falseLeafInputDegree;
             }
         });
 
-        if (this->is_redundant(dpbd.root_))
+        if (manipulator_t::is_redundant(dpbd.root_))
         {
-            dpbd.root_ = dpbd.root_->son(0);
+            dpbd.root_ = dpbd.root_->get_son(0);
         }
 
         if (falseLeafInputDegree == redundantVs.size())
@@ -400,22 +397,22 @@ namespace mix::dd
     {
         nextId_                    = std::numeric_limits<id_t>::max();
         auto const insertPositions = this->find_positions(d, i);
-        auto const undefinedLeaf   = this->new_vertex(nullptr, nullptr, d.leaf_index(), d.root_->mark);
+        auto const undefinedLeaf   = this->new_vertex(nullptr, nullptr, d.leaf_index(), d.root_->get_mark());
         d.leafToVal_.emplace(undefinedLeaf, log_val_traits<2>::undefined);
 
         for (auto [vertex, sonIndex] : insertPositions)
         {
-            auto const target     = vertex->son(sonIndex);
+            auto const target     = vertex->get_son(sonIndex);
             auto const low        = 0 == from ? target : undefinedLeaf;
             auto const high       = 0 == from ? undefinedLeaf : target;
-            vertex->son(sonIndex) = this->new_vertex(low, high, i, d.root_->mark);
+            vertex->set_son(sonIndex, this->new_vertex(low, high, i, d.root_->get_mark()));
         }
 
         if (0 == i)
         {
             auto const low  = 0 == from ? d.root_ : undefinedLeaf;
             auto const high = 0 == from ? undefinedLeaf : d.root_;
-            d.root_         = this->new_vertex(low, high, i, d.root_->mark);
+            d.root_         = this->new_vertex(low, high, i, d.root_->get_mark());
         }
 
         memo_.clear();
@@ -430,17 +427,17 @@ namespace mix::dd
 
         d.traverse_pre(d.root_, [&d, &positions, i](auto const v)
         {
-            if (d.is_leaf(v) || v->index > i)
+            if (d.is_leaf(v) || v->get_index() > i)
             {
                 return;
             }
 
-            if (v->son(0)->index > i)
+            if (v->get_son(0)->get_index() > i)
             {
                 positions.emplace_back(v, 0);
             }
 
-            if (v->son(1)->index > i)
+            if (v->get_son(1)->get_index() > i)
             {
                 positions.emplace_back(v, 1);
             }
@@ -460,7 +457,7 @@ namespace mix::dd
 
         if (it != memo_.end())
         {
-            it->second->mark = mark;
+            it->second->set_mark(mark);
             return it->second;
         }
 
@@ -468,14 +465,6 @@ namespace mix::dd
         memo_.emplace(key, v);
 
         return v;
-    }
-
-    template<class VertexData, class ArcData, class Allocator>
-    auto bdd_reliability<VertexData, ArcData, Allocator>::is_redundant
-        (const vertex_t* const v) const -> bool
-    {
-        return std::all_of( std::begin(v->forwardStar), std::end(v->forwardStar)
-                          , [fid = v->son(0)->id] (auto&& arc) { return arc.target->id == fid; } );
     }
 }
 

@@ -30,8 +30,8 @@ namespace mix::utils
     };
 
     /**
-     *  Helper wrapper so that the above lambda can be easily used as template parameter.
-     * 
+     *  Helper wrapper so that the above lambda can be easily used as template argument.
+     *
      *  Example:
      *  using key_t = const std::tuple<const int, const int, const char>;
      *  using val_t = double;

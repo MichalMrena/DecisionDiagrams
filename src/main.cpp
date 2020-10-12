@@ -380,11 +380,10 @@ auto main() -> int
     // pla_alloc_speed_pooled();
     // sanity_check();
     // map_test();
-    // reliability_test();
+    reliability_test();
     // satisfy_test();
     // mvl_test();
-    mvl_non_homogenous();
-	// TODO add MIT Licence in master
+    // mvl_non_homogenous();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

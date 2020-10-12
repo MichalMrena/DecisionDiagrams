@@ -86,7 +86,7 @@ namespace mix::utils
         public:
             using value_type        = decltype(std::apply(deref, std::declval<ItTuple&>()));
             using difference_type   = std::ptrdiff_t;
-            using iterator_category = std::forward_iterator_tag;
+            using iterator_category = std::input_iterator_tag;
 
             template<class ItTupleRef>
             iterator_holder(ItTupleRef&& its, ItTupleRef&& ends);
@@ -136,7 +136,7 @@ namespace mix::utils
             using value_type        = IntType;
             using pointer           = IntType*;
             using reference         = IntType&;
-            using iterator_category = std::forward_iterator_tag;
+            using iterator_category = std::input_iterator_tag;
 
             range_iterator(IntType const curr);
 

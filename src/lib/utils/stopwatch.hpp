@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_STOPWATCH_
-#define MIX_UTILS_STOPWATCH_
+#ifndef MIX_UTILS_STOPWATCH_HPP
+#define MIX_UTILS_STOPWATCH_HPP
 
 #include <chrono>
 #include <functional>
@@ -11,11 +11,11 @@ namespace mix::utils
     public:
         using clock        = std::chrono::steady_clock;
         using milliseconds = std::chrono::milliseconds;
-        
+
     public:
         auto start        ()       -> void; 
         auto elapsed_time () const -> milliseconds;
-    
+
     private:
         std::chrono::time_point<clock> timeZero_ = clock::now();
     };
@@ -35,7 +35,7 @@ namespace mix::utils
     template<class Func>
     auto run_time (Func&& function) -> double
     {
-        auto watch = stopwatch {};
+        auto watch = stopwatch();
         function();
         return watch.elapsed_time().count();
     }
