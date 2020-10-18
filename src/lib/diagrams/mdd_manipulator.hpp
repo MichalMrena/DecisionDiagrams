@@ -39,11 +39,21 @@ namespace mix::dd
         auto restrict_var (mdd_t&  diagram, index_t const i, log_t const val) -> mdd_t&;
         auto restrict_var (mdd_t&& diagram, index_t const i, log_t const val) -> mdd_t;
 
-        template<class BinOp>
-        auto concat (std::vector<mdd_t> ds, BinOp op) -> mdd_t;
-
         auto reduce (mdd_t&  diagram) -> mdd_t&;
         auto reduce (mdd_t&& diagram) -> mdd_t;
+
+
+        template<class InputIt, class BinOp>
+        auto left_fold (InputIt first, InputIt last, BinOp op) -> mdd_t;
+
+        template<class BinOp>
+        auto left_fold (std::vector<mdd_t> range, BinOp op)    -> mdd_t;
+
+        template<class RandomIt, class BinOp>
+        auto tree_fold (RandomIt first, RandomIt last, BinOp op) -> mdd_t;
+
+        template<class BinOp>
+        auto tree_fold (std::vector<mdd_t> range, BinOp op)      -> mdd_t;
 
         static auto is_redundant (vertex_t const* const v ) -> bool;
 
@@ -418,6 +428,70 @@ namespace mix::dd
         (vertex_t* const v2)  const -> log_t
     {
         return diagram2_->value(v2);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    template<class InputIt, class BinOp>
+    auto mdd_manipulator<VertexData, ArcData, P, Allocator>::left_fold
+        (InputIt first, InputIt last, BinOp op) -> mdd_t
+    {
+        auto r = std::move(*first);
+        ++first;
+
+        while (first != last)
+        {
+            r = this->apply(std::move(r), op, std::move(*first));
+            ++first;
+        }
+
+        return r;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    template<class BinOp>
+    auto mdd_manipulator<VertexData, ArcData, P, Allocator>::left_fold
+        (std::vector<mdd_t> diagrams, BinOp op) -> mdd_t
+    {
+        return this->left_fold(std::begin(diagrams), std::end(diagrams), op);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    template<class RandomIt, class BinOp>
+    auto mdd_manipulator<VertexData, ArcData, P, Allocator>::tree_fold
+        (RandomIt first, RandomIt last, BinOp op) -> mdd_t
+    {
+        auto const count      = std::distance(first, last);
+        auto const numOfSteps = static_cast<std::size_t>(std::ceil(std::log2(count)));
+        auto currentCount     = count;
+
+        for (auto step = 0u; step < numOfSteps; ++step)
+        {
+            auto const justMoveLast = currentCount & 1;
+            currentCount = (currentCount >> 1) + justMoveLast;
+            auto const pairCount    = currentCount - justMoveLast;
+
+            for (auto i = 0u; i < pairCount; ++i)
+            {
+                *(first + i) = this->apply( std::move(*(first + 2 * i))
+                                          , op
+                                          , std::move(*(first + 2 * i + 1)) );
+            }
+
+            if (justMoveLast)
+            {
+                *(first + currentCount - 1) = std::move(*(first + 2 * (currentCount - 1)));
+            }
+        }
+
+        return mdd_t(std::move(*first));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P, class Allocator>
+    template<class BinOp>
+    auto mdd_manipulator<VertexData, ArcData, P, Allocator>::tree_fold
+        (std::vector<mdd_t> diagrams, BinOp op) -> mdd_t
+    {
+        return this->tree_fold(std::begin(diagrams), std::end(diagrams), op);
     }
 
     template<class VertexData, class ArcData, std::size_t P, class Allocator>

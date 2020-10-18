@@ -6,7 +6,7 @@
 
 namespace mix::dd
 {
-    namespace aux_impl
+    namespace var_vals_impl
     {
         template<class T>
         using int_type = std::enable_if_t< std::is_integral_v<T> 
@@ -28,7 +28,7 @@ namespace mix::dd
     }
 
     /**
-        Functor that extract value of i-th variable from a container of variables.
+        Function object that extract value of i-th variable from a container of variables.
         This general class has no definition. Definitions are provided
         via template specialization and SFINE below.
         see. https://cpppatterns.com/patterns/class-template-sfinae.html
@@ -40,9 +40,10 @@ namespace mix::dd
         Specialized definition for integral types except bool.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, aux_impl::int_type<VarVals>>
+    struct get_var_val<P, VarVals, var_vals_impl::int_type<VarVals>>
     {
-        auto operator() (VarVals const& in, index_t const i) const -> aux_impl::log_t<P>
+        [[nodiscard]] constexpr auto operator()
+            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
         {
             if (i >= sizeof(VarVals))
             {
@@ -56,11 +57,12 @@ namespace mix::dd
         Specialized definition for std::vector of integral type.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, aux_impl::vector_type<VarVals>>
+    struct get_var_val<P, VarVals, var_vals_impl::vector_type<VarVals>>
     {
-        auto operator() (VarVals const& in, index_t const i) const -> aux_impl::log_t<P>
+        [[nodiscard]] auto operator()
+            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
         {
-            return in.at(i);
+            return in[i];
         }
     };
 
@@ -68,11 +70,12 @@ namespace mix::dd
         Specialized definition for std::array of integral type.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, aux_impl::array_type<VarVals>>
+    struct get_var_val<P, VarVals, var_vals_impl::array_type<VarVals>>
     {
-        auto operator() (VarVals const& in, index_t const i) const -> aux_impl::log_t<P>
+        [[nodiscard]] constexpr auto operator()
+            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
         {
-            return in.at(i);
+            return in[i];
         }
     };
 
@@ -80,17 +83,18 @@ namespace mix::dd
         Specialized definition for std::bitset.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, aux_impl::bitset_type<VarVals>>
+    struct get_var_val<P, VarVals, var_vals_impl::bitset_type<VarVals>>
     {
-        auto operator() (VarVals const& in, index_t const i) const -> aux_impl::log_t<P>
+        [[nodiscard]] constexpr auto operator()
+            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
         {
-            return in.test(i);
+            return in[i];
         }
     };
 
 
     /**
-        Functor that sets value of i-th variable in a container of variables.
+        Function object that sets value of i-th variable in a container of variables.
         This general class has no definition. Definitions are provided
         via template specialization and SFINE below.
 
@@ -103,7 +107,7 @@ namespace mix::dd
         Specialized definition for std::bitset.
      */
     template<class VarVals> 
-    struct set_var_val<VarVals, aux_impl::bitset_type<VarVals>>
+    struct set_var_val<VarVals, var_vals_impl::bitset_type<VarVals>>
     {
         auto operator() (VarVals& vars, index_t const i, bool const v) const -> void
         {
@@ -115,14 +119,11 @@ namespace mix::dd
         Specialized definition for integral types except bool.
      */
     template<class VarVals> 
-    struct set_var_val<VarVals, aux_impl::int_type<VarVals>>
+    struct set_var_val<VarVals, var_vals_impl::int_type<VarVals>>
     {
-        auto operator() (VarVals& vars, index_t const i, bool const v) const -> void
+        constexpr auto operator()
+            (VarVals& vars, index_t const i, bool const v) const -> void
         {
-            if (i >= sizeof(VarVals))
-            {
-                throw std::out_of_range("Bit index out of range.") ;
-            }
             vars = (vars & ~(1ul << i)) | (v << i);
         }
     };

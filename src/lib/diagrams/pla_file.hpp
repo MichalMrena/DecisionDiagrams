@@ -1,5 +1,5 @@
-#ifndef MIX_DD_PLA_FILE_
-#define MIX_DD_PLA_FILE_
+#ifndef MIX_DD_PLA_FILE_HPP
+#define MIX_DD_PLA_FILE_HPP
 
 #include "typedefs.hpp"
 #include "../utils/string_utils.hpp"
@@ -25,18 +25,15 @@ namespace mix::dd
     {
         using cube_t   = bit_vector<2, bool_t>;
         using f_vals_t = bit_vector<2, bool_t>;
-        cube_t   cube; 
+        cube_t   cube;
         f_vals_t fVals;
     };
 
     /**
-        Converts a cube into a std::vector of std::pairs of form {index_t, bool}.
-        First element in the pair is index of the variable and the second element is
-        bool flag that says whether the variable is complemented. Indices start at 0.
-       
+        @brief Converts cube into a std::vector of `bool_var` structs.
         Example: "--1001" -> { {2, false}, {3, true}, {4, true}, {5, false} }
      */
-    auto cube_to_pairs (pla_line::cube_t const& cube) -> std::vector<std::pair<index_t, bool>>;
+    auto cube_to_bool_vars (pla_line::cube_t const& cube) -> std::vector<bool_var>;
 
     class pla_file
     {
@@ -250,16 +247,16 @@ namespace mix::dd
         }
     }
 
-    inline auto cube_to_pairs 
-        (pla_line::cube_t const& cube) -> std::vector<std::pair<index_t, bool>>
+    inline auto cube_to_bool_vars 
+        (pla_line::cube_t const& cube) -> std::vector<bool_var>
     {
-        auto vars = utils::vector<std::pair<index_t, bool>>(cube.size());
+        auto vars = utils::vector<bool_var>(cube.size());
         auto is   = utils::range(0u, vars.size());
         for (auto const [val, i] : utils::zip(cube, is))
         {
-            if (! is_undefined<2>(val))
+            if (!is_undefined<2>(val))
             {
-                vars.emplace_back(i, 0 == val);
+                vars.emplace_back(bool_var {static_cast<index_t>(i), 0 == val});
             }
         }
         return vars;
@@ -299,11 +296,11 @@ namespace mix::dd
         reader.throw_if_cant_read();
 
         auto const options = aux_impl::read_options(reader);
-        if (! aux_impl::has_keys(options, {".i", ".o"}))
+        if (!aux_impl::has_keys(options, {".i", ".o"}))
         {
             throw std::runtime_error {"Invalid pla header. '.i' and '.o' must be set."};
         }
-        
+
         auto const varCount     = utils::parse_except<uint32_t>(options.at(".i"));
         auto const diagramCount = utils::parse_except<uint32_t>(options.at(".o"));
         auto const lineCount    = options.find(".p") != options.end()

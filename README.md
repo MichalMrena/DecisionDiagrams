@@ -56,7 +56,7 @@ auto file     = pla_file::load_file("apex1.pla");
 auto diagrams = creator.from_pla(file);
 ```
 ### Manipulating diagrams
-Basic and probably the most important operation that you can peform with existing diagrams is called ```apply```. It takes two diagrams and a binary operation and creates a new digaram that is a result of *applying* given operation on these diagrams. Using this simple operation you can combine diagrams of simple functions into more complicated ones. ```apply``` is templated and takes instance of any binary operation in a form of a functor. We provide functors for basic [logical operations](./src/lib/diagrams/operators.hpp).
+Basic and probably the most important operation that you can perform with existing diagrams is called ```apply```. It takes two diagrams and a binary operation and creates a new diagram that is a result of *applying* given operation on these diagrams. Using this simple operation you can combine diagrams of simple functions into more complicated ones. ```apply``` is templated and takes an instance of any binary operation in a form of a TODO Callable . We provide functors for basic [logical operations](./src/lib/diagrams/operators.hpp).
 ```C++
 auto x1 = creator.just_var(1);
 auto x2 = creator.just_var(2);
@@ -69,7 +69,7 @@ This however does not look very nice. First you need to manually create a diagra
 auto& x     = creator;
 auto result = (x(1) && x(2)) || x(3);
 ```
-The only difference is that operators create a temporary instance of the manipulator. Effect on the performace is probably insignificant but in case you do some mission critical calculations it might be better to use one manipulator with direct calls to apply.  
+The only difference is that operators create a temporary instance of the manipulator. Effect on the performance is probably insignificant but in case you do some mission critical calculations it might be better to use one manipulator with direct calls to apply.  
 In case you have a diagram in a variable and you won't need this variable after the call to the apply you can move the diagram from the variable and its memory will be released after finishing apply.
 ```C++
 auto tmp    = creator.from_vector(truth_vector::from_string("01010111"));

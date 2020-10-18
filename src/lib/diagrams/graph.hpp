@@ -67,6 +67,7 @@ namespace mix::dd
         auto get_mark    () const              -> bool;
         auto toggle_mark ()                    -> void;
         auto get_index   () const              -> index_t;
+        auto set_index   (index_t const index) -> void;
 
     private:
         static constexpr auto id_mask   () -> id_t;
@@ -215,6 +216,13 @@ namespace mix::dd
         () const -> index_t
     {
         return index_;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_base<VertexData, ArcData, P>::set_index
+        (index_t const index) -> void
+    {
+        index_ = index;
     }
 
     template<class VertexData, class ArcData, std::size_t P>

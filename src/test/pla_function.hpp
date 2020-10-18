@@ -47,7 +47,7 @@ namespace mix::dd
             {
                 if (1 == line.fVals.at(fi))
                 {
-                    auto vars = cube_to_pairs(line.cube);
+                    auto vars = cube_to_bool_vars(line.cube);
                     functions[fi].emplace_back(vars.empty() ? creator.just_val(1) : creator.product(std::begin(vars), std::end(vars)));
                 }
             }

@@ -6,21 +6,31 @@
 
 namespace mix::utils
 {
+    /**
+     *  Simple class for measuring elapsed time.
+     */
     class stopwatch
     {
     public:
         using clock        = std::chrono::steady_clock;
         using milliseconds = std::chrono::milliseconds;
+        using time_point_t = std::chrono::time_point<clock>;
 
     public:
-        auto start        ()       -> void; 
+        auto reset () -> void;
+
+        /**
+         *  Returns time since the initialization of the object
+         *  or since the last call to reset.
+         *  @return time in std::chrono::milliseconds.
+         */
         auto elapsed_time () const -> milliseconds;
 
     private:
-        std::chrono::time_point<clock> timeZero_ = clock::now();
+        time_point_t timeZero_ = clock::now();
     };
 
-    inline auto stopwatch::start
+    inline auto stopwatch::reset
         () -> void
     {
         timeZero_ = clock::now();
@@ -32,17 +42,27 @@ namespace mix::utils
         return std::chrono::duration_cast<milliseconds>(clock::now() - timeZero_);
     }
 
-    template<class Func>
-    auto run_time (Func&& function) -> double
+    /**
+     *  Measures how long it takes to execute given function.
+     *  @return time in milliseconds.
+     */
+    template<class Function>
+    auto run_time (Function&& function) -> double
     {
         auto watch = stopwatch();
         function();
         return watch.elapsed_time().count();
     }
 
-    template<class Func>
+    /**
+     *  Measures how long it takes to execute given function.
+     *  Executes the function @p replications times and returns
+     *  the average time for one execution.
+     *  @return time in milliseconds.
+     */
+    template<class Function>
     auto avg_run_time ( std::size_t const replications
-                      , Func&& function ) -> double
+                      , Function&& function ) -> double
     {
         auto sum = 0.0;
         for (auto i = 0u; i < replications; ++i)

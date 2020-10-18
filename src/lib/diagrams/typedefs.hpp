@@ -7,26 +7,45 @@
 
 namespace mix::dd
 {
-    using var_vals_t = std::uint64_t;
-    using id_t       = std::int32_t;
-    using index_t    = std::uint32_t;
+    /* Types used by MDDs in general. */
 
+    using id_t    = std::int32_t;
+    using index_t = std::uint16_t;
+    using level_t = std::uint16_t;
+
+    /**
+       Traits helper for logical types and constants.
+     */
     template<std::size_t P>
     struct log_val_traits
     {
         using type = std::uint8_t;
 
-        static_assert(P < std::numeric_limits<type>::max(), "Max for P is 254.");
+        static_assert(P < std::numeric_limits<type>::max() - 1, "Max for P is 253.");
 
-        inline static constexpr auto undefined     = type {P};      // * in extended dpbds
-        inline static constexpr auto nodomain      = type {P + 1};  // non homogenous functions
-        inline static constexpr auto nondetermined = type {P + 2};  // internal vertex in apply
+        inline static constexpr auto undefined     = type {P};      // * in extended dpbds.
+        inline static constexpr auto nodomain      = type {P + 1};  // Non homogenous functions.
+        inline static constexpr auto nondetermined = type {P + 2};  // Internal vertex in apply.
         inline static constexpr auto valuecount    = type {P + 2};
 
         static auto to_string (type const t) -> std::string;
     };
 
+    /* Types used only by BDDs. */
+
+    using bool_vals_t = std::uint64_t;
     using bool_t = typename log_val_traits<2>::type;
+
+    /**
+        Description of a Boolean variable.
+     */
+    struct bool_var
+    {
+        index_t index;
+        bool    complemented;
+    };
+
+    /* Definitions. */
 
     template<std::size_t P>
     constexpr auto is_undefined(typename log_val_traits<P>::type const v)

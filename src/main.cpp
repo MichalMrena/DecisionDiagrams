@@ -58,24 +58,35 @@ auto graph()
     // std::cout << sizeof(vertex<void,   double, 2>); // 48 << '\n';
     // std::cout << sizeof(vertex<double, double, 2>); // 56 << '\n';
 
-    auto bdd  = x(0) * x(1) + x(2);
+    // auto dd  = x(0) * x(1) + x(2);
 
-    auto val1 = bdd.get_value(std::array  {1, 1, 0});
-    auto val2 = bdd.get_value(std::vector {true, true, false});
-    auto val3 = bdd.get_value(0b110);
+    // auto val1 = dd.get_value(std::array  {1, 1, 0});
+    // auto val2 = dd.get_value(std::vector {true, true, false});
+    // auto val3 = dd.get_value(0b110);
 
-    std::cout << (int)val1 << " " << (int)val2 << " " << (int)val3 << std::endl;
+    // std::cout << (int)val1 << " " << (int)val2 << " " << (int)val3 << std::endl;
 
     // using var_vals_t = std::bitset<3>;
-    // auto satisfySet  = std::vector<var_vals_t> {};
+    // auto satisfySet  = std::vector<var_vals_t>();
     // auto outputIt    = std::back_inserter(satisfySet);
-    
+
     // bdd.satisfy_all<var_vals_t>(outputIt);
 
-    // auto tools       = bdd_tools {};
+    // auto tools   = bdd_tools();
+    // auto creator = tools.creator();
+    // auto plaFile = pla_file::load_file("apex1.pla");
+    // auto bdds    = creator.from_pla(plaFile);
+
+    // for (auto& bdd : bdds)
+    // {
+    //     std::cout << bdd.vertex_count() << std::endl;
+    // }
+
+
+    // auto tools       = bdd_tools();
     // auto creator     = tools.creator();
     // auto manipulator = tools.manipulator();
-    
+
     // auto x1   = creator.just_var(1);
     // auto x2c  = manipulator.negate(creator.just_var(2));
     // auto conj = manipulator.apply(x1, OR{}, x2c);
@@ -109,23 +120,24 @@ auto alloc()
 
 auto vec_create()
 {
-    auto tools    = bdd_tools {};
-    auto creator  = tools.creator();
+    auto tools     = bdd_tools();
+    auto x         = tools.creator();
     auto const xs1 = std::vector {0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     auto const xs2 = (x(0) * x(1)) + ((x(2) * x(3)) + x(4));
     auto const xs3 = truth_vector::from_text_file("input_func.txt");
     auto const xs4 = truth_vector::from_string("01010111");
-    auto const vec = truth_vector::from_lambda([](auto&& x) 
-    { 
+
+    auto const vec = truth_vector::from_lambda([](auto&& x)
+    {
         return (x(1) && x(2)) || x(3);
     });
  
-    auto const d = creator.from_vector(xs3);
+    auto const d = x.from_vector(xs3);
 
-    creator.from_vector(xs3).to_dot_graph(std::cout);
-    creator.from_vector(xs1).to_dot_graph(std::cout);
-    creator.from_vector(vec).to_dot_graph(std::cout);
-    creator.from_vector(xs4).to_dot_graph(std::cout);
+    x.from_vector(xs3).to_dot_graph(std::cout);
+    x.from_vector(xs1).to_dot_graph(std::cout);
+    x.from_vector(vec).to_dot_graph(std::cout);
+    x.from_vector(xs4).to_dot_graph(std::cout);
     xs2.to_dot_graph(std::cout);
 }
 
@@ -147,9 +159,9 @@ auto pla_alloc_speed_pooled()
         auto tools   = bdd_tools();
         auto creator = tools.creator();
         auto file    = pla_file::load_file(filePath);
-        // (void)creator.from_pla(file, merge_mode_e::iterative);
-        // (void)creator.from_pla(file, merge_mode_e::sequential);
-        auto const ds = creator.from_pla(file, merge_mode_e::iterative);
+        // (void)creator.from_pla(file, fold_e::tree);
+        // (void)creator.from_pla(file, fold_e::left);
+        auto const ds = creator.from_pla(file, fold_e::tree);
         auto sum = 0u;
         for (auto d : ds)
         {
@@ -173,16 +185,19 @@ auto pla_alloc_speed_default()
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla"};
     // auto files = {"10-adder_col.pla", "seq.pla", "apex2.pla", "apex1.pla"};
-    auto files = {"10-adder_col.pla"};
-    // auto files   = {"apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    // auto files = {"10-adder_col.pla"};
+    auto files = {"spla.pla"};
+    // auto files   = {"apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
     // auto files = { "16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"
     //              , "apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla" };
 
     auto load_pla = [](auto&& fileName)
     {
-        auto creator = bdd_creator<double, void> {};
-        auto file    = pla_file::load_file(fileName);
-        return creator.from_pla(file, merge_mode_e::sequential);
+        auto filePath = std::string("/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/") + fileName;
+        auto creator  = bdd_creator<double, void>();
+        auto file     = pla_file::load_file(filePath);
+        return creator.from_pla(file, fold_e::left);
+        // return creator.from_pla(file, fold_e::tree);
     };
 
     for (auto fileName : files)
@@ -376,11 +391,11 @@ auto main() -> int
     // graph();
     // alloc();
     // vec_create();
-    // pla_alloc_speed_default();
+    pla_alloc_speed_default();
     // pla_alloc_speed_pooled();
     // sanity_check();
     // map_test();
-    reliability_test();
+    // reliability_test();
     // satisfy_test();
     // mvl_test();
     // mvl_non_homogenous();

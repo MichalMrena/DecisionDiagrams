@@ -15,7 +15,7 @@
 namespace mix::dd
 {
     template<class Lambda>
-    class lambda_wrap_iterator
+    class lambda_iterator
     {
     public:
         using value_type        = bool;
@@ -25,23 +25,23 @@ namespace mix::dd
         using reference         = void;
 
     public:
-        lambda_wrap_iterator ( Lambda     const& lambda
-                             , index_t    const  varCount
-                             , var_vals_t const  curr );
+        lambda_iterator ( Lambda      const& lambda
+                        , index_t     const  varCount
+                        , bool_vals_t const  curr );
 
         auto operator*  () const -> value_type;
-        auto operator++ ()       -> lambda_wrap_iterator&;
-        auto operator-- ()       -> lambda_wrap_iterator&;
-        auto operator++ (int)    -> lambda_wrap_iterator;
-        auto operator-- (int)    -> lambda_wrap_iterator;
-        auto operator!= (lambda_wrap_iterator const& other) -> bool;
-        auto operator-  (lambda_wrap_iterator const& other) -> difference_type;
+        auto operator++ ()       -> lambda_iterator&;
+        auto operator-- ()       -> lambda_iterator&;
+        auto operator++ (int)    -> lambda_iterator;
+        auto operator-- (int)    -> lambda_iterator;
+        auto operator!= (lambda_iterator const& other) -> bool;
+        auto operator-  (lambda_iterator const& other) -> difference_type;
 
     private:
         using lambda_cref = std::reference_wrapper<Lambda const>;
         lambda_cref lambda_;
         index_t     varCount_;
-        var_vals_t  curr_;
+        bool_vals_t curr_;
     };
 
     template<class Lambda>
@@ -49,7 +49,7 @@ namespace mix::dd
     {
     public:
         using lambda_t = std::decay_t<Lambda>;
-        using iterator = lambda_wrap_iterator<lambda_t>;
+        using iterator = lambda_iterator<lambda_t>;
 
         lambda_holder (Lambda&& lambda);
 
@@ -130,8 +130,8 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    lambda_wrap_iterator<Lambda>::lambda_wrap_iterator
-        (Lambda const& lambda, index_t const varCount, var_vals_t const curr) :
+    lambda_iterator<Lambda>::lambda_iterator
+        (Lambda const& lambda, index_t const varCount, bool_vals_t const curr) :
         lambda_   {std::cref(lambda)},
         varCount_ {varCount},
         curr_     {curr}
@@ -139,24 +139,24 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_wrap_iterator<Lambda>::operator++ 
-        () -> lambda_wrap_iterator&
+    auto lambda_iterator<Lambda>::operator++ 
+        () -> lambda_iterator&
     {
         ++curr_;
         return *this;
     }
 
     template<class Lambda>
-    auto lambda_wrap_iterator<Lambda>::operator-- 
-        () -> lambda_wrap_iterator&
+    auto lambda_iterator<Lambda>::operator-- 
+        () -> lambda_iterator&
     {
         --curr_;
         return *this;
     }
 
     template<class Lambda>
-    auto lambda_wrap_iterator<Lambda>::operator++ 
-        (int) -> lambda_wrap_iterator
+    auto lambda_iterator<Lambda>::operator++ 
+        (int) -> lambda_iterator
     {
         auto const copy = *this;
         ++(*this);
@@ -164,8 +164,8 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_wrap_iterator<Lambda>::operator-- 
-        (int) -> lambda_wrap_iterator
+    auto lambda_iterator<Lambda>::operator-- 
+        (int) -> lambda_iterator
     {
         auto const copy = *this;
         --(*this);
@@ -173,24 +173,24 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_wrap_iterator<Lambda>::operator!= 
-        (lambda_wrap_iterator const& other) -> bool
+    auto lambda_iterator<Lambda>::operator!= 
+        (lambda_iterator const& other) -> bool
     {
         return curr_ != other.curr_;
     }
 
     template<class Lambda>
-    auto lambda_wrap_iterator<Lambda>::operator-
-        (lambda_wrap_iterator const& other) -> difference_type
+    auto lambda_iterator<Lambda>::operator-
+        (lambda_iterator const& other) -> difference_type
     {
         return curr_ - other.curr_;
     }
 
     template<class Lambda>
-    auto lambda_wrap_iterator<Lambda>::operator* 
+    auto lambda_iterator<Lambda>::operator* 
         () const -> bool
     {
-        auto const shift = 8 * sizeof(var_vals_t) - varCount_;
+        auto const shift = 8 * sizeof(bool_vals_t) - varCount_;
         return lambda_(utils::bit_accesser {utils::reverse_bits(curr_) >> shift});
     }
 

@@ -1,5 +1,5 @@
-#ifndef MIX_DD_BDD_CREATOR_
-#define MIX_DD_BDD_CREATOR_
+#ifndef MIX_DD_BDD_CREATOR_HPP
+#define MIX_DD_BDD_CREATOR_HPP
 
 #include "bdd.hpp"
 #include "bdd_manipulator.hpp"
@@ -17,7 +17,7 @@
 
 namespace mix::dd
 {
-    enum class merge_mode_e {sequential, iterative};
+    enum class fold_e {left, tree};
 
     template<class VertexData, class ArcData, class Allocator>
     class bdd_creator : public mdd_creator<VertexData, ArcData, 2, Allocator>
@@ -31,13 +31,16 @@ namespace mix::dd
     public:
         explicit bdd_creator (Allocator const& alloc = Allocator {});
 
+        auto product (std::vector<bool_var> const& vars) -> bdd_t;
+        auto sum     (std::vector<bool_var> const& vars) -> bdd_t;
+
         template<class InputIt>
         auto product (InputIt varsIt, InputIt varsEnd) -> bdd_t;
 
-        template<class Range>
-        auto product (Range&& range) -> bdd_t;
+        template<class InputIt>
+        auto sum (InputIt varsIt, InputIt varsEnd) -> bdd_t;
 
-        auto from_pla (pla_file const& file, merge_mode_e const mm = merge_mode_e::iterative) -> std::vector<bdd_t>;
+        auto from_pla (pla_file const& file, fold_e const mm = fold_e::tree) -> std::vector<bdd_t>;
 
         template<class Range>
         auto from_vector (Range const& range) -> bdd_t;
@@ -45,11 +48,12 @@ namespace mix::dd
         template<class InputIt>
         auto from_vector (InputIt first, InputIt last) -> bdd_t;
 
-    private: 
-        auto or_merge            (std::vector<bdd_t> diagrams, merge_mode_e) -> bdd_t;
-        auto or_merge_iterative  (std::vector<bdd_t> diagrams) -> bdd_t;
-        auto or_merge_sequential (std::vector<bdd_t> diagrams) -> bdd_t;
-        auto line_to_product     (pla_line const& line)        -> bdd_t;
+    private:
+        template<class InputIt>
+        auto concat_impl (InputIt varsIt, InputIt varsEnd, bool_t absorbingVal) -> bdd_t;
+
+        auto or_merge        (std::vector<bdd_t> diagrams, fold_e) -> bdd_t;
+        auto line_to_product (pla_line const& line)                -> bdd_t;
 
         auto try_insert ( vertex_t* const falseSon
                         , vertex_t* const trueSon
@@ -89,65 +93,39 @@ namespace mix::dd
     {
     }
 
-    template<class VertexData = double, class ArcData = void>
-    auto x (index_t const i) -> bdd<VertexData, ArcData>
-    {
-        using creator_t = bdd_creator<VertexData, ArcData>;
-        auto creator = creator_t {};
-        return creator.just_var(i);
-    }
-
     template<class VertexData, class ArcData, class Allocator>
     template<class InputIt>
     auto bdd_creator<VertexData, ArcData, Allocator>::product
         (InputIt varsIt, InputIt varsEnd) -> bdd_t
     {
-        // Create vertex for each variable and point false arc to the false leaf.
-        // (Or true arc in case the variable is complemented(negated).)
-        auto const varCount  = 1 + (*std::prev(varsEnd)).first;
-        auto const falseLeaf = base_t::manager_.create(0, varCount);
-        auto const trueLeaf  = base_t::manager_.create(1, varCount);
-        auto nextId   = id_t {2};
-        auto vertices = utils::map(varsIt, varsEnd, [&](auto const& pair)
-        {
-            auto const index     = std::get<0>(pair);
-            auto const isNegated = std::get<1>(pair);
-            auto const vertex    = base_t::manager_.create(nextId++, index);
-            vertex->set_son(isNegated, falseLeaf);
-            return vertex;
-        });
-
-        // Add true leaf at the end so that no special case needs to be handled
-        // in the following linking.
-        vertices.emplace_back(trueLeaf);
-
-        // Link vertices using their true (or false if it is complemented) arcs.
-        auto it  = std::begin(vertices);
-        auto end = std::prev(std::end(vertices));
-        while (it != end)
-        {
-             auto const vertex = *it++;
-             auto const value  = static_cast<bool>(vertex->get_son(0));
-             vertex->set_son(value, *it);
-        }
-
-        // Finally just create the diagram.
-        return bdd_t { vertices.front()
-                     , { {trueLeaf, 1}, {falseLeaf, 0} }
-                     , base_t::manager_.get_alloc() };
+        return this->concat_impl(varsIt, varsEnd, 0);
     }
 
     template<class VertexData, class ArcData, class Allocator>
-    template<class Range>
-    auto bdd_creator<VertexData, ArcData, Allocator>::product
-        (Range&& range) -> bdd_t
+    template<class InputIt>
+    auto bdd_creator<VertexData, ArcData, Allocator>::sum
+        (InputIt varsIt, InputIt varsEnd) -> bdd_t
     {
-        return this->product(std::begin(range), std::end(range));
+        return this->concat_impl(varsIt, varsEnd, 1);
+    }
+
+    template<class VertexData, class ArcData, class Allocator>
+    auto bdd_creator<VertexData, ArcData, Allocator>::product
+        (std::vector<bool_var> const& vars) -> bdd_t
+    {
+        return this->product(std::begin(vars), std::end(vars));
+    }
+
+    template<class VertexData, class ArcData, class Allocator>
+    auto bdd_creator<VertexData, ArcData, Allocator>::sum
+        (std::vector<bool_var> const& vars) -> bdd_t
+    {
+        return this->sum(std::begin(vars), std::end(vars));
     }
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd_creator<VertexData, ArcData, Allocator>::from_pla 
-        (pla_file const& file, merge_mode_e const mm) -> std::vector<bdd_t>
+        (pla_file const& file, fold_e const mm) -> std::vector<bdd_t>
     {
         auto const& plaLines      = file.get_lines();
         auto const  lineCount     = file.line_count();
@@ -276,74 +254,71 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, class Allocator>
-    auto bdd_creator<VertexData, ArcData, Allocator>::or_merge
-        (std::vector<bdd_t> diagrams, merge_mode_e mm) -> bdd_t
+    template<class InputIt>
+    auto bdd_creator<VertexData, ArcData, Allocator>::concat_impl
+        (InputIt varsIt, InputIt varsEnd, bool_t const absorbingVal) -> bdd_t
     {
-        switch (mm)
+        // Create vertex for each variable and point absorbing arc to the absorbing leaf.
+        // (Or the other arc in case the variable is complemented.)
+        auto const tmpIndex      = std::numeric_limits<index_t>::max();
+        auto const otherVal      = bool_t {!absorbingVal};
+        auto const absorbingLeaf = base_t::manager_.create(id_t {0}, tmpIndex);
+        auto const otherLeaf     = base_t::manager_.create(id_t {1}, tmpIndex);
+        auto nextId   = id_t {2};
+        auto vertices = utils::map(varsIt, varsEnd, [&](auto const& boolVar)
         {
-        case merge_mode_e::iterative:
-            return this->or_merge_iterative(std::move(diagrams));
+            auto const vertex         = base_t::manager_.create(nextId++, boolVar.index);
+            auto const absorbingIndex = boolVar.complemented ? otherVal : absorbingVal;
+            vertex->set_son(absorbingIndex, absorbingLeaf);
+            return vertex;
+        });
+        auto const leafIndex = 1 + vertices.back()->get_index();
+        absorbingLeaf->set_index(leafIndex);
+        otherLeaf->set_index(leafIndex);
 
-        case merge_mode_e::sequential:
-            return this->or_merge_sequential(std::move(diagrams));
+        // Add other leaf at the end so that no special case needs to be handled
+        // in the following linking.
+        vertices.emplace_back(otherLeaf);
 
-        default:
-            throw std::runtime_error {"Non-exhaustive enum switch."};
-        }
-    }
-
-    template<class VertexData, class ArcData, class Allocator>
-    auto bdd_creator<VertexData, ArcData, Allocator>::or_merge_iterative
-        (std::vector<bdd_t> diagrams) -> bdd_t
-    {
-        auto const numOfSteps = static_cast<std::size_t>(std::ceil(std::log2(diagrams.size())));
-        auto diagramCount     = diagrams.size();
-        auto m = manipulator_t {base_t::manager_.get_alloc()};
-
-        for (auto step = 0u; step < numOfSteps; ++step)
-        {
-            auto const justMoveLast = diagramCount & 1;
-            diagramCount = (diagramCount >> 1) + (diagramCount & 1);
-            auto const iterCount    = diagramCount - justMoveLast;
-
-            for (auto i = 0u; i < iterCount; ++i)
-            {
-                diagrams[i] = m.apply( std::move(diagrams[2 * i])
-                                     , OR {}
-                                     , std::move(diagrams[2 * i + 1]) );
-            }
-
-            if (justMoveLast)
-            {
-                diagrams[diagramCount - 1] = std::move(diagrams[2 * (diagramCount - 1)]);
-            }
-        }
-
-        return bdd_t {std::move(diagrams.front())};
-    }
-
-    template<class VertexData, class ArcData, class Allocator>
-    auto bdd_creator<VertexData, ArcData, Allocator>::or_merge_sequential
-        (std::vector<bdd_t> diagrams) -> bdd_t
-    {
-        auto m   = manipulator_t {base_t::manager_.get_alloc()};
-        auto it  = std::next(std::begin(diagrams));
-        auto end = std::end(diagrams);
+        // Link vertices using their other (or absorbing if it is complemented) arcs.
+        auto it  = std::begin(vertices);
+        auto end = std::prev(std::end(vertices));
         while (it != end)
         {
-            diagrams.front() = m.apply( std::move(diagrams.front())
-                                      , OR {}
-                                      , std::move(*it++) );
+             auto const vertex     = *it++;
+             auto const otherIndex = vertex->get_son(0) ? 1 : 0;
+             vertex->set_son(otherIndex, *it);
         }
 
-        return bdd_t {std::move(diagrams.front())};
+        // Finally just create the diagram.
+        return bdd_t { vertices.front()
+                     , { {absorbingLeaf, absorbingVal}, {otherLeaf, otherVal} }
+                     , base_t::manager_.get_alloc() };
+    }
+
+    template<class VertexData, class ArcData, class Allocator>
+    auto bdd_creator<VertexData, ArcData, Allocator>::or_merge
+        (std::vector<bdd_t> diagrams, fold_e mm) -> bdd_t
+    {
+        auto m = manipulator_t(base_t::manager_.get_alloc());
+        switch (mm)
+        {
+            case fold_e::tree:
+                return m.tree_fold(std::move(diagrams), OR());
+
+            case fold_e::left:
+                return m.left_fold(std::move(diagrams), OR());
+
+            default:
+                throw std::runtime_error {"Non-exhaustive enum switch."};
+        }
     }
 
     template<class VertexData, class ArcData, class Allocator>
     auto bdd_creator<VertexData, ArcData, Allocator>::line_to_product
         (pla_line const& line) -> bdd_t
     {
-        auto vars = cube_to_pairs(line.cube);
+        auto const vars = cube_to_bool_vars(line.cube);
 
         // If there is no relevant variable i.e. line looks like "------",
         // we simply return constant 0 which is the neutral element for OR.
@@ -359,12 +334,12 @@ namespace mix::dd
         auto inGraphIt = levels_.at(level).find(key);
         if (inGraphIt != levels_.at(level).end())
         {
-            return (*inGraphIt).second;            
+            return (*inGraphIt).second;
         }
 
         auto const newVertex = base_t::manager_.create( nextId_++
-                                                    , level
-                                                    , arc_arr_t {arc_t {falseSon}, arc_t {trueSon}} );
+                                                      , level
+                                                      , arc_arr_t {arc_t {falseSon}, arc_t {trueSon}} );
         levels_.at(level).emplace(key, newVertex);
 
         return newVertex;
