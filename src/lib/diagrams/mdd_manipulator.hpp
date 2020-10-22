@@ -42,7 +42,6 @@ namespace mix::dd
         auto reduce (mdd_t&  diagram) -> mdd_t&;
         auto reduce (mdd_t&& diagram) -> mdd_t;
 
-
         template<class InputIt, class BinOp>
         auto left_fold (InputIt first, InputIt last, BinOp op) -> mdd_t;
 

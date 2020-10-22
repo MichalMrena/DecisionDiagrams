@@ -5,6 +5,7 @@
 #include "lib/diagrams/mdd_reliability.hpp"
 
     #include "lib/utils/more_iterator.hpp"
+    #include "lib/utils/debug_tools.hpp"
 
 using namespace mix::dd;
 using namespace mix::utils;
@@ -60,17 +61,23 @@ auto graph()
 
     // auto dd  = x(0) * x(1) + x(2);
 
-    // auto val1 = dd.get_value(std::array  {1, 1, 0});
-    // auto val2 = dd.get_value(std::vector {true, true, false});
-    // auto val3 = dd.get_value(0b110);
+    // auto val1 = dd.get_value(std::array  {1, 1, 0, 1});
+    // auto val2 = dd.get_value(0b1011);
+    // auto val3 = dd.get_value(std::vector { true, true
+    //                                      , true, false });
+
+    // auto xs   = std::vector {true, true, false, true};
+    // auto val1 = dd.get_value(xs);
+    // auto val2 = dd.get_value(std::array {1, 1, 0, 1});
+    // auto val3 = dd.get_value(0b1011);
 
     // std::cout << (int)val1 << " " << (int)val2 << " " << (int)val3 << std::endl;
 
-    // using var_vals_t = std::bitset<3>;
+    // using var_vals_t = std::bitset<4>;
     // auto satisfySet  = std::vector<var_vals_t>();
     // auto outputIt    = std::back_inserter(satisfySet);
 
-    // bdd.satisfy_all<var_vals_t>(outputIt);
+    // dd.satisfy_all<var_vals_t>(outputIt);
 
     // auto tools   = bdd_tools();
     // auto creator = tools.creator();
@@ -129,7 +136,7 @@ auto vec_create()
 
     auto const vec = truth_vector::from_lambda([](auto&& x)
     {
-        return (x(1) && x(2)) || x(3);
+        return (x(1) && x(2)) || (x(3) && x(4));
     });
  
     auto const d = x.from_vector(xs3);
@@ -149,19 +156,17 @@ auto pla_alloc_speed_pooled()
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla"};
     // auto files = {"10-adder_col.pla", "seq.pla", "apex2.pla", "apex1.pla"};
-    // auto files = {"10-adder_col.pla"};
+    auto files = {"10-adder_col.pla"};
     // auto files   = {"apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    auto files = { "16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"
-                 , "apex1.pla", "apex5.pla", "seq.pla", "spla.pla" };
+    // auto files = { "16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"
+    //              , "apex1.pla", "apex5.pla", "seq.pla", "spla.pla" };
 
     auto load_pla = [](auto&& filePath)
     {
         auto tools   = bdd_tools();
         auto creator = tools.creator();
         auto file    = pla_file::load_file(filePath);
-        // (void)creator.from_pla(file, fold_e::tree);
-        // (void)creator.from_pla(file, fold_e::left);
-        auto const ds = creator.from_pla(file, fold_e::tree);
+        auto const ds = creator.from_pla(file, fold_e::left);
         auto sum = 0u;
         for (auto d : ds)
         {
@@ -172,9 +177,8 @@ auto pla_alloc_speed_pooled()
 
     for (auto fileName : files)
     {
-        std::bind(load_pla, mix::utils::concat(plaDir , fileName)) ();
-        // auto et = avg_run_time(1, std::bind(load_pla, mix::utils::concat(plaDir , fileName)));
-        // printl(concat(fileName , " -> " , et , "ms [" , "-" , "]"));
+        auto et = avg_run_time(1, std::bind(load_pla, mix::utils::concat(plaDir , fileName)));
+        printl(concat(fileName , " -> " , et , "ms [" , "-" , "]"));
     }
 }
 
@@ -185,8 +189,8 @@ auto pla_alloc_speed_default()
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla"};
     // auto files = {"10-adder_col.pla", "seq.pla", "apex2.pla", "apex1.pla"};
-    // auto files = {"10-adder_col.pla"};
-    auto files = {"spla.pla"};
+    auto files = {"10-adder_col.pla"};
+    // auto files = {"spla.pla"};
     // auto files   = {"apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
     // auto files = { "16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"
     //              , "apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla" };
@@ -197,7 +201,6 @@ auto pla_alloc_speed_default()
         auto creator  = bdd_creator<double, void>();
         auto file     = pla_file::load_file(filePath);
         return creator.from_pla(file, fold_e::left);
-        // return creator.from_pla(file, fold_e::tree);
     };
 
     for (auto fileName : files)
@@ -391,14 +394,17 @@ auto main() -> int
     // graph();
     // alloc();
     // vec_create();
-    pla_alloc_speed_default();
-    // pla_alloc_speed_pooled();
+    // pla_alloc_speed_default();
+    pla_alloc_speed_pooled();
     // sanity_check();
     // map_test();
     // reliability_test();
     // satisfy_test();
     // mvl_test();
     // mvl_non_homogenous();
+
+    // printl(concat(global_lhsSize.count() , ": " , global_lhsSize.avg()));
+    // printl(concat(global_rhsSize.count() , ": " , global_rhsSize.avg()));
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");
