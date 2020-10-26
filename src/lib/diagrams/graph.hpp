@@ -2,6 +2,7 @@
 #define MIX_DD_GRAPH_HPP
 
 #include "typedefs.hpp"
+#include "../utils/more_algorithm.hpp"
 
 #include <array>
 #include <cstddef>
@@ -44,40 +45,34 @@ namespace mix::dd
     class vertex_base
     {
     public:
-        using star_arr = std::array< arc<VertexData, ArcData, P>, P >;
-        using log_t    = typename log_val_traits<P>::type;
         using vertex_t = vertex<VertexData, ArcData, P>;
+        using arc_t    = arc<VertexData, ArcData, P>;
+        using arc_a    = std::array<arc_t, P>;
+        using son_a    = std::array<vertex_t*, P>;
+        using log_t    = typename log_val_traits<P>::type;
 
     public:
-        vertex_base( id_t    const id
-                   , index_t const index
-                   , bool    const mark = false );
-
-        vertex_base( id_t     const id
-                   , index_t  const index
-                   , star_arr const forwardStar
-                   , bool     const mark = false );
+        vertex_base( index_t const  index );
+        vertex_base( index_t const  index
+                   , son_a   const& sons );
 
     public:
-        auto get_id      () const        -> id_t;
-        auto set_id      (id_t const id) -> void;
-        auto set_son     (log_t const i, vertex_t* const son) -> void;
-        auto get_son     (log_t const i) const -> vertex_t*;
-        auto set_mark    (bool const mark)     -> void;
-        auto get_mark    () const              -> bool;
-        auto toggle_mark ()                    -> void;
-        auto get_index   () const              -> index_t;
-        auto set_index   (index_t const index) -> void;
+        auto set_son       (log_t const i, vertex_t* const son) -> void;
+        auto get_son       (log_t const i) const -> vertex_t*;
+        auto set_mark      (bool const mark)     -> void;
+        auto get_mark      () const              -> bool;
+        auto toggle_mark   ()                    -> void;
+        auto get_index     () const              -> index_t;
+        auto set_index     (index_t const index) -> void;
+        auto get_ref_count () const -> std::size_t;
+        auto inc_ref_count ()       -> void;
+        auto dec_ref_count ()       -> void;
 
     private:
-        static constexpr auto id_mask   () -> id_t;
-        static constexpr auto mark_mask () -> id_t;
-        static constexpr auto mark_mask (bool const mask) -> id_t;
-
-    private:
-        id_t     id_;
-        index_t  index_;
-        star_arr forwardStar_;
+        bool        mark_;
+        index_t     index_;
+        arc_a       forwardStar_;
+        std::size_t refCount_;
     };
 
     /** normal vertex */
@@ -85,22 +80,17 @@ namespace mix::dd
     class vertex : public vertex_base<VertexData, ArcData, P>
     {
     public:
-        using star_arr = typename vertex_base<VertexData, ArcData, P>::star_arr;
-        using log_t    = typename log_val_traits<P>::type;
-        using base_t   = vertex_base<VertexData, ArcData, P>;
+        using son_a  = typename vertex_base<VertexData, ArcData, P>::son_a;
+        using log_t  = typename log_val_traits<P>::type;
+        using base_t = vertex_base<VertexData, ArcData, P>;
 
     public:
         VertexData data;
 
     public:
-        vertex( id_t    const id
-              , index_t const index
-              , bool    const mark = false );
-
-        vertex( id_t     const id
-              , index_t  const index
-              , star_arr const forwardStar
-              , bool     const mark = false );
+        vertex( index_t const  index );
+        vertex( index_t const  index
+              , son_a   const& sons );
     };
 
     /** vertex with no data */
@@ -108,19 +98,13 @@ namespace mix::dd
     class vertex<void, ArcData, P> : public vertex_base<void, ArcData, P>
     {
     public:
-        using star_arr = typename vertex_base<void, ArcData, P>::star_arr;
-        using log_t    = typename log_val_traits<P>::type;
-        using base_t   = vertex_base<void, ArcData, P>;
+        using son_a  = typename vertex_base<void, ArcData, P>::son_a;
+        using base_t = vertex_base<void, ArcData, P>;
 
     public:
-        vertex( id_t    const id
-              , index_t const index
-              , bool    const mark = false );
-
-        vertex( id_t     const id
-              , index_t  const index
-              , star_arr const forwardStar
-              , bool     const mark = false );
+        vertex( index_t const  index );
+        vertex( index_t const  index
+              , son_a   const& sons );
     };
 
 // arc definitions:
@@ -143,37 +127,20 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_base<VertexData, ArcData, P>::vertex_base
-        ( id_t    const id
-        , index_t const index
-        , bool    const mark ) :
-        vertex_base {id, index, {}, mark}
+        (index_t const index) :
+        vertex_base {index, {}}
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_base<VertexData, ArcData, P>::vertex_base
-        ( id_t     const id
-        , index_t  const index
-        , star_arr const forwardStar
-        , bool     const mark ) :
-        id_          {(id & id_mask()) | mark_mask(mark)},
+        ( index_t const  index
+        , son_a   const& sons ) :
+        mark_        {false},
         index_       {index},
-        forwardStar_ {forwardStar}
+        forwardStar_ {utils::map_to_array(sons, [](auto const v) { return arc_t {v}; })},
+        refCount_    {0}
     {
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_base<VertexData, ArcData, P>::get_id
-        () const -> id_t
-    {
-        return id_ & id_mask();
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_base<VertexData, ArcData, P>::set_id
-        (id_t const id) -> void
-    {
-        id_ = (id & id_mask()) | mark_mask(this->get_mark());
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -194,21 +161,21 @@ namespace mix::dd
     auto vertex_base<VertexData, ArcData, P>::get_mark
         () const -> bool
     {
-        return id_ & mark_mask();
+        return mark_;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::toggle_mark
         () -> void
     {
-        id_ ^= mark_mask();
+        mark_ ^= true;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::set_mark
         (bool const mark) -> void
     {
-        id_ |= mark_mask(mark);
+        mark_ = mark;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -226,47 +193,40 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    constexpr auto vertex_base<VertexData, ArcData, P>::mark_mask
-        () -> id_t
+    auto vertex_base<VertexData, ArcData, P>::get_ref_count
+        () const -> std::size_t
     {
-        // 1 in the highest bit, rest 0s
-        return mark_mask(true);
+        return refCount_;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    constexpr auto vertex_base<VertexData, ArcData, P>::mark_mask
-        (bool const mask) -> id_t
+    auto vertex_base<VertexData, ArcData, P>::inc_ref_count
+        () -> void
     {
-        // 1 or 0 in the highest bit, rest 0s
-        return (static_cast<id_t>(mask) << (8 * sizeof(id_t) - 1));
+        ++refCount_;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    constexpr auto vertex_base<VertexData, ArcData, P>::id_mask
-        () -> id_t
+    auto vertex_base<VertexData, ArcData, P>::dec_ref_count
+        () -> void
     {
-        // 0 in the highest bit, rest 1s
-        return ~mark_mask();
+        --refCount_;
     }
 
 // normal vertex definitions:
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex<VertexData, ArcData, P>::vertex
-        ( id_t    const id
-        , index_t const index
-        , bool    const mark ) :
-        base_t {id, index, mark}
+        (index_t const index) :
+        base_t {index}
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex<VertexData, ArcData, P>::vertex
-        ( id_t     const id
-        , index_t  const index
-        , star_arr const forwardStar
-        , bool     const mark ) :
-        base_t {id, index, forwardStar, mark}
+        ( index_t const  index
+        , son_a   const& sons ) :
+        base_t {index, sons}
     {
     }
 
@@ -274,20 +234,16 @@ namespace mix::dd
 
     template<class ArcData, std::size_t P>
     vertex<void, ArcData, P>::vertex
-        ( id_t    const id
-        , index_t const index
-        , bool    const mark ) :
-        base_t {id, index, mark}
+        (index_t const index) :
+        base_t {index}
     {
     }
 
     template<class ArcData, std::size_t P>
     vertex<void, ArcData, P>::vertex
-        ( id_t     const id
-        , index_t  const index
-        , star_arr const forwardStar
-        , bool     const mark ) :
-        base_t {id, index, forwardStar, mark}
+        ( index_t const  index
+        , son_a   const& sons ) :
+        base_t {index, sons}
     {
     }
 }

@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <iterator>
 #include <type_traits>
+#include <utility>
+#include <limits>
 
 namespace mix::utils
 {
@@ -40,7 +42,7 @@ namespace mix::utils
     }
 
     /**
-     *  @brief Wrap around std::transform that saves the result into a std::vector.
+        @brief Wrap around std::transform that saves the result into a std::vector.
      */
     template<class Range, class UnaryOperation>
     auto map(Range&& range, UnaryOperation op)
@@ -49,12 +51,54 @@ namespace mix::utils
     }
 
     /**
-     *  @brief Wrap around std::transform that saves the result into a std::vector.
+        @brief Wrap around std::transform that saves the result into a std::vector.
      */
     template<class Range, class UnaryOperation>
     auto map(Range&& range, std::size_t const count, UnaryOperation op)
     {
-        return impl::map(std::begin(range), std::end(range), count, op);
+        return impl::map(std::begin(range), std::end(range), count, op); // TODO rename to map_to_vector
+    }
+
+    /**
+        @brief Wrap around std::transform that saves the result into a std::array.
+     */
+    template<class T, std::size_t N, class UnaryOperation>
+    auto map_to_array(std::array<T, N> const& as, UnaryOperation op)
+    {
+        using newt = decltype(op(std::declval<T>()));
+        auto ret = std::array<newt, N>{};
+        std::transform(std::begin(as), std::end(as), std::begin(ret), op);
+        return ret;
+    }
+
+    /**
+        @brief Wrap around std::transform that saves the result into a std::array.
+     */
+    template<std::size_t N, class InputIt, class UnaryOperation>
+    auto map_to_array(InputIt first, InputIt last, UnaryOperation op)
+    {
+        // TODO actual impl here
+    }
+
+    /**
+        @brief Wrap around std::transform that saves the result into a std::array.
+     */
+    template<std::size_t N, class Range, class UnaryOperation>
+    auto map_to_array(Range&& last, UnaryOperation op)
+    {
+        return map_to_array<N>(std::begin(range), std::end(range), op);
+    }
+
+    /**
+        @brief Finds index of @p t in given range. If there is no such elemnt returns max std::size_t.
+     */
+    template<class InputIt, class T>
+    auto index_of (InputIt first, InputIt last, T const& t) -> std::size_t
+    {
+        auto constexpr npos = std::numeric_limits<std::size_t>::max();
+        auto pos = std::find(first, last, t);
+        return pos != last ? static_cast<std::size_t>(std::distance(first, pos))
+                           : npos;
     }
 }
 
