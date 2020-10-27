@@ -23,9 +23,11 @@ namespace mix::dd
         ~mdd ();
         explicit mdd (mdd const& other);
 
-        auto operator= (mdd rhs)  -> mdd&;
-        auto swap      (mdd& rhs) -> void;
-        auto get_root  () const   -> vertex_t*;
+        auto operator== (mdd const& rhs) const -> bool;
+        auto operator!= (mdd const& rhs) const -> bool;
+        auto operator=  (mdd rhs)  -> mdd&;
+        auto swap       (mdd& rhs) -> void;
+        auto get_root   () const   -> vertex_t*;
 
     private:
         using manager_t = vertex_manager<VertexData, ArcData, P>;
@@ -71,11 +73,39 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd<VertexData, ArcData, P>::operator==
+        (mdd const& rhs) const -> bool
+    {
+        return this->get_root() == rhs.get_root();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd<VertexData, ArcData, P>::operator!=
+        (mdd const& rhs) const -> bool
+    {
+        return !(*this == rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd<VertexData, ArcData, P>::operator=
         (mdd rhs) -> mdd&
     {
         rhs.swap(*this);
         return *this;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd<VertexData, ArcData, P>::swap
+        (mdd& rhs) -> void
+    {
+        std::swap(root_, rhs.root_);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd<VertexData, ArcData, P>::get_root
+        () const -> vertex_t*
+    {
+        return root_;
     }
 }
 

@@ -83,6 +83,11 @@ namespace mix::utils
             return (lhs * rhs) % M;
         }
     };
+
+    /**
+        @brief Lambda that does nothing.
+     */
+    inline auto no_op = [](auto&&...) noexcept {};
 }
 
 #endif

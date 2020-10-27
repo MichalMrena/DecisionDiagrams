@@ -20,11 +20,16 @@ namespace mix::dd
         using manager_t = vertex_manager<VertexData, ArcData, P>;
 
     public:
-        mdd_creator (manager_t* manager);
+        mdd_creator (manager_t* const manager);
 
         auto just_val   (log_t const val)     -> mdd_t;
         auto just_var   (index_t const index) -> mdd_t;
         auto operator() (index_t const index) -> mdd_t;
+
+    protected:
+        template<class LeafVals>
+        auto just_var_impl ( index_t const index
+                           , LeafVals&& vals ) -> mdd_t;
 
     private:
         manager_t* manager_;
@@ -32,7 +37,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     mdd_creator<VertexData, ArcData, P>::mdd_creator
-        (manager_t* manager) :
+        (manager_t* const manager) :
         manager_ {manager}
     {
     }
@@ -48,10 +53,22 @@ namespace mix::dd
     auto mdd_creator<VertexData, ArcData, P>::just_var
         (index_t const index) -> mdd_t
     {
-        // TODO map utils::range(0, P - 1) to array
-        auto const vals = std::array<log_t, P>{};
-        std::iota(std::begin(vals), std::end(vals), log_t {0});
-        auto const leaves = utils::map_to_array(vals, [this](auto const lv)
+        return this->just_var_impl(index, utils::range(log_t {0}, log_t {P}));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_creator<VertexData, ArcData, P>::operator()
+        (index_t const index) -> mdd_t
+    {
+        return this->just_var(index);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class LeafVals>
+    auto mdd_creator<VertexData, ArcData, P>::just_var_impl
+        (index_t const index, LeafVals&& vals) -> mdd_t
+    {
+        auto const leaves = utils::map_to_array<P>(vals, [this](auto const lv)
         {
             return this->manager_->terminal_vertex(lv);
         });

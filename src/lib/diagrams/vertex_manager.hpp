@@ -33,9 +33,10 @@ namespace mix::dd
     public:
         auto terminal_vertex (log_t const val) -> vertex_t*;
         auto internal_vertex (index_t const index, son_a const& sons) -> vertex_t*;
-
-        auto get_value     (vertex_t* const v) const -> log_t;
-        auto get_var_count () const -> std::size_t;
+        auto get_level       (vertex_t* const v) const -> level_t;
+        auto get_value       (vertex_t* const v) const -> log_t;
+        auto is_leaf         (vertex_t* const v) const -> bool;
+        auto get_var_count   () const -> std::size_t;
 
         static auto is_redundant  (son_a const& sons) -> bool;
         static auto inc_ref_count (vertex_t* const v) -> vertex_t*;
@@ -44,6 +45,7 @@ namespace mix::dd
     private:
         using index_map      = std::unordered_map<son_a, vertex_t*, utils::tuple_hash_t<son_a>>;
         using index_map_v    = std::vector<index_map>;
+        using level_v        = std::vector<level_t>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
         using alloc_t        = std::allocator<vertex_t>;
         using alloc_traits_t = std::allocator_traits<alloc_t>;
@@ -53,13 +55,13 @@ namespace mix::dd
         auto new_empty_vertex   () -> vertex_t*;
         auto new_shallow_vertex (vertex_t* const v) -> vertex_t*;
         auto delete_vertex      (vertex_t* const v) -> void;
-        auto is_leaf            (vertex_t* const v) const -> bool;
         auto do_deep_copy       (vertex_manager const& other) -> void;
         auto do_shallow_copy    (vertex_manager const& other) -> std::unordered_map<vertex_t*, vertex_t*>;
 
     private:
         index_map_v   indexMaps_;
         leaf_vertex_a leaves_;
+        level_v       levels_;
         alloc_t       alloc_;
     };
 
@@ -77,6 +79,7 @@ namespace mix::dd
         (vertex_manager&& other) :
         indexMaps_ {std::move(other.indexMaps_)},
         leaves_    {std::move(other.leaves_)},
+        levels_    {std::move(other.levels_)},
         alloc_     {std::move(other.alloc_)}
     {
     }
@@ -86,6 +89,7 @@ namespace mix::dd
         (vertex_manager const& other) :
         indexMaps_ {other.get_var_count()},
         leaves_    {{}},
+        levels_    {other.levels_},
         alloc_     {other.alloc_}
     {
         this->do_deep_copy(other);
@@ -98,6 +102,14 @@ namespace mix::dd
         for (auto& indexMap : indexMaps_)
         {
             for (auto& [key, v] : indexMap)
+            {
+                this->delete_vertex(v);
+            }
+        }
+
+        for (auto const v : leaves_)
+        {
+            if (v)
             {
                 this->delete_vertex(v);
             }
@@ -148,12 +160,26 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_level
+        (vertex_t* const v) const -> level_t
+    {
+        return levels_.empty() ? v->get_index() : levels_[v->get_index()];
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::get_value
         (vertex_t* const v) const -> log_t
     {
         return this->is_leaf(v) ? static_cast<log_t>(utils::index_of( std::begin(leaves_)
                                                                     , std::end(leaves_), v ))
                                 : log_val_traits<P>::nondetermined;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::is_leaf
+        (vertex_t* const v) const -> bool
+    {
+        return v->get_index() == this->leaf_index();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -189,7 +215,11 @@ namespace mix::dd
         {
             for (auto i = log_t {0}; i < P; ++i)
             {
-                dec_ref_count(v->get_son(i));
+                auto const son = v->get_son(i);
+                if (son)
+                {
+                    dec_ref_count(son);
+                }
             }
         }
     }
@@ -222,13 +252,6 @@ namespace mix::dd
         (vertex_t* const v) -> void
     {
         alloc_traits_t::deallocate(alloc_, v, 1);
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::is_leaf
-        (vertex_t* const v) const -> bool
-    {
-        return v->get_index() == this->leaf_index();
     }
 
     template<class VertexData, class ArcData, std::size_t P>

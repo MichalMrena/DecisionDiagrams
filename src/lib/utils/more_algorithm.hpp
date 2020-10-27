@@ -62,29 +62,29 @@ namespace mix::utils
     /**
         @brief Wrap around std::transform that saves the result into a std::array.
      */
-    template<class T, std::size_t N, class UnaryOperation>
-    auto map_to_array(std::array<T, N> const& as, UnaryOperation op)
+    template<std::size_t N, class InputIt, class UnaryOperation>
+    auto map_to_array(InputIt first, InputIt last, UnaryOperation op)
     {
-        using newt = decltype(op(std::declval<T>()));
+        using newt = decltype(op(*std::declval<InputIt>()));
         auto ret = std::array<newt, N>{};
-        std::transform(std::begin(as), std::end(as), std::begin(ret), op);
+        std::transform(first, last, std::begin(ret), op);
         return ret;
     }
 
     /**
         @brief Wrap around std::transform that saves the result into a std::array.
      */
-    template<std::size_t N, class InputIt, class UnaryOperation>
-    auto map_to_array(InputIt first, InputIt last, UnaryOperation op)
+    template<class T, std::size_t N, class UnaryOperation>
+    auto map_to_array(std::array<T, N> const& as, UnaryOperation op)
     {
-        // TODO actual impl here
+        return map_to_array<N>(std::begin(as), std::end(as), op);
     }
 
     /**
         @brief Wrap around std::transform that saves the result into a std::array.
      */
     template<std::size_t N, class Range, class UnaryOperation>
-    auto map_to_array(Range&& last, UnaryOperation op)
+    auto map_to_array(Range&& range, UnaryOperation op)
     {
         return map_to_array<N>(std::begin(range), std::end(range), op);
     }
