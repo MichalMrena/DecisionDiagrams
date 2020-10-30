@@ -56,7 +56,7 @@ namespace mix::utils
     template<class Range, class UnaryOperation>
     auto map(Range&& range, std::size_t const count, UnaryOperation op)
     {
-        return impl::map(std::begin(range), std::end(range), count, op); // TODO rename to map_to_vector
+        return impl::map(std::begin(range), std::end(range), count, op);
     }
 
     /**

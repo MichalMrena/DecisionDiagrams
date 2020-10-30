@@ -15,6 +15,8 @@
 #include <stdexcept>
 #include <map>
 #include <set>
+#include <string_view>
+#include <filesystem>
 
 namespace mix::dd
 {
@@ -35,33 +37,41 @@ namespace mix::dd
      */
     auto cube_to_bool_vars (pla_line::cube_t const& cube) -> std::vector<bool_var>;
 
+    /**
+        @brief Pla file loaded in memory.
+     */
     class pla_file
     {
     public:
-        static auto load_file    (std::string const& filePath) -> pla_file;
-        static auto save_to_file (std::string const& filePath, pla_file const& file) -> void;
+        using pla_line_v = std::vector<pla_line>;
+        using string_v   = std::vector<std::string>;
+        using index_v    = std::vector<index_t>;
 
-        pla_file( std::vector<pla_line>    pLines
-                , std::vector<std::string> pInputLabels
-                , std::vector<std::string> pOutputLabels );
+    public:
+        static auto load_file    (std::string_view path) -> pla_file;
+        static auto save_to_file (std::string_view path, pla_file const& file) -> void;
 
+    public:
         auto variable_count    () const    -> index_t;
         auto function_count    () const    -> index_t;
         auto line_count        () const    -> index_t;
-        auto get_lines         () const &  -> std::vector<pla_line> const&;
-        auto get_lines         () const && -> std::vector<pla_line>;
-        auto get_indices       () const    -> std::vector<index_t>;
-        auto get_input_labels  () const &  -> std::vector<std::string> const&;
-        auto get_input_labels  () const && -> std::vector<std::string>;
-        auto get_output_labels () const &  -> std::vector<std::string> const&;
-        auto get_output_labels () const && -> std::vector<std::string>;
+        auto get_lines         () const &  -> pla_line_v const&;
+        auto get_lines         () const && -> pla_line_v;
+        auto get_indices       () const    -> index_v;
+        auto get_input_labels  () const &  -> string_v const&;
+        auto get_input_labels  () const && -> string_v;
+        auto get_output_labels () const &  -> string_v const&;
+        auto get_output_labels () const && -> string_v;
 
         auto swap_vars (std::size_t const i1, std::size_t const i2) -> void;
 
     private:
-        std::vector<pla_line>    lines_;
-        std::vector<std::string> inputLabels_;
-        std::vector<std::string> outputLabels_;
+        pla_file (pla_line_v lines, string_v inputLabels, string_v outputLabels);
+
+    private:
+        pla_line_v lines_;
+        string_v   inputLabels_;
+        string_v   outputLabels_;
     };
 
     auto swap (pla_line& lhs, pla_line& rhs) noexcept -> void;
@@ -74,11 +84,11 @@ namespace mix::dd
 
 // definitions:
 
-    namespace aux_impl
+    namespace pla_impl
     {
-        using option_map = std::map<const std::string, std::string>;
+        using option_map = std::map<std::string const, std::string>;
 
-        inline auto constexpr ncount = std::numeric_limits<uint32_t>::max();
+        inline auto constexpr ncount = std::numeric_limits<std::uint32_t>::max();
 
         inline auto char_to_bool_t (char const c) -> bool_t
         {
@@ -107,12 +117,12 @@ namespace mix::dd
 
         inline auto is_option_line (std::string_view line) -> bool
         {
-            return ! line.empty() && '.' == line.at(0);
+            return ! line.empty() && '.' == line.front();
         }
 
         inline auto is_comment_line (std::string_view line) -> bool
         {
-            return '#' == line.at(0);
+            return '#' == line.front();
         }
 
         inline auto read_options (utils::file_reader& reader) -> option_map
@@ -135,11 +145,11 @@ namespace mix::dd
                     break;
                 }
 
-                options[keyVal.first] = keyVal.second;
-                
+                options.insert_or_assign(std::move(keyVal.first), std::move(keyVal.second));
+
                 reader.read_line_except();
             }
-            
+
             return options;
         }
 
@@ -154,14 +164,14 @@ namespace mix::dd
 
         inline auto read_input_labels (option_map const& options) -> std::vector<std::string>
         {
-            auto const inputCount = utils::parse_except<uint32_t>(options.at(".i"));
+            auto const inputCount = utils::parse_except<std::uint32_t>(options.at(".i"));
             auto const labelsIt   = options.find(".ilb");
 
             if (labelsIt != options.end())
             {
                 return utils::to_words(std::move((*labelsIt).second));
             }
-            
+
             auto labels = utils::vector<std::string>(inputCount);
             for (auto i = 0u; i < inputCount; ++i)
             {
@@ -173,14 +183,14 @@ namespace mix::dd
 
         inline auto read_output_labels (option_map const& options) -> std::vector<std::string>
         {
-            auto const outputCount = utils::parse_except<uint32_t>(options.at(".o"));
+            auto const outputCount = utils::parse_except<std::uint32_t>(options.at(".o"));
             auto const labelsIt    = options.find(".ob");
 
             if (labelsIt != options.end())
             {
                 return utils::to_words(std::move((*labelsIt).second));
             }
-            
+
             auto labels = utils::vector<std::string>(outputCount);
 
             for (auto i = 0u; i < outputCount; ++i)
@@ -192,7 +202,7 @@ namespace mix::dd
         }
 
         inline auto read_data ( utils::file_reader& reader
-                              , std::size_t const   varCount    
+                              , std::size_t const   varCount
                               , std::size_t const   diagramCount
                               , std::size_t const   lineCount ) -> std::vector<pla_line>
         {
@@ -247,7 +257,7 @@ namespace mix::dd
         }
     }
 
-    inline auto cube_to_bool_vars 
+    inline auto cube_to_bool_vars
         (pla_line::cube_t const& cube) -> std::vector<bool_var>
     {
         auto vars = utils::vector<bool_var>(cube.size());
@@ -290,34 +300,34 @@ namespace mix::dd
     }
 
     inline auto pla_file::load_file 
-        (std::string const& filePath) -> pla_file
+        (std::string_view path) -> pla_file
     {
-        auto reader = utils::file_reader {filePath};
+        auto reader = utils::file_reader {std::string {path}};
         reader.throw_if_cant_read();
 
-        auto const options = aux_impl::read_options(reader);
-        if (!aux_impl::has_keys(options, {".i", ".o"}))
+        auto const options = pla_impl::read_options(reader);
+        if (!pla_impl::has_keys(options, {".i", ".o"}))
         {
             throw std::runtime_error {"Invalid pla header. '.i' and '.o' must be set."};
         }
 
-        auto const varCount     = utils::parse_except<uint32_t>(options.at(".i"));
-        auto const diagramCount = utils::parse_except<uint32_t>(options.at(".o"));
+        auto const varCount     = utils::parse_except<std::uint32_t>(options.at(".i"));
+        auto const diagramCount = utils::parse_except<std::uint32_t>(options.at(".o"));
         auto const lineCount    = options.find(".p") != options.end()
-                                    ? utils::parse_except<uint32_t>(options.at(".p"))
-                                    : aux_impl::ncount;
+                                    ? utils::parse_except<std::uint32_t>(options.at(".p"))
+                                    : pla_impl::ncount;
 
-        return pla_file { aux_impl::read_data(reader, varCount, diagramCount, lineCount)
-                        , aux_impl::read_input_labels(options)
-                        , aux_impl::read_output_labels(options) };
+        return pla_file { pla_impl::read_data(reader, varCount, diagramCount, lineCount)
+                        , pla_impl::read_input_labels(options)
+                        , pla_impl::read_output_labels(options) };
     }
 
     inline auto pla_file::save_to_file
-        (std::string const& filePath, pla_file const& file) -> void
+        (std::string_view path, pla_file const& file) -> void
     {
         using utils::concat_range;
 
-        auto ost = std::ofstream {filePath};
+        auto ost = std::ofstream {std::filesystem::path {path}};
 
         ost << ".i "   << file.variable_count()                       << '\n';
         ost << ".o "   << file.function_count()                       << '\n';
@@ -329,14 +339,14 @@ namespace mix::dd
         {
             for (auto const var : line.cube)
             {
-                ost << aux_impl::bool_t_to_char(var);
+                ost << pla_impl::bool_t_to_char(var);
             }
 
             ost << ' ';
 
             for (auto const fval : line.fVals)
             {
-                ost << aux_impl::bool_t_to_char(fval);
+                ost << pla_impl::bool_t_to_char(fval);
             }
 
             ost << '\n';
@@ -346,12 +356,12 @@ namespace mix::dd
     }
 
     inline pla_file::pla_file
-        ( std::vector<pla_line>    lines
-        , std::vector<std::string> inputLabels
-        , std::vector<std::string> outputLabels ) :
+        ( pla_line_v lines
+        , string_v   inputLabels
+        , string_v   outputLabels ) :
         lines_        {std::move(lines)},
-        inputLabels_  {inputLabels},
-        outputLabels_ {outputLabels}
+        inputLabels_  {std::move(inputLabels)},
+        outputLabels_ {std::move(outputLabels)}
     {
     }
 
@@ -374,19 +384,19 @@ namespace mix::dd
     }
 
     inline auto pla_file::get_lines
-        () const & -> std::vector<pla_line> const&
+        () const & -> pla_line_v const&
     {
         return lines_;
     }
 
     inline auto pla_file::get_lines
-        () const && -> std::vector<pla_line>
+        () const && -> pla_line_v
     {
         return lines_;
     }
 
     inline auto pla_file::get_indices
-        () const -> std::vector<index_t>
+        () const -> index_v
     {
         auto constexpr U = log_val_traits<2>::undefined;
         auto indices = std::set<index_t> {};
@@ -404,29 +414,29 @@ namespace mix::dd
             }
         }
 
-        return std::vector<index_t> {indices.begin(), indices.end()};
+        return index_v {indices.begin(), indices.end()};
     }
 
     inline auto pla_file::get_input_labels
-        () const & -> std::vector<std::string> const&
+        () const & -> string_v const&
     {
         return inputLabels_;
     }
 
     inline auto pla_file::get_input_labels
-        () const && -> std::vector<std::string>
+        () const && -> string_v
     {
         return inputLabels_;
     }
 
     inline auto pla_file::get_output_labels
-        () const & -> std::vector<std::string> const&
+        () const & -> string_v const&
     {
         return outputLabels_;
     }
 
     inline auto pla_file::get_output_labels
-        () const && -> std::vector<std::string>
+        () const && -> string_v
     {
         return outputLabels_;
     }
@@ -435,7 +445,7 @@ namespace mix::dd
         (size_t const i1, size_t const i2) -> void
     {
         using std::swap;
-        
+
         for (auto& line : lines_)
         {
             swap(line.cube[i1], line.cube[i2]);

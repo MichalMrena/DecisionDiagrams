@@ -3,8 +3,10 @@
 
 #include "typedefs.hpp"
 #include "graph.hpp"
+#include "vertex_level_iterator.hpp"
 #include "../utils/hash.hpp"
 #include "../utils/more_iterator.hpp"
+#include "../utils/more_algorithm.hpp"
 
 #include <cstddef>
 #include <array>
@@ -13,6 +15,9 @@
 #include <memory>
 #include <algorithm>
 #include <functional>
+#include <utility>
+
+#include <type_traits>
 
 namespace mix::dd
 {
@@ -20,9 +25,12 @@ namespace mix::dd
     class vertex_manager
     {
     public:
-        using log_t    = typename log_val_traits<P>::type;
-        using vertex_t = vertex<VertexData, ArcData, P>;
-        using son_a    = std::array<vertex_t*, P>;
+        using log_t            = typename log_val_traits<P>::type;
+        using vertex_t         = vertex<VertexData, ArcData, P>;
+        using son_a            = std::array<vertex_t*, P>;
+        using index_map        = std::unordered_map<son_a, vertex_t*, utils::tuple_hash_t<son_a>>;
+        using level_iterator   = vertex_level_iterator<typename index_map::const_iterator>;
+        using level_iterator_p = std::pair<level_iterator, level_iterator>;
 
     public:
         vertex_manager  (std::size_t const varCount);
@@ -31,19 +39,21 @@ namespace mix::dd
         explicit vertex_manager (vertex_manager const& other);
 
     public:
-        auto terminal_vertex (log_t const val) -> vertex_t*;
-        auto internal_vertex (index_t const index, son_a const& sons) -> vertex_t*;
-        auto get_level       (vertex_t* const v) const -> level_t;
-        auto get_value       (vertex_t* const v) const -> log_t;
-        auto is_leaf         (vertex_t* const v) const -> bool;
-        auto get_var_count   () const -> std::size_t;
+        auto terminal_vertex     (log_t const val) -> vertex_t*;
+        auto get_terminal_vertex (log_t const val) const -> vertex_t*;
+        auto has_terminal_vertex (log_t const val) const -> bool;
+        auto internal_vertex     (index_t const index, son_a const& sons) -> vertex_t*;
+        auto get_level           (vertex_t* const v) const -> level_t;
+        auto get_value           (vertex_t* const v) const -> log_t;
+        auto is_leaf             (vertex_t* const v) const -> bool;
+        auto get_var_count       () const -> std::size_t;
+        auto get_level_iterators (level_t const level) const -> level_iterator_p;
 
         static auto is_redundant  (son_a const& sons) -> bool;
         static auto inc_ref_count (vertex_t* const v) -> vertex_t*;
         static auto dec_ref_count (vertex_t* const v) -> void;
 
     private:
-        using index_map      = std::unordered_map<son_a, vertex_t*, utils::tuple_hash_t<son_a>>;
         using index_map_v    = std::vector<index_map>;
         using level_v        = std::vector<level_t>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
@@ -52,6 +62,7 @@ namespace mix::dd
 
     private:
         auto leaf_index         () const -> index_t;
+        auto get_level_index    (level_t const level) const -> index_t;
         auto new_empty_vertex   () -> vertex_t*;
         auto new_shallow_vertex (vertex_t* const v) -> vertex_t*;
         auto delete_vertex      (vertex_t* const v) -> void;
@@ -132,6 +143,20 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_terminal_vertex
+        (log_t const val) const -> vertex_t*
+    {
+        return leaves_[val];
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::has_terminal_vertex
+        (log_t const val) const -> bool
+    {
+        return leaves_[val];
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::internal_vertex
         (index_t const index, son_a const& sons) -> vertex_t*
     {
@@ -190,6 +215,14 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_level_iterators
+        (level_t const level) const -> level_iterator_p
+    {
+        auto const& indexMap = indexMaps_[this->get_level_index(level)];
+        return std::make_pair(std::begin(indexMap), std::end(indexMap));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::is_redundant
         (son_a const& sons) -> bool
     {
@@ -245,6 +278,14 @@ namespace mix::dd
         () const -> index_t
     {
         return static_cast<index_t>(this->get_var_count());
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_level_index
+        (level_t const level) const -> index_t
+    {
+        return levels_.empty() ? level
+                               : utils::index_of(std::begin(levels_), std::end(levels_), level);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

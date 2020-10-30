@@ -57,7 +57,7 @@ namespace mix::dd
                    , son_a   const& sons );
 
     public:
-        auto set_son       (log_t const i, vertex_t* const son) -> void;
+        // auto set_son       (log_t const i, vertex_t* const son) -> void;
         auto get_son       (log_t const i) const -> vertex_t*;
         auto set_mark      (bool const mark)     -> void;
         auto get_mark      () const              -> bool;
@@ -150,12 +150,12 @@ namespace mix::dd
         return forwardStar_[i].target;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_base<VertexData, ArcData, P>::set_son
-        (log_t const i, vertex_t* const son) -> void
-    {
-        forwardStar_[i] = son;
-    }
+    // template<class VertexData, class ArcData, std::size_t P>
+    // auto vertex_base<VertexData, ArcData, P>::set_son
+    //     (log_t const i, vertex_t* const son) -> void
+    // {
+    //     forwardStar_[i] = son;
+    // }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::get_mark

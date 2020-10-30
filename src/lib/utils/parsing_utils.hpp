@@ -1,5 +1,5 @@
-#ifndef _MIX_UTILS_PARSING_UTILS_
-#define _MIX_UTILS_PARSING_UTILS_
+#ifndef MIX_UTILS_PARSING_UTILS_HPP
+#define MIX_UTILS_PARSING_UTILS_HPP
 
 #include <string_view>
 #include <stdexcept>
@@ -7,30 +7,30 @@
 
 namespace mix::utils
 {
-    template<class N>
+    template<class Num>
     struct parse_result
     {
-        N    value;
+        Num  value;
         bool isValid;
-        operator N    () const { return value; }
+        operator Num  () const { return value; }
         operator bool () const { return isValid; }
     };
 
-    template<class N>
-    auto parse (std::string_view in) -> parse_result<N>
+    template<class Num>
+    auto parse (std::string_view in) -> parse_result<Num>
     {
-        auto ret    = N {};
+        auto ret    = Num {};
         auto result = std::from_chars(in.data(), in.data() + in.size(), ret);
 
         return {ret, std::errc {} == result.ec && result.ptr == in.data() + in.size()};
     }
 
-    template<class N>
-    auto parse_except (std::string_view in) -> N
+    template<class Num>
+    auto parse_except (std::string_view in) -> Num
     {
-        auto const res = parse<N>(in);
-        
-        if (!res.isValid)
+        auto const res = parse<Num>(in);
+
+        if (!res)
         {
             throw std::invalid_argument {"Failed to parse number."};
         }

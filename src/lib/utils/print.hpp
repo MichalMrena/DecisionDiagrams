@@ -7,7 +7,7 @@
 
 namespace mix::utils
 {
-    auto constexpr EOL = "\n";
+    inline auto constexpr EOL = "\n";
 
     inline auto print (std::string_view s)
     {

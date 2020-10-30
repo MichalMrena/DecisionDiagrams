@@ -68,8 +68,11 @@ namespace mix::dd
     mdd<VertexData, ArcData, P>::~mdd
         ()
     {
-        manager_t::dec_ref_count(root_);
-        root_ = nullptr;
+        if (root_)
+        {
+            root_->dec_ref_count();
+            root_ = nullptr;
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>

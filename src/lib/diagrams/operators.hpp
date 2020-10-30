@@ -131,6 +131,49 @@ namespace mix::dd
 
     template<std::size_t P, domain_e Domain = domain_e::nonhomogenous>
     struct MULTIPLIES_MOD : public bin_op<utils::multiplies_mod<P>, P, Domain, log_val_traits<P>::undefined> {};
+
+    /**
+        @brief Checks if given operation has domain equal to given P.
+
+        This base case catches everything that is not specialized.
+        This means that if a custom user provided operation is used
+        this check is true and it is up to the user to ensure correct
+        behaviour of the operation.
+    */
+    template<std::size_t, class>
+    struct check_op : public std::true_type {};
+
+    /**
+        This specialization catches all operations defined above.
+    */
+    template<std::size_t P1, template<std::size_t, domain_e> class Op, std::size_t P2, domain_e Domain>
+    struct check_op<P1, Op<P2, Domain>> : public std::bool_constant<P1 == P2> {};
+
+    /**
+        Helper constant as usual for easier use.
+     */
+    template<std::size_t P, class Op>
+    inline constexpr auto check_op_v = check_op<P, Op>::value;
+
+    /**
+        Maps operations to their integer ids. Id is used in apply cache.
+     */
+    template<class Arg>                      auto op_id (Arg&&)                     { return -1; }
+    template<std::size_t N, domain_e Domain> auto op_id (AND<N, Domain>)            { return 1;  }
+    template<std::size_t N, domain_e Domain> auto op_id (OR<N, Domain>)             { return 2;  }
+    template<std::size_t N, domain_e Domain> auto op_id (XOR<N, Domain>)            { return 3;  }
+    template<std::size_t N, domain_e Domain> auto op_id (PI_CONJ<N, Domain>)        { return 4;  }
+    template<std::size_t N, domain_e Domain> auto op_id (NAND<N, Domain>)           { return 5;  }
+    template<std::size_t N, domain_e Domain> auto op_id (NOR<N, Domain>)            { return 6;  }
+    template<std::size_t N, domain_e Domain> auto op_id (EQUAL_TO<N, Domain>)       { return 7;  }
+    template<std::size_t N, domain_e Domain> auto op_id (LESS<N, Domain>)           { return 8;  }
+    template<std::size_t N, domain_e Domain> auto op_id (LESS_EQUAL<N, Domain>)     { return 9;  }
+    template<std::size_t N, domain_e Domain> auto op_id (GREATER<N, Domain>)        { return 10; }
+    template<std::size_t N, domain_e Domain> auto op_id (GREATER_EQUAL<N, Domain>)  { return 11; }
+    template<std::size_t N, domain_e Domain> auto op_id (MIN<N, Domain>)            { return 12; }
+    template<std::size_t N, domain_e Domain> auto op_id (MAX<N, Domain>)            { return 13; }
+    template<std::size_t N, domain_e Domain> auto op_id (PLUS_MOD<N, Domain>)       { return 14; }
+    template<std::size_t N, domain_e Domain> auto op_id (MULTIPLIES_MOD<N, Domain>) { return 15; }
 }
 
 #endif

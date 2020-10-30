@@ -56,7 +56,7 @@ namespace mix::utils
         {
             this->cache_next_line_except();
         }
-        
+
         out = std::move(cachedLine_);
         needRead_ = true;
     }
@@ -120,7 +120,7 @@ namespace mix::utils
     {
         return std::getline(istr_, cachedLine_).operator bool();
     }
-    
+
     inline auto file_reader::cache_next_line_except 
         () -> void
     {
