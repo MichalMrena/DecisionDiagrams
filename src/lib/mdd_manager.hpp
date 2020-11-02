@@ -2,7 +2,10 @@
 #define MIX_DD_MDD_MANAGER_HPP
 
 #include "diagrams/mdd.hpp"
+#include "diagrams/vertex_memo.hpp"
 #include "diagrams/vertex_manager.hpp"
+
+#include <array>
 
 namespace mix::dd
 {
@@ -11,10 +14,11 @@ namespace mix::dd
     {
     /* Public aliases */
     public:
-        using mdd_t    = mdd<VertexData, ArcData, P>;
-        using mdd_v    = std::vector<mdd_t>;
-        using vertex_t = vertex<VertexData, ArcData, P>;
-        using log_t    = typename log_val_traits<P>::type;
+        using mdd_t      = mdd<VertexData, ArcData, P>;
+        using mdd_v      = std::vector<mdd_t>;
+        using vertex_t   = vertex<VertexData, ArcData, P>;
+        using log_t      = typename log_val_traits<P>::type;
+        using prob_table = std::vector<std::array<double, P>>;
 
     /* Constructors*/
     public:
@@ -22,15 +26,15 @@ namespace mix::dd
 
     /* Tools */
     public:
-        auto vertex_count (mdd_t const& diagram) const -> std::size_t;
+        auto vertex_count (mdd_t const& d) const -> std::size_t;
         auto to_dot_graph (std::ostream& ost) const -> void;
-        auto to_dot_graph (std::ostream& ost, mdd_t const& diagram) const -> void;
+        auto to_dot_graph (std::ostream& ost, mdd_t const& d) const -> void;
 
         template<class VertexOp>
-        auto traverse_pre (mdd_t const& diagram, VertexOp&& op) const -> void;
+        auto traverse_pre (mdd_t const& d, VertexOp&& op) const -> void;
 
         template<class VertexOp>
-        auto traverse_level (mdd_t const& diagram, VertexOp&& op) const -> void;
+        auto traverse_level (mdd_t const& d, VertexOp&& op) const -> void;
 
     /* Manipulation */
     public:
@@ -40,6 +44,8 @@ namespace mix::dd
         // default Proj -> identity (std::identity since C++20), veľmi výhodné pri posúvaní negovanej funckie
         template<class Op, class LhsProj, class RhsProj>
         auto apply (mdd_t const& lhs, Op op, mdd_t const& rhs) -> mdd_t;
+
+        auto restrict_var (mdd_t const& d, index_t const i, log_t const val) -> mdd_t;
 
         template<class Op>
         auto left_fold (mdd_v mdds, Op op) -> mdd_t;
@@ -61,51 +67,70 @@ namespace mix::dd
 
     /* Reliability */
     public:
+        auto calculate_probabilities (mdd_t& f, prob_table const& ps)                    -> void;
+        auto get_probability         (log_t const level) const                           -> double;
+        auto get_availability        (log_t const level) const                           -> double;
+        auto get_unavailability      (log_t const level) const                           -> double;
+        auto availability            (mdd_t& f, log_t const level, prob_table const& ps) -> double;
+        auto unavailability          (mdd_t& f, log_t const level, prob_table const& ps) -> double;
 
     /* Internal aliases */
-    private:
-        using manager_t = vertex_manager<VertexData, ArcData, P>;
-        using vertex_v  = std::vector<vertex_t*>;
-        using vertex_vv = std::vector<vertex_v>;
-            using vertex_p = std::pair<vertex_t*, vertex_t*>;
-            using vertex_m = std::unordered_map<vertex_p, vertex_t*, utils::tuple_hash_t<vertex_p>>;
+    protected:
+        using manager_t          = vertex_manager<VertexData, ArcData, P>;
+        using son_a              = std::array<vertex_t*, P>;
+        using vertex_v           = std::vector<vertex_t*>;
+        using vertex_vv          = std::vector<vertex_v>;
+        using transformator_id_t = std::int8_t;
+        using apply_key_t        = std::tuple<vertex_t*, op_id_t, vertex_t*>;
+        using apply_memo_t       = vertex_memo<VertexData, ArcData, P, apply_key_t>;
+        using transform_key_t    = std::pair<vertex_t*, transformator_id_t>;
+        using transform_memo_t   = vertex_memo<VertexData, ArcData, P, transform_key_t>;
 
     /* Tools internals */
     private:
         template<class LevelItPair>
         auto to_dot_graph_impl (std::ostream& ost, std::vector<LevelItPair> levels) const -> void;
 
-        auto fill_levels (mdd_t const& diagram) const -> vertex_vv;
+        auto fill_levels (mdd_t const& d) const -> vertex_vv;
 
         template<class VertexOp>
         auto traverse_pre (vertex_t* const v, VertexOp&& op) const -> void;
 
     /* Manipulation internals */
-    private:
+    protected:
         template<class Op>
         auto apply_step (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*;
 
-        template<class ValOp>
-        auto map (mdd_t const& d, ValOp op) -> mdd_t; // apply op on terminal vertices (not for bdd)
+        template<auto Id, class Transformator> // transform_pre //TODO pre mnf možno bude treba post
+        auto transform (mdd_t const& d, Transformator&& op) -> mdd_t; // dpbde, mnf
 
-        template<class VertexOp>
-        auto transform (mdd_t const& d, VertexOp op) -> mdd_t; // apply op on internal vertices (restrict, dpbde, mnf)
+        template<auto Id, class Transformator>
+        auto transform_step (vertex_t* const v, Transformator&& op) -> vertex_t*;
 
     /* Creator internals */
-    private:
+    protected:
         template<class LeafVals>
         auto just_var_impl (index_t const i, LeafVals&& vals) -> mdd_t;
 
+    /* Reliability internals */
+    private:
+        auto sum_terminals (log_t const from, log_t const to) const -> double;
+
+    /* Static constants */
+    private:
+        inline static constexpr auto T_RESTRICT = transformator_id_t {2};
+
     /* Member variables */
     protected:
-        manager_t manager_;
-            vertex_m   memo_; // TODO apply memo
+        manager_t        vertexManager_;
+        apply_memo_t     applyMemo_;
+        transform_memo_t transformMemo_;
     };
 
     template<class VertexData, class ArcData, std::size_t P>
     mdd_manager<VertexData, ArcData, P>::mdd_manager
         (std::size_t const varCount) :
-        manager_ {varCount}
+        vertexManager_ {varCount}
     {
     }
 }
@@ -113,5 +138,6 @@ namespace mix::dd
 #include "diagrams/mdd_manager_tools.ipp"
 #include "diagrams/mdd_manager_manipulator.ipp"
 #include "diagrams/mdd_manager_creator.ipp"
+#include "diagrams/mdd_manager_reliability.ipp"
 
 #endif

@@ -1,11 +1,14 @@
 #ifndef MIX_DD_TRUTH_VECTOR_HPP
 #define MIX_DD_TRUTH_VECTOR_HPP
 
+#include "typedefs.hpp"
 #include "../utils/more_math.hpp"
+#include "../utils/more_vector.hpp"
 #include "../utils/bits.hpp"
 #include "../utils/string_utils.hpp"
 
 #include <vector>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <type_traits>

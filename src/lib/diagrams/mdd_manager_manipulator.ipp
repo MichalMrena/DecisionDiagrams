@@ -13,8 +13,18 @@ namespace mix::dd
         (mdd_t const& lhs, Op op, mdd_t const& rhs) -> mdd_t
     {
         auto const ret = this->apply_step(lhs.get_root(), op, rhs.get_root());
-        // memo_.clear();
-        return ret;
+        // TODO if not memoize then clear apply memo
+        return mdd_t {ret};
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::restrict_var
+        (mdd_t const& d, index_t const i, log_t const val) -> mdd_t
+    {
+        return this->template transform<T_RESTRICT>(d, [i, val](auto const v)
+        {
+            return v->get_index() == i ? v->get_son(val) : v;
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -86,28 +96,26 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::apply_step
         (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*
     {
-        using son_a = std::array<vertex_t*, P>;
-
-        auto const memoKey = vertex_p {lhs, rhs};
-        auto const memoIt  = memo_.find(memoKey);
-        if (memo_.end() != memoIt)
+        auto const key    = apply_key_t {lhs, op_id(op), rhs};
+        auto const memoIt = applyMemo_.find(key);
+        if (applyMemo_.end() != memoIt)
         {
             return memoIt->second;
         }
 
-        auto const lhsVal = manager_.get_value(lhs); // TODO project value
-        auto const rhsVal = manager_.get_value(rhs);
+        auto const lhsVal = vertexManager_.get_value(lhs); // TODO project value
+        auto const rhsVal = vertexManager_.get_value(rhs);
         auto const opVal  = op(lhsVal, rhsVal);
         auto u = static_cast<vertex_t*>(nullptr);
 
         if (!is_nondetermined<P>(opVal))
         {
-            u = manager_.terminal_vertex(opVal);
+            u = vertexManager_.terminal_vertex(opVal);
         }
         else
         {
-            auto const lhsLevel  = manager_.get_level(lhs);
-            auto const rhsLevel  = manager_.get_level(rhs);
+            auto const lhsLevel  = vertexManager_.get_level(lhs);
+            auto const rhsLevel  = vertexManager_.get_level(rhs);
             auto const level     = std::min(lhsLevel, rhsLevel);
             auto const topVertex = level == lhsLevel ? lhs : rhs;
             auto const index     = topVertex->get_index();
@@ -120,10 +128,57 @@ namespace mix::dd
                 sons[i] = this->apply_step(first, op, second);
             }
 
-            u = manager_.internal_vertex(index, sons);
+            u = vertexManager_.internal_vertex(index, sons);
         }
 
-        memo_.emplace(memoKey, u);
+        applyMemo_.emplace(key, u);
         return u;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<auto Id, class Transformator>
+    auto mdd_manager<VertexData, ArcData, P>::transform
+        (mdd_t const& d, Transformator&& op) -> mdd_t
+    {
+        auto const root = this->transform_step<Id>(d.get_root(), op);
+        // TODO clear cache if not cache...
+        return mdd_t {root};
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<auto Id, class Transformator>
+    auto mdd_manager<VertexData, ArcData, P>::transform_step
+        (vertex_t* const v, Transformator&& op) -> vertex_t*
+    {
+        auto const key = transform_key_t {v, Id};
+        auto const memoIt = transformMemo_.find(key);
+        if (transformMemo_.end() != memoIt)
+        {
+            return memoIt->second;
+        }
+
+        auto const transformedV = op(v);
+        auto newV = static_cast<vertex_t*>(nullptr);
+        if (v != transformedV)
+        {
+            newV = transformedV;
+        }
+        else if (this->vertexManager_.is_leaf(v))
+        {
+            newV = v;
+        }
+        else
+        {
+            auto sons = son_a {};
+            for (auto i = 0u; i < P; ++i)
+            {
+                sons[i] = this->template transform_step<Id>(v->get_son(i), op);
+            }
+            newV = vertexManager_.internal_vertex(v->get_index(), sons);
+        }
+
+        transformMemo_.emplace(key, newV);
+
+        return newV;
     }
 }

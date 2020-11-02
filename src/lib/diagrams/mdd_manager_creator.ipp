@@ -8,7 +8,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::just_val
         (log_t const val) -> mdd_t
     {
-        return mdd_t {manager_.terminal_vertex(val)};
+        return mdd_t {vertexManager_.terminal_vertex(val)};
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -32,8 +32,8 @@ namespace mix::dd
     {
         auto const leaves = utils::map_to_array<P>(vals, [this](auto const lv)
         {
-            return manager_.terminal_vertex(lv);
+            return vertexManager_.terminal_vertex(lv);
         });
-        return mdd_t {manager_.internal_vertex(i, leaves)};
+        return mdd_t {vertexManager_.internal_vertex(i, leaves)};
     }
 }

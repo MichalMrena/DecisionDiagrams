@@ -23,10 +23,10 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::to_dot_graph
         (std::ostream& ost) const -> void
     {
-        auto is = utils::range(0u, manager_.get_var_count());
+        auto is = utils::range(0u, vertexManager_.get_var_count());
         this->to_dot_graph_impl(ost, utils::map(is, [this](auto const i)
         {
-            return this->manager_.get_level_iterators(i);
+            return this->vertexManager_.get_level_iterators(i);
         }));
     }
 
@@ -34,7 +34,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::to_dot_graph
         (std::ostream& ost, mdd_t const& diagram) const -> void
     {
-        auto levels = this->fill_levels(diagram);
+        auto levels = this->fill_levels(diagram); // TODO fill last level with leaves a print only one terminal if mdd is constant...
         this->to_dot_graph_impl(ost, utils::map(std::begin(levels), std::prev(std::end(levels)),
             [](auto&& level)
         {
@@ -58,25 +58,27 @@ namespace mix::dd
     {
         auto cmp = [this](auto const lhs, auto const rhs)
         {
-            return this->manager_.get_level(lhs) > manager_.get_level(rhs);
+            return this->vertexManager_.get_level(lhs) > vertexManager_.get_level(rhs);
         };
 
         using compare_t     = decltype(cmp);
         using vertex_prio_q = std::priority_queue<vertex_t*, vertex_v, compare_t>;
 
-        auto queue = vertex_prio_q(std::move(cmp));
+        auto queue = vertex_prio_q {std::move(cmp)};
+        diagram.get_root()->toggle_mark();
+        queue.push(diagram.get_root());
         while (!queue.empty())
         {
             auto const current = queue.top();
             queue.pop();
             op(current);
-            current->toggle_mark();
             for (auto i = log_t {0}; i < P; ++i)
             {
                 auto const son = current->get_son(i);
                 if (son && son->get_mark() != current->get_mark())
                 {
                     queue.push(son);
+                    son->toggle_mark();
                 }
             }
         }
@@ -102,7 +104,7 @@ namespace mix::dd
         {
             using std::to_string;
             using traits_t = log_val_traits<P>;
-            return this->manager_.is_leaf(v) ? traits_t::to_string(manager_.get_value(v))
+            return this->vertexManager_.is_leaf(v) ? traits_t::to_string(vertexManager_.get_value(v))
                                              : "x" + to_string(v->get_index());
         };
         auto to_id = [](auto const v)
@@ -119,7 +121,7 @@ namespace mix::dd
                 labels.emplace_back(concat(to_id(v) , " [label = " , make_label(v) , "];"));
                 ranksLocal.emplace_back(concat(to_id(v) , ";"));
 
-                if (!manager_.is_leaf(v))
+                if (!vertexManager_.is_leaf(v))
                 {
                     for (auto val = 0u; val < P; ++val)
                     {
@@ -148,9 +150,9 @@ namespace mix::dd
         auto const valCount = log_val_traits<P>::valuecount;
         for (auto i = log_t {0}; i < valCount; ++i)
         {
-            if (manager_.has_terminal_vertex(i))
+            if (vertexManager_.has_terminal_vertex(i))
             {
-                auto const leaf = manager_.get_terminal_vertex(i);
+                auto const leaf = vertexManager_.get_terminal_vertex(i);
                 squareShapes.emplace_back(to_string(to_id(leaf)));
                 labels.emplace_back(concat(to_id(leaf) , " [label = " , make_label(leaf) , "];"));
                 ranksLocal.emplace_back(concat(to_id(leaf) , ";"));
@@ -176,11 +178,11 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::fill_levels
         (mdd_t const& diagram) const -> vertex_vv
     {
-        auto levels = vertex_vv(1 + manager_.get_var_count());
+        auto levels = vertex_vv(1 + vertexManager_.get_var_count());
 
         this->traverse_pre(diagram, [&, this](auto const v)
         {
-            levels[manager_.get_level(v)].emplace_back(v);
+            levels[vertexManager_.get_level(v)].emplace_back(v);
         });
 
         return levels;

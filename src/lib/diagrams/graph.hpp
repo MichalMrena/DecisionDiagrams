@@ -13,7 +13,9 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     class vertex;
 
-    /** arc base */
+    /**
+        @brief Arc base.
+     */
     template<class VertexData, class ArcData, std::size_t P>
     struct arc_base
     {
@@ -21,7 +23,9 @@ namespace mix::dd
         vertex_t* target {nullptr};
     };
 
-    /** normal arc */
+    /**
+        @brief Arc with data member variable.
+     */
     template<class VertexData, class ArcData, std::size_t P>
     struct arc : public arc_base<VertexData, ArcData, P>
     {
@@ -31,7 +35,9 @@ namespace mix::dd
         arc (vertex_t* const pTarget);
     };
 
-    /** arc with no data */
+    /**
+        @brief Arc with without data member variable.
+     */
     template<class VertexData, std::size_t P>
     struct arc<VertexData, void, P> : public arc_base<VertexData, void, P>
     {
@@ -40,7 +46,9 @@ namespace mix::dd
         arc (vertex_t* const pTarget);
     };
 
-    /** vertex base */
+    /**
+       @brief Vertex base.
+     */
     template<class VertexData, class ArcData, std::size_t P>
     class vertex_base
     {
@@ -57,7 +65,6 @@ namespace mix::dd
                    , son_a   const& sons );
 
     public:
-        // auto set_son       (log_t const i, vertex_t* const son) -> void;
         auto get_son       (log_t const i) const -> vertex_t*;
         auto set_mark      (bool const mark)     -> void;
         auto get_mark      () const              -> bool;
@@ -75,7 +82,9 @@ namespace mix::dd
         std::size_t refCount_;
     };
 
-    /** normal vertex */
+    /**
+        @brief Vertex with data member variable.
+     */
     template<class VertexData, class ArcData, std::size_t P>
     class vertex : public vertex_base<VertexData, ArcData, P>
     {
@@ -93,7 +102,9 @@ namespace mix::dd
               , son_a   const& sons );
     };
 
-    /** vertex with no data */
+    /**
+        @brief Specialized vertex without data member variable.
+     */
     template<class ArcData, std::size_t P>
     class vertex<void, ArcData, P> : public vertex_base<void, ArcData, P>
     {
@@ -149,13 +160,6 @@ namespace mix::dd
     {
         return forwardStar_[i].target;
     }
-
-    // template<class VertexData, class ArcData, std::size_t P>
-    // auto vertex_base<VertexData, ArcData, P>::set_son
-    //     (log_t const i, vertex_t* const son) -> void
-    // {
-    //     forwardStar_[i] = son;
-    // }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::get_mark

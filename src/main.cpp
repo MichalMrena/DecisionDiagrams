@@ -1,45 +1,64 @@
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"
 #include "lib/mdd_manager.hpp"
+#include "lib/bdd_manager.hpp"
 
 #include <cassert>
 
 using namespace mix::dd;
 using namespace mix::utils;
 
-// auto pla_test()
-// {
-//     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
-//     auto files = {"15-adder_col.pla"};
-
-//     auto load_pla = [](auto&& filePath)
-//     {
-//         auto file     = pla_file::load_file(filePath);
-//         auto manager  = bdd_manager<double, void>(file.variable_count());
-//         auto creator  = manager.creator();
-//         auto tools    = manager.tools();
-//         auto const ds = creator.from_pla(file, fold_e::left);
-//         auto sum = 0u;
-//         for (auto& d : ds)
-//         {
-//             sum += tools.vertex_count(d);
-//         }
-//         std::cout << filePath << " [" << sum << "] " << std::endl;
-//     };
-
-//     for (auto fileName : files)
-//     {
-//         auto et = avg_run_time(1, std::bind(load_pla, mix::utils::concat(plaDir , fileName)));
-//         printl(concat(fileName , " -> " , et , "ms [" , "-" , "]"));
-//     }
-// }
-
-auto main() -> int
+auto reliability_test()
 {
-    auto watch = stopwatch();
+    auto manager = bdd_manager<double, void>(5);
+    auto& m = manager;
+    auto& x = manager;
 
-    // pla_test();
+    auto sf = m.apply(m.apply(m.apply(x(0), AND(), x(1)), OR(), m.apply(x(2), AND(), x(3))), OR(), x(4));
+    auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
 
+    auto nsf = m.negate(sf);
+    auto rnsf = m.restrict_var(nsf, 4, 1);
+    manager.to_dot_graph(std::cout, rnsf);
+
+    assert(rnsf == x.just_val(0));
+
+    manager.calculate_probabilities(sf, ps);
+    auto const A = manager.get_availability();
+    auto const U = manager.get_unavailability();
+
+    printl(concat("A = " , A));
+    printl(concat("U = " , U));
+}
+
+auto pla_test()
+{
+    auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
+    auto files = {"12-adder_col.pla"};
+
+    auto load_pla = [plaDir](auto&& fileName)
+    {
+        auto const filePath = mix::utils::concat(plaDir , fileName);
+        auto file           = pla_file::load_file(filePath);
+        auto manager        = bdd_manager<double, void>(file.variable_count());
+        auto const ds       = manager.from_pla(file, fold_e::left);
+        auto sum            = 0u;
+        for (auto& d : ds)
+        {
+            sum += manager.vertex_count(d);
+        }
+        std::cout << fileName << " [" << sum << "] " << std::endl;
+    };
+
+    for (auto fileName : files)
+    {
+        auto et = avg_run_time(1, std::bind(load_pla, fileName));
+        printl(concat(fileName , " -> " , et , "ms [" , "-" , "]"));
+    }
+}
+
+auto basic_test()
+{
     using manager_t = mdd_manager<double, void, 2>;
     auto manager    = manager_t(100);
 
@@ -51,6 +70,16 @@ auto main() -> int
     auto prod = manager.apply(x1, AND(), x2);
 
     manager.to_dot_graph(std::cout);
+
+}
+
+auto main() -> int
+{
+    auto watch = stopwatch();
+
+    // basic_test();
+    // pla_test();
+    reliability_test();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

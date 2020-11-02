@@ -18,9 +18,9 @@ namespace mix::dd
 
     public:
         mdd  ();
-        mdd  (vertex_t* root);
         mdd  (mdd&& other);
         ~mdd ();
+        explicit mdd (vertex_t* root);
         explicit mdd (mdd const& other);
 
         auto operator== (mdd const& rhs) const -> bool;
