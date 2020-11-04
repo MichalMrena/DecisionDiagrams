@@ -26,12 +26,16 @@ namespace mix::dd
 
     /* Tools */
     public:
-        auto vertex_count (mdd_t const& d) const -> std::size_t;
-        auto to_dot_graph (std::ostream& ost) const -> void;
-        auto to_dot_graph (std::ostream& ost, mdd_t const& d) const -> void;
+        auto vertex_count  (mdd_t const& d) const -> std::size_t;
+        auto to_dot_graph  (std::ostream& ost) const -> void;
+        auto to_dot_graph  (std::ostream& ost, mdd_t const& d) const -> void;
+        auto satisfy_count (mdd_t& d, log_t const val) -> std::size_t;
 
         template<class VertexOp>
         auto traverse_pre (mdd_t const& d, VertexOp&& op) const -> void;
+
+        template<class VertexOp>
+        auto traverse_post (mdd_t const& d, VertexOp&& op) const -> void;
 
         template<class VertexOp>
         auto traverse_level (mdd_t const& d, VertexOp&& op) const -> void;
@@ -76,15 +80,15 @@ namespace mix::dd
 
     /* Internal aliases */
     protected:
-        using manager_t          = vertex_manager<VertexData, ArcData, P>;
-        using son_a              = std::array<vertex_t*, P>;
-        using vertex_v           = std::vector<vertex_t*>;
-        using vertex_vv          = std::vector<vertex_v>;
-        using transformator_id_t = std::int8_t;
-        using apply_key_t        = std::tuple<vertex_t*, op_id_t, vertex_t*>;
-        using apply_memo_t       = vertex_memo<VertexData, ArcData, P, apply_key_t>;
-        using transform_key_t    = std::pair<vertex_t*, transformator_id_t>;
-        using transform_memo_t   = vertex_memo<VertexData, ArcData, P, transform_key_t>;
+        using manager_t        = vertex_manager<VertexData, ArcData, P>;
+        using son_a            = std::array<vertex_t*, P>;
+        using vertex_v         = std::vector<vertex_t*>;
+        using vertex_vv        = std::vector<vertex_v>;
+        using trans_id_t       = std::int16_t;
+        using apply_key_t      = std::tuple<vertex_t*, op_id_t, vertex_t*>;
+        using apply_memo_t     = vertex_memo<VertexData, ArcData, P, apply_key_t>;
+        using transform_key_t  = std::pair<vertex_t*, trans_id_t>;
+        using transform_memo_t = vertex_memo<VertexData, ArcData, P, transform_key_t>;
 
     /* Tools internals */
     private:
@@ -96,16 +100,19 @@ namespace mix::dd
         template<class VertexOp>
         auto traverse_pre (vertex_t* const v, VertexOp&& op) const -> void;
 
+        template<class VertexOp>
+        auto traverse_post (vertex_t* const v, VertexOp&& op) const -> void;
+
     /* Manipulation internals */
     protected:
         template<class Op>
         auto apply_step (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*;
 
-        template<auto Id, class Transformator> // transform_pre //TODO pre mnf možno bude treba post
-        auto transform (mdd_t const& d, Transformator&& op) -> mdd_t; // dpbde, mnf
+        template<class Transformator> // transform_pre //TODO pre mnf možno bude treba post
+        auto transform (trans_id_t const opId, mdd_t const& d, Transformator&& op) -> mdd_t; // dpbde, mnf
 
-        template<auto Id, class Transformator>
-        auto transform_step (vertex_t* const v, Transformator&& op) -> vertex_t*;
+        template<class Transformator>
+        auto transform_step (trans_id_t const opId, vertex_t* const v, Transformator&& op) -> vertex_t*;
 
     /* Creator internals */
     protected:
@@ -118,7 +125,7 @@ namespace mix::dd
 
     /* Static constants */
     private:
-        inline static constexpr auto T_RESTRICT = transformator_id_t {2};
+        inline static constexpr auto T_RESTRICT = trans_id_t {2};
 
     /* Member variables */
     protected:

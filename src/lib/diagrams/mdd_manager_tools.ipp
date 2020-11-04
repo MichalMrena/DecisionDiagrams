@@ -5,6 +5,7 @@
 #include "operators.hpp"
 #include "../utils/string_utils.hpp"
 #include "../utils/print.hpp"
+#include "../utils/more_math.hpp"
 
 #include <queue>
 
@@ -43,18 +44,54 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::satisfy_count
+        (mdd_t& d, log_t const val) -> std::size_t
+    {
+        this->traverse_post(d, [this, val](auto const v)
+        {
+            if (this->vertexManager_.is_leaf(v))
+            {
+                v->data = this->vertexManager_.get_value(v) == val ? 1 : 0;
+            }
+            else
+            {
+                v->data = 0;
+                for (auto i = 0u; i < P; ++i)
+                {
+                    auto const vLevel   = this->vertexManager_.get_level(v);
+                    auto const sonLevel = this->vertexManager_.get_level(v->get_son(i));
+                    v->data += v->get_son(i)->data * utils::int_pow(P, sonLevel - vLevel - 1);
+                }
+            }
+        });
+
+        auto const rootAlpha = d.get_root()->data;
+        auto const rootLevel = vertexManager_.get_level(d.get_root());
+        return rootAlpha * utils::int_pow(P, rootLevel);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class VertexOp>
     auto mdd_manager<VertexData, ArcData, P>::traverse_pre
-        (mdd_t const& diagram, VertexOp&& op) const -> void
+        (mdd_t const& d, VertexOp&& op) const -> void
     {
-        this->traverse_pre(diagram.get_root(), std::forward<VertexOp>(op));
-        this->traverse_pre(diagram.get_root(), utils::no_op);
+        this->traverse_pre(d.get_root(), std::forward<VertexOp>(op));
+        this->traverse_pre(d.get_root(), utils::no_op);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VertexOp>
+    auto mdd_manager<VertexData, ArcData, P>::traverse_post
+        (mdd_t const& d, VertexOp&& op) const -> void
+    {
+        this->traverse_post(d.get_root(), std::forward<VertexOp>(op));
+        this->traverse_post(d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class VertexOp>
     auto mdd_manager<VertexData, ArcData, P>::traverse_level
-        (mdd_t const& diagram, VertexOp&& op) const -> void
+        (mdd_t const& d, VertexOp&& op) const -> void
     {
         auto cmp = [this](auto const lhs, auto const rhs)
         {
@@ -65,8 +102,8 @@ namespace mix::dd
         using vertex_prio_q = std::priority_queue<vertex_t*, vertex_v, compare_t>;
 
         auto queue = vertex_prio_q {std::move(cmp)};
-        diagram.get_root()->toggle_mark();
-        queue.push(diagram.get_root());
+        d.get_root()->toggle_mark();
+        queue.push(d.get_root());
         while (!queue.empty())
         {
             auto const current = queue.top();
@@ -83,7 +120,7 @@ namespace mix::dd
             }
         }
 
-        this->traverse_pre(diagram.get_root(), utils::no_op);
+        this->traverse_pre(d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -204,5 +241,24 @@ namespace mix::dd
                 this->traverse_pre(son, std::forward<VertexOp>(op));
             }
         }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VertexOp>
+    auto mdd_manager<VertexData, ArcData, P>::traverse_post
+        (vertex_t* const v, VertexOp&& op) const -> void
+    {
+        v->toggle_mark();
+
+        for (auto i = 0u; i < P; ++i)
+        {
+            auto const son = v->get_son(i);
+            if (son && v->get_mark() != son->get_mark())
+            {
+                this->traverse_post(son, std::forward<VertexOp>(op));
+            }
+        }
+
+        op(v);
     }
 }

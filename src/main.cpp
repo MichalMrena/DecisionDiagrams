@@ -16,19 +16,20 @@ auto reliability_test()
 
     auto sf = m.apply(m.apply(m.apply(x(0), AND(), x(1)), OR(), m.apply(x(2), AND(), x(3))), OR(), x(4));
     auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
-
-    auto nsf = m.negate(sf);
-    auto rnsf = m.restrict_var(nsf, 4, 1);
-    manager.to_dot_graph(std::cout, rnsf);
-
-    assert(rnsf == x.just_val(0));
+    auto dpbds = m.dpbds(sf);
 
     manager.calculate_probabilities(sf, ps);
-    auto const A = manager.get_availability();
-    auto const U = manager.get_unavailability();
+    auto const A   = manager.get_availability();
+    auto const U   = manager.get_unavailability();
+    auto const SIs = m.structural_importances(dpbds);
+    auto const BIs = m.birnbaum_importances(dpbds, ps);
+    auto const CIs = m.criticality_importances(BIs, ps, U);
 
-    printl(concat("A = " , A));
-    printl(concat("U = " , U));
+    printl(concat("A = "   , A));
+    printl(concat("U = "   , U));
+    printl(concat("SI "    , concat_range(SIs, " ")));
+    printl(concat("BI "    , concat_range(BIs, " ")));
+    printl(concat("CI "    , concat_range(CIs, " ")));
 }
 
 auto pla_test()
