@@ -21,7 +21,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::restrict_var
         (mdd_t const& d, index_t const i, log_t const val) -> mdd_t
     {
-        return this->transform(T_RESTRICT, d, [i, val](auto const v)
+        return this->transform(d, [i, val](auto const v)
         {
             return v->get_index() == i ? v->get_son(val) : v;
         });
@@ -138,19 +138,20 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class Transformator>
     auto mdd_manager<VertexData, ArcData, P>::transform
-        (trans_id_t const opId, mdd_t const& d, Transformator&& op) -> mdd_t
+        (mdd_t const& d, Transformator&& op) -> mdd_t
     {
-        auto const root = this->transform_step(opId, d.get_root(), op);
-        transformMemo_.clear(); // temporarily just like this
+        auto const root = this->transform_step(d.get_root(), op);
+        transformMemo_.clear();
+        // this->traverse_pre(d, utils::no_op); // TODO to correct marks
         return mdd_t {root};
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class Transformator>
     auto mdd_manager<VertexData, ArcData, P>::transform_step
-        (trans_id_t const opId, vertex_t* const v, Transformator&& op) -> vertex_t*
+        (vertex_t* const v, Transformator&& op) -> vertex_t*
     {
-        auto const key = transform_key_t {v, opId};
+        auto const key = v;
         auto const memoIt = transformMemo_.find(key);
         if (transformMemo_.end() != memoIt)
         {
@@ -172,7 +173,7 @@ namespace mix::dd
             auto sons = son_a {};
             for (auto i = 0u; i < P; ++i)
             {
-                sons[i] = this->transform_step(opId, v->get_son(i), op);
+                sons[i] = this->transform_step(v->get_son(i), op);
             }
             newV = vertexManager_.internal_vertex(v->get_index(), sons);
         }

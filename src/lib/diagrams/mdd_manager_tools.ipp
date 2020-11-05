@@ -155,7 +155,7 @@ namespace mix::dd
             while (levelIt != levelEnd)
             {
                 auto const v = *levelIt;
-                labels.emplace_back(concat(to_id(v) , " [label = " , make_label(v) , "];"));
+                labels.emplace_back(concat(to_id(v) , " [label = \"" , make_label(v) , "\"];"));
                 ranksLocal.emplace_back(concat(to_id(v) , ";"));
 
                 if (!vertexManager_.is_leaf(v))
@@ -191,7 +191,7 @@ namespace mix::dd
             {
                 auto const leaf = vertexManager_.get_terminal_vertex(i);
                 squareShapes.emplace_back(to_string(to_id(leaf)));
-                labels.emplace_back(concat(to_id(leaf) , " [label = " , make_label(leaf) , "];"));
+                labels.emplace_back(concat(to_id(leaf) , " [label = \"" , make_label(leaf) , "\"];"));
                 ranksLocal.emplace_back(concat(to_id(leaf) , ";"));
             }
         }

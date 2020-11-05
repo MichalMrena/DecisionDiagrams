@@ -18,6 +18,7 @@ namespace mix::dd
         using bdd_v      = std::vector<bdd_t>;
         using bool_var_v = std::vector<bool_var>;
         using double_v   = std::vector<double>;
+        using vertex_t   = typename base::vertex_t;
 
     /* Constructors */
     public:
@@ -26,6 +27,11 @@ namespace mix::dd
     /* Tools */
     public:
         auto satisfy_count (bdd_t& d) -> std::size_t;
+
+        template< class VariableValues
+                , class OutputIt
+                , class SetVarVal = set_var_val<VariableValues> >
+        auto satisfy_all (bdd_t const& d, OutputIt out) const -> void;
 
     /* Manipulation */
     public:
@@ -53,10 +59,24 @@ namespace mix::dd
         auto criticality_importance  (double const BI, double const qi, double const U)        -> double;
         auto criticality_importances (double_v const& BIs, double_v const& ps, double const U) -> double_v;
 
+        template<class VectorType>
+        auto mcvs (std::vector<bdd_t> dpbds) -> std::vector<VectorType>;
+
     /* Internal aliases */
     private:
         using prob_table = typename base::prob_table;
         using trans_id_t = typename base::trans_id_t;
+        using son_a      = typename base::son_a;
+
+    /* Tools internals */
+    private:
+        template< class VariableValues
+                , class OutputIt
+                , class SetVarVal = set_var_val<VariableValues> >
+        auto satisfy_all_step ( index_t   const i
+                              , vertex_t* const v
+                              , VariableValues& xs
+                              , OutputIt&       out ) const -> void;
 
     /* Creation internals */
     private:
@@ -64,12 +84,10 @@ namespace mix::dd
         auto or_merge        (bdd_v diagrams, fold_e) -> bdd_t;
 
     /* Reliability internals */
-    private:
-        auto to_prob_table (double_v const& ps) -> prob_table;
-
-    /* Static constants */
-    private:
-        inline static constexpr auto T_NEGATE = trans_id_t {1};
+    public:
+        auto to_prob_table  (double_v const& ps) -> prob_table;
+        auto to_dpbd_e      (bdd_t const& dpbd, index_t const i) -> bdd_t;
+        auto to_dpbd_e_step (vertex_t* const v, index_t const i) -> vertex_t*;
     };
 
     template<class VertexData, class ArcData>
@@ -83,5 +101,6 @@ namespace mix::dd
 #include "diagrams/bdd_manager_creator.ipp"
 #include "diagrams/bdd_manager_reliability.ipp"
 #include "diagrams/bdd_manager_manipulator.ipp"
+#include "diagrams/bdd_manager_tools.ipp"
 
 #endif

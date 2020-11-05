@@ -4,7 +4,7 @@
 #include "diagrams/mdd.hpp"
 #include "diagrams/vertex_memo.hpp"
 #include "diagrams/vertex_manager.hpp"
-
+#include "diagrams/var_vals.hpp"
 #include <array>
 
 namespace mix::dd
@@ -87,7 +87,7 @@ namespace mix::dd
         using trans_id_t       = std::int16_t;
         using apply_key_t      = std::tuple<vertex_t*, op_id_t, vertex_t*>;
         using apply_memo_t     = vertex_memo<VertexData, ArcData, P, apply_key_t>;
-        using transform_key_t  = std::pair<vertex_t*, trans_id_t>;
+        using transform_key_t  = std::tuple<vertex_t*>; // TODO tmp just pointer
         using transform_memo_t = vertex_memo<VertexData, ArcData, P, transform_key_t>;
 
     /* Tools internals */
@@ -109,10 +109,10 @@ namespace mix::dd
         auto apply_step (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*;
 
         template<class Transformator> // transform_pre //TODO pre mnf možno bude treba post
-        auto transform (trans_id_t const opId, mdd_t const& d, Transformator&& op) -> mdd_t; // dpbde, mnf
+        auto transform (mdd_t const& d, Transformator&& op) -> mdd_t; // dpbde, mnf
 
         template<class Transformator>
-        auto transform_step (trans_id_t const opId, vertex_t* const v, Transformator&& op) -> vertex_t*;
+        auto transform_step (vertex_t* const v, Transformator&& op) -> vertex_t*;
 
     /* Creator internals */
     protected:

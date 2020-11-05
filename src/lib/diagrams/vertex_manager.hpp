@@ -44,6 +44,7 @@ namespace mix::dd
         auto has_terminal_vertex (log_t const val) const -> bool;
         auto internal_vertex     (index_t const index, son_a const& sons) -> vertex_t*;
         auto get_level           (vertex_t* const v) const -> level_t;
+        auto get_level           (index_t const i)   const -> level_t;
         auto get_value           (vertex_t* const v) const -> log_t;
         auto is_leaf             (vertex_t* const v) const -> bool;
         auto get_var_count       () const -> std::size_t;
@@ -188,7 +189,14 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::get_level
         (vertex_t* const v) const -> level_t
     {
-        return levels_.empty() ? v->get_index() : levels_[v->get_index()];
+        return this->get_level(v->get_index());
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_level
+        (index_t const i) const -> level_t
+    {
+        return levels_.empty() ? i : levels_[i];
     }
 
     template<class VertexData, class ArcData, std::size_t P>
