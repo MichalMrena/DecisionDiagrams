@@ -45,19 +45,21 @@ namespace mix::dd
 
     /* Reliability */
     public:
-        auto calculate_probabilities (bdd_t& f, double_v const& ps)     -> void;
-        auto get_availability        () const                           -> double;
-        auto get_unavailability      () const                           -> double;
-        auto availability            (bdd_t& f, double_v const& ps)     -> double;
-        auto unavailability          (bdd_t& f, double_v const& ps)     -> double;
-        auto dpbd                    (bdd_t const& f, index_t const i)  -> bdd_t;
-        auto dpbds                   (bdd_t const& f)                   -> bdd_v;
-        auto structural_importance   (bdd_t& dpbd)                      -> double;
-        auto structural_importances  (bdd_v& dpbds)                     -> double_v;
-        auto birnbaum_importance     (bdd_t& dpbd,  double_v const& ps) -> double;
-        auto birnbaum_importances    (bdd_v& dpbds, double_v const& ps) -> double_v;
-        auto criticality_importance  (double const BI, double const qi, double const U)        -> double;
-        auto criticality_importances (double_v const& BIs, double_v const& ps, double const U) -> double_v;
+        auto calculate_probabilities    (bdd_t& f, double_v const& ps)     -> void;
+        auto get_availability           () const                           -> double;
+        auto get_unavailability         () const                           -> double;
+        auto availability               (bdd_t& f, double_v const& ps)     -> double;
+        auto unavailability             (bdd_t& f, double_v const& ps)     -> double;
+        auto dpbd                       (bdd_t const& f, index_t const i)  -> bdd_t;
+        auto dpbds                      (bdd_t const& f)                   -> bdd_v;
+        auto structural_importance      (bdd_t& dpbd)                      -> double;
+        auto structural_importances     (bdd_v& dpbds)                     -> double_v;
+        auto birnbaum_importance        (bdd_t& dpbd,  double_v const& ps) -> double;
+        auto birnbaum_importances       (bdd_v& dpbds, double_v const& ps) -> double_v;
+        auto criticality_importance     (double const BI, double const qi, double const U)        -> double;
+        auto criticality_importances    (double_v const& BIs, double_v const& ps, double const U) -> double_v;
+        auto fussell_vesely_importance  (bdd_t& dpbd, double const qi, double_v const& ps, double const U) -> double;
+        auto fussell_vesely_importances (bdd_v& dpbds, double_v const& ps, double const U)                 -> double_v;
 
         template<class VectorType>
         auto mcvs (std::vector<bdd_t> dpbds) -> std::vector<VectorType>;
@@ -86,8 +88,8 @@ namespace mix::dd
     /* Reliability internals */
     public:
         auto to_prob_table  (double_v const& ps) -> prob_table;
+        auto to_mnf         (bdd_t const& dpbd)  -> bdd_t;
         auto to_dpbd_e      (bdd_t const& dpbd, index_t const i) -> bdd_t;
-        auto to_dpbd_e_step (vertex_t* const v, index_t const i) -> vertex_t*;
     };
 
     template<class VertexData, class ArcData>

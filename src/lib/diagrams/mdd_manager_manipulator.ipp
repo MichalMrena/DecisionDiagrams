@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <vector>
+#include <algorithm>
 
 namespace mix::dd
 {
@@ -21,9 +22,22 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::restrict_var
         (mdd_t const& d, index_t const i, log_t const val) -> mdd_t
     {
-        return this->transform(d, [i, val](auto const v)
+        return this->transform_internal(d, [i, val, this](auto const v, auto&& l_this)
         {
-            return v->get_index() == i ? v->get_son(val) : v;
+            if (v->get_index() == i)
+            {
+                return utils::fill_array<P>([son = v->get_son(val)](auto const)
+                {
+                    return son;
+                });
+            }
+            else
+            {
+                return utils::fill_array<P>([this, &l_this, v](auto const i)
+                {
+                    return this->transform_internal_step(v->get_son(i), l_this);
+                });
+            }
         });
     }
 
@@ -100,6 +114,9 @@ namespace mix::dd
         auto const memoIt = applyMemo_.find(key);
         if (applyMemo_.end() != memoIt)
         {
+            // TODO AND(lhs, rhs) je to isté ako AND(rhs, lhs)
+            // toto treba zohľadniť v kľúči pre všetky asociatívne operácie
+            // spraviť to napr. tak, že "menší" pointer sa dá naľavo
             return memoIt->second;
         }
 
@@ -121,7 +138,7 @@ namespace mix::dd
             auto const index     = topVertex->get_index();
 
             auto sons = son_a {};
-            for (auto i = 0u; i < P; ++i)
+            for (auto i = 0u; i < P; ++i) // TODO auto const sons = utils::fill_array<P>
             {
                 auto const first  = lhsLevel == level ? lhs->get_son(i) : lhs;
                 auto const second = rhsLevel == level ? rhs->get_son(i) : rhs;
@@ -137,19 +154,49 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class Transformator>
-    auto mdd_manager<VertexData, ArcData, P>::transform
-        (mdd_t const& d, Transformator&& op) -> mdd_t
+    auto mdd_manager<VertexData, ArcData, P>::transform_internal
+        (mdd_t const& d, Transformator&& transform_sons) -> mdd_t
     {
-        auto const root = this->transform_step(d.get_root(), op);
+        auto const root = this->transform_internal_step(d.get_root(), transform_sons);
         transformMemo_.clear();
-        // this->traverse_pre(d, utils::no_op); // TODO to correct marks
         return mdd_t {root};
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class Transformator>
-    auto mdd_manager<VertexData, ArcData, P>::transform_step
-        (vertex_t* const v, Transformator&& op) -> vertex_t*
+    auto mdd_manager<VertexData, ArcData, P>::transform_internal_step
+        (vertex_t* const v, Transformator&& transform_sons) -> vertex_t*
+    {
+        auto const memoIt = transformMemo_.find(v);
+        if (transformMemo_.end() != memoIt)
+        {
+            return memoIt->second;
+        }
+
+        if (vertexManager_.is_leaf(v))
+        {
+            return v;
+        }
+
+        auto const u = vertexManager_.internal_vertex(v->get_index(), transform_sons(v, transform_sons));
+        transformMemo_.emplace(v, u);
+        return u;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class Transformator>
+    auto mdd_manager<VertexData, ArcData, P>::transform_terminal
+        (mdd_t const& d, Transformator&& map_leaf) -> mdd_t
+    {
+        auto ret = this->transform_terminal_step(d.get_root(), map_leaf);
+        transformMemo_.clear();
+        return mdd_t {ret};
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class Transformator>
+    auto mdd_manager<VertexData, ArcData, P>::transform_terminal_step
+        (vertex_t* const v, Transformator&& map_leaf_val) -> vertex_t*
     {
         auto const key = v;
         auto const memoIt = transformMemo_.find(key);
@@ -158,28 +205,18 @@ namespace mix::dd
             return memoIt->second;
         }
 
-        auto const transformedV = op(v);
-        auto newV = static_cast<vertex_t*>(nullptr);
-        if (v != transformedV)
+        if (vertexManager_.is_leaf(v))
         {
-            newV = transformedV;
-        }
-        else if (this->vertexManager_.is_leaf(v))
-        {
-            newV = v;
-        }
-        else
-        {
-            auto sons = son_a {};
-            for (auto i = 0u; i < P; ++i)
-            {
-                sons[i] = this->transform_step(v->get_son(i), op);
-            }
-            newV = vertexManager_.internal_vertex(v->get_index(), sons);
+            return vertexManager_.terminal_vertex(map_leaf_val(vertexManager_.get_value(v)));
         }
 
-        transformMemo_.emplace(key, newV);
+        auto const sons = utils::fill_array<P>([this, &map_leaf_val, v](auto const i)
+        {
+            return this->transform_terminal_step(v->get_son(i), map_leaf_val);
+        });
+        auto const u = vertexManager_.internal_vertex(v->get_index(), sons);
 
-        return newV;
+        transformMemo_.emplace(key, u);
+        return u;
     }
 }

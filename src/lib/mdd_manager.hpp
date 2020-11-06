@@ -108,11 +108,17 @@ namespace mix::dd
         template<class Op>
         auto apply_step (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*;
 
-        template<class Transformator> // transform_pre //TODO pre mnf možno bude treba post
-        auto transform (mdd_t const& d, Transformator&& op) -> mdd_t; // dpbde, mnf
+        template<class Transformator>
+        auto transform_internal (mdd_t const& d, Transformator&& transform_sons) -> mdd_t;
 
         template<class Transformator>
-        auto transform_step (vertex_t* const v, Transformator&& op) -> vertex_t*;
+        auto transform_internal_step (vertex_t* const v, Transformator&& transform_sons) -> vertex_t*;
+
+        template<class Transformator>
+        auto transform_terminal (mdd_t const& d, Transformator&& map_leaf_val) -> mdd_t;
+
+        template<class Transformator>
+        auto transform_terminal_step (vertex_t* const v, Transformator&& map_leaf_val) -> vertex_t*;
 
     /* Creator internals */
     protected:

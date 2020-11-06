@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"
 #include "lib/mdd_manager.hpp"
@@ -11,8 +13,6 @@ using namespace mix::utils;
 
 auto reliability_test()
 {
-    using bdd_t = typename bdd_manager<double, void>::bdd_t;
-
     auto manager = bdd_manager<double, void>(5);
     auto& m = manager;
     auto& x = manager;
@@ -27,6 +27,7 @@ auto reliability_test()
     auto const SIs  = m.structural_importances(dpbds);
     auto const BIs  = m.birnbaum_importances(dpbds, ps);
     auto const CIs  = m.criticality_importances(BIs, ps, U);
+    auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
     auto const MCVs = m.mcvs<std::bitset<5>>(std::move(dpbds));
 
     printl(concat("A = "   , A));
@@ -34,6 +35,7 @@ auto reliability_test()
     printl(concat("SI "    , concat_range(SIs, " ")));
     printl(concat("BI "    , concat_range(BIs, " ")));
     printl(concat("CI "    , concat_range(CIs, " ")));
+    printl(concat("FI "    , concat_range(FIs, " ")));
     printl(concat("MCVs: " , concat_range(MCVs, ", ")));
 }
 

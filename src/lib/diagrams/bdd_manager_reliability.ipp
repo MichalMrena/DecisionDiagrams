@@ -60,7 +60,7 @@ namespace mix::dd
         (bdd_t const& f) -> bdd_v
     {
         using namespace std::placeholders;
-        auto const is = utils::range(0u, base::vertexManager_.get_var_count());
+        auto const is = utils::range(0u, base::vertexManager_.get_var_count()); // TODO fill vector
         return utils::map(is, std::bind(&bdd_manager::dpbd, this, f, _1));
     }
 
@@ -114,6 +114,26 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    auto bdd_manager<VertexData, ArcData>::fussell_vesely_importance
+        (bdd_t& dpbd, double const qi, double_v const& ps, double const U) -> double
+    {
+        auto mnf = this->to_mnf(dpbd);
+        return (qi * this->availability(mnf, ps)) / U;
+    }
+
+    template<class VertexData, class ArcData>
+    auto bdd_manager<VertexData, ArcData>::fussell_vesely_importances
+        (bdd_v& dpbds, double_v const& ps, double const U) -> double_v
+    {
+        auto const is = utils::range(0u, dpbds.size());
+        return utils::map(utils::zip(is, dpbds), dpbds.size(), [this, &ps, U](auto&& pair)
+        {
+            auto&& [i, dpbd] = pair;
+            return this->fussell_vesely_importance(dpbd, 1 - ps[i], ps, U);
+        });
+    }
+
+    template<class VertexData, class ArcData>
     template<class VectorType>
     auto bdd_manager<VertexData, ArcData>::mcvs
         (std::vector<bdd_t> dpbds) -> std::vector<VectorType>
@@ -141,61 +161,64 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    auto bdd_manager<VertexData, ArcData>::to_dpbd_e
-        (bdd_t const& dpbd, index_t const i) -> bdd_t
+    auto bdd_manager<VertexData, ArcData>::to_mnf
+        (bdd_t const& dpbd) -> bdd_t
     {
-        auto const root      = dpbd.get_root();
-        auto const rootLevel = base::vertexManager_.get_level(root);
-        auto const iLevel    = base::vertexManager_.get_level(i);
-
-        if (iLevel < rootLevel)
+        return this->transform_internal(dpbd, [this](auto const v, auto&& l_this)
         {
-            auto constexpr U   = log_val_traits<2>::undefined;
-            auto const uLeaf   = base::vertexManager_.terminal_vertex(U);
-            auto const newRoot = base::vertexManager_.internal_vertex(i, son_a {root, uLeaf});
-            return bdd_t {newRoot};
-        }
-
-        return bdd_t {this->to_dpbd_e_step(dpbd.get_root(), i)};
+            // If 0-th son is the false leaf we set 0-th son to 1-th son.
+            // Otherwise we continue down to the 0-th son.
+            // We always continue to 1-th son.
+            auto sons  = son_a {};
+            auto son0  = v->get_son(0);
+            auto son1  = v->get_son(1);
+            auto son1t = this->transform_internal_step(son1, l_this);
+            auto const leaf0 = this->vertexManager_.terminal_vertex(0);
+            sons[0] = son0 == leaf0 ? son1t : this->transform_internal_step(son0, l_this);
+            sons[1] = son1t;
+            return sons;
+        });
     }
 
     template<class VertexData, class ArcData>
-    auto bdd_manager<VertexData, ArcData>::to_dpbd_e_step
-        (vertex_t* const v, index_t const i) -> vertex_t*
+    auto bdd_manager<VertexData, ArcData>::to_dpbd_e
+        (bdd_t const& dpbd, index_t const i) -> bdd_t
     {
-        auto const key = v;
-        auto const memoIt = base::transformMemo_.find(key);
-        if (base::transformMemo_.end() != memoIt)
+        auto const root   = dpbd.get_root();
+        auto const rLevel = this->vertexManager_.get_level(root);
+        auto const iLevel = this->vertexManager_.get_level(i);
+
+        // Special case when the new vertex for the i-th variable is inserted above the root.
+        if (iLevel < rLevel)
         {
-            return memoIt->second;
+            auto constexpr U   = log_val_traits<2>::undefined;
+            auto const uLeaf   = this->vertexManager_.terminal_vertex(U);
+            auto const newRoot = this->vertexManager_.internal_vertex(i, son_a {root, uLeaf});
+            return bdd_t {newRoot};
         }
 
-        if (base::vertexManager_.is_leaf(v))
+        // Normal case for all internal vertices.
+        return this->transform_internal(dpbd, [this, iLevel, i](auto const v, auto&& l_this)
         {
-            return v;
-        }
-
-        auto constexpr U  = log_val_traits<2>::undefined;
-        auto const vLevel = base::vertexManager_.get_level(v);
-        auto const iLevel = base::vertexManager_.get_level(i);
-        auto sons         = son_a {};
-        for (auto val = 0u; val < 2; ++val)
-        {
-            auto const son    = v->get_son(val);
-            auto const sLevel = base::vertexManager_.get_level(son);
-            if (iLevel > vLevel && iLevel < sLevel)
+            auto constexpr U  = log_val_traits<2>::undefined;
+            auto const vLevel = this->vertexManager_.get_level(v);
+            return utils::fill_array<2>([this, &l_this, i, v, vLevel, iLevel](auto const val)
             {
-                auto const uLeaf = base::vertexManager_.terminal_vertex(U);
-                sons[val] = base::vertexManager_.internal_vertex(i, son_a {son, uLeaf});
-            }
-            else
-            {
-                sons[val] = this->to_dpbd_e_step(son, i);
-            }
-        }
-
-        auto const u = base::vertexManager_.internal_vertex(v->get_index(), sons);
-        base::transformMemo_.emplace(key, u);
-        return u;
+                auto const son    = v->get_son(val);
+                auto const sLevel = this->vertexManager_.get_level(son);
+                if (iLevel > vLevel && iLevel < sLevel)
+                {
+                    // New vertex for the i-th variable is inserted between vertex v and his son.
+                    // No need to go deeper.
+                    auto const uLeaf = this->vertexManager_.terminal_vertex(U);
+                    return this->vertexManager_.internal_vertex(i, son_a {son, uLeaf});
+                }
+                else
+                {
+                    // No insertion point here, we need to go deeper.
+                    return this->transform_internal_step(son, l_this);
+                }
+            });
+        });
     }
 }

@@ -8,11 +8,10 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::negate
         (bdd_t const& d) -> bdd_t
     {
-        return this->transform(d, [this](auto const v)
+        return this->transform_terminal(d, [](auto const val)
         {
-            auto& m = this->vertexManager_;
-            return 0 == m.get_value(v) ? m.terminal_vertex(1) :
-                   1 == m.get_value(v) ? m.terminal_vertex(0) : v;
+            return 0 == val ? 1 :
+                   1 == val ? 0 : val;
         });
     }
 }

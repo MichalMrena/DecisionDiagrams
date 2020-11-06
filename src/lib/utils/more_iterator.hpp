@@ -102,7 +102,7 @@ namespace mix::utils
         };
 
         /**
-            Zip iterator. 
+            Zip iterator.
          */
         template<class ItTuple>
         class zip_iterator : public iterator_holder<ItTuple>
