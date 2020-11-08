@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 
 namespace mix::dd
 {
@@ -158,32 +159,53 @@ namespace mix::dd
     /**
         @brief Type of unique identifier of operations.
      */
-    using op_id_t = std::int8_t;
+    using op_id_t = std::uint8_t;
 
     /**
         @brief Id for unknown operation.
      */
-    inline constexpr auto UNKNOWN_OP = op_id_t {-1};
+    inline constexpr auto UNKNOWN_OP = op_id_t {std::numeric_limits<op_id_t>::max()};
 
     /**
         @brief Maps operations to their integer ids. Id is used in the apply cache.
      */
-    template<class Arg>                      constexpr auto op_id (Arg&&)                     { return UNKNOWN_OP;   }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (AND<P, Domain>)            { return op_id_t {1};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (OR<P, Domain>)             { return op_id_t {2};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (XOR<P, Domain>)            { return op_id_t {3};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (PI_CONJ<P, Domain>)        { return op_id_t {4};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (NAND<P, Domain>)           { return op_id_t {5};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (NOR<P, Domain>)            { return op_id_t {6};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (EQUAL_TO<P, Domain>)       { return op_id_t {7};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (LESS<P, Domain>)           { return op_id_t {8};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (LESS_EQUAL<P, Domain>)     { return op_id_t {9};  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (GREATER<P, Domain>)        { return op_id_t {10}; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (GREATER_EQUAL<P, Domain>)  { return op_id_t {11}; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (MIN<P, Domain>)            { return op_id_t {12}; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (MAX<P, Domain>)            { return op_id_t {13}; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (PLUS_MOD<P, Domain>)       { return op_id_t {14}; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_id (MULTIPLIES_MOD<P, Domain>) { return op_id_t {15}; }
+    template<class Arg>                      constexpr auto op_id (Arg&&)                     { throw std::runtime_error("Invalid op."); }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (AND<P, Domain>)            { return op_id_t {0};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (OR<P, Domain>)             { return op_id_t {1};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (XOR<P, Domain>)            { return op_id_t {2};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (PI_CONJ<P, Domain>)        { return op_id_t {3};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (NAND<P, Domain>)           { return op_id_t {4};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (NOR<P, Domain>)            { return op_id_t {5};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (EQUAL_TO<P, Domain>)       { return op_id_t {6};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (LESS<P, Domain>)           { return op_id_t {7};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (LESS_EQUAL<P, Domain>)     { return op_id_t {8};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (GREATER<P, Domain>)        { return op_id_t {9};  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (GREATER_EQUAL<P, Domain>)  { return op_id_t {10}; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (MIN<P, Domain>)            { return op_id_t {11}; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (MAX<P, Domain>)            { return op_id_t {12}; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (PLUS_MOD<P, Domain>)       { return op_id_t {13}; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_id (MULTIPLIES_MOD<P, Domain>) { return op_id_t {14}; }
+
+    /**
+        @brief Tells whether given operation is associative or not.
+     */
+    template<class Arg>                      constexpr auto op_is_associative (Arg&&)                     { throw std::runtime_error("Invalid op."); }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (AND<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (OR<P, Domain>)             { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (XOR<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (PI_CONJ<P, Domain>)        { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (NAND<P, Domain>)           { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (NOR<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (EQUAL_TO<P, Domain>)       { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (LESS<P, Domain>)           { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (LESS_EQUAL<P, Domain>)     { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (GREATER<P, Domain>)        { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (GREATER_EQUAL<P, Domain>)  { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (MIN<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (MAX<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (PLUS_MOD<P, Domain>)       { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (MULTIPLIES_MOD<P, Domain>) { return true;  }
+
 }
 
 #endif

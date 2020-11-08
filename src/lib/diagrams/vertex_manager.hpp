@@ -7,6 +7,7 @@
 #include "../utils/hash.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
+#include "../utils/more_functional.hpp"
 
 #include <cstddef>
 #include <array>
@@ -45,10 +46,13 @@ namespace mix::dd
         auto internal_vertex     (index_t const index, son_a const& sons) -> vertex_t*;
         auto get_level           (vertex_t* const v) const -> level_t;
         auto get_level           (index_t const i)   const -> level_t;
-        auto get_value           (vertex_t* const v) const -> log_t;
+        auto get_terminal_value  (vertex_t* const v) const -> log_t;
         auto is_leaf             (vertex_t* const v) const -> bool;
         auto get_var_count       () const -> std::size_t;
         auto get_level_iterators (level_t const level) const -> level_iterator_p;
+
+        template<class Op, class Filter = utils::not_null_t>
+        auto for_each_terminal (Op op, Filter filter = Filter()) -> void;
 
         static auto is_redundant  (son_a const& sons) -> bool;
         static auto inc_ref_count (vertex_t* const v) -> vertex_t*;
@@ -200,7 +204,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_value
+    auto vertex_manager<VertexData, ArcData, P>::get_terminal_value
         (vertex_t* const v) const -> log_t
     {
         return this->is_leaf(v) ? static_cast<log_t>(utils::index_of( std::begin(leaves_)
@@ -228,6 +232,20 @@ namespace mix::dd
     {
         auto const& indexMap = indexMaps_[this->get_level_index(level)];
         return std::make_pair(std::begin(indexMap), std::end(indexMap));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class Op, class Filter>
+    auto vertex_manager<VertexData, ArcData, P>::for_each_terminal
+        (Op op, Filter filter) -> void
+    {
+        for (auto const v : leaves_)
+        {
+            if (filter(v))
+            {
+                op(v);
+            }
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>

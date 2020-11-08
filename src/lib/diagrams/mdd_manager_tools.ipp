@@ -45,13 +45,13 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::satisfy_count
-        (mdd_t& d, log_t const val) -> std::size_t
+        (log_t const val, mdd_t& d) -> std::size_t
     {
         this->traverse_post(d, [this, val](auto const v)
         {
             if (this->vertexManager_.is_leaf(v))
             {
-                v->data = this->vertexManager_.get_value(v) == val ? 1 : 0;
+                v->data = this->vertexManager_.get_terminal_value(v) == val ? 1 : 0;
             }
             else
             {
@@ -141,7 +141,7 @@ namespace mix::dd
         {
             using std::to_string;
             using traits_t = log_val_traits<P>;
-            return this->vertexManager_.is_leaf(v) ? traits_t::to_string(vertexManager_.get_value(v))
+            return this->vertexManager_.is_leaf(v) ? traits_t::to_string(vertexManager_.get_terminal_value(v))
                                              : "x" + to_string(v->get_index());
         };
         auto to_id = [](auto const v)

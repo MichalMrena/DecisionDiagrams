@@ -85,9 +85,22 @@ namespace mix::utils
     };
 
     /**
-        @brief Lambda that does nothing.
+        @brief Function that does nothing.
      */
     inline auto no_op = [](auto&&...) noexcept {};
+    using no_op_t = decltype(no_op);
+
+    /**
+        @brief Function that always returns true.
+     */
+    inline auto always_true = [](auto&&...) noexcept { return true; };
+    using always_true_t = decltype(always_true);
+
+    /**
+        @brief Function that returns true if argument is not nullptr and false otherwise.
+     */
+    inline auto not_null = [](void* const arg) noexcept { return nullptr != arg; };
+    using not_null_t = decltype(not_null);
 }
 
 #endif

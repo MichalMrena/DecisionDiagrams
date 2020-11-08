@@ -45,17 +45,17 @@ namespace mix::dd
 
     /* Reliability */
     public:
-        auto calculate_probabilities    (bdd_t& f, double_v const& ps)     -> void;
+        auto calculate_probabilities    (double_v const& ps, bdd_t& f)     -> void;
         auto get_availability           () const                           -> double;
         auto get_unavailability         () const                           -> double;
-        auto availability               (bdd_t& f, double_v const& ps)     -> double;
-        auto unavailability             (bdd_t& f, double_v const& ps)     -> double;
+        auto availability               (double_v const& ps, bdd_t& f)     -> double;
+        auto unavailability             (double_v const& ps, bdd_t& f)     -> double;
         auto dpbd                       (bdd_t const& f, index_t const i)  -> bdd_t;
         auto dpbds                      (bdd_t const& f)                   -> bdd_v;
         auto structural_importance      (bdd_t& dpbd)                      -> double;
         auto structural_importances     (bdd_v& dpbds)                     -> double_v;
-        auto birnbaum_importance        (bdd_t& dpbd,  double_v const& ps) -> double;
-        auto birnbaum_importances       (bdd_v& dpbds, double_v const& ps) -> double_v;
+        auto birnbaum_importance        (double_v const& ps, bdd_t& dpbd)  -> double;
+        auto birnbaum_importances       (double_v const& ps, bdd_v& dpbds) -> double_v;
         auto criticality_importance     (double const BI, double const qi, double const U)        -> double;
         auto criticality_importances    (double_v const& BIs, double_v const& ps, double const U) -> double_v;
         auto fussell_vesely_importance  (bdd_t& dpbd, double const qi, double_v const& ps, double const U) -> double;

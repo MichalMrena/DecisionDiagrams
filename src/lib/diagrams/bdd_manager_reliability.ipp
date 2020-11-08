@@ -11,9 +11,9 @@ namespace mix::dd
 {
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::calculate_probabilities
-        (bdd_t& f, double_v const& ps) -> void
+        (double_v const& ps, bdd_t& f) -> void
     {
-        base::calculate_probabilities(f, this->to_prob_table(ps));
+        base::calculate_probabilities(this->to_prob_table(ps), f);
     }
 
     template<class VertexData, class ArcData>
@@ -32,15 +32,15 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::availability
-        (bdd_t& f, double_v const& ps) -> double
+        (double_v const& ps, bdd_t& f) -> double
     {
-        this->calculate_probabilities(f, ps);
+        this->calculate_probabilities(ps, f);
         return this->get_probability(1);
     }
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::unavailability
-        (bdd_t& f, double_v const& ps) -> double
+        (double_v const& ps, bdd_t& f) -> double
     {
         this->calculate_probabilities(f, ps);
         return this->get_probability(0);
@@ -50,7 +50,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::dpbd
         (bdd_t const& f, index_t const i) -> bdd_t
     {
-        return this->apply( this->negate(this->restrict_var(f, i, 0)) // TODO project?
+        return this->apply( this->negate(this->restrict_var(f, i, 0))
                           , AND()
                           , this->restrict_var(f, i, 1) );
     }
@@ -59,9 +59,11 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::dpbds
         (bdd_t const& f) -> bdd_v
     {
-        using namespace std::placeholders;
-        auto const is = utils::range(0u, base::vertexManager_.get_var_count()); // TODO fill vector
-        return utils::map(is, std::bind(&bdd_manager::dpbd, this, f, _1));
+        // using namespace std::placeholders;
+        // return utils::fill_vector( this->vertexManager_.get_var_count()
+        //                          , std::bind(&bdd_manager::dpbd, this, f, _1) );
+        return utils::fill_vector( this->vertexManager_.get_var_count()
+                                 , std::bind_front(&bdd_manager::dpbd, this, f) );
     }
 
     template<class VertexData, class ArcData>
@@ -76,23 +78,25 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::structural_importances
         (bdd_v& dpbds) -> double_v
     {
-        using namespace std::placeholders;
-        return utils::map(dpbds, std::bind(&bdd_manager::structural_importance, this, _1));
+        // using namespace std::placeholders;
+        // return utils::map(dpbds, std::bind(&bdd_manager::structural_importance, this, _1));
+        return utils::map(dpbds, std::bind_front(&bdd_manager::structural_importance, this));
     }
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::birnbaum_importance
-        (bdd_t& dpbd, double_v const& ps) -> double
+        (double_v const& ps, bdd_t& dpbd) -> double
     {
-        return this->availability(dpbd, ps);
+        return this->availability(ps, dpbd);
     }
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::birnbaum_importances
-        (bdd_v& dpbds, double_v const& ps) -> double_v
+        (double_v const& ps, bdd_v& dpbds) -> double_v
     {
-        using namespace std::placeholders;
-        return utils::map(dpbds, std::bind(&bdd_manager::birnbaum_importance, this, _1, ps));
+        // using namespace std::placeholders;
+        // return utils::map(dpbds, std::bind(&bdd_manager::birnbaum_importance, this, _1, ps));
+        return utils::map(dpbds, std::bind_front(&bdd_manager::birnbaum_importance, this, ps));
     }
 
     template<class VertexData, class ArcData>
@@ -118,7 +122,7 @@ namespace mix::dd
         (bdd_t& dpbd, double const qi, double_v const& ps, double const U) -> double
     {
         auto mnf = this->to_mnf(dpbd);
-        return (qi * this->availability(mnf, ps)) / U;
+        return (qi * this->availability(ps, mnf)) / U;
     }
 
     template<class VertexData, class ArcData>
@@ -164,7 +168,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::to_mnf
         (bdd_t const& dpbd) -> bdd_t
     {
-        return this->transform_internal(dpbd, [this](auto const v, auto&& l_this)
+        return this->transform(dpbd, [this](auto const v, auto&& l_this)
         {
             // If 0-th son is the false leaf we set 0-th son to 1-th son.
             // Otherwise we continue down to the 0-th son.
@@ -172,9 +176,9 @@ namespace mix::dd
             auto sons  = son_a {};
             auto son0  = v->get_son(0);
             auto son1  = v->get_son(1);
-            auto son1t = this->transform_internal_step(son1, l_this);
+            auto son1t = this->transform_step(son1, l_this);
             auto const leaf0 = this->vertexManager_.terminal_vertex(0);
-            sons[0] = son0 == leaf0 ? son1t : this->transform_internal_step(son0, l_this);
+            sons[0] = son0 == leaf0 ? son1t : this->transform_step(son0, l_this);
             sons[1] = son1t;
             return sons;
         });
@@ -198,7 +202,7 @@ namespace mix::dd
         }
 
         // Normal case for all internal vertices.
-        return this->transform_internal(dpbd, [this, iLevel, i](auto const v, auto&& l_this)
+        return this->transform(dpbd, [this, iLevel, i](auto const v, auto&& l_this)
         {
             auto constexpr U  = log_val_traits<2>::undefined;
             auto const vLevel = this->vertexManager_.get_level(v);
@@ -216,7 +220,7 @@ namespace mix::dd
                 else
                 {
                     // No insertion point here, we need to go deeper.
-                    return this->transform_internal_step(son, l_this);
+                    return this->transform_step(son, l_this);
                 }
             });
         });

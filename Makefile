@@ -1,5 +1,5 @@
 BIN := main
-COMPILE_FLAGS = -MMD -MP -Wall -Wextra -pedantic -std=c++17
+COMPILE_FLAGS = -MMD -MP -Wall -Wextra -pedantic -std=c++20
 LINK_FLAGS := -lstdc++fs
 SRC_DIRS := ./src
 CXX = clang++-10

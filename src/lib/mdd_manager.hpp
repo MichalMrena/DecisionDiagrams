@@ -18,7 +18,9 @@ namespace mix::dd
         using mdd_v      = std::vector<mdd_t>;
         using vertex_t   = vertex<VertexData, ArcData, P>;
         using log_t      = typename log_val_traits<P>::type;
+        using log_v      = std::vector<log_t>;
         using prob_table = std::vector<std::array<double, P>>;
+        using double_v   = std::vector<double>;
 
     /* Constructors*/
     public:
@@ -29,7 +31,7 @@ namespace mix::dd
         auto vertex_count  (mdd_t const& d) const -> std::size_t;
         auto to_dot_graph  (std::ostream& ost) const -> void;
         auto to_dot_graph  (std::ostream& ost, mdd_t const& d) const -> void;
-        auto satisfy_count (mdd_t& d, log_t const val) -> std::size_t;
+        auto satisfy_count (log_t const val, mdd_t& d) -> std::size_t;
 
         template<class VertexOp>
         auto traverse_pre (mdd_t const& d, VertexOp&& op) const -> void;
@@ -43,10 +45,6 @@ namespace mix::dd
     /* Manipulation */
     public:
         template<class Op>
-        auto apply (mdd_t const& lhs, Op op, mdd_t const& rhs) -> mdd_t;
-
-        // default Proj -> identity (std::identity since C++20), veľmi výhodné pri posúvaní negovanej funckie
-        template<class Op, class LhsProj, class RhsProj>
         auto apply (mdd_t const& lhs, Op op, mdd_t const& rhs) -> mdd_t;
 
         auto restrict_var (mdd_t const& d, index_t const i, log_t const val) -> mdd_t;
@@ -68,15 +66,34 @@ namespace mix::dd
         auto just_val   (log_t const val) -> mdd_t;
         auto just_var   (index_t const i) -> mdd_t;
         auto operator() (index_t const i) -> mdd_t;
+        auto just_var   (index_t const i, log_t const domain) -> mdd_t;
+        auto operator() (index_t const i, log_t const domain) -> mdd_t;
 
     /* Reliability */
     public:
-        auto calculate_probabilities (mdd_t& f, prob_table const& ps)                    -> void;
+        auto calculate_probabilities (prob_table const& ps, mdd_t& f)                    -> void;
         auto get_probability         (log_t const level) const                           -> double;
         auto get_availability        (log_t const level) const                           -> double;
         auto get_unavailability      (log_t const level) const                           -> double;
-        auto availability            (mdd_t& f, log_t const level, prob_table const& ps) -> double;
-        auto unavailability          (mdd_t& f, log_t const level, prob_table const& ps) -> double;
+        auto availability            (log_t const level, prob_table const& ps, mdd_t& f) -> double;
+        auto unavailability          (log_t const level, prob_table const& ps, mdd_t& f) -> double;
+
+        auto dpbd              (val_change<P> const var, val_change<P> const f, mdd_t const& sf, index_t const i) -> mdd_t;
+        auto dpbd_integrated_1 (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i)      -> mdd_t;
+        auto dpbd_integrated_2 (val_change<P> const var, mdd_t const& sf, index_t const i)                        -> mdd_t;
+        auto dpbd_integrated_3 (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i)      -> mdd_t;
+
+        auto dpbds              (val_change<P> const var, val_change<P> const f, mdd_t const& sf) -> mdd_v;
+        auto dpbds_integrated_1 (val_change<P> const var, log_t const fVal, mdd_t const& sf)      -> mdd_v;
+        auto dpbds_integrated_2 (val_change<P> const var, mdd_t const& sf)                        -> mdd_v;
+        auto dpbds_integrated_3 (val_change<P> const var, log_t const fVal, mdd_t const& sf)      -> mdd_v;
+
+        auto structural_importance  (std::size_t const domainSize, mdd_t& dpbd)          -> double;
+        auto structural_importance  (log_v const& domains, mdd_t& dpbd, index_t const i) -> double;
+        auto structural_importances (log_v const& domains, mdd_v& dpbds)                 -> double_v;
+
+        auto birnbaum_importance  (prob_table const& ps, mdd_t& dpbd)  -> double;
+        auto birnbaum_importances (prob_table const& ps, mdd_v& dpbds) -> double_v;
 
     /* Internal aliases */
     protected:
@@ -108,17 +125,14 @@ namespace mix::dd
         template<class Op>
         auto apply_step (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*;
 
-        template<class Transformator>
-        auto transform_internal (mdd_t const& d, Transformator&& transform_sons) -> mdd_t;
+        template<class Op>
+        static auto make_apply_key (vertex_t* const lhs, Op op, vertex_t* const rhs) -> apply_key_t;
 
         template<class Transformator>
-        auto transform_internal_step (vertex_t* const v, Transformator&& transform_sons) -> vertex_t*;
+        auto transform (mdd_t const& d, Transformator&& transform_sons) -> mdd_t;
 
         template<class Transformator>
-        auto transform_terminal (mdd_t const& d, Transformator&& map_leaf_val) -> mdd_t;
-
-        template<class Transformator>
-        auto transform_terminal_step (vertex_t* const v, Transformator&& map_leaf_val) -> vertex_t*;
+        auto transform_step (vertex_t* const v, Transformator&& transform_sons) -> vertex_t*;
 
     /* Creator internals */
     protected:
@@ -129,9 +143,9 @@ namespace mix::dd
     private:
         auto sum_terminals (log_t const from, log_t const to) const -> double;
 
-    /* Static constants */
+    /* Other internals */
     private:
-        inline static constexpr auto T_RESTRICT = trans_id_t {2};
+        auto get_var_count() const -> std::size_t;
 
     /* Member variables */
     protected:
@@ -139,15 +153,9 @@ namespace mix::dd
         apply_memo_t     applyMemo_;
         transform_memo_t transformMemo_;
     };
-
-    template<class VertexData, class ArcData, std::size_t P>
-    mdd_manager<VertexData, ArcData, P>::mdd_manager
-        (std::size_t const varCount) :
-        vertexManager_ {varCount}
-    {
-    }
 }
 
+#include "diagrams/mdd_manager.ipp"
 #include "diagrams/mdd_manager_tools.ipp"
 #include "diagrams/mdd_manager_manipulator.ipp"
 #include "diagrams/mdd_manager_creator.ipp"

@@ -14,7 +14,7 @@ namespace mix::dd
     using level_t = std::uint16_t;
 
     /**
-       Traits helper for logical types and constants.
+       Traits for logical types and constants.
      */
     template<std::size_t P>
     struct log_val_traits
@@ -29,6 +29,17 @@ namespace mix::dd
         inline static constexpr auto valuecount    = type {P + 2};
 
         static auto to_string (type const t) -> std::string;
+    };
+
+    /**
+        Auxiliary struct used in description of dpbds.
+     */
+    template<std::size_t P>
+    struct val_change
+    {
+        using log_t = typename log_val_traits<P>::type;
+        log_t from;
+        log_t to;
     };
 
     /* Types used only by BDDs. */

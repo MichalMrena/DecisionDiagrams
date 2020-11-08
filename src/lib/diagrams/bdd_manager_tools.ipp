@@ -8,7 +8,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::satisfy_count
         (bdd_t& d) -> std::size_t
     {
-        return base::satisfy_count(d, 1);
+        return base::satisfy_count(1, d);
     }
 
     template<class VertexData, class ArcData>
@@ -29,7 +29,7 @@ namespace mix::dd
         , OutputIt&       out ) const -> void
     {
         auto const set_var = SetVarVal {};
-        auto const val = base::vertexManager_.get_value(v);
+        auto const val = base::vertexManager_.get_terminal_value(v);
 
         if (base::vertexManager_.is_leaf(v) && 1 != val)
         {
