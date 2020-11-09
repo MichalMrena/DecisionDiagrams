@@ -95,6 +95,9 @@ namespace mix::dd
         auto birnbaum_importance  (prob_table const& ps, mdd_t& dpbd)  -> double;
         auto birnbaum_importances (prob_table const& ps, mdd_v& dpbds) -> double_v;
 
+        auto fussell_vesely_importance  (prob_table const& ps, double const U, log_t const level, mdd_t const& dpbd)  -> double;
+        auto fussell_vesely_importances (prob_table const& ps, double const U, log_t const level, mdd_v const& dpbds) -> double_v;
+
     /* Internal aliases */
     protected:
         using manager_t        = vertex_manager<VertexData, ArcData, P>;
@@ -142,6 +145,7 @@ namespace mix::dd
     /* Reliability internals */
     private:
         auto sum_terminals (log_t const from, log_t const to) const -> double;
+        auto to_mnf        (log_t const level, mdd_t const& dpbd)   -> mdd_t;
 
     /* Other internals */
     private:

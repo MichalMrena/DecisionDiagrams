@@ -102,9 +102,9 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbd_integrated_3
         (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply( this->apply(this->restrict_var(sf, i, var.from), GREATER_EQUAL<P>(), this->just_val(fVal)) 
+        return this->apply( this->apply(this->restrict_var(sf, i, var.from), LESS<P>(), this->just_val(fVal))
                           , AND<P, domain_e::nonhomogenous>()
-                          , this->apply(this->restrict_var(sf, i, var.to), LESS<P>(), this->just_val(fVal)) );
+                          , this->apply(this->restrict_var(sf, i, var.to), GREATER_EQUAL<P>(), this->just_val(fVal)) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -183,6 +183,47 @@ namespace mix::dd
         (prob_table const& ps, mdd_v& dpbds) -> double_v
     {
         return utils::map(dpbds, std::bind_front(&mdd_manager::birnbaum_importance, this, ps));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::fussell_vesely_importance
+        (prob_table const& ps, double const U, log_t const level, mdd_t const& dpbd) -> double
+    {
+
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::fussell_vesely_importances
+        (prob_table const& ps, double const U, log_t const level, mdd_v const& dpbds) -> double_v
+    {
+        return utils::map(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U, level));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::to_mnf
+        (log_t const level, mdd_t const& dpbd) -> mdd_t
+    {
+        auto const leaf0 = vertexManager_.get_terminal_value(0);
+        auto const leaf1 = vertexManager_.get_terminal_value(1);
+        return this->transform(dpbd, [=](auto const v, auto&& l_this)
+        {
+            auto sons = utils::fill_array<P>([=](auto const i)
+            {
+                return this->transform_step(v->get_son(i), l_this);
+            });
+
+            if (sons[level == leaf1])
+            {
+                std::fill_n(std::begin(sons), level - 1, leaf1);
+            }
+
+            if (sons[level == leaf0])
+            {
+                sons[level] = sons[level + 1];
+            }
+
+            return sons;
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>

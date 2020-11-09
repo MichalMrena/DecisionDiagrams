@@ -82,9 +82,9 @@ namespace
     constexpr auto op_id (serial23_t)   { return op_id_t {15}; }
     constexpr auto op_id (parallel23_t) { return op_id_t {16}; }
     constexpr auto op_id (parallel33_t) { return op_id_t {17}; }
-    constexpr auto op_is_associative (serial23_t)   { return false; }
-    constexpr auto op_is_associative (parallel23_t) { return false; }
-    constexpr auto op_is_associative (parallel33_t) { return false; }
+    constexpr auto op_is_commutative (serial23_t)   { return false; }
+    constexpr auto op_is_commutative (parallel23_t) { return false; }
+    constexpr auto op_is_commutative (parallel33_t) { return false; }
 }
 
 auto mss_reliability_test()
@@ -92,12 +92,13 @@ auto mss_reliability_test()
     using log_t      = typename log_val_traits<3>::type;
     using prob_table = typename mdd_manager<double, void, 3>::prob_table;
 
+    // TODO pravdepodobnosti by sa dali posielať v konštruktore a nebolo by treba ich všade pchať manuálne
     auto m  = mdd_manager<double, void, 3>(4);
     auto& x = m;
     auto sf = m.apply( m.apply(x(0, 2), serial23_t(), x(1, 3))
                      , parallel33_t()
                      , m.apply(x(2, 2), parallel23_t(), x(3, 3)) );
-    auto dpbds = m.dpbds_integrated_1({1, 0}, 1, sf);
+    auto dpbds = m.dpbds_integrated_3({1, 0}, 1, sf);
 
     auto ds       = std::vector<log_t> {2, 3, 2, 3};
     auto const ps = prob_table{ {0.1, 0.9, 0.0}
@@ -114,6 +115,19 @@ auto mss_reliability_test()
     printl(concat("A2 = " , A2));
     printl(concat("SI " , concat_range(SIs1, " ")));
     printl(concat("BI " , concat_range(BIs1, " ")));
+}
+
+auto mss_playground()
+{
+    auto m  = mdd_manager<double, void, 3>(4);
+    auto& x = m;
+
+    auto f = m.apply( m.apply(x(0), MIN<3>(), x(1))
+                    , MAX<3>()
+                    , m.apply(x(2), MAX<3>(), x(3)) );
+    auto idpbd = m.dpbd_integrated_3({0, 1}, 1, f, 1);
+
+    m.to_dot_graph(std::cout, idpbd);
 }
 
 auto pla_test()
@@ -167,7 +181,8 @@ auto main() -> int
     // basic_test();
     // pla_test();
     // bss_reliability_test();
-    mss_reliability_test();
+    // mss_reliability_test();
+    mss_playground();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

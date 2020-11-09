@@ -176,7 +176,7 @@ namespace mix::dd
             auto sons  = son_a {};
             auto son0  = v->get_son(0);
             auto son1  = v->get_son(1);
-            auto son1t = this->transform_step(son1, l_this);
+            auto son1t = this->transform_step(son1, l_this); // TODO premyslieť si tú rekurziu, aj keď asi ak son0 nie je 0 pred zanorením asi nebude ani potom
             auto const leaf0 = this->vertexManager_.terminal_vertex(0);
             sons[0] = son0 == leaf0 ? son1t : this->transform_step(son0, l_this);
             sons[1] = son1t;

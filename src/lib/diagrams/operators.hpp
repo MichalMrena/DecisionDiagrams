@@ -189,22 +189,22 @@ namespace mix::dd
     /**
         @brief Tells whether given operation is associative or not.
      */
-    template<class Arg>                      constexpr auto op_is_associative (Arg&&)                     { throw std::runtime_error("Invalid op."); }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (AND<P, Domain>)            { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (OR<P, Domain>)             { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (XOR<P, Domain>)            { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (PI_CONJ<P, Domain>)        { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (NAND<P, Domain>)           { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (NOR<P, Domain>)            { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (EQUAL_TO<P, Domain>)       { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (LESS<P, Domain>)           { return false; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (LESS_EQUAL<P, Domain>)     { return false; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (GREATER<P, Domain>)        { return false; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (GREATER_EQUAL<P, Domain>)  { return false; }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (MIN<P, Domain>)            { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (MAX<P, Domain>)            { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (PLUS_MOD<P, Domain>)       { return true;  }
-    template<std::size_t P, domain_e Domain> constexpr auto op_is_associative (MULTIPLIES_MOD<P, Domain>) { return true;  }
+    template<class Arg>                      constexpr auto op_is_commutative (Arg&&)                     { throw std::runtime_error("Invalid op."); }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (AND<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (OR<P, Domain>)             { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (XOR<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (PI_CONJ<P, Domain>)        { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (NAND<P, Domain>)           { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (NOR<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (EQUAL_TO<P, Domain>)       { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (LESS<P, Domain>)           { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (LESS_EQUAL<P, Domain>)     { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (GREATER<P, Domain>)        { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (GREATER_EQUAL<P, Domain>)  { return false; }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (MIN<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (MAX<P, Domain>)            { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (PLUS_MOD<P, Domain>)       { return true;  }
+    template<std::size_t P, domain_e Domain> constexpr auto op_is_commutative (MULTIPLIES_MOD<P, Domain>) { return true;  }
 
 }
 

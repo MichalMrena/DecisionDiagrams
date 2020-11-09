@@ -152,7 +152,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::make_apply_key
         (vertex_t* const lhs, Op op, vertex_t* const rhs) -> apply_key_t
     {
-        if constexpr (op_is_associative(op))
+        if constexpr (op_is_commutative(op))
         {
             return lhs < rhs ? apply_key_t {lhs, op_id(op), rhs}
                              : apply_key_t {rhs, op_id(op), lhs};
