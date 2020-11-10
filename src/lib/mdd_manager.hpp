@@ -33,6 +33,11 @@ namespace mix::dd
         auto to_dot_graph  (std::ostream& ost, mdd_t const& d) const -> void;
         auto satisfy_count (log_t const val, mdd_t& d) -> std::size_t;
 
+        template< class VariableValues
+                , class OutputIt
+                , class SetVarVal = set_var_val<P, VariableValues> >
+        auto satisfy_all (log_t const val, mdd_t const& d, OutputIt out) const -> void;
+
         template<class VertexOp>
         auto traverse_pre (mdd_t const& d, VertexOp&& op) const -> void;
 
@@ -95,8 +100,8 @@ namespace mix::dd
         auto birnbaum_importance  (prob_table const& ps, mdd_t& dpbd)  -> double;
         auto birnbaum_importances (prob_table const& ps, mdd_v& dpbds) -> double_v;
 
-        auto fussell_vesely_importance  (prob_table const& ps, double const U, log_t const level, mdd_t const& dpbd)  -> double;
-        auto fussell_vesely_importances (prob_table const& ps, double const U, log_t const level, mdd_v const& dpbds) -> double_v;
+        auto fussell_vesely_importance  (prob_table const& ps, double const U, mdd_t const& dpbd)  -> double;
+        auto fussell_vesely_importances (prob_table const& ps, double const U, mdd_v const& dpbds) -> double_v;
 
     /* Internal aliases */
     protected:
@@ -116,6 +121,15 @@ namespace mix::dd
         auto to_dot_graph_impl (std::ostream& ost, std::vector<LevelItPair> levels) const -> void;
 
         auto fill_levels (mdd_t const& d) const -> vertex_vv;
+
+        template< class VariableValues
+                , class OutputIt
+                , class SetVarVal = set_var_val<P, VariableValues> >
+        auto satisfy_all_step ( log_t const     val
+                              , index_t   const i
+                              , vertex_t* const v
+                              , VariableValues& xs
+                              , OutputIt&       out ) const -> void;
 
         template<class VertexOp>
         auto traverse_pre (vertex_t* const v, VertexOp&& op) const -> void;
@@ -143,9 +157,9 @@ namespace mix::dd
         auto just_var_impl (index_t const i, LeafVals&& vals) -> mdd_t;
 
     /* Reliability internals */
-    private:
+        public:
         auto sum_terminals (log_t const from, log_t const to) const -> double;
-        auto to_mnf        (log_t const level, mdd_t const& dpbd)   -> mdd_t;
+        auto to_mnf        (mdd_t const& dpbd) -> mdd_t;
 
     /* Other internals */
     private:

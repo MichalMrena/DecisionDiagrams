@@ -29,13 +29,13 @@ namespace mix::dd
         , OutputIt&       out ) const -> void
     {
         auto const set_var = SetVarVal {};
-        auto const val = base::vertexManager_.get_terminal_value(v);
+        auto const val = this->vertexManager_.get_terminal_value(v);
 
-        if (base::vertexManager_.is_leaf(v) && 1 != val)
+        if (this->vertexManager_.is_leaf(v) && 1 != val)
         {
             return;
         }
-        else if (base::vertexManager_.is_leaf(v) && 1 == val)
+        else if (this->vertexManager_.is_leaf(v) && 1 == val)
         {
             *out++ = xs;
             return;

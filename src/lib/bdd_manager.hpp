@@ -30,7 +30,7 @@ namespace mix::dd
 
         template< class VariableValues
                 , class OutputIt
-                , class SetVarVal = set_var_val<VariableValues> >
+                , class SetVarVal = set_var_val<2, VariableValues> >
         auto satisfy_all (bdd_t const& d, OutputIt out) const -> void;
 
     /* Manipulation */
@@ -74,7 +74,7 @@ namespace mix::dd
     private:
         template< class VariableValues
                 , class OutputIt
-                , class SetVarVal = set_var_val<VariableValues> >
+                , class SetVarVal = set_var_val<2, VariableValues> >
         auto satisfy_all_step ( index_t   const i
                               , vertex_t* const v
                               , VariableValues& xs

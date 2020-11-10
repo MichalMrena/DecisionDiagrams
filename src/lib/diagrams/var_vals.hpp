@@ -45,16 +45,12 @@ namespace mix::dd
         [[nodiscard]] constexpr auto operator()
             (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
         {
-            if (i >= sizeof(VarVals))
-            {
-                throw std::out_of_range("Bit index out of range.");
-            }
             return (in >> i) & 1;
         }
     };
 
     /**
-        Specialized definition for std::vector of integral type.
+        Specialized definition for `std::vector` of integral type.
      */
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, var_vals_impl::vector_type<VarVals>>
@@ -67,7 +63,7 @@ namespace mix::dd
     };
 
     /**
-        Specialized definition for std::array of integral type.
+        Specialized definition for `std::array` of integral type.
      */
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, var_vals_impl::array_type<VarVals>>
@@ -80,13 +76,15 @@ namespace mix::dd
     };
 
     /**
-        Specialized definition for std::bitset.
+        Specialized definition for `std::bitset`.
      */
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, var_vals_impl::bitset_type<VarVals>>
     {
+        static_assert(2 == P);
+
         [[nodiscard]] constexpr auto operator()
-            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
+            (VarVals const& in, index_t const i) const -> bool_t
         {
             return in[i];
         }
@@ -97,19 +95,19 @@ namespace mix::dd
         Function object that sets value of i-th variable in a container of variables.
         This general class has no definition. Definitions are provided
         via template specialization and SFINE below.
-
-        For now only two valued logic is supported.
      */
-    template<class VarVals, class = void>
+    template<std::size_t P, class VarVals, class = void>
     struct set_var_val;
 
     /**
-        Specialized definition for std::bitset.
+        Specialized definition for `std::bitset`.
      */
-    template<class VarVals> 
-    struct set_var_val<VarVals, var_vals_impl::bitset_type<VarVals>>
+    template<std::size_t P, class VarVals> 
+    struct set_var_val<P, VarVals, var_vals_impl::bitset_type<VarVals>>
     {
-        auto operator() (VarVals& vars, index_t const i, bool const v) const -> void
+        static_assert(2 == P);
+
+        auto operator() (VarVals& vars, index_t const i, bool_t const v) const -> void
         {
             vars.set(i, v);
         }
@@ -118,13 +116,30 @@ namespace mix::dd
     /**
         Specialized definition for integral types except bool.
      */
-    template<class VarVals> 
-    struct set_var_val<VarVals, var_vals_impl::int_type<VarVals>>
+    template<std::size_t P, class VarVals>
+    struct set_var_val<P, VarVals, var_vals_impl::int_type<VarVals>>
     {
+        static_assert(2 == P);
+
         constexpr auto operator()
-            (VarVals& vars, index_t const i, bool const v) const -> void
+            (VarVals& vars, index_t const i, bool_t const v) const -> void
         {
             vars = (vars & ~(1ul << i)) | (v << i);
+        }
+    };
+
+    /**
+        Specialized definition for `std::array`.
+     */
+    template<std::size_t P, class VarVals>
+    struct set_var_val<P, VarVals, var_vals_impl::array_type<VarVals>>
+    {
+        using log_t = typename log_val_traits<P>::type;
+
+        constexpr auto operator()
+            (VarVals& vars, index_t const i, log_t const v) const -> void
+        {
+            vars[i] = v;
         }
     };
 }

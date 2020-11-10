@@ -187,24 +187,27 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::fussell_vesely_importance
-        (prob_table const& ps, double const U, log_t const level, mdd_t const& dpbd) -> double
+        (prob_table const& ps, double const U, mdd_t const& dpbd) -> double
     {
-
+        auto mnf = this->to_mnf(dpbd);
+        this->calculate_probabilities(ps, mnf);
+        auto const prmnf = this->get_probability(1);
+        return prmnf / static_cast<double>(U);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::fussell_vesely_importances
-        (prob_table const& ps, double const U, log_t const level, mdd_v const& dpbds) -> double_v
+        (prob_table const& ps, double const U, mdd_v const& dpbds) -> double_v
     {
-        return utils::map(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U, level));
+        return utils::map(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::to_mnf
-        (log_t const level, mdd_t const& dpbd) -> mdd_t
+        (mdd_t const& dpbd) -> mdd_t
     {
-        auto const leaf0 = vertexManager_.get_terminal_value(0);
-        auto const leaf1 = vertexManager_.get_terminal_value(1);
+        auto const leaf0 = vertexManager_.get_terminal_vertex(0);
+        auto const leaf1 = vertexManager_.get_terminal_vertex(1);
         return this->transform(dpbd, [=](auto const v, auto&& l_this)
         {
             auto sons = utils::fill_array<P>([=](auto const i)
@@ -212,14 +215,22 @@ namespace mix::dd
                 return this->transform_step(v->get_son(i), l_this);
             });
 
-            if (sons[level == leaf1])
+            for (auto r = 1u; r < P; ++r)
             {
-                std::fill_n(std::begin(sons), level - 1, leaf1);
+                if (sons[r] == leaf1)
+                {
+                    std::fill_n(std::begin(sons), r, leaf1);
+                }
             }
 
-            if (sons[level == leaf0])
+            // TODO check 0 0 0 1
+            //              ^
+            for (auto r = 0u; r < P - 1; ++r)
             {
-                sons[level] = sons[level + 1];
+                if (sons[r] == leaf0)
+                {
+                    sons[r] = sons[r + 1];
+                }
             }
 
             return sons;

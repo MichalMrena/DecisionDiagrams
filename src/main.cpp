@@ -125,9 +125,23 @@ auto mss_playground()
     auto f = m.apply( m.apply(x(0), MIN<3>(), x(1))
                     , MAX<3>()
                     , m.apply(x(2), MAX<3>(), x(3)) );
-    auto idpbd = m.dpbd_integrated_3({0, 1}, 1, f, 1);
+    // auto idpbd = m.dpbd_integrated_3({0, 1}, 1, f, 1);
+    // auto mnf   = m.to_mnf(idpbd);
+    // m.to_dot_graph(std::cout, mnf);
 
-    m.to_dot_graph(std::cout, idpbd);
+    // m.to_dot_graph(std::cout, f);
+    using log_t = typename log_val_traits<3>::type;
+    using vec4 = std::array<log_t, 4>;
+    using vec4_v = std::vector<vec4>;
+    auto vs = vec4_v {};
+    m.template satisfy_all<vec4>(1, f, std::back_inserter(vs));
+
+    for (auto const v : vs)
+    {
+        printl(concat("(", v[0], ", ", v[1], ", ", v[2], ", ", v[3], ")"));
+    }
+    printl(concat("Total: ", vs.size()));
+    printl(concat("Total: ", m.satisfy_count(1, f)));
 }
 
 auto pla_test()

@@ -71,6 +71,15 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    template<class VariableValues, class OutputIt, class SetVarVal>
+    auto mdd_manager<VertexData, ArcData, P>::satisfy_all
+        (log_t const val, mdd_t const& d, OutputIt out) const -> void
+    {
+        auto xs = VariableValues {};
+        this->satisfy_all_step(val, 0, d.get_root(), xs, out);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class VertexOp>
     auto mdd_manager<VertexData, ArcData, P>::traverse_pre
         (mdd_t const& d, VertexOp&& op) const -> void
@@ -223,6 +232,43 @@ namespace mix::dd
         });
 
         return levels;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VariableValues, class OutputIt, class SetVarVal>
+    auto mdd_manager<VertexData, ArcData, P>::satisfy_all_step
+        ( log_t const val, index_t const cLevel, vertex_t* const v
+        , VariableValues& xs, OutputIt& out ) const -> void
+    {
+        auto const set_var   = SetVarVal {};
+        auto const vertexVal = vertexManager_.get_terminal_value(v);
+        auto const vLevel    = vertexManager_.get_level(v);
+
+        if (vertexManager_.is_leaf(v) && val != vertexVal)
+        {
+            return;
+        }
+        else if (vertexManager_.is_leaf(v) && val == vertexVal)
+        {
+            *out++ = xs;
+            return;
+        }
+        else if (vLevel > cLevel)
+        {
+            for (auto i = 0u; i < P; ++i)
+            {
+                set_var(xs, v->get_index(), i);
+                satisfy_all_step(val, cLevel + 1, v, xs, out);
+            }
+        }
+        else
+        {
+            for (auto i = 0u; i < P; ++i)
+            {
+                set_var(xs, v->get_index(), i);
+                satisfy_all_step(val, cLevel + 1, v->get_son(i), xs, out);
+            }
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
