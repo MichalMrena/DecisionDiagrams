@@ -25,6 +25,7 @@ namespace mix::dd
     /* Constructors*/
     public:
         mdd_manager (std::size_t const varCount);
+        mdd_manager (std::size_t const varCount, log_v domains);
 
     /* Tools */
     public:
@@ -71,8 +72,6 @@ namespace mix::dd
         auto just_val   (log_t const val) -> mdd_t;
         auto just_var   (index_t const i) -> mdd_t;
         auto operator() (index_t const i) -> mdd_t;
-        auto just_var   (index_t const i, log_t const domain) -> mdd_t;
-        auto operator() (index_t const i, log_t const domain) -> mdd_t;
 
     /* Reliability */
     public:
@@ -93,9 +92,8 @@ namespace mix::dd
         auto dpbds_integrated_2 (val_change<P> const var, mdd_t const& sf)                        -> mdd_v;
         auto dpbds_integrated_3 (val_change<P> const var, log_t const fVal, mdd_t const& sf)      -> mdd_v;
 
-        auto structural_importance  (std::size_t const domainSize, mdd_t& dpbd)          -> double;
-        auto structural_importance  (log_v const& domains, mdd_t& dpbd, index_t const i) -> double;
-        auto structural_importances (log_v const& domains, mdd_v& dpbds)                 -> double_v;
+        auto structural_importance  (mdd_t& dpbd, index_t const i) -> double;
+        auto structural_importances (mdd_v& dpbds)                 -> double_v;
 
         auto birnbaum_importance  (prob_table const& ps, mdd_t& dpbd)  -> double;
         auto birnbaum_importances (prob_table const& ps, mdd_v& dpbds) -> double_v;
@@ -103,9 +101,12 @@ namespace mix::dd
         auto fussell_vesely_importance  (prob_table const& ps, double const U, mdd_t const& dpbd)  -> double;
         auto fussell_vesely_importances (prob_table const& ps, double const U, mdd_v const& dpbds) -> double_v;
 
+        template<class VectorType>
+        auto mcvs (mdd_v const& dpbds, log_t const level) -> std::vector<VectorType>;
+
     /* Internal aliases */
     protected:
-        using manager_t        = vertex_manager<VertexData, ArcData, P>;
+        using vertex_manager_t = vertex_manager<VertexData, ArcData, P>;
         using son_a            = std::array<vertex_t*, P>;
         using vertex_v         = std::vector<vertex_t*>;
         using vertex_vv        = std::vector<vertex_v>;
@@ -117,8 +118,8 @@ namespace mix::dd
 
     /* Tools internals */
     private:
-        template<class LevelItPair>
-        auto to_dot_graph_impl (std::ostream& ost, std::vector<LevelItPair> levels) const -> void;
+        template<class VertexIterator>
+        auto to_dot_graph_impl (std::ostream& ost, VertexIterator for_each_v) const -> void;
 
         auto fill_levels (mdd_t const& d) const -> vertex_vv;
 
@@ -153,23 +154,31 @@ namespace mix::dd
 
     /* Creator internals */
     protected:
+        auto just_var   (index_t const i, log_t const domain) -> mdd_t;
+        auto operator() (index_t const i, log_t const domain) -> mdd_t;
+
         template<class LeafVals>
         auto just_var_impl (index_t const i, LeafVals&& vals) -> mdd_t;
 
     /* Reliability internals */
         public:
-        auto sum_terminals (log_t const from, log_t const to) const -> double;
-        auto to_mnf        (mdd_t const& dpbd) -> mdd_t;
+        auto sum_terminals         (log_t const from, log_t const to) const -> double;
+        auto structural_importance (std::size_t const domainSize, mdd_t& dpbd) -> double;
+        auto to_dpbde              (mdd_t const& dpbd, log_t const level, index_t const i) -> mdd_t;
+        auto to_mnf                (mdd_t const& dpbd) -> mdd_t;
 
     /* Other internals */
     private:
-        auto get_var_count() const -> std::size_t;
+        auto get_var_count      () const -> std::size_t;
+        auto get_domain         (index_t const i) const -> log_t;
+        auto get_domain_product () const -> std::size_t;
 
     /* Member variables */
     protected:
-        manager_t        vertexManager_;
+        vertex_manager_t        vertexManager_;
         apply_memo_t     applyMemo_;
         transform_memo_t transformMemo_;
+        log_v            domains_;
     };
 }
 

@@ -50,9 +50,13 @@ namespace mix::dd
         auto is_leaf             (vertex_t* const v) const -> bool;
         auto get_var_count       () const -> std::size_t;
         auto get_level_iterators (level_t const level) const -> level_iterator_p;
+        auto collect_garbage     () -> void;
 
-        template<class Op, class Filter = utils::not_null_t>
-        auto for_each_terminal (Op op, Filter filter = Filter()) -> void;
+        template<class VertexOp>
+        auto for_each_vertex (VertexOp op) const -> void;
+
+        template<class VertexOp>
+        auto for_each_terminal_vertex (VertexOp op) const -> void;
 
         static auto is_redundant  (son_a const& sons) -> bool;
         static auto inc_ref_count (vertex_t* const v) -> vertex_t*;
@@ -66,13 +70,13 @@ namespace mix::dd
         using alloc_traits_t = std::allocator_traits<alloc_t>;
 
     private:
-        auto leaf_index         () const -> index_t;
-        auto get_level_index    (level_t const level) const -> index_t;
-        auto new_empty_vertex   () -> vertex_t*;
-        auto new_shallow_vertex (vertex_t* const v) -> vertex_t*;
-        auto delete_vertex      (vertex_t* const v) -> void;
-        auto do_deep_copy       (vertex_manager const& other) -> void;
-        auto do_shallow_copy    (vertex_manager const& other) -> std::unordered_map<vertex_t*, vertex_t*>;
+        auto leaf_index       () const -> index_t;
+        auto get_level_index  (level_t const level) const -> index_t;
+        auto new_empty_vertex () -> vertex_t*;
+        auto new_shallow_copy (vertex_t* const v) -> vertex_t*;
+        auto delete_vertex    (vertex_t* const v) -> void;
+        auto do_deep_copy     (vertex_manager const& other) -> void;
+        auto do_shallow_copy  (vertex_manager const& other) -> std::unordered_map<vertex_t*, vertex_t*>;
 
     private:
         index_map_v   indexMaps_;
@@ -115,6 +119,7 @@ namespace mix::dd
     vertex_manager<VertexData, ArcData, P>::~vertex_manager
         ()
     {
+        // TODO this->for_each_vertex
         for (auto& indexMap : indexMaps_)
         {
             for (auto& [key, v] : indexMap)
@@ -235,13 +240,42 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class Op, class Filter>
-    auto vertex_manager<VertexData, ArcData, P>::for_each_terminal
-        (Op op, Filter filter) -> void
+    auto vertex_manager<VertexData, ArcData, P>::collect_garbage
+        () -> void
+    {
+        // TODO
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VertexOp>
+    auto vertex_manager<VertexData, ArcData, P>::for_each_vertex
+        (VertexOp op) const -> void
+    {
+         for (auto& indexMap : indexMaps_)
+        {
+            for (auto& [key, v] : indexMap)
+            {
+                op(v);
+            }
+        }
+
+        for (auto const v : leaves_)
+        {
+            if (v)
+            {
+                op(v);
+            }
+        }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VertexOp>
+    auto vertex_manager<VertexData, ArcData, P>::for_each_terminal_vertex
+        (VertexOp op) const -> void
     {
         for (auto const v : leaves_)
         {
-            if (filter(v))
+            if (v)
             {
                 op(v);
             }
@@ -272,14 +306,7 @@ namespace mix::dd
         v->dec_ref_count();
         if (0 == v->get_ref_count())
         {
-            for (auto i = log_t {0}; i < P; ++i)
-            {
-                auto const son = v->get_son(i);
-                if (son)
-                {
-                    dec_ref_count(son);
-                }
-            }
+            v->for_each_son(dec_ref_count);
         }
     }
 
@@ -291,7 +318,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::new_shallow_vertex
+    auto vertex_manager<VertexData, ArcData, P>::new_shallow_copy
         (vertex_t* const v) -> vertex_t*
     {
         auto const newv = alloc_traits_t::allocate(alloc_, 1);
@@ -356,7 +383,7 @@ namespace mix::dd
         {
             for (auto const& [key, v] : indexMap)
             {
-                map.emplace(v, this->new_shallow_vertex(v));
+                map.emplace(v, this->new_shallow_copy(v));
             }
         }
 
@@ -364,7 +391,7 @@ namespace mix::dd
         {
             if (v)
             {
-                map.emplace(v, this->new_shallow_vertex(v));
+                map.emplace(v, this->new_shallow_copy(v));
             }
         }
 

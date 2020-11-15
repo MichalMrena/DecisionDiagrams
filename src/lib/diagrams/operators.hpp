@@ -12,13 +12,14 @@ namespace mix::dd
 {
     namespace impl
     {
+        template<std::size_t P>
         struct pi_conj_t
         {
             [[nodiscard]]
-            constexpr auto operator() 
+            constexpr auto operator()
                 (bool_t const lhs, bool_t const rhs) const noexcept -> bool_t
             {
-                auto constexpr U = log_val_traits<2>::undefined;
+                auto constexpr U = log_val_traits<P>::undefined;
                 return std::min({lhs, rhs, U});
             }
         };
@@ -100,7 +101,7 @@ namespace mix::dd
     struct XOR : public bin_op<std::not_equal_to<>, P, Domain, log_val_traits<2>::undefined> {};
 
     template<std::size_t P = 2, domain_e Domain = domain_e::homogenous>
-    struct PI_CONJ : public bin_op<impl::pi_conj_t, P, Domain, 0> {};
+    struct PI_CONJ : public bin_op<impl::pi_conj_t<P>, P, Domain, 0> {};
 
     template<std::size_t P = 2, domain_e Domain = domain_e::homogenous>
     struct NAND : public bin_op<utils::logical_negate<std::logical_and<>>, P, Domain, 0> {};

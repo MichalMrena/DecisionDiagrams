@@ -75,8 +75,14 @@ namespace mix::dd
         auto inc_ref_count ()       -> void;
         auto dec_ref_count ()       -> void;
 
+        template<class VertexOp>
+        auto for_each_son (VertexOp op) -> void;
+
+        template<class IndexedVertexOp>
+        auto for_each_son_i (IndexedVertexOp op) -> void;
+
     private:
-        bool        mark_;
+        bool        mark_; // TODO prvý bit ref countu
         index_t     index_;
         arc_a       forwardStar_;
         std::size_t refCount_;
@@ -215,6 +221,34 @@ namespace mix::dd
         () -> void
     {
         --refCount_;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VertexOp>
+    auto vertex_base<VertexData, ArcData, P>::for_each_son
+        (VertexOp op) -> void
+    {
+        if (this->get_son(0))
+        {
+            for (auto i = 0u; i < P; ++i)
+            {
+                op(this->get_son(i));
+            }
+        }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class IndexedVertexOp>
+    auto vertex_base<VertexData, ArcData, P>::for_each_son_i
+        (IndexedVertexOp op) -> void
+    {
+        if (this->get_son(0))
+        {
+            for (auto i = 0u; i < P; ++i)
+            {
+                op(i, this->get_son(i));
+            }
+        }
     }
 
 // normal vertex definitions:

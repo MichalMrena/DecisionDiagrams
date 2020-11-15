@@ -91,16 +91,14 @@ auto mss_reliability_test()
 {
     using log_t      = typename log_val_traits<3>::type;
     using prob_table = typename mdd_manager<double, void, 3>::prob_table;
+    using vec_t      = std::array<int, 4>;
 
-    // TODO pravdepodobnosti by sa dali posielať v konštruktore a nebolo by treba ich všade pchať manuálne
-    auto m  = mdd_manager<double, void, 3>(4);
+    auto m  = mdd_manager<double, void, 3>(4, {2, 3, 2, 3});
     auto& x = m;
-    auto sf = m.apply( m.apply(x(0, 2), serial23_t(), x(1, 3))
+    auto sf = m.apply( m.apply(x(0), serial23_t(), x(1))
                      , parallel33_t()
-                     , m.apply(x(2, 2), parallel23_t(), x(3, 3)) );
-    auto dpbds = m.dpbds_integrated_3({1, 0}, 1, sf);
-
-    auto ds       = std::vector<log_t> {2, 3, 2, 3};
+                     , m.apply(x(2), parallel23_t(), x(3)) );
+    auto dpbds = m.dpbds_integrated_1({1, 0}, 1, sf);
     auto const ps = prob_table{ {0.1, 0.9, 0.0}
                               , {0.2, 0.6, 0.2}
                               , {0.3, 0.7, 0.0}
@@ -108,19 +106,27 @@ auto mss_reliability_test()
     m.calculate_probabilities(ps, sf);
     auto const A1   = m.get_availability(1);
     auto const A2   = m.get_availability(2);
-    auto const SIs1 = m.structural_importances(ds, dpbds);
+    auto const SIs1 = m.structural_importances(dpbds);
     auto const BIs1 = m.birnbaum_importances(ps, dpbds);
 
     printl(concat("A1 = " , A1));
     printl(concat("A2 = " , A2));
     printl(concat("SI " , concat_range(SIs1, " ")));
     printl(concat("BI " , concat_range(BIs1, " ")));
+
+    auto const mcvs = m.mcvs<vec_t>(dpbds, 1);
+    for (auto const& cut : mcvs)
+    {
+        printl(concat("(", concat_range(cut, ", "), ")"));
+    }
 }
 
 auto mss_playground()
 {
     auto m  = mdd_manager<double, void, 3>(4);
     auto& x = m;
+    // TODO set domains, set ps, default a void akou default
+
 
     auto f = m.apply( m.apply(x(0), MIN<3>(), x(1))
                     , MAX<3>()
@@ -192,11 +198,14 @@ auto main() -> int
 {
     auto watch = stopwatch();
 
+    // TODO V texte diplomovky určite spomenúť, že každý vrchol je unikátna funckia, preto je možné využiť matematické vlastnosti ako komutativita pri
+    // implementácii cache mechanizmu a tabuľky unikátnych funkcií
+
     // basic_test();
     // pla_test();
-    // bss_reliability_test();
+    bss_reliability_test();
     // mss_reliability_test();
-    mss_playground();
+    // mss_playground();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

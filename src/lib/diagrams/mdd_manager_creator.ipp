@@ -15,7 +15,11 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::just_var
         (index_t const i) -> mdd_t
     {
-        return this->just_var_impl(i, utils::range(log_t {0}, log_t {P}));
+        auto constexpr ND = log_val_traits<P>::nodomain;
+        return this->just_var_impl(i, utils::fill_array<P>([=](auto const val)
+        {
+            return val < this->get_domain(i) ? val : ND;
+        }));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -23,24 +27,6 @@ namespace mix::dd
         (index_t const i) -> mdd_t
     {
         return this->just_var(i);
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::just_var
-        (index_t const i, log_t const domain) -> mdd_t
-    {
-        auto constexpr ND = log_val_traits<P>::nodomain;
-        return this->just_var_impl(i, utils::fill_array<P>([=](auto const val)
-        {
-            return val < domain ? val : ND;
-        }));
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::operator()
-        (index_t const i, log_t const domain) -> mdd_t
-    {
-        return this->just_var(i, domain);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

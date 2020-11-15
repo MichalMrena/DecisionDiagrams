@@ -92,40 +92,40 @@ namespace mix::utils
         template<size_t N>
         struct string_traits<const char[N]> 
         {
-            static constexpr auto size (const char (&) [N]) { return N - 1; }
-            static auto to_str (const char (&s) [N]) { return s; }
+            static constexpr auto size   (char const (&) [N])  { return N - 1; }
+            static constexpr auto to_str (char const (&s) [N]) { return s; }
         };
 
         template<size_t N>
-        struct string_traits<char[N]> 
+        struct string_traits<char[N]>
         {
             static auto size   (char (&s) [N]) { return N ? std::strlen(s) : 0; }
             static auto to_str (char (&s) [N]) { return s; }
         };
 
         template<>
-        struct string_traits<char const*> 
+        struct string_traits<char const*>
         {
             static auto size   (char const* s) { return s ? std::strlen(s) : 0; }
             static auto to_str (char const* s) { return s; }
         };
 
         template<>
-        struct string_traits<char*> 
+        struct string_traits<char*>
         {
             static auto size   (char* s) { return s ? std::strlen(s) : 0; }
             static auto to_str (char* s) { return s; }
         };
 
         template<>
-        struct string_traits<std::string> 
+        struct string_traits<std::string>
         {
             static auto size   (std::string const& s) { return s.size(); }
             static auto to_str (std::string const& s) { return s; }
         };
 
         template<>
-        struct string_traits<std::string_view> 
+        struct string_traits<std::string_view>
         {
             static auto size   (std::string_view s) { return s.size(); }
             static auto to_str (std::string_view s) { return s; }

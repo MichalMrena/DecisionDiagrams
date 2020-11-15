@@ -8,6 +8,7 @@
 #include "../utils/more_math.hpp"
 
 #include <queue>
+#include <functional>
 
 namespace mix::dd
 {
@@ -24,30 +25,27 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::to_dot_graph
         (std::ostream& ost) const -> void
     {
-        auto is = utils::range(0u, vertexManager_.get_var_count());
-        this->to_dot_graph_impl(ost, utils::map(is, [this](auto const i)
+        this->to_dot_graph_impl(ost, [this](auto const f)
         {
-            return this->vertexManager_.get_level_iterators(i);
-        }));
+            this->vertexManager_.for_each_vertex(f);
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::to_dot_graph
         (std::ostream& ost, mdd_t const& diagram) const -> void
     {
-        auto levels = this->fill_levels(diagram); // TODO fill last level with leaves a print only one terminal if mdd is constant...
-        this->to_dot_graph_impl(ost, utils::map(std::begin(levels), std::prev(std::end(levels)),
-            [](auto&& level)
+        this->to_dot_graph_impl(ost, [this, &diagram](auto const f)
         {
-            return std::make_pair(std::begin(level), std::end(level));
-        }));
+            this->traverse_pre(diagram, f);
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::satisfy_count
         (log_t const val, mdd_t& d) -> std::size_t
     {
-        this->traverse_post(d, [this, val](auto const v)
+        this->traverse_post(d, [=](auto const v)
         {
             if (this->vertexManager_.is_leaf(v))
             {
@@ -56,12 +54,12 @@ namespace mix::dd
             else
             {
                 v->data = 0;
-                for (auto i = 0u; i < P; ++i)
+                auto const vLevel = this->vertexManager_.get_level(v);
+                v->for_each_son([=](auto const son)
                 {
-                    auto const vLevel   = this->vertexManager_.get_level(v);
-                    auto const sonLevel = this->vertexManager_.get_level(v->get_son(i));
-                    v->data += v->get_son(i)->data * utils::int_pow(P, sonLevel - vLevel - 1);
-                }
+                    auto const sonLevel = this->vertexManager_.get_level(son);
+                    v->data += son->data * utils::int_pow(P, sonLevel - vLevel - 1);
+                });
             }
         });
 
@@ -104,13 +102,13 @@ namespace mix::dd
     {
         auto cmp = [this](auto const lhs, auto const rhs)
         {
-            return this->vertexManager_.get_level(lhs) > vertexManager_.get_level(rhs);
+            return vertexManager_.get_level(lhs) > vertexManager_.get_level(rhs);
         };
 
         using compare_t     = decltype(cmp);
         using vertex_prio_q = std::priority_queue<vertex_t*, vertex_v, compare_t>;
 
-        auto queue = vertex_prio_q {std::move(cmp)};
+        auto queue = vertex_prio_q(cmp);
         d.get_root()->toggle_mark();
         queue.push(d.get_root());
         while (!queue.empty())
@@ -118,106 +116,85 @@ namespace mix::dd
             auto const current = queue.top();
             queue.pop();
             op(current);
-            for (auto i = log_t {0}; i < P; ++i)
+            current->for_each_son([&queue, current](auto const son)
             {
-                auto const son = current->get_son(i);
-                if (son && son->get_mark() != current->get_mark())
+                if (son->get_mark() != current->get_mark())
                 {
                     queue.push(son);
                     son->toggle_mark();
                 }
-            }
+            });
         }
 
         this->traverse_pre(d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class LevelItPair>
+    template<class VertexIterator>
     auto mdd_manager<VertexData, ArcData, P>::to_dot_graph_impl
-        (std::ostream& ost, std::vector<LevelItPair> levels) const -> void
+        (std::ostream& ost, VertexIterator for_each_v) const -> void
     {
         using std::to_string;
         using utils::concat;
         using utils::concat_range;
         using utils::EOL;
+        using string_v  = std::vector<std::string>;
+        using string_vv = std::vector<string_v>;
 
-        auto labels       = std::vector<std::string>();
-        auto arcs         = std::vector<std::string>();
-        auto ranks        = std::vector<std::string>();
-        auto squareShapes = std::vector<std::string>();
-        auto make_label   = [this](auto const v)
+        auto make_label = [this](auto const v)
         {
-            using std::to_string;
             using traits_t = log_val_traits<P>;
-            return this->vertexManager_.is_leaf(v) ? traits_t::to_string(vertexManager_.get_terminal_value(v))
-                                             : "x" + to_string(v->get_index());
+            return this->vertexManager_.is_leaf(v)
+                    ? traits_t::to_string(this->vertexManager_.get_terminal_value(v))
+                    : "x" + to_string(v->get_index());
         };
+
         auto to_id = [](auto const v)
         {
             return reinterpret_cast<std::uintptr_t>(v);
         };
 
-        for (auto [levelIt, levelEnd] : levels)
-        {
-            auto ranksLocal = std::vector<std::string> {"{rank = same;"};
-            while (levelIt != levelEnd)
-            {
-                auto const v = *levelIt;
-                labels.emplace_back(concat(to_id(v) , " [label = \"" , make_label(v) , "\"];"));
-                ranksLocal.emplace_back(concat(to_id(v) , ";"));
+        auto labels       = string_v();
+        auto rankGroups   = string_vv(1 + this->get_var_count());
+        auto arcs         = string_v();
+        auto squareShapes = string_v();
 
-                if (!vertexManager_.is_leaf(v))
+        for_each_v([&](auto const v)
+        {
+            auto const index = v->get_index();
+            labels.emplace_back(concat(to_id(v) , " [label = \"" , make_label(v) , "\"];"));
+            rankGroups[index].emplace_back(concat(to_id(v) , ";"));
+            v->for_each_son_i([&](auto const i, auto const son) mutable
+            {
+                if constexpr (2 == P)
                 {
-                    for (auto val = 0u; val < P; ++val)
-                    {
-                        if constexpr (2 == P)
-                        {
-                            auto const style = 0 == val ? "dashed" : "solid";
-                            arcs.emplace_back(concat(to_id(v) , " -> " , to_id(v->get_son(val)) , " [style = " , style , "];"));
-                        }
-                        else
-                        {
-                            arcs.emplace_back(concat(to_id(v) , " -> " , to_id(v->get_son(val)) , " [label = \"" , val , "\"];"));
-                        }
-                    }
+                    auto const style = 0 == i ? "dashed" : "solid";
+                    arcs.emplace_back(concat(to_id(v) , " -> " , to_id(son) , " [style = " , style , "];"));
                 }
-                ++levelIt;
-            }
+                else
+                {
+                    arcs.emplace_back(concat(to_id(v) , " -> " , to_id(son) , " [label = \"" , i , "\"];"));
+                }
+            });
 
-            if (ranksLocal.size() > 1)
+            if (vertexManager_.is_leaf(v))
             {
-                ranksLocal.emplace_back("}");
-                ranks.emplace_back(concat_range(ranksLocal, " "));
+                squareShapes.emplace_back(to_string(to_id(v)));
             }
-        }
+        });
 
-        auto ranksLocal = std::vector<std::string> {"{rank = same;"};
-        auto const valCount = log_val_traits<P>::valuecount;
-        for (auto i = log_t {0}; i < valCount; ++i)
+        auto const ranks = utils::map(rankGroups, [](auto const& level)
         {
-            if (vertexManager_.has_terminal_vertex(i))
-            {
-                auto const leaf = vertexManager_.get_terminal_vertex(i);
-                squareShapes.emplace_back(to_string(to_id(leaf)));
-                labels.emplace_back(concat(to_id(leaf) , " [label = \"" , make_label(leaf) , "\"];"));
-                ranksLocal.emplace_back(concat(to_id(leaf) , ";"));
-            }
-        }
-        squareShapes.emplace_back(";");
-        if (ranksLocal.size() > 1)
-        {
-            ranksLocal.emplace_back("}");
-            ranks.emplace_back(concat_range(ranksLocal, " "));
-        }
+            return concat("{ rank = same;" , concat_range(level, " "), " }");
+        });
 
-        ost << concat( "digraph D {"                                                      , EOL
-                     , "    " , "node [shape = square] ", concat_range(squareShapes, " ") , EOL
-                     , "    " , "node [shape = circle];"                                  , EOL , EOL
-                     , "    " , concat_range(labels, concat(EOL, "    "))                 , EOL , EOL
-                     , "    " , concat_range(arcs,   concat(EOL, "    "))                 , EOL , EOL
-                     , "    " , concat_range(ranks,  concat(EOL, "    "))                 , EOL
-                     , "}"                                                                , EOL );
+        ost << "digraph DD {"                                                         << EOL
+            << "    node [shape = square] " << concat_range(squareShapes, " ") << ';' << EOL
+            << "    node [shape = circle];"                                           << EOL << EOL
+            << "    " << concat_range(labels, concat(EOL, "    "))                    << EOL << EOL
+            << "    " << concat_range(arcs,   concat(EOL, "    "))                    << EOL << EOL
+            << "    " << concat_range(ranks,  concat(EOL, "    "))                    << EOL
+            << "}"                                                                    << EOL;
     }
 
     template<class VertexData, class ArcData, std::size_t P>

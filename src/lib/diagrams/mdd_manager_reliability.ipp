@@ -2,15 +2,13 @@
 #include "../mdd_manager.hpp"
 #endif
 
-#include <numeric>
-
 namespace mix::dd
 {
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::calculate_probabilities
         (prob_table const& ps, mdd_t& f) -> void
     {
-        vertexManager_.for_each_terminal([](auto const v)
+        vertexManager_.for_each_terminal_vertex([](auto const v)
         {
             v->data = 0.0;
         });
@@ -21,15 +19,12 @@ namespace mix::dd
         });
         f.get_root()->data = 1.0;
 
-        this->traverse_level(f, [this, &ps](auto const v)
+        this->traverse_level(f, [&ps](auto const v)
         {
-            if (!this->vertexManager_.is_leaf(v))
+            v->for_each_son_i([v, &ps](auto const i, auto const son) mutable
             {
-                for (auto i = 0u; i < P; ++i)
-                {
-                    v->get_son(i)->data += v->data * ps[v->get_index()][i];
-                }
-            }
+                son->data += v->data * ps[v->get_index()][i];
+            });
         });
     }
 
@@ -141,32 +136,22 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::structural_importance
-        (std::size_t const domainSize, mdd_t& dpbd) -> double
+        (mdd_t& dpbd, index_t const i) -> double
     {
-        auto const onesCount = static_cast<double>(this->satisfy_count(1, dpbd) / P);
-        return domainSize ? onesCount / domainSize : 0;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::structural_importance
-        (log_v const& domains, mdd_t& dpbd, index_t const i) -> double
-    {
-        auto const domProduct = std::reduce( std::begin(domains), std::end(domains)
-                                           , std::size_t {1}, std::multiplies() );
-        return domains[i] ? this->structural_importance(domProduct / domains[i], dpbd) : 0;
+        auto const domProduct = this->get_domain_product();
+        return this->structural_importance(domProduct / this->get_domain(i), dpbd);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::structural_importances
-        (log_v const& domains, mdd_v& dpbds) -> double_v
+        (mdd_v& dpbds) -> double_v
     {
-        auto const domProduct = std::reduce( std::begin(domains), std::end(domains)
-                                           , std::size_t {1}, std::multiplies() );
+        auto const domProduct = this->get_domain_product();
         auto zs = utils::zip(utils::range(0u, dpbds.size()), dpbds);
-        return utils::map(zs, dpbds.size(), [this, domProduct, &domains](auto&& pair)
+        return utils::map(zs, dpbds.size(), [=](auto&& pair)
         {
             auto&& [i, d] = pair;
-            return domains[i] ? this->structural_importance(domProduct / domains[i], d) : 0;
+            return this->structural_importance(domProduct / this->get_domain(i), d);
         });
     }
 
@@ -203,6 +188,96 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    template<class VectorType>
+    auto mdd_manager<VertexData, ArcData, P>::mcvs
+        (mdd_v const& dpbds, log_t const level) -> std::vector<VectorType>
+    {
+        auto const is = utils::range(0u, dpbds.size());
+        auto dpbdes   = utils::map(utils::zip(is, dpbds), dpbds.size(), [=](auto const& pair)
+        {
+            auto const& [i, dpbd] = pair;
+            return this->to_dpbde(dpbd, level, i);
+        });
+        auto const conj = this->tree_fold(std::move(dpbdes), PI_CONJ<P, domain_e::nonhomogenous>());
+        auto cuts = std::vector<VectorType> {};
+        this->template satisfy_all<VectorType>(1, conj, std::back_inserter(cuts));
+        return cuts;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::sum_terminals
+        (log_t const from, log_t const to) const -> double
+    {
+        auto sumval = 0.0;
+        for (auto i = from; i < to; ++i)
+        {
+            sumval += this->get_probability(i);
+        }
+        return sumval;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::structural_importance
+        (std::size_t const domainSize, mdd_t& dpbd) -> double
+    {
+        auto const onesCount = static_cast<double>(this->satisfy_count(1, dpbd) / P);
+        return domainSize ? onesCount / domainSize : 0;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::to_dpbde
+        (mdd_t const& dpbd, log_t const level, index_t const i) -> mdd_t
+    {
+        auto constexpr U   = log_val_traits<P>::undefined;
+        auto constexpr ND  = log_val_traits<P>::nodomain;
+        auto const root    = dpbd.get_root();
+        auto const rLevel  = vertexManager_.get_level(root);
+        auto const iLevel  = vertexManager_.get_level(i);
+        auto const iDomain = this->get_domain(i);
+
+        // Special case when the new vertex for the i-th variable is inserted above the root.
+        if (iLevel < rLevel)
+        {
+            auto const sons = utils::fill_array<P>([=](auto const val)
+            {
+                return val == (level - 1) ? root                              :
+                       val < iDomain      ? vertexManager_.terminal_vertex(U) :
+                                            vertexManager_.terminal_vertex(ND);
+            });
+            return mdd_t {vertexManager_.internal_vertex(i, sons)};
+        }
+
+        // Normal case for all internal vertices.
+        return this->transform(dpbd, [=](auto const v, auto&& l_this)
+        {
+            auto const vLevel = this->vertexManager_.get_level(v);
+            return utils::fill_array<P>([=, &l_this](auto const val)
+            {
+                auto const son    = v->get_son(val);
+                auto const sLevel = this->vertexManager_.get_level(son);
+
+                if (ND == this->vertexManager_.get_terminal_value(son))
+                {
+                    return son;
+                }
+                else if (iLevel > vLevel && iLevel < sLevel)
+                {
+                    return this->vertexManager_.internal_vertex(i, utils::fill_array<P>([=](auto const j)
+                    {
+                        return j == (level - 1) ? son :
+                               j < iDomain      ? vertexManager_.terminal_vertex(U) :
+                                                  vertexManager_.terminal_vertex(ND);
+                    }));
+                }
+                else
+                {
+                    return this->transform_step(son, l_this);
+                }
+            });
+        });
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::to_mnf
         (mdd_t const& dpbd) -> mdd_t
     {
@@ -235,17 +310,5 @@ namespace mix::dd
 
             return sons;
         });
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::sum_terminals
-        (log_t const from, log_t const to) const -> double
-    {
-        auto sumval = 0.0;
-        for (auto i = from; i < to; ++i)
-        {
-            sumval += this->get_probability(i);
-        }
-        return sumval;
     }
 }
