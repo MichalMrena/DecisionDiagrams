@@ -10,8 +10,8 @@ namespace mix::dd
     /* Types used by MDDs in general. */
 
     using id_t    = std::int32_t;
-    using index_t = std::uint16_t;
-    using level_t = std::uint16_t;
+    using index_t = std::uint32_t;
+    using level_t = std::uint32_t;
 
     /**
        Traits for logical types and constants.

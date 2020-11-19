@@ -17,7 +17,9 @@ auto bss_reliability_test()
     auto& m = manager;
     auto& x = manager;
 
-    auto sf = m.apply(m.apply(m.apply(x(0), AND(), x(1)), OR(), m.apply(x(2), AND(), x(3))), OR(), x(4));
+    auto sf = m.apply( m.apply(x(0), AND(), x(1))
+                     , OR()
+                     , m.apply(m.apply(x(2), AND(), x(3)), OR(), x(4)) );
     auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
     auto dpbds = m.dpbds(sf);
 
@@ -27,8 +29,17 @@ auto bss_reliability_test()
     auto const SIs  = m.structural_importances(dpbds);
     auto const BIs  = m.birnbaum_importances(ps, dpbds);
     auto const CIs  = m.criticality_importances(BIs, ps, U);
-    auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
+    auto       FIs  = m.fussell_vesely_importances(dpbds, ps, U);
     auto const MCVs = m.mcvs<std::bitset<5>>(std::move(dpbds));
+
+    // m.to_dot_graph(std::cout, sf);
+
+    // FIs[2] = 0;
+    // std::cout << FIs[0] << '\n';
+    // std::cout << FIs[1] << '\n';
+    // std::cout << FIs[2] << '\n';
+    // std::cout << FIs[3] << '\n';
+    // std::cout << FIs[4] << '\n';
 
     printl(concat("A = "   , A));
     printl(concat("U = "   , U));
@@ -89,7 +100,6 @@ namespace
 
 auto mss_reliability_test()
 {
-    using log_t      = typename log_val_traits<3>::type;
     using prob_table = typename mdd_manager<double, void, 3>::prob_table;
     using vec_t      = std::array<int, 4>;
 
@@ -154,7 +164,7 @@ auto pla_test()
 {
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
     // auto files = {"15-adder_col.pla"};
-    auto files = {"xor5.pla"};
+    auto files = {"clip.pla"};
 
     auto load_pla = [plaDir](auto&& fileName)
     {
@@ -168,7 +178,6 @@ auto pla_test()
             sum += manager.vertex_count(d);
         }
         std::cout << fileName << " [" << sum << "] " << std::endl;
-        manager.to_dot_graph(std::cout);
     };
 
     for (auto fileName : files)
@@ -194,6 +203,61 @@ auto basic_test()
 
 }
 
+auto example_basic_usage_bdd()
+{
+    using namespace mix::dd;
+
+    auto m = make_bdd_manager(5);
+
+    auto cFalse = m.just_val(0);
+    auto cTrue  = m.just_val(1);
+    auto x0     = m.just_var(0);
+    auto x4     = m.just_var(4);
+    auto& x     = m;
+    auto x1     = x(1);
+    auto x2_    = m.just_var_not(2);
+    auto x3_    = x(3, NOT());
+
+    auto f = m.apply( m.apply(x0, AND(), x1)
+                    , OR()
+                    , m.apply( m.apply(x(2), AND(), x(3))
+                             , OR()
+                             , x4 ) );
+
+    register_manager(m);
+
+    auto g = x(0) * x(1) + (x(2) * x(3) + x(4));
+
+    auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
+    auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
+    auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
+    auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
+    auto const val4 = m.get_value(f, 0b10110);
+
+    auto const sc = m.satisfy_count(f);
+    auto const td = m.truth_density(f);
+
+    using var_vals_t = std::bitset<5>;
+    auto vars = std::vector<var_vals_t>();
+    m.satisfy_all<var_vals_t>(f, std::back_inserter(vars));
+
+    printl(val0);
+    printl(val1);
+    printl(val2);
+    printl(val3);
+    printl(val4);
+    printl(sc);
+    printl(td);
+
+    for (auto const& vs : vars)
+    {
+        std::cout << vs << '\n';
+    }
+
+    assert(x(1, NOT()) == !x(1));
+    assert(f == g);
+}
+
 auto main() -> int
 {
     auto watch = stopwatch();
@@ -203,9 +267,11 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    bss_reliability_test();
+    // bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
+
+    example_basic_usage_bdd();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

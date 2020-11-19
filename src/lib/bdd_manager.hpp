@@ -24,9 +24,12 @@ namespace mix::dd
     public:
         bdd_manager (std::size_t const varCount);
 
+        bdd_manager (bdd_manager const&) = delete;
+
     /* Tools */
     public:
         auto satisfy_count (bdd_t& d) -> std::size_t;
+        auto truth_density (bdd_t& d) -> double;
 
         template< class VariableValues
                 , class OutputIt
@@ -39,7 +42,9 @@ namespace mix::dd
 
     /* Creation */
     public:
+        using base::operator();
         auto just_var_not (index_t const i)        -> bdd_t;
+        auto operator()   (index_t const i, NOT)   -> bdd_t;
         auto just_vars    (bool_var_v const& vars) -> bdd_v;
         auto from_pla     (pla_file const& file, fold_e const mm = fold_e::tree) -> bdd_v;
 
@@ -92,17 +97,39 @@ namespace mix::dd
         auto to_dpbd_e      (bdd_t const& dpbd, index_t const i) -> bdd_t;
     };
 
+    inline auto make_bdd_manager(std::size_t const varCount);
+
     template<class VertexData, class ArcData>
-    bdd_manager<VertexData, ArcData>::bdd_manager
-        (std::size_t const varCount) :
-        base {varCount}
-    {
-    }
+    auto register_manager(bdd_manager<VertexData, ArcData>& manager);
+
+    template<class VertexData, class ArcData>
+    auto operator&& ( mdd<VertexData, ArcData, 2> const& lhs 
+                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
+
+    template<class VertexData, class ArcData>
+    auto operator* ( mdd<VertexData, ArcData, 2> const& lhs 
+                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
+
+    template<class VertexData, class ArcData>
+    auto operator|| ( mdd<VertexData, ArcData, 2> const& lhs 
+                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
+
+    template<class VertexData, class ArcData>
+    auto operator+ ( mdd<VertexData, ArcData, 2> const& lhs 
+                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
+
+    template<class VertexData, class ArcData>
+    auto operator^ ( mdd<VertexData, ArcData, 2> const& lhs 
+                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
+
+    template<class VertexData, class ArcData>
+    auto operator! ( mdd<VertexData, ArcData, 2> const& lhs ) -> mdd<VertexData, ArcData, 2>;
 }
 
 #include "diagrams/bdd_manager_creator.ipp"
 #include "diagrams/bdd_manager_reliability.ipp"
 #include "diagrams/bdd_manager_manipulator.ipp"
 #include "diagrams/bdd_manager_tools.ipp"
+#include "diagrams/bdd_manager.ipp"
 
 #endif

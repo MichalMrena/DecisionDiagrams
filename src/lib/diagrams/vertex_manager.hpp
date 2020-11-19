@@ -3,7 +3,6 @@
 
 #include "typedefs.hpp"
 #include "graph.hpp"
-#include "vertex_level_iterator.hpp"
 #include "../utils/hash.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
@@ -26,12 +25,9 @@ namespace mix::dd
     class vertex_manager
     {
     public:
-        using log_t            = typename log_val_traits<P>::type;
-        using vertex_t         = vertex<VertexData, ArcData, P>;
-        using son_a            = std::array<vertex_t*, P>;
-        using index_map        = std::unordered_map<son_a, vertex_t*, utils::tuple_hash_t<son_a>>;
-        using level_iterator   = vertex_level_iterator<typename index_map::const_iterator>;
-        using level_iterator_p = std::pair<level_iterator, level_iterator>;
+        using log_t    = typename log_val_traits<P>::type;
+        using vertex_t = vertex<VertexData, ArcData, P>;
+        using son_a    = std::array<vertex_t*, P>;
 
     public:
         vertex_manager  (std::size_t const varCount);
@@ -49,7 +45,6 @@ namespace mix::dd
         auto get_terminal_value  (vertex_t* const v) const -> log_t;
         auto is_leaf             (vertex_t* const v) const -> bool;
         auto get_var_count       () const -> std::size_t;
-        auto get_level_iterators (level_t const level) const -> level_iterator_p;
         auto collect_garbage     () -> void;
 
         template<class VertexOp>
@@ -63,6 +58,7 @@ namespace mix::dd
         static auto dec_ref_count (vertex_t* const v) -> void;
 
     private:
+        using index_map      = std::unordered_map<son_a, vertex_t*, utils::tuple_hash_t<son_a>>;
         using index_map_v    = std::vector<index_map>;
         using level_v        = std::vector<level_t>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
@@ -119,22 +115,7 @@ namespace mix::dd
     vertex_manager<VertexData, ArcData, P>::~vertex_manager
         ()
     {
-        // TODO this->for_each_vertex
-        for (auto& indexMap : indexMaps_)
-        {
-            for (auto& [key, v] : indexMap)
-            {
-                this->delete_vertex(v);
-            }
-        }
-
-        for (auto const v : leaves_)
-        {
-            if (v)
-            {
-                this->delete_vertex(v);
-            }
-        }
+        this->for_each_vertex(std::bind_front(&vertex_manager::delete_vertex, this));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -232,18 +213,26 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_level_iterators
-        (level_t const level) const -> level_iterator_p
-    {
-        auto const& indexMap = indexMaps_[this->get_level_index(level)];
-        return std::make_pair(std::begin(indexMap), std::end(indexMap));
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::collect_garbage
         () -> void
     {
-        // TODO
+        for (auto& indexMap : indexMaps_)
+        {
+            auto const end = std::end(indexMap);
+            auto it = std::begin(indexMap);
+
+            while (it != end)
+            {
+                if (0 == it->get_ref_cout())
+                {
+                    it = indexMap.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -251,7 +240,7 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::for_each_vertex
         (VertexOp op) const -> void
     {
-         for (auto& indexMap : indexMaps_)
+        for (auto& indexMap : indexMaps_)
         {
             for (auto& [key, v] : indexMap)
             {

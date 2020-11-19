@@ -39,7 +39,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     mdd<VertexData, ArcData, P>::mdd
         () :
-        mdd {nullptr}
+        root_ {nullptr}
     {
     }
 

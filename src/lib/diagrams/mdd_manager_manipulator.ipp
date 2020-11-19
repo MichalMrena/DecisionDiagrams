@@ -133,7 +133,7 @@ namespace mix::dd
             auto const level     = std::min(lhsLevel, rhsLevel);
             auto const topVertex = level == lhsLevel ? lhs : rhs;
             auto const index     = topVertex->get_index();
-            auto const sons      = utils::fill_array<P>([=, &op](auto const i)
+            auto const sons      = utils::fill_array<P>([=](auto const i)
             {
                 auto const first  = lhsLevel == level ? lhs->get_son(i) : lhs;
                 auto const second = rhsLevel == level ? rhs->get_son(i) : rhs;

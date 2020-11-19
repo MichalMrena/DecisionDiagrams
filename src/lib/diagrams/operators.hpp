@@ -91,6 +91,8 @@ namespace mix::dd
         }
     };
 
+    struct NOT {};
+
     template<std::size_t P = 2, domain_e Domain = domain_e::homogenous>
     struct AND : public bin_op<std::logical_and<>, P, Domain, 0> {};
 

@@ -46,7 +46,17 @@ namespace mix::utils
     template<class T>
     inline constexpr auto is_std_bitset_v = is_std_bitset<T>::value;
 
-    namespace aux_impl
+    /**
+        Provides member constant `value` that is equal to number
+        of bits that represents value of given type.
+     */
+    template<class T>
+    struct bit_count : std::integral_constant<std::size_t, 8 * sizeof(T)> {};
+
+    template<class T>
+    inline constexpr auto bit_count_v = bit_count<T>::value;
+
+    namespace types_impl
     {
         // https://stackoverflow.com/questions/81870/is-it-possible-to-print-a-variables-type-in-standard-c
 

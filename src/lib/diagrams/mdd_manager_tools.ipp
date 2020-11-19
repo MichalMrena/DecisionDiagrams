@@ -69,6 +69,22 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    template<class VariableValues, class GetIthVal>
+    auto mdd_manager<VertexData, ArcData, P>::get_value
+        (mdd_t const& d, VariableValues const& vars) const -> log_t
+    {
+        auto const get_var = GetIthVal {};
+        auto v = d.get_root();
+
+        while (!vertexManager_.is_leaf(v))
+        {
+            v = v->get_son(get_var(vars, v->get_index()));
+        }
+
+        return vertexManager_.get_terminal_value(v);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class VariableValues, class OutputIt, class SetVarVal>
     auto mdd_manager<VertexData, ArcData, P>::satisfy_all
         (log_t const val, mdd_t const& d, OutputIt out) const -> void

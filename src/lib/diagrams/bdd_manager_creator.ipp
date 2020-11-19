@@ -13,6 +13,13 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    auto bdd_manager<VertexData, ArcData>::operator()
+        (index_t const i, NOT) -> bdd_t
+    {
+        return this->just_var_not(i);
+    }
+
+    template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::just_vars
         (bool_var_v const& vars) -> bdd_v
     {

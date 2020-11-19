@@ -27,12 +27,19 @@ namespace mix::dd
         mdd_manager (std::size_t const varCount);
         mdd_manager (std::size_t const varCount, log_v domains);
 
+        // TODO iba move
+        mdd_manager (mdd_manager const&) = delete;
+
     /* Tools */
     public:
         auto vertex_count  (mdd_t const& d) const -> std::size_t;
         auto to_dot_graph  (std::ostream& ost) const -> void;
         auto to_dot_graph  (std::ostream& ost, mdd_t const& d) const -> void;
         auto satisfy_count (log_t const val, mdd_t& d) -> std::size_t;
+
+        template< class VariableValues
+                , class GetIthVal = get_var_val<P, VariableValues> >
+        auto get_value (mdd_t const& d, VariableValues const& vars) const -> log_t;
 
         template< class VariableValues
                 , class OutputIt
@@ -168,7 +175,7 @@ namespace mix::dd
         auto to_mnf                (mdd_t const& dpbd) -> mdd_t;
 
     /* Other internals */
-    private:
+    public:
         auto get_var_count      () const -> std::size_t;
         auto get_domain         (index_t const i) const -> log_t;
         auto get_domain_product () const -> std::size_t;
