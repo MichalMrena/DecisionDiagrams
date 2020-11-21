@@ -16,8 +16,25 @@ namespace mix::utils
         template<class InputIt, class UnaryOperation>
         auto map(InputIt first, InputIt last, std::size_t const count, UnaryOperation op)
         {
-            auto result = utils::vector<decltype(op(*first))>(count);
+            using T = decltype(op(*first));
+            auto result = utils::vector<T>(count);
             std::transform(first, last, std::back_inserter(result), op);
+            return result;
+        }
+
+        template<class InputIt, class Predicate, class UnaryOperation>
+        auto map_if(InputIt first, InputIt last, std::size_t const count, Predicate p, UnaryOperation op)
+        {
+            using T = decltype(op(*first));
+            auto result = utils::vector<T>(count);
+            while (first != last)
+            {
+                if (p(*first))
+                {
+                    result.push_back(op(*first));
+                }
+                ++first;
+            }
             return result;
         }
     }
@@ -57,6 +74,34 @@ namespace mix::utils
     auto map(Range&& range, std::size_t const count, UnaryOperation op)
     {
         return impl::map(std::begin(range), std::end(range), count, op);
+    }
+
+    /**
+        @brief like map but uses predicate to determine whether element should be mapped.
+     */
+    template<class InputIt, class Predicate, class UnaryOperation>
+    auto map_if(InputIt first, InputIt last, Predicate p, UnaryOperation op)
+    {
+        using input_it_category = typename std::iterator_traits<InputIt>::iterator_category;
+        auto constexpr hasFastCount = std::is_same_v< input_it_category
+                                                    , std::random_access_iterator_tag >;
+        if constexpr (hasFastCount)
+        {
+            return impl::map_if(first, last, std::distance(first, last), p, op);
+        }
+        else
+        {
+            return impl::map_if(first, last, 4ul, p, op);
+        }
+    }
+
+    /**
+        @brief like map but uses predicate to determine whether element should be mapped.
+     */
+    template<class Range, class Predicate, class UnaryOperation>
+    auto map_if(Range&& range, Predicate p, UnaryOperation op)
+    {
+        return map_if(std::begin(range), std::end(range), p, op);
     }
 
     /**

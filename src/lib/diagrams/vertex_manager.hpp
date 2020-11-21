@@ -74,6 +74,9 @@ namespace mix::dd
         auto do_deep_copy     (vertex_manager const& other) -> void;
         auto do_shallow_copy  (vertex_manager const& other) -> std::unordered_map<vertex_t*, vertex_t*>;
 
+        template<class IndexMapOp>
+        auto for_each_level (IndexMapOp op) -> void;
+
     private:
         index_map_v   indexMaps_;
         leaf_vertex_a leaves_;
@@ -216,15 +219,17 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::collect_garbage
         () -> void
     {
-        for (auto& indexMap : indexMaps_)
+        this->for_each_level([](auto& indexMap)
         {
             auto const end = std::end(indexMap);
             auto it = std::begin(indexMap);
 
             while (it != end)
             {
-                if (0 == it->get_ref_cout())
+                auto const v = it->second;
+                if (0 == v->get_ref_cout())
                 {
+                    v->for_each_son(dec_ref_count);
                     it = indexMap.erase(it);
                 }
                 else
@@ -232,7 +237,7 @@ namespace mix::dd
                     ++it;
                 }
             }
-        }
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -387,6 +392,18 @@ namespace mix::dd
         map.emplace(nullptr, nullptr);
 
         return map;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class IndexMapOp>
+    auto vertex_manager<VertexData, ArcData, P>::for_each_level
+        (IndexMapOp op) -> void
+    {
+        // TODO make it level order
+        for (auto& indexMap : indexMaps_)
+        {
+            op(indexMap);
+        }
     }
 }
 

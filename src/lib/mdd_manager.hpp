@@ -140,10 +140,10 @@ namespace mix::dd
                               , OutputIt&       out ) const -> void;
 
         template<class VertexOp>
-        auto traverse_pre (vertex_t* const v, VertexOp&& op) const -> void;
+        auto traverse_pre_step (vertex_t* const v, VertexOp&& op) const -> void;
 
         template<class VertexOp>
-        auto traverse_post (vertex_t* const v, VertexOp&& op) const -> void;
+        auto traverse_post_step (vertex_t* const v, VertexOp&& op) const -> void;
 
     /* Manipulation internals */
     protected:

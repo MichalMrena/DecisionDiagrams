@@ -6,6 +6,7 @@
 #include "../utils/string_utils.hpp"
 #include "../utils/print.hpp"
 #include "../utils/more_math.hpp"
+#include "../utils/more_functional.hpp"
 
 #include <queue>
 #include <functional>
@@ -98,8 +99,8 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::traverse_pre
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        this->traverse_pre(d.get_root(), std::forward<VertexOp>(op));
-        this->traverse_pre(d.get_root(), utils::no_op);
+        this->traverse_pre_step(d.get_root(), std::forward<VertexOp>(op));
+        this->traverse_pre_step(d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -107,8 +108,8 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::traverse_post
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        this->traverse_post(d.get_root(), std::forward<VertexOp>(op));
-        this->traverse_post(d.get_root(), utils::no_op);
+        this->traverse_post_step(d.get_root(), std::forward<VertexOp>(op));
+        this->traverse_post_step(d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -142,7 +143,7 @@ namespace mix::dd
             });
         }
 
-        this->traverse_pre(d.get_root(), utils::no_op);
+        this->traverse_pre_step(d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -199,9 +200,9 @@ namespace mix::dd
             }
         });
 
-        auto const ranks = utils::map(rankGroups, [](auto const& level)
+        auto const ranks = utils::map_if(rankGroups, utils::not_empty, [](auto const& level)
         {
-            return concat("{ rank = same;" , concat_range(level, " "), " }");
+            return concat("{ rank = same; " , concat_range(level, " "), " }");
         });
 
         ost << "digraph DD {"                                                         << EOL
@@ -266,38 +267,33 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class VertexOp>
-    auto mdd_manager<VertexData, ArcData, P>::traverse_pre
+    auto mdd_manager<VertexData, ArcData, P>::traverse_pre_step
         (vertex_t* const v, VertexOp&& op) const -> void
     {
         v->toggle_mark();
         op(v);
-
-        for (auto i = 0u; i < P; ++i)
+        v->for_each_son([this, &op, v](auto const son)
         {
-            auto const son = v->get_son(i);
-            if (son && v->get_mark() != son->get_mark())
+            if (v->get_mark() != son->get_mark())
             {
-                this->traverse_pre(son, std::forward<VertexOp>(op));
+                this->traverse_pre_step(son, op);
             }
-        }
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class VertexOp>
-    auto mdd_manager<VertexData, ArcData, P>::traverse_post
+    auto mdd_manager<VertexData, ArcData, P>::traverse_post_step
         (vertex_t* const v, VertexOp&& op) const -> void
     {
         v->toggle_mark();
-
-        for (auto i = 0u; i < P; ++i)
+        v->for_each_son([this, &op, v](auto const son)
         {
-            auto const son = v->get_son(i);
-            if (son && v->get_mark() != son->get_mark())
+            if (v->get_mark() != son->get_mark())
             {
-                this->traverse_post(son, std::forward<VertexOp>(op));
+                this->traverse_post_step(son, op);
             }
-        }
-
+        });
         op(v);
     }
 }

@@ -6,7 +6,7 @@ C++ library for creation and manipulation of decision diagrams. It is being deve
 Library is header only so its easy to incorporate it in your project. All you need to do is to place contents of [this](./src/lib/) directory into your project files.
 
 ## Basic usage
- Before using any library functions you need to include either [bdd_manager.hpp](./src/lib/bdd_manager.hpp) or [mdd_manager.hpp](./src/lib/mdd_manager.hpp) depending on which diagrams you intent to use. Library API is accessed via instance of a manager. Manager can be created using `make_bdd_manager`/`make_mdd_manager` function, that takes number of variables that you intent to use as an argument.
+ Before using any library functions you need to include either [bdd_manager.hpp](./src/lib/bdd_manager.hpp) or [mdd_manager.hpp](./src/lib/mdd_manager.hpp) depending on which diagrams you intent to use. Library API is accessed via instance of a manager. Manager can be created using `make_bdd_manager`/`make_mdd_manager` function, that takes number of variables that you intent to use as an argument.  
 
 ### Binary Decision Diagrams
 ```C++
@@ -23,7 +23,7 @@ int main()
 ```
 
 #### Creating diagrams
-Simplest diagrams that you can create are a diagram of a Boolean constant (`false(0)` or `true(1)`)
+Simplest diagrams that you can create are a diagram of a Boolean constant `0` (false) or `1` (true).
 ```C++
 auto cFalse = m.just_val(0);
 auto cTrue  = m.just_val(1);
@@ -73,7 +73,40 @@ In some applications you want to know, for how many different variable assignmen
 auto const sc = m.satisfy_count(f);
 auto const td = m.truth_density(f);
 ```
-Variable values for which the function evaluates to `1` can also be enumerated using output iterator.
+Variable values for which the function evaluates to `1` can also be enumerated using the function `satisfy_all` and an output iterator. In the example below we first declare an alias for a type that will hold values of variables. The most suitable type for Boolean variables is `std::bitset` (with N = 5, since we have 5 variables). Then we need some container that will hold these values. `std::vector` seems to be the best choice. Finally we need an output iterator for that container, we can use `std::back_inserter` for that.
 ```C++
+using bool_v = std::bitset<5>;
 
+auto vars = std::vector<bool_v>();
+m.satisfy_all<bool_v>(f, std::back_inserter(vars));
 ```
+Vector `vars` now holds all values of variables for which the function evaluates to `1`. We can verify that with following asserts:
+```C++
+for (auto const& v : vars)
+{
+    assert(1 == m.get_value(f, v));
+}
+```
+If we only want to print these variable values, we can use `std::ostream_iterator` since there is an overload of `operator<<` for `std::bitset`.
+```C++
+m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
+```
+Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite elegant look.
+```C++
+auto f1 = x(1) xor x(2);
+auto f2 = (x(1) or x(2)) and (!x(1) or !x(2));
+assert(f1 == f2);
+```
+
+Last but not least, we might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). Function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the Wikepedia page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
+```C++
+m.to_dot_graph(std::cout, f);
+```
+
+### Multi-valued decision diagrams
+*comming soon*
+
+## Reliability Theory
+Main motivation for creating this library was the fact, that we can use decision diagrams 
+
+### Binary state systems

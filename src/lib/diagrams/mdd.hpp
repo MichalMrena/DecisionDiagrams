@@ -20,8 +20,8 @@ namespace mix::dd
         mdd  ();
         mdd  (mdd&& other);
         ~mdd ();
+        mdd  (mdd const& other);
         explicit mdd (vertex_t* root);
-        explicit mdd (mdd const& other);
 
         auto operator== (mdd const& rhs) const -> bool;
         auto operator!= (mdd const& rhs) const -> bool;
@@ -70,7 +70,7 @@ namespace mix::dd
     {
         if (root_)
         {
-            vertex_manager_t::dec_ref_count(root_);
+            root_->dec_ref_count();
             root_ = nullptr;
         }
     }

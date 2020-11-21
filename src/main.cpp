@@ -228,34 +228,39 @@ auto example_basic_usage_bdd()
 
     auto g = x(0) * x(1) + (x(2) * x(3) + x(4));
 
-    auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
-    auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
-    auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
-    auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
-    auto const val4 = m.get_value(f, 0b10110);
+    // auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
+    // auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
+    // auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
+    // auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
+    // auto const val4 = m.get_value(f, 0b10110);
 
-    auto const sc = m.satisfy_count(f);
-    auto const td = m.truth_density(f);
+    // auto const sc = m.satisfy_count(f);
+    // auto const td = m.truth_density(f);
 
-    using var_vals_t = std::bitset<5>;
-    auto vars = std::vector<var_vals_t>();
-    m.satisfy_all<var_vals_t>(f, std::back_inserter(vars));
+    // using var_vals_t = std::bitset<5>;
+    // auto vars = std::vector<var_vals_t>();
+    // m.satisfy_all<var_vals_t>(f, std::back_inserter(vars));
+    // m.satisfy_all<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
 
-    printl(val0);
-    printl(val1);
-    printl(val2);
-    printl(val3);
-    printl(val4);
-    printl(sc);
-    printl(td);
+    // for (auto const& v : vars)
+    // {
+    //     assert(1 == m.get_value(f, v));
+    // }
 
-    for (auto const& vs : vars)
-    {
-        std::cout << vs << '\n';
-    }
+    // printl(val0);
+    // printl(val1);
+    // printl(val2);
+    // printl(val3);
+    // printl(val4);
+    // printl(sc);
+    // printl(td);
 
-    assert(x(1, NOT()) == !x(1));
-    assert(f == g);
+    // m.to_dot_graph(std::cout, f);
+
+    auto f1 = x(1) xor x(2);
+    auto f2 = (x(1) or x(2)) and (!x(1) or !x(2));
+    assert(f1 == f2);
+    m.to_dot_graph(std::cout, f1);
 }
 
 auto main() -> int
