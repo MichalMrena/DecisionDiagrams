@@ -3,7 +3,8 @@
 C++ library for creation and manipulation of decision diagrams. It is being developed at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), [University of Žilina](https://www.uniza.sk/index.php/en/) as a student project at the [Department of Informatics](https://ki.fri.uniza.sk/).
 
 ## How to install
-Library is header only so its easy to incorporate it in your project. All you need to do is to place contents of [this](./src/lib/) directory into your project files.
+Library is header only so its easy to incorporate it in your project. All you need to do is to place contents of [this](./src/lib/) directory into your project files.  
+We use features from `C++20` so you might need to set your compiler for this version. (`-std=c++20` for `clang++` and `g++`, `/std:c++latest` for MSVC)
 
 ## Basic usage
  Before using any library functions you need to include either [bdd_manager.hpp](./src/lib/bdd_manager.hpp) or [mdd_manager.hpp](./src/lib/mdd_manager.hpp) depending on which diagrams you intent to use. Library API is accessed via instance of a manager. Manager can be created using `make_bdd_manager`/`make_mdd_manager` function, that takes number of variables that you intent to use as an argument.  
@@ -107,6 +108,38 @@ m.to_dot_graph(std::cout, f);
 *comming soon*
 
 ## Reliability Theory
-Main motivation for creating this library was the fact, that we can use decision diagrams 
+Main motivation for creating this library was the possibility of using decision diagrams in reliability analysis. Following example shows how different reliability indices and importance measures can be calculated using structure function and direct partial boolean derivatives.  
 
 ### Binary state systems
+First, we create a manager for 5 variables and we register it so that we can use operator overloading for this example.
+```C++
+auto  m = make_bdd_manager(5);
+auto& x = m;
+register_manager(m);
+```
+Besides structure function we also need probabilities associated with variables.
+```C++
+auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
+auto sf = x(0) and x(1) or (x(2) and x(3) or x(4));
+```
+Availability can be calculated directly from the structure function. Unavailability is just ones complement.
+```C++
+auto const A = m.availability(ps, sf);
+auto const U = 1 - A;
+```
+For further analysis of the structure function we need to calculate Direct Partial Boolean Derivatives, which is as simple as:
+```C++
+auto dpbds = m.dpbds(sf);
+```
+`dpbds` is now a `std::vector` of diagrams representing derivative of each variable. We can use them to calculate different importance measures:
+```C++
+auto const SIs  = m.structural_importances(dpbds);
+auto const BIs  = m.birnbaum_importances(ps, dpbds);
+auto const CIs  = m.criticality_importances(BIs, ps, U);
+auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
+```
+Finally we can enumerate all Minimal Cut Vectors. Like `satisfy_all` we need to specify a data type which will hold values of variables. Again `std::bitset` seems to be the best choice.
+```C++
+auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
+```
+`MCVs` is now a `std::vector` of `std::bitset`s which represents MCVs.

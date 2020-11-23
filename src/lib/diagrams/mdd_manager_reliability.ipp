@@ -71,7 +71,7 @@ namespace mix::dd
         (val_change<P> const var, val_change<P> const f, mdd_t const& sf, index_t const i) -> mdd_t
     {
         return this->apply( this->apply(this->restrict_var(sf, i, var.from), EQUAL_TO<P>(), this->just_val(f.from))
-                          , AND<P, domain_e::nonhomogenous>()
+                          , AND<P>()
                           , this->apply(this->restrict_var(sf, i, var.to), EQUAL_TO<P>(), this->just_val(f.to)) );
     }
 
@@ -80,7 +80,7 @@ namespace mix::dd
         (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i) -> mdd_t
     {
         return this->apply( this->apply(this->restrict_var(sf, i, var.from), EQUAL_TO<P>(), this->just_val(fVal))
-                          , AND<P, domain_e::nonhomogenous>()
+                          , AND<P>()
                           , this->apply(this->restrict_var(sf, i, var.to), LESS<P>(), this->just_val(fVal)) );
     }
 
@@ -98,7 +98,7 @@ namespace mix::dd
         (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i) -> mdd_t
     {
         return this->apply( this->apply(this->restrict_var(sf, i, var.from), LESS<P>(), this->just_val(fVal))
-                          , AND<P, domain_e::nonhomogenous>()
+                          , AND<P>()
                           , this->apply(this->restrict_var(sf, i, var.to), GREATER_EQUAL<P>(), this->just_val(fVal)) );
     }
 
@@ -198,7 +198,7 @@ namespace mix::dd
             auto const& [i, dpbd] = pair;
             return this->to_dpbde(dpbd, level, i);
         });
-        auto const conj = this->tree_fold(std::move(dpbdes), PI_CONJ<P, domain_e::nonhomogenous>());
+        auto const conj = this->tree_fold(std::move(dpbdes), PI_CONJ<P>());
         auto cuts = std::vector<VectorType> {};
         this->template satisfy_all<VectorType>(1, conj, std::back_inserter(cuts));
         return cuts;

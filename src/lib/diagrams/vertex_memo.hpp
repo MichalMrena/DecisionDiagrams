@@ -12,6 +12,7 @@
 
 namespace mix::dd
 {
+    // TODO nope just plain hashmap
     template<class VertexData, class ArcData, std::size_t P, class Key>
     class vertex_memo
     {

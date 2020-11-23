@@ -182,7 +182,7 @@ namespace mix::dd
 
     /* Member variables */
     protected:
-        vertex_manager_t        vertexManager_;
+        vertex_manager_t vertexManager_;
         apply_memo_t     applyMemo_;
         transform_memo_t transformMemo_;
         log_v            domains_;

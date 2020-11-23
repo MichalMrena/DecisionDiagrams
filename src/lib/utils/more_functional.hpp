@@ -6,38 +6,6 @@
 
 namespace mix::utils
 {
-    /**
-        @brief Function object for plus mod m.
-     */
-    template<std::size_t M>
-    struct plus_mod
-    {
-        static_assert(M > 0, "Division by zero.");
-        template<class T>
-        [[nodiscard]]
-        constexpr auto operator() 
-            (T const& lhs, T const& rhs) const noexcept -> T
-        {
-            return (lhs + rhs) % M;
-        }
-    };
-
-    /**
-        @brief Function object for multiplies mod m.
-     */
-    template<std::size_t M>
-    struct multiplies_mod
-    {
-        static_assert(M > 0, "Division by zero.");
-        template<class T>
-        [[nodiscard]]
-        constexpr auto operator() 
-            (T const& lhs, T const& rhs) const noexcept -> T
-        {
-            return (lhs * rhs) % M;
-        }
-    };
-
     namespace impl
     {
         inline auto const fnot = [](auto const f)
@@ -51,27 +19,43 @@ namespace mix::utils
     }
 
     /**
+        @brief Function modular addition.
+     */
+    template<std::size_t M>
+    inline auto const plus_mod = [](auto const l, auto const r) { return (l + r) % M; };
+    template<std::size_t M>
+    using plus_mod_t = decltype(plus_mod<M>);
+
+    /**
+        @brief Function modular multiplication.
+     */
+    template<std::size_t M>
+    inline auto const multiplies_mod = [](auto const l, auto const r) { return (l * r) % M; };
+    template<std::size_t M>
+    using multiplies_mod_t = decltype(multiplies_mod<M>);
+
+    /**
         @brief Function logical nand.
      */
-    inline const auto logical_nand = impl::fnot(std::logical_and<>());
+    inline auto const logical_nand = impl::fnot(std::logical_and<>());
     using logical_nand_t = decltype(logical_nand);
 
     /**
         @brief Function logical nor.
      */
-    inline const auto logical_nor = impl::fnot(std::logical_or<>());
+    inline auto const logical_nor = impl::fnot(std::logical_or<>());
     using logical_nor_t = decltype(logical_nor);
 
     /**
         @brief Function min.
      */
-    inline auto const min = [](auto const& lhs, auto const& rhs) { return std::min(lhs, rhs); };
+    inline auto const min = [](auto const& l, auto const& r) { return std::min(l, r); };
     using min_t = decltype(min);
 
     /**
         @brief Function max.
      */
-    inline auto const max = [](auto const& lhs, auto const& rhs) { return std::max(lhs, rhs); };
+    inline auto const max = [](auto const& l, auto const& r) { return std::max(l, r); };
     using max_t = decltype(max);
 
     /**

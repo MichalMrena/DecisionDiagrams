@@ -13,33 +13,22 @@ using namespace mix::utils;
 
 auto bss_reliability_test()
 {
-    auto manager = bdd_manager<double, void>(5);
-    auto& m = manager;
-    auto& x = manager;
+    auto  m = make_bdd_manager(5);
+    auto& x = m;
+    register_manager(m);
 
-    auto sf = m.apply( m.apply(x(0), AND(), x(1))
-                     , OR()
-                     , m.apply(m.apply(x(2), AND(), x(3)), OR(), x(4)) );
     auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
-    auto dpbds = m.dpbds(sf);
+    auto sf = x(0) and x(1) or (x(2) and x(3) or x(4));
 
-    manager.calculate_probabilities(ps, sf);
-    auto const A    = manager.get_availability();
-    auto const U    = manager.get_unavailability();
+    auto const A = m.availability(ps, sf);
+    auto const U = 1 - A;
+
+    auto dpbds = m.dpbds(sf);
     auto const SIs  = m.structural_importances(dpbds);
     auto const BIs  = m.birnbaum_importances(ps, dpbds);
     auto const CIs  = m.criticality_importances(BIs, ps, U);
-    auto       FIs  = m.fussell_vesely_importances(dpbds, ps, U);
-    auto const MCVs = m.mcvs<std::bitset<5>>(std::move(dpbds));
-
-    // m.to_dot_graph(std::cout, sf);
-
-    // FIs[2] = 0;
-    // std::cout << FIs[0] << '\n';
-    // std::cout << FIs[1] << '\n';
-    // std::cout << FIs[2] << '\n';
-    // std::cout << FIs[3] << '\n';
-    // std::cout << FIs[4] << '\n';
+    auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
+    auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
 
     printl(concat("A = "   , A));
     printl(concat("U = "   , U));
@@ -86,9 +75,11 @@ namespace
         return table.at(lhs).at(rhs);
     };
 
-    struct serial23_t : public bin_op<decltype(serial23), 3, domain_e::nonhomogenous, log_val_traits<3>::undefined> {};
-    struct parallel23_t : public bin_op<decltype(parallel23), 3, domain_e::nonhomogenous, log_val_traits<3>::undefined> {};
-    struct parallel33_t : public bin_op<decltype(parallel33), 3, domain_e::nonhomogenous, log_val_traits<3>::undefined> {};
+    auto constexpr U = log_val_traits<3>::undefined;
+
+    struct serial23_t   : public mix::dd::impl::bin_op<decltype(serial23), 3, U> {};
+    struct parallel23_t : public mix::dd::impl::bin_op<decltype(parallel23), 3, U> {};
+    struct parallel33_t : public mix::dd::impl::bin_op<decltype(parallel33), 3, U> {};
 
     constexpr auto op_id (serial23_t)   { return op_id_t {15}; }
     constexpr auto op_id (parallel23_t) { return op_id_t {16}; }
@@ -200,7 +191,6 @@ auto basic_test()
     auto prod = manager.apply(x1, AND(), x2);
 
     manager.to_dot_graph(std::cout);
-
 }
 
 auto example_basic_usage_bdd()
@@ -220,42 +210,41 @@ auto example_basic_usage_bdd()
 
     auto f = m.apply( m.apply(x0, AND(), x1)
                     , OR()
-                    , m.apply( m.apply(x(2), AND(), x(3))
+                    , m.apply( m.apply(x(2), OR(), x(3))
                              , OR()
                              , x4 ) );
 
     register_manager(m);
 
-    auto g = x(0) * x(1) + (x(2) * x(3) + x(4));
+    auto g  = x(0) * x(1) + (x(2) * x(3) + x(4));
+    auto g1 = !(x(0) * x(1)) + (!(x(2) + x(3)) + x(4));
 
-    // auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
-    // auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
-    // auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
-    // auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
-    // auto const val4 = m.get_value(f, 0b10110);
+    auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
+    auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
+    auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
+    auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
+    auto const val4 = m.get_value(f, 0b10110);
 
-    // auto const sc = m.satisfy_count(f);
-    // auto const td = m.truth_density(f);
+    auto const sc = m.satisfy_count(f);
+    auto const td = m.truth_density(f);
 
-    // using var_vals_t = std::bitset<5>;
-    // auto vars = std::vector<var_vals_t>();
-    // m.satisfy_all<var_vals_t>(f, std::back_inserter(vars));
-    // m.satisfy_all<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
+    using var_vals_t = std::bitset<5>;
+    auto vars = std::vector<var_vals_t>();
+    m.satisfy_all<var_vals_t>(f, std::back_inserter(vars));
+    m.satisfy_all<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
 
-    // for (auto const& v : vars)
-    // {
-    //     assert(1 == m.get_value(f, v));
-    // }
+    for (auto const& v : vars)
+    {
+        assert(1 == m.get_value(f, v));
+    }
 
-    // printl(val0);
-    // printl(val1);
-    // printl(val2);
-    // printl(val3);
-    // printl(val4);
-    // printl(sc);
-    // printl(td);
-
-    // m.to_dot_graph(std::cout, f);
+    printl(val0);
+    printl(val1);
+    printl(val2);
+    printl(val3);
+    printl(val4);
+    printl(sc);
+    printl(td);
 
     auto f1 = x(1) xor x(2);
     auto f2 = (x(1) or x(2)) and (!x(1) or !x(2));
@@ -272,11 +261,11 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    // bss_reliability_test();
+    bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
 
-    example_basic_usage_bdd();
+    // example_basic_usage_bdd();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");
