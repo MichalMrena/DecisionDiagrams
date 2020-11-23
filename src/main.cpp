@@ -30,6 +30,8 @@ auto bss_reliability_test()
     auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
     auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
 
+    m.to_dot_graph(std::cout, sf);
+
     printl(concat("A = "   , A));
     printl(concat("U = "   , U));
     printl(concat("SI "    , concat_range(SIs, " ")));

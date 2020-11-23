@@ -24,7 +24,7 @@ int main()
 ```
 
 #### Creating diagrams
-Simplest diagrams that you can create are a diagram of a Boolean constant `0` (false) or `1` (true).
+Simplest diagram that you can create is a diagram of a Boolean constant `0` (false) or `1` (true).
 ```C++
 auto cFalse = m.just_val(0);
 auto cTrue  = m.just_val(1);
@@ -34,7 +34,7 @@ and a diagram of a single Boolean variable.
 auto x0 = m.just_var(0);
 auto x4 = m.just_var(4);
 ```
-Useful trick for creating diagrams for variables is to create a reference to the manager with name `x`. Manager overloads the `operator()` that does the same thing as `just_var`.
+Useful trick for creating diagram for a variable is to create a reference to the manager with name `x`. Manager overloads the `operator()` that does the same thing as `just_var`.
 ```C++
 auto& x = m;
 auto x1 = x(1);
@@ -61,7 +61,7 @@ auto g = x(0) * x(1) + (x(2) * x(3) + x(4));
 ```
 
 #### Using diagrams
-Now that we have a diagram of a function we can do something with it. Since it is a function we can evaluate it for given values of variables. As you can see, these values can be specified in different ways. It is up to you which one you pick. `get_value` returns either `0` (false) or `1` (true).
+Now that we have the diagram of the function we can do something with it. Since the diagram is basically function we can evaluate it for given values of variables. As you can see, these values can be specified in different ways. It is up to you which one you pick. `get_value` returns either `0` (false) or `1` (true).
 ```C++
 auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
 auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
@@ -92,7 +92,7 @@ If we only want to print these variable values, we can use `std::ostream_iterato
 ```C++
 m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
 ```
-Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite elegant look.
+Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look.
 ```C++
 auto f1 = x(1) xor x(2);
 auto f2 = (x(1) or x(2)) and (!x(1) or !x(2));
@@ -103,15 +103,48 @@ Last but not least, we might want to check how the diagram looks like. For that 
 ```C++
 m.to_dot_graph(std::cout, f);
 ```
+This is how a DOT string might look like. If you paste this to the Webgraphviz you will get a picture of a diagram.
+```
+digraph DD {
+    node [shape = square] 6995904 6995952;
+    node [shape = circle];
+
+    6998736 [label = "x0"];
+    6998064 [label = "x2"];
+    6997520 [label = "x4"];
+    6995904 [label = "0"];
+    6995952 [label = "1"];
+    6997920 [label = "x3"];
+    6998592 [label = "x1"];
+
+    6998736 -> 6998064 [style = dashed];
+    6998736 -> 6998592 [style = solid];
+    6998064 -> 6997520 [style = dashed];
+    6998064 -> 6997920 [style = solid];
+    6997520 -> 6995904 [style = dashed];
+    6997520 -> 6995952 [style = solid];
+    6997920 -> 6997520 [style = dashed];
+    6997920 -> 6995952 [style = solid];
+    6998592 -> 6998064 [style = dashed];
+    6998592 -> 6995952 [style = solid];
+
+    { rank = same; 6998736; }
+    { rank = same; 6998592; }
+    { rank = same; 6998064; }
+    { rank = same; 6997920; }
+    { rank = same; 6997520; }
+    { rank = same; 6995904; 6995952; }
+}
+```
 
 ### Multi-valued decision diagrams
 *comming soon*
 
 ## Reliability Theory
-Main motivation for creating this library was the possibility of using decision diagrams in reliability analysis. Following example shows how different reliability indices and importance measures can be calculated using structure function and direct partial boolean derivatives.  
+Main motivation for creating this library was the possibility of using decision diagrams in reliability analysis. Following example shows how different reliability indices and importance measures can be calculated using structure function and Direct Partial Boolean Derivatives.  
 
 ### Binary state systems
-First, we create a manager for 5 variables and we register it so that we can use operator overloading for this example.
+First, we create a manager for 5 variables and we register it so that we can use operator overloading in this example.
 ```C++
 auto  m = make_bdd_manager(5);
 auto& x = m;
@@ -138,7 +171,7 @@ auto const BIs  = m.birnbaum_importances(ps, dpbds);
 auto const CIs  = m.criticality_importances(BIs, ps, U);
 auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
 ```
-Finally we can enumerate all Minimal Cut Vectors. Like `satisfy_all` we need to specify a data type which will hold values of variables. Again `std::bitset` seems to be the best choice.
+Finally we can enumerate all Minimal Cut Vectors. Like with `satisfy_all` we need to specify a data type which will hold values of variables. Again `std::bitset` seems to be the best choice.
 ```C++
 auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
 ```
