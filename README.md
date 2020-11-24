@@ -171,6 +171,7 @@ auto const BIs  = m.birnbaum_importances(ps, dpbds);
 auto const CIs  = m.criticality_importances(BIs, ps, U);
 auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
 ```
+Each `*Is` is a `std::vector` of `double`s representing given importance measures for given variables.  
 Finally we can enumerate all Minimal Cut Vectors. Like with `satisfy_all` we need to specify a data type which will hold values of variables. Again `std::bitset` seems to be the best choice.
 ```C++
 auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
