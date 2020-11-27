@@ -254,6 +254,19 @@ auto example_basic_usage_bdd()
     m.to_dot_graph(std::cout, f1);
 }
 
+auto order_test()
+{
+    auto m  = make_bdd_manager(6);
+    auto& x = m;
+    register_manager(m);
+
+    auto f1 = x(0) * x(1) + x(2) * x(3) + x(4) * x(5);
+    auto f2 = x(0) * x(3) + x(1) * x(4) + x(2) * x(5);
+
+    m.to_dot_graph(std::cout, f1);
+    m.to_dot_graph(std::cout, f2);
+}
+
 auto main() -> int
 {
     auto watch = stopwatch();
@@ -263,12 +276,12 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    bss_reliability_test();
+    // bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
 
-    // TODO set_levels
+    order_test();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

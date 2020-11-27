@@ -296,4 +296,10 @@ namespace mix::dd
         });
         op(v);
     }
+
+    template<std::size_t P>
+    auto make_mdd_manager(std::size_t const varCount)
+    {
+        return mdd_manager<double, void, P>(varCount);
+    }
 }

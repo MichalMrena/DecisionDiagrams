@@ -187,6 +187,9 @@ namespace mix::dd
         transform_memo_t transformMemo_;
         log_v            domains_;
     };
+
+    template<std::size_t P>
+    auto make_mdd_manager(std::size_t const varCount);
 }
 
 #include "diagrams/mdd_manager.ipp"
