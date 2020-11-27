@@ -72,7 +72,6 @@ namespace mix::dd
     /* Internal aliases */
     private:
         using prob_table = typename base::prob_table;
-        using trans_id_t = typename base::trans_id_t;
         using son_a      = typename base::son_a;
 
     /* Tools internals */
