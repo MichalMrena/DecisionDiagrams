@@ -7,6 +7,7 @@ namespace mix::utils
 {
     inline auto runtime_assert(bool const b, char const* msg)
     {
+        // TODO global toggle macro #define UNSAFE
         if (!b)
         {
             throw std::runtime_error(msg);

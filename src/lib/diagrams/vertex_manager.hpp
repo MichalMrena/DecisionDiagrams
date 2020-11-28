@@ -7,6 +7,7 @@
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
 #include "../utils/more_functional.hpp"
+#include "../utils/more_assert.hpp"
 
 #include <cstddef>
 #include <array>
@@ -28,12 +29,15 @@ namespace mix::dd
         using log_t    = typename log_val_traits<P>::type;
         using vertex_t = vertex<VertexData, ArcData, P>;
         using son_a    = std::array<vertex_t*, P>;
+        using index_v  = std::vector<level_t>;
 
     public:
         vertex_manager  (std::size_t const varCount);
         vertex_manager  (vertex_manager&& other);
         ~vertex_manager ();
         explicit vertex_manager (vertex_manager const& other);
+
+        auto set_order (index_v levels) -> void;
 
     public:
         auto terminal_vertex     (log_t const val) -> vertex_t*;
@@ -66,6 +70,7 @@ namespace mix::dd
         using alloc_traits_t = std::allocator_traits<alloc_t>;
 
     private:
+        auto vertex_count     () const -> std::size_t;
         auto leaf_index       () const -> index_t;
         auto get_level_index  (level_t const level) const -> index_t;
         auto new_empty_vertex () -> vertex_t*;
@@ -80,7 +85,7 @@ namespace mix::dd
     private:
         index_map_v   indexMaps_;
         leaf_vertex_a leaves_;
-        level_v       levels_;
+        level_v       indexToLevel_;
         alloc_t       alloc_;
     };
 
@@ -96,20 +101,20 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     vertex_manager<VertexData, ArcData, P>::vertex_manager
         (vertex_manager&& other) :
-        indexMaps_ {std::move(other.indexMaps_)},
-        leaves_    {std::move(other.leaves_)},
-        levels_    {std::move(other.levels_)},
-        alloc_     {std::move(other.alloc_)}
+        indexMaps_    {std::move(other.indexMaps_)},
+        leaves_       {std::move(other.leaves_)},
+        indexToLevel_ {std::move(other.indexToLevel_)},
+        alloc_        {std::move(other.alloc_)}
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_manager<VertexData, ArcData, P>::vertex_manager
         (vertex_manager const& other) :
-        indexMaps_ {other.get_var_count()},
-        leaves_    {{}},
-        levels_    {other.levels_},
-        alloc_     {other.alloc_}
+        indexMaps_    {other.get_var_count()},
+        leaves_       {{}},
+        indexToLevel_ {other.indexToLevel_},
+        alloc_        {other.alloc_}
     {
         this->do_deep_copy(other);
     }
@@ -119,6 +124,17 @@ namespace mix::dd
         ()
     {
         this->for_each_vertex(std::bind_front(&vertex_manager::delete_vertex, this));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::set_order
+        (index_v levels) -> void
+    {
+        utils::runtime_assert( 0 == this->vertex_count()
+                             , "vertex_manager::set_order: Manager must be empty." );
+        utils::runtime_assert( this->get_var_count() == levels.size()
+                             , "vertex_manager::set_order: Level vector size must match var count." );
+        indexToLevel_ = std::move(levels);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -189,7 +205,7 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::get_level
         (index_t const i) const -> level_t
     {
-        return levels_.empty() ? i : levels_[i];
+        return indexToLevel_.empty() ? i : indexToLevel_[i];
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -331,8 +347,8 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::get_level_index
         (level_t const level) const -> index_t
     {
-        return levels_.empty() ? level
-                               : utils::index_of(std::begin(levels_), std::end(levels_), level);
+        return indexToLevel_.empty() ? level
+                               : utils::index_of(std::begin(indexToLevel_), std::end(indexToLevel_), level);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

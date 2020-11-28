@@ -96,7 +96,8 @@ auto mss_reliability_test()
     using prob_table = typename mdd_manager<double, void, 3>::prob_table;
     using vec_t      = std::array<int, 4>;
 
-    auto m  = mdd_manager<double, void, 3>(4, {2, 3, 2, 3});
+    auto m  = mdd_manager<double, void, 3>(4);
+    m.set_domains({2, 3, 2, 3});
     auto& x = m;
     auto sf = m.apply( m.apply(x(0), serial23_t(), x(1))
                      , parallel33_t()
@@ -259,12 +260,11 @@ auto order_test()
     auto m  = make_bdd_manager(6);
     auto& x = m;
     register_manager(m);
+    m.set_order({0, 1, 2, 3, 4, 5});
 
-    auto f1 = x(0) * x(1) + x(2) * x(3) + x(4) * x(5);
-    auto f2 = x(0) * x(3) + x(1) * x(4) + x(2) * x(5);
+    auto f = x(0) * x(1) + x(2) * x(3) + x(4) * x(5);
 
-    m.to_dot_graph(std::cout, f1);
-    m.to_dot_graph(std::cout, f2);
+    m.to_dot_graph(std::cout, f);
 }
 
 auto main() -> int
