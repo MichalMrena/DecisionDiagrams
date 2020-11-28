@@ -52,7 +52,7 @@ namespace mix::dd
         }
         else if (v->get_index() > i) // TODO check levels
         {
-            set_var(xs, i, 0);
+            set_var(xs, i, 0); // TODO používať levely a pri zapisovaní si ho previesť na index
             satisfy_all_step(i + 1, v, xs, out);
             set_var(xs, i, 1);
             satisfy_all_step(i + 1, v, xs, out);

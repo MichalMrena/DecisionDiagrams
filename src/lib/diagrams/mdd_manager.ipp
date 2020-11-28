@@ -27,11 +27,26 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::set_order
-        (index_v levels) -> void
+        (index_v levelToIndex) -> void
     {
         utils::runtime_assert( applyMemo_.empty()
                              , "mdd_manager::set_order: Cache must be empty." );
-        vertexManager_.set_order(std::move(levels));
+        vertexManager_.set_order(std::move(levelToIndex));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::clear
+        () -> void
+    {
+        vertexManager_.clear();
+        this->clear_cache();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::clear_cache
+        () -> void
+    {
+        applyMemo_.clear();
     }
 
     template<class VertexData, class ArcData, std::size_t P>

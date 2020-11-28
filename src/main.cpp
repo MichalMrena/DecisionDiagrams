@@ -16,6 +16,7 @@ auto bss_reliability_test()
     auto  m = make_bdd_manager(5);
     auto& x = m;
     register_manager(m);
+    m.set_order({0, 3, 1, 4, 2});
 
     auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
     auto sf = x(0) and x(1) or (x(2) and x(3) or x(4));
@@ -28,7 +29,7 @@ auto bss_reliability_test()
     auto const BIs  = m.birnbaum_importances(ps, dpbds);
     auto const CIs  = m.criticality_importances(BIs, ps, U);
     auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
-    auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
+    // auto const MCVs = m.mcvs<std::bitset<5>>(dpbds); // TODO satisfy_all niekde je problém s index/level
 
     m.to_dot_graph(std::cout, sf);
 
@@ -38,7 +39,7 @@ auto bss_reliability_test()
     printl(concat("BI "    , concat_range(BIs, " ")));
     printl(concat("CI "    , concat_range(CIs, " ")));
     printl(concat("FI "    , concat_range(FIs, " ")));
-    printl(concat("MCVs: " , concat_range(MCVs, ", ")));
+    // printl(concat("MCVs: " , concat_range(MCVs, ", ")));
 }
 
 namespace
@@ -257,14 +258,28 @@ auto example_basic_usage_bdd()
 
 auto order_test()
 {
+    auto const vector = std::vector<bool> {0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     auto m  = make_bdd_manager(6);
     auto& x = m;
     register_manager(m);
-    m.set_order({0, 1, 2, 3, 4, 5});
 
-    auto f = x(0) * x(1) + x(2) * x(3) + x(4) * x(5);
+    auto order = std::vector<level_t> {0, 1, 2, 3, 4, 5};
+    while (std::next_permutation(std::begin(order), std::end(order)))
+    {
+        m.clear();
+        m.set_order(order);
 
-    m.to_dot_graph(std::cout, f);
+        auto f = x(0) * x(1) + x(2) * x(3) + x(4) * x(5);
+        auto varVals = 0;
+        for (auto const correctVal : vector)
+        {
+            if (m.get_value(f, varVals) != correctVal)
+            {
+                throw "not good";
+            }
+            ++varVals;
+        }
+    }
 }
 
 auto main() -> int
@@ -276,12 +291,12 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    // bss_reliability_test();
+    bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
 
-    order_test();
+    // order_test();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

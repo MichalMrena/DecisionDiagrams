@@ -20,6 +20,7 @@ namespace mix::dd
         using log_t      = typename log_val_traits<P>::type;
         using log_v      = std::vector<log_t>;
         using index_v    = std::vector<index_t>;
+        using level_v    = std::vector<level_t>;
         using prob_table = std::vector<std::array<double, P>>;
         using double_v   = std::vector<double>;
 
@@ -28,8 +29,11 @@ namespace mix::dd
         mdd_manager (std::size_t const varCount);
         mdd_manager (mdd_manager const&) = delete;
 
-        auto set_domains (log_v domains)  -> void;
-        auto set_order   (index_v levels) -> void;
+        auto set_domains     (log_v domains)        -> void;
+        auto set_order       (index_v levelToIndex) -> void;
+        auto clear           () -> void;
+        auto clear_cache     () -> void;
+        auto collect_garbage () -> void;
 
     /* Tools */
     public:
