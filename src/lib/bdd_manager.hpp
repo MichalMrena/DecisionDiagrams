@@ -19,11 +19,11 @@ namespace mix::dd
         using bool_var_v = std::vector<bool_var>;
         using double_v   = std::vector<double>;
         using vertex_t   = typename base::vertex_t;
+        using index_v    = std::vector<index_t>;
 
     /* Constructors */
     public:
         bdd_manager (std::size_t const varCount);
-
         bdd_manager (bdd_manager const&) = delete;
 
     /* Tools */
