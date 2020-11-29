@@ -16,7 +16,7 @@ auto bss_reliability_test()
     auto  m = make_bdd_manager(5);
     auto& x = m;
     register_manager(m);
-    m.set_order({0, 3, 1, 4, 2});
+    // m.set_order({0, 3, 1, 4, 2});
 
     auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
     auto sf = x(0) and x(1) or (x(2) and x(3) or x(4));
@@ -29,7 +29,7 @@ auto bss_reliability_test()
     auto const BIs  = m.birnbaum_importances(ps, dpbds);
     auto const CIs  = m.criticality_importances(BIs, ps, U);
     auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
-    // auto const MCVs = m.mcvs<std::bitset<5>>(dpbds); // TODO satisfy_all niekde je problém s index/level
+    auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
 
     m.to_dot_graph(std::cout, sf);
 
@@ -39,7 +39,7 @@ auto bss_reliability_test()
     printl(concat("BI "    , concat_range(BIs, " ")));
     printl(concat("CI "    , concat_range(CIs, " ")));
     printl(concat("FI "    , concat_range(FIs, " ")));
-    // printl(concat("MCVs: " , concat_range(MCVs, ", ")));
+    printl(concat("MCVs: " , concat_range(MCVs, ", ")));
 }
 
 namespace
@@ -124,6 +124,12 @@ auto mss_reliability_test()
     {
         printl(concat("(", concat_range(cut, ", "), ")"));
     }
+
+    auto constexpr ND = log_val_traits<3>::nodomain;
+    printl(m.satisfy_count(0, sf));
+    printl(m.satisfy_count(1, sf));
+    printl(m.satisfy_count(2, sf));
+    printl(m.satisfy_count(ND, sf));
 }
 
 auto mss_playground()
@@ -291,8 +297,8 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    bss_reliability_test();
-    // mss_reliability_test();
+    // bss_reliability_test();
+    mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
 

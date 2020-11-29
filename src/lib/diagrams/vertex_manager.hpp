@@ -45,7 +45,8 @@ namespace mix::dd
         auto internal_vertex     (index_t const index, son_a const& sons) -> vertex_t*;
         auto get_level           (vertex_t* const v) const -> level_t;
         auto get_level           (index_t const i)   const -> level_t;
-        auto get_terminal_value  (vertex_t* const v) const -> log_t;
+        auto get_index           (level_t const l)   const -> index_t;
+        auto get_vertex_value    (vertex_t* const v) const -> log_t;
         auto is_leaf             (vertex_t* const v) const -> bool;
         auto is_leaf             (index_t   const i) const -> bool;
         auto get_var_count       () const -> std::size_t;
@@ -72,6 +73,7 @@ namespace mix::dd
     private:
         auto vertex_count     () const -> std::size_t;
         auto leaf_index       () const -> index_t;
+        auto leaf_level       () const -> level_t;
         auto new_empty_vertex () -> vertex_t*;
         auto new_shallow_copy (vertex_t* const v) -> vertex_t*;
         auto delete_vertex    (vertex_t* const v) -> void;
@@ -207,7 +209,15 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_terminal_value
+    auto vertex_manager<VertexData, ArcData, P>::get_index
+        (level_t const l) const -> index_t
+    {
+        return levelToIndex_.empty()   ? l :
+               l == this->leaf_level() ? l : levelToIndex_[l];
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_vertex_value
         (vertex_t* const v) const -> log_t
     {
         return this->is_leaf(v) ? static_cast<log_t>(utils::index_of( std::begin(leaves_)
@@ -364,6 +374,13 @@ namespace mix::dd
         () const -> index_t
     {
         return static_cast<index_t>(this->get_var_count());
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::leaf_level
+        () const -> level_t
+    {
+        return static_cast<level_t>(this->get_var_count());
     }
 
     template<class VertexData, class ArcData, std::size_t P>

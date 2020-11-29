@@ -46,19 +46,19 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::satisfy_count
         (log_t const val, mdd_t& d) -> std::size_t
     {
-        this->traverse_post(d, [=](auto const v)
+        this->traverse_post(d, [this, val](auto const v)
         {
-            if (this->vertexManager_.is_leaf(v))
+            if (vertexManager_.is_leaf(v))
             {
-                v->data = this->vertexManager_.get_terminal_value(v) == val ? 1 : 0;
+                v->data = vertexManager_.get_vertex_value(v) == val ? 1 : 0;
             }
             else
             {
                 v->data = 0;
-                auto const vLevel = this->vertexManager_.get_level(v);
+                auto const vLevel = vertexManager_.get_level(v);
                 v->for_each_son([=](auto const son)
                 {
-                    auto const sonLevel = this->vertexManager_.get_level(son);
+                    auto const sonLevel = vertexManager_.get_level(son);
                     v->data += son->data * utils::int_pow(P, sonLevel - vLevel - 1);
                 });
             }
@@ -82,7 +82,7 @@ namespace mix::dd
             v = v->get_son(get_var(vars, v->get_index()));
         }
 
-        return vertexManager_.get_terminal_value(v);
+        return vertexManager_.get_vertex_value(v);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -162,7 +162,7 @@ namespace mix::dd
         {
             using traits_t = log_val_traits<P>;
             return this->vertexManager_.is_leaf(v)
-                    ? traits_t::to_string(this->vertexManager_.get_terminal_value(v))
+                    ? traits_t::to_string(this->vertexManager_.get_vertex_value(v))
                     : "x" + to_string(v->get_index());
         };
 
@@ -231,12 +231,10 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class VariableValues, class OutputIt, class SetVarVal>
     auto mdd_manager<VertexData, ArcData, P>::satisfy_all_step
-        ( log_t const val, index_t const cLevel, vertex_t* const v
+        ( log_t const val, level_t const l, vertex_t* const v
         , VariableValues& xs, OutputIt& out ) const -> void
     {
-        auto const set_var   = SetVarVal {};
-        auto const vertexVal = vertexManager_.get_terminal_value(v);
-        auto const vLevel    = vertexManager_.get_level(v);
+        auto const vertexVal = vertexManager_.get_vertex_value(v);
 
         if (vertexManager_.is_leaf(v) && val != vertexVal)
         {
@@ -247,21 +245,15 @@ namespace mix::dd
             *out++ = xs;
             return;
         }
-        else if (vLevel > cLevel)
-        {
-            for (auto i = 0u; i < P; ++i)
-            {
-                set_var(xs, v->get_index(), i);
-                satisfy_all_step(val, cLevel + 1, v, xs, out);
-            }
-        }
         else
         {
-            for (auto i = 0u; i < P; ++i)
+            auto const goDown = vertexManager_.get_level(v) <= l;
+            v->for_each_son_i([=, this, &out, &xs](auto const iSon, auto const son)
             {
-                set_var(xs, v->get_index(), i);
-                satisfy_all_step(val, cLevel + 1, v->get_son(i), xs, out);
-            }
+                auto const next = goDown ? son : v;
+                SetVarVal {} (xs, vertexManager_.get_index(l), iSon);
+                satisfy_all_step(val, l + 1, next, xs, out);
+            });
         }
     }
 

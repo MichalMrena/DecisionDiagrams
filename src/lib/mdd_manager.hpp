@@ -138,7 +138,7 @@ namespace mix::dd
                 , class OutputIt
                 , class SetVarVal = set_var_val<P, VariableValues> >
         auto satisfy_all_step ( log_t const     val
-                              , index_t   const i
+                              , level_t const   l
                               , vertex_t* const v
                               , VariableValues& xs
                               , OutputIt&       out ) const -> void;

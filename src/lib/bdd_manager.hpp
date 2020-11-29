@@ -74,16 +74,6 @@ namespace mix::dd
         using prob_table = typename base::prob_table;
         using son_a      = typename base::son_a;
 
-    /* Tools internals */
-    private:
-        template< class VariableValues
-                , class OutputIt
-                , class SetVarVal = set_var_val<2, VariableValues> >
-        auto satisfy_all_step ( index_t   const i
-                              , vertex_t* const v
-                              , VariableValues& xs
-                              , OutputIt&       out ) const -> void;
-
     /* Creation internals */
     private:
         auto line_to_product (pla_line const& line)   -> bdd_t;

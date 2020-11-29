@@ -256,7 +256,7 @@ namespace mix::dd
                 auto const son    = v->get_son(val);
                 auto const sLevel = this->vertexManager_.get_level(son);
 
-                if (ND == this->vertexManager_.get_terminal_value(son))
+                if (ND == this->vertexManager_.get_vertex_value(son))
                 {
                     return son;
                 }

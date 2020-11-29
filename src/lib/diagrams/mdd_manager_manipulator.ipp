@@ -117,8 +117,8 @@ namespace mix::dd
             return memoIt->second;
         }
 
-        auto const lhsVal = vertexManager_.get_terminal_value(lhs);
-        auto const rhsVal = vertexManager_.get_terminal_value(rhs);
+        auto const lhsVal = vertexManager_.get_vertex_value(lhs);
+        auto const rhsVal = vertexManager_.get_vertex_value(rhs);
         auto const opVal  = op(lhsVal, rhsVal);
         auto u = static_cast<vertex_t*>(nullptr);
 
