@@ -34,7 +34,7 @@ and a diagram of a single Boolean variable.
 auto x0 = m.just_var(0);
 auto x4 = m.just_var(4);
 ```
-Useful trick for creating diagram for a variable is to create a reference to the manager with name `x`. Manager overloads the `operator()` that does the same thing as `just_var`.
+Useful trick for creating diagram for a variable is to create a reference to the manager with name `x`. Manager defines an `operator()` that does the same thing as `just_var`.
 ```C++
 auto& x = m;
 auto x1 = x(1);
@@ -44,6 +44,11 @@ In order to create complemented (negated) variable you can use `just_var_not` or
 auto x2_ = m.just_var_not(2);
 auto x3_ = x(3, NOT());
 ```
+You can also complement (negate) an existing diagram using function `negate`.
+```C++
+auto x1_ = m.negate(x1);
+```
+
 Lets say you want to create a diagram for a more complex function `(x0 * x1) + (x2 * x3 + x5)` where `*` denotes logical conjunction (and) and `+` denotes logical disjunction (or). What we can do is to merge diagrams of individual variables using function `apply`. Apply takes two diagrams and a binary operation and returns a result of applying given operation on those diagrams.
 ```C++
 auto f = m.apply( m.apply(x0, AND(), x1)
@@ -61,7 +66,7 @@ auto g = x(0) * x(1) + (x(2) * x(3) + x(4));
 ```
 
 #### Using diagrams
-Now that we have the diagram of the function we can do something with it. Since the diagram is basically function we can evaluate it for given values of variables. As you can see, these values can be specified in different ways. It is up to you which one you pick. `get_value` returns either `0` (false) or `1` (true).
+Now that we have the diagram of the function we can do something with it. Since the diagram is basically a function we can evaluate it for given values of variables. As you can see, these values can be specified in different ways. It is up to you which one you pick. `get_value` returns either `0` (false) or `1` (true).
 ```C++
 auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
 auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
@@ -92,10 +97,10 @@ If we only want to print these variable values, we can use `std::ostream_iterato
 ```C++
 m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
 ```
-Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look.
+Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered diagram.
 ```C++
 auto f1 = x(1) xor x(2);
-auto f2 = (x(1) or x(2)) and (!x(1) or !x(2));
+auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
 assert(f1 == f2);
 ```
 

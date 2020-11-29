@@ -217,6 +217,7 @@ auto example_basic_usage_bdd()
     auto x1     = x(1);
     auto x2_    = m.just_var_not(2);
     auto x3_    = x(3, NOT());
+    auto x1_    = m.negate(x1);
 
     auto f = m.apply( m.apply(x0, AND(), x1)
                     , OR()
@@ -257,9 +258,9 @@ auto example_basic_usage_bdd()
     printl(td);
 
     auto f1 = x(1) xor x(2);
-    auto f2 = (x(1) or x(2)) and (!x(1) or !x(2));
+    auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
     assert(f1 == f2);
-    m.to_dot_graph(std::cout, f1);
+    // m.to_dot_graph(std::cout, f1);
 }
 
 auto order_test()
@@ -298,9 +299,9 @@ auto main() -> int
     // basic_test();
     // pla_test();
     // bss_reliability_test();
-    mss_reliability_test();
+    // mss_reliability_test();
     // mss_playground();
-    // example_basic_usage_bdd();
+    example_basic_usage_bdd();
 
     // order_test();
 
