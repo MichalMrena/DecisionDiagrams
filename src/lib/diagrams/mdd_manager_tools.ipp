@@ -17,7 +17,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::vertex_count
         (mdd_t const& diagram) const -> std::size_t
     {
-        auto count = 0;
+        auto count = 0u;
         this->traverse_pre(diagram, [&count](auto){ ++count; });
         return count;
     }
@@ -56,15 +56,16 @@ namespace mix::dd
             {
                 v->data = 0;
                 auto const vLevel = vertexManager_.get_level(v);
-                v->for_each_son([=](auto const son)
+                v->for_each_son([=, this](auto const son)
                 {
                     auto const sonLevel = vertexManager_.get_level(son);
-                    v->data += son->data * utils::int_pow(P, sonLevel - vLevel - 1);
+                    auto const diffFactor = utils::int_pow(P, sonLevel - vLevel - 1);
+                    v->data += son->data * static_cast<double>(diffFactor);
                 });
             }
         });
 
-        auto const rootAlpha = d.get_root()->data;
+        auto const rootAlpha = static_cast<std::size_t>(d.get_root()->data);
         auto const rootLevel = vertexManager_.get_level(d.get_root());
         return rootAlpha * utils::int_pow(P, rootLevel);
     }
@@ -91,7 +92,7 @@ namespace mix::dd
         (log_t const val, mdd_t const& d, OutputIt out) const -> void
     {
         auto xs = VariableValues {};
-        this->satisfy_all_step(val, 0, d.get_root(), xs, out);
+        this->satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, 0, d.get_root(), xs, out);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -252,7 +253,7 @@ namespace mix::dd
             {
                 auto const next = goDown ? son : v;
                 SetVarVal {} (xs, vertexManager_.get_index(l), iSon);
-                satisfy_all_step(val, l + 1, next, xs, out);
+                satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, next, xs, out);
             });
         }
     }

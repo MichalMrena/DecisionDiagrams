@@ -19,7 +19,7 @@ auto bss_reliability_test()
     // m.set_order({0, 3, 1, 4, 2});
 
     auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
-    auto sf = x(0) and x(1) or (x(2) and x(3) or x(4));
+    auto sf = (x(0) and x(1)) or ((x(2) and x(3)) or x(4));
 
     auto const A = m.availability(ps, sf);
     auto const U = 1 - A;
@@ -42,60 +42,57 @@ auto bss_reliability_test()
     printl(concat("MCVs: " , concat_range(MCVs, ", ")));
 }
 
-namespace
+auto const serial23 = [](auto const lhs, auto const rhs)
 {
-    auto const serial23 = [](auto const lhs, auto const rhs)
-    {
-        using log_t = typename log_val_traits<3>::type;
-        auto constexpr table = std::array<std::array<log_t, 3>, 2>
-        {{
-            {0, 0, 0},
-            {0, 1, 2},
-        }};
-        return table.at(lhs).at(rhs);
-    };
+    using log_t = typename log_val_traits<3>::type;
+    auto constexpr table = std::array<std::array<log_t, 3>, 2>
+    {{
+        {0, 0, 0},
+        {0, 1, 2},
+    }};
+    return table.at(lhs).at(rhs);
+};
 
-    auto const parallel23 = [](auto const lhs, auto const rhs)
-    {
-        using log_t = typename log_val_traits<3>::type;
-        auto constexpr table = std::array<std::array<log_t, 3>, 2>
-        {{
-            {0, 1, 2},
-            {1, 1, 2},
-        }};
-        return table.at(lhs).at(rhs);
-    };
+auto const parallel23 = [](auto const lhs, auto const rhs)
+{
+    using log_t = typename log_val_traits<3>::type;
+    auto constexpr table = std::array<std::array<log_t, 3>, 2>
+    {{
+        {0, 1, 2},
+        {1, 1, 2},
+    }};
+    return table.at(lhs).at(rhs);
+};
 
-    auto const parallel33 = [](auto const lhs, auto const rhs)
-    {
-        using log_t = typename log_val_traits<3>::type;
-        auto constexpr table = std::array<std::array<log_t, 3>, 3>
-        {{
-            {0, 1, 1},
-            {1, 2, 2},
-            {1, 2, 2},
-        }};
-        return table.at(lhs).at(rhs);
-    };
+auto const parallel33 = [](auto const lhs, auto const rhs)
+{
+    using log_t = typename log_val_traits<3>::type;
+    auto constexpr table = std::array<std::array<log_t, 3>, 3>
+    {{
+        {0, 1, 1},
+        {1, 2, 2},
+        {1, 2, 2},
+    }};
+    return table.at(lhs).at(rhs);
+};
 
-    auto constexpr U = log_val_traits<3>::undefined;
+auto constexpr U = log_val_traits<3>::undefined;
 
-    struct serial23_t   : public mix::dd::impl::bin_op<decltype(serial23), 3, U> {};
-    struct parallel23_t : public mix::dd::impl::bin_op<decltype(parallel23), 3, U> {};
-    struct parallel33_t : public mix::dd::impl::bin_op<decltype(parallel33), 3, U> {};
+struct serial23_t   : public mix::dd::impl::bin_op<decltype(serial23), 3, U> {};
+struct parallel23_t : public mix::dd::impl::bin_op<decltype(parallel23), 3, U> {};
+struct parallel33_t : public mix::dd::impl::bin_op<decltype(parallel33), 3, U> {};
 
-    constexpr auto op_id (serial23_t)   { return op_id_t {15}; }
-    constexpr auto op_id (parallel23_t) { return op_id_t {16}; }
-    constexpr auto op_id (parallel33_t) { return op_id_t {17}; }
-    constexpr auto op_is_commutative (serial23_t)   { return false; }
-    constexpr auto op_is_commutative (parallel23_t) { return false; }
-    constexpr auto op_is_commutative (parallel33_t) { return false; }
-}
+constexpr auto op_id (serial23_t)   { return op_id_t {15}; }
+constexpr auto op_id (parallel23_t) { return op_id_t {16}; }
+constexpr auto op_id (parallel33_t) { return op_id_t {17}; }
+constexpr auto op_is_commutative (serial23_t)   { return false; }
+constexpr auto op_is_commutative (parallel23_t) { return false; }
+constexpr auto op_is_commutative (parallel33_t) { return false; }
 
 auto mss_reliability_test()
 {
     using prob_table = typename mdd_manager<double, void, 3>::prob_table;
-    using vec_t      = std::array<int, 4>;
+    using vec_t      = std::array<unsigned int, 4>;
 
     auto m  = mdd_manager<double, void, 3>(4);
     m.set_domains({2, 3, 2, 3});
@@ -173,7 +170,7 @@ auto pla_test()
         auto file           = pla_file::load_file(filePath);
         auto manager        = bdd_manager<void, void>(file.variable_count());
         auto const ds       = manager.from_pla(file, fold_e::tree);
-        auto sum            = 0u;
+        auto sum            = 0ul;
         for (auto& d : ds)
         {
             sum += manager.vertex_count(d);
@@ -230,8 +227,8 @@ auto example_basic_usage_bdd()
     auto g  = x(0) * x(1) + (x(2) * x(3) + x(4));
     auto g1 = !(x(0) * x(1)) + (!(x(2) + x(3)) + x(4));
 
-    auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
-    auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
+    auto const val0 = m.get_value(f, std::array  {0u, 1u, 1u, 0u, 1u});
+    auto const val1 = m.get_value(f, std::vector {0u, 1u, 1u, 0u, 1u});
     auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
     auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
     auto const val4 = m.get_value(f, 0b10110);
@@ -289,21 +286,83 @@ auto order_test()
     }
 }
 
+auto swap_var_test()
+{
+    auto m  = make_bdd_manager(6);
+    auto& x = m;
+    register_manager(m);
+    m.set_order({0, 1, 2, 3, 4, 5});
+
+    auto f = x(0) * x(3)
+           + x(1) * x(4)
+           + x(2) * x(5);
+
+    // m.collect_garbage();
+    // m.to_dot_graph(std::cout);
+    // m.swap_vars(2);
+
+    // m.to_dot_graph(std::cout);
+    m.collect_garbage();
+    // m.to_dot_graph(std::cout);
+}
+
+auto eq_test()
+{
+    auto m  = make_bdd_manager(4);
+    auto& x = m;
+    register_manager(m);
+
+    // auto f1 = !((!(x(0) + x(1)) + (x(2) * x(3)))+ (x(2) + x(3)));
+    // auto f2 = (x(0) + x(1)) * !(x(2) * x(3)) * !(x(2) + x(3));
+    // auto f3 = (x(0) + x(1)) * !(x(2) * x(3)) * !x(2) * !x(3);
+    // auto f4 = (x(0) + x(1)) * (!x(2) + !x(3)) * !x(2) * !x(3);
+    // auto f5 = (x(0) + x(1)) * (!x(2) * !x(2) + !x(2) * !x(3) + !x(2) * !x(3) + !x(3) * !x(3));
+    // auto f6 = (x(0) + x(1)) * !x(2) * !x(3);
+    // assert(f4 == f6);
+
+    // auto dfc = m.restrict_var(f1, 2, 0) xor m.restrict_var(f1, 2, 1);
+    // auto dfd = m.restrict_var(f1, 3, 0) xor m.restrict_var(f1, 3, 1);
+
+    // m.to_dot_graph(std::cout, dfd);
+
+    // auto f = !( !(x(0) + x(1)) + x(2) * x(3) ) * x(2) * x(3);
+    auto f2 = x(0) * (x(1) + x(2) * x(3));
+    printl(m.availability({0.5, 0.6, 0.7, 0.8}, f2));
+
+    // m.to_dot_graph(std::cout, f);
+}
+
+auto patterns_imgs()
+{
+    auto m1 = make_mdd_manager<3>(3);
+    auto x1 = m1.just_var(1);
+    auto x2 = m1.just_var(2);
+    auto f1 = m1.apply(x1, MAX<3>(), x2);
+    m1.to_dot_graph(std::cout, f1);
+
+    auto m2 = make_bdd_manager(4);
+    auto& x = m2;
+    register_manager(m2);
+    auto f2 = x(1) * x(2) + x(3);
+    m2.to_dot_graph(std::cout, f2);
+
+    m2.to_dot_graph(std::cout, x(1) * x(2));
+}
+
 auto main() -> int
 {
     auto watch = stopwatch();
 
-    // TODO V texte diplomovky určite spomenúť, že každý vrchol je unikátna funckia, preto je možné využiť matematické vlastnosti ako komutativita pri
-    // implementácii cache mechanizmu a tabuľky unikátnych funkcií
-
     // basic_test();
     // pla_test();
-    // bss_reliability_test();
+    bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
-    example_basic_usage_bdd();
-
+    // example_basic_usage_bdd();
     // order_test();
+    // swap_var_test();
+    // eq_test();
+    // patterns_imgs();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

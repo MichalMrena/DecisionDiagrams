@@ -35,6 +35,13 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::swap_vars
+        (index_t const i) -> void
+    {
+        vertexManager_.swap_vars(i);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::clear
         () -> void
     {
@@ -47,6 +54,14 @@ namespace mix::dd
         () -> void
     {
         applyMemo_.clear();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::collect_garbage
+        () -> void
+    {
+        this->clear_cache();
+        vertexManager_.collect_garbage();
     }
 
     template<class VertexData, class ArcData, std::size_t P>

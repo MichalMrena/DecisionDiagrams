@@ -16,7 +16,7 @@ namespace mix::dd
         (index_t const i) -> mdd_t
     {
         auto constexpr ND = log_val_traits<P>::nodomain;
-        return this->just_var_impl(i, utils::fill_array<P>([=](auto const val)
+        return this->just_var_impl(i, utils::fill_array<P>([=, this](auto const val)
         {
             return val < this->get_domain(i) ? val : ND;
         }));
@@ -36,7 +36,7 @@ namespace mix::dd
     {
         auto const leaves = utils::map_to_array<P>(vals, [this](auto const lv)
         {
-            return vertexManager_.terminal_vertex(lv);
+            return vertexManager_.terminal_vertex(static_cast<log_t>(lv));
         });
         return mdd_t {vertexManager_.internal_vertex(i, leaves)};
     }

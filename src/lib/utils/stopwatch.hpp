@@ -51,7 +51,7 @@ namespace mix::utils
     {
         auto watch = stopwatch();
         function();
-        return watch.elapsed_time().count();
+        return static_cast<double>(watch.elapsed_time().count());
     }
 
     /**
@@ -69,7 +69,7 @@ namespace mix::utils
         {
             sum += run_time(function);
         }
-        return sum / replications;
+        return sum / static_cast<double>(replications);
     }
 }
 

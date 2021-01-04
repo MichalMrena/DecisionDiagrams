@@ -368,13 +368,13 @@ namespace mix::dd
     inline auto pla_file::variable_count
         () const -> index_t
     {
-        return lines_.front().cube.size();
+        return static_cast<index_t>(lines_.front().cube.size());
     }
 
     inline auto pla_file::function_count
         () const -> index_t
     {
-        return lines_.front().fVals.size();
+        return static_cast<index_t>(lines_.front().fVals.size());
     }
 
     inline auto pla_file::line_count

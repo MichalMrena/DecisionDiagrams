@@ -30,10 +30,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     struct arc : public arc_base<VertexData, ArcData, P>
     {
-        using vertex_t = typename arc_base<VertexData, ArcData, P>::vertex_t;
         ArcData data;
-        arc () = default;
-        arc (vertex_t* const pTarget);
     };
 
     /**
@@ -42,9 +39,6 @@ namespace mix::dd
     template<class VertexData, std::size_t P>
     struct arc<VertexData, void, P> : public arc_base<VertexData, void, P>
     {
-        using vertex_t = typename arc_base<VertexData, void, P>::vertex_t;
-        arc () = default;
-        arc (vertex_t* const pTarget);
     };
 
     /**
@@ -62,19 +56,20 @@ namespace mix::dd
         using ref_count_t = std::uint32_t;
 
     public:
-        vertex_base(index_t const index);
-        vertex_base(index_t const index, son_a const& sons);
+        vertex_base (index_t const index);
+        vertex_base (index_t const index, son_a const& sons);
 
     public:
-        auto get_son       (log_t const i) const -> vertex_t*;
-        auto set_son       (log_t const i, vertex_t* const son) -> void;
-        auto get_mark      () const              -> bool;
-        auto toggle_mark   ()                    -> void;
-        auto get_index     () const              -> index_t;
-        auto set_index     (index_t const index) -> void;
-        auto get_ref_count () const -> ref_count_t;
-        auto inc_ref_count ()       -> void;
-        auto dec_ref_count ()       -> void;
+        auto get_id        () const                    -> std::intptr_t;
+        auto get_son       (std::size_t const i) const -> vertex_t*;
+        auto set_sons      (son_a const& sons)         -> void;
+        auto get_mark      () const                    -> bool;
+        auto toggle_mark   ()                          -> void;
+        auto get_index     () const                    -> index_t;
+        auto set_index     (index_t const index)       -> void;
+        auto get_ref_count () const                    -> ref_count_t;
+        auto inc_ref_count ()                          -> void;
+        auto dec_ref_count ()                          -> void;
 
         template<class VertexOp>
         auto for_each_son (VertexOp op) -> void;
@@ -83,7 +78,7 @@ namespace mix::dd
         auto for_each_son_i (IndexedVertexOp op) -> void;
 
     private:
-        inline static constexpr auto MaskMark = 1 << (8 * sizeof(ref_count_t) - 1);
+        inline static constexpr auto MaskMark = 1ul << (8 * sizeof(ref_count_t) - 1);
         inline static constexpr auto MaskRef  = ~MaskMark;
 
     private:
@@ -126,22 +121,6 @@ namespace mix::dd
         vertex(index_t const index, son_a const& sons);
     };
 
-// arc definitions:
-
-    template<class VertexData, class ArcData, std::size_t P>
-    arc<VertexData, ArcData, P>::arc
-        (vertex_t* const pTarget) :
-        arc_base<VertexData, ArcData, P> {pTarget}
-    {
-    }
-
-    template<class VertexData, std::size_t P>
-    arc<VertexData, void, P>::arc
-        (vertex_t* const pTarget) :
-        arc_base<VertexData, void, P> {pTarget}
-    {
-    }
-
 // vertex_base definitions:
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -154,24 +133,34 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     vertex_base<VertexData, ArcData, P>::vertex_base
         (index_t const index, son_a const& sons) :
-        forwardStar_  {utils::map_to_array(sons, [](auto const v) { return arc_t {v}; })},
+        forwardStar_  {utils::map_to_array(sons, [](auto const v) { return arc_t {{v}}; })},
         markRefCount_ {0},
         index_        {index}
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_base<VertexData, ArcData, P>::get_id
+        () const -> std::intptr_t
+    {
+        return reinterpret_cast<std::uintptr_t>(this);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::get_son
-        (log_t const i) const -> vertex_t*
+        (std::size_t const i) const -> vertex_t*
     {
         return forwardStar_[i].target;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_base<VertexData, ArcData, P>::set_son
-        (log_t const i, vertex_t* const son) -> void
+    auto vertex_base<VertexData, ArcData, P>::set_sons
+        (son_a const& sons) -> void
     {
-        forwardStar_[i].target = son;
+        forwardStar_ = utils::map_to_array(sons, [](auto const v)
+        {
+            return arc_t {{v}};
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>

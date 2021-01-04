@@ -147,8 +147,8 @@ namespace mix::dd
         (mdd_v& dpbds) -> double_v
     {
         auto const domProduct = this->get_domain_product();
-        auto zs = utils::zip(utils::range(0u, dpbds.size()), dpbds);
-        return utils::map(zs, dpbds.size(), [=](auto&& pair)
+        auto zs = utils::zip(utils::range(0u, static_cast<index_t>(dpbds.size())), dpbds);
+        return utils::map(zs, dpbds.size(), [=, this](auto&& pair)
         {
             auto&& [i, d] = pair;
             return this->structural_importance(domProduct / this->get_domain(i), d);
@@ -192,8 +192,8 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::mcvs
         (mdd_v const& dpbds, log_t const level) -> std::vector<VectorType>
     {
-        auto const is = utils::range(0u, dpbds.size());
-        auto dpbdes   = utils::map(utils::zip(is, dpbds), dpbds.size(), [=](auto const& pair)
+        auto const is = utils::range(0u, static_cast<index_t>(dpbds.size()));
+        auto dpbdes   = utils::map(utils::zip(is, dpbds), dpbds.size(), [=, this](auto const& pair)
         {
             auto const& [i, dpbd] = pair;
             return this->to_dpbde(dpbd, level, i);
@@ -221,7 +221,7 @@ namespace mix::dd
         (std::size_t const domainSize, mdd_t& dpbd) -> double
     {
         auto const onesCount = static_cast<double>(this->satisfy_count(1, dpbd) / P);
-        return domainSize ? onesCount / domainSize : 0;
+        return domainSize ? onesCount / static_cast<double>(domainSize) : 0;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -238,7 +238,7 @@ namespace mix::dd
         // Special case when the new vertex for the i-th variable is inserted above the root.
         if (iLevel < rLevel)
         {
-            auto const sons = utils::fill_array<P>([=](auto const val)
+            auto const sons = utils::fill_array<P>([=, this](auto const val)
             {
                 return val == (level - 1) ? root                              :
                        val < iDomain      ? vertexManager_.terminal_vertex(U) :
@@ -248,10 +248,10 @@ namespace mix::dd
         }
 
         // Normal case for all internal vertices.
-        return this->transform(dpbd, [=](auto const v, auto&& l_this)
+        return this->transform(dpbd, [=, this](auto const v, auto&& l_this)
         {
             auto const vLevel = this->vertexManager_.get_level(v);
-            return utils::fill_array<P>([=, &l_this](auto const val)
+            return utils::fill_array<P>([=, this, &l_this](auto const val)
             {
                 auto const son    = v->get_son(val);
                 auto const sLevel = this->vertexManager_.get_level(son);
@@ -262,7 +262,7 @@ namespace mix::dd
                 }
                 else if (iLevel > vLevel && iLevel < sLevel)
                 {
-                    return this->vertexManager_.internal_vertex(i, utils::fill_array<P>([=](auto const j)
+                    return this->vertexManager_.internal_vertex(i, utils::fill_array<P>([=, this](auto const j)
                     {
                         return j == (level - 1) ? son :
                                j < iDomain      ? vertexManager_.terminal_vertex(U) :
@@ -283,9 +283,9 @@ namespace mix::dd
     {
         auto const leaf0 = vertexManager_.get_terminal_vertex(0);
         auto const leaf1 = vertexManager_.get_terminal_vertex(1);
-        return this->transform(dpbd, [=](auto const v, auto&& l_this)
+        return this->transform(dpbd, [=, this](auto const v, auto&& l_this)
         {
-            auto sons = utils::fill_array<P>([=](auto const i)
+            auto sons = utils::fill_array<P>([=, this](auto const i)
             {
                 return this->transform_step(v->get_son(i), l_this);
             });

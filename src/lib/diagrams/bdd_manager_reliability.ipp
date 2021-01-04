@@ -71,7 +71,8 @@ namespace mix::dd
         (bdd_t& dpbd) -> double
     {
         auto const sc = static_cast<double>(this->satisfy_count(dpbd) / 2);
-        return sc / utils::two_pow(base::vertexManager_.get_var_count() - 1);
+        auto const domainSize = utils::two_pow(base::vertexManager_.get_var_count() - 1);
+        return sc / static_cast<double>(domainSize);
     }
 
     template<class VertexData, class ArcData>
@@ -142,7 +143,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::mcvs
         (std::vector<bdd_t> dpbds) -> std::vector<VectorType>
     {
-        auto is     = utils::range(0u, dpbds.size());
+        auto is     = utils::range(0u, static_cast<index_t>(dpbds.size()));
         auto dpbdes = utils::map(utils::zip(is, dpbds), dpbds.size(), [this](auto const& pair)
         {
             auto const& [i, dpbd] = pair;

@@ -19,7 +19,8 @@ namespace mix::dd
     template<std::size_t P>
     struct log_val_traits
     {
-        using type = std::uint8_t;
+        // using type = std::uint8_t;
+        using type = unsigned int;
 
         static_assert(P < std::numeric_limits<type>::max() - 1, "Max for P is 253.");
 

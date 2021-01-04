@@ -31,6 +31,7 @@ namespace mix::dd
 
         auto set_domains     (log_v domains)        -> void;
         auto set_order       (index_v levelToIndex) -> void;
+        auto swap_vars       (index_t const i)      -> void;
         auto clear           () -> void;
         auto clear_cache     () -> void;
         auto collect_garbage () -> void;
@@ -44,7 +45,7 @@ namespace mix::dd
 
         template< class VariableValues
                 , class GetIthVal = get_var_val<P, VariableValues> >
-        auto get_value (mdd_t const& d, VariableValues const& vars) const -> log_t;
+        auto get_value (mdd_t const& d, VariableValues const& vars) const -> log_t; // TODO rename to evaluate_function?
 
         template< class VariableValues
                 , class OutputIt
@@ -81,8 +82,8 @@ namespace mix::dd
 
     /* Creation */
     public:
-        auto just_val   (log_t const val) -> mdd_t;
-        auto just_var   (index_t const i) -> mdd_t;
+        auto just_val   (log_t const val) -> mdd_t; // TODO rename to constant
+        auto just_var   (index_t const i) -> mdd_t; // TODO rename to variable
         auto operator() (index_t const i) -> mdd_t;
 
     /* Reliability */
