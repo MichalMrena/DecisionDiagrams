@@ -50,7 +50,7 @@ namespace mix::utils
                                                     , std::random_access_iterator_tag >;
         if constexpr (hasFastCount)
         {
-            return impl::map(first, last, std::distance(first, last), op);
+            return impl::map(first, last, static_cast<std::size_t>(std::distance(first, last)), op);
         }
         else
         {
@@ -87,7 +87,7 @@ namespace mix::utils
                                                     , std::random_access_iterator_tag >;
         if constexpr (hasFastCount)
         {
-            return impl::map_if(first, last, std::distance(first, last), p, op);
+            return impl::map_if(first, last, static_cast<std::size_t>(std::distance(first, last)), p, op);
         }
         else
         {
