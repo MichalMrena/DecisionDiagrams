@@ -20,7 +20,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::set_domains
         (log_v domains) -> void
     {
-        utils::runtime_assert( this->get_var_count() == domains.size()
+        utils::runtime_assert( this->var_count() == domains.size()
                              , "mdd_manager::set_domains: Domains vector size must match var count." );
         domains_ = std::move(domains);
     }
@@ -65,10 +65,10 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::get_var_count
+    auto mdd_manager<VertexData, ArcData, P>::var_count
         () const -> std::size_t
     {
-        return vertexManager_.get_var_count();
+        return vertexManager_.var_count();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -84,7 +84,7 @@ namespace mix::dd
     {
         return domains_.size() ? std::reduce( std::begin(domains_), std::end(domains_)
                                             , std::size_t {1}, std::multiplies() )
-                               : utils::int_pow(P, this->get_var_count());
+                               : utils::int_pow(P, this->var_count());
     }
 
     template<std::size_t P>

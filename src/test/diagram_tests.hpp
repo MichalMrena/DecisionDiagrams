@@ -33,8 +33,8 @@ namespace mix::dd
             
             while (input != endInput)
             {
-                auto const val1 = bdds[i].get_value(input);
-                auto const val2 = plaFunc.get_value(input, i);
+                auto const val1 = bdds[i].evaluate(input);
+                auto const val2 = plaFunc.evaluate(input, i);
                 if (val1 != val2)
                 {
                     printl(concat("!!! Error for input " , input , " in function i = " , i));
@@ -52,8 +52,8 @@ namespace mix::dd
             while (watch.elapsed_time() < maxTime)
             {
                 auto const input = random_bits();
-                auto const val1  = bdds[i].get_value(input);
-                auto const val2  = plaFunc.get_value(input, i);
+                auto const val1  = bdds[i].evaluate(input);
+                auto const val2  = plaFunc.evaluate(input, i);
                 if (val1 != val2)
                 {
                     printl(concat("!!! Error for input " , input.to_string() , " in function i = " , i));

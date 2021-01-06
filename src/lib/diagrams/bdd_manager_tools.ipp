@@ -18,7 +18,7 @@ namespace mix::dd
         (bdd_t& d) -> double
     {
         return static_cast<double>(this->satisfy_count(d))
-             / static_cast<double>(utils::two_pow(this->get_var_count()));
+             / static_cast<double>(utils::two_pow(this->var_count()));
     }
 
     template<class VertexData, class ArcData>

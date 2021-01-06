@@ -38,14 +38,16 @@ namespace mix::dd
 
     /* Tools */
     public:
-        auto vertex_count  (mdd_t const& d) const -> std::size_t;
+        auto vertex_count  ()                  const -> std::size_t;
+        auto vertex_count  (mdd_t const& d)    const -> std::size_t;
+        auto vertex_count  (index_t const i)   const -> std::size_t;
         auto to_dot_graph  (std::ostream& ost) const -> void;
         auto to_dot_graph  (std::ostream& ost, mdd_t const& d) const -> void;
         auto satisfy_count (log_t const val, mdd_t& d) -> std::size_t;
 
         template< class VariableValues
                 , class GetIthVal = get_var_val<P, VariableValues> >
-        auto get_value (mdd_t const& d, VariableValues const& vars) const -> log_t; // TODO rename to evaluate_function?
+        auto evaluate (mdd_t const& d, VariableValues const& vars) const -> log_t;
 
         template< class VariableValues
                 , class OutputIt
@@ -181,7 +183,7 @@ namespace mix::dd
 
     /* Other internals */
     public:
-        auto get_var_count      () const -> std::size_t;
+        auto var_count      () const -> std::size_t;
         auto get_domain         (index_t const i) const -> log_t;
         auto get_domain_product () const -> std::size_t;
 

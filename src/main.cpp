@@ -5,6 +5,8 @@
 #include "lib/mdd_manager.hpp"
 #include "lib/bdd_manager.hpp"
 
+#include "test/test_bdd.hpp"
+
 #include <bitset>
 #include <cassert>
 
@@ -227,11 +229,11 @@ auto example_basic_usage_bdd()
     auto g  = x(0) * x(1) + (x(2) * x(3) + x(4));
     auto g1 = !(x(0) * x(1)) + (!(x(2) + x(3)) + x(4));
 
-    auto const val0 = m.get_value(f, std::array  {0u, 1u, 1u, 0u, 1u});
-    auto const val1 = m.get_value(f, std::vector {0u, 1u, 1u, 0u, 1u});
-    auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
-    auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
-    auto const val4 = m.get_value(f, 0b10110);
+    auto const val0 = m.evaluate(f, std::array  {0u, 1u, 1u, 0u, 1u});
+    auto const val1 = m.evaluate(f, std::vector {0u, 1u, 1u, 0u, 1u});
+    auto const val2 = m.evaluate(f, std::vector {false, true, true, false, true});
+    auto const val3 = m.evaluate(f, std::bitset<5> {0b10110});
+    auto const val4 = m.evaluate(f, 0b10110);
 
     auto const sc = m.satisfy_count(f);
     auto const td = m.truth_density(f);
@@ -243,7 +245,7 @@ auto example_basic_usage_bdd()
 
     for (auto const& v : vars)
     {
-        assert(1 == m.get_value(f, v));
+        assert(1 == m.evaluate(f, v));
     }
 
     printl(val0);
@@ -277,7 +279,7 @@ auto order_test()
         auto varVals = 0;
         for (auto const correctVal : vector)
         {
-            if (m.get_value(f, varVals) != correctVal)
+            if (m.evaluate(f, varVals) != correctVal)
             {
                 throw "not good";
             }
@@ -355,7 +357,7 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    bss_reliability_test();
+    // bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
@@ -363,6 +365,8 @@ auto main() -> int
     // swap_var_test();
     // eq_test();
     // patterns_imgs();
+
+    test::test_bdd(5, test::order_e::Random);
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

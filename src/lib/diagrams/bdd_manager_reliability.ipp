@@ -60,9 +60,9 @@ namespace mix::dd
         (bdd_t const& f) -> bdd_v
     {
         // using namespace std::placeholders;
-        // return utils::fill_vector( this->vertexManager_.get_var_count()
+        // return utils::fill_vector( this->vertexManager_.var_count()
         //                          , std::bind(&bdd_manager::dpbd, this, f, _1) );
-        return utils::fill_vector( this->vertexManager_.get_var_count()
+        return utils::fill_vector( this->vertexManager_.var_count()
                                  , std::bind_front(&bdd_manager::dpbd, this, f) );
     }
 
@@ -71,7 +71,7 @@ namespace mix::dd
         (bdd_t& dpbd) -> double
     {
         auto const sc = static_cast<double>(this->satisfy_count(dpbd) / 2);
-        auto const domainSize = utils::two_pow(base::vertexManager_.get_var_count() - 1);
+        auto const domainSize = utils::two_pow(base::vertexManager_.var_count() - 1);
         return sc / static_cast<double>(domainSize);
     }
 

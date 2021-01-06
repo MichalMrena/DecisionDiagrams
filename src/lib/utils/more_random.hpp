@@ -5,33 +5,36 @@
 
 namespace mix::utils
 {
-    namespace aux_impl
+    namespace mr_impl
     {
         class random_base
         {
         public:
-            using seed_t = unsigned long;
+            using seed_t = unsigned int;
 
-            explicit random_base(seed_t const seed);
+        public:
+            explicit random_base (seed_t const seed);
 
         protected:
             std::mt19937 generator_;
         };
 
-        inline random_base::random_base(seed_t const seed) :
+        inline random_base::random_base
+            (seed_t const seed) :
             generator_ {seed}
         {
         }
     }
 
     template<class IntType>
-    class random_uniform_int : private aux_impl::random_base
+    class random_uniform_int : private mr_impl::random_base
     {
     public:
-        using base_t = aux_impl::random_base;
-        using seed_t = typename base_t::seed_t;
+        using base   = mr_impl::random_base;
+        using seed_t = typename base::seed_t;
         using dist_t = std::uniform_int_distribution<IntType>;
 
+    public:
         random_uniform_int( IntType const min  = std::numeric_limits<IntType>::min()
                           , IntType const max  = std::numeric_limits<IntType>::max()
                           , seed_t  const seed = std::random_device {} () );
@@ -43,11 +46,12 @@ namespace mix::utils
     };
 
     template<class IntType>
-    random_uniform_int<IntType>::random_uniform_int ( IntType const min
-                                                    , IntType const max
-                                                    , seed_t  const seed ) :
-        random_base   {seed}
-      , distribution_ {min, max}
+    random_uniform_int<IntType>::random_uniform_int 
+        ( IntType const min
+        , IntType const max
+        , seed_t  const seed ) :
+        base          {seed},
+        distribution_ {min, max}
     {
     }
 
@@ -55,7 +59,7 @@ namespace mix::utils
     auto random_uniform_int<IntType>::next_int
         () -> IntType
     {
-        return distribution_(random_base::generator_);
+        return distribution_(base::generator_);
     }
 }
 

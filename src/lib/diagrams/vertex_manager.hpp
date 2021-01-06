@@ -49,9 +49,11 @@ namespace mix::dd
         auto get_vertex_value    (vertex_t* const v) const -> log_t;
         auto is_leaf             (vertex_t* const v) const -> bool;
         auto is_leaf             (index_t   const i) const -> bool;
-        auto get_var_count       () const -> std::size_t;
-        auto collect_garbage     () -> void;
-        auto clear               () -> void;
+        auto vertex_count        (index_t   const i) const -> std::size_t;
+        auto vertex_count        () const -> std::size_t;
+        auto var_count           () const -> std::size_t;
+        auto collect_garbage     ()       -> void;
+        auto clear               ()       -> void;
 
         auto swap_vars (index_t const i) -> void;
 
@@ -74,14 +76,14 @@ namespace mix::dd
         using alloc_traits_t = std::allocator_traits<alloc_t>;
 
     private:
-        auto vertex_count     () const -> std::size_t;
         auto leaf_index       () const -> index_t;
         auto leaf_level       () const -> level_t;
+        auto leaf_count       () const -> std::size_t;
         auto new_empty_vertex () -> vertex_t*;
         auto new_shallow_copy (vertex_t* const v) -> vertex_t*;
         auto delete_vertex    (vertex_t* const v) -> void;
         auto find_inverse     (level_v const& indexToLevel) const -> index_v;
-        auto swap_vertex    (vertex_t* const v) -> void;
+        auto swap_vertex      (vertex_t* const v) -> void;
 
         template<class IndexMapOp>
         auto for_each_level (IndexMapOp op) -> void;
@@ -134,7 +136,7 @@ namespace mix::dd
     {
         utils::runtime_assert( 0 == this->vertex_count()
                              , "vertex_manager::set_order: Manager must be empty." );
-        utils::runtime_assert( this->get_var_count() == levelToIndex.size()
+        utils::runtime_assert( this->var_count() == levelToIndex.size()
                              , "vertex_manager::set_order: Level vector size must match var count." );
         levelToIndex_ = std::move(levelToIndex);
         indexToLevel_ = this->find_inverse(levelToIndex_);
@@ -144,7 +146,7 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::terminal_vertex
         (log_t const val) -> vertex_t*
     {
-        // TODO put runtime_asserts in methods like this
+        // TODO put asserts in methods like this
         if (leaves_[val])
         {
             return leaves_[val];
@@ -245,7 +247,35 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_var_count
+    auto vertex_manager<VertexData, ArcData, P>::vertex_count
+        (index_t const i) const -> std::size_t
+    {
+        // TODO assert
+        if (this->leaf_level() == i)
+        {
+            return this->leaf_count();
+        }
+        else
+        {
+            auto count = 0ul;
+            auto const& map = indexToMap_[i];
+            std::for_each(std::begin(map), std::end(map), [&count](auto&&){ ++count; });
+            return count;
+        }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::vertex_count
+        () const -> std::size_t
+    {
+        auto count = std::size_t {0};
+        this->for_each_level([&count](auto const& level) { count += level.size(); });
+        count += this->leaf_count();
+        return count;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::var_count
         () const -> std::size_t
     {
         return indexToMap_.size();
@@ -275,6 +305,14 @@ namespace mix::dd
                 }
             }
         });
+
+        for (auto i = 0u; i < leaves_.size(); ++i)
+        {
+            if (leaves_[i] && 0 == leaves_[i]->get_ref_count())
+            {
+                this->delete_vertex(std::exchange(leaves_[i], nullptr));
+            }
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -383,26 +421,27 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::vertex_count
-        () const -> std::size_t
-    {
-        auto count = std::size_t {0};
-        this->for_each_level([&count](auto const& level) { count += level.size(); });
-        return count;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::leaf_index
         () const -> index_t
     {
-        return static_cast<index_t>(this->get_var_count());
+        return static_cast<index_t>(this->var_count());
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::leaf_level
         () const -> level_t
     {
-        return static_cast<level_t>(this->get_var_count());
+        return static_cast<level_t>(this->var_count());
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::leaf_count
+        () const -> std::size_t
+    {
+        auto const nulls = std::count( std::begin(leaves_)
+                                     , std::end(leaves_)
+                                     , nullptr );
+        return leaves_.size() - static_cast<std::size_t>(nulls);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -491,7 +530,7 @@ namespace mix::dd
 
         if (levelToIndex_.empty())
         {
-            for (auto index = 0u; index < this->get_var_count(); ++index)
+            for (auto index = 0u; index < this->var_count(); ++index)
             {
                 op(indexToMapRef[index]);
             }

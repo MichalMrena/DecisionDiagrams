@@ -15,6 +15,13 @@ namespace mix::dd
 {
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::vertex_count
+        () const -> std::size_t
+    {
+        return vertexManager_.vertex_count();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::vertex_count
         (mdd_t const& diagram) const -> std::size_t
     {
         auto count = 0u;
@@ -23,12 +30,19 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::vertex_count
+        (index_t const i) const -> std::size_t
+    {
+        return vertexManager_.vertex_count(i);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::to_dot_graph
         (std::ostream& ost) const -> void
     {
         this->to_dot_graph_impl(ost, [this](auto const f)
         {
-            this->vertexManager_.for_each_vertex(f);
+            vertexManager_.for_each_vertex(f);
         });
     }
 
@@ -72,7 +86,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class VariableValues, class GetIthVal>
-    auto mdd_manager<VertexData, ArcData, P>::get_value
+    auto mdd_manager<VertexData, ArcData, P>::evaluate
         (mdd_t const& d, VariableValues const& vars) const -> log_t
     {
         auto const get_var = GetIthVal {};
@@ -173,7 +187,7 @@ namespace mix::dd
         };
 
         auto labels       = string_v();
-        auto rankGroups   = string_vv(1 + this->get_var_count());
+        auto rankGroups   = string_vv(1 + this->var_count());
         auto arcs         = string_v();
         auto squareShapes = string_v();
 
@@ -219,7 +233,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::fill_levels
         (mdd_t const& diagram) const -> vertex_vv
     {
-        auto levels = vertex_vv(1 + vertexManager_.get_var_count());
+        auto levels = vertex_vv(1 + vertexManager_.var_count());
 
         this->traverse_pre(diagram, [&, this](auto const v)
         {
