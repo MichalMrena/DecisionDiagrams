@@ -23,6 +23,15 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::just_vars
+        (index_v const& is) -> mdd_v
+    {
+        // Compiler couldn't infer this one. What am I missing?
+        using f_t = mdd_t(mdd_manager::*)(index_t const);
+        return utils::map(is, std::bind_front<f_t>(&mdd_manager::just_var, this));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::operator()
         (index_t const i) -> mdd_t
     {

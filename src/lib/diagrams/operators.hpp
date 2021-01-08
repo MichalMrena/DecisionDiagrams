@@ -70,7 +70,7 @@ namespace mix::dd
                     return log_val_traits<P>::nondetermined;
                 }
 
-                return BinOp () (lhs, rhs);
+                return static_cast<log_t>(BinOp () (lhs, rhs));
             }
         };
     }
@@ -156,7 +156,6 @@ namespace mix::dd
     template<std::size_t P> constexpr auto op_is_commutative (MAX<P>)            { return true;  }
     template<std::size_t P> constexpr auto op_is_commutative (PLUS_MOD<P>)       { return true;  }
     template<std::size_t P> constexpr auto op_is_commutative (MULTIPLIES_MOD<P>) { return true;  }
-
 }
 
 #endif

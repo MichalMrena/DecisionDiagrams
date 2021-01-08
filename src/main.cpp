@@ -6,6 +6,7 @@
 #include "lib/bdd_manager.hpp"
 
 #include "test/test_bdd.hpp"
+#include "test/test_mdd.hpp"
 
 #include <bitset>
 #include <cassert>
@@ -366,7 +367,8 @@ auto main() -> int
     // eq_test();
     // patterns_imgs();
 
-    test::test_bdd(5, test::order_e::Random);
+    // test::test_bdd(5, test::order_e::Random);
+    test::test_mdd<3>(5, test::order_e::Default);
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

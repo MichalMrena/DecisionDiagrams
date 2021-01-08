@@ -1,17 +1,15 @@
-#ifndef BDD_TEST_HPP
-#define BDD_TEST_HPP
+#ifndef MIX_DD_BDD_TEST_HPP
+#define MIX_DD_BDD_TEST_HPP
 
-#include <vector>
+#include "test_base.hpp"
+#include "../lib/bdd_manager.hpp"
+#include "../lib/utils/more_functional.hpp"
+#include "../lib/utils/string_utils.hpp"
+
 #include <iostream>
-#include <limits>
 #include <bitset>
-#include <algorithm>
 #include <functional>
 #include <cassert>
-
-#include "../lib/bdd_manager.hpp"
-#include "../lib/utils/more_random.hpp"
-#include "../lib/utils/string_utils.hpp"
 
 namespace mix::dd::test
 {
@@ -21,34 +19,27 @@ namespace mix::dd::test
     using bool_var_v  = std::vector<bool_var>;
     using bool_var_vv = std::vector<bool_var_v>;
 
+    auto constexpr BddVariableCount  = 22;
+    auto constexpr BddProductCount   = 50;
+    auto constexpr BddMaxProductSize = 5;
+
     struct boolean_function
     {
         bool_var_vv products;
     };
 
-    enum class order_e
+    inline auto generate_function( std::size_t const     productCount
+                                 , int_rng<std::size_t>& rngProductSize
+                                 , utils::random_bool&   rngIsComplemented
+                                 , int_rng<index_t>&     rngVarIndex ) -> boolean_function
     {
-        Default,
-        Random
-    };
-
-    auto constexpr UIntMax        = std::numeric_limits<unsigned int>::max();
-    auto constexpr VariableCount  = 22;
-    auto constexpr ProductCount   = 50;
-    auto constexpr MaxProductSize = 5;
-    auto constexpr identity       = [](auto const a){ return a; };
-
-    inline auto generate_function( int_rng<std::size_t>&  rngProductSize
-                                 , int_rng<unsigned int>& rngIsComplemented
-                                 , int_rng<index_t>&      rngVarIndex ) -> boolean_function
-    {
-        auto products = bool_var_vv(ProductCount);
-        for (auto pi = 0u; pi < ProductCount; ++pi)
+        auto products = bool_var_vv(productCount);
+        for (auto pi = 0u; pi < productCount; ++pi)
         {
             auto const productSize = rngProductSize.next_int();
             for (auto vi = 0u; vi <= productSize; ++vi)
             {
-                auto const complemented = static_cast<bool>(rngIsComplemented.next_int());
+                auto const complemented = rngIsComplemented.next_bool();
                 auto const var = bool_var {rngVarIndex.next_int(), complemented};
                 products[pi].push_back(var);
             }
@@ -57,7 +48,10 @@ namespace mix::dd::test
         return boolean_function {std::move(products)};
     }
 
-    inline auto make_diagram(bdd_manager<void, void>& m, boolean_function const& function)
+    template<class Folder>
+    inline auto make_diagram ( bdd_manager<void, void>& m
+                             , boolean_function const& function
+                             , Folder fold )
     {
         using bdd = typename bdd_manager<void, void>::bdd_t;
 
@@ -65,13 +59,15 @@ namespace mix::dd::test
         for (auto const& product : function.products)
         {
             auto const varDiagrams = m.just_vars(product);
-            productDiagrams.push_back(m.left_fold(varDiagrams, AND()));
+            productDiagrams.push_back(fold(varDiagrams, AND()));
         }
 
-        return m.left_fold(productDiagrams, OR());
+        return fold(productDiagrams, OR());
     }
 
-    inline auto eval_function(boolean_function const& function, std::bitset<VariableCount> const varVals)
+    template<std::size_t N>
+    inline auto eval_function ( boolean_function const& function
+                              , std::bitset<N> const    varVals )
     {
         auto const& pss  = function.products;
         auto productVals = std::vector<bool>();
@@ -82,64 +78,46 @@ namespace mix::dd::test
                 return bv.complemented ? !varVals[bv.index] : varVals[bv.index];
             });
         });
-        return std::any_of(std::begin(productVals), std::end(productVals), identity);
+        return std::any_of(std::begin(productVals), std::end(productVals), utils::identity);
     }
 
-    inline auto get_default_order()
-    {
-        auto is = std::vector<index_t>(VariableCount);
-        std::iota(std::begin(is), std::end(is), 0);
-        return is;
-    }
-
-    inline auto get_random_order(std::mt19937& rngOrder)
-    {
-        auto is = get_default_order();
-        std::shuffle(std::begin(is), std::end(is), rngOrder);
-        return is;
-    }
-
-    inline auto get_order(order_e const o, std::mt19937& rngOrder)
-    {
-        switch (o)
-        {
-            case order_e::Default: return get_default_order();
-            case order_e::Random:  return get_random_order(rngOrder);
-            default: throw "not good";
-        }
-    }
-
-    inline auto test_bdd(std::size_t const n, order_e const order = order_e::Default, seed_t const seed = 0u)
+    inline auto test_bdd ( std::size_t const n
+                         , order_e const     order = order_e::Default
+                         , seed_t const      seed  = 0u )
     {
         auto initSeed          = 0ul == seed ? std::random_device () () : seed;
         auto seeder            = int_rng<seed_t>(0u, UIntMax, initSeed);
-        auto rngProductSize    = int_rng<std::size_t>(1, MaxProductSize, seeder.next_int());
-        auto rngIsComplemented = int_rng<unsigned int>(0u, 1u, seeder.next_int());
-        auto rngVarIndex       = int_rng<index_t>(0, VariableCount - 1, seeder.next_int());
+        auto rngProductSize    = int_rng<std::size_t>(1, BddMaxProductSize, seeder.next_int());
+        auto rngIsComplemented = utils::random_bool(seeder.next_int());
+        auto rngVarIndex       = int_rng<index_t>(0, BddVariableCount - 1, seeder.next_int());
         auto rngOrderShuffle   = std::mt19937(seeder.next_int());
+
+        std::cout << "Running " << n << " tests."     << '\n';
+        std::cout << "    Seed:         " << initSeed << '\n' << '\n';
 
         for (auto i = 0u; i < n; ++i)
         {
-            auto manager        = bdd_manager<void, void>(VariableCount);
-            auto const os       = get_order(order, rngOrderShuffle);
+            auto manager        = bdd_manager<void, void>(BddVariableCount);
+            auto const os       = get_order(order, rngOrderShuffle, BddVariableCount);
             manager.set_order(os);
-            auto const function = generate_function(rngProductSize, rngIsComplemented, rngVarIndex);
-            auto const diagram  = make_diagram(manager, function);
-            auto result         = true;
+            auto const function = generate_function(BddProductCount, rngProductSize, rngIsComplemented, rngVarIndex);
+            auto const diagram  = make_diagram(manager, function, [&manager](auto&& ds, auto&& f){ return manager.tree_fold(ds, f); });
+            auto const diagram2 = make_diagram(manager, function, [&manager](auto&& ds, auto&& f){ return manager.left_fold(ds, f); });
             manager.collect_garbage();
             auto const vertexCount = manager.vertex_count(diagram);
 
+            assert(diagram == diagram2);
             assert(1 == manager.vertex_count(diagram.get_root()->get_index()));
             assert(vertexCount == manager.vertex_count());
 
-            std::cout << "Test #" << i                       << '\n';
-            std::cout << "    Seed:         " << initSeed    << '\n';
+            std::cout << '#' << i                            << '\n';
             std::cout << "    Vertex count: " << vertexCount << '\n';
             std::cout << "    Order:        " << utils::concat_range(os, " > ") << '\n';
 
-            for (auto varVals = 0u; varVals < (1 << VariableCount); ++varVals)
+            auto result = true;
+            for (auto varVals = 0u; varVals < (1 << BddVariableCount); ++varVals)
             {
-                auto const bits       = std::bitset<VariableCount>(varVals);
+                auto const bits       = std::bitset<BddVariableCount>(varVals);
                 auto const realVal    = eval_function(function, bits);
                 auto const diagramVal = manager.evaluate(diagram, bits);
                 if (realVal != diagramVal)

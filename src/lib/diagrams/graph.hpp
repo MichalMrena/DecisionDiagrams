@@ -78,7 +78,7 @@ namespace mix::dd
         auto for_each_son_i (IndexedVertexOp op) -> void;
 
     private:
-        inline static constexpr auto MaskMark = 1ul << (8 * sizeof(ref_count_t) - 1);
+        inline static constexpr auto MaskMark = ref_count_t(1ul << (8 * sizeof(ref_count_t) - 1));
         inline static constexpr auto MaskRef  = ~MaskMark;
 
     private:

@@ -6,7 +6,7 @@
 
 namespace mix::utils
 {
-    namespace impl
+    namespace mf_impl
     {
         inline auto const fnot = [](auto const f)
         {
@@ -37,13 +37,13 @@ namespace mix::utils
     /**
         @brief Function logical nand.
      */
-    inline auto const logical_nand = impl::fnot(std::logical_and<>());
+    inline auto const logical_nand = mf_impl::fnot(std::logical_and<>());
     using logical_nand_t = decltype(logical_nand);
 
     /**
         @brief Function logical nor.
      */
-    inline auto const logical_nor = impl::fnot(std::logical_or<>());
+    inline auto const logical_nor = mf_impl::fnot(std::logical_or<>());
     using logical_nor_t = decltype(logical_nor);
 
     /**
@@ -81,6 +81,12 @@ namespace mix::utils
      */
     inline auto const not_empty = [](auto const& c) { return !c.empty(); };
     using not_empty_t = decltype(not_empty);
+
+    /**
+     * @brief Identity function.
+     */
+    inline auto const identity = [](auto&& a) -> decltype(auto) { return std::forward<decltype(a)>(a); };
+    using identity_t = decltype(identity);
 }
 
 #endif

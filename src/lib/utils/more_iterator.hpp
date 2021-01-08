@@ -1,5 +1,5 @@
-#ifndef MIX_UTILS_MORE_ITERATOR_
-#define MIX_UTILS_MORE_ITERATOR_
+#ifndef MIX_UTILS_MORE_ITERATOR_HPP
+#define MIX_UTILS_MORE_ITERATOR_HPP
 
 #include <tuple>
 #include <iterator>
@@ -7,7 +7,7 @@
 
 namespace mix::utils
 {
-    namespace aux_impl
+    namespace mi_impl
     {
         inline auto deref = [](auto&&... xs)
         {
@@ -250,7 +250,7 @@ namespace mix::utils
         auto iterator_holder<ItTuple>::operator*
             () const -> value_type
         {
-            return std::apply(aux_impl::deref, its_);
+            return std::apply(mi_impl::deref, its_);
         }
 
         template<class ItTuple>
@@ -329,7 +329,8 @@ namespace mix::utils
         }
 
         template<class IntType>
-        range_holder<IntType>::range_holder(IntType const first, IntType const last) :
+        range_holder<IntType>::range_holder
+            (IntType const first, IntType const last) :
             first_ {first},
             last_  {last}
         {
@@ -378,7 +379,8 @@ namespace mix::utils
         }
 
         template<class IntType>
-        range_iterator<IntType>::range_iterator(IntType const curr) :
+        range_iterator<IntType>::range_iterator
+            (IntType const curr) :
             curr_ {curr}
         {
         }
@@ -405,7 +407,7 @@ namespace mix::utils
         }
 
         template<class IntType>
-        auto range_iterator<IntType>::operator++ 
+        auto range_iterator<IntType>::operator++
             ()  -> range_iterator&
         {
             ++curr_;
@@ -424,29 +426,65 @@ namespace mix::utils
                 return C(std::move(c));
             }
         }
+
+        template<std::size_t I, class T>
+        auto elem_id (T const& t)
+        {
+            return t;
+        }
+
+        template<class T, std::size_t... Is>
+        auto repeat_impl (T const& t, std::index_sequence<Is...>)
+        {
+            return std::tuple {elem_id<Is>(t)...};
+        }
     }
 
+    /**
+        @brief Makes tuple with arity N of copies of @p t .
+     */
+    template<std::size_t N, class T>
+    auto repeat (T const& t)
+    {
+        return mi_impl::repeat_impl(t, std::make_index_sequence<N>());
+    }
+
+    /**
+        @brief Makes iterable object from container references @p cs .
+        Iterator dereferences to tuple of references of elements of @p cs .
+        If a @p cs is rvalue reference, new container is move constructed
+        in the object. Otherwise, only a reference to a container is stored.
+     */
     template<class... Cs>
     auto zip(Cs&&... cs)
     {
-        using tuple_t  = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
-        using holder_t = aux_impl::container_holder<aux_impl::zip_iterator, tuple_t>;
-        return holder_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
+        using tuple_t  = std::tuple<decltype(mi_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
+        using holder_t = mi_impl::container_holder<mi_impl::zip_iterator, tuple_t>;
+        return holder_t {tuple_t {mi_impl::to_tuple_element(std::forward<Cs>(cs))...}};
     }
 
+    /**
+        @brief Makes iterable object from references to containers @p cs .
+        Iterator dereferences to tuple of references of elements of @p cs .
+        If a @p cs is rvalue reference, new container is move constructed
+        in the object. Otherwise, only a reference to a container is stored.
+     */
     template<class... Cs>
     auto product(Cs&&... cs)
     {
-        using tuple_t  = std::tuple<decltype(aux_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
-        using holder_t = aux_impl::container_holder<aux_impl::product_iterator, tuple_t>;
-        return holder_t {tuple_t {aux_impl::to_tuple_element(std::forward<Cs>(cs))...}};
+        using tuple_t  = std::tuple<decltype(mi_impl::to_tuple_element(std::forward<Cs>(cs)))...>;
+        using holder_t = mi_impl::container_holder<mi_impl::product_iterator, tuple_t>;
+        return holder_t {tuple_t {mi_impl::to_tuple_element(std::forward<Cs>(cs))...}};
     }
 
+    /**
+        @brief creates an iterable object which represents range [first, last).
+     */
     template<class FirstType, class SecondType>
     auto range(FirstType const first, SecondType const last)
     {
         using ctype = std::common_type_t<FirstType, SecondType>;
-        return aux_impl::range_holder<ctype> {first, last};
+        return mi_impl::range_holder<ctype> {first, last};
     }
 }
 

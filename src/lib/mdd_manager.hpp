@@ -71,7 +71,7 @@ namespace mix::dd
         auto restrict_var (mdd_t const& d, index_t const i, log_t const val) -> mdd_t;
 
         template<class Op>
-        auto left_fold (mdd_v mdds, Op op) -> mdd_t;
+        auto left_fold (mdd_v mdds, Op op) -> mdd_t; // TODO rename mdds to ds // TODO take it by const& ref
 
         template<class Op>
         auto tree_fold (mdd_v mdds, Op op) -> mdd_t;
@@ -84,9 +84,10 @@ namespace mix::dd
 
     /* Creation */
     public:
-        auto just_val   (log_t const val) -> mdd_t; // TODO rename to constant
-        auto just_var   (index_t const i) -> mdd_t; // TODO rename to variable
-        auto operator() (index_t const i) -> mdd_t;
+        auto just_val   (log_t const val)   -> mdd_t; // TODO rename to constant
+        auto just_var   (index_t const i)   -> mdd_t; // TODO rename to variable
+        auto just_vars  (index_v const& is) -> mdd_v; // TODO rename to variables
+        auto operator() (index_t const i)   -> mdd_t;
 
     /* Reliability */
     public:
