@@ -368,7 +368,7 @@ auto main() -> int
     // patterns_imgs();
 
     // test::test_bdd(5, test::order_e::Random);
-    test::test_mdd<3>(5, test::order_e::Default);
+    test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

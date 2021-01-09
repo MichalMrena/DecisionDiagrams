@@ -85,6 +85,8 @@ namespace mix::utils
         {
         public:
             using value_type        = decltype(std::apply(deref, std::declval<ItTuple&>()));
+            using pointer           = value_type*;
+            using reference         = value_type&;
             using difference_type   = std::ptrdiff_t;
             using iterator_category = std::input_iterator_tag;
 

@@ -66,6 +66,7 @@ namespace mix::utils
     {
         return map(std::begin(range), std::end(range), op);
     }
+    // TODO add map_i with index so that we don't need to zip with int range
 
     /**
         @brief Wrap around std::transform that saves the result into a std::vector.
