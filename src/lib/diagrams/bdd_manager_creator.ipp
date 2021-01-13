@@ -5,7 +5,7 @@
 namespace mix::dd
 {
     template<class VertexData, class ArcData>
-    auto bdd_manager<VertexData, ArcData>::just_var_not
+    auto bdd_manager<VertexData, ArcData>::variable_not
         (index_t const i) -> bdd_t
     {
         auto constexpr leafVals = std::array {1, 0};
@@ -16,17 +16,17 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::operator()
         (index_t const i, NOT) -> bdd_t
     {
-        return this->just_var_not(i);
+        return this->variable_not(i);
     }
 
     template<class VertexData, class ArcData>
-    auto bdd_manager<VertexData, ArcData>::just_vars
+    auto bdd_manager<VertexData, ArcData>::variables
         (bool_var_v const& vars) -> bdd_v
     {
         return utils::map(vars, [this](auto const var)
         {
-            return var.complemented ? this->just_var_not(var.index)
-                                    : this->just_var(var.index);
+            return var.complemented ? this->variable_not(var.index)
+                                    : this->variable(var.index);
         });
     }
 
@@ -56,11 +56,11 @@ namespace mix::dd
             // In this case we just have a constant function.
             if (productDiagrams.empty())
             {
-                productDiagrams.emplace_back(this->just_val(0));
+                productDiagrams.emplace_back(this->constant(0));
             }
 
             // Then merge products using OR.
-            functionDiagrams.emplace_back(this->or_merge(std::move(productDiagrams), mm));
+            functionDiagrams.emplace_back(this->or_merge(productDiagrams, mm));
         }
 
         return functionDiagrams;
@@ -71,21 +71,21 @@ namespace mix::dd
         (pla_line const& line) -> bdd_t
     {
         auto const vars = cube_to_bool_vars(line.cube);
-        return vars.empty() ? this->just_val(0)
-                            : this->left_fold(this->just_vars(vars), AND());
+        return vars.empty() ? this->constant(0)
+                            : this->left_fold(this->variables(vars), AND());
     }
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::or_merge
-        (bdd_v diagrams, fold_e mm) -> bdd_t
+        (bdd_v& diagrams, fold_e mm) -> bdd_t
     {
         switch (mm)
         {
             case fold_e::tree:
-                return this->tree_fold(std::move(diagrams), OR());
+                return this->tree_fold(diagrams, OR());
 
             case fold_e::left:
-                return this->left_fold(std::move(diagrams), OR());
+                return this->left_fold(diagrams, OR());
 
             default:
                 throw std::runtime_error {"Non-exhaustive enum switch."};

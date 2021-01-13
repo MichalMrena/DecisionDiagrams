@@ -31,6 +31,7 @@ namespace mix::dd
         f_vals_t fVals;
     };
 
+    // TODO why not to read PLA directly into bool_vars?
     /**
         @brief Converts cube into a std::vector of `bool_var` structs.
         Example: "--1001" -> { {2, false}, {3, true}, {4, true}, {5, false} }
@@ -299,7 +300,7 @@ namespace mix::dd
         return ! (lhs == rhs);
     }
 
-    inline auto pla_file::load_file 
+    inline auto pla_file::load_file
         (std::string_view path) -> pla_file
     {
         auto reader = utils::file_reader {std::string {path}};

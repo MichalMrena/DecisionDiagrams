@@ -9,7 +9,6 @@ namespace mix::dd
 {
     /* Types used by MDDs in general. */
 
-    using id_t    = std::int32_t;
     using index_t = std::uint32_t;
     using level_t = std::uint32_t;
 
@@ -46,7 +45,7 @@ namespace mix::dd
     /* Types used only by BDDs. */
 
     using bool_vals_t = std::uint64_t;
-    using bool_t = typename log_val_traits<2>::type;
+    using bool_t      = typename log_val_traits<2>::type;
 
     /**
         Description of a Boolean variable.
@@ -60,25 +59,28 @@ namespace mix::dd
     /* Definitions. */
 
     template<std::size_t P>
-    constexpr auto is_undefined(typename log_val_traits<P>::type const v)
+    [[nodiscard]] constexpr auto is_undefined
+        (typename log_val_traits<P>::type const v)
     {
         return log_val_traits<P>::undefined == v;
     }
 
     template<std::size_t P>
-    constexpr auto is_nondetermined(typename log_val_traits<P>::type const v)
+    [[nodiscard]] constexpr auto is_nondetermined
+        (typename log_val_traits<P>::type const v)
     {
         return log_val_traits<P>::nondetermined == v;
     }
 
     template<std::size_t P>
-    constexpr auto is_nodomain(typename log_val_traits<P>::type const v)
+    [[nodiscard]] constexpr auto is_nodomain
+        (typename log_val_traits<P>::type const v)
     {
         return log_val_traits<P>::nodomain == v;
     }
 
     template<std::size_t P>
-    auto log_val_traits<P>::to_string
+    [[nodiscard]] auto log_val_traits<P>::to_string
         (type const t) -> std::string
     {
         auto constexpr U  = log_val_traits::undefined;

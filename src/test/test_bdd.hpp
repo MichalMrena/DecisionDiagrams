@@ -58,7 +58,7 @@ namespace mix::dd::test
         auto productDiagrams = std::vector<bdd>();
         for (auto const& product : function.products)
         {
-            auto const varDiagrams = m.just_vars(product);
+            auto varDiagrams = m.variables(product);
             productDiagrams.push_back(fold(varDiagrams, AND()));
         }
 
@@ -101,7 +101,7 @@ namespace mix::dd::test
             auto const os       = get_order(order, rngOrderShuffle, BddVariableCount);
             manager.set_order(os);
             auto const function = generate_function(BddProductCount, rngProductSize, rngIsComplemented, rngVarIndex);
-            auto const diagram  = make_diagram(manager, function, [&manager](auto&& ds, auto&& f){ return manager.tree_fold(ds, f); });
+            auto const diagram  = make_diagram(manager, function, [&manager](auto&  ds, auto&& f){ return manager.tree_fold(ds, f); });
             auto const diagram2 = make_diagram(manager, function, [&manager](auto&& ds, auto&& f){ return manager.left_fold(ds, f); });
             manager.collect_garbage();
             auto const vertexCount = manager.vertex_count(diagram);

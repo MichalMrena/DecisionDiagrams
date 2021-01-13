@@ -193,11 +193,11 @@ auto basic_test()
     using manager_t = mdd_manager<double, void, 2>;
     auto manager    = manager_t(100);
 
-    auto zero = manager.just_val(0);
-    auto one  = manager.just_val(1);
-    auto x1   = manager.just_var(1);
-    auto x2   = manager.just_var(2);
-    auto x3   = manager.just_var(3);
+    auto zero = manager.constant(0);
+    auto one  = manager.constant(1);
+    auto x1   = manager.variable(1);
+    auto x2   = manager.variable(2);
+    auto x3   = manager.variable(3);
     auto prod = manager.apply(x1, AND(), x2);
 
     manager.to_dot_graph(std::cout);
@@ -207,15 +207,18 @@ auto example_basic_usage_bdd()
 {
     using namespace mix::dd;
 
+    // We will use variables x0, x1, x2, x3, x4.
     auto m = make_bdd_manager(5);
 
-    auto cFalse = m.just_val(0);
-    auto cTrue  = m.just_val(1);
-    auto x0     = m.just_var(0);
-    auto x4     = m.just_var(4);
+    // Code from following examples goes here.
+
+    auto cFalse = m.constant(0);
+    auto cTrue  = m.constant(1);
+    auto x0     = m.variable(0);
+    auto x4     = m.variable(4);
     auto& x     = m;
     auto x1     = x(1);
-    auto x2_    = m.just_var_not(2);
+    auto x2_    = m.variable_not(2);
     auto x3_    = x(3, NOT());
     auto x1_    = m.negate(x1);
 
@@ -338,8 +341,8 @@ auto eq_test()
 auto patterns_imgs()
 {
     auto m1 = make_mdd_manager<3>(3);
-    auto x1 = m1.just_var(1);
-    auto x2 = m1.just_var(2);
+    auto x1 = m1.variable(1);
+    auto x2 = m1.variable(2);
     auto f1 = m1.apply(x1, MAX<3>(), x2);
     m1.to_dot_graph(std::cout, f1);
 
@@ -367,7 +370,7 @@ auto main() -> int
     // eq_test();
     // patterns_imgs();
 
-    // test::test_bdd(5, test::order_e::Random);
+    test::test_bdd(5, test::order_e::Random);
     test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
 
     auto const timeTaken = watch.elapsed_time().count();

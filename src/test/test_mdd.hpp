@@ -79,7 +79,7 @@ namespace mix::dd::test
         auto productDiagrams = std::vector<mdd>();
         for (auto const& product : function.products)
         {
-            auto const varDiagrams = std::vector<mdd>(m.just_vars(product));
+            auto varDiagrams = std::vector<mdd>(m.variables(product));
             productDiagrams.push_back(fold(varDiagrams, MULTIPLIES_MOD<P>()));
         }
 

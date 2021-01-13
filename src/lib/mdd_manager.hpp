@@ -47,7 +47,7 @@ namespace mix::dd
 
         template< class VariableValues
                 , class GetIthVal = get_var_val<P, VariableValues> >
-        auto evaluate (mdd_t const& d, VariableValues const& vars) const -> log_t;
+        auto evaluate (mdd_t const& d, VariableValues const& vs) const -> log_t;
 
         template< class VariableValues
                 , class OutputIt
@@ -71,10 +71,10 @@ namespace mix::dd
         auto restrict_var (mdd_t const& d, index_t const i, log_t const val) -> mdd_t;
 
         template<class Op>
-        auto left_fold (mdd_v mdds, Op op) -> mdd_t; // TODO rename mdds to ds // TODO take it by const& ref
+        auto left_fold (mdd_v const& ds, Op op) -> mdd_t;
 
         template<class Op>
-        auto tree_fold (mdd_v mdds, Op op) -> mdd_t;
+        auto tree_fold (mdd_v& ds, Op op) -> mdd_t;
 
         template<class InputIt, class Op>
         auto left_fold (InputIt first, InputIt last, Op op) -> mdd_t;
@@ -84,9 +84,9 @@ namespace mix::dd
 
     /* Creation */
     public:
-        auto just_val   (log_t const val)   -> mdd_t; // TODO rename to constant
-        auto just_var   (index_t const i)   -> mdd_t; // TODO rename to variable
-        auto just_vars  (index_v const& is) -> mdd_v; // TODO rename to variables
+        auto constant   (log_t const val)   -> mdd_t;
+        auto variable   (index_t const i)   -> mdd_t;
+        auto variables  (index_v const& is) -> mdd_v;
         auto operator() (index_t const i)   -> mdd_t;
 
     /* Reliability */
@@ -169,7 +169,7 @@ namespace mix::dd
 
     /* Creator internals */
     protected:
-        auto just_var   (index_t const i, log_t const domain) -> mdd_t;
+        auto variable   (index_t const i, log_t const domain) -> mdd_t;
         auto operator() (index_t const i, log_t const domain) -> mdd_t;
 
         template<class LeafVals>

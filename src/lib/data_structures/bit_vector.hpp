@@ -95,6 +95,7 @@ namespace mix::dd
         auto operator++ ()       -> bit_v_iterator&;
     };
 
+    // TODO only for 1, 2, 4 bit values
     /**
         Vector like class for storing data that require only small amout of bits.
         For now only bit sizes that are power of 2 are supported.

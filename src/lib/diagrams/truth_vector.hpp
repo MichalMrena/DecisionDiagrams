@@ -142,7 +142,7 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_iterator<Lambda>::operator++ 
+    auto lambda_iterator<Lambda>::operator++
         () -> lambda_iterator&
     {
         ++curr_;
@@ -150,7 +150,7 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_iterator<Lambda>::operator-- 
+    auto lambda_iterator<Lambda>::operator--
         () -> lambda_iterator&
     {
         --curr_;
@@ -158,7 +158,7 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_iterator<Lambda>::operator++ 
+    auto lambda_iterator<Lambda>::operator++
         (int) -> lambda_iterator
     {
         auto const copy = *this;
@@ -167,7 +167,7 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_iterator<Lambda>::operator-- 
+    auto lambda_iterator<Lambda>::operator--
         (int) -> lambda_iterator
     {
         auto const copy = *this;
@@ -176,7 +176,7 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_iterator<Lambda>::operator!= 
+    auto lambda_iterator<Lambda>::operator!=
         (lambda_iterator const& other) -> bool
     {
         return curr_ != other.curr_;
@@ -190,7 +190,7 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto lambda_iterator<Lambda>::operator* 
+    auto lambda_iterator<Lambda>::operator*
         () const -> bool
     {
         auto const shift = 8 * sizeof(bool_vals_t) - varCount_;
@@ -233,12 +233,14 @@ namespace mix::dd
     }
 
     template<class Lambda>
-    auto truth_vector::from_lambda (Lambda&& function) -> decltype(lambda_holder {std::forward<Lambda>(function)})
+    auto truth_vector::from_lambda
+        (Lambda&& function) -> decltype(lambda_holder {std::forward<Lambda>(function)})
     {
         return lambda_holder {std::forward<Lambda>(function)};
     }
 
-    inline auto truth_vector::from_string (std::string_view vec) -> std::vector<bool>
+    inline auto truth_vector::from_string
+        (std::string_view vec) -> std::vector<bool>
     {
         if (!utils::is_power_of_two(vec.size()))
         {

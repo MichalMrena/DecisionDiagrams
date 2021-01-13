@@ -72,7 +72,7 @@ namespace mix::dd
                 auto const vLevel = vertexManager_.get_level(v);
                 v->for_each_son([=, this](auto const son)
                 {
-                    auto const sonLevel = vertexManager_.get_level(son);
+                    auto const sonLevel   = vertexManager_.get_level(son);
                     auto const diffFactor = utils::int_pow(P, sonLevel - vLevel - 1);
                     v->data += son->data * static_cast<double>(diffFactor);
                 });
@@ -87,14 +87,14 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class VariableValues, class GetIthVal>
     auto mdd_manager<VertexData, ArcData, P>::evaluate
-        (mdd_t const& d, VariableValues const& vars) const -> log_t
+        (mdd_t const& d, VariableValues const& vs) const -> log_t
     {
-        auto const get_var = GetIthVal {};
+        auto constexpr get_var = GetIthVal {};
         auto v = d.get_root();
 
         while (!vertexManager_.is_leaf(v))
         {
-            v = v->get_son(get_var(vars, v->get_index()));
+            v = v->get_son(get_var(vs, v->get_index()));
         }
 
         return vertexManager_.get_vertex_value(v);
@@ -132,7 +132,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::traverse_level
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        auto cmp = [this](auto const lhs, auto const rhs)
+        auto const cmp = [this](auto const lhs, auto const rhs)
         {
             return vertexManager_.get_level(lhs) > vertexManager_.get_level(rhs);
         };
@@ -173,17 +173,12 @@ namespace mix::dd
         using string_v  = std::vector<std::string>;
         using string_vv = std::vector<string_v>;
 
-        auto make_label = [this](auto const v)
+        auto const make_label = [this](auto const v)
         {
             using traits_t = log_val_traits<P>;
             return this->vertexManager_.is_leaf(v)
                     ? traits_t::to_string(this->vertexManager_.get_vertex_value(v))
                     : "x" + to_string(v->get_index());
-        };
-
-        auto to_id = [](auto const v)
-        {
-            return reinterpret_cast<std::uintptr_t>(v);
         };
 
         auto labels       = string_v();
@@ -194,24 +189,24 @@ namespace mix::dd
         for_each_v([&](auto const v)
         {
             auto const index = v->get_index();
-            labels.emplace_back(concat(to_id(v) , " [label = \"" , make_label(v) , "\"];"));
-            rankGroups[index].emplace_back(concat(to_id(v) , ";"));
+            labels.emplace_back(concat(v->get_id() , " [label = \"" , make_label(v) , "\"];"));
+            rankGroups[index].emplace_back(concat(v->get_id() , ";"));
             v->for_each_son_i([&](auto const i, auto const son) mutable
             {
                 if constexpr (2 == P)
                 {
                     auto const style = 0 == i ? "dashed" : "solid";
-                    arcs.emplace_back(concat(to_id(v) , " -> " , to_id(son) , " [style = " , style , "];"));
+                    arcs.emplace_back(concat(v->get_id() , " -> " , son->get_id() , " [style = " , style , "];"));
                 }
                 else
                 {
-                    arcs.emplace_back(concat(to_id(v) , " -> " , to_id(son) , " [label = \"" , i , "\"];"));
+                    arcs.emplace_back(concat(v->get_id() , " -> " , son->get_id() , " [label = \"" , i , "\"];"));
                 }
             });
 
             if (vertexManager_.is_leaf(v))
             {
-                squareShapes.emplace_back(to_string(to_id(v)));
+                squareShapes.emplace_back(to_string(v->get_id()));
             }
         });
 

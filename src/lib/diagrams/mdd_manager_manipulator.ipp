@@ -44,17 +44,17 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class Op>
     auto mdd_manager<VertexData, ArcData, P>::left_fold
-        (mdd_v mdds, Op op) -> mdd_t
+        (mdd_v const& ds, Op op) -> mdd_t
     {
-        return this->left_fold(std::begin(mdds), std::end(mdds), op);
+        return this->left_fold(std::begin(ds), std::end(ds), op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class Op>
     auto mdd_manager<VertexData, ArcData, P>::tree_fold
-        (mdd_v mdds, Op op) -> mdd_t
+        (mdd_v& ds, Op op) -> mdd_t
     {
-        return this->tree_fold(std::begin(mdds), std::end(mdds), op);
+        return this->tree_fold(std::begin(ds), std::end(ds), op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

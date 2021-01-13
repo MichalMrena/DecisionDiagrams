@@ -5,14 +5,14 @@
 namespace mix::dd
 {
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::just_val
+    auto mdd_manager<VertexData, ArcData, P>::constant
         (log_t const val) -> mdd_t
     {
         return mdd_t {vertexManager_.terminal_vertex(val)};
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::just_var
+    auto mdd_manager<VertexData, ArcData, P>::variable
         (index_t const i) -> mdd_t
     {
         auto constexpr ND = log_val_traits<P>::nodomain;
@@ -23,19 +23,19 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::just_vars
+    auto mdd_manager<VertexData, ArcData, P>::variables
         (index_v const& is) -> mdd_v
     {
         // Compiler couldn't infer this one. What am I missing?
         using f_t = mdd_t(mdd_manager::*)(index_t const);
-        return utils::map(is, std::bind_front<f_t>(&mdd_manager::just_var, this));
+        return utils::map(is, std::bind_front<f_t>(&mdd_manager::variable, this));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::operator()
         (index_t const i) -> mdd_t
     {
-        return this->just_var(i);
+        return this->variable(i);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

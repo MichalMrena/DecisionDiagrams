@@ -143,13 +143,13 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::mcvs
         (std::vector<bdd_t> dpbds) -> std::vector<VectorType>
     {
-        auto is     = utils::range(0u, static_cast<index_t>(dpbds.size()));
+        auto is     = utils::range(0u, static_cast<index_t>(dpbds.size())); // TODO map_i
         auto dpbdes = utils::map(utils::zip(is, dpbds), dpbds.size(), [this](auto const& pair)
         {
             auto const& [i, dpbd] = pair;
             return this->to_dpbd_e(dpbd, i);
         });
-        auto const conj = this->tree_fold(std::move(dpbdes), PI_CONJ {});
+        auto const conj = this->tree_fold(dpbdes, PI_CONJ {});
         auto cutVectors = std::vector<VectorType>();
         this->satisfy_all<VectorType>(conj, std::back_inserter(cutVectors));
         return cutVectors;

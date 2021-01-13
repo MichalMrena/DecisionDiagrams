@@ -6,7 +6,6 @@
 #include "../utils/more_type_traits.hpp"
 
 #include <array>
-#include <cstddef>
 
 namespace mix::dd
 {
@@ -56,17 +55,17 @@ namespace mix::dd
         using ref_count_t = std::uint32_t;
 
     public:
-        vertex_base (index_t const index);
-        vertex_base (index_t const index, son_a const& sons);
+        vertex_base (index_t const i);
+        vertex_base (index_t const i, son_a const& sons);
 
     public:
-        auto get_id        () const                    -> std::intptr_t;
+        auto get_id        () const                    -> std::uintptr_t;
         auto get_son       (std::size_t const i) const -> vertex_t*;
         auto set_sons      (son_a const& sons)         -> void;
         auto get_mark      () const                    -> bool;
         auto toggle_mark   ()                          -> void;
         auto get_index     () const                    -> index_t;
-        auto set_index     (index_t const index)       -> void;
+        auto set_index     (index_t const i)           -> void;
         auto get_ref_count () const                    -> ref_count_t;
         auto inc_ref_count ()                          -> void;
         auto dec_ref_count ()                          -> void;
@@ -102,8 +101,8 @@ namespace mix::dd
         VertexData data;
 
     public:
-        vertex(index_t const index);
-        vertex(index_t const index, son_a const& sons);
+        vertex (index_t const i);
+        vertex (index_t const i, son_a const& sons);
     };
 
     /**
@@ -117,31 +116,31 @@ namespace mix::dd
         using base_t = vertex_base<void, ArcData, P>;
 
     public:
-        vertex(index_t const index);
-        vertex(index_t const index, son_a const& sons);
+        vertex(index_t const i);
+        vertex(index_t const i, son_a const& sons);
     };
 
 // vertex_base definitions:
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_base<VertexData, ArcData, P>::vertex_base
-        (index_t const index) :
-        vertex_base {index, {}}
+        (index_t const i) :
+        vertex_base {i, {}}
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_base<VertexData, ArcData, P>::vertex_base
-        (index_t const index, son_a const& sons) :
+        (index_t const i, son_a const& sons) :
         forwardStar_  {utils::map_to_array(sons, [](auto const v) { return arc_t {{v}}; })},
         markRefCount_ {0},
-        index_        {index}
+        index_        {i}
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::get_id
-        () const -> std::intptr_t
+        () const -> std::uintptr_t
     {
         return reinterpret_cast<std::uintptr_t>(this);
     }
@@ -186,9 +185,9 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::set_index
-        (index_t const index) -> void
+        (index_t const i) -> void
     {
-        index_ = index;
+        index_ = i;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -244,15 +243,15 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex<VertexData, ArcData, P>::vertex
-        (index_t const index) :
-        base_t {index}
+        (index_t const i) :
+        base_t {i}
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex<VertexData, ArcData, P>::vertex
-        (index_t const index, son_a const& sons) :
-        base_t {index, sons}
+        (index_t const i, son_a const& sons) :
+        base_t {i, sons}
     {
     }
 
@@ -260,15 +259,15 @@ namespace mix::dd
 
     template<class ArcData, std::size_t P>
     vertex<void, ArcData, P>::vertex
-        (index_t const index) :
-        base_t {index}
+        (index_t const i) :
+        base_t {i}
     {
     }
 
     template<class ArcData, std::size_t P>
     vertex<void, ArcData, P>::vertex
-        (index_t const index, son_a const& sons) :
-        base_t {index, sons}
+        (index_t const i, son_a const& sons) :
+        base_t {i, sons}
     {
     }
 }

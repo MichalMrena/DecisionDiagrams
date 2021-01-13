@@ -43,9 +43,9 @@ namespace mix::dd
     /* Creation */
     public:
         using base::operator();
-        auto just_var_not (index_t const i)        -> bdd_t;
+        auto variable_not (index_t const i)        -> bdd_t;
         auto operator()   (index_t const i, NOT)   -> bdd_t;
-        auto just_vars    (bool_var_v const& vars) -> bdd_v;
+        auto variables    (bool_var_v const& vars) -> bdd_v;
         auto from_pla     (pla_file const& file, fold_e const mm = fold_e::tree) -> bdd_v;
 
     /* Reliability */
@@ -76,8 +76,8 @@ namespace mix::dd
 
     /* Creation internals */
     private:
-        auto line_to_product (pla_line const& line)   -> bdd_t;
-        auto or_merge        (bdd_v diagrams, fold_e) -> bdd_t;
+        auto line_to_product (pla_line const& line)    -> bdd_t;
+        auto or_merge        (bdd_v& diagrams, fold_e) -> bdd_t;
 
     /* Reliability internals */
     public:
@@ -92,23 +92,23 @@ namespace mix::dd
     auto register_manager(bdd_manager<VertexData, ArcData>& manager);
 
     template<class VertexData, class ArcData>
-    auto operator&& ( mdd<VertexData, ArcData, 2> const& lhs 
+    auto operator&& ( mdd<VertexData, ArcData, 2> const& lhs
                     , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
 
     template<class VertexData, class ArcData>
-    auto operator* ( mdd<VertexData, ArcData, 2> const& lhs 
+    auto operator* ( mdd<VertexData, ArcData, 2> const& lhs
                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
 
     template<class VertexData, class ArcData>
-    auto operator|| ( mdd<VertexData, ArcData, 2> const& lhs 
+    auto operator|| ( mdd<VertexData, ArcData, 2> const& lhs
                     , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
 
     template<class VertexData, class ArcData>
-    auto operator+ ( mdd<VertexData, ArcData, 2> const& lhs 
+    auto operator+ ( mdd<VertexData, ArcData, 2> const& lhs
                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
 
     template<class VertexData, class ArcData>
-    auto operator^ ( mdd<VertexData, ArcData, 2> const& lhs 
+    auto operator^ ( mdd<VertexData, ArcData, 2> const& lhs
                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
 
     template<class VertexData, class ArcData>

@@ -6,7 +6,7 @@
 
 namespace mix::dd
 {
-    namespace var_vals_impl
+    namespace vv_impl
     {
         template<class T>
         using int_type = std::enable_if_t< std::is_integral_v<T> 
@@ -40,10 +40,10 @@ namespace mix::dd
         Specialized definition for integral types except bool.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, var_vals_impl::int_type<VarVals>>
+    struct get_var_val<P, VarVals, vv_impl::int_type<VarVals>>
     {
         [[nodiscard]] constexpr auto operator()
-            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
+            (VarVals const& in, index_t const i) const -> vv_impl::log_t<P>
         {
             return (in >> i) & 1;
         }
@@ -53,10 +53,10 @@ namespace mix::dd
         Specialized definition for `std::vector` of integral type.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, var_vals_impl::vector_type<VarVals>>
+    struct get_var_val<P, VarVals, vv_impl::vector_type<VarVals>>
     {
         [[nodiscard]] auto operator()
-            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
+            (VarVals const& in, index_t const i) const -> vv_impl::log_t<P>
         {
             return in[i];
         }
@@ -66,10 +66,10 @@ namespace mix::dd
         Specialized definition for `std::array` of integral type.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, var_vals_impl::array_type<VarVals>>
+    struct get_var_val<P, VarVals, vv_impl::array_type<VarVals>>
     {
         [[nodiscard]] constexpr auto operator()
-            (VarVals const& in, index_t const i) const -> var_vals_impl::log_t<P>
+            (VarVals const& in, index_t const i) const -> vv_impl::log_t<P>
         {
             return in[i];
         }
@@ -79,7 +79,7 @@ namespace mix::dd
         Specialized definition for `std::bitset`.
      */
     template<std::size_t P, class VarVals>
-    struct get_var_val<P, VarVals, var_vals_impl::bitset_type<VarVals>>
+    struct get_var_val<P, VarVals, vv_impl::bitset_type<VarVals>>
     {
         static_assert(2 == P);
 
@@ -102,12 +102,13 @@ namespace mix::dd
     /**
         Specialized definition for `std::bitset`.
      */
-    template<std::size_t P, class VarVals> 
-    struct set_var_val<P, VarVals, var_vals_impl::bitset_type<VarVals>>
+    template<std::size_t P, class VarVals>
+    struct set_var_val<P, VarVals, vv_impl::bitset_type<VarVals>>
     {
         static_assert(2 == P);
 
-        auto operator() (VarVals& vars, index_t const i, bool_t const v) const -> void
+        auto operator()
+            (VarVals& vars, index_t const i, bool_t const v) const -> void
         {
             vars.set(i, v);
         }
@@ -117,7 +118,7 @@ namespace mix::dd
         Specialized definition for integral types except bool.
      */
     template<std::size_t P, class VarVals>
-    struct set_var_val<P, VarVals, var_vals_impl::int_type<VarVals>>
+    struct set_var_val<P, VarVals, vv_impl::int_type<VarVals>>
     {
         static_assert(2 == P);
 
@@ -132,7 +133,7 @@ namespace mix::dd
         Specialized definition for `std::array`.
      */
     template<std::size_t P, class VarVals>
-    struct set_var_val<P, VarVals, var_vals_impl::array_type<VarVals>>
+    struct set_var_val<P, VarVals, vv_impl::array_type<VarVals>>
     {
         using log_t = typename log_val_traits<P>::type;
 

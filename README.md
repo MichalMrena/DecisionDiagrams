@@ -7,7 +7,7 @@ Library is header only so its easy to incorporate it in your project. All you ne
 We use features from `C++20` so you might need to set your compiler for this version. (`-std=c++20` for `clang++` and `g++`, `/std:c++latest` for MSVC)
 
 ## Basic usage
- Before using any library functions you need to include either [bdd_manager.hpp](./src/lib/bdd_manager.hpp) or [mdd_manager.hpp](./src/lib/mdd_manager.hpp) depending on which diagrams you intent to use. Library API is accessed via instance of a manager. Manager can be created using `make_bdd_manager`/`make_mdd_manager` function, that takes number of variables that you intent to use as an argument.  
+ Before using any library functions you need to include either [bdd_manager.hpp](./src/lib/bdd_manager.hpp) or [mdd_manager.hpp](./src/lib/mdd_manager.hpp) depending on which diagrams you intent to use. Library API is accessed via instance of a manager. Manager can be created using `make_bdd_manager`/`make_mdd_manager` function, that takes number of variables you want to work with as an argument.  
 
 ### Binary Decision Diagrams
 ```C++
@@ -17,31 +17,32 @@ int main()
 {
     using namespace mix::dd;
 
+    // We will use variables x0, x1, x2, x3, x4.
     auto m = make_bdd_manager(5);
 
-    // code from following examples goes here
+    // Code from following examples goes here.
 }
 ```
 
 #### Creating diagrams
 Simplest diagram that you can create is a diagram of a Boolean constant `0` (false) or `1` (true).
 ```C++
-auto cFalse = m.just_val(0);
-auto cTrue  = m.just_val(1);
+auto cFalse = m.constant(0);
+auto cTrue  = m.constant(1);
 ```
 and a diagram of a single Boolean variable.
 ```C++
-auto x0 = m.just_var(0);
-auto x4 = m.just_var(4);
+auto x0 = m.variable(0);
+auto x4 = m.variable(4);
 ```
-Useful trick for creating diagram for a variable is to create a reference to the manager with name `x`. Manager defines an `operator()` that does the same thing as `just_var`.
+Useful trick for creating diagram for a variable is to create a reference to the manager with name `x`. Manager defines an `operator()` that does the same thing as `variable`.
 ```C++
 auto& x = m;
 auto x1 = x(1);
 ```
-In order to create complemented (negated) variable you can use `just_var_not` or `operator()` with not flag.
+In order to create complemented (negated) variable you can use `variable_not` or `operator()` with not flag.
 ```C++
-auto x2_ = m.just_var_not(2);
+auto x2_ = m.variable_not(2);
 auto x3_ = x(3, NOT());
 ```
 You can also complement (negate) an existing diagram using function `negate`.
@@ -57,24 +58,24 @@ auto f = m.apply( m.apply(x0, AND(), x1)
                          , OR()
                          , x4 ) );
 ```
-Following operations can be used in apply: `AND(), OR(), XOR(), NAND(), NOR()`. There are a few more which we will cover later.
+Following operations can be used in apply: `AND(), OR(), XOR(), NAND(), NOR()`.
 
-Even with sophisticated formatting and indentation, expressions like this might seem a bit complicated. That is why we overloaded corresponding operators to use `apply` for us in the background. Before using any overloaded operator you need to register the manager you are using so that operators know which one to use. This feature is intended only for testing and playing around. For a real world usage, please stick with calling `apply` directly.
+Even with sophisticated formatting and indentation, expressions like this might seem a bit complicated. That is why we overloaded corresponding operators to use `apply` for us in the background. Before using any overloaded operator you need to register the manager you are using so that operators know which one to use. This feature is intended only for testing and playing around. For a real world usage, we recommend to stick with calling `apply` directly.
 ```C++
 register_manager(m);
 auto g = x(0) * x(1) + (x(2) * x(3) + x(4));
 ```
 
 #### Using diagrams
-Now that we have the diagram of the function we can do something with it. Since the diagram is basically a function we can evaluate it for given values of variables. As you can see, these values can be specified in different ways. It is up to you which one you pick. `get_value` returns either `0` (false) or `1` (true).
+Now that we have the diagram of the function we can do something with it. Since the diagram is basically a function we can evaluate it for given values of variables. As you can see, these values can be specified in different ways. It is up to you which one you pick. `evaluate` returns either `0` (false) or `1` (true). 
 ```C++
-auto const val0 = m.get_value(f, std::array  {0, 1, 1, 0, 1});
-auto const val1 = m.get_value(f, std::vector {0, 1, 1, 0, 1});
-auto const val2 = m.get_value(f, std::vector {false, true, true, false, true});
-auto const val3 = m.get_value(f, std::bitset<5> {0b10110});
-auto const val4 = m.get_value(f, 0b10110);
+auto const val0 = m.evaluate(f, std::array  {0, 1, 1, 0, 1});
+auto const val1 = m.evaluate(f, std::vector {0, 1, 1, 0, 1});
+auto const val2 = m.evaluate(f, std::vector {false, true, true, false, true});
+auto const val3 = m.evaluate(f, std::bitset<5> {0b10110});
+auto const val4 = m.evaluate(f, 0b10110);
 ```
-In some applications you want to know, for how many different variable assignments the function evaluates to `1` (true). Functions that computes this value is called `satisfy_count`. If we divide this number by number of all possible variable assignments we get so called truth density which can be calculated by *wait for it* `truth_density` function.
+In some applications you want to know, for how many different variable assignments the function evaluates to `1` (true). Functions that computes this value is called `satisfy_count`. If we divide this number by number of all possible variable assignments we get so called truth density which can be calculated by `truth_density` function.
 ```C++
 auto const sc = m.satisfy_count(f);
 auto const td = m.truth_density(f);
@@ -86,64 +87,33 @@ using bool_v = std::bitset<5>;
 auto vars = std::vector<bool_v>();
 m.satisfy_all<bool_v>(f, std::back_inserter(vars));
 ```
-Vector `vars` now holds all values of variables for which the function evaluates to `1`. We can verify that with following asserts:
+Vector `vars` now holds all values of variables for which the function evaluates to `1`. We can verify that with following assert:
 ```C++
 for (auto const& v : vars)
 {
-    assert(1 == m.get_value(f, v));
+    assert(1 == m.evaluate(f, v));
 }
 ```
 If we only want to print these variable values, we can use `std::ostream_iterator` since there is an overload of `operator<<` for `std::bitset`.
 ```C++
 m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
 ```
-Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered diagram.
+Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
 ```C++
 auto f1 = x(1) xor x(2);
 auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
 assert(f1 == f2);
 ```
 
-Last but not least, we might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). Function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the Wikepedia page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
+Last but not least, you might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). Function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the Wikepedia page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
 ```C++
 m.to_dot_graph(std::cout, f);
 ```
-This is how a DOT string might look like. If you paste this to the Webgraphviz you will get a picture of a diagram.
-```
-digraph DD {
-    node [shape = square] 6995904 6995952;
-    node [shape = circle];
-
-    6998736 [label = "x0"];
-    6998064 [label = "x2"];
-    6997520 [label = "x4"];
-    6995904 [label = "0"];
-    6995952 [label = "1"];
-    6997920 [label = "x3"];
-    6998592 [label = "x1"];
-
-    6998736 -> 6998064 [style = dashed];
-    6998736 -> 6998592 [style = solid];
-    6998064 -> 6997520 [style = dashed];
-    6998064 -> 6997920 [style = solid];
-    6997520 -> 6995904 [style = dashed];
-    6997520 -> 6995952 [style = solid];
-    6997920 -> 6997520 [style = dashed];
-    6997920 -> 6995952 [style = solid];
-    6998592 -> 6998064 [style = dashed];
-    6998592 -> 6995952 [style = solid];
-
-    { rank = same; 6998736; }
-    { rank = same; 6998592; }
-    { rank = same; 6998064; }
-    { rank = same; 6997920; }
-    { rank = same; 6997520; }
-    { rank = same; 6995904; 6995952; }
-}
-```
 
 ### Multi-valued decision diagrams
-*comming soon*
+Using MDDs is almost identical to using BDDs. You just need to use `make_mdd_manager` which has a template parameter `P` that specifies how many logical levels you want to use.
+```C++
+```
 
 ## Reliability Theory
 Main motivation for creating this library was the possibility of using decision diagrams in reliability analysis. Following example shows how different reliability indices and importance measures can be calculated using structure function and Direct Partial Boolean Derivatives.  
@@ -171,10 +141,10 @@ auto dpbds = m.dpbds(sf);
 ```
 `dpbds` is now a `std::vector` of diagrams representing derivative of each variable. We can use them to calculate different importance measures:
 ```C++
-auto const SIs  = m.structural_importances(dpbds);
-auto const BIs  = m.birnbaum_importances(ps, dpbds);
-auto const CIs  = m.criticality_importances(BIs, ps, U);
-auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
+auto const SIs = m.structural_importances(dpbds);
+auto const BIs = m.birnbaum_importances(ps, dpbds);
+auto const CIs = m.criticality_importances(BIs, ps, U);
+auto const FIs = m.fussell_vesely_importances(dpbds, ps, U);
 ```
 Each `*Is` is a `std::vector` of `double`s representing given importance measures for given variables.  
 Finally we can enumerate all Minimal Cut Vectors. Like with `satisfy_all` we need to specify a data type which will hold values of variables. Again `std::bitset` seems to be the best choice.

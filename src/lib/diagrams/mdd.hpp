@@ -18,16 +18,16 @@ namespace mix::dd
 
     public:
         mdd  ();
-        mdd  (mdd&& other);
         ~mdd ();
+        mdd  (mdd&& other);
         mdd  (mdd const& other);
         explicit mdd (vertex_t* root);
 
         auto operator== (mdd const& rhs) const -> bool;
         auto operator!= (mdd const& rhs) const -> bool;
-        auto operator=  (mdd rhs)  -> mdd&;
-        auto swap       (mdd& rhs) -> void;
-        auto get_root   () const   -> vertex_t*;
+        auto operator=  (mdd rhs)              -> mdd&;
+        auto swap       (mdd& rhs)             -> void;
+        auto get_root   () const               -> vertex_t*;
 
     private:
         using vertex_manager_t = vertex_manager<VertexData, ArcData, P>;
