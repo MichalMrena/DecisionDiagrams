@@ -77,42 +77,21 @@ namespace mix::dd
 
     struct NOT {};
 
-    template<std::size_t P = 2> struct AND            : public impl::bin_op< std::logical_and<>,         P, 0          > {};
-    template<std::size_t P = 2> struct OR             : public impl::bin_op< std::logical_or<>,          P, 1          > {};
-    template<std::size_t P = 2> struct XOR            : public impl::bin_op< std::not_equal_to<>,        P, impl::U<P> > {};
-    template<std::size_t P = 2> struct PI_CONJ        : public impl::bin_op< impl::pi_conj_t<P>,         P, 0          > {};
-    template<std::size_t P = 2> struct NAND           : public impl::bin_op< utils::logical_nand_t,      P, impl::U<P> > {};
-    template<std::size_t P = 2> struct NOR            : public impl::bin_op< utils::logical_nor_t,       P, impl::U<P> > {};
-    template<std::size_t P>     struct EQUAL_TO       : public impl::bin_op< std::equal_to<>,            P, impl::U<P> > {};
-    template<std::size_t P>     struct LESS           : public impl::bin_op< std::less<>,                P, impl::U<P> > {};
-    template<std::size_t P>     struct LESS_EQUAL     : public impl::bin_op< std::less_equal<>,          P, impl::U<P> > {};
-    template<std::size_t P>     struct GREATER        : public impl::bin_op< std::greater<>,             P, impl::U<P> > {};
-    template<std::size_t P>     struct GREATER_EQUAL  : public impl::bin_op< std::greater_equal<>,       P, impl::U<P> > {};
-    template<std::size_t P>     struct MIN            : public impl::bin_op< utils::min_t,               P, 0          > {};
-    template<std::size_t P>     struct MAX            : public impl::bin_op< utils::max_t,               P, P - 1      > {};
-    template<std::size_t P>     struct PLUS_MOD       : public impl::bin_op< utils::plus_mod_t<P>,       P, impl::U<P> > {};
-    template<std::size_t P>     struct MULTIPLIES_MOD : public impl::bin_op< utils::multiplies_mod_t<P>, P, impl::U<P> > {};
-
-    /**
-        @brief Checks if given operation has domain equal to given P.
-        No check here just false for everything that does not match
-        specialization below.
-    */
-    template<std::size_t, class>
-    struct check_op : public std::false_type {};
-
-    /**
-        @brief Specialization that catches all operations defined above.
-        Actual checking happens here.
-    */
-    template<std::size_t P1, template<std::size_t> class Op, std::size_t P2>
-    struct check_op<P1, Op<P2>> : public std::bool_constant<P1 == P2> {};
-
-    /**
-        @brief Helper constant as usual for easier use.
-     */
-    template<std::size_t P, class Op>
-    inline constexpr auto check_op_v = check_op<P, Op>::value;
+    template<std::size_t P> struct AND            : public impl::bin_op< std::logical_and<>,         P, 0          > {};
+    template<std::size_t P> struct OR             : public impl::bin_op< std::logical_or<>,          P, 1          > {};
+    template<std::size_t P> struct XOR            : public impl::bin_op< std::not_equal_to<>,        P, impl::U<P> > {};
+    template<std::size_t P> struct PI_CONJ        : public impl::bin_op< impl::pi_conj_t<P>,         P, 0          > {};
+    template<std::size_t P> struct NAND           : public impl::bin_op< utils::logical_nand_t,      P, impl::U<P> > {};
+    template<std::size_t P> struct NOR            : public impl::bin_op< utils::logical_nor_t,       P, impl::U<P> > {};
+    template<std::size_t P> struct EQUAL_TO       : public impl::bin_op< std::equal_to<>,            P, impl::U<P> > {};
+    template<std::size_t P> struct LESS           : public impl::bin_op< std::less<>,                P, impl::U<P> > {};
+    template<std::size_t P> struct LESS_EQUAL     : public impl::bin_op< std::less_equal<>,          P, impl::U<P> > {};
+    template<std::size_t P> struct GREATER        : public impl::bin_op< std::greater<>,             P, impl::U<P> > {};
+    template<std::size_t P> struct GREATER_EQUAL  : public impl::bin_op< std::greater_equal<>,       P, impl::U<P> > {};
+    template<std::size_t P> struct MIN            : public impl::bin_op< utils::min_t,               P, 0          > {};
+    template<std::size_t P> struct MAX            : public impl::bin_op< utils::max_t,               P, P - 1      > {};
+    template<std::size_t P> struct PLUS_MOD       : public impl::bin_op< utils::plus_mod_t<P>,       P, impl::U<P> > {};
+    template<std::size_t P> struct MULTIPLIES_MOD : public impl::bin_op< utils::multiplies_mod_t<P>, P, impl::U<P> > {};
 
     /**
         @brief Type of unique identifier of operations.
@@ -139,7 +118,7 @@ namespace mix::dd
     template<std::size_t P> constexpr auto op_id (MULTIPLIES_MOD<P>) { return op_id_t {14}; }
 
     /**
-        @brief Tells whether given operation is associative or not.
+        @brief Tells whether given operation is commutative or not.
      */
     template<std::size_t P> constexpr auto op_is_commutative (AND<P>)            { return true;  }
     template<std::size_t P> constexpr auto op_is_commutative (OR<P>)             { return true;  }

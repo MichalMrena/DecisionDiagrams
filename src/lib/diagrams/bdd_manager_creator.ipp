@@ -72,7 +72,7 @@ namespace mix::dd
     {
         auto const vars = cube_to_bool_vars(line.cube);
         return vars.empty() ? this->constant(0)
-                            : this->left_fold(this->variables(vars), AND());
+                            : this->template left_fold<AND>(this->variables(vars));
     }
 
     template<class VertexData, class ArcData>
@@ -82,10 +82,10 @@ namespace mix::dd
         switch (mm)
         {
             case fold_e::tree:
-                return this->tree_fold(diagrams, OR());
+                return this->template tree_fold<OR>(diagrams);
 
             case fold_e::left:
-                return this->left_fold(diagrams, OR());
+                return this->template left_fold<OR>(diagrams);
 
             default:
                 throw std::runtime_error {"Non-exhaustive enum switch."};

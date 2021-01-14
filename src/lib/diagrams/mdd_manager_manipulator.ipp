@@ -9,11 +9,11 @@
 namespace mix::dd
 {
     template<class VertexData, class ArcData, std::size_t P>
-    template<class Op>
+    template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::apply
-        (mdd_t const& lhs, Op op, mdd_t const& rhs) -> mdd_t
+        (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t
     {
-        auto const ret = this->apply_step(lhs.get_root(), op, rhs.get_root());
+        auto const ret = this->apply_step<Op>(lhs.get_root(), rhs.get_root());
         // TODO if not memoize then clear apply memo
         return mdd_t {ret};
     }
@@ -42,32 +42,32 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class Op>
+    template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::left_fold
-        (mdd_v const& ds, Op op) -> mdd_t
+        (mdd_v const& ds) -> mdd_t
     {
-        return this->left_fold(std::begin(ds), std::end(ds), op);
+        return this->left_fold<Op>(std::begin(ds), std::end(ds));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class Op>
+    template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::tree_fold
-        (mdd_v& ds, Op op) -> mdd_t
+        (mdd_v& ds) -> mdd_t
     {
-        return this->tree_fold(std::begin(ds), std::end(ds), op);
+        return this->tree_fold<Op>(std::begin(ds), std::end(ds));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class InputIt, class Op>
+    template<template<std::size_t> class Op, class InputIt>
     auto mdd_manager<VertexData, ArcData, P>::left_fold
-        (InputIt first, InputIt last, Op op) -> mdd_t
+        (InputIt first, InputIt last) -> mdd_t
     {
         auto r = std::move(*first);
         ++first;
 
         while (first != last)
         {
-            r = this->apply(r, op, *first);
+            r = this->apply<Op>(r, *first);
             ++first;
         }
 
@@ -75,9 +75,9 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class RandomIt, class Op>
+    template<template<std::size_t> class Op, class RandomIt>
     auto mdd_manager<VertexData, ArcData, P>::tree_fold
-        (RandomIt first, RandomIt last, Op op) -> mdd_t
+        (RandomIt first, RandomIt last) -> mdd_t
     {
         auto const count      = std::distance(first, last);
         auto const numOfSteps = static_cast<std::size_t>(std::ceil(std::log2(count)));
@@ -91,9 +91,8 @@ namespace mix::dd
 
             for (auto i = 0u; i < pairCount; ++i)
             {
-                *(first + i) = this->apply( *(first + 2 * i)
-                                          , op
-                                          , *(first + 2 * i + 1) );
+                *(first + i) = this->apply<Op>( *(first + 2 * i)
+                                              , *(first + 2 * i + 1) );
             }
 
             if (justMoveLast)
@@ -106,11 +105,11 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class Op>
+    template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::apply_step
-        (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*
+        (vertex_t* const lhs, vertex_t* const rhs) -> vertex_t*
     {
-        auto const memoKey = make_apply_key(lhs, op, rhs);
+        auto const memoKey = make_apply_key<Op<P>>(lhs, rhs);
         auto const memoIt  = applyMemo_.find(memoKey);
         if (applyMemo_.end() != memoIt)
         {
@@ -119,7 +118,7 @@ namespace mix::dd
 
         auto const lhsVal = vertexManager_.get_vertex_value(lhs);
         auto const rhsVal = vertexManager_.get_vertex_value(rhs);
-        auto const opVal  = op(lhsVal, rhsVal);
+        auto const opVal  = Op<P> () (lhsVal, rhsVal);
         auto u = static_cast<vertex_t*>(nullptr);
 
         if (!is_nondetermined<P>(opVal))
@@ -137,7 +136,7 @@ namespace mix::dd
             {
                 auto const first  = lhsLevel == level ? lhs->get_son(i) : lhs;
                 auto const second = rhsLevel == level ? rhs->get_son(i) : rhs;
-                return this->apply_step(first, op, second);
+                return this->apply_step<Op>(first, second);
             });
 
             u = vertexManager_.internal_vertex(index, sons);
@@ -150,16 +149,16 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class Op>
     auto mdd_manager<VertexData, ArcData, P>::make_apply_key
-        (vertex_t* const lhs, Op op, vertex_t* const rhs) -> apply_key_t
+        (vertex_t* const lhs, vertex_t* const rhs) -> apply_key_t
     {
-        if constexpr (op_is_commutative(op))
+        if constexpr (op_is_commutative(Op()))
         {
-            return lhs < rhs ? apply_key_t {lhs, op_id(op), rhs}
-                             : apply_key_t {rhs, op_id(op), lhs};
+            return lhs < rhs ? apply_key_t {lhs, op_id(Op()), rhs}
+                             : apply_key_t {rhs, op_id(Op()), lhs};
         }
         else
         {
-            return apply_key_t {lhs, op_id(op), rhs};
+            return apply_key_t {lhs, op_id(Op()), rhs};
         }
     }
 
@@ -189,7 +188,8 @@ namespace mix::dd
             return v;
         }
 
-        auto const u = vertexManager_.internal_vertex(v->get_index(), transform_sons(v, transform_sons));
+        auto const u = vertexManager_.internal_vertex( v->get_index()
+                                                     , transform_sons(v, transform_sons) );
         transformMemo_.emplace(v, u);
         return u;
     }

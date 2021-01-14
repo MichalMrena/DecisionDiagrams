@@ -70,36 +70,32 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbd
         (val_change<P> const var, val_change<P> const f, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply( this->apply(this->restrict_var(sf, i, var.from), EQUAL_TO<P>(), this->constant(f.from))
-                          , AND<P>()
-                          , this->apply(this->restrict_var(sf, i, var.to), EQUAL_TO<P>(), this->constant(f.to)) );
+        return this->apply<AND>( this->apply<EQUAL_TO>(this->restrict_var(sf, i, var.from), this->constant(f.from))
+                               , this->apply<EQUAL_TO>(this->restrict_var(sf, i, var.to), this->constant(f.to)) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbd_integrated_1
         (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply( this->apply(this->restrict_var(sf, i, var.from), EQUAL_TO<P>(), this->constant(fVal))
-                          , AND<P>()
-                          , this->apply(this->restrict_var(sf, i, var.to), LESS<P>(), this->constant(fVal)) );
+        return this->apply<AND>( this->apply<EQUAL_TO>(this->restrict_var(sf, i, var.from), this->constant(fVal))
+                               , this->apply<LESS>(this->restrict_var(sf, i, var.to), this->constant(fVal)) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbd_integrated_2
         (val_change<P> const var, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply( this->restrict_var(sf, i, var.from)
-                          , GREATER<P>()
-                          , this->restrict_var(sf, i, var.to) );
+        return this->apply<GREATER>( this->restrict_var(sf, i, var.from)
+                                   , this->restrict_var(sf, i, var.to) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbd_integrated_3
         (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply( this->apply(this->restrict_var(sf, i, var.from), LESS<P>(), this->constant(fVal))
-                          , AND<P>()
-                          , this->apply(this->restrict_var(sf, i, var.to), GREATER_EQUAL<P>(), this->constant(fVal)) );
+        return this->apply<AND>( this->apply<LESS>(this->restrict_var(sf, i, var.from), this->constant(fVal))
+                               , this->apply<GREATER_EQUAL>(this->restrict_var(sf, i, var.to), this->constant(fVal)) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -198,7 +194,7 @@ namespace mix::dd
             auto const& [i, dpbd] = pair;
             return this->to_dpbde(dpbd, level, i);
         });
-        auto const conj = this->tree_fold(dpbdes, PI_CONJ<P>());
+        auto const conj = this->tree_fold<PI_CONJ>(dpbdes);
         auto cuts = std::vector<VectorType> {};
         this->template satisfy_all<VectorType>(1, conj, std::back_inserter(cuts));
         return cuts;

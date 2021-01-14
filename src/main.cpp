@@ -81,16 +81,16 @@ auto const parallel33 = [](auto const lhs, auto const rhs)
 
 auto constexpr U = log_val_traits<3>::undefined;
 
-struct serial23_t   : public mix::dd::impl::bin_op<decltype(serial23), 3, U> {};
-struct parallel23_t : public mix::dd::impl::bin_op<decltype(parallel23), 3, U> {};
-struct parallel33_t : public mix::dd::impl::bin_op<decltype(parallel33), 3, U> {};
+template<std::size_t P> struct serial23_t   : public mix::dd::impl::bin_op<decltype(serial23), P, U> {};
+template<std::size_t P> struct parallel23_t : public mix::dd::impl::bin_op<decltype(parallel23), P, U> {};
+template<std::size_t P> struct parallel33_t : public mix::dd::impl::bin_op<decltype(parallel33), P, U> {};
 
-constexpr auto op_id (serial23_t)   { return op_id_t {15}; }
-constexpr auto op_id (parallel23_t) { return op_id_t {16}; }
-constexpr auto op_id (parallel33_t) { return op_id_t {17}; }
-constexpr auto op_is_commutative (serial23_t)   { return false; }
-constexpr auto op_is_commutative (parallel23_t) { return false; }
-constexpr auto op_is_commutative (parallel33_t) { return false; }
+template<std::size_t P> constexpr auto op_id (serial23_t<P>)   { return op_id_t {15}; }
+template<std::size_t P> constexpr auto op_id (parallel23_t<P>) { return op_id_t {16}; }
+template<std::size_t P> constexpr auto op_id (parallel33_t<P>) { return op_id_t {17}; }
+template<std::size_t P> constexpr auto op_is_commutative (serial23_t<P>)   { return false; }
+template<std::size_t P> constexpr auto op_is_commutative (parallel23_t<P>) { return false; }
+template<std::size_t P> constexpr auto op_is_commutative (parallel33_t<P>) { return false; }
 
 auto mss_reliability_test()
 {
@@ -100,9 +100,8 @@ auto mss_reliability_test()
     auto m  = mdd_manager<double, void, 3>(4);
     m.set_domains({2, 3, 2, 3});
     auto& x = m;
-    auto sf = m.apply( m.apply(x(0), serial23_t(), x(1))
-                     , parallel33_t()
-                     , m.apply(x(2), parallel23_t(), x(3)) );
+    auto sf = m.apply<parallel33_t>( m.apply<serial23_t>(x(0), x(1))
+                                   , m.apply<parallel23_t>(x(2), x(3)) );
     auto dpbds = m.dpbds_integrated_1({1, 0}, 1, sf);
     auto const ps = prob_table{ {0.1, 0.9, 0.0}
                               , {0.2, 0.6, 0.2}
@@ -139,9 +138,8 @@ auto mss_playground()
     // TODO set domains, set ps, default a void akou default
 
 
-    auto f = m.apply( m.apply(x(0), MIN<3>(), x(1))
-                    , MAX<3>()
-                    , m.apply(x(2), MAX<3>(), x(3)) );
+    auto f = m.apply<MAX>( m.apply<MIN>(x(0), x(1))
+                         , m.apply<MAX>(x(2), x(3)) );
     // auto idpbd = m.dpbd_integrated_3({0, 1}, 1, f, 1);
     // auto mnf   = m.to_mnf(idpbd);
     // m.to_dot_graph(std::cout, mnf);
@@ -198,7 +196,7 @@ auto basic_test()
     auto x1   = manager.variable(1);
     auto x2   = manager.variable(2);
     auto x3   = manager.variable(3);
-    auto prod = manager.apply(x1, AND(), x2);
+    auto prod = manager.apply<AND>(x1, x2);
 
     manager.to_dot_graph(std::cout);
 }
@@ -222,11 +220,9 @@ auto example_basic_usage_bdd()
     auto x3_    = x(3, NOT());
     auto x1_    = m.negate(x1);
 
-    auto f = m.apply( m.apply(x0, AND(), x1)
-                    , OR()
-                    , m.apply( m.apply(x(2), OR(), x(3))
-                             , OR()
-                             , x4 ) );
+    auto f = m.apply<OR>( m.apply<AND>(x0, x1)
+                        , m.apply<OR>( m.apply<OR>(x(2), x(3))
+                                     , x4 ) );
 
     register_manager(m);
 
@@ -343,7 +339,7 @@ auto patterns_imgs()
     auto m1 = make_mdd_manager<3>(3);
     auto x1 = m1.variable(1);
     auto x2 = m1.variable(2);
-    auto f1 = m1.apply(x1, MAX<3>(), x2);
+    auto f1 = m1.apply<MAX>(x1, x2);
     m1.to_dot_graph(std::cout, f1);
 
     auto m2 = make_bdd_manager(4);

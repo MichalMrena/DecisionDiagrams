@@ -40,35 +40,35 @@ namespace mix::dd
     auto operator&& ( mdd<VertexData, ArcData, 2> const& lhs
                     , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
     {
-        return impl::m_ref<VertexData, ArcData>().apply(lhs, AND(), rhs);
+        return impl::m_ref<VertexData, ArcData>().template apply<AND>(lhs, rhs);
     }
 
     template<class VertexData, class ArcData>
     auto operator* ( mdd<VertexData, ArcData, 2> const& lhs
                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
     {
-        return impl::m_ref<VertexData, ArcData>().apply(lhs, AND(), rhs);
+        return impl::m_ref<VertexData, ArcData>().template apply<AND>(lhs, rhs);
     }
 
     template<class VertexData, class ArcData>
     auto operator|| ( mdd<VertexData, ArcData, 2> const& lhs
                     , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
     {
-        return impl::m_ref<VertexData, ArcData>().apply(lhs, OR(), rhs);
+        return impl::m_ref<VertexData, ArcData>().template apply<OR>(lhs, rhs);
     }
 
     template<class VertexData, class ArcData>
     auto operator+ ( mdd<VertexData, ArcData, 2> const& lhs
                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
     {
-        return impl::m_ref<VertexData, ArcData>().apply(lhs, OR(), rhs);
+        return impl::m_ref<VertexData, ArcData>().template apply<OR>(lhs, rhs);
     }
 
     template<class VertexData, class ArcData>
     auto operator^ ( mdd<VertexData, ArcData, 2> const& lhs
                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
     {
-        return impl::m_ref<VertexData, ArcData>().apply(lhs, XOR(), rhs);
+        return impl::m_ref<VertexData, ArcData>().template apply<XOR>(lhs, rhs);
     }
 
     template<class VertexData, class ArcData>

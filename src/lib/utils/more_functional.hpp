@@ -19,7 +19,7 @@ namespace mix::utils
     }
 
     /**
-        @brief Function modular addition.
+        @brief Modular addition.
      */
     template<std::size_t M>
     inline auto const plus_mod = [](auto const l, auto const r) { return (l + r) % M; };
@@ -27,7 +27,7 @@ namespace mix::utils
     using plus_mod_t = decltype(plus_mod<M>);
 
     /**
-        @brief Function modular multiplication.
+        @brief Modular multiplication.
      */
     template<std::size_t M>
     inline auto const multiplies_mod = [](auto const l, auto const r) { return (l * r) % M; };
@@ -35,25 +35,25 @@ namespace mix::utils
     using multiplies_mod_t = decltype(multiplies_mod<M>);
 
     /**
-        @brief Function logical nand.
+        @brief Logical nand.
      */
     inline auto const logical_nand = mf_impl::fnot(std::logical_and<>());
     using logical_nand_t = decltype(logical_nand);
 
     /**
-        @brief Function logical nor.
+        @brief Logical nor.
      */
     inline auto const logical_nor = mf_impl::fnot(std::logical_or<>());
     using logical_nor_t = decltype(logical_nor);
 
     /**
-        @brief Function min.
+        @brief Min.
      */
     inline auto const min = [](auto const& l, auto const& r) { return std::min(l, r); };
     using min_t = decltype(min);
 
     /**
-        @brief Function max.
+        @brief Max.
      */
     inline auto const max = [](auto const& l, auto const& r) { return std::max(l, r); };
     using max_t = decltype(max);
@@ -71,13 +71,13 @@ namespace mix::utils
     using always_true_t = decltype(always_true);
 
     /**
-        @brief Function that returns true if argument is not nullptr and false otherwise.
+        @brief Returns true iif argument is not nullptr.
      */
     inline auto const not_null = [](void* const arg) noexcept { return nullptr != arg; };
     using not_null_t = decltype(not_null);
 
     /**
-     *  @brief Function that returns true if given container is not empty.
+     *  @brief Returns true if given container is not empty.
      */
     inline auto const not_empty = [](auto const& c) { return !c.empty(); };
     using not_empty_t = decltype(not_empty);

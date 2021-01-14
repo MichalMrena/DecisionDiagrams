@@ -65,22 +65,22 @@ namespace mix::dd
 
     /* Manipulation */
     public:
-        template<class Op>
-        auto apply (mdd_t const& lhs, Op op, mdd_t const& rhs) -> mdd_t;
+        template<template<std::size_t> class Op>
+        auto apply (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t;
 
         auto restrict_var (mdd_t const& d, index_t const i, log_t const val) -> mdd_t;
 
-        template<class Op>
-        auto left_fold (mdd_v const& ds, Op op) -> mdd_t;
+        template<template<std::size_t> class Op>
+        auto left_fold (mdd_v const& ds) -> mdd_t;
 
-        template<class Op>
-        auto tree_fold (mdd_v& ds, Op op) -> mdd_t;
+        template<template<std::size_t> class Op>
+        auto tree_fold (mdd_v& ds) -> mdd_t;
 
-        template<class InputIt, class Op>
-        auto left_fold (InputIt first, InputIt last, Op op) -> mdd_t;
+        template<template<std::size_t> class Op, class InputIt>
+        auto left_fold (InputIt first, InputIt last) -> mdd_t;
 
-        template<class RandomIt, class Op>
-        auto tree_fold (RandomIt first, RandomIt last, Op op) -> mdd_t;
+        template<template<std::size_t> class Op, class RandomIt>
+        auto tree_fold (RandomIt first, RandomIt last) -> mdd_t;
 
     /* Creation */
     public:
@@ -155,11 +155,11 @@ namespace mix::dd
 
     /* Manipulation internals */
     protected:
-        template<class Op>
-        auto apply_step (vertex_t* const lhs, Op op, vertex_t* const rhs) -> vertex_t*;
+        template<template<std::size_t> class Op>
+        auto apply_step (vertex_t* const lhs, vertex_t* const rhs) -> vertex_t*;
 
         template<class Op>
-        static auto make_apply_key (vertex_t* const lhs, Op op, vertex_t* const rhs) -> apply_key_t;
+        static auto make_apply_key (vertex_t* const lhs, vertex_t* const rhs) -> apply_key_t;
 
         template<class Transformator>
         auto transform (mdd_t const& d, Transformator&& transform_sons) -> mdd_t;

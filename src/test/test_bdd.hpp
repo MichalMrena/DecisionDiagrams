@@ -48,10 +48,11 @@ namespace mix::dd::test
         return boolean_function {std::move(products)};
     }
 
-    template<class Folder>
+    template<class OrFold, class AndFold>
     inline auto make_diagram ( bdd_manager<void, void>& m
-                             , boolean_function const& function
-                             , Folder fold )
+                             , boolean_function const&  function
+                             , OrFold                   orFold
+                             , AndFold                  andFold )
     {
         using bdd = typename bdd_manager<void, void>::bdd_t;
 
@@ -59,10 +60,10 @@ namespace mix::dd::test
         for (auto const& product : function.products)
         {
             auto varDiagrams = m.variables(product);
-            productDiagrams.push_back(fold(varDiagrams, AND()));
+            productDiagrams.push_back(andFold(varDiagrams));
         }
 
-        return fold(productDiagrams, OR());
+        return orFold(productDiagrams);
     }
 
     template<std::size_t N>
@@ -71,6 +72,7 @@ namespace mix::dd::test
     {
         auto const& pss  = function.products;
         auto productVals = std::vector<bool>();
+        // TODO transform reduce
         std::transform(std::begin(pss), std::end(pss), std::back_inserter(productVals), [&varVals](auto const& ps)
         {
             return std::all_of(std::begin(ps), std::end(ps), [&varVals](auto const bv)
@@ -97,12 +99,21 @@ namespace mix::dd::test
 
         for (auto i = 0u; i < n; ++i)
         {
-            auto manager        = bdd_manager<void, void>(BddVariableCount);
-            auto const os       = get_order(order, rngOrderShuffle, BddVariableCount);
+            // Create manager and set order of variables.
+            auto manager  = bdd_manager<void, void>(BddVariableCount);
+            auto const os = get_order(order, rngOrderShuffle, BddVariableCount);
             manager.set_order(os);
+
+            // Different folding strategies.
+            auto const andLeftFold = [&manager](auto&& ds){ return manager.template left_fold<AND>(ds); };
+            auto const orLeftFold  = [&manager](auto&& ds){ return manager.template left_fold<OR>(ds); };
+            auto const andTreeFold = [&manager](auto&& ds){ return manager.template tree_fold<AND>(ds); };
+            auto const orTreeFold  = [&manager](auto&& ds){ return manager.template tree_fold<OR>(ds); };
+
+            // Generate function and create diagrams using different strategies.
             auto const function = generate_function(BddProductCount, rngProductSize, rngIsComplemented, rngVarIndex);
-            auto const diagram  = make_diagram(manager, function, [&manager](auto&  ds, auto&& f){ return manager.tree_fold(ds, f); });
-            auto const diagram2 = make_diagram(manager, function, [&manager](auto&& ds, auto&& f){ return manager.left_fold(ds, f); });
+            auto const diagram  = make_diagram(manager, function, orLeftFold, andLeftFold);
+            auto const diagram2 = make_diagram(manager, function, orTreeFold, andTreeFold);
             manager.collect_garbage();
             auto const vertexCount = manager.vertex_count(diagram);
 
@@ -114,6 +125,7 @@ namespace mix::dd::test
             std::cout << "    Vertex count: " << vertexCount << '\n';
             std::cout << "    Order:        " << utils::concat_range(os, " > ") << '\n';
 
+            // TODO move to function test_evaluate
             auto result = true;
             for (auto varVals = 0u; varVals < (1 << BddVariableCount); ++varVals)
             {

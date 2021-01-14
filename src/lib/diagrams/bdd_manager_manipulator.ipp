@@ -8,6 +8,6 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::negate
         (bdd_t const& d) -> bdd_t
     {
-        return this->apply(d, XOR(), this->constant(1));
+        return this->template apply<XOR>(d, this->constant(1));
     }
 }

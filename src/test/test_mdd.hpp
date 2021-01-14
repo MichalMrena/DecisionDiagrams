@@ -69,10 +69,11 @@ namespace mix::dd::test
         return mvl_function {varCount, std::move(products)};
     }
 
-    template<std::size_t P, class Folder>
+    template<std::size_t P, class MulFold, class PlusFold>
     inline auto make_diagram ( mdd_manager<void, void, P>& m
                              , mvl_function const&         function
-                             , Folder                      fold )
+                             , MulFold                     mulFold
+                             , PlusFold                    plusFold )
     {
         using mdd = typename mdd_manager<void, void, P>::mdd_t;
 
@@ -80,10 +81,10 @@ namespace mix::dd::test
         for (auto const& product : function.products)
         {
             auto varDiagrams = std::vector<mdd>(m.variables(product));
-            productDiagrams.push_back(fold(varDiagrams, MULTIPLIES_MOD<P>()));
+            productDiagrams.push_back(mulFold(varDiagrams));
         }
 
-        return fold(productDiagrams, PLUS_MOD<P>());
+        return plusFold(productDiagrams);
     }
 
     template<std::size_t P>
@@ -177,15 +178,22 @@ namespace mix::dd::test
 
         for (auto i = 0u; i < n; ++i)
         {
-            auto manager        = mdd_manager<void, void, P>(MddVariableCount);
-            auto const os       = get_order(order, rngOrderShuffle, MddVariableCount);
-            auto const ds       = get_domains<P>(domain, MddVariableCount, rngDomain);
+
+            auto manager  = mdd_manager<void, void, P>(MddVariableCount);
+            auto const os = get_order(order, rngOrderShuffle, MddVariableCount);
+            auto const ds = get_domains<P>(domain, MddVariableCount, rngDomain);
             manager.set_order(os);
             manager.set_domains(ds);
+
+            auto const mulLeftFold  = [&manager](auto&& ds){ return manager.template left_fold<MULTIPLIES_MOD>(ds); };
+            auto const plusLeftFold = [&manager](auto&& ds){ return manager.template left_fold<PLUS_MOD>(ds); };
+            auto const mulTreeFold  = [&manager](auto&& ds){ return manager.template tree_fold<MULTIPLIES_MOD>(ds); };
+            auto const plusTreeFold = [&manager](auto&& ds){ return manager.template tree_fold<PLUS_MOD>(ds); };
+
             auto const function = generate_function(MddVariableCount, MddProductCount, rngProductSize, rngVarIndex);
             auto const depSet   = dependency_set(function);
-            auto const diagram  = make_diagram<P>(manager, function, [&manager](auto&& ds, auto&& f){ return manager.tree_fold(ds, f); });
-            auto const diagram2 = make_diagram<P>(manager, function, [&manager](auto&& ds, auto&& f){ return manager.left_fold(ds, f); });
+            auto const diagram  = make_diagram<P>(manager, function, mulLeftFold, plusLeftFold);
+            auto const diagram2 = make_diagram<P>(manager, function, mulTreeFold, plusTreeFold);
             manager.collect_garbage();
             auto const vertexCount = manager.vertex_count(diagram);
 

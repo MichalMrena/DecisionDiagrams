@@ -50,9 +50,8 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::dpbd
         (bdd_t const& f, index_t const i) -> bdd_t
     {
-        return this->apply( this->negate(this->restrict_var(f, i, 0))
-                          , AND()
-                          , this->restrict_var(f, i, 1) );
+        return this->template apply<AND>( this->negate(this->restrict_var(f, i, 0))
+                                        , this->restrict_var(f, i, 1) );
     }
 
     template<class VertexData, class ArcData>
@@ -149,7 +148,7 @@ namespace mix::dd
             auto const& [i, dpbd] = pair;
             return this->to_dpbd_e(dpbd, i);
         });
-        auto const conj = this->tree_fold(dpbdes, PI_CONJ {});
+        auto const conj = this->template tree_fold<PI_CONJ>(dpbdes);
         auto cutVectors = std::vector<VectorType>();
         this->satisfy_all<VectorType>(conj, std::back_inserter(cutVectors));
         return cutVectors;
