@@ -198,6 +198,48 @@ namespace mix::dd
 
     template<std::size_t P>
     auto make_mdd_manager(std::size_t const varCount);
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto register_manager(mdd_manager<VertexData, ArcData, P>& m);
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator&& ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator|| ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator^ ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator< ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator<= ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator> ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator>= ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator+ ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator* ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator! ( mdd<VertexData, ArcData, P> const& lhs ) -> mdd<VertexData, ArcData, P>;
 }
 
 #include "diagrams/mdd_manager.ipp"

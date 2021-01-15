@@ -18,62 +18,11 @@ namespace mix::dd
         return bdd_manager<double, void>(varCount);
     }
 
-    namespace impl
-    {
-        template<class VertexData, class ArcData>
-        inline auto bddManager_ = static_cast<bdd_manager<VertexData, ArcData>*>(nullptr);
-
-        template<class VertexData, class ArcData>
-        auto m_ref () -> bdd_manager<VertexData, ArcData>&
-        {
-            return *bddManager_<VertexData, ArcData>;
-        }
-    }
-
     template<class VertexData, class ArcData>
-    auto register_manager(bdd_manager<VertexData, ArcData>& manager)
+    auto operator! (mdd<VertexData, ArcData, 2> const& lhs) -> mdd<VertexData, ArcData, 2>
     {
-        impl::bddManager_<VertexData, ArcData> = &manager;
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator&& ( mdd<VertexData, ArcData, 2> const& lhs
-                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
-    {
-        return impl::m_ref<VertexData, ArcData>().template apply<AND>(lhs, rhs);
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator* ( mdd<VertexData, ArcData, 2> const& lhs
-                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
-    {
-        return impl::m_ref<VertexData, ArcData>().template apply<AND>(lhs, rhs);
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator|| ( mdd<VertexData, ArcData, 2> const& lhs
-                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
-    {
-        return impl::m_ref<VertexData, ArcData>().template apply<OR>(lhs, rhs);
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator+ ( mdd<VertexData, ArcData, 2> const& lhs
-                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
-    {
-        return impl::m_ref<VertexData, ArcData>().template apply<OR>(lhs, rhs);
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator^ ( mdd<VertexData, ArcData, 2> const& lhs
-                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>
-    {
-        return impl::m_ref<VertexData, ArcData>().template apply<XOR>(lhs, rhs);
-    }
-
-    template<class VertexData, class ArcData>
-    auto operator! ( mdd<VertexData, ArcData, 2> const& lhs ) -> mdd<VertexData, ArcData, 2>
-    {
-        return impl::m_ref<VertexData, ArcData>().negate(lhs);
+        auto& mref = mm_impl::m_ref<VertexData, ArcData, 2>();
+        auto& bref = static_cast<bdd_manager<VertexData, ArcData>&>(mref);
+        return bref.negate(lhs);
     }
 }

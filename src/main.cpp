@@ -226,8 +226,8 @@ auto example_basic_usage_bdd()
 
     register_manager(m);
 
-    auto g  = x(0) * x(1) + (x(2) * x(3) + x(4));
-    auto g1 = !(x(0) * x(1)) + (!(x(2) + x(3)) + x(4));
+    auto g  = (x(0) && x(1)) || (x(2) && x(3) || x(4));
+    auto g1 = !(x(0) && x(1)) || (!(x(2) || x(3)) || x(4));
 
     auto const val0 = m.evaluate(f, std::array  {0u, 1u, 1u, 0u, 1u});
     auto const val1 = m.evaluate(f, std::vector {0u, 1u, 1u, 0u, 1u});
@@ -271,8 +271,8 @@ auto example_basic_usage_mdd()
     auto f = m.apply<PLUS_MOD>( m.apply<MULTIPLIES_MOD>(x(0), x(1))
                               , m.apply<MULTIPLIES_MOD>(x(2), x(3)) );
 
-    auto const val0 = m.evaluate(f, std::array  {0, 1, 2, 3});
-    auto const val1 = m.evaluate(f, std::vector {0, 1, 2, 3});
+    auto const val0 = m.evaluate(f, std::array  {0u, 1u, 2u, 3u});
+    auto const val1 = m.evaluate(f, std::vector {0u, 1u, 2u, 3u});
     auto const sc2  = m.satisfy_count(2, f);
 
     using var_vals_t = std::array<unsigned int, 4>;
@@ -296,7 +296,7 @@ auto order_test()
         m.clear();
         m.set_order(order);
 
-        auto f = x(0) * x(1) + x(2) * x(3) + x(4) * x(5);
+        auto f = (x(0) && x(1)) || (x(2) && x(3)) || (x(4) && x(5));
         auto varVals = 0;
         for (auto const correctVal : vector)
         {
@@ -316,9 +316,9 @@ auto swap_var_test()
     register_manager(m);
     m.set_order({0, 1, 2, 3, 4, 5});
 
-    auto f = x(0) * x(3)
-           + x(1) * x(4)
-           + x(2) * x(5);
+    auto f = (x(0) && x(3))
+          || (x(1) && x(4))
+          || (x(2) && x(5));
 
     // m.collect_garbage();
     // m.to_dot_graph(std::cout);
@@ -327,32 +327,6 @@ auto swap_var_test()
     // m.to_dot_graph(std::cout);
     m.collect_garbage();
     // m.to_dot_graph(std::cout);
-}
-
-auto eq_test()
-{
-    auto m  = make_bdd_manager(4);
-    auto& x = m;
-    register_manager(m);
-
-    // auto f1 = !((!(x(0) + x(1)) + (x(2) * x(3)))+ (x(2) + x(3)));
-    // auto f2 = (x(0) + x(1)) * !(x(2) * x(3)) * !(x(2) + x(3));
-    // auto f3 = (x(0) + x(1)) * !(x(2) * x(3)) * !x(2) * !x(3);
-    // auto f4 = (x(0) + x(1)) * (!x(2) + !x(3)) * !x(2) * !x(3);
-    // auto f5 = (x(0) + x(1)) * (!x(2) * !x(2) + !x(2) * !x(3) + !x(2) * !x(3) + !x(3) * !x(3));
-    // auto f6 = (x(0) + x(1)) * !x(2) * !x(3);
-    // assert(f4 == f6);
-
-    // auto dfc = m.restrict_var(f1, 2, 0) xor m.restrict_var(f1, 2, 1);
-    // auto dfd = m.restrict_var(f1, 3, 0) xor m.restrict_var(f1, 3, 1);
-
-    // m.to_dot_graph(std::cout, dfd);
-
-    // auto f = !( !(x(0) + x(1)) + x(2) * x(3) ) * x(2) * x(3);
-    auto f2 = x(0) * (x(1) + x(2) * x(3));
-    printl(m.availability({0.5, 0.6, 0.7, 0.8}, f2));
-
-    // m.to_dot_graph(std::cout, f);
 }
 
 auto patterns_imgs()
@@ -366,7 +340,7 @@ auto patterns_imgs()
     auto m2 = make_bdd_manager(4);
     auto& x = m2;
     register_manager(m2);
-    auto f2 = x(1) * x(2) + x(3);
+    auto f2 = (x(1) && x(2)) || x(3);
     m2.to_dot_graph(std::cout, f2);
 
     m2.to_dot_graph(std::cout, x(1) * x(2));
@@ -382,7 +356,7 @@ auto main() -> int
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
-    example_basic_usage_mdd();
+    // example_basic_usage_mdd();
     // order_test();
     // swap_var_test();
     // eq_test();

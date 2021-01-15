@@ -89,30 +89,7 @@ namespace mix::dd
     inline auto make_bdd_manager(std::size_t const varCount);
 
     template<class VertexData, class ArcData>
-    auto register_manager(bdd_manager<VertexData, ArcData>& manager);
-
-    template<class VertexData, class ArcData>
-    auto operator&& ( mdd<VertexData, ArcData, 2> const& lhs
-                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
-
-    template<class VertexData, class ArcData>
-    auto operator* ( mdd<VertexData, ArcData, 2> const& lhs
-                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
-
-    template<class VertexData, class ArcData>
-    auto operator|| ( mdd<VertexData, ArcData, 2> const& lhs
-                    , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
-
-    template<class VertexData, class ArcData>
-    auto operator+ ( mdd<VertexData, ArcData, 2> const& lhs
-                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
-
-    template<class VertexData, class ArcData>
-    auto operator^ ( mdd<VertexData, ArcData, 2> const& lhs
-                   , mdd<VertexData, ArcData, 2> const& rhs ) -> mdd<VertexData, ArcData, 2>;
-
-    template<class VertexData, class ArcData>
-    auto operator! ( mdd<VertexData, ArcData, 2> const& lhs ) -> mdd<VertexData, ArcData, 2>;
+    auto operator! (mdd<VertexData, ArcData, 2> const& lhs) -> mdd<VertexData, ArcData, 2>;
 }
 
 #include "diagrams/bdd_manager_creator.ipp"

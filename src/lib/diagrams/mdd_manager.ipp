@@ -6,6 +6,7 @@
 #include "../utils/more_assert.hpp"
 
 #include <numeric>
+#include <memory>
 
 namespace mix::dd
 {
@@ -91,5 +92,86 @@ namespace mix::dd
     auto make_mdd_manager(std::size_t const varCount)
     {
         return mdd_manager<double, void, P>(varCount);
+    }
+
+    namespace mm_impl
+    {
+        template<class VertexData, class ArcData, std::size_t P>
+        inline auto manager_ = static_cast<mdd_manager<VertexData, ArcData, P>*>(nullptr);
+
+        template<class VertexData, class ArcData, std::size_t P>
+        auto m_ref() -> mdd_manager<VertexData, ArcData, P>&
+        {
+            return *manager_<VertexData, ArcData, P>;
+        }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto register_manager(mdd_manager<VertexData, ArcData, P>& m)
+    {
+        mm_impl::manager_<VertexData, ArcData, P> = std::addressof(m);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator&& ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<AND>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator|| ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<OR>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator^ ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<XOR>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator< ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<LESS>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator<= ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<LESS_EQUAL>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator> ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<GREATER>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator>= ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<GREATER_EQUAL>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator+ ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<PLUS_MOD>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator* ( mdd<VertexData, ArcData, P> const& lhs
+                   , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<MULTIPLIES_MOD>(lhs, rhs);
     }
 }
