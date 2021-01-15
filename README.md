@@ -52,13 +52,11 @@ auto x1_ = m.negate(x1);
 
 Lets say you want to create a diagram for a more complex function `(x0 * x1) + (x2 * x3 + x5)` where `*` denotes logical conjunction (and) and `+` denotes logical disjunction (or). What we can do is to merge diagrams of individual variables using function `apply`. Apply takes two diagrams and a binary operation and returns a result of applying given operation on those diagrams.
 ```C++
-auto f = m.apply( m.apply(x0, AND(), x1)
-                , OR()
-                , m.apply( m.apply(x(2), AND(), x(3))
-                         , OR()
-                         , x4 ) );
+auto f = m.apply<OR>( m.apply<AND>(x0, x1)
+                    , m.apply<OR>( m.apply<OR>(x(2), x(3))
+                                 , x4 ) );
 ```
-Following operations can be used in apply: `AND(), OR(), XOR(), NAND(), NOR()`.
+Following operations can be used in apply: `AND, OR, XOR, NAND, NOR`.
 
 Even with sophisticated formatting and indentation, expressions like this might seem a bit complicated. That is why we overloaded corresponding operators to use `apply` for us in the background. Before using any overloaded operator you need to register the manager you are using so that operators know which one to use. This feature is intended only for testing and playing around. For a real world usage, we recommend to stick with calling `apply` directly.
 ```C++
@@ -111,9 +109,44 @@ m.to_dot_graph(std::cout, f);
 ```
 
 ### Multi-valued decision diagrams
-Using MDDs is almost identical to using BDDs. You just need to use `make_mdd_manager` which has a template parameter `P` that specifies how many logical levels you want to use.
+Using MDDs is almost identical to using BDDs. You just need to use `make_mdd_manager` which has a template parameter `P` that specifies how many logical levels you want to use. Here is an example of 4-valued logic function of 4 variables:
 ```C++
+auto m  = make_mdd_manager<4>(4);
+auto& x = m;
+
+// f = (x0 * x1 + x2 * x3) mod 4
+auto f = m.apply<PLUS_MOD>( m.apply<MULTIPLIES_MOD>(x(0), x(1))
+                          , m.apply<MULTIPLIES_MOD>(x(2), x(3)) );
+
+auto const val0 = m.evaluate(f, std::array  {0, 1, 2, 3});
+auto const val1 = m.evaluate(f, std::vector {0, 1, 2, 3});
+auto const sc2  = m.satisfy_count(2, f);
+
+using var_vals_t = std::array<unsigned int, 4>;
+auto sas = std::vector<var_vals_t>();
+m.satisfy_all<var_vals_t>(2, f, std::back_inserter(sas));
+
+assert(val0 == val1);
+assert(sc2 == sas.size());
 ```
+As you can see the API is almost identical to the `bdd_manager`, however some functions need additional parameter that specifies logical level. Following functions can be used in `apply` with MDDs:
+| Binary operator | Description                     | Operator overload | Note                                        |
+|-----------------|---------------------------------|-------------------|---------------------------------------------|
+|       AND       | Logical and.                    |         &&        | Treats 0 as false, everything else as true. |
+|        OR       | Logical or.                     |        \|\|       | Treats 0 as false, everything else as true. |
+|       XOR       | Logical xor.                    |         ^         | Treats 0 as false, everything else as true. |
+|       NAND      | Logical nand.                   |                   | Treats 0 as false, everything else as true. |
+|       NOR       | Logical nor.                    |                   | Treats 0 as false, everything else as true. |
+|     EQUAL_TO    | Equal to relation.              |         ??        | Result is 1 for true and 0 for false.       |
+|   NOT_EQUAL_TO  | Not equal to relation.          |         ??        | Result is 1 for true and 0 for false.       |
+|       LESS      | Less than relation              |         <         | Result is 1 for true and 0 for false.       |
+|    LESS_EQUAL   | Less than or equal relation.    |         <=        | Result is 1 for true and 0 for false.       |
+|     GREATER     | Greater than relation.          |         >         | Result is 1 for true and 0 for false.       |
+|  GREATER_EQUAL  | Greater than or equal relation. |         >=        | Result is 1 for true and 0 for false.       |
+|       MIN       | Minimum of two values.          |                   |                                             |
+|       MAX       | Maximum of two values.          |                   |                                             |
+|       PLUS      | Addition modulo P.              |         +         |                                             |
+|    MULTIPLIES   | Multiplication modulo P.        |         *         |                                             |
 
 ## Reliability Theory
 Main motivation for creating this library was the possibility of using decision diagrams in reliability analysis. Following example shows how different reliability indices and importance measures can be calculated using structure function and Direct Partial Boolean Derivatives.  

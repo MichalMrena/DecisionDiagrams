@@ -126,7 +126,7 @@ namespace mix::dd
     template<std::size_t P> constexpr auto op_is_commutative (PI_CONJ<P>)        { return true;  }
     template<std::size_t P> constexpr auto op_is_commutative (NAND<P>)           { return true;  }
     template<std::size_t P> constexpr auto op_is_commutative (NOR<P>)            { return true;  }
-    template<std::size_t P> constexpr auto op_is_commutative (EQUAL_TO<P>)       { return true;  }
+    template<std::size_t P> constexpr auto op_is_commutative (EQUAL_TO<P>)       { return true;  } // TODO not equal to
     template<std::size_t P> constexpr auto op_is_commutative (LESS<P>)           { return false; }
     template<std::size_t P> constexpr auto op_is_commutative (LESS_EQUAL<P>)     { return false; }
     template<std::size_t P> constexpr auto op_is_commutative (GREATER<P>)        { return false; }

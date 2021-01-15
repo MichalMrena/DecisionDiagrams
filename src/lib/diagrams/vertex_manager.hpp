@@ -43,12 +43,13 @@ namespace mix::dd
         auto get_terminal_vertex (log_t const val) const -> vertex_t*;
         auto has_terminal_vertex (log_t const val) const -> bool;
         auto internal_vertex     (index_t const index, son_a const& sons) -> vertex_t*;
-        auto get_level           (vertex_t* const v) const -> level_t;
+        auto get_vertex_level           (vertex_t* const v) const -> level_t;
         auto get_level           (index_t const i)   const -> level_t;
         auto get_index           (level_t const l)   const -> index_t;
         auto get_vertex_value    (vertex_t* const v) const -> log_t;
-        auto is_leaf             (vertex_t* const v) const -> bool;
-        auto is_leaf             (index_t   const i) const -> bool;
+        auto is_leaf_vertex      (vertex_t* const v) const -> bool;
+        auto is_leaf_index       (index_t   const i) const -> bool;
+        auto is_leaf_level       (level_t   const l) const -> bool;
         auto vertex_count        (index_t   const i) const -> std::size_t;
         auto vertex_count        () const -> std::size_t;
         auto var_count           () const -> std::size_t;
@@ -201,7 +202,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_level
+    auto vertex_manager<VertexData, ArcData, P>::get_vertex_level
         (vertex_t* const v) const -> level_t
     {
         return this->get_level(v->get_index());
@@ -211,8 +212,8 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::get_level
         (index_t const i) const -> level_t
     {
-        return indexToLevel_.empty() ? i :
-               this->is_leaf(i)      ? i : indexToLevel_[i];
+        return indexToLevel_.empty()  ? i :
+               this->is_leaf_index(i) ? i : indexToLevel_[i];
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -227,23 +228,36 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::get_vertex_value
         (vertex_t* const v) const -> log_t
     {
-        return this->is_leaf(v) ? static_cast<log_t>(utils::index_of( std::begin(leaves_)
-                                                                    , std::end(leaves_), v ))
-                                : log_val_traits<P>::nondetermined;
+        if (this->is_leaf_vertex(v))
+        {
+            return static_cast<log_t>(utils::index_of( std::begin(leaves_)
+                                                     , std::end(leaves_), v ));
+        }
+        else
+        {
+            return log_val_traits<P>::nondetermined;
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::is_leaf
+    auto vertex_manager<VertexData, ArcData, P>::is_leaf_vertex
         (vertex_t* const v) const -> bool
     {
-        return this->is_leaf(v->get_index());
+        return this->is_leaf_index(v->get_index());
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::is_leaf
+    auto vertex_manager<VertexData, ArcData, P>::is_leaf_index
         (index_t const i) const -> bool
     {
         return i == this->leaf_index();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::is_leaf_level
+        (level_t const l) const -> bool
+    {
+        return l == this->leaf_level();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -471,7 +485,7 @@ namespace mix::dd
         (vertex_t* const v) -> void
     {
         auto const index     = v->get_index();
-        auto const nextIndex = this->get_index(1 + this->get_level(v));
+        auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
         auto const cofactors = utils::fill_array<P>([=](auto const sonIndex)
         {
             return utils::fill_array<P>([=](auto const sonSonIndex)

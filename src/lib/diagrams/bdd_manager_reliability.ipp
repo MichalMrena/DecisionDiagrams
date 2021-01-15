@@ -189,7 +189,7 @@ namespace mix::dd
         (bdd_t const& dpbd, index_t const i) -> bdd_t
     {
         auto const root   = dpbd.get_root();
-        auto const rLevel = this->vertexManager_.get_level(root);
+        auto const rLevel = this->vertexManager_.get_vertex_level(root);
         auto const iLevel = this->vertexManager_.get_level(i);
 
         // Special case when the new vertex for the i-th variable is inserted above the root.
@@ -205,11 +205,11 @@ namespace mix::dd
         return this->transform(dpbd, [this, iLevel, i](auto const v, auto&& l_this)
         {
             auto constexpr U  = log_val_traits<2>::undefined;
-            auto const vLevel = this->vertexManager_.get_level(v);
+            auto const vLevel = this->vertexManager_.get_vertex_level(v);
             return utils::fill_array<2>([this, &l_this, i, v, vLevel, iLevel](auto const val)
             {
                 auto const son    = v->get_son(val);
-                auto const sLevel = this->vertexManager_.get_level(son);
+                auto const sLevel = this->vertexManager_.get_vertex_level(son);
                 if (iLevel > vLevel && iLevel < sLevel)
                 {
                     // New vertex for the i-th variable is inserted between vertex v and his son.

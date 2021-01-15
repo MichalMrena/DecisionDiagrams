@@ -62,17 +62,17 @@ namespace mix::dd
     {
         this->traverse_post(d, [this, val](auto const v)
         {
-            if (vertexManager_.is_leaf(v))
+            if (vertexManager_.is_leaf_vertex(v))
             {
                 v->data = vertexManager_.get_vertex_value(v) == val ? 1 : 0;
             }
             else
             {
                 v->data = 0;
-                auto const vLevel = vertexManager_.get_level(v);
+                auto const vLevel = vertexManager_.get_vertex_level(v);
                 v->for_each_son([=, this](auto const son)
                 {
-                    auto const sonLevel   = vertexManager_.get_level(son);
+                    auto const sonLevel   = vertexManager_.get_vertex_level(son);
                     auto const diffFactor = utils::int_pow(P, sonLevel - vLevel - 1);
                     v->data += son->data * static_cast<double>(diffFactor);
                 });
@@ -80,7 +80,7 @@ namespace mix::dd
         });
 
         auto const rootAlpha = static_cast<std::size_t>(d.get_root()->data);
-        auto const rootLevel = vertexManager_.get_level(d.get_root());
+        auto const rootLevel = vertexManager_.get_vertex_level(d.get_root());
         return rootAlpha * utils::int_pow(P, rootLevel);
     }
 
@@ -92,7 +92,7 @@ namespace mix::dd
         auto constexpr get_var = GetIthVal {};
         auto v = d.get_root();
 
-        while (!vertexManager_.is_leaf(v))
+        while (!vertexManager_.is_leaf_vertex(v))
         {
             v = v->get_son(get_var(vs, v->get_index()));
         }
@@ -134,7 +134,7 @@ namespace mix::dd
     {
         auto const cmp = [this](auto const lhs, auto const rhs)
         {
-            return vertexManager_.get_level(lhs) > vertexManager_.get_level(rhs);
+            return vertexManager_.get_vertex_level(lhs) > vertexManager_.get_vertex_level(rhs);
         };
 
         using compare_t     = decltype(cmp);
@@ -176,7 +176,7 @@ namespace mix::dd
         auto const make_label = [this](auto const v)
         {
             using traits_t = log_val_traits<P>;
-            return this->vertexManager_.is_leaf(v)
+            return this->vertexManager_.is_leaf_vertex(v)
                     ? traits_t::to_string(this->vertexManager_.get_vertex_value(v))
                     : "x" + to_string(v->get_index());
         };
@@ -204,7 +204,7 @@ namespace mix::dd
                 }
             });
 
-            if (vertexManager_.is_leaf(v))
+            if (vertexManager_.is_leaf_vertex(v))
             {
                 squareShapes.emplace_back(to_string(v->get_id()));
             }
@@ -232,7 +232,7 @@ namespace mix::dd
 
         this->traverse_pre(diagram, [&, this](auto const v)
         {
-            levels[vertexManager_.get_level(v)].emplace_back(v);
+            levels[vertexManager_.get_vertex_level(v)].emplace_back(v);
         });
 
         return levels;
@@ -244,25 +244,32 @@ namespace mix::dd
         ( log_t const val, level_t const l, vertex_t* const v
         , VariableValues& xs, OutputIt& out ) const -> void
     {
-        auto const vertexVal = vertexManager_.get_vertex_value(v);
+        auto const vertexValue = vertexManager_.get_vertex_value(v);
+        auto const vertexLevel = vertexManager_.get_vertex_level(v);
 
-        if (vertexManager_.is_leaf(v) && val != vertexVal)
+        if (vertexManager_.is_leaf_level(l) && vertexManager_.is_leaf_vertex(v) && val != vertexValue)
         {
             return;
         }
-        else if (vertexManager_.is_leaf(v) && val == vertexVal)
+        else if (vertexManager_.is_leaf_level(l) && vertexManager_.is_leaf_vertex(v) && val == vertexValue)
         {
             *out++ = xs;
             return;
         }
+        else if (vertexLevel > l)
+        {
+            for (auto iSon = 0u; iSon < P; ++iSon)
+            {
+                SetVarVal {} (xs, vertexManager_.get_index(l), iSon);
+                satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, v, xs, out);
+            }
+        }
         else
         {
-            auto const goDown = vertexManager_.get_level(v) <= l;
             v->for_each_son_i([=, this, &out, &xs](auto const iSon, auto const son)
             {
-                auto const next = goDown ? son : v;
                 SetVarVal {} (xs, vertexManager_.get_index(l), iSon);
-                satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, next, xs, out);
+                satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, son, xs, out);
             });
         }
     }

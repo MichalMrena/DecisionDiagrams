@@ -127,8 +127,8 @@ namespace mix::dd
         }
         else
         {
-            auto const lhsLevel  = vertexManager_.get_level(lhs);
-            auto const rhsLevel  = vertexManager_.get_level(rhs);
+            auto const lhsLevel  = vertexManager_.get_vertex_level(lhs);
+            auto const rhsLevel  = vertexManager_.get_vertex_level(rhs);
             auto const level     = std::min(lhsLevel, rhsLevel);
             auto const topVertex = level == lhsLevel ? lhs : rhs;
             auto const index     = topVertex->get_index();
@@ -183,7 +183,7 @@ namespace mix::dd
             return memoIt->second;
         }
 
-        if (vertexManager_.is_leaf(v))
+        if (vertexManager_.is_leaf_vertex(v))
         {
             return v;
         }

@@ -262,6 +262,27 @@ auto example_basic_usage_bdd()
     // m.to_dot_graph(std::cout, f1);
 }
 
+auto example_basic_usage_mdd()
+{
+    auto m  = make_mdd_manager<4>(4);
+    auto& x = m;
+
+    // f = x0 * x1 + x2 * x3 mod 4
+    auto f = m.apply<PLUS_MOD>( m.apply<MULTIPLIES_MOD>(x(0), x(1))
+                              , m.apply<MULTIPLIES_MOD>(x(2), x(3)) );
+
+    auto const val0 = m.evaluate(f, std::array  {0, 1, 2, 3});
+    auto const val1 = m.evaluate(f, std::vector {0, 1, 2, 3});
+    auto const sc2  = m.satisfy_count(2, f);
+
+    using var_vals_t = std::array<unsigned int, 4>;
+    auto sas = std::vector<var_vals_t>();
+    m.satisfy_all<var_vals_t>(2, f, std::back_inserter(sas));
+
+    assert(val0 == val1);
+    assert(sc2 == sas.size());
+}
+
 auto order_test()
 {
     auto const vector = std::vector<bool> {0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
@@ -361,12 +382,13 @@ auto main() -> int
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
+    example_basic_usage_mdd();
     // order_test();
     // swap_var_test();
     // eq_test();
     // patterns_imgs();
 
-    test::test_bdd(5, test::order_e::Random);
+    // test::test_bdd(5, test::order_e::Random);
     test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
 
     auto const timeTaken = watch.elapsed_time().count();
