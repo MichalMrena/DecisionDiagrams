@@ -268,8 +268,8 @@ auto example_basic_usage_mdd()
     auto& x = m;
 
     // f = x0 * x1 + x2 * x3 mod 4
-    auto f = m.apply<PLUS_MOD>( m.apply<MULTIPLIES_MOD>(x(0), x(1))
-                              , m.apply<MULTIPLIES_MOD>(x(2), x(3)) );
+    auto f = m.apply<PLUS>( m.apply<MULTIPLIES>(x(0), x(1))
+                              , m.apply<MULTIPLIES>(x(2), x(3)) );
 
     auto const val0 = m.evaluate(f, std::array  {0u, 1u, 2u, 3u});
     auto const val1 = m.evaluate(f, std::vector {0u, 1u, 2u, 3u});
@@ -362,7 +362,7 @@ auto main() -> int
     // eq_test();
     // patterns_imgs();
 
-    // test::test_bdd(5, test::order_e::Random);
+    test::test_bdd(5, test::order_e::Random);
     test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
 
     auto const timeTaken = watch.elapsed_time().count();

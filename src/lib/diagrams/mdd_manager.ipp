@@ -165,13 +165,13 @@ namespace mix::dd
     auto operator+ ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
     {
-        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<PLUS_MOD>(lhs, rhs);
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<PLUS>(lhs, rhs);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto operator* ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
     {
-        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<MULTIPLIES_MOD>(lhs, rhs);
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<MULTIPLIES>(lhs, rhs);
     }
 }

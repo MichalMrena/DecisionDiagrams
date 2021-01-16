@@ -25,12 +25,15 @@ int main()
 ```
 
 #### Creating diagrams
-Simplest diagram that you can create is a diagram of a Boolean constant `0` (false) or `1` (true).
+
+##### Diagram of a constant
+This is the simplest diagram that you can create. It has only one vertex which represents given value.
 ```C++
 auto cFalse = m.constant(0);
 auto cTrue  = m.constant(1);
 ```
-and a diagram of a single Boolean variable.
+
+##### Diagram of a variable
 ```C++
 auto x0 = m.variable(0);
 auto x4 = m.variable(4);
@@ -40,7 +43,7 @@ Useful trick for creating diagram for a variable is to create a reference to the
 auto& x = m;
 auto x1 = x(1);
 ```
-In order to create complemented (negated) variable you can use `variable_not` or `operator()` with not flag.
+If you want to create complemented (negated) variable you can use `variable_not` or `operator()` with not flag.
 ```C++
 auto x2_ = m.variable_not(2);
 auto x3_ = x(3, NOT());
@@ -50,30 +53,31 @@ You can also complement (negate) an existing diagram using function `negate`.
 auto x1_ = m.negate(x1);
 ```
 
-Lets say you want to create a diagram for a more complex function `(x0 * x1) + (x2 * x3 + x5)` where `*` denotes logical conjunction (and) and `+` denotes logical disjunction (or). What we can do is to merge diagrams of individual variables using function `apply`. Apply takes two diagrams and a binary operation and returns a result of applying given operation on those diagrams.
+##### Diagram of a function of more variables
+In order to create a diagram for more complex function e.g. `(x0 and x1) or ((x2 and x3) or x5)` you need to combine diagrams of individual variables using function template `apply`.
 ```C++
 auto f = m.apply<OR>( m.apply<AND>(x0, x1)
                     , m.apply<OR>( m.apply<OR>(x(2), x(3))
                                  , x4 ) );
 ```
-Following operations can be used in apply: `AND, OR, XOR, NAND, NOR`.
-
-Even with sophisticated formatting and indentation, expressions like this might seem a bit complicated. That is why we overloaded corresponding operators to use `apply` for us in the background. Before using any overloaded operator you need to register the manager you are using so that operators know which one to use. This feature is intended only for testing and playing around. For a real world usage, we recommend to stick with calling `apply` directly.
+Expressions like this one look a bit complicated. That is why we overloaded corresponding operators to use `apply` for you in the background. Before using any overloaded operator you must register the manager you are using so that operators know which one to use.  
+This feature is intended only for testing and playing around. For a real world usage, we recommend you to stick with calling `apply` directly.
 ```C++
 register_manager(m);
-auto g = x(0) * x(1) + (x(2) * x(3) + x(4));
+auto g = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
 ```
+Basic operations that can be used in apply are: `AND, OR, XOR, NAND, NOR`. Full list with corresponding operator overloads can be found in table below.
 
 #### Using diagrams
-Now that we have the diagram of the function we can do something with it. Since the diagram is basically a function we can evaluate it for given values of variables. As you can see, these values can be specified in different ways. It is up to you which one you pick. `evaluate` returns either `0` (false) or `1` (true). 
+Since a diagram is representation of a function you can evaluate it for given assignment of variables.Values of variables can be specified in different ways. It is up to you which one you pick. `evaluate` returns either `0` (false) or `1` (true).
 ```C++
-auto const val0 = m.evaluate(f, std::array  {0, 1, 1, 0, 1});
-auto const val1 = m.evaluate(f, std::vector {0, 1, 1, 0, 1});
+auto const val0 = m.evaluate(f, std::array  {0u, 1u, 1u, 0u, 1u});
+auto const val1 = m.evaluate(f, std::vector {0u, 1u, 1u, 0u, 1u});
 auto const val2 = m.evaluate(f, std::vector {false, true, true, false, true});
 auto const val3 = m.evaluate(f, std::bitset<5> {0b10110});
 auto const val4 = m.evaluate(f, 0b10110);
 ```
-In some applications you want to know, for how many different variable assignments the function evaluates to `1` (true). Functions that computes this value is called `satisfy_count`. If we divide this number by number of all possible variable assignments we get so called truth density which can be calculated by `truth_density` function.
+Functions `satisfy_count` computes number of all different variable assignments for which a function evaluates to `1` (true). If you divide this number by a number of all possible variable assignments you get so called truth density of a Boolean function, which can also be calculated directly using by the function `truth_density` function.
 ```C++
 auto const sc = m.satisfy_count(f);
 auto const td = m.truth_density(f);
@@ -85,14 +89,7 @@ using bool_v = std::bitset<5>;
 auto vars = std::vector<bool_v>();
 m.satisfy_all<bool_v>(f, std::back_inserter(vars));
 ```
-Vector `vars` now holds all values of variables for which the function evaluates to `1`. We can verify that with following assert:
-```C++
-for (auto const& v : vars)
-{
-    assert(1 == m.evaluate(f, v));
-}
-```
-If we only want to print these variable values, we can use `std::ostream_iterator` since there is an overload of `operator<<` for `std::bitset`.
+Vector `vars` now holds all variable assignments for which the function evaluates to `1`. If you only want to print these variable values, you can use `std::ostream_iterator` since there is an overload of `operator<<` for `std::bitset`.
 ```C++
 m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
 ```
@@ -118,8 +115,8 @@ auto& x = m;
 auto f = m.apply<PLUS_MOD>( m.apply<MULTIPLIES_MOD>(x(0), x(1))
                           , m.apply<MULTIPLIES_MOD>(x(2), x(3)) );
 
-auto const val0 = m.evaluate(f, std::array  {0, 1, 2, 3});
-auto const val1 = m.evaluate(f, std::vector {0, 1, 2, 3});
+auto const val0 = m.evaluate(f, std::array  {0u, 1u, 2u, 3u});
+auto const val1 = m.evaluate(f, std::vector {0u, 1u, 2u, 3u});
 auto const sc2  = m.satisfy_count(2, f);
 
 using var_vals_t = std::array<unsigned int, 4>;
@@ -130,23 +127,23 @@ assert(val0 == val1);
 assert(sc2 == sas.size());
 ```
 As you can see the API is almost identical to the `bdd_manager`, however some functions need additional parameter that specifies logical level. Following functions can be used in `apply` with MDDs:
-| Binary operator | Description                     | Operator overload | Note                                        |
-|-----------------|---------------------------------|-------------------|---------------------------------------------|
-|       AND       | Logical and.                    |         &&        | Treats 0 as false, everything else as true. |
-|        OR       | Logical or.                     |        \|\|       | Treats 0 as false, everything else as true. |
-|       XOR       | Logical xor.                    |         ^         | Treats 0 as false, everything else as true. |
-|       NAND      | Logical nand.                   |                   | Treats 0 as false, everything else as true. |
-|       NOR       | Logical nor.                    |                   | Treats 0 as false, everything else as true. |
-|     EQUAL_TO    | Equal to relation.              |         ??        | Result is 1 for true and 0 for false.       |
-|   NOT_EQUAL_TO  | Not equal to relation.          |         ??        | Result is 1 for true and 0 for false.       |
-|       LESS      | Less than relation              |         <         | Result is 1 for true and 0 for false.       |
-|    LESS_EQUAL   | Less than or equal relation.    |         <=        | Result is 1 for true and 0 for false.       |
-|     GREATER     | Greater than relation.          |         >         | Result is 1 for true and 0 for false.       |
-|  GREATER_EQUAL  | Greater than or equal relation. |         >=        | Result is 1 for true and 0 for false.       |
-|       MIN       | Minimum of two values.          |                   |                                             |
-|       MAX       | Maximum of two values.          |                   |                                             |
-|       PLUS      | Addition modulo P.              |         +         |                                             |
-|    MULTIPLIES   | Multiplication modulo P.        |         *         |                                             |
+| Binary operator | Description                     | Operator overload | Note                                  |
+|-----------------|---------------------------------|-------------------|---------------------------------------|
+|       AND       | Logical and.                    |         &&        | 0 is false, everything else is true.  |
+|        OR       | Logical or.                     |        \|\|       | 0 is false, everything else is true.  |
+|       XOR       | Logical xor.                    |         ^         | 0 is false, everything else is true.  |
+|       NAND      | Logical nand.                   |                   | 0 is false, everything else is true.  |
+|       NOR       | Logical nor.                    |                   | 0 is false, everything else is true.  |
+|     EQUAL_TO    | Equal to relation.              |         ??        | Result is 1 for true and 0 for false. |
+|   NOT_EQUAL_TO  | Not equal to relation.          |         ??        | Result is 1 for true and 0 for false. |
+|       LESS      | Less than relation              |         <         | Result is 1 for true and 0 for false. |
+|    LESS_EQUAL   | Less than or equal relation.    |         <=        | Result is 1 for true and 0 for false. |
+|     GREATER     | Greater than relation.          |         >         | Result is 1 for true and 0 for false. |
+|  GREATER_EQUAL  | Greater than or equal relation. |         >=        | Result is 1 for true and 0 for false. |
+|       MIN       | Minimum of two values.          |                   |                                       |
+|       MAX       | Maximum of two values.          |                   |                                       |
+|       PLUS      | Addition modulo P.              |         +         |                                       |
+|    MULTIPLIES   | Multiplication modulo P.        |         *         |                                       |
 
 ## Reliability Theory
 Main motivation for creating this library was the possibility of using decision diagrams in reliability analysis. Following example shows how different reliability indices and importance measures can be calculated using structure function and Direct Partial Boolean Derivatives.  

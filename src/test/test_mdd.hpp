@@ -185,10 +185,10 @@ namespace mix::dd::test
             manager.set_order(os);
             manager.set_domains(ds);
 
-            auto const mulLeftFold  = [&manager](auto&& ds){ return manager.template left_fold<MULTIPLIES_MOD>(ds); };
-            auto const plusLeftFold = [&manager](auto&& ds){ return manager.template left_fold<PLUS_MOD>(ds); };
-            auto const mulTreeFold  = [&manager](auto&& ds){ return manager.template tree_fold<MULTIPLIES_MOD>(ds); };
-            auto const plusTreeFold = [&manager](auto&& ds){ return manager.template tree_fold<PLUS_MOD>(ds); };
+            auto const mulLeftFold  = [&manager](auto&& ds){ return manager.template left_fold<MULTIPLIES>(ds); };
+            auto const plusLeftFold = [&manager](auto&& ds){ return manager.template left_fold<PLUS>(ds); };
+            auto const mulTreeFold  = [&manager](auto&& ds){ return manager.template tree_fold<MULTIPLIES>(ds); };
+            auto const plusTreeFold = [&manager](auto&& ds){ return manager.template tree_fold<PLUS>(ds); };
 
             auto const function = generate_function(MddVariableCount, MddProductCount, rngProductSize, rngVarIndex);
             auto const depSet   = dependency_set(function);
