@@ -134,6 +134,20 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto operator== ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<EQUAL_TO>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator!= ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
+    {
+        return mm_impl::m_ref<VertexData, ArcData, P>().template apply<NOT_EQUAL_TO>(lhs, rhs);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto operator< ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>
     {

@@ -189,16 +189,16 @@ namespace mix::dd::test
             auto const plusLeftFold = [&manager](auto&& ds){ return manager.template left_fold<PLUS>(ds); };
             auto const mulTreeFold  = [&manager](auto&& ds){ return manager.template tree_fold<MULTIPLIES>(ds); };
             auto const plusTreeFold = [&manager](auto&& ds){ return manager.template tree_fold<PLUS>(ds); };
-
-            auto const function = generate_function(MddVariableCount, MddProductCount, rngProductSize, rngVarIndex);
-            auto const depSet   = dependency_set(function);
-            auto const diagram  = make_diagram<P>(manager, function, mulLeftFold, plusLeftFold);
-            auto const diagram2 = make_diagram<P>(manager, function, mulTreeFold, plusTreeFold);
+            auto const function     = generate_function(MddVariableCount, MddProductCount, rngProductSize, rngVarIndex);
+            auto const funcDepSet   = dependency_set(function);
+            auto const diagram      = make_diagram<P>(manager, function, mulLeftFold, plusLeftFold);
+            auto const diagram2     = make_diagram<P>(manager, function, mulTreeFold, plusTreeFold);
+            auto const diagramDs    = manager.dependency_set(diagram);
             manager.collect_garbage();
-            auto const vertexCount = manager.vertex_count(diagram);
+            auto const vertexCount  = manager.vertex_count(diagram);
 
-            assert(diagram == diagram2);
-            assert(1 == manager.vertex_count(diagram.get_root()->get_index()));
+            assert(diagram.equals(diagram2));
+            assert(1 == manager.vertex_count(diagramDs.front()));
             assert(vertexCount == manager.vertex_count());
 
             std::cout << '#' << i                            << '\n';
@@ -210,7 +210,7 @@ namespace mix::dd::test
             auto enumerator = domain_iterator<P>(MddVariableCount);
             while (enumerator.has_more())
             {
-                auto const realVal    = eval_function<P>(function, depSet, ds, enumerator.var_vals());
+                auto const realVal    = eval_function<P>(function, funcDepSet, ds, enumerator.var_vals());
                 auto const diagramVal = manager.evaluate(diagram, enumerator.var_vals());
                 if (realVal != diagramVal)
                 {
@@ -219,6 +219,10 @@ namespace mix::dd::test
                     std::cout << ", expected " << realVal << '\n';
                     result = false;
                     break;
+                    // TODO test na apply<EQUAL_TO>(f, f) musi vratit constant(1)
+                    // TODO test na apply<MULTIPLIES>(f, constant(0)) musi vratit constant(0)
+                    // TODO test na apply<MULTIPLIES>(f, constant(1)) musi vratit f
+                    // and so on ...
                 }
 
                 enumerator.move_next();

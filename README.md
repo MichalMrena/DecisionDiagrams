@@ -93,6 +93,7 @@ Vector `vars` now holds all variable assignments for which the function evaluate
 ```C++
 m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
 ```
+**TODO equals metoda**
 Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
 ```C++
 auto f1 = x(1) xor x(2);
@@ -112,8 +113,8 @@ auto m  = make_mdd_manager<4>(4);
 auto& x = m;
 
 // f = (x0 * x1 + x2 * x3) mod 4
-auto f = m.apply<PLUS_MOD>( m.apply<MULTIPLIES_MOD>(x(0), x(1))
-                          , m.apply<MULTIPLIES_MOD>(x(2), x(3)) );
+auto f = m.apply<PLUS>( m.apply<MULTIPLIES>(x(0), x(1))
+                      , m.apply<MULTIPLIES>(x(2), x(3)) );
 
 auto const val0 = m.evaluate(f, std::array  {0u, 1u, 2u, 3u});
 auto const val1 = m.evaluate(f, std::vector {0u, 1u, 2u, 3u});
@@ -128,14 +129,14 @@ assert(sc2 == sas.size());
 ```
 As you can see the API is almost identical to the `bdd_manager`, however some functions need additional parameter that specifies logical level. Following functions can be used in `apply` with MDDs:
 | Binary operator | Description                     | Operator overload | Note                                  |
-|-----------------|---------------------------------|-------------------|---------------------------------------|
+|:---------------:|---------------------------------|:-----------------:|---------------------------------------|
 |       AND       | Logical and.                    |         &&        | 0 is false, everything else is true.  |
 |        OR       | Logical or.                     |        \|\|       | 0 is false, everything else is true.  |
 |       XOR       | Logical xor.                    |         ^         | 0 is false, everything else is true.  |
 |       NAND      | Logical nand.                   |                   | 0 is false, everything else is true.  |
 |       NOR       | Logical nor.                    |                   | 0 is false, everything else is true.  |
-|     EQUAL_TO    | Equal to relation.              |         ??        | Result is 1 for true and 0 for false. |
-|   NOT_EQUAL_TO  | Not equal to relation.          |         ??        | Result is 1 for true and 0 for false. |
+|     EQUAL_TO    | Equal to relation.              |         ==        | Result is 1 for true and 0 for false. |
+|   NOT_EQUAL_TO  | Not equal to relation.          |         !=        | Result is 1 for true and 0 for false. |
 |       LESS      | Less than relation              |         <         | Result is 1 for true and 0 for false. |
 |    LESS_EQUAL   | Less than or equal relation.    |         <=        | Result is 1 for true and 0 for false. |
 |     GREATER     | Greater than relation.          |         >         | Result is 1 for true and 0 for false. |

@@ -114,11 +114,12 @@ namespace mix::dd::test
             auto const function = generate_function(BddProductCount, rngProductSize, rngIsComplemented, rngVarIndex);
             auto const diagram  = make_diagram(manager, function, orLeftFold, andLeftFold);
             auto const diagram2 = make_diagram(manager, function, orTreeFold, andTreeFold);
+            auto const ds       = manager.dependency_set(diagram);
             manager.collect_garbage();
             auto const vertexCount = manager.vertex_count(diagram);
 
-            assert(diagram == diagram2);
-            assert(1 == manager.vertex_count(diagram.get_root()->get_index()));
+            assert(diagram.equals(diagram2));
+            assert(1 == manager.vertex_count(ds.front()));
             assert(vertexCount == manager.vertex_count());
 
             std::cout << '#' << i                            << '\n';

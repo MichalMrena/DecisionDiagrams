@@ -258,7 +258,7 @@ auto example_basic_usage_bdd()
 
     auto f1 = x(1) xor x(2);
     auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
-    assert(f1 == f2);
+    assert(f1.equals(f2));
     // m.to_dot_graph(std::cout, f1);
 }
 

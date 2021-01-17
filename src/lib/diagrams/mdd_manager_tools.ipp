@@ -85,6 +85,27 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::dependency_set
+        (mdd_t const& d) -> std::vector<index_t>
+    {
+        auto set = utils::vector<index_t>(vertexManager_.var_count());
+        auto is  = std::vector<index_t>(vertexManager_.var_count(), false);
+
+        this->traverse_pre(d, [&](auto const v)
+        {
+            auto const i = v->get_index();
+            if (!is[i])
+            {
+                set.push_back(i);
+                is[i] = true;
+            }
+        });
+
+        set.shrink_to_fit();
+        return set;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class VariableValues, class GetIthVal>
     auto mdd_manager<VertexData, ArcData, P>::evaluate
         (mdd_t const& d, VariableValues const& vs) const -> log_t

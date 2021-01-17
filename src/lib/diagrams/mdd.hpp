@@ -11,8 +11,18 @@
 namespace mix::dd
 {
     template<class VertexData, class ArcData, std::size_t P>
+    class mdd_manager;
+
+    template<class VertexData, class ArcData>
+    class bdd_manager;
+
+    template<class VertexData, class ArcData, std::size_t P>
     class mdd
     {
+    public:
+        friend class mdd_manager<VertexData, ArcData, P>;
+        friend class bdd_manager<VertexData, ArcData>;
+
     public:
         using vertex_t = vertex<VertexData, ArcData, P>;
 
@@ -23,14 +33,15 @@ namespace mix::dd
         mdd  (mdd const& other);
         explicit mdd (vertex_t* root);
 
-        auto operator== (mdd const& rhs) const -> bool;
-        auto operator!= (mdd const& rhs) const -> bool;
-        auto operator=  (mdd rhs)              -> mdd&;
-        auto swap       (mdd& rhs)             -> void;
-        auto get_root   () const               -> vertex_t*;
+        auto operator= (mdd rhs)              -> mdd&;
+        auto swap      (mdd& rhs)             -> void;
+        auto equals    (mdd const& rhs) const -> bool;
 
     private:
         using vertex_manager_t = vertex_manager<VertexData, ArcData, P>;
+
+    private:
+        auto get_root () const -> vertex_t*;
 
     private:
         vertex_t* root_;
@@ -76,20 +87,6 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd<VertexData, ArcData, P>::operator==
-        (mdd const& rhs) const -> bool
-    {
-        return this->get_root() == rhs.get_root();
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd<VertexData, ArcData, P>::operator!=
-        (mdd const& rhs) const -> bool
-    {
-        return !(*this == rhs);
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     auto mdd<VertexData, ArcData, P>::operator=
         (mdd rhs) -> mdd&
     {
@@ -102,6 +99,13 @@ namespace mix::dd
         (mdd& rhs) -> void
     {
         std::swap(root_, rhs.root_);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd<VertexData, ArcData, P>::equals
+        (mdd const& rhs) const -> bool
+    {
+        return this->get_root() == rhs.get_root();
     }
 
     template<class VertexData, class ArcData, std::size_t P>

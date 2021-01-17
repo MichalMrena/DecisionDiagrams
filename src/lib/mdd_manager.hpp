@@ -38,12 +38,13 @@ namespace mix::dd
 
     /* Tools */
     public:
-        auto vertex_count  ()                  const -> std::size_t;
-        auto vertex_count  (mdd_t const& d)    const -> std::size_t;
-        auto vertex_count  (index_t const i)   const -> std::size_t;
-        auto to_dot_graph  (std::ostream& ost) const -> void;
-        auto to_dot_graph  (std::ostream& ost, mdd_t const& d) const -> void;
-        auto satisfy_count (log_t const val, mdd_t& d) -> std::size_t;
+        auto vertex_count   ()                  const -> std::size_t;
+        auto vertex_count   (mdd_t const& d)    const -> std::size_t;
+        auto vertex_count   (index_t const i)   const -> std::size_t;
+        auto to_dot_graph   (std::ostream& ost) const -> void;
+        auto to_dot_graph   (std::ostream& ost, mdd_t const& d) const -> void;
+        auto satisfy_count  (log_t const val, mdd_t& d) -> std::size_t;
+        auto dependency_set (mdd_t const& d) -> std::vector<index_t>;
 
         template< class VariableValues
                 , class GetIthVal = get_var_val<P, VariableValues> >
@@ -52,8 +53,9 @@ namespace mix::dd
         template< class VariableValues
                 , class OutputIt
                 , class SetVarVal = set_var_val<P, VariableValues> >
-        auto satisfy_all (log_t const val, mdd_t const& d, OutputIt out) const -> void;
-
+        auto satisfy_all (log_t const val, mdd_t const& d, OutputIt out) const -> void; // TODO nebolo by jednoduchšie vracať tam vector?
+                                                                                        // rovnako aj pri dependency set, toto treba prekonzultovať
+        // TODO traversy do private
         template<class VertexOp>
         auto traverse_pre (mdd_t const& d, VertexOp&& op) const -> void;
 
@@ -213,6 +215,14 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     auto operator^ ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator== ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto operator!= ( mdd<VertexData, ArcData, P> const& lhs
+                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
     template<class VertexData, class ArcData, std::size_t P>
     auto operator< ( mdd<VertexData, ArcData, P> const& lhs
