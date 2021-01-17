@@ -50,11 +50,12 @@ namespace mix::dd
                 , class GetIthVal = get_var_val<P, VariableValues> >
         auto evaluate (mdd_t const& d, VariableValues const& vs) const -> log_t;
 
+        // TODO rename to satisfy_all_g (_g for generic) and add simler version that returns vector
         template< class VariableValues
                 , class OutputIt
                 , class SetVarVal = set_var_val<P, VariableValues> >
-        auto satisfy_all (log_t const val, mdd_t const& d, OutputIt out) const -> void; // TODO nebolo by jednoduchšie vracať tam vector?
-                                                                                        // rovnako aj pri dependency set, toto treba prekonzultovať
+        auto satisfy_all (log_t const val, mdd_t const& d, OutputIt out) const -> void; 
+
         // TODO traversy do private
         template<class VertexOp>
         auto traverse_pre (mdd_t const& d, VertexOp&& op) const -> void;

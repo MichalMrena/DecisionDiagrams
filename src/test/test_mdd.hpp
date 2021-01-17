@@ -3,18 +3,23 @@
 
 #include "../lib/mdd_manager.hpp"
 #include "../lib/utils/more_random.hpp"
+#include "../lib/utils/string_utils.hpp"
 
 #include <vector>
 
 namespace mix::dd::test
 {
     template<class T>
-    using int_rng     = utils::random_uniform_int<T>;
-    using seed_t      = unsigned int;
-    using var_v       = std::vector<index_t>;
-    using bool_v      = std::vector<bool>;
-    using var_vv      = std::vector<var_v>;
-    using uint_v      = std::vector<unsigned>;
+    using int_rng   = utils::random_uniform_int<T>;
+    using seed_t    = unsigned int;
+    using var_v     = std::vector<index_t>;
+    using bool_v    = std::vector<bool>;
+    using var_vv    = std::vector<var_v>;
+    using uint_v    = std::vector<unsigned>;
+    template<std::size_t P>
+    using manager_t = mdd_manager<double, void, P>;
+    template<std::size_t P>
+    using mdd_t     = mdd<double, void, P>;
 
     inline auto constexpr MddVariableCount  = 15;
     inline auto constexpr MddProductCount   = 25;
@@ -23,6 +28,7 @@ namespace mix::dd::test
     struct mvl_function
     {
         std::size_t varCount;
+        uint_v      domains;
         var_vv      products;
     };
 
@@ -50,10 +56,52 @@ namespace mix::dd::test
         log_v varVals_;
     };
 
+    template<std::size_t P>
+    auto get_domains ( domain_e const     d
+                     , std::size_t const  varCount
+                     , int_rng<unsigned>& rngDomain )
+    {
+        auto const get_homogenous_domains = [=]()
+        {
+            auto ds = std::vector<unsigned int>(varCount);
+            std::fill(std::begin(ds), std::end(ds), P);
+            return ds;
+        };
+
+        auto const get_nonhomogenous_domains = [&]()
+        {
+            return utils::fill_vector(varCount, [&](auto const)
+            {
+                return rngDomain.next_int();
+            });
+        };
+
+        switch (d)
+        {
+            case domain_e::Homogenous:    return get_homogenous_domains();
+            case domain_e::Nonhomogenous: return get_nonhomogenous_domains();
+            default: throw "not good";
+        }
+    }
+
+    inline auto dependency_set (mvl_function const& f)
+    {
+        auto is = std::vector<bool>(f.varCount, false);
+        for (auto const& ps : f.products)
+        {
+            for (auto const p : ps)
+            {
+                is[p] = true;
+            }
+        }
+        return is;
+    }
+
     inline auto generate_function ( std::size_t const     varCount
                                   , std::size_t const     productCount
+                                  , uint_v                domains
                                   , int_rng<std::size_t>& rngProductSize
-                                  , int_rng<index_t>&     rngVarIndex ) -> mvl_function
+                                  , int_rng<index_t>&     rngVarIndex )
     {
         auto products = var_vv(productCount);
 
@@ -66,16 +114,16 @@ namespace mix::dd::test
             }
         }
 
-        return mvl_function {varCount, std::move(products)};
+        return mvl_function {varCount, std::move(domains), std::move(products)};
     }
 
     template<std::size_t P, class MulFold, class PlusFold>
-    inline auto make_diagram ( mdd_manager<void, void, P>& m
-                             , mvl_function const&         function
-                             , MulFold                     mulFold
-                             , PlusFold                    plusFold )
+    auto make_diagram ( manager_t<P>&       m
+                      , mvl_function const& function
+                      , MulFold             mulFold
+                      , PlusFold            plusFold )
     {
-        using mdd = typename mdd_manager<void, void, P>::mdd_t;
+        using mdd = typename manager_t<P>::mdd_t;
 
         auto productDiagrams = std::vector<mdd>();
         for (auto const& product : function.products)
@@ -90,14 +138,14 @@ namespace mix::dd::test
     template<std::size_t P>
     auto eval_function ( mvl_function const& function
                        , bool_v const&       depSet
-                       , uint_v const&       domains
                        , uint_v const&       varVals )
     {
-        auto const dis = utils::zip(utils::range(0u, domains.size()), varVals);
-        auto const isNoDomain = std::any_of(std::begin(dis), std::end(dis), [&](auto const& p)
+        auto const isNoDomain = std::any_of(std::begin(varVals), std::end(varVals),
+            [&, i = 0u](auto const v) mutable
         {
-            auto const [i, v] = p;
-            return depSet[i] and v >= domains[i];
+            auto const ret =  depSet[i] and v >= function.domains[i];
+            ++i;
+            return ret;
         });
 
         if (isNoDomain)
@@ -120,47 +168,94 @@ namespace mix::dd::test
     }
 
     template<std::size_t P>
-    auto get_homogenous_domains (std::size_t const varCount)
+    auto test_collect_garbage ( manager_t<P>&   m
+                              , mdd_t<P> const& d )
     {
-        auto ds = std::vector<unsigned int>(varCount);
-        std::fill(std::begin(ds), std::end(ds), P);
-        return ds;
-    }
+        m.collect_garbage();
+        auto const rootIndex     = m.dependency_set(d).front();
+        auto const diagramVCount = m.vertex_count(d);
+        auto const totalVCount   = m.vertex_count();
+        auto const rootIVCount   = m.vertex_count(rootIndex);
 
-    template<std::size_t P>
-    auto get_nonhomogenous_domains ( std::size_t const  varCount
-                                   , int_rng<unsigned>& rngDomain )
-    {
-        return utils::fill_vector(varCount, [&](auto const)
+        if (diagramVCount != totalVCount)
         {
-            return rngDomain.next_int();
-        });
-    }
-
-    template<std::size_t P>
-    auto get_domains ( domain_e const     d
-                     , std::size_t const  varCount
-                     , int_rng<unsigned>& rngDomain )
-    {
-        switch (d)
-        {
-            case domain_e::Homogenous:    return get_homogenous_domains<P>(varCount);
-            case domain_e::Nonhomogenous: return get_nonhomogenous_domains<P>(varCount, rngDomain);
-            default: throw "not good";
+            return utils::concat( "Failed. ", "Vertex count = ", totalVCount
+                                , ", expected ", diagramVCount, "." );
         }
+
+        if (1 != rootIVCount)
+        {
+            return utils::concat( "Failed. ", "Root vertex count = ", rootIVCount
+                                , ", expected 1.");
+        }
+
+        return std::string("OK");
     }
 
-    auto dependency_set (mvl_function const& f)
+    template<std::size_t P>
+    auto test_evaluate ( manager_t<P>&       m
+                       , mvl_function const& f
+                       , mdd_t<P> const&     d )
     {
-        auto is = std::vector<bool>(f.varCount, false);
-        for (auto const& ps : f.products)
+        auto const funcDepSet = dependency_set(f);
+        auto enumerator       = domain_iterator<P>(MddVariableCount);
+
+        while (enumerator.has_more())
         {
-            for (auto const p : ps)
+            auto const realVal    = eval_function<P>(f, funcDepSet, enumerator.var_vals());
+            auto const diagramVal = m.evaluate(d, enumerator.var_vals());
+            if (realVal != diagramVal)
             {
-                is[p] = true;
+                return utils::concat( "Failed. ", "Got ", diagramVal, ", expected", realVal, "" );
             }
+            enumerator.move_next();
         }
-        return is;
+
+        return std::string("OK");
+    }
+
+    template<std::size_t P>
+    auto test_satisfy_count ( manager_t<P>&       m
+                            , mvl_function const& f
+                            , mdd_t<P>&           d )
+    {
+        auto const expectedScs = [&]()
+        {
+            auto const depSet = dependency_set(f);
+            auto vs  = domain_iterator<P>(MddVariableCount);
+            auto scs = std::array<unsigned, log_val_traits<P>::valuecount> {{}};
+
+            while (vs.has_more())
+            {
+                auto const val = eval_function<P>(f, depSet, vs.var_vals());
+                ++scs[val];
+                vs.move_next();
+            }
+
+            return scs;
+        }();
+
+        auto const realScs = utils::fill_array<P + 2>([&](auto const l)
+        {
+            return m.satisfy_count(l, d);
+        });
+
+        auto const areEqual = std::equal( std::begin(expectedScs), std::end(expectedScs)
+                                        , std::begin(realScs) );
+
+        if (!areEqual)
+        {
+            return utils::concat( "Failed. Expected {", utils::concat_range(expectedScs, " "), "}"
+                                , " got {", utils::concat_range(realScs, " "), "}" );
+        }
+
+        return std::string("OK");
+    }
+
+    template<std::size_t P>
+    auto test_satisfy_all ()
+    {
+        // TODO dummy output iterator, ktory to nebude ukladat, ale iba pocitat a cekovat ci je evaluate spravny
     }
 
     template<std::size_t P>
@@ -178,58 +273,30 @@ namespace mix::dd::test
 
         for (auto i = 0u; i < n; ++i)
         {
-
-            auto manager  = mdd_manager<void, void, P>(MddVariableCount);
-            auto const os = get_order(order, rngOrderShuffle, MddVariableCount);
-            auto const ds = get_domains<P>(domain, MddVariableCount, rngDomain);
-            manager.set_order(os);
-            manager.set_domains(ds);
+            auto const varorder = get_order(order, rngOrderShuffle, MddVariableCount);
+            auto const domains  = get_domains<P>(domain, MddVariableCount, rngDomain);
+            auto manager        = manager_t<P>(MddVariableCount);
+            manager.set_order(varorder);
+            manager.set_domains(domains);
 
             auto const mulLeftFold  = [&manager](auto&& ds){ return manager.template left_fold<MULTIPLIES>(ds); };
-            auto const plusLeftFold = [&manager](auto&& ds){ return manager.template left_fold<PLUS>(ds); };
+            auto const plusLeftFold = [&manager](auto&& ds){ return manager.template left_fold<PLUS>(ds);       };
             auto const mulTreeFold  = [&manager](auto&& ds){ return manager.template tree_fold<MULTIPLIES>(ds); };
-            auto const plusTreeFold = [&manager](auto&& ds){ return manager.template tree_fold<PLUS>(ds); };
-            auto const function     = generate_function(MddVariableCount, MddProductCount, rngProductSize, rngVarIndex);
-            auto const funcDepSet   = dependency_set(function);
-            auto const diagram      = make_diagram<P>(manager, function, mulLeftFold, plusLeftFold);
-            auto const diagram2     = make_diagram<P>(manager, function, mulTreeFold, plusTreeFold);
-            auto const diagramDs    = manager.dependency_set(diagram);
-            manager.collect_garbage();
-            auto const vertexCount  = manager.vertex_count(diagram);
+            auto const plusTreeFold = [&manager](auto&& ds){ return manager.template tree_fold<PLUS>(ds);       };
 
-            assert(diagram.equals(diagram2));
-            assert(1 == manager.vertex_count(diagramDs.front()));
-            assert(vertexCount == manager.vertex_count());
+            auto const function     = generate_function(MddVariableCount, MddProductCount, domains, rngProductSize, rngVarIndex);
+            auto       diagram      = make_diagram<P>(manager, function, mulLeftFold, plusLeftFold);
+            auto       diagram2     = make_diagram<P>(manager, function, mulTreeFold, plusTreeFold);
 
-            std::cout << '#' << i                            << '\n';
-            std::cout << "    Vertex count: " << vertexCount << '\n';
-            std::cout << "    Order:        " << utils::concat_range(os, " > ") << '\n';
-            std::cout << "    Domains:      " << utils::concat_range(ds, " > ") << '\n';
-
-            auto result     = true;
-            auto enumerator = domain_iterator<P>(MddVariableCount);
-            while (enumerator.has_more())
-            {
-                auto const realVal    = eval_function<P>(function, funcDepSet, ds, enumerator.var_vals());
-                auto const diagramVal = manager.evaluate(diagram, enumerator.var_vals());
-                if (realVal != diagramVal)
-                {
-                    std::cout << "    !!! Error output missmatch. ";
-                    std::cout << "Got "        << diagramVal;
-                    std::cout << ", expected " << realVal << '\n';
-                    result = false;
-                    break;
-                    // TODO test na apply<EQUAL_TO>(f, f) musi vratit constant(1)
-                    // TODO test na apply<MULTIPLIES>(f, constant(0)) musi vratit constant(0)
-                    // TODO test na apply<MULTIPLIES>(f, constant(1)) musi vratit f
-                    // and so on ...
-                }
-
-                enumerator.move_next();
-            }
-
-            std::cout << (result ? "    Result:       OK"
-                                 : "    Result:       Failed.") << "\n\n";
+            std::cout << '#'                     << i                                             << '\n';
+            std::cout << "    Vertex count:    " << manager.vertex_count(diagram)                 << '\n';
+            std::cout << "    Order:           " << utils::concat_range(varorder, " > ")          << '\n';
+            std::cout << "    Domains:         " << utils::concat_range(function.domains, " > ")  << '\n';
+            std::cout << "    Fold:            " << (diagram.equals(diagram2) ? "OK" : "Failed.") << '\n';
+            std::cout << "    Collect garbage: " << test_collect_garbage<P>(manager, diagram)     << '\n';
+            std::cout << "    Evaluate:        " << test_evaluate<P>(manager, function, diagram)  << '\n';
+            std::cout << "    Satisfy count:   " << test_satisfy_count<P>(manager, function, diagram)  << '\n';
+            std::cout << "\n";
         }
     }
 
