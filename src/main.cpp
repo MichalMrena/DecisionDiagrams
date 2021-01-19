@@ -362,7 +362,6 @@ auto main() -> int
     // eq_test();
     // patterns_imgs();
 
-    // test::test_bdd(5, test::order_e::Random);
     test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
 
     // TODO nonhomogenous, nepridata ND leaf, ale nechat tam jednoducho null,

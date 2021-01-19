@@ -56,6 +56,16 @@ namespace mix::dd::test
         log_v varVals_;
     };
 
+    template<class F>
+    struct dummy_output
+    {
+        F f_;
+        dummy_output    (F f) : f_ (f) { }
+        auto operator++ (int)          { return *this; }
+        auto operator*  ()             { return *this; }
+        auto operator=  (auto&& arg)   { f_(std::forward<decltype(arg)>(arg)); }
+    };
+
     template<std::size_t P>
     auto get_domains ( domain_e const     d
                      , std::size_t const  varCount
@@ -253,9 +263,87 @@ namespace mix::dd::test
     }
 
     template<std::size_t P>
-    auto test_satisfy_all ()
+    auto test_satisfy_all ( manager_t<P>&       m
+                          , mvl_function const& f
+                          , mdd_t<P>&           d )
     {
-        // TODO dummy output iterator, ktory to nebude ukladat, ale iba pocitat a cekovat ci je evaluate spravny
+        auto const expectedScs = [&]()
+        {
+            auto const depSet = dependency_set(f);
+            auto vs  = domain_iterator<P>(MddVariableCount);
+            auto scs = std::array<unsigned, log_val_traits<P>::valuecount> {{}};
+
+            while (vs.has_more())
+            {
+                auto const val = eval_function<P>(f, depSet, vs.var_vals());
+                ++scs[val];
+                vs.move_next();
+            }
+
+            return scs;
+        }();
+
+        auto const realScs = [&]()
+        {
+            using var_vals_t = std::array<unsigned, MddVariableCount>;
+            auto sas = std::array<std::size_t, P + 2> {};
+            auto out = dummy_output([&](auto&& vals)
+            {
+                ++sas[m.evaluate(d, vals)];
+            });
+            for (auto i = 0u; i < log_val_traits<P>::valuecount; ++i)
+            {
+                m.template satisfy_all<var_vals_t>(i, d, out);
+            }
+            return sas;
+        }();
+
+        auto const areEqual = std::equal( std::begin(expectedScs), std::end(expectedScs)
+                                        , std::begin(realScs) );
+
+        if (!areEqual)
+        {
+            return utils::concat( "Failed. Expected {", utils::concat_range(expectedScs, " "), "}"
+                                , " got {", utils::concat_range(realScs, " "), "}" );
+        }
+
+        return std::string("OK");
+    }
+
+    template<std::size_t P>
+    auto test_restrict_var ( manager_t<P>&       m
+                           , mvl_function const& f
+                           , mdd_t<P> const&     d
+                           , int_rng<index_t>&   rngVarIndex )
+    {
+        auto const i1 = rngVarIndex.next_int();
+        auto const i2 = rngVarIndex.next_int();
+        auto const v1 = 0;
+        auto const v2 = 1;
+        auto const d_ = m.restrict_var(m.restrict_var(d, i1, v1), i2, v2);
+
+        auto const funcDepSet = dependency_set(f);
+        auto enumerator       = domain_iterator<P>(MddVariableCount);
+
+        while (enumerator.has_more())
+        {
+            auto const varVals    = [&]()
+            {
+                auto vs = enumerator.var_vals();
+                vs[i1] = v1;
+                vs[i2] = v2;
+                return vs;
+            }();
+            auto const diagramVal = m.evaluate(d_, varVals);
+            auto const realVal    = eval_function<P>(f, funcDepSet, varVals);
+            if (realVal != diagramVal)
+            {
+                return utils::concat( "Failed. ", "Got ", diagramVal, ", expected", realVal, "" );
+            }
+            enumerator.move_next();
+        }
+
+        return std::string("OK");
     }
 
     template<std::size_t P>
@@ -268,6 +356,7 @@ namespace mix::dd::test
         auto seeder          = int_rng<seed_t>(0u, UIntMax, initSeed);
         auto rngProductSize  = int_rng<std::size_t>(1, MddMaxProductSize, seeder.next_int());
         auto rngVarIndex     = int_rng<index_t>(0, MddVariableCount - 1, seeder.next_int());
+        auto rngRestVarIndex = int_rng<index_t>(0, MddVariableCount - 1, seeder.next_int());
         auto rngOrderShuffle = std::mt19937(seeder.next_int());
         auto rngDomain       = int_rng<unsigned>(2, P, seeder.next_int());
 
@@ -288,15 +377,20 @@ namespace mix::dd::test
             auto       diagram      = make_diagram<P>(manager, function, mulLeftFold, plusLeftFold);
             auto       diagram2     = make_diagram<P>(manager, function, mulTreeFold, plusTreeFold);
 
-            std::cout << '#'                     << i                                             << '\n';
-            std::cout << "    Vertex count:    " << manager.vertex_count(diagram)                 << '\n';
-            std::cout << "    Order:           " << utils::concat_range(varorder, " > ")          << '\n';
-            std::cout << "    Domains:         " << utils::concat_range(function.domains, " > ")  << '\n';
-            std::cout << "    Fold:            " << (diagram.equals(diagram2) ? "OK" : "Failed.") << '\n';
-            std::cout << "    Collect garbage: " << test_collect_garbage<P>(manager, diagram)     << '\n';
-            std::cout << "    Evaluate:        " << test_evaluate<P>(manager, function, diagram)  << '\n';
-            std::cout << "    Satisfy count:   " << test_satisfy_count<P>(manager, function, diagram)  << '\n';
+            std::cout << '#'                     << i                                                                    << '\n';
+            std::cout << "    Diagram"                                                                                   << '\n';
+            std::cout << "        Vertex count    " << manager.vertex_count(diagram)                                     << '\n';
+            std::cout << "        Order           " << utils::concat_range(varorder, " > ")                              << '\n';
+            std::cout << "        Domains         " << utils::concat_range(function.domains, " > ")                      << '\n';
+            std::cout << "    Tests"                                                                                     << '\n';
+            std::cout << "        Fold            " << (diagram.equals(diagram2) ? "OK" : "Failed.")                     << '\n';
+            std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
+            std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
+            std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
+            std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
+            std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
             std::cout << "\n";
+            // TODO test operators absorbing, neutral element, pri Booleovskych najprv transform na 0 1 cez EQ, LT, GT, ...
         }
     }
 

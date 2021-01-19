@@ -27,7 +27,6 @@ int main()
 #### Creating diagrams
 
 ##### Diagram of a constant
-This is the simplest diagram that you can create. It has only one vertex which represents given value.
 ```C++
 auto cFalse = m.constant(0);
 auto cTrue  = m.constant(1);
@@ -60,7 +59,7 @@ auto f = m.apply<OR>( m.apply<AND>(x0, x1)
                     , m.apply<OR>( m.apply<OR>(x(2), x(3))
                                  , x4 ) );
 ```
-Expressions like this one look a bit complicated. That is why we overloaded corresponding operators to use `apply` for you in the background. Before using any overloaded operator you must register the manager you are using so that operators know which one to use.  
+Expressions like this one look a bit complicated. That is why we overloaded corresponding operators to use `apply` for you in the background. Before using any overloaded operator you must register the manager you are using.  
 This feature is intended only for testing and playing around. For a real world usage, we recommend you to stick with calling `apply` directly.
 ```C++
 register_manager(m);
@@ -69,7 +68,7 @@ auto g = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
 Basic operations that can be used in apply are: `AND, OR, XOR, NAND, NOR`. Full list with corresponding operator overloads can be found in table below.
 
 #### Using diagrams
-Since a diagram is representation of a function you can evaluate it for given assignment of variables.Values of variables can be specified in different ways. It is up to you which one you pick. `evaluate` returns either `0` (false) or `1` (true).
+Since a diagram is representation of a function you can evaluate it for given assignment of variables. Values of variables can be specified in different ways. `evaluate` returns either `0` (false) or `1` (true).
 ```C++
 auto const val0 = m.evaluate(f, std::array  {0u, 1u, 1u, 0u, 1u});
 auto const val1 = m.evaluate(f, std::vector {0u, 1u, 1u, 0u, 1u});
@@ -93,15 +92,13 @@ Vector `vars` now holds all variable assignments for which the function evaluate
 ```C++
 m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
 ```
-**TODO equals metoda**
-Diagrams can be compared for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using `operator==`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
+Diagrams can be tested for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using diagrams member function `equals`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
 ```C++
 auto f1 = x(1) xor x(2);
 auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
-assert(f1 == f2);
+assert(f1.equals(f2));
 ```
-
-Last but not least, you might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). Function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the Wikepedia page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
+Last but not least, you might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). Function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the Wikipedia page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
 ```C++
 m.to_dot_graph(std::cout, f);
 ```
@@ -143,8 +140,8 @@ As you can see the API is almost identical to the `bdd_manager`, however some fu
 |  GREATER_EQUAL  | Greater than or equal relation. |         >=        | Result is 1 for true and 0 for false. |
 |       MIN       | Minimum of two values.          |                   |                                       |
 |       MAX       | Maximum of two values.          |                   |                                       |
-|       PLUS      | Addition modulo P.              |         +         |                                       |
-|    MULTIPLIES   | Multiplication modulo P.        |         *         |                                       |
+|       PLUS      | Modular addition.               |         +         | (a + b) mod P                         |
+|    MULTIPLIES   | Modular multiplication.         |         *         | (a * b) mod P                         |
 
 ## Reliability Theory
 Main motivation for creating this library was the possibility of using decision diagrams in reliability analysis. Following example shows how different reliability indices and importance measures can be calculated using structure function and Direct Partial Boolean Derivatives.  
