@@ -27,7 +27,7 @@ namespace mix::dd
     public:
         using log_t    = typename log_val_traits<P>::type;
         using vertex_t = vertex<VertexData, ArcData, P>;
-        using son_a    = std::array<vertex_t*, P>;
+        using vertex_a    = std::array<vertex_t*, P>;
         using index_v  = std::vector<level_t>;
         using level_v  = std::vector<level_t>;
 
@@ -42,7 +42,7 @@ namespace mix::dd
         auto terminal_vertex     (log_t const val)       -> vertex_t*;
         auto get_terminal_vertex (log_t const val) const -> vertex_t*;
         auto has_terminal_vertex (log_t const val) const -> bool;
-        auto internal_vertex     (index_t const index, son_a const& sons) -> vertex_t*;
+        auto internal_vertex     (index_t const index, vertex_a const& sons) -> vertex_t*;
         auto get_vertex_level           (vertex_t* const v) const -> level_t;
         auto get_level           (index_t const i)   const -> level_t;
         auto get_index           (level_t const l)   const -> index_t;
@@ -64,13 +64,13 @@ namespace mix::dd
         template<class VertexOp>
         auto for_each_terminal_vertex (VertexOp op) const -> void;
 
-        static auto is_redundant  (son_a const& sons) -> bool;
+        static auto is_redundant  (vertex_a const& sons) -> bool;
         static auto inc_ref_count (vertex_t* const v) -> vertex_t*;
         static auto dec_ref_count (vertex_t* const v) -> void;
 
     private:
-        // using index_map      = std::unordered_map<son_a, vertex_t*, utils::tuple_hash_t<son_a>>;
-        using index_map      = std::unordered_multimap<son_a, vertex_t*, utils::tuple_hash_t<son_a>>;
+        // using index_map      = std::unordered_map<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
+        using index_map      = std::unordered_multimap<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
         using index_map_v    = std::vector<index_map>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
         using alloc_t        = std::allocator<vertex_t>;
@@ -175,7 +175,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::internal_vertex
-        (index_t const index, son_a const& sons) -> vertex_t*
+        (index_t const index, vertex_a const& sons) -> vertex_t*
     {
         if (is_redundant(sons))
         {
@@ -192,11 +192,7 @@ namespace mix::dd
         auto const v = this->new_empty_vertex();
         alloc_traits_t::construct(alloc_, v, index, sons);
         indexMap.emplace(sons, v);
-
-        for (auto v : sons)
-        {
-            v->inc_ref_count();
-        }
+        v->for_each_son(inc_ref_count);
 
         return v;
     }
@@ -396,11 +392,12 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::is_redundant
-        (son_a const& sons) -> bool
+        (vertex_a const& sons) -> bool
     {
-        return std::end(sons) == std::adjacent_find( std::begin(sons)
-                                                   , std::end(sons)
-                                                   , std::not_equal_to<>() );
+        auto const end = std::find(std::begin(sons), std::end(sons), nullptr);
+        return end == std::adjacent_find( std::begin(sons)
+                                        , end
+                                        , std::not_equal_to<>() );
     }
 
     template<class VertexData, class ArcData, std::size_t P>

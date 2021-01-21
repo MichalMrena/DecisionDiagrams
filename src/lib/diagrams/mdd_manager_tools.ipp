@@ -73,7 +73,8 @@ namespace mix::dd
                 v->for_each_son([=, this](auto const son)
                 {
                     auto const sonLevel   = vertexManager_.get_vertex_level(son);
-                    auto const diffFactor = utils::int_pow(P, sonLevel - vLevel - 1);
+                    // auto const diffFactor = utils::int_pow(P, sonLevel - vLevel - 1);
+                    auto const diffFactor = this->domain_product(vLevel, sonLevel);
                     v->data += son->data * static_cast<double>(diffFactor);
                 });
             }
@@ -110,12 +111,17 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::evaluate
         (mdd_t const& d, VariableValues const& vs) const -> log_t
     {
+        auto constexpr ND      = log_val_traits<P>::nodomain;
         auto constexpr get_var = GetIthVal {};
         auto v = d.get_root();
 
         while (!vertexManager_.is_leaf_vertex(v))
         {
             v = v->get_son(get_var(vs, v->get_index()));
+            if (!v)
+            {
+                return ND;
+            }
         }
 
         return vertexManager_.get_vertex_value(v);
@@ -231,7 +237,7 @@ namespace mix::dd
             }
         });
 
-        auto const ranks = utils::map_if(rankGroups, utils::not_empty, [](auto const& level)
+        auto const ranks = utils::filter_map(rankGroups, utils::not_empty, [](auto const& level)
         {
             return concat("{ rank = same; " , concat_range(level, " "), " }");
         });
@@ -243,6 +249,26 @@ namespace mix::dd
             << "    " << concat_range(arcs,   concat(EOL, "    "))                    << EOL << EOL
             << "    " << concat_range(ranks,  concat(EOL, "    "))                    << EOL
             << "}"                                                                    << EOL;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::domain_product
+        (level_t const from, level_t const to) const -> std::size_t
+    {
+        if constexpr (2 == P)
+        {
+            return utils::two_pow(to - from - 1);
+        }
+        else
+        {
+            auto const get_dom = [this](auto const l)
+            {
+                return this->get_domain(vertexManager_.get_index(l));
+            };
+            auto const ls = utils::range(from + 1, to);
+            return std::transform_reduce( std::begin(ls), std::end(ls)
+                                        , 1u, std::multiplies<>(), get_dom );
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -265,6 +291,7 @@ namespace mix::dd
         ( log_t const val, level_t const l, vertex_t* const v
         , VariableValues& xs, OutputIt& out ) const -> void
     {
+        // TODO remove duplicity
         auto const vertexValue = vertexManager_.get_vertex_value(v);
         auto const vertexLevel = vertexManager_.get_vertex_level(v);
 
@@ -279,17 +306,20 @@ namespace mix::dd
         }
         else if (vertexLevel > l)
         {
-            for (auto iSon = 0u; iSon < P; ++iSon)
+            auto const index  = vertexManager_.get_index(l);
+            auto const domain = this->get_domain(index);
+            for (auto iv = 0u; iv < domain; ++iv)
             {
-                SetVarVal {} (xs, vertexManager_.get_index(l), iSon);
+                SetVarVal {} (xs, index, iv);
                 satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, v, xs, out);
             }
         }
         else
         {
-            v->for_each_son_i([=, this, &out, &xs](auto const iSon, auto const son)
+            auto const index = v->get_index();
+            v->for_each_son_i([=, &out, &xs](auto const iv, auto const son)
             {
-                SetVarVal {} (xs, vertexManager_.get_index(l), iSon);
+                SetVarVal {} (xs, index, iv);
                 satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, son, xs, out);
             });
         }

@@ -125,7 +125,7 @@ namespace mix::dd
 
     /* Internal aliases */
     protected:
-        using son_a            = std::array<vertex_t*, P>;
+        using vertex_a            = std::array<vertex_t*, P>;
         using vertex_v         = std::vector<vertex_t*>;
         using vertex_vv        = std::vector<vertex_v>;
         using apply_key_t      = std::tuple<vertex_t*, op_id_t, vertex_t*>;
@@ -138,6 +138,8 @@ namespace mix::dd
     private:
         template<class VertexIterator>
         auto to_dot_graph_impl (std::ostream& ost, VertexIterator for_each_v) const -> void;
+
+        auto domain_product (level_t const from, level_t const to) const -> std::size_t;
 
         auto fill_levels (mdd_t const& d) const -> vertex_vv;
 
@@ -176,7 +178,7 @@ namespace mix::dd
         auto operator() (index_t const i, log_t const domain) -> mdd_t;
 
         template<class LeafVals>
-        auto just_var_impl (index_t const i, LeafVals&& vals) -> mdd_t;
+        auto variable_impl (index_t const i, LeafVals&& vals, std::size_t const domain = P) -> mdd_t;
 
     /* Reliability internals */
         public:
@@ -187,7 +189,7 @@ namespace mix::dd
 
     /* Other internals */
     public:
-        auto var_count      () const -> std::size_t;
+        auto var_count          () const -> std::size_t;
         auto get_domain         (index_t const i) const -> log_t;
         auto get_domain_product () const -> std::size_t;
 

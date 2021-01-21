@@ -15,11 +15,9 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::variable
         (index_t const i) -> mdd_t
     {
-        auto constexpr ND = log_val_traits<P>::nodomain;
-        return this->just_var_impl(i, utils::fill_array<P>([=, this](auto const val)
-        {
-            return val < this->get_domain(i) ? val : ND;
-        }));
+        auto const dom  = this->get_domain(i);
+        auto const vals = utils::fill_array<P>(utils::identityv);
+        return this->variable_impl(i, vals, dom);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -40,10 +38,12 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class LeafVals>
-    auto mdd_manager<VertexData, ArcData, P>::just_var_impl
-        (index_t const i, LeafVals&& vals) -> mdd_t
+    auto mdd_manager<VertexData, ArcData, P>::variable_impl
+        (index_t const i, LeafVals&& vals, std::size_t const domain) -> mdd_t
     {
-        auto const leaves = utils::map_to_array<P>(vals, [this](auto const lv)
+        auto const first  = std::begin(vals);
+        auto const last   = std::next(first, static_cast<std::ptrdiff_t>(domain));
+        auto const leaves = utils::map_to_array<P>(first, last, [this](auto const lv)
         {
             return vertexManager_.terminal_vertex(static_cast<log_t>(lv));
         });

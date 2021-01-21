@@ -65,7 +65,7 @@ This feature is intended only for testing and playing around. For a real world u
 register_manager(m);
 auto g = (x(0) && x(1)) || ((x(2) && x(3)) || x(4));
 ```
-Basic operations that can be used in apply are: `AND, OR, XOR, NAND, NOR`. Full list with corresponding operator overloads can be found in table below.
+Basic operations that can be used in apply are: `AND, OR, XOR, NAND, NOR`. Full list of operations with corresponding overloads can be found in table below.
 
 #### Using diagrams
 Since a diagram is representation of a function you can evaluate it for given assignment of variables. Values of variables can be specified in different ways. `evaluate` returns either `0` (false) or `1` (true).

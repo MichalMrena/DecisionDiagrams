@@ -173,7 +173,7 @@ namespace mix::dd
             // If 0-th son is the false leaf we set 0-th son to 1-th son.
             // Otherwise we continue down to the 0-th son.
             // We always continue to 1-th son.
-            auto sons  = son_a {};
+            auto sons  = vertex_a {};
             auto son0  = v->get_son(0);
             auto son1  = v->get_son(1);
             auto son1t = this->transform_step(son1, l_this); // TODO premyslieť si tú rekurziu, aj keď asi ak son0 nie je 0 pred zanorením asi nebude ani potom
@@ -197,7 +197,7 @@ namespace mix::dd
         {
             auto constexpr U   = log_val_traits<2>::undefined;
             auto const uLeaf   = this->vertexManager_.terminal_vertex(U);
-            auto const newRoot = this->vertexManager_.internal_vertex(i, son_a {root, uLeaf});
+            auto const newRoot = this->vertexManager_.internal_vertex(i, vertex_a {root, uLeaf});
             return bdd_t {newRoot};
         }
 
@@ -215,7 +215,7 @@ namespace mix::dd
                     // New vertex for the i-th variable is inserted between vertex v and his son.
                     // No need to go deeper.
                     auto const uLeaf = this->vertexManager_.terminal_vertex(U);
-                    return this->vertexManager_.internal_vertex(i, son_a {son, uLeaf});
+                    return this->vertexManager_.internal_vertex(i, vertex_a {son, uLeaf});
                 }
                 else
                 {

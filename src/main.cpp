@@ -149,7 +149,7 @@ auto mss_playground()
     using vec4 = std::array<log_t, 4>;
     using vec4_v = std::vector<vec4>;
     auto vs = vec4_v {};
-    m.template satisfy_all<vec4>(1, f, std::back_inserter(vs));
+    m.template satisfy_all<vec4>(1u, f, std::back_inserter(vs));
 
     for (auto const v : vs)
     {
@@ -346,6 +346,27 @@ auto patterns_imgs()
     m2.to_dot_graph(std::cout, x(1) * x(2));
 }
 
+auto test_mul_absorbing()
+{
+    auto m  = make_mdd_manager<3>(3);
+    auto& x = m;
+    register_manager(m);
+    m.set_domains({3, 2, 3});
+    auto f = x(0) * x(1) + x(2);
+    auto g = f * m.constant(0);
+
+    // m.to_dot_graph(std::cout, f);
+    // m.to_dot_graph(std::cout, g);
+
+    auto const sc = mix::utils::fill_array<3>([&](auto const i)
+    {
+        return m.satisfy_count(i, f);
+    });
+
+    mix::utils::printl(mix::utils::concat_range(sc, " "));
+    // mix::utils::printl(m.satisfy_count(0, f));
+}
+
 auto main() -> int
 {
     auto watch = stopwatch();
@@ -361,11 +382,9 @@ auto main() -> int
     // swap_var_test();
     // eq_test();
     // patterns_imgs();
+    // test_mul_absorbing();
 
-    test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
-
-    // TODO nonhomogenous, nepridata ND leaf, ale nechat tam jednoducho null,
-    // bude treba upravit hlavme apply a is_redundant
+    test::test_mdd<4>(5, test::order_e::Random, test::domain_e::Nonhomogenous, 2180396580);
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

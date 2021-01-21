@@ -22,18 +22,21 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::restrict_var
         (mdd_t const& d, index_t const i, log_t const val) -> mdd_t
     {
-        return this->transform(d, [i, val, this](auto const v, auto&& l_this)
+        return this->transform(d, [=, this](auto const v, auto&& l_this)
         {
+            auto const domain = this->get_domain(v->get_index());
             if (v->get_index() == i)
             {
-                return utils::fill_array<P>([son = v->get_son(val)](auto const)
+                // We make redundant vertex that will be handled by the vertex manager.
+                return utils::fill_array_n<P>(domain, [son = v->get_son(val)](auto const)
                 {
                     return son;
                 });
             }
             else
             {
-                return utils::fill_array<P>([this, &l_this, v](auto const i)
+                // Nothing to restrict here so we just continue downwards.
+                return utils::fill_array_n<P>(domain, [this, &l_this, v](auto const i)
                 {
                     return this->transform_step(v->get_son(i), l_this);
                 });
@@ -119,7 +122,7 @@ namespace mix::dd
         auto const lhsVal = vertexManager_.get_vertex_value(lhs);
         auto const rhsVal = vertexManager_.get_vertex_value(rhs);
         auto const opVal  = Op<P> () (lhsVal, rhsVal);
-        auto u = static_cast<vertex_t*>(nullptr);
+        auto u = static_cast<vertex_t*>(nullptr); // TODO IILambda?
 
         if (!is_nondetermined<P>(opVal))
         {
@@ -129,17 +132,18 @@ namespace mix::dd
         {
             auto const lhsLevel  = vertexManager_.get_vertex_level(lhs);
             auto const rhsLevel  = vertexManager_.get_vertex_level(rhs);
-            auto const level     = std::min(lhsLevel, rhsLevel);
-            auto const topVertex = level == lhsLevel ? lhs : rhs;
-            auto const index     = topVertex->get_index();
-            auto const sons      = utils::fill_array<P>([=, this](auto const i)
+            auto const topLevel  = std::min(lhsLevel, rhsLevel);
+            auto const topVertex = topLevel == lhsLevel ? lhs : rhs;
+            auto const topIndex  = topVertex->get_index();
+            auto const domain    = this->get_domain(topIndex);
+            auto const sons      = utils::fill_array_n<P>(domain, [=, this](auto const i)
             {
-                auto const first  = lhsLevel == level ? lhs->get_son(i) : lhs;
-                auto const second = rhsLevel == level ? rhs->get_son(i) : rhs;
+                auto const first  = lhsLevel == topLevel ? lhs->get_son(i) : lhs;
+                auto const second = rhsLevel == topLevel ? rhs->get_son(i) : rhs;
                 return this->apply_step<Op>(first, second);
             });
 
-            u = vertexManager_.internal_vertex(index, sons);
+            u = vertexManager_.internal_vertex(topIndex, sons);
         }
 
         applyMemo_.emplace(memoKey, u);

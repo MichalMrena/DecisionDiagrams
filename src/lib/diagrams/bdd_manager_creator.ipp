@@ -8,8 +8,8 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::variable_not
         (index_t const i) -> bdd_t
     {
-        auto constexpr leafVals = std::array {1, 0};
-        return base::just_var_impl(i, leafVals);
+        auto constexpr leafVals = std::array {1u, 0u};
+        return base::variable_impl(i, leafVals);
     }
 
     template<class VertexData, class ArcData>

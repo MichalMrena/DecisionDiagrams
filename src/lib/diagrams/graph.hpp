@@ -50,18 +50,18 @@ namespace mix::dd
         using vertex_t    = vertex<VertexData, ArcData, P>;
         using arc_t       = arc<VertexData, ArcData, P>;
         using arc_a       = std::array<arc_t, P>;
-        using son_a       = std::array<vertex_t*, P>;
+        using vertex_a       = std::array<vertex_t*, P>;
         using log_t       = typename log_val_traits<P>::type;
         using ref_count_t = std::uint32_t;
 
     public:
         vertex_base (index_t const i);
-        vertex_base (index_t const i, son_a const& sons);
+        vertex_base (index_t const i, vertex_a const& sons);
 
     public:
         auto get_id        () const                    -> std::uintptr_t;
         auto get_son       (std::size_t const i) const -> vertex_t*;
-        auto set_sons      (son_a const& sons)         -> void;
+        auto set_sons      (vertex_a const& sons)         -> void;
         auto get_mark      () const                    -> bool;
         auto toggle_mark   ()                          -> void;
         auto get_index     () const                    -> index_t;
@@ -93,7 +93,7 @@ namespace mix::dd
     class vertex : public vertex_base<VertexData, ArcData, P>
     {
     public:
-        using son_a  = typename vertex_base<VertexData, ArcData, P>::son_a;
+        using vertex_a  = typename vertex_base<VertexData, ArcData, P>::vertex_a;
         using log_t  = typename log_val_traits<P>::type;
         using base_t = vertex_base<VertexData, ArcData, P>;
 
@@ -102,7 +102,7 @@ namespace mix::dd
 
     public:
         vertex (index_t const i);
-        vertex (index_t const i, son_a const& sons);
+        vertex (index_t const i, vertex_a const& sons);
     };
 
     /**
@@ -112,12 +112,12 @@ namespace mix::dd
     class vertex<void, ArcData, P> : public vertex_base<void, ArcData, P>
     {
     public:
-        using son_a  = typename vertex_base<void, ArcData, P>::son_a;
+        using vertex_a  = typename vertex_base<void, ArcData, P>::vertex_a;
         using base_t = vertex_base<void, ArcData, P>;
 
     public:
         vertex(index_t const i);
-        vertex(index_t const i, son_a const& sons);
+        vertex(index_t const i, vertex_a const& sons);
     };
 
 // vertex_base definitions:
@@ -131,7 +131,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_base<VertexData, ArcData, P>::vertex_base
-        (index_t const i, son_a const& sons) :
+        (index_t const i, vertex_a const& sons) :
         forwardStar_  {utils::map_to_array(sons, [](auto const v) { return arc_t {{v}}; })},
         markRefCount_ {0},
         index_        {i}
@@ -154,7 +154,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_base<VertexData, ArcData, P>::set_sons
-        (son_a const& sons) -> void
+        (vertex_a const& sons) -> void
     {
         forwardStar_ = utils::map_to_array(sons, [](auto const v)
         {
@@ -216,12 +216,13 @@ namespace mix::dd
     auto vertex_base<VertexData, ArcData, P>::for_each_son
         (VertexOp op) -> void
     {
-        if (this->get_son(0))
+        auto const end = std::end(forwardStar_);
+        auto it = std::begin(forwardStar_);
+
+        while (it->target && it != end)
         {
-            for (auto i = 0u; i < P; ++i)
-            {
-                op(this->get_son(i));
-            }
+            op(it->target);
+            ++it;
         }
     }
 
@@ -230,12 +231,15 @@ namespace mix::dd
     auto vertex_base<VertexData, ArcData, P>::for_each_son_i
         (IndexedVertexOp op) -> void
     {
-        if (this->get_son(0))
+        auto const end = std::end(forwardStar_);
+        auto it = std::begin(forwardStar_);
+        auto i  = 0u;
+
+        while (it->target && it != end)
         {
-            for (auto i = 0u; i < P; ++i)
-            {
-                op(i, this->get_son(i));
-            }
+            op(i, it->target);
+            ++it;
+            ++i;
         }
     }
 
@@ -250,7 +254,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex<VertexData, ArcData, P>::vertex
-        (index_t const i, son_a const& sons) :
+        (index_t const i, vertex_a const& sons) :
         base_t {i, sons}
     {
     }
@@ -266,7 +270,7 @@ namespace mix::dd
 
     template<class ArcData, std::size_t P>
     vertex<void, ArcData, P>::vertex
-        (index_t const i, son_a const& sons) :
+        (index_t const i, vertex_a const& sons) :
         base_t {i, sons}
     {
     }

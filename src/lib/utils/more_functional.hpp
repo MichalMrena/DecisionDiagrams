@@ -87,6 +87,12 @@ namespace mix::utils
      */
     inline auto const identity = [](auto&& a) -> decltype(auto) { return std::forward<decltype(a)>(a); };
     using identity_t = decltype(identity);
+
+    /**
+     * @brief Identity function.
+     */
+    inline auto const identityv = [](auto const a) { return a; };
+    using identityv_t = decltype(identityv);
 }
 
 #endif

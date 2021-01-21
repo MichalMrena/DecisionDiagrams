@@ -46,14 +46,51 @@ namespace mix::dd::test
         using log_v = std::vector<log_t>;
 
     public:
-        domain_iterator (std::size_t const varCount);
+        domain_iterator (std::size_t const varCount, uint_v domains) :
+            domains_ (std::move(domains)),
+            varVals_ (varCount)
+        {
+        };
 
-        auto var_vals  () const -> log_v const&;
-        auto has_more  () const -> bool;
-        auto move_next ()       -> void;
+        auto var_vals () const -> log_v const&
+        {
+            return varVals_;
+        }
+
+        auto has_more () const -> bool
+        {
+            return not varVals_.empty();
+        }
+
+        auto move_next () -> void
+        {
+            auto const varCount = varVals_.size();
+            auto overflow       = false;
+
+            for (auto i = 0u; i < varCount; ++i)
+            {
+                ++varVals_[i];
+                overflow = varVals_[i] == domains_[i];
+                if (overflow)
+                {
+                    varVals_[i] = 0;
+                }
+
+                if (not overflow)
+                {
+                    break;
+                }
+            }
+
+            if (overflow)
+            {
+                varVals_.clear();
+            }
+        }
 
     private:
-        log_v varVals_;
+        uint_v domains_;
+        log_v  varVals_;
     };
 
     template<class F>
@@ -92,19 +129,6 @@ namespace mix::dd::test
             case domain_e::Nonhomogenous: return get_nonhomogenous_domains();
             default: throw "not good";
         }
-    }
-
-    inline auto dependency_set (mvl_function const& f)
-    {
-        auto is = std::vector<bool>(f.varCount, false);
-        for (auto const& ps : f.products)
-        {
-            for (auto const p : ps)
-            {
-                is[p] = true;
-            }
-        }
-        return is;
     }
 
     inline auto generate_function ( std::size_t const     varCount
@@ -147,22 +171,8 @@ namespace mix::dd::test
 
     template<std::size_t P>
     auto eval_function ( mvl_function const& function
-                       , bool_v const&       depSet
                        , uint_v const&       varVals )
     {
-        auto const isNoDomain = std::any_of(std::begin(varVals), std::end(varVals),
-            [&, i = 0u](auto const v) mutable
-        {
-            auto const ret =  depSet[i] and v >= function.domains[i];
-            ++i;
-            return ret;
-        });
-
-        if (isNoDomain)
-        {
-            return log_val_traits<P>::nodomain;
-        }
-
         auto const& pss = function.products;
         auto result = 0u;
         for (auto const& ps : pss)
@@ -207,16 +217,15 @@ namespace mix::dd::test
                        , mvl_function const& f
                        , mdd_t<P> const&     d )
     {
-        auto const funcDepSet = dependency_set(f);
-        auto enumerator       = domain_iterator<P>(MddVariableCount);
+        auto enumerator = domain_iterator<P>(MddVariableCount, f.domains);
 
         while (enumerator.has_more())
         {
-            auto const realVal    = eval_function<P>(f, funcDepSet, enumerator.var_vals());
+            auto const realVal    = eval_function<P>(f, enumerator.var_vals());
             auto const diagramVal = m.evaluate(d, enumerator.var_vals());
             if (realVal != diagramVal)
             {
-                return utils::concat( "Failed. ", "Got ", diagramVal, ", expected", realVal, "" );
+                return utils::concat( "Failed. ", "Got ", diagramVal, ", expected ", realVal, "" );
             }
             enumerator.move_next();
         }
@@ -231,21 +240,19 @@ namespace mix::dd::test
     {
         auto const expectedScs = [&]()
         {
-            auto const depSet = dependency_set(f);
-            auto vs  = domain_iterator<P>(MddVariableCount);
-            auto scs = std::array<unsigned, log_val_traits<P>::valuecount> {{}};
+            auto vs  = domain_iterator<P>(MddVariableCount, f.domains);
+            auto scs = std::array<unsigned, P> {};
 
             while (vs.has_more())
             {
-                auto const val = eval_function<P>(f, depSet, vs.var_vals());
-                ++scs[val];
+                ++scs[eval_function<P>(f, vs.var_vals())];
                 vs.move_next();
             }
 
             return scs;
         }();
 
-        auto const realScs = utils::fill_array<P + 2>([&](auto const l)
+        auto const realScs = utils::fill_array<P>([&](auto const l)
         {
             return m.satisfy_count(l, d);
         });
@@ -269,14 +276,16 @@ namespace mix::dd::test
     {
         auto const expectedScs = [&]()
         {
-            auto const depSet = dependency_set(f);
-            auto vs  = domain_iterator<P>(MddVariableCount);
-            auto scs = std::array<unsigned, log_val_traits<P>::valuecount> {{}};
+            auto vs  = domain_iterator<P>(MddVariableCount, f.domains);
+            auto scs = std::array<unsigned, P> {};
 
             while (vs.has_more())
             {
-                auto const val = eval_function<P>(f, depSet, vs.var_vals());
-                ++scs[val];
+                auto const val = eval_function<P>(f, vs.var_vals());
+                if (!is_nodomain<P>(val))
+                {
+                    ++scs[val];
+                }
                 vs.move_next();
             }
 
@@ -286,12 +295,12 @@ namespace mix::dd::test
         auto const realScs = [&]()
         {
             using var_vals_t = std::array<unsigned, MddVariableCount>;
-            auto sas = std::array<std::size_t, P + 2> {};
+            auto sas = std::array<std::size_t, P> {};
             auto out = dummy_output([&](auto&& vals)
             {
                 ++sas[m.evaluate(d, vals)];
             });
-            for (auto i = 0u; i < log_val_traits<P>::valuecount; ++i)
+            for (auto i = 0u; i < P; ++i)
             {
                 m.template satisfy_all<var_vals_t>(i, d, out);
             }
@@ -317,13 +326,23 @@ namespace mix::dd::test
                            , int_rng<index_t>&   rngVarIndex )
     {
         auto const i1 = rngVarIndex.next_int();
-        auto const i2 = rngVarIndex.next_int();
+        auto const i2 = [&]()
+        {
+            for (;;)
+            {
+                // Potentially dangerous but should be ok...
+                auto const i = rngVarIndex.next_int();
+                if (i != i1)
+                {
+                    return i;
+                }
+            }
+        }();
         auto const v1 = 0;
         auto const v2 = 1;
         auto const d_ = m.restrict_var(m.restrict_var(d, i1, v1), i2, v2);
 
-        auto const funcDepSet = dependency_set(f);
-        auto enumerator       = domain_iterator<P>(MddVariableCount);
+        auto enumerator = domain_iterator<P>(MddVariableCount, f.domains);
 
         while (enumerator.has_more())
         {
@@ -335,10 +354,11 @@ namespace mix::dd::test
                 return vs;
             }();
             auto const diagramVal = m.evaluate(d_, varVals);
-            auto const realVal    = eval_function<P>(f, funcDepSet, varVals);
+            auto const realVal    = eval_function<P>(f, varVals);
             if (realVal != diagramVal)
             {
-                return utils::concat( "Failed. ", "Got ", diagramVal, ", expected", realVal, "" );
+                return utils::concat( "Failed. ", "x", i1, "=", v1, ", x", i2, "=", v2, ". "
+                                    , "Got ", diagramVal, ", expected ", realVal, "." );
             }
             enumerator.move_next();
         }
@@ -359,6 +379,9 @@ namespace mix::dd::test
         auto rngRestVarIndex = int_rng<index_t>(0, MddVariableCount - 1, seeder.next_int());
         auto rngOrderShuffle = std::mt19937(seeder.next_int());
         auto rngDomain       = int_rng<unsigned>(2, P, seeder.next_int());
+
+        std::cout << "Running " << n << " tests." << '\n';
+        std::cout << "Seed is " << initSeed       << '\n';
 
         for (auto i = 0u; i < n; ++i)
         {
@@ -391,55 +414,6 @@ namespace mix::dd::test
             std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
             std::cout << "\n";
             // TODO test operators absorbing, neutral element, pri Booleovskych najprv transform na 0 1 cez EQ, LT, GT, ...
-        }
-    }
-
-    template<std::size_t P>
-    domain_iterator<P>::domain_iterator
-        (std::size_t const varCount) :
-        varVals_ (varCount)
-    {
-    }
-
-    template<std::size_t P>
-    auto domain_iterator<P>::var_vals
-        () const -> log_v const&
-    {
-        return varVals_;
-    }
-
-    template<std::size_t P>
-    auto domain_iterator<P>::has_more
-        () const -> bool
-    {
-        return not varVals_.empty();
-    }
-
-    template<std::size_t P>
-    auto domain_iterator<P>::move_next
-        () -> void
-    {
-        auto const varCount = varVals_.size();
-        auto overflow       = false;
-
-        for (auto i = 0u; i < varCount; ++i)
-        {
-            ++varVals_[i];
-            overflow = varVals_[i] == P;
-            if (overflow)
-            {
-                varVals_[i] = 0;
-            }
-
-            if (not overflow)
-            {
-                break;
-            }
-        }
-
-        if (overflow)
-        {
-            varVals_.clear();
         }
     }
 }
