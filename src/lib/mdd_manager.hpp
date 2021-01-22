@@ -73,6 +73,8 @@ namespace mix::dd
 
         auto restrict_var (mdd_t const& d, index_t const i, log_t const val) -> mdd_t;
 
+        auto booleanize (mdd_t const& d) -> mdd_t;
+
         template<template<std::size_t> class Op>
         auto left_fold (mdd_v const& ds) -> mdd_t;
 

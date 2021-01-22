@@ -5,7 +5,6 @@
 #include "lib/mdd_manager.hpp"
 #include "lib/bdd_manager.hpp"
 
-#include "test/test_bdd.hpp"
 #include "test/test_mdd.hpp"
 
 #include <bitset>
@@ -384,7 +383,7 @@ auto main() -> int
     // patterns_imgs();
     // test_mul_absorbing();
 
-    test::test_mdd<4>(5, test::order_e::Random, test::domain_e::Nonhomogenous, 2180396580);
+    test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

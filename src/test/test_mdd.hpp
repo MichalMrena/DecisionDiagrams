@@ -32,6 +32,12 @@ namespace mix::dd::test
         var_vv      products;
     };
 
+    enum class order_e
+    {
+        Default,
+        Random
+    };
+
     enum class domain_e
     {
         Homogenous,
@@ -102,6 +108,34 @@ namespace mix::dd::test
         auto operator*  ()             { return *this; }
         auto operator=  (auto&& arg)   { f_(std::forward<decltype(arg)>(arg)); }
     };
+
+    auto constexpr UIntMax = std::numeric_limits<unsigned int>::max();
+
+    inline auto get_order ( order_e const     o
+                          , std::mt19937&     rngOrder
+                          , std::size_t const varCount )
+    {
+        auto const get_default_order = [=]()
+        {
+            auto is = std::vector<index_t>(varCount);
+            std::iota(std::begin(is), std::end(is), 0);
+            return is;
+        };
+
+        auto const get_random_order = [&]()
+        {
+            auto is = get_default_order();
+            std::shuffle(std::begin(is), std::end(is), rngOrder);
+            return is;
+        };
+
+        switch (o)
+        {
+            case order_e::Default: return get_default_order();
+            case order_e::Random:  return get_random_order();
+            default: throw "not good";
+        }
+    }
 
     template<std::size_t P>
     auto get_domains ( domain_e const     d
@@ -182,7 +216,7 @@ namespace mix::dd::test
             {
                 product *= varVals[i];
             }
-            result += product % P;
+            result += product;
         }
         return static_cast<unsigned int>(result % P);
     }
@@ -367,6 +401,108 @@ namespace mix::dd::test
     }
 
     template<std::size_t P>
+    auto test_operators ( manager_t<P>&   m
+                        , mdd_t<P> const& d )
+    {
+        auto const zero = m.constant(0);
+        auto const one  = m.constant(1);
+        auto const sup  = m.constant(P - 1);
+        auto const bd   = m.template apply<GREATER_EQUAL>(d, one);
+
+        if (not m.template apply<AND>(bd, zero).equals(zero))
+        {
+            return std::string("AND Absorbing element failed.");
+        }
+
+        if (not m.template apply<AND>(bd, one).equals(bd))
+        {
+            return std::string("AND Neutral element failed.");
+        }
+
+        if (not m.template apply<OR>(bd, one).equals(one))
+        {
+            return std::string("OR Absorbing element failed.");
+        }
+
+        if (not m.template apply<OR>(bd, zero).equals(bd))
+        {
+            return std::string("OR Neutral element failed.");
+        }
+
+        if (not m.template apply<XOR>(bd, bd).equals(zero))
+        {
+            return std::string("XOR Annihilate failed.");
+        }
+
+        if (not m.template apply<MULTIPLIES>(d, zero).equals(zero))
+        {
+            return std::string("(*) Absorbing element failed.");
+        }
+
+        if (not m.template apply<MULTIPLIES>(d, one).equals(d))
+        {
+            return std::string("(*) Neutral element failed.");
+        }
+
+        if (not m.template apply<PLUS>(d, zero).equals(d))
+        {
+            return std::string("(+) Neutral element failed.");
+        }
+
+        if (not m.template apply<EQUAL_TO>(d, d).equals(one))
+        {
+            return std::string("(==) Annihilate failed.");
+        }
+
+        if (not m.template apply<NOT_EQUAL_TO>(d, d).equals(zero))
+        {
+            return std::string("(!=) Annihilate failed.");
+        }
+
+        if (not m.template apply<LESS>(d, d).equals(zero))
+        {
+            return std::string("(<) Annihilate failed.");
+        }
+
+        if (not m.template apply<GREATER>(d, d).equals(zero))
+        {
+            return std::string("(>) Annihilate failed.");
+        }
+
+        if (not m.template apply<LESS_EQUAL>(d, d).equals(one))
+        {
+            return std::string("(<=) Annihilate failed.");
+        }
+
+        if (not m.template apply<GREATER_EQUAL>(d, d).equals(one))
+        {
+            return std::string("(>=) Annihilate failed.");
+        }
+
+        if (not m.template apply<MIN>(d, zero).equals(zero))
+        {
+            return std::string("MIN Absorbing element failed.");
+        }
+
+        if (not m.template apply<MIN>(d, sup).equals(d))
+        {
+            return std::string("MIN Neutral element failed.");
+        }
+
+        if (not m.template apply<MAX>(d, sup).equals(sup))
+        {
+            return std::string("MAX Absorbing element failed.");
+        }
+
+        if (not m.template apply<MAX>(d, zero).equals(d))
+        {
+            return std::string("MAX Neutral element failed.");
+        }
+
+        return std::string("OK");
+    }
+
+    template<std::size_t P>
     auto test_mdd ( std::size_t const n
                   , order_e const     order  = order_e::Default
                   , domain_e const    domain = domain_e::Homogenous
@@ -400,7 +536,7 @@ namespace mix::dd::test
             auto       diagram      = make_diagram<P>(manager, function, mulLeftFold, plusLeftFold);
             auto       diagram2     = make_diagram<P>(manager, function, mulTreeFold, plusTreeFold);
 
-            std::cout << '#'                     << i                                                                    << '\n';
+            std::cout << '#'                        << i                                                                 << '\n';
             std::cout << "    Diagram"                                                                                   << '\n';
             std::cout << "        Vertex count    " << manager.vertex_count(diagram)                                     << '\n';
             std::cout << "        Order           " << utils::concat_range(varorder, " > ")                              << '\n';
@@ -412,8 +548,8 @@ namespace mix::dd::test
             std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
             std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
             std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
+            std::cout << "        Operators       " << test_operators<P>(manager, diagram)                               << '\n';
             std::cout << "\n";
-            // TODO test operators absorbing, neutral element, pri Booleovskych najprv transform na 0 1 cez EQ, LT, GT, ...
         }
     }
 }

@@ -92,7 +92,7 @@ namespace mix::dd
     template<std::size_t P> struct MIN           : public impl::bin_op< utils::min_t,               P, 0          > {};
     template<std::size_t P> struct MAX           : public impl::bin_op< utils::max_t,               P, P - 1      > {};
     template<std::size_t P> struct PLUS          : public impl::bin_op< utils::plus_mod_t<P>,       P, impl::U<P> > {};
-    template<std::size_t P> struct MULTIPLIES    : public impl::bin_op< utils::multiplies_mod_t<P>, P, impl::U<P> > {};
+    template<std::size_t P> struct MULTIPLIES    : public impl::bin_op< utils::multiplies_mod_t<P>, P, 0          > {};
 
     /**
         @brief Type of unique identifier of operations.
