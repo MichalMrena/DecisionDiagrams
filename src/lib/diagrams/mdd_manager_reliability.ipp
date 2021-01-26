@@ -196,7 +196,7 @@ namespace mix::dd
         });
         auto const conj = this->tree_fold<PI_CONJ>(dpbdes);
         auto cuts = std::vector<VectorType> {};
-        this->template satisfy_all<VectorType>(1, conj, std::back_inserter(cuts));
+        this->template satisfy_all_g<VectorType>(1, conj, std::back_inserter(cuts));
         return cuts;
     }
 

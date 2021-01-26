@@ -76,7 +76,7 @@ auto const val2 = m.evaluate(f, std::vector {false, true, true, false, true});
 auto const val3 = m.evaluate(f, std::bitset<5> {0b10110});
 auto const val4 = m.evaluate(f, 0b10110);
 ```
-Functions `satisfy_count` computes number of all different variable assignments for which a function evaluates to `1` (true). If you divide this number by a number of all possible variable assignments you get so called truth density of a Boolean function, which can also be calculated directly using by the function `truth_density` function.
+Functions `satisfy_count` computes number of all different variable assignments for which a function evaluates to `1` (true). If you divide this number by a number of all possible variable assignments you get so called truth density of a Boolean function, which can also be calculated directly by using the `truth_density` function.
 ```C++
 auto const sc = m.satisfy_count(f);
 auto const td = m.truth_density(f);

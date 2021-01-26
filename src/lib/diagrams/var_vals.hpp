@@ -42,6 +42,8 @@ namespace mix::dd
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, vv_impl::int_type<VarVals>>
     {
+        static_assert(2 == P);
+
         [[nodiscard]] constexpr auto operator()
             (VarVals const& in, index_t const i) const -> vv_impl::log_t<P>
         {

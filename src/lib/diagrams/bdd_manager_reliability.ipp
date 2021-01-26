@@ -150,7 +150,7 @@ namespace mix::dd
         });
         auto const conj = this->template tree_fold<PI_CONJ>(dpbdes);
         auto cutVectors = std::vector<VectorType>();
-        this->satisfy_all<VectorType>(conj, std::back_inserter(cutVectors));
+        this->satisfy_all_g<VectorType>(conj, std::back_inserter(cutVectors));
         return cutVectors;
     }
 

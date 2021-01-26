@@ -73,7 +73,6 @@ namespace mix::dd
                 v->for_each_son([=, this](auto const son)
                 {
                     auto const sonLevel   = vertexManager_.get_vertex_level(son);
-                    // auto const diffFactor = utils::int_pow(P, sonLevel - vLevel - 1);
                     auto const diffFactor = this->domain_product(vLevel, sonLevel);
                     v->data += son->data * static_cast<double>(diffFactor);
                 });
@@ -107,12 +106,12 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class VariableValues, class GetIthVal>
+    template<class VariableValues, class GetIthVar>
     auto mdd_manager<VertexData, ArcData, P>::evaluate
         (mdd_t const& d, VariableValues const& vs) const -> log_t
     {
         auto constexpr ND      = log_val_traits<P>::nodomain;
-        auto constexpr get_var = GetIthVal {};
+        auto constexpr get_var = GetIthVar {};
         auto v = d.get_root();
 
         while (!vertexManager_.is_leaf_vertex(v))
@@ -128,12 +127,22 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class VariableValues, class OutputIt, class SetVarVal>
+    template<class VariableValues, class SetIthVar>
     auto mdd_manager<VertexData, ArcData, P>::satisfy_all
+        (log_t const val, mdd_t const& d) const -> std::vector<VariableValues>
+    {
+        auto vals = std::vector<VariableValues>();
+        this->satisfy_all_g<VariableValues>(val, d, std::back_inserter(vals));
+        return vals;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VariableValues, class OutputIt, class SetIthVar>
+    auto mdd_manager<VertexData, ArcData, P>::satisfy_all_g
         (log_t const val, mdd_t const& d, OutputIt out) const -> void
     {
         auto xs = VariableValues {};
-        this->satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, 0, d.get_root(), xs, out);
+        this->satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, 0, d.get_root(), xs, out);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -286,7 +295,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class VariableValues, class OutputIt, class SetVarVal>
+    template<class VariableValues, class OutputIt, class SetIthVar>
     auto mdd_manager<VertexData, ArcData, P>::satisfy_all_step
         ( log_t const val, level_t const l, vertex_t* const v
         , VariableValues& xs, OutputIt& out ) const -> void
@@ -310,8 +319,8 @@ namespace mix::dd
             auto const domain = this->get_domain(index);
             for (auto iv = 0u; iv < domain; ++iv)
             {
-                SetVarVal {} (xs, index, iv);
-                satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, v, xs, out);
+                SetIthVar {} (xs, index, iv);
+                satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, l + 1, v, xs, out);
             }
         }
         else
@@ -319,8 +328,8 @@ namespace mix::dd
             auto const index = v->get_index();
             v->for_each_son_i([=, &out, &xs](auto const iv, auto const son)
             {
-                SetVarVal {} (xs, index, iv);
-                satisfy_all_step<VariableValues, OutputIt, SetVarVal>(val, l + 1, son, xs, out);
+                SetIthVar {} (xs, index, iv);
+                satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, l + 1, son, xs, out);
             });
         }
     }

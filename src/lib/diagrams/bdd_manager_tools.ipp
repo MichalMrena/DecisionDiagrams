@@ -22,10 +22,10 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
-    template<class VariableValues, class OutputIt, class SetVarVal>
-    auto bdd_manager<VertexData, ArcData>::satisfy_all
+    template<class VariableValues, class OutputIt, class SetIthVar>
+    auto bdd_manager<VertexData, ArcData>::satisfy_all_g
         (bdd_t const& d, OutputIt out) const -> void
     {
-        base::template satisfy_all<VariableValues>(1, d, out);
+        base::template satisfy_all_g<VariableValues>(1, d, out);
     }
 }

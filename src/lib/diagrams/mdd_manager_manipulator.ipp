@@ -45,6 +45,13 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::booleanize
+        (mdd_t const& d) -> mdd_t
+    {
+        return this->apply<GREATER_EQUAL>(d, this->constant(1));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::left_fold
         (mdd_v const& ds) -> mdd_t

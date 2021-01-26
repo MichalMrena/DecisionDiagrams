@@ -148,7 +148,7 @@ auto mss_playground()
     using vec4 = std::array<log_t, 4>;
     using vec4_v = std::vector<vec4>;
     auto vs = vec4_v {};
-    m.template satisfy_all<vec4>(1u, f, std::back_inserter(vs));
+    m.template satisfy_all_g<vec4>(1u, f, std::back_inserter(vs));
 
     for (auto const v : vs)
     {
@@ -239,8 +239,8 @@ auto example_basic_usage_bdd()
 
     using var_vals_t = std::bitset<5>;
     auto vars = std::vector<var_vals_t>();
-    m.satisfy_all<var_vals_t>(f, std::back_inserter(vars));
-    m.satisfy_all<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
+    m.satisfy_all_g<var_vals_t>(f, std::back_inserter(vars));
+    m.satisfy_all_g<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
 
     for (auto const& v : vars)
     {
@@ -276,7 +276,7 @@ auto example_basic_usage_mdd()
 
     using var_vals_t = std::array<unsigned int, 4>;
     auto sas = std::vector<var_vals_t>();
-    m.satisfy_all<var_vals_t>(2, f, std::back_inserter(sas));
+    m.satisfy_all_g<var_vals_t>(2, f, std::back_inserter(sas));
 
     assert(val0 == val1);
     assert(sc2 == sas.size());

@@ -336,7 +336,7 @@ namespace mix::dd::test
             });
             for (auto i = 0u; i < P; ++i)
             {
-                m.template satisfy_all<var_vals_t>(i, d, out);
+                m.template satisfy_all_g<var_vals_t>(i, d, out);
             }
             return sas;
         }();

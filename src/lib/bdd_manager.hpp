@@ -33,8 +33,8 @@ namespace mix::dd
 
         template< class VariableValues
                 , class OutputIt
-                , class SetVarVal = set_var_val<2, VariableValues> >
-        auto satisfy_all (bdd_t const& d, OutputIt out) const -> void;
+                , class SetIthVar = set_var_val<2, VariableValues> >
+        auto satisfy_all_g (bdd_t const& d, OutputIt out) const -> void;
 
     /* Manipulation */
     public:
