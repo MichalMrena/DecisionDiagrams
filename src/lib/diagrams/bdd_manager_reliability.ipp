@@ -27,7 +27,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::get_unavailability
         () const -> double
     {
-        return 1 - this->get_availability();
+        return base::get_probability(0);
     }
 
     template<class VertexData, class ArcData>
@@ -35,7 +35,7 @@ namespace mix::dd
         (double_v const& ps, bdd_t& f) -> double
     {
         this->calculate_probabilities(ps, f);
-        return this->get_probability(1);
+        return base::get_probability(1);
     }
 
     template<class VertexData, class ArcData>
@@ -43,7 +43,7 @@ namespace mix::dd
         (double_v const& ps, bdd_t& f) -> double
     {
         this->calculate_probabilities(f, ps);
-        return this->get_probability(0);
+        return base::get_probability(0);
     }
 
     template<class VertexData, class ArcData>
@@ -58,10 +58,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::dpbds
         (bdd_t const& f) -> bdd_v
     {
-        // using namespace std::placeholders;
-        // return utils::fill_vector( this->vertexManager_.var_count()
-        //                          , std::bind(&bdd_manager::dpbd, this, f, _1) );
-        return utils::fill_vector( this->vertexManager_.var_count()
+        return utils::fill_vector( base::vertexManager_.var_count()
                                  , std::bind_front(&bdd_manager::dpbd, this, f) );
     }
 
@@ -78,9 +75,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::structural_importances
         (bdd_v& dpbds) -> double_v
     {
-        // using namespace std::placeholders;
-        // return utils::map(dpbds, std::bind(&bdd_manager::structural_importance, this, _1));
-        return utils::map(dpbds, std::bind_front(&bdd_manager::structural_importance, this));
+        return utils::fmap(dpbds, std::bind_front(&bdd_manager::structural_importance, this));
     }
 
     template<class VertexData, class ArcData>
@@ -94,9 +89,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::birnbaum_importances
         (double_v const& ps, bdd_v& dpbds) -> double_v
     {
-        // using namespace std::placeholders;
-        // return utils::map(dpbds, std::bind(&bdd_manager::birnbaum_importance, this, _1, ps));
-        return utils::map(dpbds, std::bind_front(&bdd_manager::birnbaum_importance, this, ps));
+        return utils::fmap(dpbds, std::bind_front(&bdd_manager::birnbaum_importance, this, ps));
     }
 
     template<class VertexData, class ArcData>
@@ -110,10 +103,9 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::criticality_importances
         (double_v const& BIs, double_v const& ps, double const U) -> double_v
     {
-        return utils::map(utils::zip(BIs, ps), ps.size(), [this, U](auto pair)
+        return utils::fmap_i(BIs, [this, U, &ps](auto const i, auto const BI)
         {
-            auto const [BI, pi] = pair;
-            return this->criticality_importance(BI, 1 - pi, U);
+            return this->criticality_importance(BI, 1 - ps[i], U);
         });
     }
 
@@ -129,10 +121,8 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::fussell_vesely_importances
         (bdd_v& dpbds, double_v const& ps, double const U) -> double_v
     {
-        auto const is = utils::range(0u, dpbds.size());
-        return utils::map(utils::zip(is, dpbds), dpbds.size(), [this, &ps, U](auto&& pair)
+        return utils::fmap_i(dpbds, [this, &ps, U](auto const i, auto&& dpbd)
         {
-            auto&& [i, dpbd] = pair;
             return this->fussell_vesely_importance(dpbd, 1 - ps[i], ps, U);
         });
     }
@@ -142,23 +132,16 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::mcvs
         (std::vector<bdd_t> dpbds) -> std::vector<VectorType>
     {
-        auto is     = utils::range(0u, static_cast<index_t>(dpbds.size())); // TODO map_i
-        auto dpbdes = utils::map(utils::zip(is, dpbds), dpbds.size(), [this](auto const& pair)
-        {
-            auto const& [i, dpbd] = pair;
-            return this->to_dpbd_e(dpbd, i);
-        });
+        auto dpbdes = utils::fmap_i(dpbds, std::bind_front(&bdd_manager::to_dpbd_e, this));
         auto const conj = this->template tree_fold<PI_CONJ>(dpbdes);
-        auto cutVectors = std::vector<VectorType>();
-        this->satisfy_all_g<VectorType>(conj, std::back_inserter(cutVectors));
-        return cutVectors;
+        return this->satisfy_all<VectorType>(conj);
     }
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::to_prob_table
         (double_v const& ps) -> prob_table
     {
-        return utils::map(ps, [](auto const p)
+        return utils::fmap(ps, [](auto const p)
         {
             return std::array<double, 2> {1 - p, p};
         });
@@ -186,7 +169,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::to_dpbd_e
-        (bdd_t const& dpbd, index_t const i) -> bdd_t
+        (index_t const i, bdd_t const& dpbd) -> bdd_t
     {
         auto const root   = dpbd.get_root();
         auto const rLevel = this->vertexManager_.get_vertex_level(root);

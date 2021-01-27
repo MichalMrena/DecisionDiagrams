@@ -132,7 +132,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     vertex_base<VertexData, ArcData, P>::vertex_base
         (index_t const i, vertex_a const& sons) :
-        forwardStar_  {utils::map_to_array(sons, [](auto const v) { return arc_t {{v}}; })},
+        forwardStar_  {utils::fmap_to_array(sons, [](auto const v) { return arc_t {{v}}; })},
         markRefCount_ {0},
         index_        {i}
     {
@@ -156,7 +156,7 @@ namespace mix::dd
     auto vertex_base<VertexData, ArcData, P>::set_sons
         (vertex_a const& sons) -> void
     {
-        forwardStar_ = utils::map_to_array(sons, [](auto const v)
+        forwardStar_ = utils::fmap_to_array(sons, [](auto const v)
         {
             return arc_t {{v}};
         });

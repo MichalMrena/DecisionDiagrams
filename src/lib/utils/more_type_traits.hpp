@@ -47,6 +47,20 @@ namespace mix::utils
     inline constexpr auto is_std_bitset_v = is_std_bitset<T>::value;
 
     /**
+        Provides member constant that is equal to true if the
+        Iterator is a random access iterator.
+     */
+    template<class Iterator>
+    struct is_random_access : public std::conditional_t< std::is_same_v< std::random_access_iterator_tag
+                                                                       , typename std::iterator_traits<Iterator>::iterator_category >
+                                                       , std::true_type
+                                                       , std::false_type > {};
+
+    template<class Iterator>
+    inline constexpr auto is_random_access_v = is_random_access<Iterator>::value;
+
+
+    /**
         Provides member constant `value` that is equal to number
         of bits that represents value of given type.
      */

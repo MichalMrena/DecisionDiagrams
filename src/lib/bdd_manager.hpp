@@ -32,6 +32,10 @@ namespace mix::dd
         auto truth_density (bdd_t& d) -> double;
 
         template< class VariableValues
+                , class SetIthVar = set_var_val<2, VariableValues> >
+        auto satisfy_all (bdd_t const& d) const -> std::vector<VariableValues>;
+
+        template< class VariableValues
                 , class OutputIt
                 , class SetIthVar = set_var_val<2, VariableValues> >
         auto satisfy_all_g (bdd_t const& d, OutputIt out) const -> void;
@@ -83,7 +87,7 @@ namespace mix::dd
     public:
         auto to_prob_table  (double_v const& ps) -> prob_table;
         auto to_mnf         (bdd_t const& dpbd)  -> bdd_t;
-        auto to_dpbd_e      (bdd_t const& dpbd, index_t const i) -> bdd_t;
+        auto to_dpbd_e      (index_t const i, bdd_t const& dpbd) -> bdd_t;
     };
 
     inline auto make_bdd_manager(std::size_t const varCount);

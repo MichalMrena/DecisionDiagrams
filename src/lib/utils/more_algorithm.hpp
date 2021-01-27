@@ -1,7 +1,8 @@
 #ifndef MIX_DD_MORE_ALGORITHM_HPP
 #define MIX_DD_MORE_ALGORITHM_HPP
 
-#include "../utils/more_vector.hpp"
+#include "more_vector.hpp"
+#include "more_type_traits.hpp"
 
 #include <algorithm>
 #include <iterator>
@@ -11,105 +12,119 @@
 
 namespace mix::utils
 {
-    namespace ma_impl
-    {
-        template<class InputIt, class UnaryOperation>
-        auto map(InputIt first, InputIt last, std::size_t const count, UnaryOperation op)
-        {
-            using T = decltype(op(*first));
-            auto result = utils::vector<T>(count);
-            std::transform(first, last, std::back_inserter(result), op);
-            return result;
-        }
-
-        template<class InputIt, class Predicate, class UnaryOperation>
-        auto filter_map(InputIt first, InputIt last, std::size_t const count, Predicate p, UnaryOperation op)
-        {
-            using T = decltype(op(*first));
-            auto result = utils::vector<T>(count);
-            while (first != last)
-            {
-                if (p(*first))
-                {
-                    result.push_back(op(*first));
-                }
-                ++first;
-            }
-            return result;
-        }
-    }
-
     /**
-        @brief Wrap around std::transform that saves the result into a std::vector.
+        @brief Wrap around std::transform that saves the result into std::vector.
+        @param count size of the range so that resulting vector can be allocated at once.
      */
     template<class InputIt, class UnaryOperation>
-    auto map(InputIt first, InputIt last, UnaryOperation op)
+    auto fmap(InputIt first, InputIt last, std::size_t const count, UnaryOperation op)
     {
-        using input_it_category = typename std::iterator_traits<InputIt>::iterator_category;
-        auto constexpr hasFastCount = std::is_same_v< input_it_category
-                                                    , std::random_access_iterator_tag >;
-        if constexpr (hasFastCount)
+        using T = decltype(op(*first));
+        auto result = utils::vector<T>(count);
+        std::transform(first, last, std::back_inserter(result), op);
+        return result;
+    }
+
+    /**
+        @brief Wrap around std::transform that saves the result into std::vector.
+     */
+    template<class InputIt, class UnaryOperation>
+    auto fmap(InputIt first, InputIt last, UnaryOperation op)
+    {
+        if constexpr (is_random_access_v<InputIt>)
         {
-            return ma_impl::map(first, last, static_cast<std::size_t>(std::distance(first, last)), op);
+            auto const count = static_cast<std::size_t>(std::distance(first, last));
+            return fmap(first, last, count, op);
         }
         else
         {
-            return ma_impl::map(first, last, 4ul, op);
+            return fmap(first, last, 4ul, op);
         }
     }
 
     /**
-        @brief Wrap around std::transform that saves the result into a std::vector.
+        @brief Wrap around std::transform that saves the result into std::vector.
      */
     template<class Range, class UnaryOperation>
-    auto map(Range&& range, UnaryOperation op)
+    auto fmap(Range&& range, UnaryOperation op)
     {
-        return map(std::begin(range), std::end(range), op);
-    }
-    // TODO add map_i with index so that we don't need to zip with int range
-
-    /**
-        @brief Wrap around std::transform that saves the result into a std::vector.
-     */
-    template<class Range, class UnaryOperation>
-    auto map(Range&& range, std::size_t const count, UnaryOperation op)
-    {
-        return ma_impl::map(std::begin(range), std::end(range), count, op);
+        return fmap(std::begin(range), std::end(range), op);
     }
 
     /**
-        @brief like map but uses predicate to determine whether element should be mapped.
+        @brief Wrap around std::transform that saves the result into a std::vector.
+        @param count size of the @p range so that resulting vector can be allocated at once.
+     */
+    template<class Range, class UnaryOperation>
+    auto fmap(Range&& range, std::size_t const count, UnaryOperation op)
+    {
+        return fmap(std::begin(range), std::end(range), count, op);
+    }
+
+    /**
+        @brief Same as fmap but also passes an index as an argument to @p op .
+     */
+    template<class Range, class UnaryOperation>
+    auto fmap_i(Range&& range, UnaryOperation op)
+    {
+        return fmap(range, [op, i = 0u](auto&& x) mutable
+        {
+            return op(i++, x);
+        });
+    }
+
+    /**
+        @brief like fmap but uses predicate to determine whether element should be mapped.
+        @param count size of the range so that resulting vector can be allocated at once.
      */
     template<class InputIt, class Predicate, class UnaryOperation>
-    auto filter_map(InputIt first, InputIt last, Predicate p, UnaryOperation op)
+    auto filter_fmap(InputIt first, InputIt last, std::size_t const count, Predicate p, UnaryOperation op)
     {
-        using input_it_category = typename std::iterator_traits<InputIt>::iterator_category;
-        auto constexpr hasFastCount = std::is_same_v< input_it_category
-                                                    , std::random_access_iterator_tag >;
-        if constexpr (hasFastCount)
+        using T = decltype(op(*first));
+        auto result = utils::vector<T>(count);
+        while (first != last)
         {
-            return ma_impl::filter_map(first, last, static_cast<std::size_t>(std::distance(first, last)), p, op);
+            if (p(*first))
+            {
+                result.push_back(op(*first));
+            }
+            ++first;
+        }
+        result.shrink_to_fit();
+        return result;
+    }
+
+    /**
+        @brief like fmap but uses predicate to determine whether element should be mapped.
+     */
+    template<class InputIt, class Predicate, class UnaryOperation>
+    auto filter_fmap(InputIt first, InputIt last, Predicate p, UnaryOperation op)
+    {
+        if constexpr (is_random_access_v<InputIt>)
+        {
+            auto const size = static_cast<std::size_t>(std::distance(first, last));
+            return filter_fmap(first, last, size, p, op);
         }
         else
         {
-            return ma_impl::filter_map(first, last, 4ul, p, op);
+            return filter_fmap(first, last, 4ul, p, op);
         }
     }
 
     /**
-        @brief like map but uses predicate to determine whether element should be mapped.
+        @brief like fmap but uses predicate to determine whether element should be mapped.
      */
     template<class Range, class Predicate, class UnaryOperation>
-    auto filter_map(Range&& range, Predicate p, UnaryOperation op)
+    auto filter_fmap(Range&& range, Predicate p, UnaryOperation op)
     {
-        return filter_map(std::begin(range), std::end(range), p, op);
+        return filter_fmap(std::begin(range), std::end(range), p, op);
     }
 
     /**
         @brief Wrap around std::transform that saves the result into std::array.
      */
     template<std::size_t N, class InputIt, class UnaryOperation>
-    auto map_to_array(InputIt first, InputIt last, UnaryOperation op)
+    auto fmap_to_array(InputIt first, InputIt last, UnaryOperation op)
     {
         using T  = decltype(op(*std::declval<InputIt>()));
         auto ret = std::array<T, N>{};
@@ -121,18 +136,18 @@ namespace mix::utils
         @brief Wrap around std::transform that saves the result into a std::array.
      */
     template<class T, std::size_t N, class UnaryOperation>
-    auto map_to_array(std::array<T, N> const& as, UnaryOperation op)
+    auto fmap_to_array(std::array<T, N> const& as, UnaryOperation op)
     {
-        return map_to_array<N>(std::begin(as), std::end(as), op);
+        return fmap_to_array<N>(std::begin(as), std::end(as), op);
     }
 
     /**
         @brief Wrap around std::transform that saves the result into a std::array.
      */
     template<std::size_t N, class Range, class UnaryOperation>
-    auto map_to_array(Range&& range, UnaryOperation op)
+    auto fmap_to_array(Range&& range, UnaryOperation op)
     {
-        return map_to_array<N>(std::begin(range), std::end(range), op);
+        return fmap_to_array<N>(std::begin(range), std::end(range), op);
     }
 
     /**

@@ -144,7 +144,7 @@ namespace mix::dd
     {
         auto const domProduct = this->get_domain_product();
         auto zs = utils::zip(utils::range(0u, static_cast<index_t>(dpbds.size())), dpbds);
-        return utils::map(zs, dpbds.size(), [=, this](auto&& pair)
+        return utils::fmap(zs, dpbds.size(), [=, this](auto&& pair)
         {
             auto&& [i, d] = pair;
             return this->structural_importance(domProduct / this->get_domain(i), d);
@@ -163,7 +163,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::birnbaum_importances
         (prob_table const& ps, mdd_v& dpbds) -> double_v
     {
-        return utils::map(dpbds, std::bind_front(&mdd_manager::birnbaum_importance, this, ps));
+        return utils::fmap(dpbds, std::bind_front(&mdd_manager::birnbaum_importance, this, ps));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -180,36 +180,41 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::fussell_vesely_importances
         (prob_table const& ps, double const U, mdd_v const& dpbds) -> double_v
     {
-        return utils::map(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U));
+        return utils::fmap(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<class VectorType>
+    template<class VariableValues, class SetIthVar>
     auto mdd_manager<VertexData, ArcData, P>::mcvs
-        (mdd_v const& dpbds, log_t const level) -> std::vector<VectorType>
+        (mdd_v const& dpbds, log_t const level) -> std::vector<VariableValues>
     {
-        auto const is = utils::range(0u, static_cast<index_t>(dpbds.size()));
-        auto dpbdes   = utils::map(utils::zip(is, dpbds), dpbds.size(), [=, this](auto const& pair)
+        auto cs = std::vector<VariableValues>();
+        this->template mcvs_g<VariableValues>(dpbds, level, std::back_inserter(cs));
+        return cs;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class VariableValues, class OutputIt, class SetIthVar>
+    auto mdd_manager<VertexData, ArcData, P>::mcvs_g
+        (mdd_v const& dpbds, log_t const level, OutputIt out) -> void
+    {
+        auto const is = utils::range(0u, static_cast<index_t>(dpbds.size())); // TODO fmap_i
+        auto dpbdes   = utils::fmap(utils::zip(is, dpbds), dpbds.size(), [=, this](auto const& pair)
         {
             auto const& [i, dpbd] = pair;
             return this->to_dpbde(dpbd, level, i);
         });
         auto const conj = this->tree_fold<PI_CONJ>(dpbdes);
-        auto cuts = std::vector<VectorType> {};
-        this->template satisfy_all_g<VectorType>(1, conj, std::back_inserter(cuts));
-        return cuts;
+        this->template satisfy_all_g<VariableValues, OutputIt, SetIthVar>(1, conj, out);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::sum_terminals
         (log_t const from, log_t const to) const -> double
     {
-        auto sumval = 0.0;
-        for (auto i = from; i < to; ++i)
-        {
-            sumval += this->get_probability(i);
-        }
-        return sumval;
+        auto const is = utils::range(from, to);
+        return std::transform_reduce( std::begin(is), std::end(is), 0.0, std::plus<>()
+                                    , std::bind_front(&mdd_manager::get_probability, this) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -246,19 +251,19 @@ namespace mix::dd
         // Normal case for all internal vertices.
         return this->transform(dpbd, [=, this](auto const v, auto&& l_this)
         {
-            auto const vLevel = this->vertexManager_.get_vertex_level(v);
-            return utils::fill_array<P>([=, this, &l_this](auto const val)
+            auto const vLevel = vertexManager_.get_vertex_level(v);
+            return utils::fill_array<P>([=, this, &l_this](auto const val) // TODO fill_array_n podla domain
             {
                 auto const son    = v->get_son(val);
-                auto const sLevel = this->vertexManager_.get_vertex_level(son);
+                auto const sLevel = vertexManager_.get_vertex_level(son);
 
-                if (ND == this->vertexManager_.get_vertex_value(son))
+                if (ND == vertexManager_.get_vertex_value(son)) // TODO nope ND už netreba
                 {
                     return son;
                 }
                 else if (iLevel > vLevel && iLevel < sLevel)
                 {
-                    return this->vertexManager_.internal_vertex(i, utils::fill_array<P>([=, this](auto const j)
+                    return vertexManager_.internal_vertex(i, utils::fill_array<P>([=, this](auto const j) // TODO fill_array_n podla domain
                     {
                         return j == (level - 1) ? son :
                                j < iDomain      ? vertexManager_.terminal_vertex(U) :

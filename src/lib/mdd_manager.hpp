@@ -333,11 +333,22 @@ namespace mix::dd
         /**
             @brief Finds all Minimal Cut Vectors.
             @param dpbds std::vector of Direct Partial Boolean Derivatives.
-            @tparam VectorType something in which variable values can be stored. See satisfy all.
+            @tparam VariableValues something that holds values of individual variables.
             @return std::vector of all Minimal Cut Vectors.
          */
-        template<class VectorType> // TODO SetIthVar !
-        auto mcvs (mdd_v const& dpbds, log_t const level) -> std::vector<VectorType>;
+        template< class VariableValues
+                , class SetIthVar = set_var_val<P, VariableValues> >
+        auto mcvs (mdd_v const& dpbds, log_t const level) -> std::vector<VariableValues>;
+
+        /**
+            @brief Generic version of mcvs.
+                   MCVs are enumerated into @p out.
+            @tparam OutputIt output iterator.
+         */
+        template< class VariableValues
+                , class OutputIt
+                , class SetIthVar = set_var_val<P, VariableValues> >
+        auto mcvs_g (mdd_v const& dpbds, log_t const level, OutputIt out) -> void;
 
     /* Other */
     public:

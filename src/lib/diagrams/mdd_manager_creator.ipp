@@ -26,7 +26,7 @@ namespace mix::dd
     {
         // Compiler couldn't infer this one. What am I missing?
         using f_t = mdd_t(mdd_manager::*)(index_t const);
-        return utils::map(is, std::bind_front<f_t>(&mdd_manager::variable, this));
+        return utils::fmap(is, std::bind_front<f_t>(&mdd_manager::variable, this));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -43,7 +43,7 @@ namespace mix::dd
     {
         auto const first  = std::begin(vals);
         auto const last   = std::next(first, static_cast<std::ptrdiff_t>(domain));
-        auto const leaves = utils::map_to_array<P>(first, last, [this](auto const lv)
+        auto const leaves = utils::fmap_to_array<P>(first, last, [this](auto const lv)
         {
             return vertexManager_.terminal_vertex(static_cast<log_t>(lv));
         });

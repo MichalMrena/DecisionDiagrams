@@ -238,11 +238,10 @@ auto example_basic_usage_bdd()
     auto const td = m.truth_density(f);
 
     using var_vals_t = std::bitset<5>;
-    auto vars = std::vector<var_vals_t>();
-    m.satisfy_all_g<var_vals_t>(f, std::back_inserter(vars));
+    auto const satisfyingSet = m.satisfy_all<var_vals_t>(f);
     m.satisfy_all_g<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
 
-    for (auto const& v : vars)
+    for (auto const& v : satisfyingSet)
     {
         assert(1 == m.evaluate(f, v));
     }
@@ -275,8 +274,7 @@ auto example_basic_usage_mdd()
     auto const sc2  = m.satisfy_count(2, f);
 
     using var_vals_t = std::array<unsigned int, 4>;
-    auto sas = std::vector<var_vals_t>();
-    m.satisfy_all_g<var_vals_t>(2, f, std::back_inserter(sas));
+    auto sas = m.satisfy_all<var_vals_t>(2, f);
 
     assert(val0 == val1);
     assert(sc2 == sas.size());
@@ -328,23 +326,6 @@ auto swap_var_test()
     // m.to_dot_graph(std::cout);
 }
 
-auto patterns_imgs()
-{
-    auto m1 = make_mdd_manager<3>(3);
-    auto x1 = m1.variable(1);
-    auto x2 = m1.variable(2);
-    auto f1 = m1.apply<MAX>(x1, x2);
-    m1.to_dot_graph(std::cout, f1);
-
-    auto m2 = make_bdd_manager(4);
-    auto& x = m2;
-    register_manager(m2);
-    auto f2 = (x(1) && x(2)) || x(3);
-    m2.to_dot_graph(std::cout, f2);
-
-    m2.to_dot_graph(std::cout, x(1) * x(2));
-}
-
 auto test_mul_absorbing()
 {
     auto m  = make_mdd_manager<3>(3);
@@ -372,7 +353,7 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    // bss_reliability_test();
+    bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
@@ -380,10 +361,9 @@ auto main() -> int
     // order_test();
     // swap_var_test();
     // eq_test();
-    // patterns_imgs();
     // test_mul_absorbing();
 
-    test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
+    // test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

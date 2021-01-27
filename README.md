@@ -76,29 +76,27 @@ auto const val2 = m.evaluate(f, std::vector {false, true, true, false, true});
 auto const val3 = m.evaluate(f, std::bitset<5> {0b10110});
 auto const val4 = m.evaluate(f, 0b10110);
 ```
-Functions `satisfy_count` computes number of all different variable assignments for which a function evaluates to `1` (true). If you divide this number by a number of all possible variable assignments you get so called truth density of a Boolean function, which can also be calculated directly by using the `truth_density` function.
+Functions `satisfy_count` computes number of all different variable assignments for which the function evaluates to `1` (true). If you divide this number by a number of all possible variable assignments you get so called truth density of a Boolean function, which can also be calculated directly by using the `truth_density` function.
 ```C++
 auto const sc = m.satisfy_count(f);
 auto const td = m.truth_density(f);
 ```
-Variable values for which the function evaluates to `1` can also be enumerated using the function `satisfy_all` and an output iterator. In the example below we first declare an alias for a type that will hold values of variables. The most suitable type for Boolean variables is `std::bitset` (with N = 5, since we have 5 variables). Then we need some container that will hold these values. `std::vector` seems to be the best choice. Finally we need an output iterator for that container, we can use `std::back_inserter` for that.
+Variable assignments for which the function `f` evaluates to `1` can also be enumerated using the function `satisfy_all`. In the example below we first declare an alias for the type that will hold values of variables. The most suitable type for Boolean variables is `std::bitset` (with N = 5, since we have 5 variables). `satisfy_all` then returns `std::vector` of `var_vals_t`.
 ```C++
-using bool_v = std::bitset<5>;
-
-auto vars = std::vector<bool_v>();
-m.satisfy_all<bool_v>(f, std::back_inserter(vars));
+using var_vals_t = std::bitset<5>;
+auto const satisfyingSet = m.satisfy_all<var_vals_t>(f);
 ```
-Vector `vars` now holds all variable assignments for which the function evaluates to `1`. If you only want to print these variable values, you can use `std::ostream_iterator` since there is an overload of `operator<<` for `std::bitset`.
+If you only want to print these variable assignments, you can use the generic version of this function called `satisfy_all_g`. This function takes an [output iterator](https://en.cppreference.com/w/cpp/named_req/OutputIterator) instead of returning a container. `std::ostream_iterator` is really elegant here since there is an overload of `operator<<` for `std::bitset`.
 ```C++
-m.satisfy_all<bool_v>(f, std::ostream_iterator<bool_v>(std::cout, "\n"));
+m.satisfy_all_g<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
 ```
-Diagrams can be tested for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using diagrams member function `equals`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example which gives it quite an elegant look. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
+Diagrams can be tested for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using diagrams member function `equals`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
 ```C++
 auto f1 = x(1) xor x(2);
 auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
 assert(f1.equals(f2));
 ```
-Last but not least, you might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). Function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the Wikipedia page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
+Last but not least, you might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). The function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the [Wikipedia](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
 ```C++
 m.to_dot_graph(std::cout, f);
 ```
@@ -118,13 +116,17 @@ auto const val1 = m.evaluate(f, std::vector {0u, 1u, 2u, 3u});
 auto const sc2  = m.satisfy_count(2, f);
 
 using var_vals_t = std::array<unsigned int, 4>;
-auto sas = std::vector<var_vals_t>();
-m.satisfy_all<var_vals_t>(2, f, std::back_inserter(sas));
+auto sas = m.satisfy_all<var_vals_t>(2, f);
 
 assert(val0 == val1);
 assert(sc2 == sas.size());
 ```
-As you can see the API is almost identical to the `bdd_manager`, however some functions need additional parameter that specifies logical level. Following functions can be used in `apply` with MDDs:
+As you can see the API is almost identical to the `bdd_manager`, however some functions need additional parameter that specifies logical level.  
+
+### In conclusion
+Above examples showed a basic functionality of the library. For further details see public interfaces of [bdd_manager](https://github.com/MichalMrena/DecisionDiagrams/blob/master/src/lib/bdd_manager.hpp) and [mdd_manager](https://github.com/MichalMrena/DecisionDiagrams/blob/master/src/lib/mdd_manager.hpp). From the implementation point of view, there is no difference between BDD and MDD. `bdd_manager` only exists because BDDs are more common and declarations of some functions can be simplified when `P = 2`.
+
+### Operations supported in by `apply`
 | Binary operator | Description                     | Operator overload | Note                                  |
 |:---------------:|---------------------------------|:-----------------:|---------------------------------------|
 |       AND       | Logical and.                    |         &&        | 0 is false, everything else is true.  |

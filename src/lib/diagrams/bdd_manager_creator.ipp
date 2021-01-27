@@ -23,7 +23,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::variables
         (bool_var_v const& vars) -> bdd_v
     {
-        return utils::map(vars, [this](auto const var)
+        return utils::fmap(vars, [this](auto const var)
         {
             return var.complemented ? this->variable_not(var.index)
                                     : this->variable(var.index);

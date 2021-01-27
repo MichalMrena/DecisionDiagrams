@@ -246,7 +246,7 @@ namespace mix::dd
             }
         });
 
-        auto const ranks = utils::filter_map(rankGroups, utils::not_empty, [](auto const& level)
+        auto const ranks = utils::filter_fmap(rankGroups, utils::not_empty, [](auto const& level)
         {
             return concat("{ rank = same; " , concat_range(level, " "), " }");
         });
