@@ -32,7 +32,7 @@ namespace mix::dd
     /* Creation */
     public:
         /**
-            @return Diagram with single vertex representing constant value @p val.
+            @return Diagram with single vertex representing constant value @p val .
          */
         auto constant (log_t const val) -> mdd_t;
 
@@ -59,7 +59,7 @@ namespace mix::dd
         auto vertex_count () const -> std::size_t;
 
         /**
-            @return Number of vertices in @p d.
+            @return Number of vertices in @p d .
          */
         auto vertex_count (mdd_t const& d) const -> std::size_t;
 
@@ -69,35 +69,35 @@ namespace mix::dd
         auto vertex_count (index_t const i) const -> std::size_t;
 
         /**
-            @brief Prints DOT representation of all vertices into @p ost.
+            @brief Prints DOT representation of all vertices into @p ost .
          */
         auto to_dot_graph (std::ostream& ost) const -> void;
 
         /**
-            @brief Prints DOT representation of @p d into @p ost.
+            @brief Prints DOT representation of @p d into @p ost .
          */
         auto to_dot_graph (std::ostream& ost, mdd_t const& d) const -> void;
 
         /**
-            @return Number of different variable assignments for which @p d evaluates to @p val.
+            @return Number of different variable assignments for which @p d evaluates to @p val .
          */
         auto satisfy_count (log_t const val, mdd_t& d) -> std::size_t;
 
         /**
-            @return std::vector containing variable indices that are in @p d.
+            @return std::vector containing variable indices that are in @p d .
          */
         auto dependency_set (mdd_t const& d) -> std::vector<index_t>;
 
         /**
-            @brief Enumerates variable indices that are in @p d into @p out.
+            @brief Enumerates variable indices that are in @p d into @p out .
          */
         template<class OutputIt>
         auto dependency_set_g (mdd_t const& d, OutputIt out) -> void;
 
         /**
-            @return Value of @p d for variable assignment @p vs.
+            @return Value of @p d for variable assignment @p vs .
             @tparam VariableValues something that holds values of individual variables.
-            @tparam GetIthVar function object that extract value of i-th variable from @p vs.
+            @tparam GetIthVar function object that extract value of i-th variable from @p vs .
                     std::vector, std::array, std::bitset (for P = 2), integral type (for P = 2)
                     are supported by default. In case you want to use custom one, check
                     var_vals.hpp for implementation details.
@@ -108,7 +108,7 @@ namespace mix::dd
 
         /**
             @return std::vector of all different variable assignments for which @p d
-                    evaluates to @p val.
+                    evaluates to @p val .
             @tparam VariableValues something that holds values of individual variables.
             @tparam SetIthVar function object that sets value of i-th variable in VariableValues {}.
                     std::vector, std::array, std::bitset (for P = 2), integral type (for P = 2)
@@ -121,7 +121,7 @@ namespace mix::dd
 
         /**
             @brief Generic version of satisfy_all.
-                   Variable assignments are enumerated into @p out.
+                   Variable assignments are enumerated into @p out .
             @tparam OutputIt output iterator.
          */
         template< class VariableValues
@@ -139,7 +139,7 @@ namespace mix::dd
         auto apply (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t;
 
         /**
-            @return Function @p d where @p i th variable is set to constant @p val.
+            @return Function @p d where @p i th variable is set to constant @p val .
          */
         auto restrict_var (mdd_t const& d, index_t const i, log_t const val) -> mdd_t;
 
@@ -180,7 +180,7 @@ namespace mix::dd
     /* Reliability */
     public:
         /**
-            @brief Calculates probability of each leaf in @p f based on @p ps.
+            @brief Calculates probability of each leaf in @p f based on @p ps .
             @param ps 2D array where ps[i][j] is the probability that i-th variable has value j.
          */
         auto calculate_probabilities (prob_table const& ps, mdd_t& f) -> void;
@@ -192,13 +192,13 @@ namespace mix::dd
         auto get_probability (log_t const level) const -> double;
 
         /**
-            @return Availability for logical @p level.
+            @return Availability for logical @p level .
                     Returned value is undefined if calculate_probabilities was not called before.
          */
         auto get_availability (log_t const level) const -> double;
 
         /**
-            @return Unavailability for logical @p level.
+            @return Unavailability for logical @p level .
                     Returned value is undefined if calculate_probabilities was not called before.
          */
         auto get_unavailability (log_t const level) const -> double;
@@ -207,7 +207,7 @@ namespace mix::dd
             @brief Calculates and returns availability.
                    Same as calling calculate_probabilities(ps, f) and get_availability(level).
             @param ps 2D array where ps[i][j] is the probability that i-th variable has value j.
-            @return Availability for logical @p level.
+            @return Availability for logical @p level .
          */
         auto availability (log_t const level, prob_table const& ps, mdd_t& f) -> double;
 
@@ -215,7 +215,7 @@ namespace mix::dd
             @brief Calculates and returns unavailability.
                    Same as calling calculate_probabilities(ps, f) and get_unavailability(level).
             @param ps 2D array where ps[i][j] is the probability that i-th variable has value j.
-            @return Availability for logical @p level.
+            @return Availability for logical @p level .
          */
         auto unavailability (log_t const level, prob_table const& ps, mdd_t& f) -> double;
 
@@ -338,17 +338,18 @@ namespace mix::dd
          */
         template< class VariableValues
                 , class SetIthVar = set_var_val<P, VariableValues> >
-        auto mcvs (mdd_v const& dpbds, log_t const level) -> std::vector<VariableValues>;
+        auto mcvs (mdd_t const& sf, log_t const logLevel) -> std::vector<VariableValues>;
 
         /**
-            @brief Generic version of mcvs.
-                   MCVs are enumerated into @p out.
+            @brief Generic version of mcvs. MCVs are enumerated into @p out .
+            @param sf       Diagram representing structure function.
+            @param logLevel Logical level of the @p sf for which MCVs should be calculated.
             @tparam OutputIt output iterator.
          */
         template< class VariableValues
                 , class OutputIt
                 , class SetIthVar = set_var_val<P, VariableValues> >
-        auto mcvs_g (mdd_v const& dpbds, log_t const level, OutputIt out) -> void;
+        auto mcvs_g (mdd_t const& sf, log_t const logLevel, OutputIt out) -> void;
 
     /* Other */
     public:
@@ -426,10 +427,10 @@ namespace mix::dd
         auto variable_impl (index_t const i, LeafVals&& vals, std::size_t const domain = P) -> mdd_t;
 
     /* Reliability internals */
-        public:
-        auto sum_terminals         (log_t const from, log_t const to) const -> double;
+    protected:
+        auto sum_terminals         (log_t const from, log_t const to) const    -> double;
         auto structural_importance (std::size_t const domainSize, mdd_t& dpbd) -> double;
-        auto to_dpbde              (mdd_t const& dpbd, log_t const level, index_t const i) -> mdd_t;
+        auto to_dpbd_e             (log_t const varFrom, index_t const varIndex, mdd_t const& dpbd) -> mdd_t;
         auto to_mnf                (mdd_t const& dpbd) -> mdd_t;
 
     /* Other internals */

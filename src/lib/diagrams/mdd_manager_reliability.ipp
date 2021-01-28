@@ -186,24 +186,33 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class VariableValues, class SetIthVar>
     auto mdd_manager<VertexData, ArcData, P>::mcvs
-        (mdd_v const& dpbds, log_t const level) -> std::vector<VariableValues>
+        (mdd_t const& sf, log_t const logLevel) -> std::vector<VariableValues>
     {
         auto cs = std::vector<VariableValues>();
-        this->template mcvs_g<VariableValues>(dpbds, level, std::back_inserter(cs));
+        this->template mcvs_g<VariableValues>(sf, logLevel, std::back_inserter(cs));
         return cs;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     template<class VariableValues, class OutputIt, class SetIthVar>
     auto mdd_manager<VertexData, ArcData, P>::mcvs_g
-        (mdd_v const& dpbds, log_t const level, OutputIt out) -> void
+        (mdd_t const& sf, log_t const logLevel, OutputIt out) -> void
     {
-        auto const is = utils::range(0u, static_cast<index_t>(dpbds.size())); // TODO fmap_i
-        auto dpbdes   = utils::fmap(utils::zip(is, dpbds), dpbds.size(), [=, this](auto const& pair)
+        auto const varCount = this->var_count();
+        auto dpbdes = std::vector<mdd_t>();
+
+        for (auto varIndex = 0u; varIndex < varCount; ++varIndex)
         {
-            auto const& [i, dpbd] = pair;
-            return this->to_dpbde(dpbd, level, i);
-        });
+            auto const varDomain = this->get_domain(varIndex);
+            for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
+            {
+                for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo)
+                {
+                    auto const dpbd = this->dpbd_integrated_3({varFrom, varTo}, logLevel, sf, varIndex);
+                    dpbdes.emplace_back(this->to_dpbd_e(varFrom, varIndex, dpbd));
+                }
+            }
+        }
         auto const conj = this->tree_fold<PI_CONJ>(dpbdes);
         this->template satisfy_all_g<VariableValues, OutputIt, SetIthVar>(1, conj, out);
     }
@@ -226,52 +235,47 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::to_dpbde
-        (mdd_t const& dpbd, log_t const level, index_t const i) -> mdd_t
+    auto mdd_manager<VertexData, ArcData, P>::to_dpbd_e
+        (log_t const varFrom, index_t const varIndex, mdd_t const& dpbd) -> mdd_t
     {
-        auto constexpr U   = log_val_traits<P>::undefined;
-        auto constexpr ND  = log_val_traits<P>::nodomain;
-        auto const root    = dpbd.get_root();
-        auto const rLevel  = vertexManager_.get_vertex_level(root);
-        auto const iLevel  = vertexManager_.get_level(i);
-        auto const iDomain = this->get_domain(i);
+        auto constexpr U     = log_val_traits<P>::undefined;
+        auto const root      = dpbd.get_root();
+        auto const rootLevel = vertexManager_.get_vertex_level(root);
+        auto const varLevel  = vertexManager_.get_level(varIndex);
+        auto const varDomain = this->get_domain(varIndex);
 
         // Special case when the new vertex for the i-th variable is inserted above the root.
-        if (iLevel < rLevel)
+        if (varLevel < rootLevel)
         {
-            auto const sons = utils::fill_array<P>([=, this](auto const val)
+            auto const sons = utils::fill_array_n<P>(varDomain, [=, this](auto const val)
             {
-                return val == (level - 1) ? root                              :
-                       val < iDomain      ? vertexManager_.terminal_vertex(U) :
-                                            vertexManager_.terminal_vertex(ND);
+                return val == varFrom ? root : vertexManager_.terminal_vertex(U);
             });
-            return mdd_t {vertexManager_.internal_vertex(i, sons)};
+            return mdd_t {vertexManager_.internal_vertex(varIndex, sons)};
         }
 
         // Normal case for all internal vertices.
         return this->transform(dpbd, [=, this](auto const v, auto&& l_this)
         {
-            auto const vLevel = vertexManager_.get_vertex_level(v);
-            return utils::fill_array<P>([=, this, &l_this](auto const val) // TODO fill_array_n podla domain
+            auto const vertexLevel  = vertexManager_.get_vertex_level(v);
+            auto const vertexDomain = this->get_domain(v->get_index());
+            return utils::fill_array_n<P>(vertexDomain, [=, this, &l_this](auto const val)
             {
-                auto const son    = v->get_son(val);
-                auto const sLevel = vertexManager_.get_vertex_level(son);
+                auto const son      = v->get_son(val);
+                auto const sonLevel = vertexManager_.get_vertex_level(son);
 
-                if (ND == vertexManager_.get_vertex_value(son)) // TODO nope ND už netreba
+                // This means that the new vertex goes in between current vertex and its val-th son.
+                if (varLevel > vertexLevel && varLevel < sonLevel)
                 {
-                    return son;
-                }
-                else if (iLevel > vLevel && iLevel < sLevel)
-                {
-                    return vertexManager_.internal_vertex(i, utils::fill_array<P>([=, this](auto const j) // TODO fill_array_n podla domain
+                    auto const newSons = utils::fill_array_n<P>(varDomain, [=, this](auto const j)
                     {
-                        return j == (level - 1) ? son :
-                               j < iDomain      ? vertexManager_.terminal_vertex(U) :
-                                                  vertexManager_.terminal_vertex(ND);
-                    }));
+                        return j == varFrom ? son : vertexManager_.terminal_vertex(U);
+                    });
+                    return vertexManager_.internal_vertex(varIndex, newSons);
                 }
                 else
                 {
+                    // New vertex will be inserted somewhere deeper.
                     return this->transform_step(son, l_this);
                 }
             });

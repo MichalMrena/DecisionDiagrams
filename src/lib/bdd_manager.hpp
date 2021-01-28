@@ -71,7 +71,7 @@ namespace mix::dd
         auto fussell_vesely_importances (bdd_v& dpbds, double_v const& ps, double const U)                 -> double_v;
 
         template<class VectorType>
-        auto mcvs (std::vector<bdd_t> dpbds) -> std::vector<VectorType>;
+        auto mcvs (std::vector<bdd_t> const& dpbds) -> std::vector<VectorType>;
 
     /* Internal aliases */
     private:
@@ -85,9 +85,9 @@ namespace mix::dd
 
     /* Reliability internals */
     public:
-        auto to_prob_table  (double_v const& ps) -> prob_table;
-        auto to_mnf         (bdd_t const& dpbd)  -> bdd_t;
-        auto to_dpbd_e      (index_t const i, bdd_t const& dpbd) -> bdd_t;
+        auto to_prob_table (double_v const& ps) -> prob_table;
+        auto to_mnf        (bdd_t const& dpbd)  -> bdd_t;
+        auto to_dpbd_e     (index_t const i, bdd_t const& dpbd) -> bdd_t;
     };
 
     inline auto make_bdd_manager(std::size_t const varCount);

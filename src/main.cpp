@@ -118,7 +118,7 @@ auto mss_reliability_test()
     printl(concat("SI " , concat_range(SIs1, " ")));
     printl(concat("BI " , concat_range(BIs1, " ")));
 
-    auto const mcvs = m.mcvs<vec_t>(dpbds, 1);
+    auto const mcvs = m.mcvs<vec_t>(sf, 1);
     for (auto const& cut : mcvs)
     {
         printl(concat("(", concat_range(cut, ", "), ")"));

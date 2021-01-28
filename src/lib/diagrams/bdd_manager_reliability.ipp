@@ -130,7 +130,7 @@ namespace mix::dd
     template<class VertexData, class ArcData>
     template<class VectorType>
     auto bdd_manager<VertexData, ArcData>::mcvs
-        (std::vector<bdd_t> dpbds) -> std::vector<VectorType>
+        (std::vector<bdd_t> const& dpbds) -> std::vector<VectorType>
     {
         auto dpbdes = utils::fmap_i(dpbds, std::bind_front(&bdd_manager::to_dpbd_e, this));
         auto const conj = this->template tree_fold<PI_CONJ>(dpbdes);
@@ -171,41 +171,6 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::to_dpbd_e
         (index_t const i, bdd_t const& dpbd) -> bdd_t
     {
-        auto const root   = dpbd.get_root();
-        auto const rLevel = this->vertexManager_.get_vertex_level(root);
-        auto const iLevel = this->vertexManager_.get_level(i);
-
-        // Special case when the new vertex for the i-th variable is inserted above the root.
-        if (iLevel < rLevel)
-        {
-            auto constexpr U   = log_val_traits<2>::undefined;
-            auto const uLeaf   = this->vertexManager_.terminal_vertex(U);
-            auto const newRoot = this->vertexManager_.internal_vertex(i, vertex_a {root, uLeaf});
-            return bdd_t {newRoot};
-        }
-
-        // Normal case for all internal vertices.
-        return this->transform(dpbd, [this, iLevel, i](auto const v, auto&& l_this)
-        {
-            auto constexpr U  = log_val_traits<2>::undefined;
-            auto const vLevel = this->vertexManager_.get_vertex_level(v);
-            return utils::fill_array<2>([this, &l_this, i, v, vLevel, iLevel](auto const val)
-            {
-                auto const son    = v->get_son(val);
-                auto const sLevel = this->vertexManager_.get_vertex_level(son);
-                if (iLevel > vLevel && iLevel < sLevel)
-                {
-                    // New vertex for the i-th variable is inserted between vertex v and his son.
-                    // No need to go deeper.
-                    auto const uLeaf = this->vertexManager_.terminal_vertex(U);
-                    return this->vertexManager_.internal_vertex(i, vertex_a {son, uLeaf});
-                }
-                else
-                {
-                    // No insertion point here, we need to go deeper.
-                    return this->transform_step(son, l_this);
-                }
-            });
-        });
+        return base::to_dpbd_e(0, i, dpbd);
     }
 }

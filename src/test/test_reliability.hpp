@@ -31,7 +31,7 @@ namespace mix::dd::test
     }
 
     template<class Range1, class Range2>
-    auto const equal_set(Range1&& r1, Range2&& r2)
+    auto equal_set(Range1&& r1, Range2&& r2)
     {
         return std::size(r1) == std::size(r2)
            and std::is_permutation(std::begin(r1), std::end(r1), std::begin(r2));
