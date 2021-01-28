@@ -6,6 +6,7 @@
 #include "lib/bdd_manager.hpp"
 
 #include "test/test_mdd.hpp"
+#include "test/test_reliability.hpp"
 
 #include <bitset>
 #include <cassert>
@@ -353,7 +354,7 @@ auto main() -> int
 
     // basic_test();
     // pla_test();
-    bss_reliability_test();
+    // bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
@@ -364,6 +365,7 @@ auto main() -> int
     // test_mul_absorbing();
 
     // test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
+    test::test_bss();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

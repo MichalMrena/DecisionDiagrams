@@ -42,7 +42,7 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::unavailability
         (double_v const& ps, bdd_t& f) -> double
     {
-        this->calculate_probabilities(f, ps);
+        this->calculate_probabilities(ps, f);
         return base::get_probability(0);
     }
 
