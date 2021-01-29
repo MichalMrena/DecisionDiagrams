@@ -124,7 +124,7 @@ assert(sc2 == sas.size());
 As you can see the API is almost identical to the `bdd_manager`, however some functions need additional parameter that specifies logical level.  
 
 ### In conclusion
-Above examples showed a basic functionality of the library. For further details see public interfaces of [bdd_manager](https://github.com/MichalMrena/DecisionDiagrams/blob/master/src/lib/bdd_manager.hpp) and [mdd_manager](https://github.com/MichalMrena/DecisionDiagrams/blob/master/src/lib/mdd_manager.hpp). From the implementation point of view, there is no difference between BDD and MDD. `bdd_manager` only exists because BDDs are more common and declarations of some functions can be simplified when `P = 2`.
+Above examples showed a basic functionality of the library. For further details see public interfaces of [bdd_manager](./src/lib/bdd_manager.hpp) and [mdd_manager](./src/lib/mdd_manager.hpp). From the implementation point of view, there is no difference between BDD and MDD. `bdd_manager` only exists because BDDs are more common and declarations of some functions can be simplified when `P = 2`.
 
 ### Operations supported by `apply`
 | Binary operator | Description                     | Operator overload | Note                                  |
