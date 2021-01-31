@@ -327,25 +327,14 @@ auto swap_var_test()
     // m.to_dot_graph(std::cout);
 }
 
-auto test_mul_absorbing()
+auto test_stack_algo()
 {
-    auto m  = make_mdd_manager<3>(3);
-    auto& x = m;
-    register_manager(m);
-    m.set_domains({3, 2, 3});
-    auto f = x(0) * x(1) + x(2);
-    auto g = f * m.constant(0);
-
-    // m.to_dot_graph(std::cout, f);
-    // m.to_dot_graph(std::cout, g);
-
-    auto const sc = mix::utils::fill_array<3>([&](auto const i)
-    {
-        return m.satisfy_count(i, f);
-    });
-
-    mix::utils::printl(mix::utils::concat_range(sc, " "));
-    // mix::utils::printl(m.satisfy_count(0, f));
+    using log_t   = typename log_val_traits<4>::type;
+    auto const vs = std::vector<log_t> {0, 0, 0, 0, 0, 1, 1, 2, 0, 1, 1, 2, 0, 2, 3, 3};
+    auto m        = make_mdd_manager<4>(3);
+    m.set_domains({2, 2, 4});
+    auto const d  = m.from_vector(std::begin(vs), std::end(vs));
+    m.to_dot_graph(std::cout, d);
 }
 
 auto main() -> int
@@ -363,9 +352,11 @@ auto main() -> int
     // swap_var_test();
     // eq_test();
     // test_mul_absorbing();
+    // test_stack_algo();
 
-    // test::test_mdd<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
-    test::test_bss();
+    // test::test_mdd_random<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
+    test::test_mdd_vector(10);
+    // test::test_bss();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

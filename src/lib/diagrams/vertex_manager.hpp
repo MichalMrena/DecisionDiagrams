@@ -39,11 +39,11 @@ namespace mix::dd
         auto set_order (index_v levelToIndex) -> void;
 
     public:
-        auto terminal_vertex     (log_t const val)       -> vertex_t*;
-        auto get_terminal_vertex (log_t const val) const -> vertex_t*;
-        auto has_terminal_vertex (log_t const val) const -> bool;
-        auto internal_vertex     (index_t const index, vertex_a const& sons) -> vertex_t*;
-        auto get_vertex_level           (vertex_t* const v) const -> level_t;
+        auto terminal_vertex     (log_t const val)         -> vertex_t*; // TODO rename create_terminal_vertex
+        auto get_terminal_vertex (log_t const val) const   -> vertex_t*;
+        auto has_terminal_vertex (log_t const val) const   -> bool; // TODO toto sa niekde používa?!
+        auto internal_vertex     (index_t const index, vertex_a const& sons) -> vertex_t*; // TODO rename create_internal_vertex
+        auto get_vertex_level    (vertex_t* const v) const -> level_t;
         auto get_level           (index_t const i)   const -> level_t;
         auto get_index           (level_t const l)   const -> index_t;
         auto get_vertex_value    (vertex_t* const v) const -> log_t;
@@ -53,6 +53,7 @@ namespace mix::dd
         auto vertex_count        (index_t   const i) const -> std::size_t;
         auto vertex_count        () const -> std::size_t;
         auto var_count           () const -> std::size_t;
+        auto get_last_level      () const -> level_t;
         auto collect_garbage     ()       -> void;
         auto clear               ()       -> void;
 
@@ -182,8 +183,8 @@ namespace mix::dd
             return sons.front();
         }
 
-        auto& indexMap = indexToMap_[index];
-        auto existing  = indexMap.find(sons);
+        auto& indexMap      = indexToMap_[index];
+        auto const existing = indexMap.find(sons);
         if (indexMap.end() != existing)
         {
             return existing->second;
@@ -289,6 +290,13 @@ namespace mix::dd
         () const -> std::size_t
     {
         return indexToMap_.size();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_last_level
+        () const -> level_t
+    {
+        return static_cast<level_t>(this->var_count() - 1);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

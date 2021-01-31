@@ -73,10 +73,31 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::get_index
+        (level_t const l) const -> index_t
+    {
+        return vertexManager_.get_index(l);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::get_level
+        (index_t const i) const -> level_t
+    {
+        return vertexManager_.get_level(i);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::get_domain
         (index_t const i) const -> log_t
     {
         return domains_.size() ? domains_[i] : P;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::get_last_level
+        () const -> level_t
+    {
+        return vertexManager_.get_last_level();
     }
 
     template<class VertexData, class ArcData, std::size_t P>

@@ -52,23 +52,23 @@ namespace mix::dd::test
         using log_v = std::vector<log_t>;
 
     public:
-        domain_iterator (std::size_t const varCount, uint_v domains) :
+        domain_iterator (uint_v domains) :
             domains_ (std::move(domains)),
-            varVals_ (varCount)
+            varVals_ (domains_.size())
         {
         };
-
-        auto var_vals () const -> log_v const&
-        {
-            return varVals_;
-        }
 
         auto has_more () const -> bool
         {
             return not varVals_.empty();
         }
 
-        auto move_next () -> void
+        auto operator* () const -> log_v const&
+        {
+            return varVals_;
+        }
+
+        auto operator++ () -> void
         {
             auto const varCount = varVals_.size();
             auto overflow       = false;
@@ -251,17 +251,17 @@ namespace mix::dd::test
                        , mvl_function const& f
                        , mdd_t<P> const&     d )
     {
-        auto enumerator = domain_iterator<P>(MddVariableCount, f.domains);
+        auto enumerator = domain_iterator<P>(f.domains);
 
         while (enumerator.has_more())
         {
-            auto const realVal    = eval_function<P>(f, enumerator.var_vals());
-            auto const diagramVal = m.evaluate(d, enumerator.var_vals());
+            auto const realVal    = eval_function<P>(f, *enumerator);
+            auto const diagramVal = m.evaluate(d, *enumerator);
             if (realVal != diagramVal)
             {
                 return utils::concat( "Failed. ", "Got ", diagramVal, ", expected ", realVal, "" );
             }
-            enumerator.move_next();
+            ++enumerator;
         }
 
         return std::string("OK");
@@ -274,13 +274,13 @@ namespace mix::dd::test
     {
         auto const expectedScs = [&]()
         {
-            auto vs  = domain_iterator<P>(MddVariableCount, f.domains);
+            auto vs  = domain_iterator<P>(f.domains);
             auto scs = std::array<unsigned, P> {};
 
             while (vs.has_more())
             {
-                ++scs[eval_function<P>(f, vs.var_vals())];
-                vs.move_next();
+                ++scs[eval_function<P>(f, *vs)];
+                ++vs;
             }
 
             return scs;
@@ -310,17 +310,17 @@ namespace mix::dd::test
     {
         auto const expectedScs = [&]()
         {
-            auto vs  = domain_iterator<P>(MddVariableCount, f.domains);
+            auto vs  = domain_iterator<P>(f.domains);
             auto scs = std::array<unsigned, P> {};
 
             while (vs.has_more())
             {
-                auto const val = eval_function<P>(f, vs.var_vals());
+                auto const val = eval_function<P>(f, *vs);
                 if (!is_nodomain<P>(val))
                 {
                     ++scs[val];
                 }
-                vs.move_next();
+                ++vs;
             }
 
             return scs;
@@ -376,13 +376,13 @@ namespace mix::dd::test
         auto const v2 = 1;
         auto const d_ = m.restrict_var(m.restrict_var(d, i1, v1), i2, v2);
 
-        auto enumerator = domain_iterator<P>(MddVariableCount, f.domains);
+        auto enumerator = domain_iterator<P>(f.domains);
 
         while (enumerator.has_more())
         {
             auto const varVals    = [&]()
             {
-                auto vs = enumerator.var_vals();
+                auto vs = *enumerator;
                 vs[i1] = v1;
                 vs[i2] = v2;
                 return vs;
@@ -394,7 +394,7 @@ namespace mix::dd::test
                 return utils::concat( "Failed. ", "x", i1, "=", v1, ", x", i2, "=", v2, ". "
                                     , "Got ", diagramVal, ", expected ", realVal, "." );
             }
-            enumerator.move_next();
+            ++enumerator;
         }
 
         return std::string("OK");
@@ -503,10 +503,10 @@ namespace mix::dd::test
     }
 
     template<std::size_t P>
-    auto test_mdd ( std::size_t const n
-                  , order_e const     order  = order_e::Default
-                  , domain_e const    domain = domain_e::Homogenous
-                  , seed_t const      seed   = 0u )
+    auto test_mdd_random ( std::size_t const n
+                         , order_e const     order  = order_e::Default
+                         , domain_e const    domain = domain_e::Homogenous
+                         , seed_t const      seed   = 0u )
     {
         auto initSeed        = 0ul == seed ? std::random_device () () : seed;
         auto seeder          = int_rng<seed_t>(0u, UIntMax, initSeed);
@@ -550,6 +550,96 @@ namespace mix::dd::test
             std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
             std::cout << "        Operators       " << test_operators<P>(manager, diagram)                               << '\n';
             std::cout << "\n";
+        }
+    }
+
+    template<std::size_t P>
+    auto test_mdd_vector_eval( uint_v const& vector
+                             , uint_v const& domains
+                             , manager_t<P>& manager  )
+    {
+        auto const d       = manager.from_vector(vector);
+        auto enumerator    = domain_iterator<P>(domains);
+        auto const offsets = [&]()
+        {
+            auto os = std::vector<uint>(domains.size());
+            os[0] = 1;
+            for (auto i = 1u; i < domains.size(); ++i)
+            {
+                os[i] = os[i - 1] * domains[domains.size() - i];
+            }
+            std::reverse(std::begin(os), std::end(os));
+            return os;
+        }();
+
+        while (enumerator.has_more())
+        {
+            auto const vals  = *enumerator;
+            auto const index = [&]()
+            {
+                auto idx = 0u;
+                for (auto i = 0u; i < vals.size(); ++i)
+                {
+                    idx += vals[i] * offsets[i];
+                }
+                return idx;
+            }();
+            auto const realVal = vector[index];
+            auto const diagramVal = manager.evaluate(d, *enumerator);
+
+            if (realVal != diagramVal)
+            {
+                return utils::concat("Failed. ", "Got ", diagramVal, ", expected ", realVal, "." );
+            }
+
+            ++enumerator;
+        }
+
+        return std::string("OK");
+    }
+
+    auto test_mdd_vector( std::size_t const n
+                        , seed_t const seed = 0u )
+    {
+        auto constexpr VarCount = 10;
+        auto constexpr P        = 4;
+        using log_t    = typename log_val_traits<4>::type;
+        auto initSeed  = 0ul == seed ? std::random_device () () : seed;
+        auto seeder    = int_rng<seed_t>(0u, UIntMax, initSeed);
+        auto rngDomain = int_rng<log_t>(2, P, seeder.next_int());
+        auto rngValue  = int_rng<log_t>(0, P - 1, seeder.next_int());
+        auto manager   = make_mdd_manager<P>(VarCount);
+
+        for (auto i = 0u; i < n; ++i)
+        {
+            auto const domains    = utils::fill_vector(VarCount, [&](auto const){ return rngDomain.next_int(); });
+            auto const domainProd = std::reduce(std::begin(domains), std::end(domains), 1u, std::multiplies<>());
+            auto const vector     = utils::fill_vector(domainProd, [&](auto const){ return rngValue.next_int(); });
+            manager.set_domains(domains);
+            std::cout << test_mdd_vector_eval<P>(vector, domains, manager) << '\n';
+
+            manager.clear();
+        }
+        {
+            auto m = make_mdd_manager<4>(3);
+            auto const domains = {2u, 2u, 4u};
+            auto const vector  = {0u, 0u, 0u, 0u, 0u, 1u, 1u, 2u, 0u, 1u, 1u, 2u, 0u, 2u, 3u, 3u};
+            m.set_domains(domains);
+            std::cout << test_mdd_vector_eval<4>(vector, domains, m) << '\n';
+        }
+        {
+            auto m = make_mdd_manager<3>(4);
+            auto const domains = {2u, 3u, 2u, 3u};
+            auto const vector  = {0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 2u, 2u, 2u, 2u, 2u, 1u, 2u, 2u, 2u, 2u, 2u};
+            m.set_domains(domains);
+            std::cout << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
+        }
+        {
+            auto m = make_mdd_manager<3>(4);
+            auto const domains = {3u, 2u, 2u, 3u};
+            auto const vector  = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 0u, 0u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u};
+            m.set_domains(domains);
+            std::cout << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
         }
     }
 }

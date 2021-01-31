@@ -51,6 +51,18 @@ namespace mix::dd
          */
         auto operator() (index_t const i) -> mdd_t;
 
+        /**
+               TODO
+         */
+        template<class InputIt>
+        auto from_vector (InputIt first, InputIt last) -> mdd_t;
+
+        /**
+               TODO
+         */
+        template<class Range>
+        auto from_vector (Range&& range) -> mdd_t;
+
     /* Tools */
     public:
         /**
@@ -436,7 +448,10 @@ namespace mix::dd
     /* Other internals */
     public:
         auto var_count          () const -> std::size_t;
+        auto get_index          (level_t const l) const -> index_t;
+        auto get_level          (index_t const i) const -> level_t;
         auto get_domain         (index_t const i) const -> log_t;
+        auto get_last_level     () const -> level_t;
         auto get_domain_product () const -> std::size_t;
 
     /* Member variables */

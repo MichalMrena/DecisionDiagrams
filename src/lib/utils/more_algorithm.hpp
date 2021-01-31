@@ -5,6 +5,7 @@
 #include "more_type_traits.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <iterator>
 #include <type_traits>
 #include <utility>
@@ -209,6 +210,24 @@ namespace mix::utils
         auto pos = std::find(first, last, t);
         return pos != last ? static_cast<std::size_t>(std::distance(first, pos))
                            : npos;
+    }
+
+    /**
+        @brief Checks whether all elements in the [ @p first, @p last ) are the same.
+     */
+    template<class InputIt>
+    auto all_same (InputIt first, InputIt last) -> bool
+    {
+        return last == std::adjacent_find(first, last, std::not_equal_to<>());
+    }
+
+    /**
+        @brief Checks whether all elements in the @p range are the same.
+     */
+    template<class Range>
+    auto all_same (Range&& range) -> bool
+    {
+        return all_same(std::begin(range), std::end(range));
     }
 }
 
