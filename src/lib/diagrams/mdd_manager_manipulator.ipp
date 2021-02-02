@@ -22,7 +22,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::restrict_var
         (mdd_t const& d, index_t const i, log_t const val) -> mdd_t
     {
-        return this->transform(d, [=, this](auto const v, auto&& l_this)
+        return this->transform(d, [=, this](auto&& l_this, auto const v)
         {
             auto const domain = this->get_domain(v->get_index());
             if (v->get_index() == i)
@@ -38,7 +38,7 @@ namespace mix::dd
                 // Nothing to restrict here so we just continue downwards.
                 return utils::fill_array_n<P>(domain, [this, &l_this, v](auto const i)
                 {
-                    return this->transform_step(v->get_son(i), l_this);
+                    return this->transform_step(l_this, v->get_son(i));
                 });
             }
         });
@@ -178,7 +178,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::transform
         (mdd_t const& d, Transformator&& transform_sons) -> mdd_t
     {
-        auto const root = this->transform_step(d.get_root(), transform_sons);
+        auto const root = this->transform_step(transform_sons, d.get_root());
         transformMemo_.clear();
         return mdd_t {root};
     }
@@ -186,7 +186,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class Transformator>
     auto mdd_manager<VertexData, ArcData, P>::transform_step
-        (vertex_t* const v, Transformator&& transform_sons) -> vertex_t*
+        (Transformator&& transform_sons, vertex_t* const v) -> vertex_t*
     {
         auto const memoIt = transformMemo_.find(v);
         if (transformMemo_.end() != memoIt)
@@ -200,7 +200,7 @@ namespace mix::dd
         }
 
         auto const u = vertexManager_.internal_vertex( v->get_index()
-                                                     , transform_sons(v, transform_sons) );
+                                                     , transform_sons(transform_sons, v) );
         transformMemo_.emplace(v, u);
         return u;
     }

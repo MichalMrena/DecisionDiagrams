@@ -13,6 +13,7 @@
 
 using namespace mix::dd;
 using namespace mix::utils;
+using namespace mix::dd::test;
 
 auto bss_reliability_test()
 {
@@ -45,78 +46,29 @@ auto bss_reliability_test()
     printl(concat("MCVs: " , concat_range(MCVs, ", ")));
 }
 
-auto const serial23 = [](auto const lhs, auto const rhs)
-{
-    using log_t = typename log_val_traits<3>::type;
-    auto constexpr table = std::array<std::array<log_t, 3>, 2>
-    {{
-        {0, 0, 0},
-        {0, 1, 2},
-    }};
-    return table.at(lhs).at(rhs);
-};
-
-auto const parallel23 = [](auto const lhs, auto const rhs)
-{
-    using log_t = typename log_val_traits<3>::type;
-    auto constexpr table = std::array<std::array<log_t, 3>, 2>
-    {{
-        {0, 1, 2},
-        {1, 1, 2},
-    }};
-    return table.at(lhs).at(rhs);
-};
-
-auto const parallel33 = [](auto const lhs, auto const rhs)
-{
-    using log_t = typename log_val_traits<3>::type;
-    auto constexpr table = std::array<std::array<log_t, 3>, 3>
-    {{
-        {0, 1, 1},
-        {1, 2, 2},
-        {1, 2, 2},
-    }};
-    return table.at(lhs).at(rhs);
-};
-
-auto constexpr U = log_val_traits<3>::undefined;
-
-template<std::size_t P> struct serial23_t   : public mix::dd::impl::bin_op<decltype(serial23), P, U> {};
-template<std::size_t P> struct parallel23_t : public mix::dd::impl::bin_op<decltype(parallel23), P, U> {};
-template<std::size_t P> struct parallel33_t : public mix::dd::impl::bin_op<decltype(parallel33), P, U> {};
-
-template<std::size_t P> constexpr auto op_id (serial23_t<P>)   { return op_id_t {15}; }
-template<std::size_t P> constexpr auto op_id (parallel23_t<P>) { return op_id_t {16}; }
-template<std::size_t P> constexpr auto op_id (parallel33_t<P>) { return op_id_t {17}; }
-template<std::size_t P> constexpr auto op_is_commutative (serial23_t<P>)   { return false; }
-template<std::size_t P> constexpr auto op_is_commutative (parallel23_t<P>) { return false; }
-template<std::size_t P> constexpr auto op_is_commutative (parallel33_t<P>) { return false; }
-
 auto mss_reliability_test()
 {
     using prob_table = typename mdd_manager<double, void, 3>::prob_table;
     using vec_t      = std::array<unsigned int, 4>;
-
-    auto m  = mdd_manager<double, void, 3>(4);
+    using log_t      = typename log_val_traits<3>::type;
+    auto m           = mdd_manager<double, void, 3>(4);
     m.set_domains({2, 3, 2, 3});
-    auto& x = m;
-    auto sf = m.apply<parallel33_t>( m.apply<serial23_t>(x(0), x(1))
-                                   , m.apply<parallel23_t>(x(2), x(3)) );
-    auto dpbds = m.dpbds_integrated_1({1, 0}, 1, sf);
-    auto const ps = prob_table{ {0.1, 0.9, 0.0}
-                              , {0.2, 0.6, 0.2}
-                              , {0.3, 0.7, 0.0}
-                              , {0.1, 0.6, 0.3} };
+    auto sf          = m.from_vector(std::vector<log_t> {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2});
+    auto dpbds       = m.dpbds_integrated_1({1, 0}, 1, sf);
+    auto const ps    = prob_table{ {0.1, 0.9, 0.0}
+                                 , {0.2, 0.6, 0.2}
+                                 , {0.3, 0.7, 0.0}
+                                 , {0.1, 0.6, 0.3} };
     m.calculate_probabilities(ps, sf);
-    auto const A1   = m.get_availability(1);
-    auto const A2   = m.get_availability(2);
-    auto const SIs1 = m.structural_importances(dpbds);
-    auto const BIs1 = m.birnbaum_importances(ps, dpbds);
+    auto const A1    = m.get_availability(1);
+    auto const A2    = m.get_availability(2);
+    auto const SIs1  = m.structural_importances(dpbds);
+    auto const BIs1  = m.birnbaum_importances(ps, dpbds);
 
     printl(concat("A1 = " , A1));
     printl(concat("A2 = " , A2));
-    printl(concat("SI " , concat_range(SIs1, " ")));
-    printl(concat("BI " , concat_range(BIs1, " ")));
+    printl(concat("SI "   , concat_range(SIs1, " ")));
+    printl(concat("BI "   , concat_range(BIs1, " ")));
 
     auto const mcvs = m.mcvs<vec_t>(sf, 1);
     for (auto const& cut : mcvs)
@@ -186,21 +138,6 @@ auto pla_test()
     }
 }
 
-auto basic_test()
-{
-    using manager_t = mdd_manager<double, void, 2>;
-    auto manager    = manager_t(100);
-
-    auto zero = manager.constant(0);
-    auto one  = manager.constant(1);
-    auto x1   = manager.variable(1);
-    auto x2   = manager.variable(2);
-    auto x3   = manager.variable(3);
-    auto prod = manager.apply<AND>(x1, x2);
-
-    manager.to_dot_graph(std::cout);
-}
-
 auto example_basic_usage_bdd()
 {
     using namespace mix::dd;
@@ -258,7 +195,7 @@ auto example_basic_usage_bdd()
     auto f1 = x(1) xor x(2);
     auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
     assert(f1.equals(f2));
-    // m.to_dot_graph(std::cout, f1);
+    m.to_dot_graph(std::cout, f1);
 }
 
 auto example_basic_usage_mdd()
@@ -341,9 +278,7 @@ auto main() -> int
 {
     auto watch = stopwatch();
 
-    // basic_test();
     // pla_test();
-    // bss_reliability_test();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
@@ -354,9 +289,10 @@ auto main() -> int
     // test_mul_absorbing();
     // test_stack_algo();
 
-    // test::test_mdd_random<3>(5, test::order_e::Random, test::domain_e::Nonhomogenous);
-    test::test_mdd_vector(10);
-    // test::test_bss();
+    // test_mdd_random<3>(5, order_e::Random, domain_e::Nonhomogenous);
+    // test_mdd_vector(10);
+    test_bss();
+    // test_mss();
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

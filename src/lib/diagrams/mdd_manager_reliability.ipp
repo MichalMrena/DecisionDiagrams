@@ -94,8 +94,17 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbd_integrated_3
         (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply<AND>( this->apply<LESS>(this->restrict_var(sf, i, var.from), this->constant(fVal))
-                               , this->apply<GREATER_EQUAL>(this->restrict_var(sf, i, var.to), this->constant(fVal)) );
+        auto const fValConstant = this->constant(fVal);
+        if (var.from < var.to)
+        {
+            return this->apply<AND>( this->apply<LESS>(this->restrict_var(sf, i, var.from), fValConstant)
+                                   , this->apply<GREATER_EQUAL>(this->restrict_var(sf, i, var.to), fValConstant) );
+        }
+        else
+        {
+            return this->apply<AND>( this->apply<GREATER_EQUAL>(this->restrict_var(sf, i, var.from), fValConstant)
+                                   , this->apply<LESS>(this->restrict_var(sf, i, var.to), fValConstant) );
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -143,10 +152,8 @@ namespace mix::dd
         (mdd_v& dpbds) -> double_v
     {
         auto const domProduct = this->get_domain_product();
-        auto zs = utils::zip(utils::range(0u, static_cast<index_t>(dpbds.size())), dpbds);
-        return utils::fmap(zs, dpbds.size(), [=, this](auto&& pair)
+        return utils::fmap_i(dpbds, [=, this](auto const i, auto& d)
         {
-            auto&& [i, d] = pair;
             return this->structural_importance(domProduct / this->get_domain(i), d);
         });
     }
@@ -255,7 +262,7 @@ namespace mix::dd
         }
 
         // Normal case for all internal vertices.
-        return this->transform(dpbd, [=, this](auto const v, auto&& l_this)
+        return this->transform(dpbd, [=, this](auto&& l_this, auto const v)
         {
             auto const vertexLevel  = vertexManager_.get_vertex_level(v);
             auto const vertexDomain = this->get_domain(v->get_index());
@@ -276,7 +283,7 @@ namespace mix::dd
                 else
                 {
                     // New vertex will be inserted somewhere deeper.
-                    return this->transform_step(son, l_this);
+                    return this->transform_step(l_this, son);
                 }
             });
         });

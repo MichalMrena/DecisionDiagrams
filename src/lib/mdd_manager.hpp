@@ -428,7 +428,7 @@ namespace mix::dd
         auto transform (mdd_t const& d, Transformator&& transform_sons) -> mdd_t;
 
         template<class Transformator>
-        auto transform_step (vertex_t* const v, Transformator&& transform_sons) -> vertex_t*;
+        auto transform_step (Transformator&& transform_sons, vertex_t* const v) -> vertex_t*;
 
     /* Creator internals */
     protected:

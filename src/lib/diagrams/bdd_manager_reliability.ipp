@@ -151,19 +151,20 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::to_mnf
         (bdd_t const& dpbd) -> bdd_t
     {
-        return this->transform(dpbd, [this](auto const v, auto&& l_this)
+        auto const leaf0 = base::vertexManager_.terminal_vertex(0);
+        return this->transform(dpbd, [=, this](auto&& l_this, auto const v)
         {
             // If 0-th son is the false leaf we set 0-th son to 1-th son.
             // Otherwise we continue down to the 0-th son.
-            // We always continue to 1-th son.
-            auto sons  = vertex_a {};
-            auto son0  = v->get_son(0);
-            auto son1  = v->get_son(1);
-            auto son1t = this->transform_step(son1, l_this); // TODO premyslieť si tú rekurziu, aj keď asi ak son0 nie je 0 pred zanorením asi nebude ani potom
-            auto const leaf0 = this->vertexManager_.terminal_vertex(0);
-            sons[0] = son0 == leaf0 ? son1t : this->transform_step(son0, l_this);
-            sons[1] = son1t;
-            return sons;
+            // We always continue to the 1-th son.
+            auto const son0    = v->get_son(0);
+            auto const son1    = v->get_son(1);
+            auto const newSon1 = this->transform_step(l_this, son1);
+            auto const newSon0 = v->get_son(0) == leaf0
+                                     ? newSon1
+                                     : this->transform_step(l_this, son0);
+
+            return vertex_a {newSon0, newSon1};
         });
     }
 
