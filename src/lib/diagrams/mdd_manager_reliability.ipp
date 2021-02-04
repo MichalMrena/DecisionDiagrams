@@ -213,11 +213,8 @@ namespace mix::dd
             auto const varDomain = this->get_domain(varIndex);
             for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
             {
-                for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo)
-                {
-                    auto const dpbd = this->dpbd_integrated_3({varFrom, varTo}, logLevel, sf, varIndex);
-                    dpbdes.emplace_back(this->to_dpbd_e(varFrom, varIndex, dpbd));
-                }
+                auto const dpbd = this->dpbd_integrated_3({varFrom, varFrom + 1}, logLevel, sf, varIndex);
+                dpbdes.emplace_back(this->to_dpbd_e(varFrom, varIndex, dpbd));
             }
         }
         auto const conj = this->tree_fold<PI_CONJ>(dpbdes);
@@ -302,23 +299,30 @@ namespace mix::dd
                 return this->transform_step(v->get_son(i), l_this);
             });
 
-            for (auto r = 1u; r < P; ++r)
+            for (auto r = P; r > 0;)
             {
-                if (sons[r] == leaf1)
+                --r;
+                if (r > 0 && sons[r] == leaf1)
                 {
                     std::fill_n(std::begin(sons), r, leaf1);
+                    break;
+                }
+
+                if (r < P - 1 && sons[r] == leaf0)
+                {
+                    sons[r] = sons[r + 1];
                 }
             }
 
             // TODO check 0 0 0 1
             //              ^
-            for (auto r = 0u; r < P - 1; ++r)
-            {
-                if (sons[r] == leaf0)
-                {
-                    sons[r] = sons[r + 1];
-                }
-            }
+            // for (auto r = 0u; r < P - 1; ++r)
+            // {
+            //     if (sons[r] == leaf0)
+            //     {
+            //         sons[r] = sons[r + 1];
+            //     }
+            // }
 
             return sons;
         });
