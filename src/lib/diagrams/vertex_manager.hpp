@@ -70,8 +70,8 @@ namespace mix::dd
         static auto dec_ref_count (vertex_t* const v) -> void;
 
     private:
-        // using index_map      = std::unordered_map<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
-        using index_map      = std::unordered_multimap<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
+        using index_map      = std::unordered_map<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
+        // using index_map      = std::unordered_multimap<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
         using index_map_v    = std::vector<index_map>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
         using alloc_t        = std::allocator<vertex_t>;

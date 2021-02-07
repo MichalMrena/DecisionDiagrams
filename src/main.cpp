@@ -114,8 +114,8 @@ auto mss_playground()
 auto pla_test()
 {
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
+    auto files = {"10-adder_col.pla", "11-adder_col.pla", "12-adder_col.pla", "13-adder_col.pla", "14-adder_col.pla", "15-adder_col.pla", "16-adder_col.pla"};
     // auto files = {"15-adder_col.pla"};
-    auto files = {"clip.pla"};
 
     auto load_pla = [plaDir](auto&& fileName)
     {
@@ -123,18 +123,18 @@ auto pla_test()
         auto file           = pla_file::load_file(filePath);
         auto manager        = bdd_manager<void, void>(file.variable_count());
         auto const ds       = manager.from_pla(file, fold_e::tree);
-        auto sum            = 0ul;
-        for (auto& d : ds)
-        {
-            sum += manager.vertex_count(d);
-        }
-        std::cout << fileName << " [" << sum << "] " << std::endl;
+        // auto sum            = 0ul;
+        // for (auto& d : ds)
+        // {
+        //     sum += manager.vertex_count(d);
+        // }
+        // std::cout << fileName << " [" << sum << "] " << std::endl;
     };
 
     for (auto fileName : files)
     {
         auto et = avg_run_time(1, std::bind(load_pla, fileName));
-        printl(concat(fileName , " -> " , et , "ms [" , "-" , "]"));
+        printl(concat(fileName , " -> " , et , "ms"));
     }
 }
 
@@ -278,7 +278,7 @@ auto main() -> int
 {
     auto watch = stopwatch();
 
-    // pla_test();
+    pla_test();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
@@ -287,7 +287,7 @@ auto main() -> int
     // swap_var_test();
     // eq_test();
     // test_mul_absorbing();
-    test_stack_algo();
+    // test_stack_algo();
 
     // test_mdd_random<3>(5, order_e::Random, domain_e::Nonhomogenous);
     // test_mdd_vector(10);

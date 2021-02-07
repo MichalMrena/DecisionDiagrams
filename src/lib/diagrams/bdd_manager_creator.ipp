@@ -43,7 +43,7 @@ namespace mix::dd
         for (auto fi = 0u; fi < functionCount; ++fi)
         {
             // First create a diagram for each product.
-            auto productDiagrams = utils::vector<bdd_t>(lineCount);
+            auto productDiagrams = utils::vector<bdd_t>(lineCount); // TODO outside of loop and clear?
             for (auto li = 0u; li < lineCount; ++li)
             {
                 // We are doing SOP so we are only interested in functions with value 1.
@@ -61,6 +61,9 @@ namespace mix::dd
 
             // Then merge products using OR.
             functionDiagrams.emplace_back(this->or_merge(productDiagrams, mm));
+
+            this->clear_cache();
+            this->collect_garbage();
         }
 
         return functionDiagrams;
@@ -70,9 +73,10 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::line_to_product
         (pla_line const& line) -> bdd_t
     {
-        auto const vars = cube_to_bool_vars(line.cube);
+        auto const vars  = cube_to_bool_vars(line.cube);
+        auto varDiagrams = this->variables(vars);
         return vars.empty() ? this->constant(0)
-                            : this->template left_fold<AND>(this->variables(vars));
+                            : this->template tree_fold<AND>(std::begin(varDiagrams), std::end(varDiagrams));
     }
 
     template<class VertexData, class ArcData>
@@ -82,10 +86,10 @@ namespace mix::dd
         switch (mm)
         {
             case fold_e::tree:
-                return this->template tree_fold<OR>(diagrams);
+                return this->template tree_fold<OR>(std::begin(diagrams), std::end(diagrams));
 
             case fold_e::left:
-                return this->template left_fold<OR>(diagrams);
+                return this->template left_fold<OR>(std::begin(diagrams), std::end(diagrams));
 
             default:
                 throw std::runtime_error {"Non-exhaustive enum switch."};
