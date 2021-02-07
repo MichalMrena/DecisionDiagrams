@@ -2,6 +2,7 @@
 
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"
+#include "lib/utils/object_pool.hpp"
 #include "lib/mdd_manager.hpp"
 #include "lib/bdd_manager.hpp"
 
@@ -114,7 +115,8 @@ auto mss_playground()
 auto pla_test()
 {
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
-    auto files = {"10-adder_col.pla", "11-adder_col.pla", "12-adder_col.pla", "13-adder_col.pla", "14-adder_col.pla", "15-adder_col.pla", "16-adder_col.pla"};
+    // auto files = {"10-adder_col.pla", "11-adder_col.pla", "12-adder_col.pla", "13-adder_col.pla", "14-adder_col.pla", "15-adder_col.pla", "16-adder_col.pla"};
+    auto files = {"10-adder_col.pla", "11-adder_col.pla", "12-adder_col.pla", "13-adder_col.pla"};
     // auto files = {"15-adder_col.pla"};
 
     auto load_pla = [plaDir](auto&& fileName)
@@ -123,18 +125,18 @@ auto pla_test()
         auto file           = pla_file::load_file(filePath);
         auto manager        = bdd_manager<void, void>(file.variable_count());
         auto const ds       = manager.from_pla(file, fold_e::tree);
-        // auto sum            = 0ul;
-        // for (auto& d : ds)
-        // {
-        //     sum += manager.vertex_count(d);
-        // }
-        // std::cout << fileName << " [" << sum << "] " << std::endl;
+        auto sum            = 0ul;
+        for (auto& d : ds)
+        {
+            sum += manager.vertex_count(d);
+        }
+        std::cout << fileName << " [" << sum << "] " << std::endl;
     };
 
     for (auto fileName : files)
     {
         auto et = avg_run_time(1, std::bind(load_pla, fileName));
-        printl(concat(fileName , " -> " , et , "ms"));
+        // printl(concat(fileName , " -> " , et , "ms"));
     }
 }
 
@@ -264,16 +266,6 @@ auto swap_var_test()
     // m.to_dot_graph(std::cout);
 }
 
-auto test_stack_algo()
-{
-    using log_t   = typename log_val_traits<4>::type;
-    auto const vs = std::vector<log_t> {0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 2, 2};
-    auto m        = make_mdd_manager<3>(3);
-    m.set_domains({2, 2, 3});
-    auto const d  = m.from_vector(std::begin(vs), std::end(vs));
-    m.to_dot_graph(std::cout, d);
-}
-
 auto main() -> int
 {
     auto watch = stopwatch();
@@ -293,6 +285,11 @@ auto main() -> int
     // test_mdd_vector(10);
     // test_bss();
     // test_mss();
+
+    // auto m  = bdd_manager<void, void>(4);
+    // auto vs = std::vector<bool_var> {{0, false}, {1, true}, {2, false}, {3, true}};
+    // auto d  = m.product(vs);
+    // m.to_dot_graph(std::cout, d);
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

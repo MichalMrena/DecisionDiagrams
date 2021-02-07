@@ -31,6 +31,36 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    auto bdd_manager<VertexData, ArcData>::product
+        (bool_var_v const& vars) -> bdd_t
+    {
+        return this->product(std::begin(vars), std::end(vars));
+    }
+
+    template<class VertexData, class ArcData>
+    template<class BidirIt>
+    auto bdd_manager<VertexData, ArcData>::product
+        (BidirIt first, BidirIt last) -> bdd_t
+    {
+        auto const falseLeaf = base::vertexManager_.terminal_vertex(0);
+        auto const trueLeaf  = base::vertexManager_.terminal_vertex(1);
+        auto current         = std::prev(last);
+        auto prevVertex      = current->complemented
+                                   ? base::vertexManager_.internal_vertex(current->index, {trueLeaf, falseLeaf})
+                                   : base::vertexManager_.internal_vertex(current->index, {falseLeaf, trueLeaf});
+        do
+        {
+            std::advance(current, -1);
+            prevVertex = current->complemented
+                             ? base::vertexManager_.internal_vertex(current->index, {prevVertex, falseLeaf})
+                             : base::vertexManager_.internal_vertex(current->index, {falseLeaf, prevVertex});
+
+        } while (current != first);
+
+        return bdd_t {prevVertex};
+    }
+
+    template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::from_pla
         (pla_file const& file, fold_e const mm) -> bdd_v
     {
@@ -74,9 +104,10 @@ namespace mix::dd
         (pla_line const& line) -> bdd_t
     {
         auto const vars  = cube_to_bool_vars(line.cube);
-        auto varDiagrams = this->variables(vars);
+        // auto varDiagrams = this->variables(vars);
         return vars.empty() ? this->constant(0)
-                            : this->template tree_fold<AND>(std::begin(varDiagrams), std::end(varDiagrams));
+                            // : this->template tree_fold<AND>(std::begin(varDiagrams), std::end(varDiagrams));
+                            : this->product(vars);
     }
 
     template<class VertexData, class ArcData>

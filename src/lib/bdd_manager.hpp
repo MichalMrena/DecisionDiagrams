@@ -50,7 +50,11 @@ namespace mix::dd
         auto variable_not (index_t const i)        -> bdd_t;
         auto operator()   (index_t const i, NOT)   -> bdd_t;
         auto variables    (bool_var_v const& vars) -> bdd_v;
+        auto product      (bool_var_v const& vars) -> bdd_t;
         auto from_pla     (pla_file const& file, fold_e const mm = fold_e::tree) -> bdd_v;
+
+        template<class BidirIt>
+        auto product (BidirIt first, BidirIt last) -> bdd_t;
 
     /* Reliability */
     public:
