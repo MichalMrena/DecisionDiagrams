@@ -53,6 +53,9 @@ namespace mix::dd
         auto product      (bool_var_v const& vars) -> bdd_t;
         auto from_pla     (pla_file const& file, fold_e const mm = fold_e::tree) -> bdd_v;
 
+        template<std::size_t BitSize, class T>
+        auto product (bit_vector<BitSize, T> const& cubes) -> bdd_t;
+
         template<class BidirIt>
         auto product (BidirIt first, BidirIt last) -> bdd_t;
 

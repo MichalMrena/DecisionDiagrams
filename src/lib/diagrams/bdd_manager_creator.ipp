@@ -38,6 +38,43 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData>
+    template<std::size_t BitSize, class T>
+    auto bdd_manager<VertexData, ArcData>::product
+        (bit_vector<BitSize, T> const& cubes) -> bdd_t
+    {
+        auto const varCount  = cubes.size();
+        auto const falseLeaf = base::vertexManager_.terminal_vertex(0);
+        auto const trueLeaf  = base::vertexManager_.terminal_vertex(1);
+        auto index = static_cast<index_t>(varCount - 1);
+        while (index != static_cast<index_t>(-1) && cubes.at(index) > 1)
+        {
+            --index;
+        }
+        if (index == static_cast<index_t>(-1))
+        {
+            return this->constant(0);
+        }
+
+        auto prevVertex = 0 == cubes.at(index)
+                              ? base::vertexManager_.internal_vertex(index, {trueLeaf, falseLeaf})
+                              : base::vertexManager_.internal_vertex(index, {falseLeaf, trueLeaf});
+        while (index > 0)
+        {
+            --index;
+            auto const val = cubes.at(index);
+            if (val > 1)
+            {
+                continue;
+            }
+            prevVertex = 0 == val
+                             ? base::vertexManager_.internal_vertex(index, {prevVertex, falseLeaf})
+                             : base::vertexManager_.internal_vertex(index, {falseLeaf, prevVertex});
+        }
+
+        return bdd_t {prevVertex};
+    }
+
+    template<class VertexData, class ArcData>
     template<class BidirIt>
     auto bdd_manager<VertexData, ArcData>::product
         (BidirIt first, BidirIt last) -> bdd_t
@@ -48,7 +85,7 @@ namespace mix::dd
         auto prevVertex      = current->complemented
                                    ? base::vertexManager_.internal_vertex(current->index, {trueLeaf, falseLeaf})
                                    : base::vertexManager_.internal_vertex(current->index, {falseLeaf, trueLeaf});
-        do
+        if (current != first) do
         {
             std::advance(current, -1);
             prevVertex = current->complemented
@@ -103,11 +140,12 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::line_to_product
         (pla_line const& line) -> bdd_t
     {
-        auto const vars  = cube_to_bool_vars(line.cube);
+        // auto const vars  = cube_to_bool_vars(line.cube);
         // auto varDiagrams = this->variables(vars);
-        return vars.empty() ? this->constant(0)
-                            // : this->template tree_fold<AND>(std::begin(varDiagrams), std::end(varDiagrams));
-                            : this->product(vars);
+        // return vars.empty() ? this->constant(0)
+        //                     // : this->template tree_fold<AND>(std::begin(varDiagrams), std::end(varDiagrams));
+        //                     : this->product(line.cube);
+        return this->product(line.cube);
     }
 
     template<class VertexData, class ArcData>
