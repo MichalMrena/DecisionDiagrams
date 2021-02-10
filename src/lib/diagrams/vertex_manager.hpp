@@ -3,6 +3,7 @@
 
 #include "typedefs.hpp"
 #include "graph.hpp"
+#include "unique_table.hpp"
 #include "../utils/hash.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
@@ -70,8 +71,7 @@ namespace mix::dd
         static auto dec_ref_count (vertex_t* const v) -> void;
 
     private:
-        using index_map      = std::unordered_map<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
-        // using index_map      = std::unordered_multimap<vertex_a, vertex_t*, utils::tuple_hash_t<vertex_a>>;
+        using index_map      = unique_table<VertexData, ArcData, P>;
         using index_map_v    = std::vector<index_map>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
         using alloc_t        = std::allocator<vertex_t>;
@@ -185,14 +185,14 @@ namespace mix::dd
 
         auto& indexMap      = indexToMap_[index];
         auto const existing = indexMap.find(sons);
-        if (indexMap.end() != existing)
+        if (existing)
         {
-            return existing->second;
+            return existing;
         }
 
         auto const v = this->new_empty_vertex();
         alloc_traits_t::construct(alloc_, v, index, sons);
-        indexMap.emplace(sons, v);
+        indexMap.insert(v);
         v->for_each_son(inc_ref_count);
 
         return v;
@@ -310,7 +310,7 @@ namespace mix::dd
 
             while (it != end)
             {
-                auto const v = it->second;
+                auto const v = *it;
                 if (0 == v->get_ref_count())
                 {
                     v->for_each_son(dec_ref_count);
@@ -367,9 +367,9 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::for_each_vertex
         (VertexOp op) const -> void
     {
-        for (auto& indexMap : indexToMap_)
+        for (auto const& indexMap : indexToMap_)
         {
-            for (auto& [key, v] : indexMap)
+            for (auto const v : indexMap)
             {
                 op(v);
             }

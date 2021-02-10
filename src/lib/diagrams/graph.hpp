@@ -61,7 +61,9 @@ namespace mix::dd
     public:
         auto get_id        () const                    -> std::uintptr_t;
         auto get_son       (std::size_t const i) const -> vertex_t*;
-        auto set_sons      (vertex_a const& sons)         -> void;
+        auto set_sons      (vertex_a const& sons)      -> void;
+        auto get_next      () const                    -> vertex_t*;
+        auto set_next      (vertex_t* const n)         -> void;
         auto get_mark      () const                    -> bool;
         auto toggle_mark   ()                          -> void;
         auto get_index     () const                    -> index_t;
@@ -82,6 +84,7 @@ namespace mix::dd
 
     private:
         arc_a       forwardStar_;
+        vertex_t*   next_;
         ref_count_t markRefCount_;
         index_t     index_;
     };
@@ -133,6 +136,7 @@ namespace mix::dd
     vertex_base<VertexData, ArcData, P>::vertex_base
         (index_t const i, vertex_a const& sons) :
         forwardStar_  {utils::fmap_to_array(sons, [](auto const v) { return arc_t {{v}}; })},
+        next_         {nullptr},
         markRefCount_ {0},
         index_        {i}
     {
@@ -160,6 +164,20 @@ namespace mix::dd
         {
             return arc_t {{v}};
         });
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_base<VertexData, ArcData, P>::get_next
+        () const -> vertex_t*
+    {
+        return next_;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_base<VertexData, ArcData, P>::set_next
+        (vertex_t* const n) -> void
+    {
+        next_ = n;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
