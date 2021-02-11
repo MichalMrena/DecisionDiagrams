@@ -1,2 +1,5 @@
 build
 .vscode
+gmon.out
+profile.txt
+profile.png

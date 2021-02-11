@@ -116,8 +116,9 @@ auto pla_test()
 {
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
     // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    auto files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    // auto files = {"10-adder_col.pla", "11-adder_col.pla", "12-adder_col.pla", "13-adder_col.pla", "14-adder_col.pla", "15-adder_col.pla", "16-adder_col.pla"};
+    // auto files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla"};
+    auto files = {"14-adder_col.pla"};
 
     auto load_pla = [plaDir](auto&& fileName)
     {
@@ -284,13 +285,15 @@ auto main() -> int
     // test_mdd_random<3>(5, order_e::Random, domain_e::Nonhomogenous);
     // test_mdd_vector(10);
     // test_bss();
-    // test_mss();
+    // test_mss(144);
 
     // auto m  = bdd_manager<void, void>(5);
     // auto vs = bit_vector<2, unsigned> {3, 3, 3};
     // // auto vs = bit_vector<2, unsigned> {3, 0, 1, 1, 3};
     // auto d  = m.product(vs);
     // m.to_dot_graph(std::cout, d);
+
+    // TODO remove IO from benchmarks
 
     auto const timeTaken = watch.elapsed_time().count();
     printl("Done.");

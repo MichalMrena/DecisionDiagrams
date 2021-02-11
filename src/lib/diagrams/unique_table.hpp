@@ -372,8 +372,10 @@ namespace mix::dd
         {
             while (bucket)
             {
+                auto const next = bucket->get_next();
+                bucket->set_next(nullptr);
                 this->insert_impl(bucket);
-                bucket = bucket->get_next();
+                bucket = next;
             }
         };
     }

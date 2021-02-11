@@ -610,6 +610,8 @@ namespace mix::dd::test
         auto rngValue  = int_rng<log_t>(0, P - 1, seeder.next_int());
         auto manager   = make_mdd_manager<P>(VarCount);
 
+        std::cout << "Testing from vector. Init seed was " << initSeed << '\n';
+
         for (auto i = 0u; i < n; ++i)
         {
             auto const domains    = utils::fill_vector(VarCount, [&](auto const){ return rngDomain.next_int(); });
