@@ -38,7 +38,7 @@ namespace mix::dd
         auto equals    (mdd const& rhs) const -> bool;
 
     private:
-        using vertex_manager_t = vertex_manager<VertexData, ArcData, P>;
+        using manager_t = vertex_manager<VertexData, ArcData, P>;
 
     private:
         auto get_root () const -> vertex_t*;
@@ -57,7 +57,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     mdd<VertexData, ArcData, P>::mdd
         (vertex_t* root) :
-        root_ {vertex_manager_t::inc_ref_count(root)}
+        root_ {manager_t::inc_ref_count(root)}
     {
     }
 
@@ -71,7 +71,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     mdd<VertexData, ArcData, P>::mdd
         (mdd const& other) :
-        root_ {vertex_manager_t::inc_ref_count(other.root_)}
+        root_ {manager_t::inc_ref_count(other.root_)}
     {
     }
 

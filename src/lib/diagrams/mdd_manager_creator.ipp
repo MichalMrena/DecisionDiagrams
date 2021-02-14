@@ -10,7 +10,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::constant
         (log_t const val) -> mdd_t
     {
-        return mdd_t {vertexManager_.terminal_vertex(val)};
+        return mdd_t {manager_.terminal_vertex(val)};
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -84,7 +84,7 @@ namespace mix::dd
                 {
                     return stack.peek(newDomain - o - 1).vertex;
                 });
-                auto const newVertex = vertexManager_.internal_vertex(newIndex, newSons);
+                auto const newVertex = manager_.internal_vertex(newIndex, newSons);
                 stack.pop_n(newDomain);
                 stack.push(stack_frame {newVertex, currentLevel - 1});
             }
@@ -94,9 +94,9 @@ namespace mix::dd
         {
             auto const leaves = utils::fmap_to_array(vals, [=, this](auto const val)
             {
-                return vertexManager_.terminal_vertex(val);
+                return manager_.terminal_vertex(val);
             });
-            return vertexManager_.internal_vertex(lastIndex, leaves);
+            return manager_.internal_vertex(lastIndex, leaves);
         };
 
         while (first != last)
@@ -131,8 +131,8 @@ namespace mix::dd
         auto const last   = std::next(first, static_cast<std::ptrdiff_t>(domain));
         auto const leaves = utils::fmap_to_array<P>(first, last, [this](auto const lv)
         {
-            return vertexManager_.terminal_vertex(static_cast<log_t>(lv));
+            return manager_.terminal_vertex(static_cast<log_t>(lv));
         });
-        return mdd_t {vertexManager_.internal_vertex(i, leaves)};
+        return mdd_t {manager_.internal_vertex(i, leaves)};
     }
 }

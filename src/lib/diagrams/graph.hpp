@@ -104,6 +104,7 @@ namespace mix::dd
         VertexData data;
 
     public:
+        vertex ();
         vertex (index_t const i);
         vertex (index_t const i, vertex_a const& sons);
     };
@@ -119,6 +120,7 @@ namespace mix::dd
         using base_t = vertex_base<void, ArcData, P>;
 
     public:
+        vertex ();
         vertex(index_t const i);
         vertex(index_t const i, vertex_a const& sons);
     };
@@ -265,6 +267,13 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex<VertexData, ArcData, P>::vertex
+        () :
+        base_t {static_cast<index_t>(-1)}
+    {
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    vertex<VertexData, ArcData, P>::vertex
         (index_t const i) :
         base_t {i}
     {
@@ -278,6 +287,13 @@ namespace mix::dd
     }
 
 // specialized empty vertex definitions:
+
+    template<class ArcData, std::size_t P>
+    vertex<void, ArcData, P>::vertex
+        () :
+        base_t {static_cast<index_t>(-1)}
+    {
+    }
 
     template<class ArcData, std::size_t P>
     vertex<void, ArcData, P>::vertex

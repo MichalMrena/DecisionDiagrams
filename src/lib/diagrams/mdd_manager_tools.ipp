@@ -17,7 +17,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::vertex_count
         () const -> std::size_t
     {
-        return vertexManager_.vertex_count();
+        return manager_.get_vertex_count();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -33,7 +33,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::vertex_count
         (index_t const i) const -> std::size_t
     {
-        return vertexManager_.vertex_count(i);
+        return manager_.get_vertex_count(i);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -42,7 +42,7 @@ namespace mix::dd
     {
         this->to_dot_graph_impl(ost, [this](auto const f)
         {
-            vertexManager_.for_each_vertex(f);
+            manager_.for_each_vertex(f);
         });
     }
 
@@ -62,17 +62,17 @@ namespace mix::dd
     {
         this->traverse_post(d, [this, val](auto const v)
         {
-            if (vertexManager_.is_leaf_vertex(v))
+            if (manager_.is_leaf_vertex(v))
             {
-                v->data = vertexManager_.get_vertex_value(v) == val ? 1 : 0;
+                v->data = manager_.get_vertex_value(v) == val ? 1 : 0;
             }
             else
             {
                 v->data = 0;
-                auto const vLevel = vertexManager_.get_vertex_level(v);
+                auto const vLevel = manager_.get_vertex_level(v);
                 v->for_each_son([=, this](auto const son)
                 {
-                    auto const sonLevel   = vertexManager_.get_vertex_level(son);
+                    auto const sonLevel   = manager_.get_vertex_level(son);
                     auto const diffFactor = this->domain_product(vLevel, sonLevel);
                     v->data += son->data * static_cast<double>(diffFactor);
                 });
@@ -80,7 +80,7 @@ namespace mix::dd
         });
 
         auto const rootAlpha = static_cast<std::size_t>(d.get_root()->data);
-        auto const rootLevel = vertexManager_.get_vertex_level(d.get_root());
+        auto const rootLevel = manager_.get_vertex_level(d.get_root());
         return rootAlpha * utils::int_pow(P, rootLevel);
     }
 
@@ -88,13 +88,13 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dependency_set
         (mdd_t const& d) -> std::vector<index_t>
     {
-        auto set = utils::vector<index_t>(vertexManager_.var_count());
-        auto is  = std::vector<index_t>(vertexManager_.var_count(), false);
+        auto set = utils::vector<index_t>(manager_.get_var_count());
+        auto is  = std::vector<index_t>(manager_.get_var_count(), false);
 
         this->traverse_pre(d, [&](auto const v)
         {
             auto const i = v->get_index();
-            if (!is[i])
+            if (!manager_.is_leaf_index(i) && !is[i])
             {
                 set.push_back(i);
                 is[i] = true;
@@ -114,7 +114,7 @@ namespace mix::dd
         auto constexpr get_var = GetIthVar {};
         auto v = d.get_root();
 
-        while (!vertexManager_.is_leaf_vertex(v))
+        while (!manager_.is_leaf_vertex(v))
         {
             v = v->get_son(get_var(vs, v->get_index()));
             if (!v)
@@ -123,7 +123,7 @@ namespace mix::dd
             }
         }
 
-        return vertexManager_.get_vertex_value(v);
+        return manager_.get_vertex_value(v);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -170,7 +170,7 @@ namespace mix::dd
     {
         auto const cmp = [this](auto const lhs, auto const rhs)
         {
-            return vertexManager_.get_vertex_level(lhs) > vertexManager_.get_vertex_level(rhs);
+            return manager_.get_vertex_level(lhs) > manager_.get_vertex_level(rhs);
         };
 
         using compare_t     = decltype(cmp);
@@ -212,8 +212,8 @@ namespace mix::dd
         auto const make_label = [this](auto const v)
         {
             using traits_t = log_val_traits<P>;
-            return this->vertexManager_.is_leaf_vertex(v)
-                    ? traits_t::to_string(this->vertexManager_.get_vertex_value(v))
+            return this->manager_.is_leaf_vertex(v)
+                    ? traits_t::to_string(this->manager_.get_vertex_value(v))
                     : "x" + to_string(v->get_index());
         };
 
@@ -240,7 +240,7 @@ namespace mix::dd
                 }
             });
 
-            if (vertexManager_.is_leaf_vertex(v))
+            if (manager_.is_leaf_vertex(v))
             {
                 squareShapes.emplace_back(to_string(v->get_id()));
             }
@@ -272,7 +272,7 @@ namespace mix::dd
         {
             auto const get_dom = [this](auto const l)
             {
-                return this->get_domain(vertexManager_.get_index(l));
+                return this->get_domain(manager_.get_index(l));
             };
             auto const ls = utils::range(from + 1, to);
             return std::transform_reduce( std::begin(ls), std::end(ls)
@@ -284,11 +284,11 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::fill_levels
         (mdd_t const& diagram) const -> vertex_vv
     {
-        auto levels = vertex_vv(1 + vertexManager_.var_count());
+        auto levels = vertex_vv(1 + manager_.get_var_count());
 
         this->traverse_pre(diagram, [&, this](auto const v)
         {
-            levels[vertexManager_.get_vertex_level(v)].emplace_back(v);
+            levels[manager_.get_vertex_level(v)].emplace_back(v);
         });
 
         return levels;
@@ -301,21 +301,21 @@ namespace mix::dd
         , VariableValues& xs, OutputIt& out ) const -> void
     {
         // TODO remove duplicity
-        auto const vertexValue = vertexManager_.get_vertex_value(v);
-        auto const vertexLevel = vertexManager_.get_vertex_level(v);
+        auto const vertexValue = manager_.get_vertex_value(v);
+        auto const vertexLevel = manager_.get_vertex_level(v);
 
-        if (vertexManager_.is_leaf_level(l) && vertexManager_.is_leaf_vertex(v) && val != vertexValue)
+        if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val != vertexValue)
         {
             return;
         }
-        else if (vertexManager_.is_leaf_level(l) && vertexManager_.is_leaf_vertex(v) && val == vertexValue)
+        else if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val == vertexValue)
         {
             *out++ = xs;
             return;
         }
         else if (vertexLevel > l)
         {
-            auto const index  = vertexManager_.get_index(l);
+            auto const index  = manager_.get_index(l);
             auto const domain = this->get_domain(index);
             for (auto iv = 0u; iv < domain; ++iv)
             {

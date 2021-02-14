@@ -43,8 +43,8 @@ namespace mix::dd
         (bit_vector<BitSize, T> const& cubes) -> bdd_t
     {
         auto const varCount  = cubes.size();
-        auto const falseLeaf = base::vertexManager_.terminal_vertex(0);
-        auto const trueLeaf  = base::vertexManager_.terminal_vertex(1);
+        auto const falseLeaf = base::manager_.terminal_vertex(0);
+        auto const trueLeaf  = base::manager_.terminal_vertex(1);
         auto index = static_cast<index_t>(varCount - 1);
         while (index != static_cast<index_t>(-1) && cubes.at(index) > 1)
         {
@@ -56,8 +56,8 @@ namespace mix::dd
         }
 
         auto prevVertex = 0 == cubes.at(index)
-                              ? base::vertexManager_.internal_vertex(index, {trueLeaf, falseLeaf})
-                              : base::vertexManager_.internal_vertex(index, {falseLeaf, trueLeaf});
+                              ? base::manager_.internal_vertex(index, {trueLeaf, falseLeaf})
+                              : base::manager_.internal_vertex(index, {falseLeaf, trueLeaf});
         while (index > 0)
         {
             --index;
@@ -67,8 +67,8 @@ namespace mix::dd
                 continue;
             }
             prevVertex = 0 == val
-                             ? base::vertexManager_.internal_vertex(index, {prevVertex, falseLeaf})
-                             : base::vertexManager_.internal_vertex(index, {falseLeaf, prevVertex});
+                             ? base::manager_.internal_vertex(index, {prevVertex, falseLeaf})
+                             : base::manager_.internal_vertex(index, {falseLeaf, prevVertex});
         }
 
         return bdd_t {prevVertex};
@@ -79,18 +79,18 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::product
         (BidirIt first, BidirIt last) -> bdd_t
     {
-        auto const falseLeaf = base::vertexManager_.terminal_vertex(0);
-        auto const trueLeaf  = base::vertexManager_.terminal_vertex(1);
+        auto const falseLeaf = base::manager_.terminal_vertex(0);
+        auto const trueLeaf  = base::manager_.terminal_vertex(1);
         auto current         = std::prev(last);
         auto prevVertex      = current->complemented
-                                   ? base::vertexManager_.internal_vertex(current->index, {trueLeaf, falseLeaf})
-                                   : base::vertexManager_.internal_vertex(current->index, {falseLeaf, trueLeaf});
+                                   ? base::manager_.internal_vertex(current->index, {trueLeaf, falseLeaf})
+                                   : base::manager_.internal_vertex(current->index, {falseLeaf, trueLeaf});
         if (current != first) do
         {
             std::advance(current, -1);
             prevVertex = current->complemented
-                             ? base::vertexManager_.internal_vertex(current->index, {prevVertex, falseLeaf})
-                             : base::vertexManager_.internal_vertex(current->index, {falseLeaf, prevVertex});
+                             ? base::manager_.internal_vertex(current->index, {prevVertex, falseLeaf})
+                             : base::manager_.internal_vertex(current->index, {falseLeaf, prevVertex});
 
         } while (current != first);
 
@@ -110,7 +110,7 @@ namespace mix::dd
         for (auto fi = 0u; fi < functionCount; ++fi)
         {
             // First create a diagram for each product.
-            auto productDiagrams = utils::vector<bdd_t>(lineCount); // TODO outside of loop and clear?
+            auto productDiagrams = utils::vector<bdd_t>(lineCount);
             for (auto li = 0u; li < lineCount; ++li)
             {
                 // We are doing SOP so we are only interested in functions with value 1.
@@ -128,9 +128,6 @@ namespace mix::dd
 
             // Then merge products using OR.
             functionDiagrams.emplace_back(this->or_merge(productDiagrams, mm));
-
-            this->clear_cache();
-            this->collect_garbage();
         }
 
         return functionDiagrams;

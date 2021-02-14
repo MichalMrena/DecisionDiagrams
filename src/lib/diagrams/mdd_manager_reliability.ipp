@@ -8,7 +8,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::calculate_probabilities
         (prob_table const& ps, mdd_t& f) -> void
     {
-        vertexManager_.for_each_terminal_vertex([](auto const v)
+        manager_.for_each_terminal_vertex([](auto const v)
         {
             v->data = 0.0;
         });
@@ -32,8 +32,8 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::get_probability
         (log_t const level) const -> double
     {
-        auto const leaf = vertexManager_.get_terminal_vertex(level);
-        return leaf ? leaf->data : 0;
+        auto const v = manager_.terminal_vertex(level);
+        return v ? v->data : 0.0;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -244,8 +244,8 @@ namespace mix::dd
     {
         auto constexpr U     = log_val_traits<P>::undefined;
         auto const root      = dpbd.get_root();
-        auto const rootLevel = vertexManager_.get_vertex_level(root);
-        auto const varLevel  = vertexManager_.get_level(varIndex);
+        auto const rootLevel = manager_.get_vertex_level(root);
+        auto const varLevel  = manager_.get_level(varIndex);
         auto const varDomain = this->get_domain(varIndex);
 
         // Special case when the new vertex for the i-th variable is inserted above the root.
@@ -253,29 +253,29 @@ namespace mix::dd
         {
             auto const sons = utils::fill_array_n<P>(varDomain, [=, this](auto const val)
             {
-                return val == varFrom ? root : vertexManager_.terminal_vertex(U);
+                return val == varFrom ? root : manager_.terminal_vertex(U);
             });
-            return mdd_t {vertexManager_.internal_vertex(varIndex, sons)};
+            return mdd_t {manager_.internal_vertex(varIndex, sons)};
         }
 
         // Normal case for all internal vertices.
         return this->transform(dpbd, [=, this](auto&& l_this, auto const v)
         {
-            auto const vertexLevel  = vertexManager_.get_vertex_level(v);
+            auto const vertexLevel  = manager_.get_vertex_level(v);
             auto const vertexDomain = this->get_domain(v->get_index());
             return utils::fill_array_n<P>(vertexDomain, [=, this, &l_this](auto const val)
             {
                 auto const son      = v->get_son(val);
-                auto const sonLevel = vertexManager_.get_vertex_level(son);
+                auto const sonLevel = manager_.get_vertex_level(son);
 
                 // This means that the new vertex goes in between current vertex and its val-th son.
                 if (varLevel > vertexLevel && varLevel < sonLevel)
                 {
                     auto const newSons = utils::fill_array_n<P>(varDomain, [=, this](auto const j)
                     {
-                        return j == varFrom ? son : vertexManager_.terminal_vertex(U);
+                        return j == varFrom ? son : manager_.terminal_vertex(U);
                     });
-                    return vertexManager_.internal_vertex(varIndex, newSons);
+                    return manager_.internal_vertex(varIndex, newSons);
                 }
                 else
                 {
@@ -290,8 +290,8 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::to_mnf
         (mdd_t const& dpbd) -> mdd_t
     {
-        auto const leaf0 = vertexManager_.get_terminal_vertex(0);
-        auto const leaf1 = vertexManager_.get_terminal_vertex(1);
+        auto const leaf0 = manager_.terminal_vertex(0);
+        auto const leaf1 = manager_.terminal_vertex(1);
         return this->transform(dpbd, [=, this](auto const v, auto&& l_this)
         {
             auto sons = utils::fill_array<P>([=, this](auto const i)

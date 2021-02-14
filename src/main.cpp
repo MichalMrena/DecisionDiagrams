@@ -112,31 +112,46 @@ auto mss_playground()
     printl(concat("Total: ", m.satisfy_count(1, f)));
 }
 
-auto pla_test()
+auto pla_sanity_check()
 {
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
-    // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    // auto files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    // auto files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla"};
-    auto files = {"14-adder_col.pla"};
+    auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    // auto const files = {"14-adder_col.pla"};
 
-    auto load_pla = [plaDir](auto&& fileName)
+    for (auto const fileName : files)
     {
         auto const filePath = mix::utils::concat(plaDir , fileName);
         auto file           = pla_file::load_file(filePath);
         auto manager        = bdd_manager<void, void>(file.variable_count());
         auto const ds       = manager.from_pla(file, fold_e::tree);
-        // auto sum            = 0ul;
-        // for (auto& d : ds)
-        // {
-        //     sum += manager.vertex_count(d);
-        // }
-        // std::cout << fileName << " [" << sum << "] " << std::endl;
+        auto sum            = 0ul;
+        for (auto& d : ds)
+        {
+            sum += manager.vertex_count(d);
+        }
+        std::cout << fileName << " [" << sum << "] " << std::endl;
+    }
+}
+
+auto pla_test_speed()
+{
+    auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
+    // auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    // auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla"};
+    // auto const files = {"14-adder_col.pla"};
+
+    auto const load_pla = [plaDir](auto&& fileName)
+    {
+        auto const filePath = mix::utils::concat(plaDir , fileName);
+        auto file           = pla_file::load_file(filePath);
+        auto manager        = bdd_manager<void, void>(file.variable_count());
+        auto const ds       = manager.from_pla(file, fold_e::tree);
     };
 
     for (auto fileName : files)
     {
-        auto et = avg_run_time(1, std::bind(load_pla, fileName));
+        auto et = avg_run_time(1, std::bind_front(load_pla, fileName));
         printl(concat(fileName , " -> " , et , "ms"));
     }
 }
@@ -271,7 +286,8 @@ auto main() -> int
 {
     auto watch = stopwatch();
 
-    pla_test();
+    pla_sanity_check();
+    // pla_test_speed();
     // mss_reliability_test();
     // mss_playground();
     // example_basic_usage_bdd();
@@ -282,7 +298,7 @@ auto main() -> int
     // test_mul_absorbing();
     // test_stack_algo();
 
-    // test_mdd_random<3>(5, order_e::Random, domain_e::Nonhomogenous);
+    // test_mdd_random<3>(1, order_e::Random, domain_e::Nonhomogenous);
     // test_mdd_vector(10);
     // test_bss();
     // test_mss(144);

@@ -9,6 +9,7 @@
 
 namespace mix::dd
 {
+    // TODO rename to mdd_tools
     template<class VertexData, class ArcData, std::size_t P>
     class mdd_manager
     {
@@ -456,8 +457,8 @@ namespace mix::dd
 
     /* Member variables */
     protected:
-        vertex_manager_t vertexManager_;
-        apply_memo_t     applyMemo_;
+        vertex_manager_t manager_;
+        // apply_memo_t     applyMemo_;
         transform_memo_t transformMemo_;
         log_v            domains_;
     };

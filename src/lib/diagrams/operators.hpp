@@ -99,6 +99,8 @@ namespace mix::dd
      */
     using op_id_t = std::uint8_t;
 
+    auto constexpr op_count () { return std::size_t {16}; }
+
     /**
         @brief Maps operations to their integer ids. Id is used in the apply cache.
      */

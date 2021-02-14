@@ -1,5 +1,6 @@
 BIN := main
 COMPILE_FLAGS = -MMD -MP -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+LINK_FLAGS = 
 SRC_DIRS := ./src
 CXX = clang++-10
 
@@ -16,7 +17,7 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 $(BUILD_DIR)/$(BIN): $(OBJS)
-	$(CXX) $(OBJS) -o $@
+	$(CXX) $(OBJS) $(LINK_FLAGS) -o $@
 
 $(BUILD_DIR)/%.cpp.o: %.cpp
 	mkdir -p $(dir $@)

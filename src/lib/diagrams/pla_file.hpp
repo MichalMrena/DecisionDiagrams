@@ -31,7 +31,6 @@ namespace mix::dd
         f_vals_t fVals;
     };
 
-    // TODO why not to read PLA directly into bool_vars?
     /**
         @brief Converts cube into a std::vector of `bool_var` structs.
         Example: "--1001" -> { {2, false}, {3, true}, {4, true}, {5, false} }

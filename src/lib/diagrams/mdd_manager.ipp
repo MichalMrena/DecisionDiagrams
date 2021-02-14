@@ -13,7 +13,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     mdd_manager<VertexData, ArcData, P>::mdd_manager
         (std::size_t const varCount) :
-        vertexManager_ {varCount}
+        manager_ {varCount}
     {
     }
 
@@ -21,8 +21,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::set_domains
         (log_v domains) -> void
     {
-        utils::runtime_assert( this->var_count() == domains.size()
-                             , "mdd_manager::set_domains: Domains vector size must match var count." );
+        utils::runtime_assert(this->var_count() == domains.size(), "mdd_manager::set_domains: Domains vector size must match var count.");
         domains_ = std::move(domains);
     }
 
@@ -30,60 +29,49 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::set_order
         (index_v levelToIndex) -> void
     {
-        utils::runtime_assert( applyMemo_.empty()
-                             , "mdd_manager::set_order: Cache must be empty." );
-        vertexManager_.set_order(std::move(levelToIndex));
+        manager_.set_order(std::move(levelToIndex));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::swap_vars
         (index_t const i) -> void
     {
-        vertexManager_.swap_vars(i);
+        manager_.swap_vars(i);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::clear
         () -> void
     {
-        vertexManager_.clear();
-        this->clear_cache();
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::clear_cache
-        () -> void
-    {
-        applyMemo_.clear();
+        manager_.clear();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::collect_garbage
         () -> void
     {
-        this->clear_cache();
-        vertexManager_.collect_garbage();
+        manager_.collect_garbage();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::var_count
         () const -> std::size_t
     {
-        return vertexManager_.var_count();
+        return manager_.get_var_count();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::get_index
         (level_t const l) const -> index_t
     {
-        return vertexManager_.get_index(l);
+        return manager_.get_index(l);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::get_level
         (index_t const i) const -> level_t
     {
-        return vertexManager_.get_level(i);
+        return manager_.get_level(i);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -97,7 +85,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::get_last_level
         () const -> level_t
     {
-        return vertexManager_.get_last_level();
+        return manager_.get_last_level();
     }
 
     template<class VertexData, class ArcData, std::size_t P>

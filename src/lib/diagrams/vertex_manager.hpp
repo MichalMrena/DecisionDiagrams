@@ -1,9 +1,12 @@
-#ifndef MIX_DD_VERTEX_MANAGER
-#define MIX_DD_VERTEX_MANAGER
+#ifndef MIX_DD_VERTEX_MANAGER_HPP
+#define MIX_DD_VERTEX_MANAGER_HPP
 
 #include "typedefs.hpp"
 #include "graph.hpp"
+#include "operators.hpp"
 #include "unique_table.hpp"
+#include "bin_op_cache.hpp"
+#include "../utils/object_pool.hpp"
 #include "../utils/hash.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
@@ -26,37 +29,47 @@ namespace mix::dd
     class vertex_manager
     {
     public:
-        using log_t    = typename log_val_traits<P>::type;
-        using vertex_t = vertex<VertexData, ArcData, P>;
-        using vertex_a    = std::array<vertex_t*, P>;
-        using index_v  = std::vector<level_t>;
-        using level_v  = std::vector<level_t>;
+        using log_t             = typename log_val_traits<P>::type;
+        using vertex_t          = vertex<VertexData, ArcData, P>;
+        using vertex_a          = std::array<vertex_t*, P>;
+        using index_v           = std::vector<level_t>;
+        using level_v           = std::vector<level_t>;
+        using op_cache_t        = bin_op_cache<VertexData, ArcData, P>;
+        using op_cache_iterator = typename op_cache_t::iterator;
 
     public:
         vertex_manager  (std::size_t const varCount);
-        vertex_manager  (vertex_manager&& other);
+        vertex_manager  (vertex_manager&& other) = default;
         ~vertex_manager ();
 
         auto set_order (index_v levelToIndex) -> void;
 
     public:
-        auto terminal_vertex     (log_t const val)         -> vertex_t*; // TODO rename create_terminal_vertex
-        auto get_terminal_vertex (log_t const val) const   -> vertex_t*;
-        auto has_terminal_vertex (log_t const val) const   -> bool; // TODO toto sa niekde používa?!
-        auto internal_vertex     (index_t const index, vertex_a const& sons) -> vertex_t*; // TODO rename create_internal_vertex
-        auto get_vertex_level    (vertex_t* const v) const -> level_t;
-        auto get_level           (index_t const i)   const -> level_t;
-        auto get_index           (level_t const l)   const -> index_t;
-        auto get_vertex_value    (vertex_t* const v) const -> log_t;
-        auto is_leaf_vertex      (vertex_t* const v) const -> bool;
-        auto is_leaf_index       (index_t   const i) const -> bool;
-        auto is_leaf_level       (level_t   const l) const -> bool;
-        auto vertex_count        (index_t   const i) const -> std::size_t;
-        auto vertex_count        () const -> std::size_t;
-        auto var_count           () const -> std::size_t;
-        auto get_last_level      () const -> level_t;
-        auto collect_garbage     ()       -> void;
-        auto clear               ()       -> void;
+        auto terminal_vertex  (log_t const val) const                     -> vertex_t*;
+        auto terminal_vertex  (log_t const val)                           -> vertex_t*;
+        auto internal_vertex  (index_t const index, vertex_a const& sons) -> vertex_t*;
+
+        auto get_vertex_level (vertex_t* const v) const -> level_t;
+        auto get_level        (index_t   const i) const -> level_t;
+        auto get_index        (level_t   const l) const -> index_t;
+        auto get_vertex_value (vertex_t* const v) const -> log_t;
+        auto get_vertex_count (index_t   const i) const -> std::size_t;
+        auto get_vertex_count ()                  const -> std::size_t;
+        auto get_var_count    ()                  const -> std::size_t;
+        auto get_last_level   ()                  const -> level_t;
+
+        auto is_leaf_vertex   (vertex_t* const v) const -> bool;
+        auto is_leaf_index    (index_t   const i) const -> bool;
+        auto is_leaf_level    (level_t   const l) const -> bool;
+
+        template<class Op>
+        auto cache_find       (vertex_t* const l, vertex_t* const r) -> op_cache_iterator;
+        template<class Op>
+        auto cache_put        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void;
+        auto cache_adjust     () -> void;
+
+        auto collect_garbage  ()                        -> void; // TODO toto by malo byť asi len interné
+        auto clear            ()                        -> void;
 
         auto swap_vars (index_t const i) -> void;
 
@@ -67,25 +80,28 @@ namespace mix::dd
         auto for_each_terminal_vertex (VertexOp op) const -> void;
 
         static auto is_redundant  (vertex_a const& sons) -> bool;
-        static auto inc_ref_count (vertex_t* const v) -> vertex_t*;
-        static auto dec_ref_count (vertex_t* const v) -> void;
+        static auto inc_ref_count (vertex_t* const v)    -> vertex_t*;
+        static auto dec_ref_count (vertex_t* const v)    -> void;
 
     private:
         using index_map      = unique_table<VertexData, ArcData, P>;
-        using index_map_v    = std::vector<index_map>;
+        using unique_table_v = std::vector<index_map>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
-        using alloc_t        = std::allocator<vertex_t>;
-        using alloc_traits_t = std::allocator_traits<alloc_t>;
+        using op_cache_a     = std::array<op_cache_t, op_count()>;
+        // using vertex_pool_t  = utils::object_pool<vertex_t>;
+        using vertex_pool_t  = utils::dummy_object_pool<vertex_t>;
 
     private:
-        auto leaf_index       () const -> index_t;
-        auto leaf_level       () const -> level_t;
-        auto leaf_count       () const -> std::size_t;
-        auto new_empty_vertex () -> vertex_t*;
-        auto new_shallow_copy (vertex_t* const v) -> vertex_t*;
-        auto delete_vertex    (vertex_t* const v) -> void;
-        auto find_inverse     (level_v const& indexToLevel) const -> index_v;
-        auto swap_vertex      (vertex_t* const v) -> void;
+        auto leaf_index  () const -> index_t;
+        auto leaf_level  () const -> level_t;
+        auto leaf_count  () const -> std::size_t;
+
+        auto clear_cache () -> void;
+
+        auto swap_vertex (vertex_t* const v) -> void;
+
+        template<class... Args>
+        auto new_vertex  (Args&&... args) -> vertex_t*;
 
         template<class IndexMapOp>
         auto for_each_level (IndexMapOp op) -> void;
@@ -97,31 +113,20 @@ namespace mix::dd
         auto for_each_level_impl (IndexMapOp op) const -> void;
 
     private:
-        index_map_v   indexToMap_;
-        leaf_vertex_a leaves_;
-        level_v       indexToLevel_;
-        index_v       levelToIndex_;
-        alloc_t       alloc_;
+        unique_table_v uniqueTables_;
+        leaf_vertex_a  leaves_;
+        level_v        indexToLevel_;
+        index_v        levelToIndex_;
+        op_cache_a     opCaches_;
+        vertex_pool_t  pool_;
     };
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_manager<VertexData, ArcData, P>::vertex_manager
         (std::size_t const varCount) :
-        indexToMap_ {varCount},
-        leaves_     {{}},
-        alloc_      {alloc_t {}}
-    {
-        // TODO init levelToIndex_ & indexToLevel_
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    vertex_manager<VertexData, ArcData, P>::vertex_manager
-        (vertex_manager&& other) :
-        indexToMap_    {std::move(other.indexToMap_)},
-        leaves_        {std::move(other.leaves_)},
-        indexToLevel_  {std::move(other.indexToLevel_)},
-        levelToIndex_  {std::move(other.levelToIndex_)},
-        alloc_         {std::move(other.alloc_)}
+        uniqueTables_ {varCount},
+        leaves_       {{}},
+        pool_         {2'000'000}
     {
     }
 
@@ -129,49 +134,45 @@ namespace mix::dd
     vertex_manager<VertexData, ArcData, P>::~vertex_manager
         ()
     {
-        this->for_each_vertex(std::bind_front(&vertex_manager::delete_vertex, this));
+        // Note: toto teoreticky s prealokovaným poolom netreba.
+        this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::set_order
         (index_v levelToIndex) -> void
     {
-        utils::runtime_assert( 0 == this->vertex_count()
-                             , "vertex_manager::set_order: Manager must be empty." );
-        utils::runtime_assert( this->var_count() == levelToIndex.size()
-                             , "vertex_manager::set_order: Level vector size must match var count." );
+        utils::runtime_assert(0 == this->get_vertex_count(), "vertex_manager::set_order: Manager must be empty.");
+        utils::runtime_assert(this->get_var_count() == levelToIndex.size(), "vertex_manager::set_order: Level vector size must match var count.");
+
         levelToIndex_ = std::move(levelToIndex);
-        indexToLevel_ = this->find_inverse(levelToIndex_);
+        indexToLevel_ = std::vector<level_t>(levelToIndex_.size());
+        auto level    = 0u;
+        for (auto const index : levelToIndex_)
+        {
+            indexToLevel_[index] = level++;
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::terminal_vertex
-        (log_t const val) -> vertex_t*
-    {
-        // TODO put asserts in methods like this
-        if (leaves_[val])
-        {
-            return leaves_[val];
-        }
-
-        auto const v = this->new_empty_vertex();
-        alloc_traits_t::construct(alloc_, v, this->leaf_index());
-        leaves_[val] = v;
-        return v;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_terminal_vertex
         (log_t const val) const -> vertex_t*
     {
         return leaves_[val];
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::has_terminal_vertex
-        (log_t const val) const -> bool
+    auto vertex_manager<VertexData, ArcData, P>::terminal_vertex
+        (log_t const val) -> vertex_t*
     {
-        return leaves_[val];
+        if (leaves_[val])
+        {
+            return leaves_[val];
+        }
+
+        auto const v = this->new_vertex(this->leaf_index());
+        leaves_[val] = v;
+        return v;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -183,15 +184,14 @@ namespace mix::dd
             return sons.front();
         }
 
-        auto& indexMap      = indexToMap_[index];
+        auto& indexMap      = uniqueTables_[index];
         auto const existing = indexMap.find(sons);
         if (existing)
         {
             return existing;
         }
 
-        auto const v = this->new_empty_vertex();
-        alloc_traits_t::construct(alloc_, v, index, sons);
+        auto v = this->new_vertex(index, sons);
         indexMap.insert(v);
         v->for_each_son(inc_ref_count);
 
@@ -258,7 +258,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::vertex_count
+    auto vertex_manager<VertexData, ArcData, P>::get_vertex_count
         (index_t const i) const -> std::size_t
     {
         // TODO assert
@@ -269,14 +269,14 @@ namespace mix::dd
         else
         {
             auto count = 0ul;
-            auto const& map = indexToMap_[i];
+            auto const& map = uniqueTables_[i];
             std::for_each(std::begin(map), std::end(map), [&count](auto&&){ ++count; });
             return count;
         }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::vertex_count
+    auto vertex_manager<VertexData, ArcData, P>::get_vertex_count
         () const -> std::size_t
     {
         auto count = std::size_t {0};
@@ -286,23 +286,53 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::var_count
+    auto vertex_manager<VertexData, ArcData, P>::get_var_count
         () const -> std::size_t
     {
-        return indexToMap_.size();
+        return uniqueTables_.size();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::get_last_level
         () const -> level_t
     {
-        return static_cast<level_t>(this->var_count() - 1);
+        return static_cast<level_t>(this->get_var_count() - 1);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class Op>
+    auto vertex_manager<VertexData, ArcData, P>::cache_find
+        (vertex_t* const l, vertex_t* const r) -> op_cache_iterator
+    {
+        auto& cache = opCaches_[op_id(Op())];
+        return cache.find(l, r);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<class Op>
+    auto vertex_manager<VertexData, ArcData, P>::cache_put
+        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void
+    {
+        auto& cache = opCaches_[op_id(Op())];
+        cache.put(it, l, r, res);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::cache_adjust
+        () -> void
+    {
+        for (auto& c : opCaches_)
+        {
+            c.adjuct_capacity();
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::collect_garbage
         () -> void
     {
+        this->clear_cache();
+
         this->for_each_level([this](auto& indexMap)
         {
             auto const end = std::end(indexMap);
@@ -314,7 +344,7 @@ namespace mix::dd
                 if (0 == v->get_ref_count())
                 {
                     v->for_each_son(dec_ref_count);
-                    this->delete_vertex(v);
+                    pool_.destroy(v);
                     it = indexMap.erase(it);
                 }
                 else
@@ -328,7 +358,7 @@ namespace mix::dd
         {
             if (leaves_[i] && 0 == leaves_[i]->get_ref_count())
             {
-                this->delete_vertex(std::exchange(leaves_[i], nullptr));
+                pool_.destroy(std::exchange(leaves_[i], nullptr));
             }
         }
     }
@@ -337,7 +367,7 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::clear
         () -> void
     {
-        this->for_each_vertex(std::bind_front(&vertex_manager::delete_vertex, this));
+        this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
         this->for_each_level([](auto& levelMap) { levelMap.clear(); });
         std::fill(std::begin(leaves_), std::end(leaves_), nullptr);
     }
@@ -350,12 +380,12 @@ namespace mix::dd
 
         auto const iLevel    = this->get_level(i);
         auto const nextIndex = this->get_index(1 + iLevel);
-        auto tmpIndexMap     = index_map(std::move(indexToMap_[i]));
+        auto tmpIndexMap     = index_map(std::move(uniqueTables_[i]));
         for (auto&& [key, v] : tmpIndexMap)
         {
             this->swap_vertex(v);
         }
-        indexToMap_[nextIndex].merge(tmpIndexMap);
+        uniqueTables_[nextIndex].merge(tmpIndexMap);
 
         std::swap(levelToIndex_[iLevel], levelToIndex_[1 + iLevel]);
         ++indexToLevel_[i];
@@ -367,7 +397,7 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::for_each_vertex
         (VertexOp op) const -> void
     {
-        for (auto const& indexMap : indexToMap_)
+        for (auto const& indexMap : uniqueTables_)
         {
             for (auto const v : indexMap)
             {
@@ -424,33 +454,17 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::new_empty_vertex
-        () -> vertex_t*
-    {
-        return alloc_traits_t::allocate(alloc_, 1);
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::new_shallow_copy
-        (vertex_t* const v) -> vertex_t*
-    {
-        auto const newv = alloc_traits_t::allocate(alloc_, 1);
-        alloc_traits_t::construct(alloc_, newv, *v);
-        return newv;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::leaf_index
         () const -> index_t
     {
-        return static_cast<index_t>(this->var_count());
+        return static_cast<index_t>(this->get_var_count());
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::leaf_level
         () const -> level_t
     {
-        return static_cast<level_t>(this->var_count());
+        return static_cast<level_t>(this->get_var_count());
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -464,25 +478,13 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::delete_vertex
-        (vertex_t* const v) -> void
+    auto vertex_manager<VertexData, ArcData, P>::clear_cache
+        () -> void
     {
-        alloc_traits_t::deallocate(alloc_, v, 1);
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::find_inverse
-        (level_v const& indexToLevel) const -> level_v
-    {
-        auto levelToIndex = std::vector<index_t>(indexToLevel.size());
-
-        auto i = 0u;
-        for (auto const level : indexToLevel)
+        for (auto& c : opCaches_)
         {
-            levelToIndex[level] = i++;
+            c.clear();
         }
-
-        return levelToIndex;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -514,6 +516,27 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    template<class... Args>
+    auto vertex_manager<VertexData, ArcData, P>::new_vertex
+        (Args&&... args) -> vertex_t*
+    {
+        auto const v1 = pool_.try_create(std::forward<Args>(args)...);
+        if (v1)
+        {
+            return v1;
+        }
+
+        this->collect_garbage();
+        auto const v2 = pool_.try_create(std::forward<Args>(args)...);
+        if (v2)
+        {
+            return v2;
+        }
+
+        return pool_.force_create(std::forward<Args>(args)...);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class IndexMapOp>
     auto vertex_manager<VertexData, ArcData, P>::for_each_level
         (IndexMapOp op) -> void
@@ -534,22 +557,22 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::for_each_level_impl
         (IndexMapOp op) const -> void
     {
-        using index_map_v_ref = std::conditional_t<IsConst, index_map_v const&, index_map_v&>;
+        using index_map_v_ref = std::conditional_t<IsConst, unique_table_v const&, unique_table_v&>;
         auto&& indexToMapRef = [this]() -> index_map_v_ref
         {
             if constexpr (IsConst)
             {
-                return indexToMap_;
+                return uniqueTables_;
             }
             else
             {
-                return const_cast<vertex_manager&>(*this).indexToMap_;
+                return const_cast<vertex_manager&>(*this).uniqueTables_;
             }
         }();
 
         if (levelToIndex_.empty())
         {
-            for (auto index = 0u; index < this->var_count(); ++index)
+            for (auto index = 0u; index < this->get_var_count(); ++index)
             {
                 op(indexToMapRef[index]);
             }

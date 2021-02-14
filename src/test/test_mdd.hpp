@@ -226,7 +226,8 @@ namespace mix::dd::test
                               , mdd_t<P> const& d )
     {
         m.collect_garbage();
-        auto const rootIndex     = m.dependency_set(d).front();
+        auto const depSet        = m.dependency_set(d);
+        auto const rootIndex     = depSet.front();
         auto const diagramVCount = m.vertex_count(d);
         auto const totalVCount   = m.vertex_count();
         auto const rootIVCount   = m.vertex_count(rootIndex);
@@ -544,12 +545,12 @@ namespace mix::dd::test
             std::cout << "    Tests"                                                                                     << '\n';
             std::cout << "        Fold            " << (diagram.equals(diagram2) ? "OK" : "Failed.")                     << '\n';
             std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
-            std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
-            std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
-            std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
-            std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
-            std::cout << "        Operators       " << test_operators<P>(manager, diagram)                               << '\n';
-            std::cout << "\n";
+            // std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
+            // std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
+            // std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
+            // std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
+            // std::cout << "        Operators       " << test_operators<P>(manager, diagram)                               << '\n';
+            // std::cout << "\n";
         }
     }
 

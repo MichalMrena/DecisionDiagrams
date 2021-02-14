@@ -8,9 +8,15 @@
 
 namespace mix::utils
 {
+    /**
+        @brief Operators new and delete hidden behind pool interface.
+     */
     template<class T>
     class dummy_object_pool
     {
+    public:
+        dummy_object_pool (std::size_t const);
+
     public:
         template<class... Args>
         [[nodiscard]] auto try_create (Args&&... args) -> T*;
@@ -28,12 +34,21 @@ namespace mix::utils
         alloc_t alloc_;
     };
 
+    /**
+        @brief Simple pool of pre-allocated objects in a continuous storage.
+     */
     template<class T>
     class object_pool
     {
     public:
         object_pool (std::size_t const size);
+        object_pool (object_pool const&) = delete;
+        object_pool (object_pool&&)      = default;
 
+        auto operator= (object_pool const&) -> object_pool& = delete;
+        auto operator= (object_pool&&)      -> object_pool& = default;
+
+    public:
         template<class... Args>
         [[nodiscard]] auto try_create (Args&&... args) -> T*;
 
@@ -50,12 +65,18 @@ namespace mix::utils
         auto is_from_pool (T* const p) const -> bool;
 
     private:
-        alloc_t        alloc_;
-        std::vector<T> objects_;
-        std::deque<T*> available_;
+        alloc_t         alloc_;
+        std::vector<T>  objects_;
+        std::vector<T*> available_;
     };
 
 // dummy_object_pool definitions:
+
+    template<class T>
+    dummy_object_pool<T>::dummy_object_pool
+        (std::size_t const)
+    {
+    }
 
     template<class T>
     template<class... Args>

@@ -14,7 +14,7 @@ namespace mix::dd
         (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t
     {
         auto const ret = this->apply_step<Op>(lhs.get_root(), rhs.get_root());
-        // TODO if not memoize then clear apply memo
+        manager_.cache_adjust(); // TODO same for unique table aby sa neprepocitavala pri kazdom apply_step
         return mdd_t {ret};
     }
 
@@ -119,26 +119,25 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::apply_step
         (vertex_t* const lhs, vertex_t* const rhs) -> vertex_t*
     {
-        auto const memoKey = make_apply_key<Op<P>>(lhs, rhs);
-        auto const memoIt  = applyMemo_.find(memoKey);
-        if (applyMemo_.end() != memoIt)
+        auto const cacheIterator = manager_.template cache_find<Op<P>>(lhs, rhs);
+        if (cacheIterator->matches(lhs, rhs))
         {
-            return memoIt->second;
+            return cacheIterator->result;
         }
 
-        auto const lhsVal = vertexManager_.get_vertex_value(lhs);
-        auto const rhsVal = vertexManager_.get_vertex_value(rhs);
+        auto const lhsVal = manager_.get_vertex_value(lhs);
+        auto const rhsVal = manager_.get_vertex_value(rhs);
         auto const opVal  = Op<P> () (lhsVal, rhsVal);
         auto u = static_cast<vertex_t*>(nullptr); // TODO IILambda?
 
         if (!is_nondetermined<P>(opVal))
         {
-            u = vertexManager_.terminal_vertex(opVal);
+            u = manager_.terminal_vertex(opVal);
         }
         else
         {
-            auto const lhsLevel  = vertexManager_.get_vertex_level(lhs);
-            auto const rhsLevel  = vertexManager_.get_vertex_level(rhs);
+            auto const lhsLevel  = manager_.get_vertex_level(lhs);
+            auto const rhsLevel  = manager_.get_vertex_level(rhs);
             auto const topLevel  = std::min(lhsLevel, rhsLevel);
             auto const topVertex = topLevel == lhsLevel ? lhs : rhs;
             auto const topIndex  = topVertex->get_index();
@@ -150,10 +149,11 @@ namespace mix::dd
                 return this->apply_step<Op>(first, second);
             });
 
-            u = vertexManager_.internal_vertex(topIndex, sons);
+            u = manager_.internal_vertex(topIndex, sons);
         }
 
-        applyMemo_.emplace(memoKey, u);
+        // TODO resize môže nastať až po apply, alebo sa nemôže použiť iterator
+        manager_.template cache_put<Op<P>>(cacheIterator, lhs, rhs, u);
         return u;
     }
 
@@ -194,12 +194,12 @@ namespace mix::dd
             return memoIt->second;
         }
 
-        if (vertexManager_.is_leaf_vertex(v))
+        if (manager_.is_leaf_vertex(v))
         {
             return v;
         }
 
-        auto const u = vertexManager_.internal_vertex( v->get_index()
+        auto const u = manager_.internal_vertex( v->get_index()
                                                      , transform_sons(transform_sons, v) );
         transformMemo_.emplace(v, u);
         return u;
