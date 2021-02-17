@@ -66,8 +66,8 @@ namespace mix::dd
         auto cache_find       (vertex_t* const l, vertex_t* const r) -> op_cache_iterator;
         template<class Op>
         auto cache_put        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void;
-        auto cache_adjust     () -> void;
 
+        auto adjust_sizes     ()                        -> void;
         auto collect_garbage  ()                        -> void; // TODO toto by malo byť asi len interné
         auto clear            ()                        -> void;
 
@@ -84,8 +84,8 @@ namespace mix::dd
         static auto dec_ref_count (vertex_t* const v)    -> void;
 
     private:
-        using index_map      = unique_table<VertexData, ArcData, P>;
-        using unique_table_v = std::vector<index_map>;
+        using unique_table_t = unique_table<VertexData, ArcData, P>;
+        using unique_table_v = std::vector<unique_table_t>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
         using op_cache_a     = std::array<op_cache_t, op_count()>;
         // using vertex_pool_t  = utils::object_pool<vertex_t>;
@@ -318,9 +318,14 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::cache_adjust
+    auto vertex_manager<VertexData, ArcData, P>::adjust_sizes
         () -> void
     {
+        for (auto& t : uniqueTables_)
+        {
+            t.adjust_capacity();
+        }
+
         for (auto& c : opCaches_)
         {
             c.adjuct_capacity();
@@ -380,7 +385,7 @@ namespace mix::dd
 
         auto const iLevel    = this->get_level(i);
         auto const nextIndex = this->get_index(1 + iLevel);
-        auto tmpIndexMap     = index_map(std::move(uniqueTables_[i]));
+        auto tmpIndexMap     = unique_table_t(std::move(uniqueTables_[i]));
         for (auto&& [key, v] : tmpIndexMap)
         {
             this->swap_vertex(v);

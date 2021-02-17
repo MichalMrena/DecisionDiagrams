@@ -25,13 +25,6 @@ namespace mix::utils
         [[nodiscard]] auto force_create (Args&&... args) -> T*;
 
         auto destroy (T* const p) -> void;
-
-    private:
-        using alloc_t  = std::allocator<T>;
-        using traits_t = std::allocator_traits<alloc_t>;
-
-    private:
-        alloc_t alloc_;
     };
 
     /**
@@ -58,16 +51,14 @@ namespace mix::utils
         auto destroy (T* const p) -> void;
 
     private:
-        using alloc_t  = std::allocator<T>;
-        using traits_t = std::allocator_traits<alloc_t>;
+        using pool_iterator = typename std::vector<T>::iterator;
 
     private:
-        auto is_from_pool (T* const p) const -> bool;
-
-    private:
-        alloc_t         alloc_;
-        std::vector<T>  objects_;
-        std::vector<T*> available_;
+        std::vector<T>              mainPool_;
+        std::vector<std::vector<T>> overflowPools_;
+        std::vector<T*>             freeObjects_;
+        std::vector<T>*             currentPool_;
+        pool_iterator               nextObject_;
     };
 
 // dummy_object_pool definitions:
@@ -91,17 +82,14 @@ namespace mix::utils
     auto dummy_object_pool<T>::force_create
         (Args&&... args) -> T*
     {
-        auto const p = traits_t::allocate(alloc_, 1);
-        traits_t::construct(alloc_, p, std::forward<Args>(args)...);
-        return p;
+        return new T(std::forward<Args>(args)...);
     }
 
     template<class T>
     auto dummy_object_pool<T>::destroy
         (T* const p) -> void
     {
-        traits_t::destroy(alloc_, p);
-        traits_t::deallocate(alloc_, p, 1);
+        delete p;
     }
 
 // object_pool definitions:
@@ -109,18 +97,10 @@ namespace mix::utils
     template<class T>
     object_pool<T>::object_pool
         (std::size_t const size) :
-        objects_   (size),
-        available_ (size)
+        mainPool_    (size),
+        currentPool_ (std::addressof(mainPool_)),
+        nextObject_  (std::begin(mainPool_))
     {
-        auto in    = std::begin(objects_);
-        auto endIn = std::end(objects_);
-        auto out   = std::begin(available_);
-        while (in != endIn)
-        {
-            *out = std::addressof(*in);
-            ++in;
-            ++out;
-        }
     }
 
     template<class T>
@@ -128,14 +108,28 @@ namespace mix::utils
     auto object_pool<T>::try_create
         (Args&&... args) -> T*
     {
-        if (available_.empty())
+        using alloc_t  = decltype(currentPool_->get_allocator());
+        using traits_t = std::allocator_traits<alloc_t>;
+
+        auto p = static_cast<T*>(nullptr);
+
+        if (nextObject_ != std::end(*currentPool_))
         {
-            return nullptr;
+            p = std::addressof(*nextObject_);
+            ++nextObject_;
+        }
+        else if (!freeObjects_.empty())
+        {
+            p = freeObjects_.back();
+            freeObjects_.pop_back();
         }
 
-        auto const p = available_.back();
-        available_.pop_back();
-        traits_t::construct(alloc_, p, std::forward<Args>(args)...);
+        if (p)
+        {
+            auto alloc = currentPool_->get_allocator();
+            traits_t::construct(alloc, p, std::forward<Args>(args)...);
+        }
+
         return p;
     }
 
@@ -144,33 +138,17 @@ namespace mix::utils
     auto object_pool<T>::force_create
         (Args&&... args) -> T*
     {
-        auto const p = traits_t::allocate(alloc_, 1);
-        traits_t::construct(alloc_, p, std::forward<Args>(args)...);
-        return p;
+        overflowPools_.emplace_back(mainPool_.size() / 2);
+        currentPool_ = std::addressof(overflowPools_.back());
+        nextObject_  = std::begin(*currentPool_);
+        return this->try_create(std::forward<Args>(args)...);
     }
 
     template<class T>
     auto object_pool<T>::destroy
         (T* const p) -> void
     {
-        if (this->is_from_pool(p))
-        {
-            available_.push_back(p);
-        }
-        else
-        {
-            traits_t::destroy(alloc_, p);
-            traits_t::deallocate(alloc_, p, 1);
-        }
-    }
-
-    template<class T>
-    auto object_pool<T>::is_from_pool
-        (T* const p) const -> bool
-    {
-        auto const first = std::addressof(objects_.front());
-        auto const last  = std::addressof(objects_.back());
-        return p >= first && p <= last;
+        freeObjects_.push_back(p);
     }
 }
 

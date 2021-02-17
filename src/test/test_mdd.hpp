@@ -545,12 +545,12 @@ namespace mix::dd::test
             std::cout << "    Tests"                                                                                     << '\n';
             std::cout << "        Fold            " << (diagram.equals(diagram2) ? "OK" : "Failed.")                     << '\n';
             std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
-            // std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
-            // std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
-            // std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
-            // std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
-            // std::cout << "        Operators       " << test_operators<P>(manager, diagram)                               << '\n';
-            // std::cout << "\n";
+            std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
+            std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
+            std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
+            std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
+            std::cout << "        Operators       " << test_operators<P>(manager, diagram)                               << '\n';
+            std::cout << "\n";
         }
     }
 

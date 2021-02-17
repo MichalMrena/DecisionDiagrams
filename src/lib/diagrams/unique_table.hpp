@@ -61,15 +61,16 @@ namespace mix::dd
         unique_table ();
 
     public:
-        auto insert (vertex_t* const v)         -> vertex_t*;
-        auto find   (vertex_a const& key) const -> vertex_t*;
-        auto erase  (iterator const it)         -> iterator;
-        auto size   () const                    -> std::size_t;
-        auto clear  ()                          -> void;
-        auto begin  ()                          -> iterator;
-        auto end    ()                          -> iterator;
-        auto begin  () const                    -> const_iterator;
-        auto end    () const                    -> const_iterator;
+        auto insert          (vertex_t* const v)         -> vertex_t*;
+        auto find            (vertex_a const& key) const -> vertex_t*;
+        auto erase           (iterator const it)         -> iterator;
+        auto size            () const                    -> std::size_t;
+        auto adjust_capacity ()                          -> void;
+        auto clear           ()                          -> void;
+        auto begin           ()                          -> iterator;
+        auto end             ()                          -> iterator;
+        auto begin           () const                    -> const_iterator;
+        auto end             () const                    -> const_iterator;
 
     private:
         template<class Key, class Getter>
@@ -83,10 +84,18 @@ namespace mix::dd
 
     private:
         static inline auto constexpr LoadThreshold = 0.75;
-        static inline auto constexpr Capacities    = std::array<std::size_t, 25> {257, 521, 1049, 2099, 4201, 8419, 16843, 33703, 67409, 134837, 269683, 539389, 1078787, 2157587, 4315183, 8630387, 17260781, 34521589, 69043189, 138086407, 276172823, 552345671, 1104691373, 2209382761, 4418765551};
+        static inline auto constexpr Capacities    = std::array<std::size_t, 25>
+        {
+            257,         521,         1049,          2'099,         4'201,
+            8'419,       16'843,      33'703,        67'409,        134'837,
+            269'683,     539'389,     1'078'787,     2'157'587,     4'315'183,
+            8'630'387,   17'260'781,  34'521'589,    69'043'189,    138'086'407,
+            276'172'823, 552'345'671, 1'104'691'373, 2'209'382'761, 4'418'765'551
+        };
 
     private:
         std::size_t            size_;
+        std::size_t const*     capacity_;
         std::vector<vertex_t*> buckets_;
     };
 
@@ -180,8 +189,9 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     unique_table<VertexData, ArcData, P>::unique_table
         () :
-        size_    (0),
-        buckets_ (256, nullptr)
+        size_     (0),
+        capacity_ (Capacities.data()),
+        buckets_  (*capacity_, nullptr)
     {
     }
 
@@ -189,11 +199,6 @@ namespace mix::dd
     auto unique_table<VertexData, ArcData, P>::insert
         (vertex_t* const v) -> vertex_t*
     {
-        if (this->needs_rehash())
-        {
-            this->rehash();
-        }
-
         auto const ret = this->insert_impl(v);
         ++size_;
         return ret;
@@ -248,6 +253,16 @@ namespace mix::dd
         () const -> std::size_t
     {
         return size_;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto unique_table<VertexData, ArcData, P>::adjust_capacity
+        () -> void
+    {
+        if (size_ && this->needs_rehash())
+        {
+            this->rehash();
+        }
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -367,8 +382,9 @@ namespace mix::dd
     auto unique_table<VertexData, ArcData, P>::rehash
         () -> void
     {
+        ++capacity_;
         auto oldBuckets = std::vector<vertex_t*>(std::move(buckets_));
-        buckets_ = std::vector<vertex_t*>(2 * oldBuckets.size(), nullptr);
+        buckets_ = std::vector<vertex_t*>(*capacity_, nullptr);
         for (auto bucket : oldBuckets)
         {
             while (bucket)

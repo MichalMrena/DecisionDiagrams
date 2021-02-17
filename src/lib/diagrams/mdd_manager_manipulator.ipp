@@ -14,7 +14,7 @@ namespace mix::dd
         (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t
     {
         auto const ret = this->apply_step<Op>(lhs.get_root(), rhs.get_root());
-        manager_.cache_adjust(); // TODO same for unique table aby sa neprepocitavala pri kazdom apply_step
+        manager_.adjust_sizes();
         return mdd_t {ret};
     }
 
