@@ -7,7 +7,7 @@
 namespace mix::utils
 {
     /**
-     *  Simple class for measuring elapsed time.
+        Simple class for measuring elapsed time.
      */
     class stopwatch
     {
@@ -16,35 +16,29 @@ namespace mix::utils
         using milliseconds = std::chrono::milliseconds;
         using time_point_t = std::chrono::time_point<clock>;
 
-    public:
-        auto reset () -> void;
-
-        /**
-         *  Returns time since the initialization of the object
-         *  or since the last call to reset.
-         *  @return time in std::chrono::milliseconds.
-         */
-        auto elapsed_time () const -> milliseconds;
-
     private:
         time_point_t timeZero_ = clock::now();
+
+    public:
+        auto reset () -> void
+        {
+            timeZero_ = clock::now();
+        }
+
+        /**
+            Returns time since the initialization of the object
+            or since the last call to reset.
+            @return time in std::chrono::milliseconds.
+         */
+        auto elapsed_time () const -> milliseconds
+        {
+            return std::chrono::duration_cast<milliseconds>(clock::now() - timeZero_);
+        }
     };
 
-    inline auto stopwatch::reset
-        () -> void
-    {
-        timeZero_ = clock::now();
-    }
-
-    inline auto stopwatch::elapsed_time
-        () const -> milliseconds
-    {
-        return std::chrono::duration_cast<milliseconds>(clock::now() - timeZero_);
-    }
-
     /**
-     *  Measures how long it takes to execute given function.
-     *  @return time in milliseconds.
+        Measures how long it takes to execute given function.
+        @return time in milliseconds.
      */
     template<class Function>
     auto run_time (Function&& function) -> double
@@ -55,14 +49,14 @@ namespace mix::utils
     }
 
     /**
-     *  Measures how long it takes to execute given function.
-     *  Executes the function @p replications times and returns
-     *  the average time for one execution.
-     *  @return time in milliseconds.
+        Measures how long it takes to execute given function.
+        Executes the function @p replications times and returns
+        the average time for one execution.
+        @return time in milliseconds.
      */
     template<class Function>
     auto avg_run_time ( std::size_t const replications
-                      , Function&& function ) -> double
+                      , Function&&        function ) -> double
     {
         auto sum = 0.0;
         for (auto i = 0u; i < replications; ++i)

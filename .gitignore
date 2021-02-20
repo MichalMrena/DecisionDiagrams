@@ -3,3 +3,4 @@ build
 gmon.out
 profile.txt
 profile.png
+valgrind.txt

@@ -58,8 +58,13 @@ namespace mix::dd
         auto prevVertex = 0 == cubes.at(index)
                               ? base::manager_.internal_vertex(index, {trueLeaf, falseLeaf})
                               : base::manager_.internal_vertex(index, {falseLeaf, trueLeaf});
+
+            // prevVertex->inc_ref_count();
+
         while (index > 0)
         {
+                // auto const oldPrev = prevVertex;
+
             --index;
             auto const val = cubes.at(index);
             if (val > 1)
@@ -69,8 +74,12 @@ namespace mix::dd
             prevVertex = 0 == val
                              ? base::manager_.internal_vertex(index, {prevVertex, falseLeaf})
                              : base::manager_.internal_vertex(index, {falseLeaf, prevVertex});
+
+                // oldPrev->dec_ref_count();
+                // prevVertex->inc_ref_count();
         }
 
+            // prevVertex->dec_ref_count();
         return bdd_t {prevVertex};
     }
 
@@ -85,6 +94,7 @@ namespace mix::dd
         auto prevVertex      = current->complemented
                                    ? base::manager_.internal_vertex(current->index, {trueLeaf, falseLeaf})
                                    : base::manager_.internal_vertex(current->index, {falseLeaf, trueLeaf});
+
         if (current != first) do
         {
             std::advance(current, -1);
@@ -130,6 +140,8 @@ namespace mix::dd
             functionDiagrams.emplace_back(this->or_merge(productDiagrams, mm));
         }
 
+        base::manager_.collect_garbage();
+
         return functionDiagrams;
     }
 
@@ -137,11 +149,6 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::line_to_product
         (pla_line const& line) -> bdd_t
     {
-        // auto const vars  = cube_to_bool_vars(line.cube);
-        // auto varDiagrams = this->variables(vars);
-        // return vars.empty() ? this->constant(0)
-        //                     // : this->template tree_fold<AND>(std::begin(varDiagrams), std::end(varDiagrams));
-        //                     : this->product(line.cube);
         return this->product(line.cube);
     }
 

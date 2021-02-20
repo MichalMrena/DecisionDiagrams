@@ -13,9 +13,10 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::apply
         (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t
     {
-        auto const ret = this->apply_step<Op>(lhs.get_root(), rhs.get_root());
+        auto const v = this->apply_step<Op>(lhs.get_root(), rhs.get_root());
+        auto const d = mdd_t {v};
         manager_.adjust_sizes();
-        return mdd_t {ret};
+        return d;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -128,7 +129,7 @@ namespace mix::dd
         auto const lhsVal = manager_.get_vertex_value(lhs);
         auto const rhsVal = manager_.get_vertex_value(rhs);
         auto const opVal  = Op<P> () (lhsVal, rhsVal);
-        auto u = static_cast<vertex_t*>(nullptr); // TODO IILambda?
+        auto u = static_cast<vertex_t*>(nullptr);
 
         if (!is_nondetermined<P>(opVal))
         {

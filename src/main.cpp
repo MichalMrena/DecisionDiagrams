@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"
@@ -15,74 +16,6 @@
 using namespace mix::dd;
 using namespace mix::utils;
 using namespace mix::dd::test;
-
-auto bss_reliability_test()
-{
-    auto  m = make_bdd_manager(5);
-    auto& x = m;
-    register_manager(m);
-    // m.set_order({0, 3, 1, 4, 2});
-
-    auto const ps = std::vector {0.9, 0.8, 0.7, 0.9, 0.9};
-    auto sf = (x(0) and x(1)) or ((x(2) and x(3)) or x(4));
-
-    auto const A = m.availability(ps, sf);
-    auto const U = 1 - A;
-
-    auto dpbds = m.dpbds(sf);
-    auto const SIs  = m.structural_importances(dpbds);
-    auto const BIs  = m.birnbaum_importances(ps, dpbds);
-    auto const CIs  = m.criticality_importances(BIs, ps, U);
-    auto const FIs  = m.fussell_vesely_importances(dpbds, ps, U);
-    auto const MCVs = m.mcvs<std::bitset<5>>(dpbds);
-
-    m.to_dot_graph(std::cout, sf);
-
-    printl(concat("A = "   , A));
-    printl(concat("U = "   , U));
-    printl(concat("SI "    , concat_range(SIs, " ")));
-    printl(concat("BI "    , concat_range(BIs, " ")));
-    printl(concat("CI "    , concat_range(CIs, " ")));
-    printl(concat("FI "    , concat_range(FIs, " ")));
-    printl(concat("MCVs: " , concat_range(MCVs, ", ")));
-}
-
-auto mss_reliability_test()
-{
-    using prob_table = typename mdd_manager<double, void, 3>::prob_table;
-    using vec_t      = std::array<unsigned int, 4>;
-    using log_t      = typename log_val_traits<3>::type;
-    auto m           = mdd_manager<double, void, 3>(4);
-    m.set_domains({2, 3, 2, 3});
-    auto sf          = m.from_vector(std::vector<log_t> {0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2});
-    auto dpbds       = m.dpbds_integrated_1({1, 0}, 1, sf);
-    auto const ps    = prob_table{ {0.1, 0.9, 0.0}
-                                 , {0.2, 0.6, 0.2}
-                                 , {0.3, 0.7, 0.0}
-                                 , {0.1, 0.6, 0.3} };
-    m.calculate_probabilities(ps, sf);
-    auto const A1    = m.get_availability(1);
-    auto const A2    = m.get_availability(2);
-    auto const SIs1  = m.structural_importances(dpbds);
-    auto const BIs1  = m.birnbaum_importances(ps, dpbds);
-
-    printl(concat("A1 = " , A1));
-    printl(concat("A2 = " , A2));
-    printl(concat("SI "   , concat_range(SIs1, " ")));
-    printl(concat("BI "   , concat_range(BIs1, " ")));
-
-    auto const mcvs = m.mcvs<vec_t>(sf, 1);
-    for (auto const& cut : mcvs)
-    {
-        printl(concat("(", concat_range(cut, ", "), ")"));
-    }
-
-    auto constexpr ND = log_val_traits<3>::nodomain;
-    printl(m.satisfy_count(0, sf));
-    printl(m.satisfy_count(1, sf));
-    printl(m.satisfy_count(2, sf));
-    printl(m.satisfy_count(ND, sf));
-}
 
 auto mss_playground()
 {
@@ -115,13 +48,13 @@ auto mss_playground()
 auto pla_sanity_check()
 {
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
-    auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    // auto const files = {"14-adder_col.pla"};
+    // auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    auto const files = {"12-adder_col.pla"};
 
     for (auto const fileName : files)
     {
         auto const filePath = mix::utils::concat(plaDir , fileName);
-        auto file           = pla_file::load_file(filePath);
+        auto const file     = pla_file::load_file(filePath);
         auto manager        = bdd_manager<void, void>(file.variable_count());
         auto const ds       = manager.from_pla(file, fold_e::tree);
         auto sum            = 0ul;
@@ -136,23 +69,23 @@ auto pla_sanity_check()
 auto pla_test_speed()
 {
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
-    auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
     // auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
     // auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla"};
-    // auto const files = {"14-adder_col.pla"};
+    // auto const files = {"15-adder_col.pla"};
 
-    auto const load_pla = [plaDir](auto&& fileName)
+    auto const build_diagrams = [](auto const& plaFileRef)
     {
-        auto const filePath = mix::utils::concat(plaDir , fileName);
-        auto file           = pla_file::load_file(filePath);
-        auto manager        = bdd_manager<void, void>(file.variable_count());
-        auto const ds       = manager.from_pla(file, fold_e::tree);
+        auto manager  = bdd_manager<void, void>(plaFileRef.get().variable_count());
+        auto const ds = manager.from_pla(plaFileRef.get(), fold_e::tree);
     };
 
     for (auto fileName : files)
     {
-        auto et = avg_run_time(2, std::bind_front(load_pla, fileName));
-        printl(concat(fileName , " -> " , et , "ms"));
+        auto const filePath = mix::utils::concat(plaDir , fileName);
+        auto const plaFile  = pla_file::load_file(filePath);
+        auto const elapsed  = avg_run_time(2, std::bind_front(build_diagrams, std::cref(plaFile)));
+        printl(concat(fileName , " -> " , elapsed , "ms"));
     }
 }
 
@@ -282,38 +215,11 @@ auto swap_var_test()
     // m.to_dot_graph(std::cout);
 }
 
-auto main() -> int
+auto main () -> int
 {
-    auto watch = stopwatch();
+    pla_sanity_check();
+    // pla_test_speed();
 
-    // pla_sanity_check();
-    pla_test_speed();
-    // mss_reliability_test();
-    // mss_playground();
-    // example_basic_usage_bdd();
-    // example_basic_usage_mdd();
-    // order_test();
-    // swap_var_test();
-    // eq_test();
-    // test_mul_absorbing();
-    // test_stack_algo();
-
-    // test_mdd_random<3>(5, order_e::Random, domain_e::Nonhomogenous);
-    // test_mdd_vector(10);
-    // test_bss();
-    // test_mss(144);
-
-    // auto m  = bdd_manager<void, void>(5);
-    // auto vs = bit_vector<2, unsigned> {3, 3, 3};
-    // // auto vs = bit_vector<2, unsigned> {3, 0, 1, 1, 3};
-    // auto d  = m.product(vs);
-    // m.to_dot_graph(std::cout, d);
-
-    // TODO remove IO from benchmarks
-
-    auto const timeTaken = watch.elapsed_time().count();
-    printl("Done.");
-    printl("Time taken: " + std::to_string(timeTaken) + " ms");
-
+    std::cout << "Done." << '\n';
     return 0;
 }
