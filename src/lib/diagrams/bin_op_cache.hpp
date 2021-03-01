@@ -32,7 +32,7 @@ namespace mix::dd
     public:
         auto find            (vertex_t* const l, vertex_t* const r) -> iterator;
         auto put             (iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void;
-        auto adjuct_capacity () -> void;
+        auto adjust_capacity (std::size_t const aproxCapacity) -> void;
         auto clear           () -> void;
 
     private:
@@ -41,16 +41,17 @@ namespace mix::dd
         {
             257,         521,         1049,          2'099,         4'201,
             8'419,       16'843,      33'703,        67'409,        134'837,
-            269'683,     539'389,     1'078'787,     2'157'587,     4'315'183,
+            269'683,     539'389,     1'078'787,      2'157'587,     4'315'183,
             8'630'387,   17'260'781,  34'521'589,    69'043'189,    138'086'407,
             276'172'823, 552'345'671, 1'104'691'373, 2'209'382'761, 4'418'765'551
         };
 
     private:
-        static auto hash     (vertex_t* const l, vertex_t* const r)       -> std::size_t;
-        auto calculate_index (vertex_t* const l, vertex_t* const r) const -> std::size_t;
-        auto needs_rehash    () const -> bool;
-        auto rehash          ()       -> void;
+        static auto hash       (vertex_t* const l, vertex_t* const r)        -> std::size_t;
+        auto calculate_index   (vertex_t* const l, vertex_t* const r)  const -> std::size_t;
+        auto possibly_rehash   (std::size_t const  aproxCapacity)      const -> bool;
+        auto rehash            (std::size_t const* capacity)                 -> void;
+        auto find_gte_capacity (std::size_t const  aproxCapacity)      const -> std::size_t const*;
 
     private:
         std::size_t        size_;
@@ -93,13 +94,27 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::adjuct_capacity
-        () -> void
+    auto bin_op_cache<VertexData, ArcData, P>::adjust_capacity
+        (std::size_t const aproxCapacity) -> void
     {
-        if (size_ && this->needs_rehash())
+        if (!size_ || !(capacity_ < std::end(Capacities)))
         {
-            this->rehash();
+            return;
         }
+
+        auto const targetCapacity = this->find_gte_capacity(aproxCapacity);
+        if (capacity_ >= targetCapacity)
+        {
+            return;
+        }
+
+        auto const currentLoad = static_cast<double>(size_) / static_cast<double>(entries_.size());
+        if (currentLoad < LoadThreshold)
+        {
+            return;
+        }
+
+        this->rehash(targetCapacity);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -136,25 +151,29 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::needs_rehash
-        () const -> bool
-    {
-        auto const currentLoad = static_cast<double>(size_) / static_cast<double>(entries_.size());
-        return currentLoad > LoadThreshold;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     auto bin_op_cache<VertexData, ArcData, P>::rehash
-        () -> void
+        (std::size_t const* capacity) -> void
     {
-        ++capacity_;
-        auto oldEntries = std::vector<entry>(std::move(entries_));
-        entries_        = std::vector<entry>(*capacity_);
+        capacity_             = capacity;
+        auto const oldEntries = std::vector<entry>(std::move(entries_));
+        entries_              = std::vector<entry>(*capacity_);
         for (auto const& e : oldEntries)
         {
             auto const index = this->calculate_index(e.lhs, e.rhs);
             entries_[index]  = e;
         }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto bin_op_cache<VertexData, ArcData, P>::find_gte_capacity
+        (std::size_t const aproxCapacity) const -> std::size_t const*
+    {
+        auto c = capacity_;
+        while (c < std::end(Capacities) && *c < aproxCapacity)
+        {
+            ++c;
+        }
+        return c;
     }
 }
 

@@ -619,7 +619,7 @@ namespace mix::dd::test
             auto const domainProd = std::reduce(std::begin(domains), std::end(domains), 1u, std::multiplies<>());
             auto const vector     = utils::fill_vector(domainProd, [&](auto const){ return rngValue.next_int(); });
             manager.set_domains(domains);
-            std::cout << test_mdd_vector_eval<P>(vector, domains, manager) << '\n';
+            std::cout << '#' << i << ' ' << test_mdd_vector_eval<P>(vector, domains, manager) << '\n';
 
             manager.clear();
         }
@@ -628,21 +628,21 @@ namespace mix::dd::test
             auto const domains = {2u, 2u, 4u};
             auto const vector  = {0u, 0u, 0u, 0u, 0u, 1u, 1u, 2u, 0u, 1u, 1u, 2u, 0u, 2u, 3u, 3u};
             m.set_domains(domains);
-            std::cout << test_mdd_vector_eval<4>(vector, domains, m) << '\n';
+            std::cout << "#_ " << test_mdd_vector_eval<4>(vector, domains, m) << '\n';
         }
         {
             auto m = make_mdd_manager<3>(4);
             auto const domains = {2u, 3u, 2u, 3u};
             auto const vector  = {0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 2u, 2u, 2u, 2u, 2u, 1u, 2u, 2u, 2u, 2u, 2u};
             m.set_domains(domains);
-            std::cout << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
+            std::cout << "#_ " << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
         }
         {
             auto m = make_mdd_manager<3>(4);
             auto const domains = {3u, 2u, 2u, 3u};
             auto const vector  = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 0u, 0u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u};
             m.set_domains(domains);
-            std::cout << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
+            std::cout << "#_ " << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
         }
     }
 }

@@ -59,12 +59,8 @@ namespace mix::dd
                               ? base::manager_.internal_vertex(index, {trueLeaf, falseLeaf})
                               : base::manager_.internal_vertex(index, {falseLeaf, trueLeaf});
 
-            // prevVertex->inc_ref_count();
-
         while (index > 0)
         {
-                // auto const oldPrev = prevVertex;
-
             --index;
             auto const val = cubes.at(index);
             if (val > 1)
@@ -74,12 +70,8 @@ namespace mix::dd
             prevVertex = 0 == val
                              ? base::manager_.internal_vertex(index, {prevVertex, falseLeaf})
                              : base::manager_.internal_vertex(index, {falseLeaf, prevVertex});
-
-                // oldPrev->dec_ref_count();
-                // prevVertex->inc_ref_count();
         }
 
-            // prevVertex->dec_ref_count();
         return bdd_t {prevVertex};
     }
 

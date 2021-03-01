@@ -153,7 +153,6 @@ namespace mix::dd
             u = manager_.internal_vertex(topIndex, sons);
         }
 
-        // TODO resize môže nastať až po apply, alebo sa nemôže použiť iterator
         manager_.template cache_put<Op<P>>(cacheIterator, lhs, rhs, u);
         return u;
     }

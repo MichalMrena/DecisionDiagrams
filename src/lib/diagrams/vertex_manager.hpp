@@ -68,7 +68,7 @@ namespace mix::dd
         auto cache_put        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void;
 
         auto adjust_sizes     ()                        -> void;
-        auto collect_garbage  ()                        -> void; // TODO toto by malo byť asi len interné
+        auto collect_garbage  ()                        -> void;
         auto clear            ()                        -> void;
 
         auto swap_vars (index_t const i) -> void;
@@ -88,9 +88,7 @@ namespace mix::dd
         using unique_table_v = std::vector<unique_table_t>;
         using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
         using op_cache_a     = std::array<op_cache_t, op_count()>;
-        // using vertex_pool_t  = utils::object_pool<vertex_t>;
-        // using vertex_pool_t  = utils::dummy_object_pool<vertex_t>;
-        using vertex_pool_t  = utils::semi_dummy_object_pool<vertex_t>;
+        using vertex_pool_t  = utils::object_pool<vertex_t>;
 
     private:
         auto leaf_index  () const -> index_t;
@@ -100,6 +98,8 @@ namespace mix::dd
         auto clear_cache () -> void;
 
         auto swap_vertex (vertex_t* const v) -> void;
+
+        auto delete_vertex (vertex_t* const v) -> void;
 
         template<class... Args>
         auto new_vertex  (Args&&... args) -> vertex_t*;
@@ -114,6 +114,9 @@ namespace mix::dd
         auto for_each_level_impl (IndexMapOp op) const -> void;
 
     private:
+        inline static constexpr auto PoolSize = 2'000'000;
+
+    private:
         unique_table_v uniqueTables_;
         leaf_vertex_a  leaves_;
         level_v        indexToLevel_;
@@ -121,6 +124,7 @@ namespace mix::dd
         op_cache_a     opCaches_;
         vertex_pool_t  pool_;
         bool           needsGc_;
+        std::size_t    vertexCount_;
     };
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -128,9 +132,9 @@ namespace mix::dd
         (std::size_t const varCount) :
         uniqueTables_ {varCount},
         leaves_       {{}},
-        // pool_         {2'000'000},
-        pool_         {200'000},
-        needsGc_      {false}
+        pool_         {PoolSize},
+        needsGc_      {false},
+        vertexCount_  {0}
     {
     }
 
@@ -139,7 +143,7 @@ namespace mix::dd
         ()
     {
         // Note: toto teoreticky s prealokovaným poolom netreba.
-        this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
+        // this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -331,7 +335,7 @@ namespace mix::dd
 
         for (auto& c : opCaches_)
         {
-            c.adjuct_capacity();
+            c.adjust_capacity(vertexCount_ / 4);
         }
 
         if (needsGc_)
@@ -359,7 +363,7 @@ namespace mix::dd
                 {
                     v->for_each_son(dec_ref_count);
                     it = indexMap.erase(it);
-                    pool_.destroy(v);
+                    this->delete_vertex(v);
                 }
                 else
                 {
@@ -372,7 +376,7 @@ namespace mix::dd
         {
             if (leaves_[i] && 0 == leaves_[i]->get_ref_count())
             {
-                pool_.destroy(std::exchange(leaves_[i], nullptr));
+                this->delete_vertex(std::exchange(leaves_[i], nullptr));
             }
         }
     }
@@ -384,14 +388,13 @@ namespace mix::dd
         this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
         this->for_each_level([](auto& levelMap) { levelMap.clear(); });
         std::fill(std::begin(leaves_), std::end(leaves_), nullptr);
+        vertexCount_ = 0;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::swap_vars
         (index_t const i) -> void
     {
-        // TODO bound check
-
         auto const iLevel    = this->get_level(i);
         auto const nextIndex = this->get_index(1 + iLevel);
         auto tmpIndexMap     = unique_table_t(std::move(uniqueTables_[i]));
@@ -534,10 +537,19 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::delete_vertex
+        (vertex_t* const v) -> void
+    {
+        --vertexCount_;
+        pool_.destroy(v);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class... Args>
     auto vertex_manager<VertexData, ArcData, P>::new_vertex
         (Args&&... args) -> vertex_t*
     {
+        ++vertexCount_;
         auto const v = pool_.try_create(std::forward<Args>(args)...);
         if (v)
         {

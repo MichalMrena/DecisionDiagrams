@@ -1,5 +1,5 @@
-#ifndef MIX_DD_FILE_READER_
-#define MIX_DD_FILE_READER_
+#ifndef MIX_DD_FILE_READER_HPP
+#define MIX_DD_FILE_READER_HPP
 
 #include <string>
 #include <string_view>
