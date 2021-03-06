@@ -110,8 +110,8 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::evaluate
         (mdd_t const& d, VariableValues const& vs) const -> log_t
     {
-        auto constexpr ND      = log_val_traits<P>::nodomain;
-        auto constexpr get_var = GetIthVar {};
+        static auto constexpr ND      = log_val_traits<P>::nodomain;
+        static auto constexpr get_var = GetIthVar {};
         auto v = d.get_root();
 
         while (!manager_.is_leaf_vertex(v))
@@ -150,8 +150,21 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::traverse_pre
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        this->traverse_pre_step(d.get_root(), std::forward<VertexOp>(op));
-        this->traverse_pre_step(d.get_root(), utils::no_op);
+        auto const go = [](auto&& go, auto const v, auto&& op)
+        {
+            v->toggle_mark();
+            op(v);
+            v->for_each_son([&go, v, &op](auto const son)
+            {
+                if (v->get_mark() != son->get_mark())
+                {
+                    go(go, son, op);
+                }
+            });
+        };
+
+        go(go, d.get_root(), op);
+        go(go, d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -159,8 +172,21 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::traverse_post
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        this->traverse_post_step(d.get_root(), std::forward<VertexOp>(op));
-        this->traverse_post_step(d.get_root(), utils::no_op);
+        auto const go = [](auto&& go, auto const v, auto&& op)
+        {
+            v->toggle_mark();
+            v->for_each_son([&go, v, &op](auto const son)
+            {
+                if (v->get_mark() != son->get_mark())
+                {
+                    go(go, son, op);
+                }
+            });
+            op(v);
+        };
+
+        go(go, d.get_root(), op);
+        go(go, d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -168,33 +194,50 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::traverse_level
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        auto const cmp = [this](auto const lhs, auto const rhs)
+        auto const go_level = [this](auto const v, auto&& op)
         {
-            return manager_.get_vertex_level(lhs) > manager_.get_vertex_level(rhs);
+            auto const cmp = [this](auto const l, auto const r)
+            {
+                return manager_.get_vertex_level(l) > manager_.get_vertex_level(r);
+            };
+
+            using compare_t     = decltype(cmp);
+            using vertex_prio_q = std::priority_queue<vertex_t*, vertex_v, compare_t>;
+
+            auto queue = vertex_prio_q(cmp);
+            v->toggle_mark();
+            queue.push(v);
+            while (!queue.empty())
+            {
+                auto const current = queue.top();
+                queue.pop();
+                op(current);
+                current->for_each_son([&queue, current](auto const son)
+                {
+                    if (son->get_mark() != current->get_mark())
+                    {
+                        queue.push(son);
+                        son->toggle_mark();
+                    }
+                });
+            }
         };
 
-        using compare_t     = decltype(cmp);
-        using vertex_prio_q = std::priority_queue<vertex_t*, vertex_v, compare_t>;
-
-        auto queue = vertex_prio_q(cmp);
-        d.get_root()->toggle_mark();
-        queue.push(d.get_root());
-        while (!queue.empty())
+        auto const go_pre = [](auto&& go, auto const v, auto&& op)
         {
-            auto const current = queue.top();
-            queue.pop();
-            op(current);
-            current->for_each_son([&queue, current](auto const son)
+            v->toggle_mark();
+            op(v);
+            v->for_each_son([&go, v, &op](auto const son)
             {
-                if (son->get_mark() != current->get_mark())
+                if (v->get_mark() != son->get_mark())
                 {
-                    queue.push(son);
-                    son->toggle_mark();
+                    go(go, son, op);
                 }
             });
-        }
+        };
 
-        this->traverse_pre_step(d.get_root(), utils::no_op);
+        go_level(d.get_root(), op);
+        go_pre(go_pre, d.get_root(), utils::no_op);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -203,40 +246,34 @@ namespace mix::dd
         (std::ostream& ost, VertexIterator for_each_v) const -> void
     {
         using std::to_string;
-        using utils::concat;
-        using utils::concat_range;
-        using utils::EOL;
-        using string_v  = std::vector<std::string>;
-        using string_vv = std::vector<string_v>;
 
         auto const make_label = [this](auto const v)
         {
-            using traits_t = log_val_traits<P>;
-            return this->manager_.is_leaf_vertex(v)
-                    ? traits_t::to_string(this->manager_.get_vertex_value(v))
-                    : "x" + to_string(v->get_index());
+            return manager_.is_leaf_vertex(v)
+                       ? log_val_traits<P>::to_string(manager_.get_vertex_value(v))
+                       : "x" + to_string(v->get_index());
         };
 
-        auto labels       = string_v();
-        auto rankGroups   = string_vv(1 + this->var_count());
-        auto arcs         = string_v();
-        auto squareShapes = string_v();
+        auto labels       = std::vector<std::string>();
+        auto rankGroups   = std::vector<std::vector<std::string>>(1 + manager_.get_var_count());
+        auto arcs         = std::vector<std::string>();
+        auto squareShapes = std::vector<std::string>();
 
         for_each_v([&](auto const v)
         {
             auto const index = v->get_index();
-            labels.emplace_back(concat(v->get_id() , " [label = \"" , make_label(v) , "\"];"));
-            rankGroups[index].emplace_back(concat(v->get_id() , ";"));
-            v->for_each_son_i([&](auto const i, auto const son) mutable
+            labels.emplace_back(utils::concat(v->get_id() , " [label = \"" , make_label(v) , "\"];"));
+            rankGroups[index].emplace_back(utils::concat(v->get_id() , ";"));
+            v->for_each_son_i([&](auto const i, auto const son)
             {
                 if constexpr (2 == P)
                 {
                     auto const style = 0 == i ? "dashed" : "solid";
-                    arcs.emplace_back(concat(v->get_id() , " -> " , son->get_id() , " [style = " , style , "];"));
+                    arcs.emplace_back(utils::concat(v->get_id() , " -> " , son->get_id() , " [style = " , style , "];"));
                 }
                 else
                 {
-                    arcs.emplace_back(concat(v->get_id() , " -> " , son->get_id() , " [label = \"" , i , "\"];"));
+                    arcs.emplace_back(utils::concat(v->get_id() , " -> " , son->get_id() , " [label = \"" , i , "\"];"));
                 }
             });
 
@@ -248,16 +285,16 @@ namespace mix::dd
 
         auto const ranks = utils::filter_fmap(rankGroups, utils::not_empty, [](auto const& level)
         {
-            return concat("{ rank = same; " , concat_range(level, " "), " }");
+            return utils::concat("{ rank = same; " , utils::concat_range(level, " "), " }");
         });
 
-        ost << "digraph DD {"                                                         << EOL
-            << "    node [shape = square] " << concat_range(squareShapes, " ") << ';' << EOL
-            << "    node [shape = circle];"                                           << EOL << EOL
-            << "    " << concat_range(labels, concat(EOL, "    "))                    << EOL << EOL
-            << "    " << concat_range(arcs,   concat(EOL, "    "))                    << EOL << EOL
-            << "    " << concat_range(ranks,  concat(EOL, "    "))                    << EOL
-            << "}"                                                                    << EOL;
+        ost << "digraph DD {"                                                         << '\n'
+            << "    node [shape = square] " << utils::concat_range(squareShapes, " ") << ';'  << '\n'
+            << "    node [shape = circle];"                                           << '\n' << '\n'
+            << "    " << utils::concat_range(labels, "\n    ")                        << '\n' << '\n'
+            << "    " << utils::concat_range(arcs,   "\n    ")                        << '\n' << '\n'
+            << "    " << utils::concat_range(ranks,  "\n    ")                        << '\n'
+            << "}"                                                                    << '\n';
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -284,7 +321,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::fill_levels
         (mdd_t const& diagram) const -> vertex_vv
     {
-        auto levels = vertex_vv(1 + manager_.get_var_count());
+        auto levels = std::vector<std::vector<vertex_t*>>(1 + manager_.get_var_count());
 
         this->traverse_pre(diagram, [&, this](auto const v)
         {
@@ -332,37 +369,5 @@ namespace mix::dd
                 satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, l + 1, son, xs, out);
             });
         }
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    template<class VertexOp>
-    auto mdd_manager<VertexData, ArcData, P>::traverse_pre_step
-        (vertex_t* const v, VertexOp&& op) const -> void
-    {
-        v->toggle_mark();
-        op(v);
-        v->for_each_son([this, &op, v](auto const son)
-        {
-            if (v->get_mark() != son->get_mark())
-            {
-                this->traverse_pre_step(son, op);
-            }
-        });
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    template<class VertexOp>
-    auto mdd_manager<VertexData, ArcData, P>::traverse_post_step
-        (vertex_t* const v, VertexOp&& op) const -> void
-    {
-        v->toggle_mark();
-        v->for_each_son([this, &op, v](auto const son)
-        {
-            if (v->get_mark() != son->get_mark())
-            {
-                this->traverse_post_step(son, op);
-            }
-        });
-        op(v);
     }
 }

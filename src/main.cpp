@@ -78,7 +78,7 @@ auto pla_test_speed()
     auto const build_diagrams = [](auto const& plaFileRef)
     {
         auto manager  = bdd_manager<void, void>(plaFileRef.get().variable_count());
-        auto const ds = manager.from_pla(plaFileRef.get(), fold_e::tree);
+        auto const ds = manager.from_pla(plaFileRef.get(), fold_e::left);
     };
 
     for (auto fileName : files)
@@ -221,8 +221,12 @@ auto main () -> int
     // pla_sanity_check();
     pla_test_speed();
 
+    // example_basic_usage_bdd();
+
     // test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
     // test_mdd_vector(10);
+    // test_bss();
+    // test_mss(5);
 
     std::cout << "Done." << '\n';
     return 0;

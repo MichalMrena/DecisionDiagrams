@@ -111,7 +111,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbds
         (val_change<P> const var, val_change<P> const f, mdd_t const& sf) -> mdd_v
     {
-        return utils::fill_vector( this->var_count()
+        return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd, this, var, f, sf) );
     }
 
@@ -119,7 +119,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_1
         (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> mdd_v
     {
-        return utils::fill_vector( this->var_count()
+        return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd_integrated_1, this, var, fVal, sf) );
     }
 
@@ -127,7 +127,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_2
         (val_change<P> const var, mdd_t const& sf) -> mdd_v
     {
-        return utils::fill_vector( this->var_count()
+        return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd_integrated_2, this, var, sf) );
     }
 
@@ -135,7 +135,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_3
         (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> mdd_v
     {
-        return utils::fill_vector( this->var_count()
+        return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd_integrated_3, this, var, fVal, sf) );
     }
 
@@ -205,7 +205,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::mcvs_g
         (mdd_t const& sf, log_t const logLevel, OutputIt out) -> void
     {
-        auto const varCount = this->var_count();
+        auto const varCount = manager_.get_var_count();
         auto dpbdes = std::vector<mdd_t>();
 
         for (auto varIndex = 0u; varIndex < varCount; ++varIndex)

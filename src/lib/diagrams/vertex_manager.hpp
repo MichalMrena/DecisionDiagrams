@@ -7,7 +7,6 @@
 #include "unique_table.hpp"
 #include "bin_op_cache.hpp"
 #include "../utils/object_pool.hpp"
-#include "../utils/hash.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
 #include "../utils/more_functional.hpp"
@@ -63,9 +62,9 @@ namespace mix::dd
         auto is_leaf_level    (level_t   const l) const -> bool;
 
         template<class Op>
-        auto cache_find       (vertex_t* const l, vertex_t* const r) -> op_cache_iterator;
+        auto cache_find       (vertex_t* l, vertex_t* r) -> op_cache_iterator;
         template<class Op>
-        auto cache_put        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void;
+        auto cache_put        (op_cache_iterator it, vertex_t* l, vertex_t* r, vertex_t* const res) -> void;
 
         auto adjust_sizes     ()                        -> void;
         auto collect_garbage  ()                        -> void;
@@ -286,10 +285,7 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::get_vertex_count
         () const -> std::size_t
     {
-        auto count = std::size_t {0};
-        this->for_each_level([&count](auto const& level) { count += level.size(); });
-        count += this->leaf_count();
-        return count;
+        return vertexCount_;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -309,8 +305,16 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class Op>
     auto vertex_manager<VertexData, ArcData, P>::cache_find
-        (vertex_t* const l, vertex_t* const r) -> op_cache_iterator
+        (vertex_t* l, vertex_t* r) -> op_cache_iterator
     {
+        if constexpr (op_is_commutative(Op()))
+        {
+            if (l > r)
+            {
+                std::swap(l, r);
+            }
+        }
+
         auto& cache = opCaches_[op_id(Op())];
         return cache.find(l, r);
     }
@@ -318,8 +322,16 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<class Op>
     auto vertex_manager<VertexData, ArcData, P>::cache_put
-        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void
+        (op_cache_iterator it, vertex_t* l, vertex_t* r, vertex_t* const res) -> void
     {
+        if constexpr (op_is_commutative(Op()))
+        {
+            if (l > r)
+            {
+                std::swap(l, r);
+            }
+        }
+
         auto& cache = opCaches_[op_id(Op())];
         cache.put(it, l, r, res);
     }

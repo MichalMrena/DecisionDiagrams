@@ -46,9 +46,9 @@ namespace mix::dd
         using stack_frame = struct { vertex_t* vertex; level_t level; };
         auto stack = ds::peekable_stack<stack_frame>();
 
-        auto const lastLevel     = this->get_last_level();
-        auto const lastIndex     = this->get_index(lastLevel);
-        auto const lastVarDomain = this->get_domain(this->get_index(lastLevel));
+        auto const lastLevel     = manager_.get_last_level();
+        auto const lastIndex     = manager_.get_index(lastLevel);
+        auto const lastVarDomain = this->get_domain(manager_.get_index(lastLevel));
 
         auto const shrink_stack = [=, &stack]()
         {
@@ -72,7 +72,7 @@ namespace mix::dd
                     break;
                 }
 
-                auto const newIndex     = this->get_index(currentLevel - 1);
+                auto const newIndex     = manager_.get_index(currentLevel - 1);
                 auto const newDomain    = this->get_domain(newIndex);
 
                 if (vertices_available(currentLevel) < newDomain)

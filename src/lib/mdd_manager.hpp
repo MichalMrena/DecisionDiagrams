@@ -9,7 +9,6 @@
 
 namespace mix::dd
 {
-    // TODO rename to mdd_tools
     template<class VertexData, class ArcData, std::size_t P>
     class mdd_manager
     {
@@ -411,20 +410,8 @@ namespace mix::dd
         template<class VertexOp>
         auto traverse_level (mdd_t const& d, VertexOp&& op) const -> void;
 
-        template<class VertexOp>
-        auto traverse_pre_step (vertex_t* const v, VertexOp&& op) const -> void;
-
-        template<class VertexOp>
-        auto traverse_post_step (vertex_t* const v, VertexOp&& op) const -> void;
-
     /* Manipulation internals */
     protected:
-        template<template<std::size_t> class Op>
-        auto apply_step (vertex_t* const lhs, vertex_t* const rhs) -> vertex_t*;
-
-        template<class Op>
-        static auto make_apply_key (vertex_t* const lhs, vertex_t* const rhs) -> apply_key_t;
-
         template<class Transformator>
         auto transform (mdd_t const& d, Transformator&& transform_sons) -> mdd_t;
 
@@ -448,17 +435,12 @@ namespace mix::dd
 
     /* Other internals */
     public:
-        auto var_count          () const -> std::size_t;
-        auto get_index          (level_t const l) const -> index_t;
-        auto get_level          (index_t const i) const -> level_t;
         auto get_domain         (index_t const i) const -> log_t;
-        auto get_last_level     () const -> level_t;
         auto get_domain_product () const -> std::size_t;
 
     /* Member variables */
     protected:
         vertex_manager_t manager_;
-        // apply_memo_t     applyMemo_;
         transform_memo_t transformMemo_;
         log_v            domains_;
     };

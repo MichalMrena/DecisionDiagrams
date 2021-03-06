@@ -6,7 +6,6 @@
 #include "../utils/more_assert.hpp"
 
 #include <numeric>
-#include <memory>
 
 namespace mix::dd
 {
@@ -21,7 +20,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::set_domains
         (log_v domains) -> void
     {
-        utils::runtime_assert(this->var_count() == domains.size(), "mdd_manager::set_domains: Domains vector size must match var count.");
+        utils::runtime_assert(manager_.get_var_count() == domains.size(), "mdd_manager::set_domains: Domains vector size must match var count.");
         domains_ = std::move(domains);
     }
 
@@ -54,38 +53,10 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::var_count
-        () const -> std::size_t
-    {
-        return manager_.get_var_count();
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::get_index
-        (level_t const l) const -> index_t
-    {
-        return manager_.get_index(l);
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::get_level
-        (index_t const i) const -> level_t
-    {
-        return manager_.get_level(i);
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::get_domain
         (index_t const i) const -> log_t
     {
         return domains_.size() ? domains_[i] : P;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::get_last_level
-        () const -> level_t
-    {
-        return manager_.get_last_level();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -94,7 +65,7 @@ namespace mix::dd
     {
         return domains_.size() ? std::reduce( std::begin(domains_), std::end(domains_)
                                             , std::size_t {1}, std::multiplies() )
-                               : utils::int_pow(P, this->var_count());
+                               : utils::int_pow(P, manager_.get_var_count());
     }
 
     template<std::size_t P>

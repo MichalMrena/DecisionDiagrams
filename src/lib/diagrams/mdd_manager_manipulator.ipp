@@ -3,8 +3,7 @@
 #endif
 
 #include <cmath>
-#include <vector>
-#include <algorithm>
+#include <iterator>
 
 namespace mix::dd
 {
@@ -13,8 +12,47 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::apply
         (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t
     {
-        auto const v = this->apply_step<Op>(lhs.get_root(), rhs.get_root());
-        auto const d = mdd_t {v};
+        auto const go = [this](auto&& go, auto l, auto r)
+        {
+            auto const cacheIterator = manager_.template cache_find<Op<P>>(l, r);
+            if (cacheIterator->matches(l, r))
+            {
+                return cacheIterator->result;
+            }
+
+            auto const lhsVal = manager_.get_vertex_value(l);
+            auto const rhsVal = manager_.get_vertex_value(r);
+            auto const opVal  = Op<P> () (lhsVal, rhsVal);
+            auto u = static_cast<vertex_t*>(nullptr);
+
+            if (!is_nondetermined<P>(opVal))
+            {
+                u = manager_.terminal_vertex(opVal);
+            }
+            else
+            {
+                auto const lhsLevel  = manager_.get_vertex_level(l);
+                auto const rhsLevel  = manager_.get_vertex_level(r);
+                auto const topLevel  = std::min(lhsLevel, rhsLevel);
+                auto const topVertex = topLevel == lhsLevel ? l : r;
+                auto const topIndex  = topVertex->get_index();
+                auto const domain    = this->get_domain(topIndex);
+                auto const sons      = utils::fill_array_n<P>(domain, [=, &go](auto const i)
+                {
+                    auto const first  = lhsLevel == topLevel ? l->get_son(i) : l;
+                    auto const second = rhsLevel == topLevel ? r->get_son(i) : r;
+                    return go(go, first, second);
+                });
+
+                u = manager_.internal_vertex(topIndex, sons);
+            }
+
+            manager_.template cache_put<Op<P>>(cacheIterator, l, r, u);
+            return u;
+        };
+
+        auto const v = go(go, lhs.get_root(), rhs.get_root());
+        auto const d = mdd_t(v);
         manager_.adjust_sizes();
         return d;
     }
@@ -116,64 +154,6 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    template<template<std::size_t> class Op>
-    auto mdd_manager<VertexData, ArcData, P>::apply_step
-        (vertex_t* const lhs, vertex_t* const rhs) -> vertex_t*
-    {
-        auto const cacheIterator = manager_.template cache_find<Op<P>>(lhs, rhs);
-        if (cacheIterator->matches(lhs, rhs))
-        {
-            return cacheIterator->result;
-        }
-
-        auto const lhsVal = manager_.get_vertex_value(lhs);
-        auto const rhsVal = manager_.get_vertex_value(rhs);
-        auto const opVal  = Op<P> () (lhsVal, rhsVal);
-        auto u = static_cast<vertex_t*>(nullptr);
-
-        if (!is_nondetermined<P>(opVal))
-        {
-            u = manager_.terminal_vertex(opVal);
-        }
-        else
-        {
-            auto const lhsLevel  = manager_.get_vertex_level(lhs);
-            auto const rhsLevel  = manager_.get_vertex_level(rhs);
-            auto const topLevel  = std::min(lhsLevel, rhsLevel);
-            auto const topVertex = topLevel == lhsLevel ? lhs : rhs;
-            auto const topIndex  = topVertex->get_index();
-            auto const domain    = this->get_domain(topIndex);
-            auto const sons      = utils::fill_array_n<P>(domain, [=, this](auto const i)
-            {
-                auto const first  = lhsLevel == topLevel ? lhs->get_son(i) : lhs;
-                auto const second = rhsLevel == topLevel ? rhs->get_son(i) : rhs;
-                return this->apply_step<Op>(first, second);
-            });
-
-            u = manager_.internal_vertex(topIndex, sons);
-        }
-
-        manager_.template cache_put<Op<P>>(cacheIterator, lhs, rhs, u);
-        return u;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    template<class Op>
-    auto mdd_manager<VertexData, ArcData, P>::make_apply_key
-        (vertex_t* const lhs, vertex_t* const rhs) -> apply_key_t
-    {
-        if constexpr (op_is_commutative(Op()))
-        {
-            return lhs < rhs ? apply_key_t {lhs, op_id(Op()), rhs}
-                             : apply_key_t {rhs, op_id(Op()), lhs};
-        }
-        else
-        {
-            return apply_key_t {lhs, op_id(Op()), rhs};
-        }
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     template<class Transformator>
     auto mdd_manager<VertexData, ArcData, P>::transform
         (mdd_t const& d, Transformator&& transform_sons) -> mdd_t
@@ -200,7 +180,7 @@ namespace mix::dd
         }
 
         auto const u = manager_.internal_vertex( v->get_index()
-                                                     , transform_sons(transform_sons, v) );
+                                               , transform_sons(transform_sons, v) );
         transformMemo_.emplace(v, u);
         return u;
     }
