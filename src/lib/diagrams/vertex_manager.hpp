@@ -308,14 +308,7 @@ namespace mix::dd
         (vertex_t* const l, vertex_t* const r) -> op_cache_iterator
     {
         auto& cache = opCaches_[op_id(Op())];
-        // if constexpr (op_is_commutative(Op()))
-        // {
-        //     return l > r ? cache.find(r, l) : cache.find(l, r);
-        // }
-        // else
-        // {
-            return cache.find(l, r);
-        // }
+        return cache.find(l, r);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -324,21 +317,7 @@ namespace mix::dd
         (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void
     {
         auto& cache = opCaches_[op_id(Op())];
-        // if constexpr (op_is_commutative(Op()))
-        // {
-        //     if (l > r)
-        //     {
-        //         cache.put(it, r, l, res);
-        //     }
-        //     else
-        //     {
-        //         cache.put(it, l, r, res);
-        //     }
-        // }
-        // else
-        // {
-            cache.put(it, l, r, res);
-        // }
+        cache.put(it, l, r, res);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

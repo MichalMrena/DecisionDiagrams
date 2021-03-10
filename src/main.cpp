@@ -221,10 +221,10 @@ auto main () -> int
     // pla_sanity_check();
     // pla_test_speed();
 
-    test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
-    test_mdd_vector(10);
-    test_bss();
-    test_mss(5);
+   test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
+   test_mdd_vector(10);
+   test_bss();
+   test_mss(5);
 
     std::cout << "Done." << '\n';
     return 0;
