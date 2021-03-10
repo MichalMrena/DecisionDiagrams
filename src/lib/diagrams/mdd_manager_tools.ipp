@@ -73,7 +73,7 @@ namespace mix::dd
                 v->for_each_son([=, this](auto const son)
                 {
                     auto const sonLevel   = manager_.get_vertex_level(son);
-                    auto const diffFactor = this->domain_product(vLevel, sonLevel);
+                    auto const diffFactor = this->domain_product(vLevel + 1, sonLevel);
                     v->data += son->data * static_cast<double>(diffFactor);
                 });
             }
@@ -81,7 +81,7 @@ namespace mix::dd
 
         auto const rootAlpha = static_cast<std::size_t>(d.get_root()->data);
         auto const rootLevel = manager_.get_vertex_level(d.get_root());
-        return rootAlpha * utils::int_pow(P, rootLevel);
+        return rootAlpha * this->domain_product(0, rootLevel);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -142,7 +142,43 @@ namespace mix::dd
         (log_t const val, mdd_t const& d, OutputIt out) const -> void
     {
         auto xs = VariableValues {};
-        this->satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, 0, d.get_root(), xs, out);
+
+        auto go = [=, this, &xs](auto&& go, auto const l, auto const v) mutable
+        {
+            auto const vertexValue = manager_.get_vertex_value(v);
+            auto const vertexLevel = manager_.get_vertex_level(v);
+
+            if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val != vertexValue)
+            {
+                return;
+            }
+            else if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val == vertexValue)
+            {
+                *out++ = xs;
+                return;
+            }
+            else if (vertexLevel > l)
+            {
+                auto const index  = manager_.get_index(l);
+                auto const domain = this->get_domain(index);
+                for (auto iv = 0u; iv < domain; ++iv)
+                {
+                    SetIthVar {} (xs, index, iv);
+                    go(go, l + 1, v);
+                }
+            }
+            else
+            {
+                auto const index = v->get_index();
+                v->for_each_son_i([=, &xs](auto const iv, auto const son) mutable
+                {
+                    SetIthVar {} (xs, index, iv);
+                    go(go, l + 1, son);
+                });
+            }
+        };
+
+        go(go, level_t(0), d.get_root());
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -303,7 +339,7 @@ namespace mix::dd
     {
         if constexpr (2 == P)
         {
-            return utils::two_pow(to - from - 1);
+            return utils::two_pow(to - from);
         }
         else
         {
@@ -311,7 +347,7 @@ namespace mix::dd
             {
                 return this->get_domain(manager_.get_index(l));
             };
-            auto const ls = utils::range(from + 1, to);
+            auto const ls = utils::range(from, to);
             return std::transform_reduce( std::begin(ls), std::end(ls)
                                         , 1u, std::multiplies<>(), get_dom );
         }
@@ -337,7 +373,6 @@ namespace mix::dd
         ( log_t const val, level_t const l, vertex_t* const v
         , VariableValues& xs, OutputIt& out ) const -> void
     {
-        // TODO remove duplicity
         auto const vertexValue = manager_.get_vertex_value(v);
         auto const vertexLevel = manager_.get_vertex_level(v);
 

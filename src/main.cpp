@@ -85,7 +85,7 @@ auto pla_test_speed()
     {
         auto const filePath = mix::utils::concat(plaDir , fileName);
         auto const plaFile  = pla_file::load_file(filePath);
-        auto const elapsed  = avg_run_time(2, std::bind_front(build_diagrams, std::cref(plaFile)));
+        auto const elapsed  = avg_run_time(1, std::bind_front(build_diagrams, std::cref(plaFile)));
         printl(concat(fileName , " -> " , elapsed , "ms"));
     }
 }
@@ -219,14 +219,12 @@ auto swap_var_test()
 auto main () -> int
 {
     // pla_sanity_check();
-    pla_test_speed();
+    // pla_test_speed();
 
-    // example_basic_usage_bdd();
-
-    // test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
-    // test_mdd_vector(10);
-    // test_bss();
-    // test_mss(5);
+    test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
+    test_mdd_vector(10);
+    test_bss();
+    test_mss(5);
 
     std::cout << "Done." << '\n';
     return 0;
