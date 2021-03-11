@@ -148,11 +148,11 @@ namespace mix::dd
             auto const vertexValue = manager_.get_vertex_value(v);
             auto const vertexLevel = manager_.get_vertex_level(v);
 
-            if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val != vertexValue)
+            if (manager_.is_leaf_vertex(v) && val != vertexValue)
             {
                 return;
             }
-            else if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val == vertexValue)
+            else if (manager_.is_leaf_level(l) && val == vertexValue)
             {
                 *out++ = xs;
                 return;
