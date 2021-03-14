@@ -433,11 +433,6 @@ namespace mix::dd
         auto to_dpbd_e             (log_t const varFrom, index_t const varIndex, mdd_t const& dpbd) -> mdd_t;
         auto to_mnf                (mdd_t const& dpbd) -> mdd_t;
 
-    /* Other internals */
-    public:
-        auto get_domain         (index_t const i) const -> log_t;
-        auto get_domain_product () const -> std::size_t;
-
     /* Member variables */
     protected:
         vertex_manager_t manager_;

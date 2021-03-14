@@ -143,18 +143,18 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::structural_importance
         (mdd_t& dpbd, index_t const i) -> double
     {
-        auto const domProduct = this->get_domain_product();
-        return this->structural_importance(domProduct / this->get_domain(i), dpbd);
+        auto const domProduct = this->domain_product(0, manager_.get_var_count() - 1);
+        return this->structural_importance(domProduct / manager_.get_domain(i), dpbd);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::structural_importances
         (mdd_v& dpbds) -> double_v
     {
-        auto const domProduct = this->get_domain_product();
+        auto const domProduct = this->domain_product(0, manager_.get_var_count() - 1);
         return utils::fmap_i(dpbds, [=, this](auto const i, auto& d)
         {
-            return this->structural_importance(domProduct / this->get_domain(i), d);
+            return this->structural_importance(domProduct / manager_.get_domain(i), d);
         });
     }
 
@@ -210,7 +210,7 @@ namespace mix::dd
 
         for (auto varIndex = 0u; varIndex < varCount; ++varIndex)
         {
-            auto const varDomain = this->get_domain(varIndex);
+            auto const varDomain = manager_.get_domain(varIndex);
             for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
             {
                 auto const dpbd = this->dpbd_integrated_3({varFrom, varFrom + 1}, logLevel, sf, varIndex);
@@ -246,7 +246,7 @@ namespace mix::dd
         auto const root      = dpbd.get_root();
         auto const rootLevel = manager_.get_vertex_level(root);
         auto const varLevel  = manager_.get_level(varIndex);
-        auto const varDomain = this->get_domain(varIndex);
+        auto const varDomain = manager_.get_domain(varIndex);
 
         // Special case when the new vertex for the i-th variable is inserted above the root.
         if (varLevel < rootLevel)
@@ -262,7 +262,7 @@ namespace mix::dd
         return this->transform(dpbd, [=, this](auto&& l_this, auto const v)
         {
             auto const vertexLevel  = manager_.get_vertex_level(v);
-            auto const vertexDomain = this->get_domain(v->get_index());
+            auto const vertexDomain = manager_.get_domain(v->get_index());
             return utils::fill_array_n<P>(vertexDomain, [=, this, &l_this](auto const val)
             {
                 auto const son      = v->get_son(val);

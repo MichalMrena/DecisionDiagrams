@@ -29,6 +29,7 @@ namespace mix::dd
     {
     public:
         using log_t             = typename log_val_traits<P>::type;
+        using log_v             = std::vector<log_t>;
         using vertex_t          = vertex<VertexData, ArcData, P>;
         using vertex_a          = std::array<vertex_t*, P>;
         using index_v           = std::vector<level_t>;
@@ -37,40 +38,42 @@ namespace mix::dd
         using op_cache_iterator = typename op_cache_t::iterator;
 
     public:
-        vertex_manager  (std::size_t const varCount);
-        vertex_manager  (vertex_manager&& other) = default;
+        explicit vertex_manager  (std::size_t varCount);
+        vertex_manager  (vertex_manager&& other) noexcept = default;
         ~vertex_manager ();
 
         auto set_order (index_v levelToIndex) -> void;
 
     public:
-        auto terminal_vertex  (log_t const val) const                     -> vertex_t*;
-        auto terminal_vertex  (log_t const val)                           -> vertex_t*;
-        auto internal_vertex  (index_t const index, vertex_a const& sons) -> vertex_t*;
+        auto terminal_vertex  (log_t val) const                     -> vertex_t*;
+        auto terminal_vertex  (log_t val)                           -> vertex_t*;
+        auto internal_vertex  (index_t index, vertex_a const& sons) -> vertex_t*;
 
-        auto get_vertex_level (vertex_t* const v) const -> level_t;
-        auto get_level        (index_t   const i) const -> level_t;
-        auto get_index        (level_t   const l) const -> index_t;
-        auto get_vertex_value (vertex_t* const v) const -> log_t;
-        auto get_vertex_count (index_t   const i) const -> std::size_t;
-        auto get_vertex_count ()                  const -> std::size_t;
-        auto get_var_count    ()                  const -> std::size_t;
-        auto get_last_level   ()                  const -> level_t;
+        auto get_vertex_level (vertex_t* v) const -> level_t;
+        auto get_level        (index_t   i) const -> level_t;
+        auto get_index        (level_t   l) const -> index_t;
+        auto get_vertex_value (vertex_t* v) const -> log_t;
+        auto get_vertex_count (index_t   i) const -> std::size_t;
+        auto get_vertex_count ()            const -> std::size_t;
+        auto get_var_count    ()            const -> std::size_t;
+        auto get_last_level   ()            const -> level_t;
+        auto get_domain       (index_t i)   const -> log_t;
+        auto has_domains      ()            const -> bool;
+        auto set_domains      (log_v ds)          -> void;
 
-        auto is_leaf_vertex   (vertex_t* const v) const -> bool;
-        auto is_leaf_index    (index_t   const i) const -> bool;
-        auto is_leaf_level    (level_t   const l) const -> bool;
+        auto is_leaf_vertex   (vertex_t* v) const -> bool;
+        auto is_leaf_index    (index_t   i) const -> bool;
+        auto is_leaf_level    (level_t   l) const -> bool;
 
         template<class Op>
-        auto cache_find       (vertex_t* const l, vertex_t* const r) -> op_cache_iterator;
+        auto cache_find       (vertex_t* l, vertex_t* r) -> op_cache_iterator;
         template<class Op>
-        auto cache_put        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void;
+        auto cache_put        (op_cache_iterator it, vertex_t* l, vertex_t* r, vertex_t* res) -> void;
 
-        auto adjust_sizes     ()                        -> void;
-        auto collect_garbage  ()                        -> void;
-        auto clear            ()                        -> void;
-
-        auto swap_vars (index_t const i) -> void;
+        auto adjust_sizes     ()                  -> void;
+        auto collect_garbage  ()                  -> void;
+        auto clear            ()                  -> void;
+        auto swap_vars        (index_t i)         -> void;
 
         template<class VertexOp>
         auto for_each_vertex (VertexOp op) const -> void;
@@ -79,8 +82,8 @@ namespace mix::dd
         auto for_each_terminal_vertex (VertexOp op) const -> void;
 
         static auto is_redundant  (vertex_a const& sons) -> bool;
-        static auto inc_ref_count (vertex_t* const v)    -> vertex_t*;
-        static auto dec_ref_count (vertex_t* const v)    -> void;
+        static auto inc_ref_count (vertex_t* v)          -> vertex_t*;
+        static auto dec_ref_count (vertex_t* v)          -> void;
 
     private:
         using unique_table_t = unique_table<VertexData, ArcData, P>;
@@ -96,9 +99,9 @@ namespace mix::dd
 
         auto clear_cache () -> void;
 
-        auto swap_vertex (vertex_t* const v) -> void;
+        auto swap_vertex (vertex_t* v) -> void;
 
-        auto delete_vertex (vertex_t* const v) -> void;
+        auto delete_vertex (vertex_t* v) -> void;
 
         template<class... Args>
         auto new_vertex  (Args&&... args) -> vertex_t*;
@@ -124,16 +127,21 @@ namespace mix::dd
         vertex_pool_t  pool_;
         bool           needsGc_;
         std::size_t    vertexCount_;
+        log_v          domains_;
     };
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_manager<VertexData, ArcData, P>::vertex_manager
         (std::size_t const varCount) :
-        uniqueTables_ {varCount},
-        leaves_       {{}},
-        pool_         {PoolSize},
-        needsGc_      {false},
-        vertexCount_  {0}
+        uniqueTables_ (varCount),
+        leaves_       ({}),
+        indexToLevel_ (utils::fill_vector(varCount, utils::identityv)),
+        levelToIndex_ (utils::fill_vector(varCount, utils::identityv)),
+        opCaches_     ({}),
+        pool_         (PoolSize),
+        needsGc_      (false),
+        vertexCount_  (0),
+        domains_      ({})
     {
     }
 
@@ -303,6 +311,27 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_domain
+        (index_t const i) const -> log_t
+    {
+        return domains_.size() ? domains_[i] : P;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::has_domains
+        () const -> bool
+    {
+        return !domains_.empty();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::set_domains
+        (log_v ds) -> void
+    {
+        domains_ = std::move(ds);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class Op>
     auto vertex_manager<VertexData, ArcData, P>::cache_find
         (vertex_t* const l, vertex_t* const r) -> op_cache_iterator
@@ -324,6 +353,11 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::adjust_sizes
         () -> void
     {
+        if (needsGc_)
+        {
+            this->collect_garbage();
+        }
+
         for (auto& t : uniqueTables_)
         {
             t.adjust_capacity();
@@ -332,11 +366,6 @@ namespace mix::dd
         for (auto& c : opCaches_)
         {
             c.adjust_capacity(vertexCount_ / 4);
-        }
-
-        if (needsGc_)
-        {
-            this->collect_garbage();
         }
     }
 
@@ -391,14 +420,16 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::swap_vars
         (index_t const i) -> void
     {
+        // TODO dokončiť celý sift, ak je počet vrcholov vyšší, postupne sa vracať
+
         auto const iLevel    = this->get_level(i);
         auto const nextIndex = this->get_index(1 + iLevel);
-        auto tmpIndexMap     = unique_table_t(std::move(uniqueTables_[i]));
-        for (auto&& [key, v] : tmpIndexMap)
+        auto tmpTable        = unique_table_t(std::move(uniqueTables_[i]));
+        for (auto const v : tmpTable)
         {
             this->swap_vertex(v);
         }
-        uniqueTables_[nextIndex].merge(tmpIndexMap);
+        uniqueTables_[nextIndex].merge(tmpTable);
 
         std::swap(levelToIndex_[iLevel], levelToIndex_[1 + iLevel]);
         ++indexToLevel_[i];
@@ -510,21 +541,20 @@ namespace mix::dd
     {
         auto const index     = v->get_index();
         auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
-        auto const cofactors = utils::fill_array<P>([=](auto const sonIndex)
+        auto const vDomain   = this->get_domain(index);
+        auto const sonDomain = this->get_domain(nextIndex);
+        auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
         {
-            return utils::fill_array<P>([=](auto const sonSonIndex)
-            {
-                auto const son = v->get_son(sonIndex);
-                return son->get_index() == nextIndex
-                            ? son->get_son(sonSonIndex)
-                            : son;
-            });
+            auto const son = v->get_son(sonIndex);
+            return son->get_index() == nextIndex
+                ? utils::fill_array_n<P>(sonDomain, [=](auto const j) { return son->get_son(j); })
+                : utils::fill_array_n<P>(sonDomain, [=](auto const)   { return son; });
         });
         v->for_each_son(dec_ref_count);
         v->set_index(nextIndex);
-        v->set_sons(utils::fill_array<P>([=, this, &cofactors](auto const i)
+        v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
         {
-            return this->internal_vertex(index, utils::fill_array<P>([=, &cofactors](auto const j)
+            return this->internal_vertex(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
             {
                 return cofactors[j][i];
             }));

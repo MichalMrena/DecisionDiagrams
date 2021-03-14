@@ -17,7 +17,7 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::variable
         (index_t const i) -> mdd_t
     {
-        auto const dom  = this->get_domain(i);
+        auto const dom  = manager_.get_domain(i);
         auto const vals = utils::fill_array<P>(utils::identityv);
         return this->variable_impl(i, vals, dom);
     }
@@ -48,7 +48,7 @@ namespace mix::dd
 
         auto const lastLevel     = manager_.get_last_level();
         auto const lastIndex     = manager_.get_index(lastLevel);
-        auto const lastVarDomain = this->get_domain(manager_.get_index(lastLevel));
+        auto const lastVarDomain = manager_.get_domain(manager_.get_index(lastLevel));
 
         auto const shrink_stack = [=, &stack]()
         {
@@ -73,7 +73,7 @@ namespace mix::dd
                 }
 
                 auto const newIndex     = manager_.get_index(currentLevel - 1);
-                auto const newDomain    = this->get_domain(newIndex);
+                auto const newDomain    = manager_.get_domain(newIndex);
 
                 if (vertices_available(currentLevel) < newDomain)
                 {

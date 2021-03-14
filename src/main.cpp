@@ -198,22 +198,32 @@ auto order_test()
 
 auto swap_var_test()
 {
-    auto m  = make_bdd_manager(6);
+    auto  m = make_mdd_manager<3>(3);
     auto& x = m;
-    register_manager(m);
-    m.set_order({0, 1, 2, 3, 4, 5});
-
-    auto f = (x(0) && x(3))
-          || (x(1) && x(4))
-          || (x(2) && x(5));
-
-    // m.collect_garbage();
-    // m.to_dot_graph(std::cout);
-    // m.swap_vars(2);
-
-    // m.to_dot_graph(std::cout);
+    m.set_domains({3, 2, 3});
+    auto  f = m.apply<MIN>(x(0), m.apply<MAX>(x(1), x(2)));
     m.collect_garbage();
-    // m.to_dot_graph(std::cout);
+    m.swap_vars(1);
+    m.collect_garbage();
+    m.to_dot_graph(std::cout);
+}
+
+auto symmetric_example()
+{
+    auto constexpr VarCount = 20;
+    auto order = mix::utils::fill_vector(VarCount, mix::utils::identityv);
+    auto rng   = std::mt19937(144);
+    for (auto i = 0u; i < 50; ++i)
+    {
+        std::shuffle(std::begin(order), std::end(order), rng);
+        auto m = make_mdd_manager<4>(VarCount);
+        m.set_order(order);
+        // m.set_domains(mix::utils::fill_vector(VarCount, [](auto const){ return (unsigned)(std::rand() & 1 ? 2 : 3); }));
+
+        auto xs = m.variables(mix::utils::fill_vector(VarCount, mix::utils::identityv));
+        auto f  = m.tree_fold<PLUS>(std::begin(xs), std::end(xs));
+        std::cout << m.vertex_count(f) << " :: " << mix::utils::concat_range(order, " ") << '\n';
+    }
 }
 
 auto main () -> int
@@ -221,10 +231,13 @@ auto main () -> int
     // pla_sanity_check();
     // pla_test_speed();
 
-   test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
-   test_mdd_vector(10);
-   test_bss();
-   test_mss(5);
+//    test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
+//    test_mdd_vector(10);
+//    test_bss();
+//    test_mss(5);
+
+    swap_var_test();
+    // symmetric_example();
 
     std::cout << "Done." << '\n';
     return 0;

@@ -59,6 +59,7 @@ namespace mix::dd
 
     public:
         unique_table ();
+        unique_table (unique_table&& other);
 
     public:
         auto insert          (vertex_t* const v)         -> vertex_t*;
@@ -66,6 +67,7 @@ namespace mix::dd
         auto erase           (iterator const it)         -> iterator;
         auto size            () const                    -> std::size_t;
         auto adjust_capacity ()                          -> void;
+        auto merge           (unique_table& rhs)         -> void;
         auto clear           ()                          -> void;
         auto begin           ()                          -> iterator;
         auto end             ()                          -> iterator;
@@ -196,6 +198,15 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    unique_table<VertexData, ArcData, P>::unique_table
+        (unique_table&& other) :
+        size_     (std::exchange(other.size_, 0)),
+        capacity_ (std::exchange(other.capacity_, Capacities.data())),
+        buckets_  (std::exchange(other.buckets_, std::vector<vertex_t*>(Capacities.front(), nullptr)))
+    {
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto unique_table<VertexData, ArcData, P>::insert
         (vertex_t* const v) -> vertex_t*
     {
@@ -263,6 +274,23 @@ namespace mix::dd
         {
             this->rehash();
         }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto unique_table<VertexData, ArcData, P>::merge
+        (unique_table& rhs) -> void
+    {
+        auto const end = std::end(rhs);
+        auto it = std::begin(rhs);
+        while (it != end)
+        {
+            auto const v = *it;
+            ++it;
+
+            v->set_next(nullptr);
+            this->insert(v);
+        }
+        rhs.clear();
     }
 
     template<class VertexData, class ArcData, std::size_t P>

@@ -36,7 +36,7 @@ namespace mix::dd
                 auto const topLevel  = std::min(lhsLevel, rhsLevel);
                 auto const topVertex = topLevel == lhsLevel ? l : r;
                 auto const topIndex  = topVertex->get_index();
-                auto const domain    = this->get_domain(topIndex);
+                auto const domain    = manager_.get_domain(topIndex);
                 auto const sons      = utils::fill_array_n<P>(domain, [=, &go](auto const i)
                 {
                     auto const first  = lhsLevel == topLevel ? l->get_son(i) : l;
@@ -63,7 +63,7 @@ namespace mix::dd
     {
         return this->transform(d, [=, this](auto&& l_this, auto const v)
         {
-            auto const domain = this->get_domain(v->get_index());
+            auto const domain = manager_.get_domain(v->get_index());
             if (v->get_index() == i)
             {
                 // We make redundant vertex that will be handled by the vertex manager.

@@ -89,7 +89,7 @@ namespace mix::utils
     using identity_t = decltype(identity);
 
     /**
-     * @brief Identity function.
+     * @brief Identity function for small value types.
      */
     inline auto const identityv = [](auto const a) { return a; };
     using identityv_t = decltype(identityv);

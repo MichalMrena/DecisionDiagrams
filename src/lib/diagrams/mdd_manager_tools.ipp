@@ -160,7 +160,7 @@ namespace mix::dd
             else if (vertexLevel > l)
             {
                 auto const index  = manager_.get_index(l);
-                auto const domain = this->get_domain(index);
+                auto const domain = manager_.get_domain(index);
                 for (auto iv = 0u; iv < domain; ++iv)
                 {
                     SetIthVar {} (xs, index, iv);
@@ -343,13 +343,20 @@ namespace mix::dd
         }
         else
         {
-            auto const get_dom = [this](auto const l)
+            if (manager_.has_domains())
             {
-                return this->get_domain(manager_.get_index(l));
-            };
-            auto const ls = utils::range(from, to);
-            return std::transform_reduce( std::begin(ls), std::end(ls)
-                                        , 1u, std::multiplies<>(), get_dom );
+                auto const get_dom = [this](auto const l)
+                {
+                    return manager_.get_domain(manager_.get_index(l));
+                };
+                auto const ls = utils::range(from, to);
+                return std::transform_reduce( std::begin(ls), std::end(ls)
+                                            , 1u, std::multiplies<>(), get_dom );
+            }
+            else
+            {
+                return utils::int_pow(to - from, P);
+            }
         }
     }
 
@@ -388,7 +395,7 @@ namespace mix::dd
         else if (vertexLevel > l)
         {
             auto const index  = manager_.get_index(l);
-            auto const domain = this->get_domain(index);
+            auto const domain = manager_.get_domain(index);
             for (auto iv = 0u; iv < domain; ++iv)
             {
                 SetIthVar {} (xs, index, iv);
