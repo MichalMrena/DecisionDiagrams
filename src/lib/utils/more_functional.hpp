@@ -77,22 +77,34 @@ namespace mix::utils
     using not_null_t = decltype(not_null);
 
     /**
-     *  @brief Returns true if given container is not empty.
+        @brief Returns true if given container is not empty.
      */
     inline auto const not_empty = [](auto const& c) { return !c.empty(); };
     using not_empty_t = decltype(not_empty);
 
     /**
-     * @brief Identity function.
+       @brief Identity function.
      */
     inline auto const identity = [](auto&& a) -> decltype(auto) { return std::forward<decltype(a)>(a); };
     using identity_t = decltype(identity);
 
     /**
-     * @brief Identity function for small value types.
+       @brief Identity function for small value types.
      */
     inline auto const identityv = [](auto const a) { return a; };
     using identityv_t = decltype(identityv);
+
+    /**
+     * @brief Constant function.
+     */
+    inline auto const const_ = [](auto&& x){ return [&x](auto&&...) -> decltype(auto) { return std::forward<decltype(x)>(x); }; };
+    using const_t = decltype(const_);
+
+    /**
+     * @brief Constant function for small value types.
+     */
+    inline auto const constv_ = [](auto const x){ return [x](auto&&...){ return x; }; };
+    using constv_t = decltype(constv_);
 }
 
 #endif

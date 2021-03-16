@@ -204,7 +204,7 @@ auto swap_var_test()
     auto  f = m.apply<MIN>(x(0), m.apply<MAX>(x(1), x(2)));
     m.collect_garbage();
     m.swap_vars(1);
-    m.collect_garbage();
+    // m.collect_garbage();
     m.to_dot_graph(std::cout);
 }
 

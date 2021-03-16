@@ -62,9 +62,10 @@ namespace mix::dd
         unique_table (unique_table&& other);
 
     public:
-        auto insert          (vertex_t* const v)         -> vertex_t*;
+        auto insert          (vertex_t* v)               -> vertex_t*;
         auto find            (vertex_a const& key) const -> vertex_t*;
-        auto erase           (iterator const it)         -> iterator;
+        auto erase           (iterator it)               -> iterator;
+        auto erase           (vertex_t* v)               -> iterator;
         auto size            () const                    -> std::size_t;
         auto adjust_capacity ()                          -> void;
         auto merge           (unique_table& rhs)         -> void;
@@ -77,9 +78,9 @@ namespace mix::dd
     private:
         template<class Key, class Getter>
         static auto hash      (Key key, Getter get_ith)                -> std::size_t;
-        static auto vertex_eq (vertex_t* const v, vertex_a const& key) -> bool;
-        auto insert_impl      (vertex_t* const v)                      -> vertex_t*;
-        auto calculate_index  (vertex_t* const v) const                -> std::size_t;
+        static auto vertex_eq (vertex_t* v, vertex_a const& key) -> bool;
+        auto insert_impl      (vertex_t* v)                      -> vertex_t*;
+        auto calculate_index  (vertex_t* v) const                -> std::size_t;
         auto calculate_index  (vertex_a const& key) const              -> std::size_t;
         auto needs_rehash     ()                  const                -> bool;
         auto rehash           ()                                       -> void;
@@ -257,6 +258,19 @@ namespace mix::dd
         --size_;
         v->set_next(nullptr);
         return nextIt;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto unique_table<VertexData, ArcData, P>::erase
+        (vertex_t* const v) -> iterator
+    {
+        auto const index = static_cast<std::ptrdiff_t>(this->calculate_index(v));
+        auto       it    = iterator(std::begin(buckets_) + index, std::end(buckets_));
+        while (*it != v)
+        {
+            ++it;
+        }
+        return this->erase(it);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

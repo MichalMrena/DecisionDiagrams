@@ -102,6 +102,7 @@ namespace mix::dd
         auto swap_vertex (vertex_t* v) -> void;
 
         auto delete_vertex (vertex_t* v) -> void;
+        auto try_gc_vertex (vertex_t* v) -> void;
 
         template<class... Args>
         auto new_vertex  (Args&&... args) -> vertex_t*;
@@ -548,9 +549,10 @@ namespace mix::dd
             auto const son = v->get_son(sonIndex);
             return son->get_index() == nextIndex
                 ? utils::fill_array_n<P>(sonDomain, [=](auto const j) { return son->get_son(j); })
-                : utils::fill_array_n<P>(sonDomain, [=](auto const)   { return son; });
+                : utils::fill_array_n<P>(sonDomain, utils::constv_(son));
         });
         v->for_each_son(dec_ref_count);
+        v->for_each_son(std::bind_front(&vertex_manager::try_gc_vertex, this));
         v->set_index(nextIndex);
         v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
         {
@@ -568,6 +570,21 @@ namespace mix::dd
     {
         --vertexCount_;
         pool_.destroy(v);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::try_gc_vertex
+        (vertex_t* const v) -> void
+    {
+        if (v->get_ref_count() || this->is_leaf_vertex(v))
+        {
+            return;
+        }
+
+        v->for_each_son(dec_ref_count);
+        v->for_each_son(std::bind_front(&vertex_manager::try_gc_vertex, this));
+        uniqueTables_[v->get_index()].erase(v);
+        this->delete_vertex(v);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

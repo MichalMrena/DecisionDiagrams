@@ -218,7 +218,6 @@ namespace mix::utils
         if (p)
         {
             auto alloc = currentPool_->get_allocator();
-            traits_t::destroy(alloc, p); // TODO treba to?
             traits_t::construct(alloc, p, std::forward<Args>(args)...);
         }
 
