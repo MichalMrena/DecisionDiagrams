@@ -377,28 +377,7 @@ namespace mix::dd::test
         auto const v2 = 1;
         auto const d_ = m.restrict_var(m.restrict_var(d, i1, v1), i2, v2);
 
-        auto enumerator = domain_iterator<P>(f.domains);
-
-        while (enumerator.has_more())
-        {
-            auto const varVals    = [&]()
-            {
-                auto vs = *enumerator;
-                vs[i1] = v1;
-                vs[i2] = v2;
-                return vs;
-            }();
-            auto const diagramVal = m.evaluate(d_, varVals);
-            auto const realVal    = eval_function<P>(f, varVals);
-            if (realVal != diagramVal)
-            {
-                return utils::concat( "Failed. ", "x", i1, "=", v1, ", x", i2, "=", v2, ". "
-                                    , "Got ", diagramVal, ", expected ", realVal, "." );
-            }
-            ++enumerator;
-        }
-
-        return std::string("OK");
+        return test_evaluate(m, f, d);
     }
 
     template<std::size_t P>
@@ -408,7 +387,8 @@ namespace mix::dd::test
         auto const zero = m.constant(0);
         auto const one  = m.constant(1);
         auto const sup  = m.constant(P - 1);
-        auto const bd   = m.template apply<GREATER_EQUAL>(d, one);
+        auto const bd   = m.booleanize(d);
+        auto const rd   = m.reduce(d);
 
         if (not m.template apply<AND>(bd, zero).equals(zero))
         {
@@ -435,72 +415,87 @@ namespace mix::dd::test
             return std::string("XOR Annihilate failed.");
         }
 
-        if (not m.template apply<MULTIPLIES>(d, zero).equals(zero))
+        if (not m.template apply<MULTIPLIES>(rd, zero).equals(zero))
         {
             return std::string("(*) Absorbing element failed.");
         }
 
-        if (not m.template apply<MULTIPLIES>(d, one).equals(d))
+        if (not m.template apply<MULTIPLIES>(rd, one).equals(rd))
         {
             return std::string("(*) Neutral element failed.");
         }
 
-        if (not m.template apply<PLUS>(d, zero).equals(d))
+        if (not m.template apply<PLUS>(rd, zero).equals(rd))
         {
             return std::string("(+) Neutral element failed.");
         }
 
-        if (not m.template apply<EQUAL_TO>(d, d).equals(one))
+        if (not m.template apply<EQUAL_TO>(rd, rd).equals(one))
         {
             return std::string("(==) Annihilate failed.");
         }
 
-        if (not m.template apply<NOT_EQUAL_TO>(d, d).equals(zero))
+        if (not m.template apply<NOT_EQUAL_TO>(rd, rd).equals(zero))
         {
             return std::string("(!=) Annihilate failed.");
         }
 
-        if (not m.template apply<LESS>(d, d).equals(zero))
+        if (not m.template apply<LESS>(rd, rd).equals(zero))
         {
             return std::string("(<) Annihilate failed.");
         }
 
-        if (not m.template apply<GREATER>(d, d).equals(zero))
+        if (not m.template apply<GREATER>(rd, rd).equals(zero))
         {
             return std::string("(>) Annihilate failed.");
         }
 
-        if (not m.template apply<LESS_EQUAL>(d, d).equals(one))
+        if (not m.template apply<LESS_EQUAL>(rd, rd).equals(one))
         {
             return std::string("(<=) Annihilate failed.");
         }
 
-        if (not m.template apply<GREATER_EQUAL>(d, d).equals(one))
+        if (not m.template apply<GREATER_EQUAL>(rd, rd).equals(one))
         {
             return std::string("(>=) Annihilate failed.");
         }
 
-        if (not m.template apply<MIN>(d, zero).equals(zero))
+        if (not m.template apply<MIN>(rd, zero).equals(zero))
         {
             return std::string("MIN Absorbing element failed.");
         }
 
-        if (not m.template apply<MIN>(d, sup).equals(d))
+        if (not m.template apply<MIN>(rd, sup).equals(rd))
         {
             return std::string("MIN Neutral element failed.");
         }
 
-        if (not m.template apply<MAX>(d, sup).equals(sup))
+        if (not m.template apply<MAX>(rd, sup).equals(sup))
         {
             return std::string("MAX Absorbing element failed.");
         }
 
-        if (not m.template apply<MAX>(d, zero).equals(d))
+        if (not m.template apply<MAX>(rd, zero).equals(rd))
         {
             return std::string("MAX Neutral element failed.");
         }
 
         return std::string("OK");
+    }
+
+    template<std::size_t P>
+    auto test_var_swap ( manager_t<P>&       m
+                       , mvl_function const& f
+                       , mdd_t<P> const&     d
+                       , int_rng<level_t>&   rngVarLevel )
+    {
+        auto const& order = m.get_order();
+        auto const level  = rngVarLevel.next_int();
+        auto const index  = order[level];
+
+        m.swap_vars(index);
+
+        return test_evaluate(m, f, d);
     }
 
     template<std::size_t P>
@@ -513,6 +508,7 @@ namespace mix::dd::test
         auto seeder          = int_rng<seed_t>(0u, UIntMax, initSeed);
         auto rngProductSize  = int_rng<std::size_t>(1, MddMaxProductSize, seeder.next_int());
         auto rngVarIndex     = int_rng<index_t>(0, MddVariableCount - 1, seeder.next_int());
+        auto rngVarLevel     = int_rng<level_t>(0, MddVariableCount - 2, seeder.next_int());
         auto rngRestVarIndex = int_rng<index_t>(0, MddVariableCount - 1, seeder.next_int());
         auto rngOrderShuffle = std::mt19937(seeder.next_int());
         auto rngDomain       = int_rng<unsigned>(2, P, seeder.next_int());
@@ -545,6 +541,8 @@ namespace mix::dd::test
             std::cout << "    Tests"                                                                                     << '\n';
             std::cout << "        Fold            " << (diagram.equals(diagram2) ? "OK" : "Failed.")                     << '\n';
             std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
+            std::cout << "        Swap var        " << test_var_swap<P>(manager, function, diagram, rngVarLevel)         << '\n';
+                // std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
             std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
             std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
             std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';

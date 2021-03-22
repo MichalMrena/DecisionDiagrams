@@ -154,6 +154,13 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::reduce
+        (mdd_t const& d) -> mdd_t
+    {
+        return this->apply<MULTIPLIES>(d, this->constant(1));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     template<class Transformator>
     auto mdd_manager<VertexData, ArcData, P>::transform
         (mdd_t const& d, Transformator&& transform_sons) -> mdd_t

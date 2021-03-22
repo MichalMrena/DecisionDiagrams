@@ -189,6 +189,11 @@ namespace mix::dd
         template<template<std::size_t> class Op, class RandomIt>
         auto tree_fold (RandomIt first, RandomIt last) -> mdd_t;
 
+        /**
+            @brief TODO
+         */
+        auto reduce (mdd_t const& d) -> mdd_t;
+
     /* Reliability */
     public:
         /**
@@ -367,6 +372,7 @@ namespace mix::dd
     public:
         auto set_domains     (log_v domains)        -> void;
         auto set_order       (index_v levelToIndex) -> void;
+        auto get_order       () const               -> index_v const&;
         auto swap_vars       (index_t const i)      -> void;
         auto clear           () -> void;
         auto clear_cache     () -> void;
@@ -374,7 +380,7 @@ namespace mix::dd
 
     /* Internal aliases */
     protected:
-        using vertex_a            = std::array<vertex_t*, P>;
+        using vertex_a         = std::array<vertex_t*, P>;
         using vertex_v         = std::vector<vertex_t*>;
         using vertex_vv        = std::vector<vertex_v>;
         using apply_key_t      = std::tuple<vertex_t*, op_id_t, vertex_t*>;

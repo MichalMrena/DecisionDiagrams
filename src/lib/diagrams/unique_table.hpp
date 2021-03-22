@@ -89,11 +89,11 @@ namespace mix::dd
         static inline auto constexpr LoadThreshold = 0.75;
         static inline auto constexpr Capacities    = std::array<std::size_t, 25>
         {
-            257,         521,         1049,          2'099,         4'201,
-            8'419,       16'843,      33'703,        67'409,        134'837,
-            269'683,     539'389,     1'078'787,     2'157'587,     4'315'183,
-            8'630'387,   17'260'781,  34'521'589,    69'043'189,    138'086'407,
-            276'172'823, 552'345'671, 1'104'691'373, 2'209'382'761, 4'418'765'551
+            307,         617,         1'237,         2'477,         4'957,
+            9'923,       19'853,      39'709,        79'423,        158'849,
+            317'701,     635'413,     1'270'849,     2'541'701,     5'083'423,
+            10'166'857,  20'333'759,  40'667'527,    81'335'063,    162'670'129,
+            325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289, 5'205'444'619
         };
 
     private:
@@ -380,13 +380,8 @@ namespace mix::dd
         if (bucket)
         {
             v->set_next(bucket);
-            buckets_[index] = v;
         }
-        else
-        {
-            buckets_[index] = v;
-        }
-
+        buckets_[index] = v;
         return v;
     }
 
@@ -425,7 +420,7 @@ namespace mix::dd
         () -> void
     {
         ++capacity_;
-        auto oldBuckets = std::vector<vertex_t*>(std::move(buckets_));
+        auto const oldBuckets = std::vector<vertex_t*>(std::move(buckets_));
         buckets_ = std::vector<vertex_t*>(*capacity_, nullptr);
         for (auto bucket : oldBuckets)
         {

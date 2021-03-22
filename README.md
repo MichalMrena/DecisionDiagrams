@@ -76,7 +76,7 @@ auto const val2 = m.evaluate(f, std::vector {false, true, true, false, true});
 auto const val3 = m.evaluate(f, std::bitset<5> {0b10110});
 auto const val4 = m.evaluate(f, 0b10110);
 ```
-Functions `satisfy_count` computes number of all different variable assignments for which the function evaluates to `1` (true). If you divide this number by a number of all possible variable assignments you get so called truth density of a Boolean function, which can also be calculated directly by using the `truth_density` function.
+Function `satisfy_count` computes number of all different variable assignments for which the function evaluates to `1` (true). If you divide this number by the number of all possible variable assignments you get so called truth density of a Boolean function, which can also be calculated directly by using the `truth_density` function.
 ```C++
 auto const sc = m.satisfy_count(f);
 auto const td = m.truth_density(f);
@@ -90,13 +90,13 @@ If you only want to print these variable assignments, you can use the generic ve
 ```C++
 m.satisfy_all_g<var_vals_t>(f, std::ostream_iterator<var_vals_t>(std::cout, "\n"));
 ```
-Diagrams can be tested for equality and inequality. From above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using diagrams member function `equals`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
+Diagrams can be tested for equality and inequality. From the above examples, it is obvious that `f` and `g` represent the same function since we used the same logical expression to construct them. In general, you can use diagrams to check whether two logical expressions represent the same function using diagrams member function `equals`. Notice that we used [alternative tokens](https://en.cppreference.com/w/cpp/language/operator_alternative) in this example. Also notice that you can use `operator!` (or its alternative token `not`) to negate a diagram after you registered a manager.
 ```C++
 auto f1 = x(1) xor x(2);
 auto f2 = (x(1) or x(2)) and (!x(1) or not x(2));
 assert(f1.equals(f2));
 ```
-Last but not least, you might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). The function `to_dot_graph` prints DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the [Wikipedia](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
+Last but not least, you might want to check how the diagram looks like. For that purpose we use the [DOT language](https://en.wikipedia.org/wiki/DOT_(graph_description_language)). The function `to_dot_graph` prints a DOT representation of given diagram into given output stream (`std::cout` in the example below, you might also consider `std::ofstream` or `std::ostringstream`). DOT string can be visualized by different tools listed in the [Wikipedia](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) page, the fastest ways is to use [Webgraphviz](http://www.webgraphviz.com/).
 ```C++
 m.to_dot_graph(std::cout, f);
 ```

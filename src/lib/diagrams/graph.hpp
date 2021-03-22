@@ -50,7 +50,7 @@ namespace mix::dd
         using vertex_t    = vertex<VertexData, ArcData, P>;
         using arc_t       = arc<VertexData, ArcData, P>;
         using arc_a       = std::array<arc_t, P>;
-        using vertex_a       = std::array<vertex_t*, P>;
+        using vertex_a    = std::array<vertex_t*, P>;
         using log_t       = typename log_val_traits<P>::type;
         using ref_count_t = std::uint32_t;
 

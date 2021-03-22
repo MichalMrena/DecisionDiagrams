@@ -75,7 +75,7 @@ namespace mix::utils
         template<class... Args>
         [[nodiscard]] auto force_create (Args&&... args) -> T*;
 
-        auto destroy (T* const p) -> void;
+        auto destroy (T* p) -> void;
 
     private:
         using pool_iterator = typename std::vector<T>::iterator;

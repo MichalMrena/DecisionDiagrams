@@ -33,6 +33,13 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::get_order
+        () const -> index_v const&
+    {
+        return manager_.get_order();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::swap_vars
         (index_t const i) -> void
     {

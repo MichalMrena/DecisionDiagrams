@@ -43,6 +43,7 @@ namespace mix::dd
         ~vertex_manager ();
 
         auto set_order (index_v levelToIndex) -> void;
+        auto get_order () const               -> index_v const&;
 
     public:
         auto terminal_vertex  (log_t val) const                     -> vertex_t*;
@@ -101,8 +102,8 @@ namespace mix::dd
 
         auto swap_vertex (vertex_t* v) -> void;
 
-        auto delete_vertex (vertex_t* v) -> void;
-        auto try_gc_vertex (vertex_t* v) -> void;
+        auto delete_vertex  (vertex_t* v) -> void;
+        auto dec_ref_try_gc (vertex_t* v) -> void;
 
         template<class... Args>
         auto new_vertex  (Args&&... args) -> vertex_t*;
@@ -168,6 +169,13 @@ namespace mix::dd
         {
             indexToLevel_[index] = level++;
         }
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::get_order
+        () const -> index_v const&
+    {
+        return levelToIndex_;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -551,8 +559,9 @@ namespace mix::dd
                 ? utils::fill_array_n<P>(sonDomain, [=](auto const j) { return son->get_son(j); })
                 : utils::fill_array_n<P>(sonDomain, utils::constv_(son));
         });
-        v->for_each_son(dec_ref_count);
-        v->for_each_son(std::bind_front(&vertex_manager::try_gc_vertex, this));
+        // v->for_each_son(dec_ref_count);
+        // v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
         v->set_index(nextIndex);
         v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
         {
@@ -573,16 +582,21 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::try_gc_vertex
+    auto vertex_manager<VertexData, ArcData, P>::dec_ref_try_gc
         (vertex_t* const v) -> void
     {
-        if (v->get_ref_count() || this->is_leaf_vertex(v))
+        v->dec_ref_count();
+
+        if (v->get_ref_count() > 0 || this->is_leaf_vertex(v))
         {
             return;
         }
 
-        v->for_each_son(dec_ref_count);
-        v->for_each_son(std::bind_front(&vertex_manager::try_gc_vertex, this));
+    // v má synov [v1, v2, v2] v2 má pred týmto 2 refs, po tomto 0 refs, na ďalšom riadku tam vleze 2x...
+    // treba to robiť v jedom cykle
+        // v->for_each_son(dec_ref_count);
+        // v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
         uniqueTables_[v->get_index()].erase(v);
         this->delete_vertex(v);
     }

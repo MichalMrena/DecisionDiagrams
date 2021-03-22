@@ -20,7 +20,7 @@ namespace mix::dd
             vertex_t* lhs    {nullptr};
             vertex_t* rhs    {nullptr};
             vertex_t* result {nullptr};
-            auto matches (vertex_t* const l, vertex_t* const r) const -> bool;
+            auto matches (vertex_t* l, vertex_t* r) const -> bool;
         };
 
     public:
@@ -30,28 +30,28 @@ namespace mix::dd
         bin_op_cache ();
 
     public:
-        auto find            (vertex_t* const l, vertex_t* const r) -> iterator;
-        auto put             (iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void;
-        auto adjust_capacity (std::size_t const aproxCapacity) -> void;
+        auto find            (vertex_t* l, vertex_t* r) -> iterator;
+        auto put             (iterator it, vertex_t* l, vertex_t* r, vertex_t* res) -> void;
+        auto adjust_capacity (std::size_t aproxCapacity) -> void;
         auto clear           () -> void;
 
     private:
         static inline auto constexpr LoadThreshold = 0.75;
         static inline auto constexpr Capacities    = std::array<std::size_t, 25>
         {
-            257,         521,         1049,          2'099,         4'201,
-            8'419,       16'843,      33'703,        67'409,        134'837,
-            269'683,     539'389,     1'078'787,      2'157'587,     4'315'183,
-            8'630'387,   17'260'781,  34'521'589,    69'043'189,    138'086'407,
-            276'172'823, 552'345'671, 1'104'691'373, 2'209'382'761, 4'418'765'551
+            307,         617,         1'237,         2'477,         4'957,
+            9'923,       19'853,      39'709,        79'423,        158'849,
+            317'701,     635'413,     1'270'849,     2'541'701,     5'083'423,
+            10'166'857,  20'333'759,  40'667'527,    81'335'063,    162'670'129,
+            325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289, 5'205'444'619
         };
 
     private:
-        static auto hash       (vertex_t* const l, vertex_t* const r)        -> std::size_t;
-        auto calculate_index   (vertex_t* const l, vertex_t* const r)  const -> std::size_t;
-        auto possibly_rehash   (std::size_t const  aproxCapacity)      const -> bool;
-        auto rehash            (std::size_t const* capacity)                 -> void;
-        auto find_gte_capacity (std::size_t const  aproxCapacity)      const -> std::size_t const*;
+        static auto hash       (vertex_t* l, vertex_t* r)               -> std::size_t;
+        auto calculate_index   (vertex_t* l, vertex_t* r)         const -> std::size_t;
+        auto possibly_rehash   (std::size_t        aproxCapacity) const -> bool;
+        auto rehash            (std::size_t const* capacity)            -> void;
+        auto find_gte_capacity (std::size_t        aproxCapacity) const -> std::size_t const*;
 
     private:
         std::size_t        size_;

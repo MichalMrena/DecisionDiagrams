@@ -1,5 +1,6 @@
 #include <iostream>
 #include <iomanip>
+#include <unordered_set>
 
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"
@@ -231,12 +232,13 @@ auto main () -> int
     // pla_sanity_check();
     // pla_test_speed();
 
-//    test_mdd_random<3>(15, order_e::Random, domain_e::Nonhomogenous);
+//    test_mdd_random<3>(3, order_e::Random, domain_e::Nonhomogenous, 158);
+   test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
 //    test_mdd_vector(10);
 //    test_bss();
 //    test_mss(5);
 
-    swap_var_test();
+    // swap_var_test();
     // symmetric_example();
 
     std::cout << "Done." << '\n';
