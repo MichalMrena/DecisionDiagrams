@@ -489,11 +489,14 @@ namespace mix::dd::test
                        , mdd_t<P> const&     d
                        , int_rng<level_t>&   rngVarLevel )
     {
+        auto constexpr N  = 5;
         auto const& order = m.get_order();
-        auto const level  = rngVarLevel.next_int();
-        auto const index  = order[level];
 
-        m.swap_vars(index);
+        for (auto i = 0; i < N; ++i)
+        {
+            auto const index = order[rngVarLevel.next_int()];
+            m.swap_vars(index);
+        }
 
         return test_evaluate(m, f, d);
     }
@@ -542,7 +545,6 @@ namespace mix::dd::test
             std::cout << "        Fold            " << (diagram.equals(diagram2) ? "OK" : "Failed.")                     << '\n';
             std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
             std::cout << "        Swap var        " << test_var_swap<P>(manager, function, diagram, rngVarLevel)         << '\n';
-                // std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
             std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
             std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
             std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';

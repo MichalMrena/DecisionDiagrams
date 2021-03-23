@@ -228,6 +228,11 @@ namespace mix::dd
     auto vertex_base<VertexData, ArcData, P>::dec_ref_count
         () -> void
     {
+        if (0 == markRefCount_)
+        {
+            std::cout << "not good" << '\n';
+        }
+
         --markRefCount_;
     }
 

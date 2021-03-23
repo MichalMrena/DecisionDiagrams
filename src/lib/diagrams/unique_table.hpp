@@ -82,7 +82,7 @@ namespace mix::dd
         auto insert_impl      (vertex_t* v)                      -> vertex_t*;
         auto calculate_index  (vertex_t* v) const                -> std::size_t;
         auto calculate_index  (vertex_a const& key) const              -> std::size_t;
-        auto needs_rehash     ()                  const                -> bool;
+        auto is_overloaded     ()                  const                -> bool;
         auto rehash           ()                                       -> void;
 
     private:
@@ -224,7 +224,7 @@ namespace mix::dd
         auto current     = buckets_[index];
         while (current)
         {
-            if (vertex_eq(current, key))
+            if (unique_table::vertex_eq(current, key))
             {
                 return current;
             }
@@ -284,9 +284,17 @@ namespace mix::dd
     auto unique_table<VertexData, ArcData, P>::adjust_capacity
         () -> void
     {
-        if (size_ && this->needs_rehash())
+        if (size_)
         {
-            this->rehash();
+            while (static_cast<double>(size_) / static_cast<double>(*capacity_) > LoadThreshold)
+            {
+                ++capacity_;
+            }
+
+            if (*capacity_ != buckets_.size())
+            {
+                this->rehash();
+            }
         }
     }
 
@@ -294,6 +302,9 @@ namespace mix::dd
     auto unique_table<VertexData, ArcData, P>::merge
         (unique_table& rhs) -> void
     {
+        size_ += rhs.size();
+        this->adjust_capacity();
+
         auto const end = std::end(rhs);
         auto it = std::begin(rhs);
         while (it != end)
@@ -302,7 +313,7 @@ namespace mix::dd
             ++it;
 
             v->set_next(nullptr);
-            this->insert(v);
+            this->insert_impl(v);
         }
         rhs.clear();
     }
@@ -389,7 +400,7 @@ namespace mix::dd
     auto unique_table<VertexData, ArcData, P>::calculate_index
         (vertex_t* const v) const -> std::size_t
     {
-        auto const h = hash<vertex_t*>(v, [](auto const i, auto const v)
+        auto const h = unique_table::hash<vertex_t*>(v, [](auto const i, auto const v)
         {
             return v->get_son(i);
         });
@@ -408,10 +419,10 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto unique_table<VertexData, ArcData, P>::needs_rehash
+    auto unique_table<VertexData, ArcData, P>::is_overloaded
         () const -> bool
     {
-        auto const currentLoad = static_cast<double>(size_) / static_cast<double>(buckets_.size());
+        auto const currentLoad = static_cast<double>(size_) / static_cast<double>(*capacity_);
         return currentLoad > LoadThreshold;
     }
 
@@ -419,7 +430,6 @@ namespace mix::dd
     auto unique_table<VertexData, ArcData, P>::rehash
         () -> void
     {
-        ++capacity_;
         auto const oldBuckets = std::vector<vertex_t*>(std::move(buckets_));
         buckets_ = std::vector<vertex_t*>(*capacity_, nullptr);
         for (auto bucket : oldBuckets)

@@ -95,13 +95,13 @@ namespace mix::utils
     using identityv_t = decltype(identityv);
 
     /**
-     * @brief Constant function.
+       @brief Creates constant function that returns @p x .
      */
     inline auto const const_ = [](auto&& x){ return [&x](auto&&...) -> decltype(auto) { return std::forward<decltype(x)>(x); }; };
     using const_t = decltype(const_);
 
     /**
-     * @brief Constant function for small value types.
+       @brief Creates constant function that returns @p x by value.
      */
     inline auto const constv_ = [](auto const x){ return [x](auto&&...){ return x; }; };
     using constv_t = decltype(constv_);

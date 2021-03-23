@@ -438,6 +438,7 @@ namespace mix::dd
         {
             this->swap_vertex(v);
         }
+        uniqueTables_[i].adjust_capacity();
         uniqueTables_[nextIndex].merge(tmpTable);
 
         std::swap(levelToIndex_[iLevel], levelToIndex_[1 + iLevel]);
@@ -552,25 +553,29 @@ namespace mix::dd
         auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
         auto const vDomain   = this->get_domain(index);
         auto const sonDomain = this->get_domain(nextIndex);
+        auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&vertex_t::get_son, v));
         auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
         {
             auto const son = v->get_son(sonIndex);
             return son->get_index() == nextIndex
-                ? utils::fill_array_n<P>(sonDomain, [=](auto const j) { return son->get_son(j); })
+                ? utils::fill_array_n<P>(sonDomain, std::bind_front(&vertex_t::get_son, son))
                 : utils::fill_array_n<P>(sonDomain, utils::constv_(son));
         });
-        // v->for_each_son(dec_ref_count);
-        // v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
-        v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
         v->set_index(nextIndex);
         v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
         {
             return this->internal_vertex(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
             {
+                // if (reinterpret_cast<std::intptr_t>(cofactors[j][i]) == 0x7ffff16e6420)
+                // {
+                //     std::cout << "what if?" << '\n';
+                // }
+
                 return cofactors[j][i];
             }));
         }));
         v->for_each_son(inc_ref_count);
+        utils::for_all(oldSons, std::bind_front(&vertex_manager::dec_ref_try_gc, this));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -592,10 +597,6 @@ namespace mix::dd
             return;
         }
 
-    // v má synov [v1, v2, v2] v2 má pred týmto 2 refs, po tomto 0 refs, na ďalšom riadku tam vleze 2x...
-    // treba to robiť v jedom cykle
-        // v->for_each_son(dec_ref_count);
-        // v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
         v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
         uniqueTables_[v->get_index()].erase(v);
         this->delete_vertex(v);

@@ -20,7 +20,7 @@ namespace mix::utils
     template<class InputIt, class UnaryOperation>
     auto fmap(InputIt first, InputIt last, std::size_t const count, UnaryOperation op)
     {
-        using T = decltype(op(*first));
+        using T = decltype(std::invoke(op, *first));
         auto result = utils::vector<T>(count);
         std::transform(first, last, std::back_inserter(result), op);
         return result;
@@ -70,7 +70,7 @@ namespace mix::utils
     {
         return fmap(range, [op, i = 0u](auto&& x) mutable
         {
-            return op(i++, x);
+            return std::invoke(op, i++, std::forward<decltype(x)>(x));
         });
     }
 
@@ -81,13 +81,13 @@ namespace mix::utils
     template<class InputIt, class Predicate, class UnaryOperation>
     auto filter_fmap(InputIt first, InputIt last, std::size_t const count, Predicate p, UnaryOperation op)
     {
-        using T = decltype(op(*first));
+        using T = decltype(std::invoke(op, *first));
         auto result = utils::vector<T>(count);
         while (first != last)
         {
-            if (p(*first))
+            if (std::invoke(p, *first))
             {
-                result.push_back(op(*first));
+                result.push_back(std::invoke(op, *first));
             }
             ++first;
         }
@@ -160,13 +160,13 @@ namespace mix::utils
     template<std::size_t N, class Generator>
     auto constexpr fill_array_n(std::size_t const n, Generator&& f)
     {
-        using T          = decltype(f(0u));
+        using T          = decltype(std::invoke(f, 0u));
         auto ret         = std::array<T, N> {};
         auto const begin = std::begin(ret);
         auto const end   = std::next(begin, static_cast<std::ptrdiff_t>(n));
         std::generate(begin, end, [i = 0u, &f]() mutable
         {
-            return f(i++);
+            return std::invoke(f, i++);
         });
         return ret;
     }
@@ -191,11 +191,11 @@ namespace mix::utils
     template<class Generator>
     auto fill_vector(std::size_t const n, Generator&& f)
     {
-        using T  = decltype(f(0u));
+        using T  = decltype(std::invoke(f, 0u));
         auto ret = utils::vector<T>(n);
         for (auto i = 0u; i < n; ++i)
         {
-            ret.emplace_back(f(i));
+            ret.emplace_back(std::invoke(f, i));
         }
         return ret;
     }
@@ -228,6 +228,15 @@ namespace mix::utils
     auto all_same (Range&& range) -> bool
     {
         return all_same(std::begin(range), std::end(range));
+    }
+
+    /**
+     *  @brief Wrap aroud std::for_each.
+     */
+    template<class Range, class UnaryOperation>
+    auto constexpr for_all (Range&& range, UnaryOperation op)
+    {
+        std::for_each(std::begin(range), std::end(range), op);
     }
 }
 

@@ -390,7 +390,7 @@ namespace mix::dd
         using vertex_manager_t = vertex_manager<VertexData, ArcData, P>;
 
     /* Tools internals */
-    private:
+    public:
         template<class VertexIterator>
         auto to_dot_graph_impl (std::ostream& ost, VertexIterator for_each_v) const -> void;
 
