@@ -9,7 +9,7 @@
 namespace mix::dd
 {
     template<class VertexData, class ArcData, std::size_t P>
-    class bin_op_cache
+    class apply_cache
     {
     public:
         using vertex_t = vertex<VertexData, ArcData, P>;
@@ -27,7 +27,7 @@ namespace mix::dd
         using iterator = typename std::vector<entry>::iterator;
 
     public:
-        bin_op_cache ();
+        apply_cache ();
 
     public:
         auto find            (vertex_t* l, vertex_t* r) -> iterator;
@@ -60,14 +60,14 @@ namespace mix::dd
     };
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::entry::matches
+    auto apply_cache<VertexData, ArcData, P>::entry::matches
         (vertex_t* const l, vertex_t* const r) const -> bool
     {
         return result && l == lhs && r == rhs;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    bin_op_cache<VertexData, ArcData, P>::bin_op_cache
+    apply_cache<VertexData, ArcData, P>::apply_cache
         () :
         size_     (0),
         capacity_ (Capacities.data()),
@@ -76,7 +76,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::find
+    auto apply_cache<VertexData, ArcData, P>::find
         (vertex_t* const l, vertex_t* const r) -> iterator
     {
         auto const index = this->calculate_index(l, r);
@@ -84,7 +84,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::put
+    auto apply_cache<VertexData, ArcData, P>::put
         (iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void
     {
         ++size_;
@@ -94,7 +94,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::adjust_capacity
+    auto apply_cache<VertexData, ArcData, P>::adjust_capacity
         (std::size_t const aproxCapacity) -> void
     {
         if (!size_ || !(capacity_ < std::end(Capacities)))
@@ -118,7 +118,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::clear
+    auto apply_cache<VertexData, ArcData, P>::clear
         () -> void
     {
         if (size_ > 0)
@@ -132,7 +132,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::hash
+    auto apply_cache<VertexData, ArcData, P>::hash
         (vertex_t* const l, vertex_t* const r) -> std::size_t
     {
         auto seed = 0ull;
@@ -144,14 +144,14 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::calculate_index
+    auto apply_cache<VertexData, ArcData, P>::calculate_index
         (vertex_t* const l, vertex_t* const r) const -> std::size_t
     {
         return hash(l, r) % entries_.size();
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::rehash
+    auto apply_cache<VertexData, ArcData, P>::rehash
         (std::size_t const* capacity) -> void
     {
         capacity_             = capacity;
@@ -165,7 +165,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto bin_op_cache<VertexData, ArcData, P>::find_gte_capacity
+    auto apply_cache<VertexData, ArcData, P>::find_gte_capacity
         (std::size_t const aproxCapacity) const -> std::size_t const*
     {
         auto c = capacity_;

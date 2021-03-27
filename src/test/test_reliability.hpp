@@ -231,12 +231,15 @@ namespace mix::dd::test
                 .MCVs = {std::bitset<6>(0b111110), std::bitset<6>(0b100101), std::bitset<6>(0b100011), std::bitset<6>(0b011111)}
             };
             auto const res = analyze_bss<6>(m, sf, ps);
-            std::cout << "    Test 2: " << compare_bss<6>(res, bs) << '\n';
+            std::cout << "    Test 3: " << compare_bss<6>(res, bs) << '\n';
         }
+        std::cout << '\n';
     }
 
-    auto test_mss(std::size_t const)
+    auto test_mss()
     {
+        std::cout << "Testing MSS." << '\n';
+
         {
             auto constexpr P = 3;
             auto constexpr N = 4;
@@ -254,8 +257,9 @@ namespace mix::dd::test
                 .As = {1.0000, 0.9916, 0.6984},
                 .Us = {0.0000, 0.0084, 0.3016}
             };
-            std::cout << compare_mss(g, e) << '\n';
+            std::cout << "    Test 1: " << compare_mss(g, e) << '\n';
         }
+        std::cout << '\n';
     }
 }
 

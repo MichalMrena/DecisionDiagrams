@@ -132,7 +132,7 @@ namespace mix::dd
             functionDiagrams.emplace_back(this->or_merge(productDiagrams, mm));
         }
 
-        base::manager_.collect_garbage();
+        // base::manager_.collect_garbage();
 
         return functionDiagrams;
     }

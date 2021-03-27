@@ -54,7 +54,7 @@ namespace mix::dd
         using log_t       = typename log_val_traits<P>::type;
         using ref_count_t = std::uint32_t;
 
-    public:
+    protected:
         vertex_base (index_t const i);
         vertex_base (index_t const i, vertex_a const& sons);
 
@@ -121,8 +121,8 @@ namespace mix::dd
 
     public:
         vertex ();
-        vertex(index_t const i);
-        vertex(index_t const i, vertex_a const& sons);
+        vertex (index_t const i);
+        vertex (index_t const i, vertex_a const& sons);
     };
 
 // vertex_base definitions:

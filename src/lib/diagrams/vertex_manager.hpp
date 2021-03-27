@@ -5,7 +5,7 @@
 #include "graph.hpp"
 #include "operators.hpp"
 #include "unique_table.hpp"
-#include "bin_op_cache.hpp"
+#include "apply_cache.hpp"
 #include "../utils/object_pool.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
@@ -34,7 +34,7 @@ namespace mix::dd
         using vertex_a          = std::array<vertex_t*, P>;
         using index_v           = std::vector<level_t>;
         using level_v           = std::vector<level_t>;
-        using op_cache_t        = bin_op_cache<VertexData, ArcData, P>;
+        using op_cache_t        = apply_cache<VertexData, ArcData, P>;
         using op_cache_iterator = typename op_cache_t::iterator;
 
     public:
@@ -119,6 +119,7 @@ namespace mix::dd
 
     private:
         inline static constexpr auto PoolSize = 2'000'000;
+        // inline static constexpr auto PoolSize = 2'000;
 
     private:
         unique_table_v uniqueTables_;
@@ -137,8 +138,8 @@ namespace mix::dd
         (std::size_t const varCount) :
         uniqueTables_ (varCount),
         leaves_       ({}),
-        indexToLevel_ (utils::fill_vector(varCount, utils::identityv)),
-        levelToIndex_ (utils::fill_vector(varCount, utils::identityv)),
+        indexToLevel_ (utils::fill_vector(varCount + 1, utils::identityv)),
+        levelToIndex_ (utils::fill_vector(varCount + 1, utils::identityv)),
         opCaches_     ({}),
         pool_         (PoolSize),
         needsGc_      (false),
@@ -169,6 +170,8 @@ namespace mix::dd
         {
             indexToLevel_[index] = level++;
         }
+        levelToIndex_.push_back(static_cast<index_t>(this->get_var_count()));
+        indexToLevel_.push_back(static_cast<level_t>(this->get_var_count()));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -233,16 +236,14 @@ namespace mix::dd
     auto vertex_manager<VertexData, ArcData, P>::get_level
         (index_t const i) const -> level_t
     {
-        return indexToLevel_.empty()  ? i :
-               this->is_leaf_index(i) ? i : indexToLevel_[i];
+        return indexToLevel_[i];
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::get_index
         (level_t const l) const -> index_t
     {
-        return levelToIndex_.empty()   ? l :
-               l == this->leaf_level() ? l : levelToIndex_[l];
+        return levelToIndex_[l];
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -566,11 +567,6 @@ namespace mix::dd
         {
             return this->internal_vertex(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
             {
-                // if (reinterpret_cast<std::intptr_t>(cofactors[j][i]) == 0x7ffff16e6420)
-                // {
-                //     std::cout << "what if?" << '\n';
-                // }
-
                 return cofactors[j][i];
             }));
         }));
@@ -653,20 +649,10 @@ namespace mix::dd
             }
         }();
 
-        if (levelToIndex_.empty())
+        std::for_each_n(std::begin(levelToIndex_), this->get_var_count(), [&](auto const i)
         {
-            for (auto index = 0u; index < this->get_var_count(); ++index)
-            {
-                op(indexToMapRef[index]);
-            }
-        }
-        else
-        {
-            for (auto const index : levelToIndex_)
-            {
-                op(indexToMapRef[index]);
-            }
-        }
+            op(indexToMapRef[i]);
+        });
     }
 }
 

@@ -516,8 +516,7 @@ namespace mix::dd::test
         auto rngOrderShuffle = std::mt19937(seeder.next_int());
         auto rngDomain       = int_rng<unsigned>(2, P, seeder.next_int());
 
-        std::cout << "Running " << n << " tests." << '\n';
-        std::cout << "Seed is " << initSeed       << '\n';
+        std::cout << "Running " << n << " tests. Init seed was " << initSeed << '.' << '\n';
 
         for (auto i = 0u; i < n; ++i)
         {
@@ -611,7 +610,7 @@ namespace mix::dd::test
         auto rngValue  = int_rng<log_t>(0, P - 1, seeder.next_int());
         auto manager   = make_mdd_manager<P>(VarCount);
 
-        std::cout << "Testing from vector. Init seed was " << initSeed << '\n';
+        std::cout << "Testing from_vector. Init seed was " << initSeed << '.' << '\n';
 
         for (auto i = 0u; i < n; ++i)
         {
@@ -644,6 +643,7 @@ namespace mix::dd::test
             m.set_domains(domains);
             std::cout << "#_ " << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
         }
+        std::cout << '\n';
     }
 }
 

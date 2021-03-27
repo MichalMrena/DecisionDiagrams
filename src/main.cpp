@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <unordered_set>
+#include <unordered_map>
 
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"
@@ -51,7 +52,7 @@ auto pla_sanity_check()
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
     auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
     // auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    // auto const files = {"14-adder_col.pla"};
+    // auto const files = {"10-adder_col.pla"};
 
     for (auto const fileName : files)
     {
@@ -232,14 +233,13 @@ auto main () -> int
     // pla_sanity_check();
     // pla_test_speed();
 
-//    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
-   test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous, 3858120596);
-//    test_mdd_vector(10);
-//    test_bss();
-//    test_mss(5);
+    // xor hash combine pre apply cache?
+    // je symetrický, takže by dobre riešil komutatívnosť
 
-    // swap_var_test();
-    // symmetric_example();
+   test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
+   test_mdd_vector(10);
+   test_bss();
+   test_mss();
 
     std::cout << "Done." << '\n';
     return 0;
