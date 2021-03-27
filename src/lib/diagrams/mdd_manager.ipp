@@ -11,7 +11,7 @@ namespace mix::dd
 {
     template<class VertexData, class ArcData, std::size_t P>
     mdd_manager<VertexData, ArcData, P>::mdd_manager
-        (std::size_t const varCount) :
+        (std::size_t const varCount, std::size_t const vertexCount) :
         manager_ {varCount}
     {
     }
@@ -28,7 +28,6 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::set_order
         (index_v levelToIndex) -> void
     {
-        // TODO add check aby tam bola každý index práve raz...
         manager_.set_order(std::move(levelToIndex));
     }
 

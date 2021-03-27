@@ -1,7 +1,8 @@
 #include <iostream>
 #include <iomanip>
-#include <unordered_set>
-#include <unordered_map>
+    #include <unordered_set>
+    #include <unordered_map>
+    #include <memory>
 
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"

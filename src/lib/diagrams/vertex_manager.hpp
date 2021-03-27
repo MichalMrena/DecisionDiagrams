@@ -162,6 +162,7 @@ namespace mix::dd
     {
         utils::runtime_assert(0 == this->get_vertex_count(), "vertex_manager::set_order: Manager must be empty.");
         utils::runtime_assert(this->get_var_count() == levelToIndex.size(), "vertex_manager::set_order: Level vector size must match var count.");
+        // TODO add check aby tam bola každý index práve raz...
 
         levelToIndex_ = std::move(levelToIndex);
         indexToLevel_ = std::vector<level_t>(levelToIndex_.size());
