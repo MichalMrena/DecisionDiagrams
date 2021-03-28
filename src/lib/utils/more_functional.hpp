@@ -50,7 +50,7 @@ namespace mix::utils
     /**
      *  @brief Min.
      */
-    auto constexpr min = [](auto const& l, auto const& r) { return std::min(l, r); };
+    auto constexpr min = [](auto const& l, auto const& r) { return std::min(l, r); }; // TODO to values, refs je overkill
     using min_t = decltype(min);
 
     /**
