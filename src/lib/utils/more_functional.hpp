@@ -1,110 +1,111 @@
 #ifndef MIX_UTILS_MORE_FUNCTIONAL_HPP
 #define MIX_UTILS_MORE_FUNCTIONAL_HPP
 
-#include <functional>
-#include <utility>
+    // TODO replace with custom ones
+    #include <functional>
+    #include <utility>
 
 namespace mix::utils
 {
-    namespace mf_impl
+    /**
+     *  @brief Creates a function that negates output of @p f .
+     */
+    auto constexpr fnot = [](auto const f)
     {
-        inline auto const fnot = [](auto const f)
+        using F = decltype(f);
+        return [](auto&&... args)
         {
-            using F = decltype(f);
-            return [](auto&&... args)
-            {
-                return ! F {} (std::forward<decltype(args)>(args)...);
-            };
+            return ! F () (std::forward<decltype(args)>(args)...);
         };
-    }
+    };
 
     /**
-        @brief Modular addition.
+     *  @brief Modular addition.
      */
     template<std::size_t M>
-    inline auto const plus_mod = [](auto const l, auto const r) { return (l + r) % M; };
+    auto constexpr plus_mod = [](auto const l, auto const r) { return (l + r) % M; };
     template<std::size_t M>
     using plus_mod_t = decltype(plus_mod<M>);
 
     /**
-        @brief Modular multiplication.
+     *  @brief Modular multiplication.
      */
     template<std::size_t M>
-    inline auto const multiplies_mod = [](auto const l, auto const r) { return (l * r) % M; };
+    auto constexpr multiplies_mod = [](auto const l, auto const r) { return (l * r) % M; };
     template<std::size_t M>
     using multiplies_mod_t = decltype(multiplies_mod<M>);
 
     /**
-        @brief Logical nand.
+     *  @brief Logical nand.
      */
-    inline auto const logical_nand = mf_impl::fnot(std::logical_and<>());
+    auto constexpr logical_nand = fnot(std::logical_and<>());
     using logical_nand_t = decltype(logical_nand);
 
     /**
-        @brief Logical nor.
+     *  @brief Logical nor.
      */
-    inline auto const logical_nor = mf_impl::fnot(std::logical_or<>());
+    auto constexpr logical_nor = fnot(std::logical_or<>());
     using logical_nor_t = decltype(logical_nor);
 
     /**
-        @brief Min.
+     *  @brief Min.
      */
-    inline auto const min = [](auto const& l, auto const& r) { return std::min(l, r); };
+    auto constexpr min = [](auto const& l, auto const& r) { return std::min(l, r); };
     using min_t = decltype(min);
 
     /**
-        @brief Max.
+     *  @brief Max.
      */
-    inline auto const max = [](auto const& l, auto const& r) { return std::max(l, r); };
+    auto constexpr max = [](auto const& l, auto const& r) { return std::max(l, r); };
     using max_t = decltype(max);
 
     /**
-        @brief Function that does nothing.
+     *  @brief Function that does nothing.
      */
-    inline auto const no_op = [](auto&&...) noexcept {};
+    auto constexpr no_op = [](auto&&...) noexcept {};
     using no_op_t = decltype(no_op);
 
     /**
-        @brief Function that always returns true.
+     *  @brief Returns true iif argument is not nullptr.
      */
-    inline auto const always_true = [](auto&&...) noexcept { return true; };
-    using always_true_t = decltype(always_true);
-
-    /**
-        @brief Returns true iif argument is not nullptr.
-     */
-    inline auto const not_null = [](void* const arg) noexcept { return nullptr != arg; };
+    auto constexpr not_null = [](void* const arg) noexcept { return nullptr != arg; };
     using not_null_t = decltype(not_null);
 
     /**
-        @brief Returns true if given container is not empty.
+     *  @brief Returns true if given container is not empty.
      */
-    inline auto const not_empty = [](auto const& c) { return !c.empty(); };
+    auto constexpr not_empty = [](auto const& c) { return !c.empty(); };
     using not_empty_t = decltype(not_empty);
 
     /**
-       @brief Identity function.
+     *  @brief Identity function.
      */
-    inline auto const identity = [](auto&& a) -> decltype(auto) { return std::forward<decltype(a)>(a); };
+    auto constexpr identity = [](auto&& a) -> decltype(auto) { return std::forward<decltype(a)>(a); };
     using identity_t = decltype(identity);
 
     /**
-       @brief Identity function for small value types.
+     *  @brief Identity function for small value types.
      */
-    inline auto const identityv = [](auto const a) { return a; };
+    auto constexpr identityv = [](auto const a) { return a; };
     using identityv_t = decltype(identityv);
 
     /**
-       @brief Creates constant function that returns @p x .
+     *  @brief Creates constant function that returns @p x .
      */
-    inline auto const const_ = [](auto&& x){ return [&x](auto&&...) -> decltype(auto) { return std::forward<decltype(x)>(x); }; };
+    auto constexpr const_ = [](auto&& x){ return [&x](auto&&...) -> decltype(auto) { return std::forward<decltype(x)>(x); }; };
     using const_t = decltype(const_);
 
     /**
-       @brief Creates constant function that returns @p x by value.
+     *  @brief Creates a constant function that returns @p x by value.
      */
-    inline auto const constv_ = [](auto const x){ return [x](auto&&...){ return x; }; };
+    auto constexpr constv_ = [](auto const x){ return [x](auto&&...){ return x; }; };
     using constv_t = decltype(constv_);
+
+    /**
+     *  @brief Function that always returns true.
+     */
+    auto constexpr always_true = constv_(true);
+    using always_true_t = decltype(always_true);
 }
 
 #endif

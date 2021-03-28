@@ -7,21 +7,20 @@
 
 namespace mix::dd
 {
-    /* Types used by MDDs in general. */
+    /// Types used by MDDs in general.
 
     using index_t = std::uint32_t;
     using level_t = std::uint32_t;
 
     /**
-       Traits for logical types and constants.
+     *  @brief Traits for logical types and constants.
      */
     template<std::size_t P>
     struct log_val_traits
     {
-        // using type = std::uint8_t;
         using type = unsigned int;
 
-        static_assert(P < std::numeric_limits<type>::max() - 1, "Max for P is 253.");
+        static_assert(P < 250, "P too big.");
 
         inline static constexpr auto undefined     = type {P};      // * in extended dpbds.
         inline static constexpr auto nodomain      = type {P + 1};  // Non homogenous functions.
@@ -32,7 +31,7 @@ namespace mix::dd
     };
 
     /**
-        Auxiliary struct used in description of dpbds.
+     *  @brief Auxiliary struct used in description of dpbds.
      */
     template<std::size_t P>
     struct val_change
@@ -42,13 +41,13 @@ namespace mix::dd
         log_t to;
     };
 
-    /* Types used only by BDDs. */
+    /// Types used only by BDDs.
 
     using bool_vals_t = std::uint64_t;
     using bool_t      = typename log_val_traits<2>::type;
 
     /**
-        Description of a Boolean variable.
+     *  @brief Description of a Boolean variable.
      */
     struct bool_var
     {
@@ -56,7 +55,7 @@ namespace mix::dd
         bool    complemented;
     };
 
-    /* Definitions. */
+    /// Definitions.
 
     template<std::size_t P>
     [[nodiscard]] constexpr auto is_undefined

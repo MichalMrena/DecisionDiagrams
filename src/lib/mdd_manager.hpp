@@ -44,7 +44,7 @@ namespace mix::dd
         /**
          *  TODO
          */
-        auto get_order () const -> index_v const&;
+        auto get_order () const -> std::vector<index_t> const&;
 
         /**
          *  TODO
@@ -54,7 +54,7 @@ namespace mix::dd
         /**
          *  TODO
          */
-        auto set_pool_ration (std::size_t denominator) -> void;
+        auto set_pool_ratio (std::size_t denominator) -> void;
 
             //
             auto swap_vars       (index_t const i)      -> void;
@@ -77,7 +77,7 @@ namespace mix::dd
         /**
          *  @return @c std::vector of diagrams representing @p is ths variables.
          */
-        auto variables (std::vector<index_t> const& is) -> mdd_v;
+        auto variables (std::vector<index_t> const& is) -> std::vector<mdd_t>;
 
         /**
          *  @return Diagram representing @p i th variable.
@@ -186,7 +186,7 @@ namespace mix::dd
         /**
          *  @return Function @p d where @p i th variable is set to constant @p val .
          */
-        auto restrict_var (mdd_t const& d, index_t i, log_t val) -> mdd_t;
+        auto cofactor (mdd_t const& d, index_t i, log_t val) -> mdd_t;
 
         /**
          *  @return Function @p d where each terminal vertex > 1 is transformed into 1.

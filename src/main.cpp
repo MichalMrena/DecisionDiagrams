@@ -1,8 +1,5 @@
 #include <iostream>
 #include <iomanip>
-    #include <unordered_set>
-    #include <unordered_map>
-    #include <memory>
 
 #include "lib/utils/stopwatch.hpp"
 #include "lib/utils/print.hpp"
@@ -236,6 +233,13 @@ auto main () -> int
 
     // xor hash combine pre apply cache?
     // je symetrický, takže by dobre riešil komutatívnosť
+    // stačilo by potom upraviť porvnávanie kľúča aby bralo do úvahy komutatívnosť
+
+    // satisfy_count to go step
+
+    // zbaviť sa nodomain
+
+    // move a forward makrá, see. https://foonathan.net/2020/09/move-forward/
 
    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
    test_mdd_vector(10);

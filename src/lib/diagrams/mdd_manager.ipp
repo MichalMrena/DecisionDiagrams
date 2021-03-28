@@ -12,7 +12,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     mdd_manager<VertexData, ArcData, P>::mdd_manager
         (std::size_t const varCount, std::size_t const vertexCount) :
-        manager_ {varCount}
+        manager_ (varCount, vertexCount)
     {
     }
 
@@ -36,6 +36,20 @@ namespace mix::dd
         () const -> index_v const&
     {
         return manager_.get_order();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::set_cache_ratio
+        (std::size_t denominator) -> void
+    {
+        manager_.set_cache_ratio(denominator);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::set_pool_ratio
+        (std::size_t denominator) -> void
+    {
+        manager_.set_pool_ratio(denominator);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

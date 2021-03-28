@@ -70,24 +70,24 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::dpbd
         (val_change<P> const var, val_change<P> const f, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply<AND>( this->apply<EQUAL_TO>(this->restrict_var(sf, i, var.from), this->constant(f.from))
-                               , this->apply<EQUAL_TO>(this->restrict_var(sf, i, var.to), this->constant(f.to)) );
+        return this->apply<AND>( this->apply<EQUAL_TO>(this->cofactor(sf, i, var.from), this->constant(f.from))
+                               , this->apply<EQUAL_TO>(this->cofactor(sf, i, var.to), this->constant(f.to)) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbd_integrated_1
         (val_change<P> const var, log_t const fVal, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply<AND>( this->apply<EQUAL_TO>(this->restrict_var(sf, i, var.from), this->constant(fVal))
-                               , this->apply<LESS>(this->restrict_var(sf, i, var.to), this->constant(fVal)) );
+        return this->apply<AND>( this->apply<EQUAL_TO>(this->cofactor(sf, i, var.from), this->constant(fVal))
+                               , this->apply<LESS>(this->cofactor(sf, i, var.to), this->constant(fVal)) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbd_integrated_2
         (val_change<P> const var, mdd_t const& sf, index_t const i) -> mdd_t
     {
-        return this->apply<GREATER>( this->restrict_var(sf, i, var.from)
-                                   , this->restrict_var(sf, i, var.to) );
+        return this->apply<GREATER>( this->cofactor(sf, i, var.from)
+                                   , this->cofactor(sf, i, var.to) );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -97,13 +97,13 @@ namespace mix::dd
         auto const fValConstant = this->constant(fVal);
         if (var.from < var.to)
         {
-            return this->apply<AND>( this->apply<LESS>(this->restrict_var(sf, i, var.from), fValConstant)
-                                   , this->apply<GREATER_EQUAL>(this->restrict_var(sf, i, var.to), fValConstant) );
+            return this->apply<AND>( this->apply<LESS>(this->cofactor(sf, i, var.from), fValConstant)
+                                   , this->apply<GREATER_EQUAL>(this->cofactor(sf, i, var.to), fValConstant) );
         }
         else
         {
-            return this->apply<AND>( this->apply<GREATER_EQUAL>(this->restrict_var(sf, i, var.from), fValConstant)
-                                   , this->apply<LESS>(this->restrict_var(sf, i, var.to), fValConstant) );
+            return this->apply<AND>( this->apply<GREATER_EQUAL>(this->cofactor(sf, i, var.from), fValConstant)
+                                   , this->apply<LESS>(this->cofactor(sf, i, var.to), fValConstant) );
         }
     }
 

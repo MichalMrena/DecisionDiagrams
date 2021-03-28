@@ -20,27 +20,6 @@ namespace mix::dd
         template<std::size_t P>
         using pi_conj_t = decltype(pi_conj<P>);
 
-        /**
-            @brief Base class for binary operators.
-
-            Wrapper for binary operations that are used in the `apply`.
-            Handles these cases for all operations in this order:
-                - When we work with non-homogenous function it returns
-                `nodomain` which means `apply` will create terminal vertex.
-                - When one of the values is @p AbsorbingVal for given operation
-                it returns @p AbsorbingVal which means `apply` will create
-                terminal vertex.
-                - When one of the values is from an internal node (nondetermined)
-                it returns `nondetermined` which means apply will create
-                internal node.
-                - If none of the above is true it calls @p BinOp with given arguments
-                which means apply will create terminal node.
-
-            @tparam BinOp stateless binary operation.
-            @tparam P domain of the function.
-            @tparam Domain specifies whether @p lhs or @p rhs can be `nodomain`.
-            @tparam AbsorbingVal the value if @p BinOp has it or `undefined`.
-        */
         template<class BinOp, std::size_t P, auto AbsorbingVal>
         struct bin_op
         {
@@ -49,14 +28,6 @@ namespace mix::dd
             [[nodiscard]] constexpr auto operator()
                 (log_t const lhs, log_t const rhs) const noexcept (BinOp () (log_t{}, log_t{})) -> log_t
             {
-                if constexpr (P > 2)
-                {
-                    if (is_nodomain<P>(lhs) || is_nodomain<P>(rhs))
-                    {
-                        return log_val_traits<P>::nodomain;
-                    }
-                }
-
                 if constexpr (!is_undefined<P>(AbsorbingVal))
                 {
                     if (AbsorbingVal == lhs || AbsorbingVal == rhs)
@@ -95,14 +66,14 @@ namespace mix::dd
     template<std::size_t P> struct MULTIPLIES    : public impl::bin_op< utils::multiplies_mod_t<P>, P, 0          > {};
 
     /**
-        @brief Type of unique identifier of operations.
+     *  @brief Type of unique identifier of operations.
      */
     using op_id_t = std::uint8_t;
 
     auto constexpr op_count () { return std::size_t {16}; }
 
     /**
-        @brief Maps operations to their integer ids. Id is used in the apply cache.
+     *  @brief Maps operations to their integer ids. Id is used in the apply cache.
      */
     template<std::size_t P> constexpr auto op_id (AND<P>)           { return op_id_t {0};  }
     template<std::size_t P> constexpr auto op_id (OR<P>)            { return op_id_t {1};  }
@@ -122,7 +93,7 @@ namespace mix::dd
     template<std::size_t P> constexpr auto op_id (MULTIPLIES<P>)    { return op_id_t {15}; }
 
     /**
-        @brief Tells whether given operation is commutative or not.
+     *  @brief Tells whether given operation is commutative or not.
      */
     template<std::size_t P> constexpr auto op_is_commutative (AND<P>)           { return true;  }
     template<std::size_t P> constexpr auto op_is_commutative (OR<P>)            { return true;  }

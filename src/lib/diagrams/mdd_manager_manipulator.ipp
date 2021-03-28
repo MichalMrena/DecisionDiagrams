@@ -58,7 +58,7 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto mdd_manager<VertexData, ArcData, P>::restrict_var
+    auto mdd_manager<VertexData, ArcData, P>::cofactor
         (mdd_t const& d, index_t const i, log_t const val) -> mdd_t
     {
         return this->transform(d, [=, this](auto&& l_this, auto const v)

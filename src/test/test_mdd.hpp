@@ -375,7 +375,7 @@ namespace mix::dd::test
         }();
         auto const v1 = 0;
         auto const v2 = 1;
-        auto const d_ = m.restrict_var(m.restrict_var(d, i1, v1), i2, v2);
+        auto const d_ = m.cofactor(m.cofactor(d, i1, v1), i2, v2);
 
         return test_evaluate(m, f, d);
     }
@@ -522,9 +522,11 @@ namespace mix::dd::test
         {
             auto const varorder = get_order(order, rngOrderShuffle, MddVariableCount);
             auto const domains  = get_domains<P>(domain, MddVariableCount, rngDomain);
-            auto manager        = manager_t<P>(MddVariableCount);
+            auto manager        = manager_t<P>(MddVariableCount, 5'000);
             manager.set_order(varorder);
             manager.set_domains(domains);
+            manager.set_cache_ratio(2);
+            manager.set_pool_ratio(3);
 
             auto const mulLeftFold  = [&manager](auto&& ds){ return manager.template left_fold<MULTIPLIES>(ds); };
             auto const plusLeftFold = [&manager](auto&& ds){ return manager.template left_fold<PLUS>(ds);       };
@@ -547,7 +549,7 @@ namespace mix::dd::test
             std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
             std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
             std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
-            std::cout << "        Restrict var    " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
+            std::cout << "        Cofactor        " << test_restrict_var<P>(manager, function, diagram, rngRestVarIndex) << '\n';
             std::cout << "        Operators       " << test_operators<P>(manager, diagram)                               << '\n';
             std::cout << "\n";
         }

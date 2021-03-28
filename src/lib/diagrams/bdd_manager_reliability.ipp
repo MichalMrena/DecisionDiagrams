@@ -50,8 +50,8 @@ namespace mix::dd
     auto bdd_manager<VertexData, ArcData>::dpbd
         (bdd_t const& f, index_t const i) -> bdd_t
     {
-        return this->template apply<AND>( this->negate(this->restrict_var(f, i, 0))
-                                        , this->restrict_var(f, i, 1) );
+        return this->template apply<AND>( this->negate(this->cofactor(f, i, 0))
+                                        , this->cofactor(f, i, 1) );
     }
 
     template<class VertexData, class ArcData>
