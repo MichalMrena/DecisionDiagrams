@@ -60,26 +60,51 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::satisfy_count
         (log_t const val, mdd_t& d) -> std::size_t
     {
-        this->traverse_post(d, [this, val](auto const v)
+        auto constexpr CanUseDataMember = std::is_floating_point_v<VertexData> || std::is_integral_v<VertexData>;
+        using T = std::conditional_t<CanUseDataMember, VertexData, std::size_t>;
+
+        // Returns reference to a data associated with given vertex.
+        auto data = []()
         {
-            if (manager_.is_leaf_vertex(v))
+            if constexpr (CanUseDataMember)
             {
-                v->data = manager_.get_vertex_value(v) == val ? 1 : 0;
+                // Simply return reference to data member.
+                return [](auto const v) mutable -> decltype(auto)
+                {
+                    return (v->data);
+                };
             }
             else
             {
-                v->data = 0;
+                // Return reference to a data that is stored int the map.
+                return [map = std::unordered_map<vertex_t*, T>()](auto const v) mutable -> T&
+                {
+                    return map[v];
+                };
+            }
+        }();
+
+        // Actual satisfy count algorithm.
+        this->traverse_post(d, [this, val, &data](auto const v) mutable
+        {
+            if (manager_.is_leaf_vertex(v))
+            {
+                data(v) = manager_.get_vertex_value(v) == val ? 1 : 0;
+            }
+            else
+            {
+                data(v) = 0;
                 auto const vLevel = manager_.get_vertex_level(v);
-                v->for_each_son([=, this](auto const son)
+                v->for_each_son([=, this, &data](auto const son) mutable
                 {
                     auto const sonLevel   = manager_.get_vertex_level(son);
                     auto const diffFactor = this->domain_product(vLevel + 1, sonLevel);
-                    v->data += son->data * static_cast<double>(diffFactor);
+                    data(v) += data(son) * static_cast<T>(diffFactor);
                 });
             }
         });
 
-        auto const rootAlpha = static_cast<std::size_t>(d.get_root()->data);
+        auto const rootAlpha = static_cast<std::size_t>(data(d.get_root()));
         auto const rootLevel = manager_.get_vertex_level(d.get_root());
         return rootAlpha * this->domain_product(0, rootLevel);
     }
