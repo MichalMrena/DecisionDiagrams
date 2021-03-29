@@ -17,9 +17,9 @@ namespace mix::dd::test
     using var_vv    = std::vector<var_v>;
     using uint_v    = std::vector<unsigned>;
     template<std::size_t P>
-    using manager_t = mdd_manager<double, void, P>;
+    using manager_t = mdd_manager<void, void, P>;
     template<std::size_t P>
-    using mdd_t     = mdd<double, void, P>;
+    using mdd_t     = mdd<void, void, P>;
 
     inline auto constexpr MddVariableCount  = 15;
     inline auto constexpr MddProductCount   = 25;
@@ -610,7 +610,7 @@ namespace mix::dd::test
         auto seeder    = int_rng<seed_t>(0u, UIntMax, initSeed);
         auto rngDomain = int_rng<log_t>(2, P, seeder.next_int());
         auto rngValue  = int_rng<log_t>(0, P - 1, seeder.next_int());
-        auto manager   = make_mdd_manager<P>(VarCount);
+        auto manager   = manager_t<P>(VarCount);
 
         std::cout << "Testing from_vector. Init seed was " << initSeed << '.' << '\n';
 
@@ -625,21 +625,21 @@ namespace mix::dd::test
             manager.clear();
         }
         {
-            auto m = make_mdd_manager<4>(3);
+            auto m = manager_t<4>(3);
             auto const domains = {2u, 2u, 4u};
             auto const vector  = {0u, 0u, 0u, 0u, 0u, 1u, 1u, 2u, 0u, 1u, 1u, 2u, 0u, 2u, 3u, 3u};
             m.set_domains(domains);
             std::cout << "#_ " << test_mdd_vector_eval<4>(vector, domains, m) << '\n';
         }
         {
-            auto m = make_mdd_manager<3>(4);
+            auto m = manager_t<3>(4);
             auto const domains = {2u, 3u, 2u, 3u};
             auto const vector  = {0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 2u, 2u, 2u, 2u, 2u, 1u, 2u, 2u, 2u, 2u, 2u};
             m.set_domains(domains);
             std::cout << "#_ " << test_mdd_vector_eval<3>(vector, domains, m) << '\n';
         }
         {
-            auto m = make_mdd_manager<3>(4);
+            auto m = manager_t<3>(4);
             auto const domains = {3u, 2u, 2u, 3u};
             auto const vector  = {0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 0u, 0u, 0u, 0u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u};
             m.set_domains(domains);

@@ -8,7 +8,7 @@
 #include "lib/bdd_manager.hpp"
 
 #include "test/test_mdd.hpp"
-#include "test/test_reliability.hpp"
+// #include "test/test_reliability.hpp"
 
 #include <bitset>
 #include <cassert>
@@ -226,6 +226,16 @@ auto symmetric_example()
     }
 }
 
+auto example()
+{
+    auto m  = mdd_manager<void, void, 3>(3);
+    auto& x = m;
+    register_manager(m);
+    auto f  = m.apply<MAX>(m.apply<MIN>(x(0), x(1)), x(2));
+    m.to_dot_graph(std::cout, f);
+    auto sc = m.satisfy_count(1, f);
+}
+
 auto main () -> int
 {
     // pla_sanity_check();
@@ -241,10 +251,12 @@ auto main () -> int
 
     // move a forward makrá, see. https://foonathan.net/2020/09/move-forward/
 
-   test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
-   test_mdd_vector(10);
-   test_bss();
-   test_mss();
+//    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
+//    test_mdd_vector(10);
+//    test_bss();
+//    test_mss();
+
+    example();
 
     std::cout << "Done." << '\n';
     return 0;
