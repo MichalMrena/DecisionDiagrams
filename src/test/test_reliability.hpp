@@ -14,6 +14,8 @@ namespace mix::dd::test
     using double_vv  = std::vector<double_v>;
     template<std::size_t P>
     using mdd_man_t  = mdd_manager<double, void, P>;
+    template<std::size_t P>
+    using rel_mdd_t  = mdd<double, void, P>;
     template<std::size_t N>
     using double_a   = std::array<double, N>;
     template<std::size_t P>
@@ -142,7 +144,7 @@ namespace mix::dd::test
     }
 
     template<std::size_t N, std::size_t P>
-    auto analyze_mss(mdd_man_t<P>& m, mdd_t<P> sf, prob_table<P> const& ps)
+    auto analyze_mss(mdd_man_t<P>& m, rel_mdd_t<P> sf, prob_table<P> const& ps)
     {
         m.calculate_probabilities(ps, sf);
         return mss_characteristic<N, P>

@@ -8,7 +8,7 @@
 #include "lib/bdd_manager.hpp"
 
 #include "test/test_mdd.hpp"
-// #include "test/test_reliability.hpp"
+#include "test/test_reliability.hpp"
 
 #include <bitset>
 #include <cassert>
@@ -251,12 +251,12 @@ auto main () -> int
 
     // move a forward makrá, see. https://foonathan.net/2020/09/move-forward/
 
-//    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
-//    test_mdd_vector(10);
-//    test_bss();
-//    test_mss();
+   test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
+   test_mdd_vector(10);
+   test_bss();
+   test_mss();
 
-    example();
+    // example();
 
     std::cout << "Done." << '\n';
     return 0;
