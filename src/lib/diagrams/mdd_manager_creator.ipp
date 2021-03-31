@@ -46,7 +46,7 @@ namespace mix::dd
         using stack_frame = struct { vertex_t* vertex; level_t level; };
         auto stack = ds::peekable_stack<stack_frame>();
 
-        auto const lastLevel     = manager_.get_last_level();
+        auto const lastLevel     = manager_.get_last_internal_level();
         auto const lastIndex     = manager_.get_index(lastLevel);
         auto const lastVarDomain = manager_.get_domain(manager_.get_index(lastLevel));
 

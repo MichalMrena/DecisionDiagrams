@@ -502,6 +502,19 @@ namespace mix::dd::test
     }
 
     template<std::size_t P>
+    auto test_var_sift ( manager_t<P>&       m
+                       , mvl_function const& f
+                       , mdd_t<P> const&     d )
+    {
+        m.collect_garbage();
+        m.sift_variables();
+        auto const result   = test_evaluate(m, f, d);
+        auto const newCount = std::to_string(m.vertex_count(d));
+
+        return result + std::string(" New vertex count ") + newCount;
+    }
+
+    template<std::size_t P>
     auto test_mdd_random ( std::size_t const n
                          , order_e const     order  = order_e::Default
                          , domain_e const    domain = domain_e::Homogenous
@@ -540,12 +553,15 @@ namespace mix::dd::test
             std::cout << '#'                        << i                                                                 << '\n';
             std::cout << "    Diagram"                                                                                   << '\n';
             std::cout << "        Vertex count    " << manager.vertex_count(diagram)                                     << '\n';
-            std::cout << "        Order           " << utils::concat_range(varorder, " > ")                              << '\n';
+            std::cout << "        Initial order   " << utils::concat_range(varorder, " > ")                              << '\n';
             std::cout << "        Domains         " << utils::concat_range(function.domains, " > ")                      << '\n';
             std::cout << "    Tests"                                                                                     << '\n';
             std::cout << "        Fold            " << (diagram.equals(diagram2) ? "OK" : "Failed.")                     << '\n';
             std::cout << "        Collect garbage " << test_collect_garbage<P>(manager, diagram)                         << '\n';
-            std::cout << "        Swap var        " << test_var_swap<P>(manager, function, diagram, rngVarLevel)         << '\n';
+
+            manager.sift_variables();
+            std::cout << "        Var sift        " << test_var_sift<P>(manager, function, diagram)                      << '\n';
+            // std::cout << "        Swap var        " << test_var_swap<P>(manager, function, diagram, rngVarLevel)         << '\n';
             std::cout << "        Evaluate        " << test_evaluate<P>(manager, function, diagram)                      << '\n';
             std::cout << "        Satisfy count   " << test_satisfy_count<P>(manager, function, diagram)                 << '\n';
             std::cout << "        Satisfy all     " << test_satisfy_all<P>(manager, function, diagram)                   << '\n';
