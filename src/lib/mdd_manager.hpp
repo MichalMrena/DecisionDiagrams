@@ -56,11 +56,17 @@ namespace mix::dd
          */
         auto set_pool_ratio (std::size_t denominator) -> void;
 
+        /**
+         *  TODO
+         */
+        auto set_dynamic_reorder (bool reorder) -> void;
+
             //
             auto swap_vars       (index_t const i)      -> void;
             auto clear           () -> void;
             auto clear_cache     () -> void;
             auto collect_garbage () -> void;
+            auto sift_variables  () -> void;
 
     /// Creation
     public:

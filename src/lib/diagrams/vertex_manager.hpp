@@ -62,6 +62,7 @@ namespace mix::dd
         auto get_order               ()            const    -> index_v const&;
         auto set_cache_ratio         (std::size_t denom)    -> void;
         auto set_pool_ratio          (std::size_t denom)    -> void;
+        auto set_reorder             (bool reorder)         -> void;
         auto is_leaf_vertex          (vertex_t* v) const    -> bool;
         auto is_leaf_index           (index_t   i) const    -> bool;
         auto is_leaf_level           (level_t   l) const    -> bool;
@@ -129,21 +130,23 @@ namespace mix::dd
         std::size_t    vertexCount_;
         log_v          domains_;
         std::size_t    cacheRatio_;
+        bool           reorderEnabled_;
     };
 
     template<class VertexData, class ArcData, std::size_t P>
     vertex_manager<VertexData, ArcData, P>::vertex_manager
         (std::size_t const varCount, std::size_t const vertexCount) :
-        uniqueTables_ (varCount),
-        leaves_       ({}),
-        indexToLevel_ (utils::fill_vector(varCount + 1, utils::identityv)),
-        levelToIndex_ (utils::fill_vector(varCount + 1, utils::identityv)),
-        opCaches_     ({}),
-        pool_         (vertexCount),
-        needsGc_      (false),
-        vertexCount_  (0),
-        domains_      ({}),
-        cacheRatio_   (4)
+        uniqueTables_   (varCount),
+        leaves_         ({}),
+        indexToLevel_   (utils::fill_vector(varCount + 1, utils::identityv)),
+        levelToIndex_   (utils::fill_vector(varCount + 1, utils::identityv)),
+        opCaches_       ({}),
+        pool_           (vertexCount),
+        needsGc_        (false),
+        vertexCount_    (0),
+        domains_        ({}),
+        cacheRatio_     (4),
+        reorderEnabled_ (false)
     {
     }
 
@@ -185,6 +188,13 @@ namespace mix::dd
         (std::size_t const denom) -> void
     {
         pool_.set_overflow_ratio(denom);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::set_reorder
+        (bool const reorder) -> void
+    {
+        reorderEnabled_ = reorder;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -364,6 +374,10 @@ namespace mix::dd
         if (needsGc_)
         {
             this->collect_garbage();
+            if (reorderEnabled_)
+            {
+                this->sift_vars();
+            }
         }
 
         for (auto& t : uniqueTables_)
@@ -455,30 +469,32 @@ namespace mix::dd
         {
             auto counts = utils::fill_vector(this->get_var_count(), [this](auto const i)
             {
-                return count_pair(i, this->get_vertex_count(i));
+                return count_pair {i, this->get_vertex_count(i)};
             });
             std::sort(std::begin(counts), std::end(counts), [](auto&& l, auto&& r){ return l.count > r.count; });
             return counts;
         };
 
-        auto const move_var_down = [](auto const index)
+        auto const move_var_down = [this](auto const index)
         {
-            // TODO
+            this->swap_vars(index);
         };
 
-        auto const move_var_up = [](auto const index)
+        auto const move_var_up = [this](auto const index)
         {
-            // TODO
+            auto const level     = this->get_level(index);
+            auto const prevIndex = this->get_index(level - 1);
+            this->swap_vars(prevIndex);
         };
 
-        auto const place_variable = [this, &](auto const index)
+        auto const place_variable = [&, this](auto const index)
         {
             auto level        = this->get_level(index);
             auto optimalLevel = level;
             auto optimalCount = vertexCount_;
 
             // Sift down.
-            while (level != this->get_last_internal_level);
+            while (level != this->get_last_internal_level())
             {
                 move_var_down(index);
                 ++level;
@@ -504,7 +520,7 @@ namespace mix::dd
             // Restore optimal position.
             while (level != optimalLevel)
             {
-                move_var_down(level);
+                move_var_down(index);
                 ++level;
             }
         };

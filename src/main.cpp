@@ -8,7 +8,7 @@
 #include "lib/bdd_manager.hpp"
 
 #include "test/test_mdd.hpp"
-// #include "test/test_reliability.hpp"
+#include "test/test_reliability.hpp"
 
 #include <bitset>
 #include <cassert>
@@ -64,10 +64,16 @@ auto pla_test_speed()
 
 auto sift()
 {
-    auto m  = make_bdd_manager(9);
+    auto m  = make_bdd_manager(8);
     register_manager(m);
     auto& x = m;
-    auto f  = (x(0) && x(1) && x(2)) || (x(3) && x(4) && x(5)) || (x(6) && x(7) && x(8));
+    auto f  = (x(0) && x(4)) || (x(1) && x(5)) || (x(2) && x(6)) || (x(3) && x(7));
+    std::cout << "before: " << m.vertex_count(f) << '\n';
+    m.collect_garbage();
+    m.sift_variables();
+    std::cout << "after: " << m.vertex_count(f) << '\n';
+    auto fr = m.reduce(f);
+    std::cout << "after reduce: " << m.vertex_count(fr) << '\n';
     m.to_dot_graph(std::cout, f);
 }
 
@@ -96,13 +102,14 @@ auto main () -> int
 
     // move a forward makrá, see. https://foonathan.net/2020/09/move-forward/
 
-//    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
+//    test_mdd_random<3>(1, order_e::Random, domain_e::Nonhomogenous, 117);
+   test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
 //    test_mdd_vector(10);
 //    test_bss();
 //    test_mss();
 
 //  sift();
-    example();
+    // example();
 
     std::cout << "Done." << '\n';
     return 0;

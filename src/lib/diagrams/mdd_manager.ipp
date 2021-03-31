@@ -53,6 +53,13 @@ namespace mix::dd
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::set_dynamic_reorder
+        (bool const reorder) -> void
+    {
+        manager_.set_reorder(reorder);
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::swap_vars
         (index_t const i) -> void
     {
@@ -71,6 +78,13 @@ namespace mix::dd
         () -> void
     {
         manager_.collect_garbage();
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto mdd_manager<VertexData, ArcData, P>::sift_variables
+        () -> void
+    {
+        manager_.sift_vars();
     }
 
     template<std::size_t P>
