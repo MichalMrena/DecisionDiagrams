@@ -380,7 +380,7 @@ namespace mix::dd
             }
             else
             {
-                return utils::int_pow(to - from, P);
+                return utils::int_pow(P, to - from);
             }
         }
     }
