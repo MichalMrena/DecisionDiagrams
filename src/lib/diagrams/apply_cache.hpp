@@ -87,7 +87,10 @@ namespace mix::dd
     auto apply_cache<VertexData, ArcData, P>::put
         (iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void
     {
-        ++size_;
+        if (!it->result)
+        {
+            ++size_;
+        }
         it->lhs    = l;
         it->rhs    = r;
         it->result = res;

@@ -1,6 +1,9 @@
-*We don't have a formal name yet so there is no cool heading here.*
+*Cool heading soon.*
 
 C++ library for creation and manipulation of decision diagrams. It is being developed at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), [University of Žilina](https://www.uniza.sk/index.php/en/) as a student project at the [Department of Informatics](https://ki.fri.uniza.sk/).
+
+## Decision diagrams
+*TODO*
 
 ## How to install
 Library is header only so its easy to incorporate it in your project. All you need to do is to place contents of [this](./src/lib/) directory into your project files.  
