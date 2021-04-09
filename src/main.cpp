@@ -42,10 +42,6 @@ auto pla_sanity_check()
 auto main () -> int
 {
 
-    // xor hash combine pre apply cache?
-    // je symetrický, takže by dobre riešil komutatívnosť
-    // stačilo by potom upraviť porvnávanie kľúča aby bralo do úvahy komutatívnosť
-
     // satisfy_count to go step
 
     // zbaviť sa nodomain
@@ -57,6 +53,13 @@ auto main () -> int
     test_mdd_vector(10);
     test_bss();
     test_mss();
+
+    // auto x = bdd_manager<void, void>(3);
+    // auto x1 = x.variable(1);
+    // auto x1_ = x.variable_not(1);
+
+    // x.to_dot_graph(std::cout, x1);
+    // x.to_dot_graph(std::cout, x1_);
 
     std::cout << "Done." << '\n';
     return 0;

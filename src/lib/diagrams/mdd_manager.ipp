@@ -88,9 +88,9 @@ namespace mix::dd
     }
 
     template<std::size_t P>
-    auto make_mdd_manager(std::size_t const varCount)
+    auto make_mdd_manager(std::size_t const varCount, std::size_t const vertexCount)
     {
-        return mdd_manager<double, void, P>(varCount);
+        return mdd_manager<double, void, P>(varCount, vertexCount);
     }
 
     namespace mm_impl

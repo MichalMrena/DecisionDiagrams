@@ -26,38 +26,53 @@ namespace mix::dd
 
     /// Constructors
     public:
+        /**
+         *  @param varCount Number of variables that you want to use.
+         *  @param vertexCount Initial count of pre-allocated vertices.
+         *  Value of @p vertexCount might have a significant impact on performance.
+         */
         mdd_manager (std::size_t varCount, std::size_t vertexCount = 10'000);
         mdd_manager (mdd_manager const&) = delete;
 
     /// Technical stuff
     public:
         /**
-         *  TODO
+         *  @brief Sets domains of variables.
+         *  Domain -> number of values that a variable can take.
+         *  Number at index i in @p domains is domain of i/-th variable.
          */
         auto set_domains (std::vector<log_t> domains) -> void;
 
         /**
-         *  TODO
+         *  @brief Sets initial order of variables.
+         *  Nuber at level j in @p levelToIndex is index of variable at level j.
+         *  Variables are ordered by their indices by default.
          */
         auto set_order (std::vector<index_t> levelToIndex) -> void;
 
         /**
-         *  TODO
+         *  @return Const reference to current order of variables.
+         *  Order returned by this function will be different from
+         *  the default order of from an order set by @c set_order
+         *  iif dynamic reordering is enabled.
          */
         auto get_order () const -> std::vector<index_t> const&;
 
         /**
-         *  TODO
+         *  @brief Sets size of the apply cache.
+         *  Size of cache tables is calculated by @c vertex_count() / @p denominator .
          */
         auto set_cache_ratio (std::size_t denominator) -> void;
 
         /**
-         *  TODO
+         *  @brief Sets ratio of additionally allocated vertices.
+         *  Number of additionally allocated vertices is calculated
+         *  by @c init_vertex_count / @p denominator .
          */
         auto set_pool_ratio (std::size_t denominator) -> void;
 
         /**
-         *  TODO
+         *  @brief Enables/disables dynamic reordering od variables.
          */
         auto set_dynamic_reorder (bool reorder) -> void;
 
@@ -91,13 +106,22 @@ namespace mix::dd
         auto operator() (index_t i) -> mdd_t;
 
         /**
-         *     TODO
+         *  @brief Creates a diagram from a truth vector.
+         *  @param first First element of the truth vector. Bools or 0/1 can be used
+         *  @param last First past last element of the truth vector.
+         *
+         *  Example of a truth vector and corresponding truth table.
+         *  x1 x2  f
+         *   0  0  0
+         *   0  1  0    ->   [0001]
+         *   1  0  0
+         *   1  1  1
          */
         template<class InputIt>
         auto from_vector (InputIt first, InputIt last) -> mdd_t;
 
         /**
-         *     TODO
+         *  @brief See @c from_vector above. This version only gets iterators from @p range .
          */
         template<class Range>
         auto from_vector (Range&& range) -> mdd_t;
@@ -158,13 +182,13 @@ namespace mix::dd
         auto evaluate (mdd_t const& d, VariableValues const& vs) const -> log_t;
 
         /**
-         *  @return std::vector of all different variable assignments for which @p d
+         *  @return @c std::vector of all different variable assignments for which @p d
          *          evaluates to @p val .
          *  @tparam VariableValues something that holds values of individual variables.
-         *  @tparam SetIthVar function object that sets value of i-th variable in VariableValues {}.
-         *          std::vector, std::array, std::bitset (for P = 2), integral type (for P = 2)
+         *  @tparam SetIthVar function object that sets value of i-th variable in @c VariableValues{} .
+         *          @c std::vector, @c std::array, @c std::bitset (for P = 2), integral type (for P = 2)
          *          are supported by default. In case you want to use custom one, check
-         *          var_vals.hpp for implementation details.
+         *          @c var_vals.hpp for implementation details.
          */
         template< class VariableValues
                 , class SetIthVar = set_var_val<P, VariableValues> >
@@ -229,7 +253,9 @@ namespace mix::dd
         auto tree_fold (RandomIt first, RandomIt last) -> mdd_t;
 
         /**
-         *  TODO
+         *  @brief Reduces @p d into canonical form.
+         *  This function is relevant only if dynamic reordering is enabled.
+         *  Otherwise for each @c d; @c d.equals(reduce(d)) .
          */
         auto reduce (mdd_t const& d) -> mdd_t;
 
@@ -261,7 +287,7 @@ namespace mix::dd
 
         /**
          *  @brief Calculates and returns availability.
-         *         Same as calling @c calculate_probabilities(ps,f) and @c get_availability(level) .
+         *  Same as calling @c calculate_probabilities(ps,f) and @c get_availability(level) .
          *  @param ps 2D array where @c ps[i][j] is the probability that i-th variable has value j.
          *  @return Availability for logical @p level .
          */
@@ -269,7 +295,7 @@ namespace mix::dd
 
         /**
          *  @brief Calculates and returns unavailability.
-         *         Same as calling @c calculate_probabilities(ps,f) and @c get_unavailability(level) .
+         *  Same as calling @c calculate_probabilities(ps,f) and @c get_unavailability(level) .
          *  @param ps 2D array where @c ps[i][j] is the probability that i-th variable has value j.
          *  @return Availability for logical @p level .
          */
@@ -458,6 +484,7 @@ namespace mix::dd
         auto variable   (index_t const i, log_t const domain) -> mdd_t;
         auto operator() (index_t const i, log_t const domain) -> mdd_t;
 
+        // TODO toto nebude treba
         template<class LeafVals>
         auto variable_impl (index_t const i, LeafVals&& vals, std::size_t const domain = P) -> mdd_t;
 
@@ -475,58 +502,94 @@ namespace mix::dd
         std::vector<log_t> domains_;
     };
 
+    /**
+     *  @brief Factory function for creating instance of @c mdd_manager .
+     */
     template<std::size_t P>
-    auto make_mdd_manager(std::size_t const varCount);
+    auto make_mdd_manager(std::size_t varCount, std::size_t vertexCount = 10'000);
 
+    /**
+     *  @brief Registers @p m so that you can use below declared overloaded operators.
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto register_manager(mdd_manager<VertexData, ArcData, P>& m);
 
+    /**
+     *  @brief @c apply<AND> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator&& ( mdd<VertexData, ArcData, P> const& lhs
                     , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<OR> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator|| ( mdd<VertexData, ArcData, P> const& lhs
                     , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<XOR> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator^ ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<EQUAL_TO> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator== ( mdd<VertexData, ArcData, P> const& lhs
                     , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<NOT_EQUAL_TO> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator!= ( mdd<VertexData, ArcData, P> const& lhs
                     , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<LESS> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator< ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<LESS_EQUAL> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator<= ( mdd<VertexData, ArcData, P> const& lhs
                     , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<GREATER> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator> ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<GREATER_EQUAL> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator>= ( mdd<VertexData, ArcData, P> const& lhs
                     , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<PLUS> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator+ ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
 
+    /**
+     *  @brief @c apply<MULTIPLIES> .
+     */
     template<class VertexData, class ArcData, std::size_t P>
     auto operator* ( mdd<VertexData, ArcData, P> const& lhs
                    , mdd<VertexData, ArcData, P> const& rhs ) -> mdd<VertexData, ArcData, P>;
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto operator! ( mdd<VertexData, ArcData, P> const& lhs ) -> mdd<VertexData, ArcData, P>;
 }
 
 #include "diagrams/mdd_manager.ipp"

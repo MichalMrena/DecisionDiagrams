@@ -21,7 +21,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::variables
-        (bool_var_v const& vars) -> bdd_v
+        (bool_var_v const& vars) -> std::vector<bdd_t>
     {
         return utils::fmap(vars, [this](auto const var)
         {
@@ -101,7 +101,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::from_pla
-        (pla_file const& file, fold_e const mm) -> bdd_v
+        (pla_file const& file, fold_e const mm) -> std::vector<bdd_t>
     {
         auto const& plaLines      = file.get_lines();
         auto const  lineCount     = file.line_count();
@@ -146,7 +146,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::or_merge
-        (bdd_v& diagrams, fold_e mm) -> bdd_t
+        (std::vector<bdd_t>& diagrams, fold_e mm) -> bdd_t
     {
         switch (mm)
         {

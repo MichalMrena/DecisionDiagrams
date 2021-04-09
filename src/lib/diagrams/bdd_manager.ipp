@@ -8,14 +8,14 @@ namespace mix::dd
 {
     template<class VertexData, class ArcData>
     bdd_manager<VertexData, ArcData>::bdd_manager
-        (std::size_t const varCount) :
-        base {varCount}
+        (std::size_t const varCount, std::size_t const vertexCount) :
+        base {varCount, vertexCount}
     {
     }
 
-    auto make_bdd_manager(std::size_t const varCount)
+    auto make_bdd_manager(std::size_t const varCount, std::size_t const vertexCount)
     {
-        return bdd_manager<double, void>(varCount);
+        return bdd_manager<double, void>(varCount, vertexCount);
     }
 
     template<class VertexData, class ArcData>

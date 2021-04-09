@@ -11,7 +11,7 @@ namespace mix::dd
 {
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::calculate_probabilities
-        (double_v const& ps, bdd_t& f) -> void
+        (std::vector<double> const& ps, bdd_t& f) -> void
     {
         base::calculate_probabilities(this->to_prob_table(ps), f);
     }
@@ -32,7 +32,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::availability
-        (double_v const& ps, bdd_t& f) -> double
+        (std::vector<double> const& ps, bdd_t& f) -> double
     {
         this->calculate_probabilities(ps, f);
         return base::get_probability(1);
@@ -40,7 +40,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::unavailability
-        (double_v const& ps, bdd_t& f) -> double
+        (std::vector<double> const& ps, bdd_t& f) -> double
     {
         this->calculate_probabilities(ps, f);
         return base::get_probability(0);
@@ -56,7 +56,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::dpbds
-        (bdd_t const& f) -> bdd_v
+        (bdd_t const& f) -> std::vector<bdd_t>
     {
         return utils::fill_vector( base::manager_.get_var_count()
                                  , std::bind_front(&bdd_manager::dpbd, this, f) );
@@ -73,21 +73,21 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::structural_importances
-        (bdd_v& dpbds) -> double_v
+        (std::vector<bdd_t>& dpbds) -> std::vector<double>
     {
         return utils::fmap(dpbds, std::bind_front(&bdd_manager::structural_importance, this));
     }
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::birnbaum_importance
-        (double_v const& ps, bdd_t& dpbd) -> double
+        (std::vector<double> const& ps, bdd_t& dpbd) -> double
     {
         return this->availability(ps, dpbd);
     }
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::birnbaum_importances
-        (double_v const& ps, bdd_v& dpbds) -> double_v
+        (std::vector<double> const& ps, std::vector<bdd_t>& dpbds) -> std::vector<double>
     {
         return utils::fmap(dpbds, std::bind_front(&bdd_manager::birnbaum_importance, this, ps));
     }
@@ -101,7 +101,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::criticality_importances
-        (double_v const& BIs, double_v const& ps, double const U) -> double_v
+        (std::vector<double> const& BIs, std::vector<double> const& ps, double const U) -> std::vector<double>
     {
         return utils::fmap_i(BIs, [this, U, &ps](auto const i, auto const BI)
         {
@@ -111,7 +111,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::fussell_vesely_importance
-        (bdd_t& dpbd, double const qi, double_v const& ps, double const U) -> double
+        (bdd_t& dpbd, double const qi, std::vector<double> const& ps, double const U) -> double
     {
         auto mnf = this->to_mnf(dpbd);
         return (qi * this->availability(ps, mnf)) / U;
@@ -119,7 +119,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::fussell_vesely_importances
-        (bdd_v& dpbds, double_v const& ps, double const U) -> double_v
+        (std::vector<bdd_t>& dpbds, std::vector<double> const& ps, double const U) -> std::vector<double>
     {
         return utils::fmap_i(dpbds, [this, &ps, U](auto const i, auto&& dpbd)
         {
@@ -139,7 +139,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::to_prob_table
-        (double_v const& ps) -> prob_table
+        (std::vector<double> const& ps) -> prob_table
     {
         return utils::fmap(ps, [](auto const p)
         {
