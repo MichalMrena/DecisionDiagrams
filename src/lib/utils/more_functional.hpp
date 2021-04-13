@@ -8,14 +8,14 @@
 namespace mix::utils
 {
     /**
-     *  @brief Creates a function that negates output of @p f .
+     *  @brief Creates a function that negates an output of binary function @p f .
      */
     auto constexpr fnot = [](auto const f)
     {
         using F = decltype(f);
-        return [](auto&&... args)
+        return [](auto const l, auto const r)
         {
-            return ! F () (std::forward<decltype(args)>(args)...);
+            return ! F () (l, r);
         };
     };
 
@@ -36,27 +36,39 @@ namespace mix::utils
     using multiplies_mod_t = decltype(multiplies_mod<M>);
 
     /**
+     *  @brief Logical and.
+     */
+    auto constexpr logical_and = [](auto const l, auto const r) { return l && r; };
+    using logical_and_t = decltype(logical_and);
+
+    /**
+     *  @brief Logical or.
+     */
+    auto constexpr logical_or = [](auto const l, auto const r) { return l || r; };
+    using logical_or_t = decltype(logical_or);
+
+    /**
      *  @brief Logical nand.
      */
-    auto constexpr logical_nand = fnot(std::logical_and<>());
+    auto constexpr logical_nand = fnot(logical_and);
     using logical_nand_t = decltype(logical_nand);
 
     /**
      *  @brief Logical nor.
      */
-    auto constexpr logical_nor = fnot(std::logical_or<>());
+    auto constexpr logical_nor = fnot(logical_or);
     using logical_nor_t = decltype(logical_nor);
 
     /**
      *  @brief Min.
      */
-    auto constexpr min = [](auto const& l, auto const& r) { return std::min(l, r); }; // TODO to values, refs je overkill
+    auto constexpr min = [](auto const l, auto const r) { return l < r ? l : r; };
     using min_t = decltype(min);
 
     /**
      *  @brief Max.
      */
-    auto constexpr max = [](auto const& l, auto const& r) { return std::max(l, r); };
+    auto constexpr max = [](auto const l, auto const r) { return l > r ? l : r; };
     using max_t = decltype(max);
 
     /**
