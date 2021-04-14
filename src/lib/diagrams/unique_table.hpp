@@ -2,14 +2,13 @@
 #define MIX_DD_UNIQUE_TABLE_HPP
 
 #include "graph.hpp"
-#include "../utils/hash.hpp"
-
 #include <vector>
+#include <functional>
 
 namespace mix::dd
 {
     /**
-        @brief Iterator for unique table.
+     *  @brief Iterator for unique table.
      */
     template<class BucketIterator, class VertexData, class ArcData, std::size_t P>
     class unique_table_iterator
@@ -44,7 +43,7 @@ namespace mix::dd
     };
 
     /**
-        @brief Unique table of vertices.
+     *  @brief Unique table of vertices.
      */
     template<class VertexData, class ArcData, std::size_t P>
     class unique_table
@@ -77,13 +76,13 @@ namespace mix::dd
 
     private:
         template<class Key, class Getter>
-        static auto hash      (Key key, Getter get_ith)                -> std::size_t;
+        static auto hash      (Key key, Getter get_ith)          -> std::size_t;
         static auto vertex_eq (vertex_t* v, vertex_a const& key) -> bool;
         auto insert_impl      (vertex_t* v)                      -> vertex_t*;
-        auto calculate_index  (vertex_t* v) const                -> std::size_t;
-        auto calculate_index  (vertex_a const& key) const              -> std::size_t;
-        auto is_overloaded     ()                  const                -> bool;
-        auto rehash           ()                                       -> void;
+        auto calculate_index  (vertex_t* v)         const        -> std::size_t;
+        auto calculate_index  (vertex_a const& key) const        -> std::size_t;
+        auto is_overloaded    ()                    const        -> bool;
+        auto rehash           ()                                 -> void;
 
     private:
         static inline auto constexpr LoadThreshold = 0.75;

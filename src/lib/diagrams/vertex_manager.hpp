@@ -9,7 +9,7 @@
 #include "../utils/object_pool.hpp"
 #include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
-#include "../utils/more_functional.hpp"
+#include "../utils/less_functional.hpp"
 #include "../utils/more_assert.hpp"
 
 #include <cstddef>
@@ -138,8 +138,8 @@ namespace mix::dd
         (std::size_t const varCount, std::size_t const vertexCount) :
         uniqueTables_   (varCount),
         leaves_         ({}),
-        indexToLevel_   (utils::fill_vector(varCount + 1, utils::identityv)),
-        levelToIndex_   (utils::fill_vector(varCount + 1, utils::identityv)),
+        indexToLevel_   (utils::fill_vector(varCount + 1, utils::identity)),
+        levelToIndex_   (utils::fill_vector(varCount + 1, utils::identity)),
         opCaches_       ({}),
         pool_           (vertexCount),
         needsGc_        (false),
@@ -645,7 +645,7 @@ namespace mix::dd
             auto const son = v->get_son(sonIndex);
             return son->get_index() == nextIndex
                 ? utils::fill_array_n<P>(sonDomain, std::bind_front(&vertex_t::get_son, son))
-                : utils::fill_array_n<P>(sonDomain, utils::constv_(son));
+                : utils::fill_array_n<P>(sonDomain, utils::constant(son));
         });
         v->set_index(nextIndex);
         v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)

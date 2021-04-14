@@ -1,16 +1,14 @@
 #ifndef MIX_DD_TYPEDEFS_HPP
 #define MIX_DD_TYPEDEFS_HPP
 
-#include <cstdint>
-#include <limits>
 #include <string>
 
 namespace mix::dd
 {
     /// Types used by MDDs in general.
 
-    using index_t = std::uint32_t;
-    using level_t = std::uint32_t;
+    using index_t = unsigned int;
+    using level_t = unsigned int;
 
     /**
      *  @brief Traits for logical types and constants.
@@ -23,15 +21,14 @@ namespace mix::dd
         static_assert(P < 250, "P too big.");
 
         inline static constexpr auto undefined     = type {P};      // * in extended dpbds.
-        inline static constexpr auto nodomain      = type {P + 1};  // Non homogenous functions.
-        inline static constexpr auto nondetermined = type {P + 2};  // Internal vertex in apply.
+        inline static constexpr auto nondetermined = type {P + 1};  // Internal vertex in apply.
         inline static constexpr auto valuecount    = type {P + 2};
 
-        static auto to_string (type const t) -> std::string;
+        static auto to_string (type t) -> std::string;
     };
 
     /**
-     *  @brief Auxiliary struct used in description of dpbds.
+     *  @brief Used in description of dpbds.
      */
     template<std::size_t P>
     struct val_change
@@ -72,23 +69,14 @@ namespace mix::dd
     }
 
     template<std::size_t P>
-    [[nodiscard]] constexpr auto is_nodomain
-        (typename log_val_traits<P>::type const v)
-    {
-        return log_val_traits<P>::nodomain == v;
-    }
-
-    template<std::size_t P>
     [[nodiscard]] auto log_val_traits<P>::to_string
         (type const t) -> std::string
     {
-        auto constexpr U  = log_val_traits::undefined;
-        auto constexpr ND = log_val_traits::nodomain;
+        auto constexpr U = log_val_traits::undefined;
 
         switch (t)
         {
             case U:  return "*";
-            case ND: return "N";
             default: return std::to_string(t);
         }
     }

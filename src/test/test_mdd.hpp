@@ -317,10 +317,7 @@ namespace mix::dd::test
             while (vs.has_more())
             {
                 auto const val = eval_function<P>(f, *vs);
-                if (!is_nodomain<P>(val))
-                {
-                    ++scs[val];
-                }
+                ++scs[val];
                 ++vs;
             }
 

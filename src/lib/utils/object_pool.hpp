@@ -2,31 +2,10 @@
 #define MIX_UTILS_OBJECT_POOL_HPP
 
 #include <memory>
-#include <utility>
 #include <vector>
-#include <deque>
 
 namespace mix::utils
 {
-    /**
-        @brief Operators new and delete hidden behind pool interface.
-     */
-    template<class T>
-    class dummy_object_pool
-    {
-    public:
-        dummy_object_pool (std::size_t const);
-
-    public:
-        template<class... Args>
-        [[nodiscard]] auto try_create (Args&&... args) -> T*;
-
-        template<class... Args>
-        [[nodiscard]] auto force_create (Args&&... args) -> T*;
-
-        auto destroy (T* const p) -> void;
-    };
-
     /**
         @brief Simple pool of pre-allocated objects in a continuous storage.
      */
@@ -34,7 +13,7 @@ namespace mix::utils
     class object_pool
     {
     public:
-        object_pool (std::size_t const size);
+        object_pool (std::size_t size);
         object_pool (object_pool const&) = delete;
         object_pool (object_pool&&)      = default;
 
@@ -63,37 +42,6 @@ namespace mix::utils
         pool_iterator               nextObject_;
         std::size_t                 overflowRatio_;
     };
-
-// dummy_object_pool definitions:
-
-    template<class T>
-    dummy_object_pool<T>::dummy_object_pool
-        (std::size_t const)
-    {
-    }
-
-    template<class T>
-    template<class... Args>
-    auto dummy_object_pool<T>::try_create
-        (Args&&... args) -> T*
-    {
-        return this->force_create(std::forward<Args>(args)...);
-    }
-
-    template<class T>
-    template<class... Args>
-    auto dummy_object_pool<T>::force_create
-        (Args&&... args) -> T*
-    {
-        return new T(std::forward<Args>(args)...);
-    }
-
-    template<class T>
-    auto dummy_object_pool<T>::destroy
-        (T* const p) -> void
-    {
-        delete p;
-    }
 
 // object_pool definitions:
 

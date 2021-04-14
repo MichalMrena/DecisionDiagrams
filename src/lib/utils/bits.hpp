@@ -11,11 +11,11 @@ namespace mix::utils
     {
         template<class IntType> 
         using bit_keeper = std::bitset<8 * sizeof(IntType)>;
-    } 
+    }
 
     template<class IntType>
     class bit_accesser
-    { 
+    {
     public:
         bit_accesser    (IntType const bits);
         auto operator() (std::size_t const i ) const -> bool;

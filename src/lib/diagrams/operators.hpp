@@ -2,11 +2,7 @@
 #define MIX_DD_OPERATORS_HPP
 
 #include "typedefs.hpp"
-#include "../utils/more_functional.hpp"
-
-#include <algorithm>
-#include <functional>
-#include <limits>
+#include "../utils/less_functional.hpp"
 
 namespace mix::dd
 {
@@ -16,7 +12,7 @@ namespace mix::dd
         inline constexpr auto U = log_val_traits<P>::undefined;
 
         template<std::size_t P>
-        inline auto constexpr pi_conj = [](auto const l, auto const r) { return std::min({l, r, U<P>}); };
+        inline auto constexpr pi_conj = [](auto const l, auto const r) { return utils::min(utils::min(l, r), U<P>); };
         template<std::size_t P>
         using pi_conj_t = decltype(pi_conj<P>);
 
@@ -26,7 +22,7 @@ namespace mix::dd
             using log_t = typename log_val_traits<P>::type;
 
             [[nodiscard]] constexpr auto operator()
-                (log_t const lhs, log_t const rhs) const noexcept (BinOp () (log_t{}, log_t{})) -> log_t
+                (log_t const lhs, log_t const rhs) const noexcept -> log_t
             {
                 if constexpr (!is_undefined<P>(AbsorbingVal))
                 {
@@ -48,18 +44,18 @@ namespace mix::dd
 
     struct NOT {};
 
-    template<std::size_t P> struct AND           : public impl::bin_op< std::logical_and<>,         P, 0          > {};
-    template<std::size_t P> struct OR            : public impl::bin_op< std::logical_or<>,          P, 1          > {};
-    template<std::size_t P> struct XOR           : public impl::bin_op< std::not_equal_to<>,        P, impl::U<P> > {};
+    template<std::size_t P> struct AND           : public impl::bin_op< utils::logical_and_t,       P, 0          > {};
+    template<std::size_t P> struct OR            : public impl::bin_op< utils::logical_or_t,        P, 1          > {};
+    template<std::size_t P> struct XOR           : public impl::bin_op< utils::logical_xor_t,       P, impl::U<P> > {};
     template<std::size_t P> struct PI_CONJ       : public impl::bin_op< impl::pi_conj_t<P>,         P, 0          > {};
     template<std::size_t P> struct NAND          : public impl::bin_op< utils::logical_nand_t,      P, impl::U<P> > {};
     template<std::size_t P> struct NOR           : public impl::bin_op< utils::logical_nor_t,       P, impl::U<P> > {};
-    template<std::size_t P> struct EQUAL_TO      : public impl::bin_op< std::equal_to<>,            P, impl::U<P> > {};
-    template<std::size_t P> struct NOT_EQUAL_TO  : public impl::bin_op< std::not_equal_to<>,        P, impl::U<P> > {};
-    template<std::size_t P> struct LESS          : public impl::bin_op< std::less<>,                P, impl::U<P> > {};
-    template<std::size_t P> struct LESS_EQUAL    : public impl::bin_op< std::less_equal<>,          P, impl::U<P> > {};
-    template<std::size_t P> struct GREATER       : public impl::bin_op< std::greater<>,             P, impl::U<P> > {};
-    template<std::size_t P> struct GREATER_EQUAL : public impl::bin_op< std::greater_equal<>,       P, impl::U<P> > {};
+    template<std::size_t P> struct EQUAL_TO      : public impl::bin_op< utils::equal_to_t,          P, impl::U<P> > {};
+    template<std::size_t P> struct NOT_EQUAL_TO  : public impl::bin_op< utils::not_equal_to_t,      P, impl::U<P> > {};
+    template<std::size_t P> struct LESS          : public impl::bin_op< utils::less_t,              P, impl::U<P> > {};
+    template<std::size_t P> struct LESS_EQUAL    : public impl::bin_op< utils::less_equal_t,        P, impl::U<P> > {};
+    template<std::size_t P> struct GREATER       : public impl::bin_op< utils::greater_t,           P, impl::U<P> > {};
+    template<std::size_t P> struct GREATER_EQUAL : public impl::bin_op< utils::greater_equal_t,     P, impl::U<P> > {};
     template<std::size_t P> struct MIN           : public impl::bin_op< utils::min_t,               P, 0          > {};
     template<std::size_t P> struct MAX           : public impl::bin_op< utils::max_t,               P, P - 1      > {};
     template<std::size_t P> struct PLUS          : public impl::bin_op< utils::plus_mod_t<P>,       P, impl::U<P> > {};

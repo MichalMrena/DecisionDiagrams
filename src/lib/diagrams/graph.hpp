@@ -3,7 +3,6 @@
 
 #include "typedefs.hpp"
 #include "../utils/more_algorithm.hpp"
-#include "../utils/more_type_traits.hpp"
 
 #include <array>
 
@@ -52,25 +51,25 @@ namespace mix::dd
         using arc_a       = std::array<arc_t, P>;
         using vertex_a    = std::array<vertex_t*, P>;
         using log_t       = typename log_val_traits<P>::type;
-        using ref_count_t = std::uint32_t;
+        using ref_count_t = unsigned int;
 
     protected:
-        vertex_base (index_t const i);
-        vertex_base (index_t const i, vertex_a const& sons);
+        vertex_base (index_t i);
+        vertex_base (index_t i, vertex_a const& sons);
 
     public:
-        auto get_id        () const                    -> std::uintptr_t;
-        auto get_son       (std::size_t const i) const -> vertex_t*;
-        auto set_sons      (vertex_a const& sons)      -> void;
-        auto get_next      () const                    -> vertex_t*;
-        auto set_next      (vertex_t* const n)         -> void;
-        auto get_mark      () const                    -> bool;
-        auto toggle_mark   ()                          -> void;
-        auto get_index     () const                    -> index_t;
-        auto set_index     (index_t const i)           -> void;
-        auto get_ref_count () const                    -> ref_count_t;
-        auto inc_ref_count ()                          -> void;
-        auto dec_ref_count ()                          -> void;
+        auto get_id        () const               -> std::uintptr_t;
+        auto get_son       (std::size_t i) const  -> vertex_t*;
+        auto set_sons      (vertex_a const& sons) -> void;
+        auto get_next      () const               -> vertex_t*;
+        auto set_next      (vertex_t* n)          -> void;
+        auto get_mark      () const               -> bool;
+        auto toggle_mark   ()                     -> void;
+        auto get_index     () const               -> index_t;
+        auto set_index     (index_t i)            -> void;
+        auto get_ref_count () const               -> ref_count_t;
+        auto inc_ref_count ()                     -> void;
+        auto dec_ref_count ()                     -> void;
 
         template<class VertexOp>
         auto for_each_son (VertexOp op) -> void;
@@ -105,8 +104,8 @@ namespace mix::dd
 
     public:
         vertex ();
-        vertex (index_t const i);
-        vertex (index_t const i, vertex_a const& sons);
+        vertex (index_t i);
+        vertex (index_t i, vertex_a const& sons);
     };
 
     /**
@@ -228,11 +227,6 @@ namespace mix::dd
     auto vertex_base<VertexData, ArcData, P>::dec_ref_count
         () -> void
     {
-        if (0 == markRefCount_)
-        {
-            std::cout << "not good" << '\n';
-        }
-
         --markRefCount_;
     }
 

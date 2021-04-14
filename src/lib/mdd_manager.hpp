@@ -438,8 +438,6 @@ namespace mix::dd
         using vertex_a         = std::array<vertex_t*, P>;
         using vertex_v         = std::vector<vertex_t*>;
         using vertex_vv        = std::vector<vertex_v>;
-        using apply_key_t      = std::tuple<vertex_t*, op_id_t, vertex_t*>;
-        using apply_memo_t     = std::unordered_map<apply_key_t, vertex_t*, utils::tuple_hash_t<apply_key_t>>;
         using transform_key_t  = vertex_t*;
         using transform_memo_t = std::unordered_map<vertex_t*, vertex_t*>;
         using vertex_manager_t = vertex_manager<VertexData, ArcData, P>;

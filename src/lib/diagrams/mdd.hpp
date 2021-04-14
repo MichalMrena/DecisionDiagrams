@@ -1,12 +1,7 @@
 #ifndef MIX_DD_MDD_HPP
 #define MIX_DD_MDD_HPP
 
-#include "typedefs.hpp"
 #include "graph.hpp"
-#include "vertex_manager.hpp"
-
-#include <cstddef>
-#include <utility>
 
 namespace mix::dd
 {
@@ -38,9 +33,6 @@ namespace mix::dd
         auto equals    (mdd const& rhs) const -> bool;
 
     private:
-        using manager_t = vertex_manager<VertexData, ArcData, P>;
-
-    private:
         auto get_root () const -> vertex_t*;
 
     private:
@@ -57,7 +49,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     mdd<VertexData, ArcData, P>::mdd
         (vertex_t* root) :
-        root_ {manager_t::inc_ref_count(root)}
+        root_ {[](auto const v){ v->inc_ref_count(); return v; }(root) }
     {
     }
 
@@ -71,7 +63,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     mdd<VertexData, ArcData, P>::mdd
         (mdd const& other) :
-        root_ {manager_t::inc_ref_count(other.root_)}
+        root_ {[](auto const v){ v->inc_ref_count(); return v; }(other.root_)}
     {
     }
 

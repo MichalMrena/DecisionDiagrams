@@ -18,7 +18,7 @@ namespace mix::dd
         (index_t const i) -> mdd_t
     {
         auto const dom  = manager_.get_domain(i);
-        auto const vals = utils::fill_array<P>(utils::identityv);
+        auto const vals = utils::fill_array<P>(utils::identity);
         return this->variable_impl(i, vals, dom);
     }
 

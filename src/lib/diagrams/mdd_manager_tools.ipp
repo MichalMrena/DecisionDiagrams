@@ -6,7 +6,7 @@
 #include "../utils/string_utils.hpp"
 #include "../utils/print.hpp"
 #include "../utils/more_math.hpp"
-#include "../utils/more_functional.hpp"
+#include "../utils/less_functional.hpp"
 
 #include <queue>
 #include <functional>
@@ -135,17 +135,12 @@ namespace mix::dd
     auto mdd_manager<VertexData, ArcData, P>::evaluate
         (mdd_t const& d, VariableValues const& vs) const -> log_t
     {
-        static auto constexpr ND      = log_val_traits<P>::nodomain;
         static auto constexpr get_var = GetIthVar {};
         auto v = d.get_root();
 
         while (!manager_.is_leaf_vertex(v))
         {
             v = v->get_son(get_var(vs, v->get_index()));
-            if (!v)
-            {
-                return ND;
-            }
         }
 
         return manager_.get_vertex_value(v);

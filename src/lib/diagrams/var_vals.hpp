@@ -9,7 +9,7 @@ namespace mix::dd
     namespace vv_impl
     {
         template<class T>
-        using int_type = std::enable_if_t< std::is_integral_v<T> 
+        using int_type = std::enable_if_t< std::is_integral_v<T>
                                         && !std::is_same_v<bool, T> >;
 
         template<class T>
@@ -28,16 +28,16 @@ namespace mix::dd
     }
 
     /**
-        Function object that extract value of i-th variable from a container of variables.
-        This general class has no definition. Definitions are provided
-        via template specialization and SFINE below.
-        see. https://cpppatterns.com/patterns/class-template-sfinae.html
+     *  @brief Function object that extract value of i-th variable from a container of variables.
+     *  This base case has no definition. Definitions are provided
+     *  via template specialization and SFINE below.
+     *  see. https://cpppatterns.com/patterns/class-template-sfinae.html
      */
     template<std::size_t P, class VarVals, class = void>
     struct get_var_val;
 
     /**
-        Specialized definition for integral types except bool.
+     *  @brief Specialized definition for integral types except bool.
      */
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, vv_impl::int_type<VarVals>>
@@ -52,7 +52,7 @@ namespace mix::dd
     };
 
     /**
-        Specialized definition for `std::vector` of integral type.
+     *  @brief Specialized definition for @c std::vector of integral type.
      */
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, vv_impl::vector_type<VarVals>>
@@ -65,7 +65,7 @@ namespace mix::dd
     };
 
     /**
-        Specialized definition for `std::array` of integral type.
+     *  @brief Specialized definition for @c std::array of integral type.
      */
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, vv_impl::array_type<VarVals>>
@@ -78,7 +78,7 @@ namespace mix::dd
     };
 
     /**
-        Specialized definition for `std::bitset`.
+     *  @brief Specialized definition for @c std::bitset .
      */
     template<std::size_t P, class VarVals>
     struct get_var_val<P, VarVals, vv_impl::bitset_type<VarVals>>
@@ -94,15 +94,15 @@ namespace mix::dd
 
 
     /**
-        Function object that sets value of i-th variable in a container of variables.
-        This general class has no definition. Definitions are provided
-        via template specialization and SFINE below.
+     *  @brief Function object that sets value of i-th variable in a container of variables.
+     *  This base case has no definition. Definitions are provided
+     *  via template specialization and SFINE below.
      */
     template<std::size_t P, class VarVals, class = void>
     struct set_var_val;
 
     /**
-        Specialized definition for `std::bitset`.
+     *  @brief Specialized definition for @c std::bitset .
      */
     template<std::size_t P, class VarVals>
     struct set_var_val<P, VarVals, vv_impl::bitset_type<VarVals>>
@@ -117,7 +117,7 @@ namespace mix::dd
     };
 
     /**
-        Specialized definition for integral types except bool.
+     *  @brief Specialized definition for integral types except bool.
      */
     template<std::size_t P, class VarVals>
     struct set_var_val<P, VarVals, vv_impl::int_type<VarVals>>
@@ -132,7 +132,7 @@ namespace mix::dd
     };
 
     /**
-        Specialized definition for `std::array`.
+     *  @brief Specialized definition for @c std::array .
      */
     template<std::size_t P, class VarVals>
     struct set_var_val<P, VarVals, vv_impl::array_type<VarVals>>

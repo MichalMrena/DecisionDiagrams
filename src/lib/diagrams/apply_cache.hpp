@@ -2,8 +2,6 @@
 #define MIX_DD_BIN_OP_CACHE_HPP
 
 #include "graph.hpp"
-#include "operators.hpp"
-
 #include <vector>
 
 namespace mix::dd
