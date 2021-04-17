@@ -3,85 +3,163 @@
 
 #include <string>
 #include <string_view>
+
 #include <vector>
 #include <utility>
 #include <sstream>
 #include <iterator>
 #include <cstring>
-#include <algorithm> 
+#include <algorithm>
 #include <locale>
 
 namespace mix::utils
 {
     /**
-        Splits the string into words using space as a delimiter.
-        @return vector of new string that are words from @p s .
+     *  @brief Removes spaces in place both side of the @p s .
      */
-    auto to_words (std::string s) -> std::vector<std::string>;
+    auto trim (std::string& s) -> void
+    {
+        s.erase(std::begin(s), std::find_if(std::begin(s), std::end(s), [](auto const c)
+        {
+            return !std::isspace(c);
+        }));
+
+        s.erase(std::find_if(std::rbegin(s), std::rend(s), [](auto const c)
+        {
+            return !std::isspace(c);
+        }).base(), std::end(s));
+    }
 
     /**
-        Splits the string into two parts. The first one contains the first word (head)
-        and the second one constains the rest of the string (tail).
-        @return pair of new strings that are the head and the tail of @p s .
+     *  @brief Replaces groups of spaces (' ') with a single one.
+     *  @return new string with no consecutive spaces.
      */
-    auto to_head_tail (std::string s) -> std::pair<std::string, std::string>;
+    auto shrink_spaces (std::string& s) -> void
+    {
+        auto const newEnd = std::unique(std::begin(s), std::end(s), [](auto const l, auto const r)
+        {
+            return (l == r) && (l == ' ');
+        });
+        s.erase(newEnd, std::end(s));
+    }
 
     /**
-        Replaces consecutive spaces with a single one.
-        By space we mean ' '.
-        @return new string with no consecutive spaces.
+     *  @brief Splits the string into two parts.
+     *  The first one contains the first word (head)
+     *  and the second one constains the rest of the string (tail).
+     *  @return pair of string_view that are the head and the tail of @p sv .
      */
-    auto shrink_spaces (std::string s) -> std::string;
+    auto to_head_tail (std::string_view sv) -> std::pair<std::string_view, std::string_view>
+    {
+        auto const firstSpaceIt = std::find(std::begin(sv), std::end(sv), ' ');
+
+        if (std::end(sv) == firstSpaceIt)
+        {
+            return std::make_pair("", "");
+        }
+
+        auto const firstSpacePos = static_cast<std::size_t>(firstSpaceIt - std::begin(sv));
+        return std::make_pair( sv.substr(0, firstSpacePos)
+                             , sv.substr(firstSpacePos + 1) );
+    }
 
     /**
-        Removes spaces from the begining and from the end of the string.
-        @return new string with no leading and trailing spaces.
+     *  @brief Splits the string into words using space as a delimiter.
+     *  @return vector of new string that are words from @p s .
      */
-    auto trim (std::string s) -> std::string;
+    auto to_words (std::string_view sv, std::string_view delimiters = " ") -> std::vector<std::string>
+    {
+        auto const end = std::cend(sv);
+        auto first     = std::cbegin(sv);
+        auto words     = std::vector<std::string>();
+
+        while (first != end)
+        {
+            auto const last = std::find_first_of(first, end, std::cbegin(delimiters), std::cend(delimiters));
+
+            if (first != last)
+            {
+                words.emplace_back(first, last);
+            }
+
+            if (last == end)
+            {
+                break;
+            }
+
+            first = std::next(last);
+        }
+
+        return words;
+    }
 
     /**
-        @return new string that is reversed version of @p s .
+     *  @brief Check if @p sv begins with @p prefix . Ignores spaces.
+     *  @return true if @p sv starts with @p prefix false otherwise.
      */
-    auto reverse (std::string s) -> std::string;
+    auto starts_with (std::string_view sv, std::string_view prefix) -> bool
+    {
+        if (sv.size() < prefix.size())
+        {
+            return false;
+        }
 
+        auto const end = std::end(sv);
+        auto svIt      = std::begin(sv);
+
+        while (std::isspace(*svIt) && svIt < end)
+        {
+            ++svIt;
+        }
+
+        return std::equal(std::begin(prefix), std::end(prefix), std::begin(sv));
+    }
 
     /**
-        Ignores leading spaces. C++20 introduces member function for std::string
-        and std::string_view that does almost the same.
-        @return true if @p s starts with @p pattern 
-                false otherwise
-     */
-    auto starts_with ( std::string_view s
-                     , std::string_view pattern ) -> bool;
-
-    /**
-        Concatenates a string representation of each element of the range
-        using provided @p glue .
-        Elements of the range must be printable to std::ostream.
-        @return new string representing the range.
+     *  @brief Prints each element in [ @p first , @p last ) into @c std::ostream .
+     *  @param glue string inserted in between elements.
+     *  @return new string representing the range.
      */
     template<class InputIt>
     auto concat_range ( InputIt first
                       , InputIt last
-                      , std::string_view glue ) -> std::string;
+                      , std::string_view glue ) -> std::string
+    {
+        if (first == last)
+        {
+            return std::string {};
+        }
+
+        auto ost = std::ostringstream {};
+
+        ost << *first;
+        ++first;
+
+        while (first != last)
+        {
+            ost << glue << *first;
+            ++first;
+        }
+
+        return ost.str();
+    }
 
     /**
-        Concatenates a string representation of each element of the range
-        using provided @p glue .
-        Elements of the range must be printable to std::ostream.
-        @return new string representing the range.
+     *  @brief Prints each element in @p range into @c std::ostream .
+     *  @param glue string inserted in between elements.
+     *  @return new string representing the range.
      */
     template<class Range>
     auto concat_range ( Range const& strs
-                      , std::string_view glue ) -> std::string;
-
-// definitions:
-
-    /**
-        https://stackoverflow.com/a/18899027/8616625
-    */
-    namespace aux_impl 
+                      , std::string_view glue ) -> std::string
     {
+        return concat_range(std::begin(strs), std::end(strs), glue);
+    }
+
+    namespace detail
+    {
+        // https://stackoverflow.com/a/18899027/8616625
+
         template<class N>
         struct string_traits
         {
@@ -90,7 +168,7 @@ namespace mix::utils
         };
 
         template<size_t N>
-        struct string_traits<const char[N]> 
+        struct string_traits<const char[N]>
         {
             static constexpr auto size   (char const (&) [N])  { return N - 1; }
             static constexpr auto to_str (char const (&s) [N]) { return s; }
@@ -131,7 +209,7 @@ namespace mix::utils
             static auto to_str (std::string_view s) { return s; }
         };
 
-        template<class String> 
+        template<class String>
         auto string_size (String&& s)
         {
             using noref_t  = std::remove_reference_t<String>;
@@ -148,147 +226,16 @@ namespace mix::utils
         }
     }
 
+    /**
+     *  @brief Concatenates strings of different types.
+     *  Numbers are converted to string using @c std::to_string .
+     */
     template<class... Strings>
     auto concat (Strings const&... str) -> std::string
     {
         auto result = std::string {};
-        result.reserve((aux_impl::string_size(str) + ...));
-        return (result += ... += aux_impl::to_str(str));
-    }
-
-    inline auto to_words (std::string s) -> std::vector<std::string>
-    {
-        auto const delims = {' '};
-        auto const end    = std::cend(s);
-        auto first        = std::cbegin(s);
-        auto words        = std::vector<std::string> {};
-
-        while (first != end)
-        {
-            auto const last = std::find_first_of(first, end, std::cbegin(delims), std::cend(delims));
-
-            if (first != last)
-            {
-                words.emplace_back(first, last);
-            }
-
-            if (last == end)
-            {
-                break;
-            }
-
-            first = std::next(last);
-        }
-
-        return words;
-    }
-
-    inline auto to_head_tail (std::string s) -> std::pair<std::string, std::string>
-    {
-        auto const firstSpaceIt = std::find(std::begin(s), std::end(s), ' ');
-
-        if (std::end(s) == firstSpaceIt)
-        {
-            return std::make_pair(s, "");
-        }
-
-        auto const firstSpacePos = static_cast<std::size_t>(firstSpaceIt - std::begin(s));
-        return std::make_pair( s.substr(0, firstSpacePos)
-                             , s.substr(firstSpacePos + 1) );
-    }
-
-    inline auto shrink_spaces (std::string s) -> std::string
-    {
-        auto newEnd = std::unique(std::begin(s), std::end(s), 
-            [](const char lhs, const char rhs) 
-        {
-            return (lhs == rhs) && (lhs == ' ');
-        });
-
-        s.erase(newEnd, std::end(s));
-        return s;
-    }
-
-    inline auto trim (std::string s) -> std::string
-    {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) 
-        {
-            return ! std::isspace(ch);
-        }));
-
-        s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) 
-        {
-            return ! std::isspace(ch);
-        }).base(), s.end());
-
-        return s;
-    }
-
-    inline auto reverse (std::string s) -> std::string
-    {
-        std::reverse(std::begin(s), std::end(s));
-        return s;
-    }
-
-    inline auto starts_with 
-        (std::string_view s, std::string_view pattern) -> bool
-    {
-        if (s.size() < pattern.size())
-        {
-            return false;
-        }
-
-        auto stringIt  = std::begin(s);
-        auto stringEnd = std::end(s);
-
-        while (std::isspace(*stringIt))
-        {
-            ++stringIt;
-        }
-
-        auto patternIt  = std::begin(pattern);
-        auto patternEnd = std::end(pattern);
-
-        while (stringIt != stringEnd && patternIt != patternEnd)
-        {
-            if (*stringIt++ != *patternIt++)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    template<class InputIt>
-    auto concat_range ( InputIt first
-                      , InputIt last
-                      , std::string_view glue ) -> std::string
-    {
-        if (first == last)
-        {
-            return std::string {};
-        }
-
-        auto ost = std::ostringstream {};
-
-        ost << *first;
-        ++first;
-
-        while (first != last)
-        {
-            ost << glue << *first;
-            ++first;
-        }
-
-        return ost.str();
-    }
-
-    template<class Range>
-    auto concat_range ( Range const& strs
-                      , std::string_view glue ) -> std::string
-    {
-        return concat_range(std::begin(strs), std::end(strs), glue);
+        result.reserve((detail::string_size(str) + ...));
+        return (result += ... += detail::to_str(str));
     }
 }
 

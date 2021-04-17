@@ -21,7 +21,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::variables
-        (bool_var_v const& vars) -> std::vector<bdd_t>
+        (std::vector<bool_var> const& vars) -> std::vector<bdd_t>
     {
         return utils::fmap(vars, [this](auto const var)
         {
@@ -32,21 +32,20 @@ namespace mix::dd
 
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::product
-        (bool_var_v const& vars) -> bdd_t
+        (std::vector<bool_var> const& vars) -> bdd_t
     {
         return this->product(std::begin(vars), std::end(vars));
     }
 
     template<class VertexData, class ArcData>
-    template<std::size_t BitSize, class T>
     auto bdd_manager<VertexData, ArcData>::product
-        (bit_vector<BitSize, T> const& cubes) -> bdd_t
+        (bool_cube const& cube) -> bdd_t
     {
-        auto const varCount  = cubes.size();
+        auto const varCount  = cube.size();
         auto const falseLeaf = base::manager_.terminal_vertex(0);
         auto const trueLeaf  = base::manager_.terminal_vertex(1);
         auto index = static_cast<index_t>(varCount - 1);
-        while (index != static_cast<index_t>(-1) && cubes.at(index) > 1)
+        while (index != static_cast<index_t>(-1) && cube.get(index) > 1)
         {
             --index;
         }
@@ -55,14 +54,14 @@ namespace mix::dd
             return this->constant(0);
         }
 
-        auto prevVertex = 0 == cubes.at(index)
+        auto prevVertex = 0 == cube.get(index)
                               ? base::manager_.internal_vertex(index, {trueLeaf, falseLeaf})
                               : base::manager_.internal_vertex(index, {falseLeaf, trueLeaf});
 
         while (index > 0)
         {
             --index;
-            auto const val = cubes.at(index);
+            auto const val = cube.get(index);
             if (val > 1)
             {
                 continue;
@@ -71,30 +70,6 @@ namespace mix::dd
                              ? base::manager_.internal_vertex(index, {prevVertex, falseLeaf})
                              : base::manager_.internal_vertex(index, {falseLeaf, prevVertex});
         }
-
-        return bdd_t {prevVertex};
-    }
-
-    template<class VertexData, class ArcData>
-    template<class BidirIt>
-    auto bdd_manager<VertexData, ArcData>::product
-        (BidirIt first, BidirIt last) -> bdd_t
-    {
-        auto const falseLeaf = base::manager_.terminal_vertex(0);
-        auto const trueLeaf  = base::manager_.terminal_vertex(1);
-        auto current         = std::prev(last);
-        auto prevVertex      = current->complemented
-                                   ? base::manager_.internal_vertex(current->index, {trueLeaf, falseLeaf})
-                                   : base::manager_.internal_vertex(current->index, {falseLeaf, trueLeaf});
-
-        if (current != first) do
-        {
-            std::advance(current, -1);
-            prevVertex = current->complemented
-                             ? base::manager_.internal_vertex(current->index, {prevVertex, falseLeaf})
-                             : base::manager_.internal_vertex(current->index, {falseLeaf, prevVertex});
-
-        } while (current != first);
 
         return bdd_t {prevVertex};
     }
@@ -116,9 +91,9 @@ namespace mix::dd
             for (auto li = 0u; li < lineCount; ++li)
             {
                 // We are doing SOP so we are only interested in functions with value 1.
-                if (plaLines[li].fVals.at(fi) == 1)
+                if (plaLines[li].fVals.get(fi) == 1)
                 {
-                    productDiagrams.emplace_back(this->line_to_product(plaLines[li]));
+                    productDiagrams.emplace_back(this->product(plaLines[li].cube));
                 }
             }
 
@@ -132,16 +107,7 @@ namespace mix::dd
             functionDiagrams.emplace_back(this->or_merge(productDiagrams, mm));
         }
 
-        // base::manager_.collect_garbage();
-
         return functionDiagrams;
-    }
-
-    template<class VertexData, class ArcData>
-    auto bdd_manager<VertexData, ArcData>::line_to_product
-        (pla_line const& line) -> bdd_t
-    {
-        return this->product(line.cube);
     }
 
     template<class VertexData, class ArcData>
@@ -157,7 +123,7 @@ namespace mix::dd
                 return this->template left_fold<OR>(std::begin(diagrams), std::end(diagrams));
 
             default:
-                throw std::runtime_error {"Non-exhaustive enum switch."};
+                throw std::runtime_error("Non-exhaustive enum switch.");
         }
     }
 }

@@ -16,10 +16,6 @@ namespace mix::dd
         using base       = mdd_manager<VertexData, ArcData, 2>;
         using bdd_t      = typename base::mdd_t;
         using vertex_t   = typename base::vertex_t;
-            // using bdd_v      = std::vector<bdd_t>;
-            using bool_var_v = std::vector<bool_var>;
-            // using double_v   = std::vector<double>;
-            using index_v    = std::vector<index_t>;
 
     /// Constructors
     public:
@@ -53,6 +49,11 @@ namespace mix::dd
          */
         auto product (std::vector<bool_var> const& vars) -> bdd_t;
 
+        /**
+         *  @return BDD representing product of @p cube .
+         */
+        auto product (bool_cube const& cube) -> bdd_t;
+
         // TODO add sum
 
         /**
@@ -60,14 +61,6 @@ namespace mix::dd
          *  @return @c std::vector of BDDs of functions from the file.
          */
         auto from_pla (pla_file const& file, fold_e const mm = fold_e::tree) -> std::vector<bdd_t>;
-
-
-            // TODO nope, transform bit_vector into cube class
-            template<std::size_t BitSize, class T>
-            auto product (bit_vector<BitSize, T> const& cubes) -> bdd_t;
-
-            template<class BidirIt>
-            auto product (BidirIt first, BidirIt last) -> bdd_t;
 
         using base::operator();
 
@@ -234,8 +227,7 @@ namespace mix::dd
 
     /// Creation internals
     private:
-        auto line_to_product (pla_line const& line)    -> bdd_t;
-        auto or_merge        (std::vector<bdd_t>& diagrams, fold_e) -> bdd_t;
+        auto or_merge (std::vector<bdd_t>& diagrams, fold_e) -> bdd_t;
 
     /// Reliability internals
     public:

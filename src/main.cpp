@@ -22,7 +22,8 @@ auto pla_sanity_check()
     auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
     auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
     // auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
-    // auto const files = {"10-adder_col.pla"};
+    // auto const files = {"13-adder_col.pla"};
+    // auto const files = {"inc.pla"};
 
     for (auto const fileName : files)
     {
@@ -37,29 +38,23 @@ auto pla_sanity_check()
         }
         std::cout << fileName << " [" << sum << "] " << std::endl;
     }
+
+    // auto const filePath = mix::utils::concat(plaDir , "inc.pla");
+    // auto const file     = pla_file::load_file(filePath);
+    // pla_file::save_to_file("test_pla_out.pla", file);
 }
 
 auto main () -> int
 {
-
     // satisfy_count to go step
 
-    // zbaviť sa nodomain
+    // change namespace to teddy
 
-    // move a forward makrá, see. https://foonathan.net/2020/09/move-forward/
-
-    // pla_sanity_check();
-    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
-    test_mdd_vector(10);
-    test_bss();
-    test_mss();
-
-    // auto x = bdd_manager<void, void>(3);
-    // auto x1 = x.variable(1);
-    // auto x1_ = x.variable_not(1);
-
-    // x.to_dot_graph(std::cout, x1);
-    // x.to_dot_graph(std::cout, x1_);
+    pla_sanity_check();
+    // test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
+    // test_mdd_vector(10);
+    // test_bss();
+    // test_mss();
 
     std::cout << "Done." << '\n';
     return 0;

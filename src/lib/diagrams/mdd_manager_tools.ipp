@@ -425,10 +425,10 @@ namespace mix::dd
         else
         {
             auto const index = v->get_index();
-            v->for_each_son_i([=, &out, &xs](auto const iv, auto const son)
+            v->for_each_son_i([=, this, &out, &xs](auto const iv, auto const son)
             {
                 SetIthVar {} (xs, index, iv);
-                satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, l + 1, son, xs, out);
+                this->satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, l + 1, son, xs, out);
             });
         }
     }

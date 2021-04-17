@@ -140,6 +140,7 @@ namespace mix::utils
             using reference         = IntType&;
             using iterator_category = std::input_iterator_tag;
 
+            // TODO to random access
             range_iterator(IntType const curr);
 
             auto operator== (range_iterator const& o) const -> bool;
