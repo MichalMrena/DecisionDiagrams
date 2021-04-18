@@ -7,7 +7,7 @@
 namespace mix::utils
 {
     /**
-        @brief Simple pool of pre-allocated objects in a continuous storage.
+     *  @brief Simple pool of pre-allocated objects in a continuous storage.
      */
     template<class T>
     class object_pool

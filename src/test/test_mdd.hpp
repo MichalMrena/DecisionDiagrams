@@ -2,8 +2,8 @@
 #define MIX_DD_TEST_TEST_MDD_HPP
 
 #include "../lib/mdd_manager.hpp"
-#include "../lib/utils/more_random.hpp"
 #include "../lib/utils/string_utils.hpp"
+#include "../other/more_random.hpp"
 
 #include <vector>
 

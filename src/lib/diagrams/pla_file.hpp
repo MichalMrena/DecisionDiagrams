@@ -111,7 +111,7 @@ namespace mix::dd
                 return utils::to_words(std::move(labelsIt->second));
             }
 
-            return utils::fmap(utils::range(0u, count), [=](auto const i)
+            return utils::fmap(utils::range(0ul, count), [=](auto const i)
             {
                 return utils::concat(defaultPrefix, i);
             });

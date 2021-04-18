@@ -43,7 +43,7 @@ namespace mix::utils
     inline auto file_reader::throw_if_cant_read
         () -> void
     {
-        if (! istr_.is_open())
+        if (!istr_.is_open())
         {
             this->throw_cant_read();
         }
@@ -106,13 +106,13 @@ namespace mix::utils
     inline auto file_reader::throw_no_more_lines
         () -> void
     {
-        throw std::runtime_error {"No more lines in: " + filePath_};
+        throw std::runtime_error("No more lines in: " + filePath_);
     }
 
     inline auto file_reader::throw_cant_read
         () -> void
     {
-        throw std::runtime_error {"Cannot read file: " + filePath_};
+        throw std::runtime_error("Cannot read file: " + filePath_);
     }
 
     inline auto file_reader::cache_next_line

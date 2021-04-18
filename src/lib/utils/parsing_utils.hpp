@@ -32,7 +32,7 @@ namespace mix::utils
 
         if (!res)
         {
-            throw std::invalid_argument {"Failed to parse number."};
+            throw std::invalid_argument("Failed to parse number.");
         }
 
         return res;

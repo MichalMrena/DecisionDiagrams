@@ -1,11 +1,11 @@
 #ifndef MIX_UTILS_MATH_UTILS_HPP
 #define MIX_UTILS_MATH_UTILS_HPP
 
-#include <cstdint>
-#include <cstddef>
-
 namespace mix::utils
 {
+    /**
+     *  @brief Exponentiation for integral types.
+     */
     template<class Base, class Exponent>
     auto constexpr int_pow (Base base, Exponent exponent) -> Base
     {
@@ -28,17 +28,22 @@ namespace mix::utils
         return result;
     }
 
+    /**
+     *  @brief Calculates power of two for integral types.
+     */
     template<class Exponent, class Result = std::uint64_t>
     auto constexpr two_pow (Exponent const exponent) -> Result
     {
         return static_cast<Result>(1) << exponent;
     }
 
+    /**
+     *  @brief Check if @p num is power of two.
+     */
     template<class N>
     auto constexpr is_power_of_two (N const num) -> bool
     {
-        // TODO C++20 std::has_single_bit
-        return !( (num - 1) & num );
+        return num && !((num - 1) & num);
     }
 }
 

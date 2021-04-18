@@ -8,12 +8,13 @@
 namespace mix::ds
 {
     /**
-        @brief Extension of std::stack that allows you to peek elements under top() using peek(offset) method.
-
-        They say that one does not simply inherit from std:: Container.
-        However I've decided that this is the simplest approach to achieve the desired result.
-        I don't see any situations when using this container would result in something bad.
-        If you see a problem with it please let me know.
+     *  @brief Extension of @c std::stack that allows you to peek elements
+     *  under @c top() using @c peek(offset) method.
+     *
+     *  They say that one does not simply inherit from std:: Container.
+     *  However I've decided that this is the simplest approach to achieve the desired result.
+     *  I don't see any situations where using this container would result in something bad.
+     *  If you see a problem with it please let me know.
      */
     template<class T, class Container = std::deque<T>>
     class peekable_stack : public std::stack<T, Container>
@@ -29,7 +30,7 @@ namespace mix::ds
         template<class Alloc>
         using uses_allocator  = typename std::enable_if_t<std::uses_allocator<container_type, Alloc>::value>;
 
-    public: // See the documentation for std::stack constructors.
+    public:
         peekable_stack ();
         explicit peekable_stack (Container const& cont);
         explicit peekable_stack (Container&& cont);
@@ -44,39 +45,39 @@ namespace mix::ds
 
     public:
         /**
-            @return reference to the element that is @p offset positions under the top().
+         *  @return reference to the element that is @p offset positions under the @c top() .
          */
-        auto peek (size_type const offset) -> reference;
+        auto peek (size_type offset) -> reference;
 
         /**
-            @return const_reference to the element that is @p offset positions under the top().
+         *  @return const_reference to the element that is @p offset positions under the @c top() .
          */
-        auto peek (size_type const offset) const -> const_reference;
+        auto peek (size_type offset) const -> const_reference;
 
         /**
-            @return reference to the element that is @p offset positions under the top().
-            @throw  std::out_of_range
+         *  @return reference to the element that is @p offset positions under the @c top() .
+         *  @throw  @c std::out_of_range
          */
-        auto peek_safe (size_type const offset) -> reference;
+        auto peek_safe (size_type offset) -> reference;
 
         /**
-            @return const_reference to the element that is @p offset positions under the top().
-            @throw  std::out_of_range
+         *  @return const_reference to the element that is @p offset positions under the @c top() .
+         *  @throw  @c std::out_of_range
          */
-        auto peek_safe (size_type const offset) const -> const_reference;
+        auto peek_safe (size_type offset) const -> const_reference;
 
         /**
-            @brief Pops @p n elements from the stack.
+         *  @brief Pops @p n elements from the stack.
          */
-        auto pop_n (size_type const n) -> void;
+        auto pop_n (size_type n) -> void;
 
         /**
-            @brief Erases all elements from the stack.
+         *  @brief Erases all elements from the stack.
          */
         auto clear () -> void;
 
     private:
-        auto range_check (size_type const offset) const -> void;
+        auto range_check (size_type offset) const -> void;
     };
 
     template<class T, class Container>
@@ -155,9 +156,7 @@ namespace mix::ds
     auto peekable_stack<T, Container>::peek
         (size_type const offset) const -> const_reference
     {
-        auto it = std::rbegin(base::c);
-        std::advance(it, offset);
-        return *it;
+        return *std::next(std::rbegin(base::c), static_cast<std::ptrdiff_t>(offset));
     }
 
     template<class T, class Container>
@@ -172,9 +171,7 @@ namespace mix::ds
         (size_type const offset) const -> const_reference
     {
         this->range_check(offset);
-        auto it = base::c.rbegin();
-        std::advance(it, offset);
-        return *it;
+        return this->peek(offset);
     }
 
     template<class T, class Container>
@@ -200,7 +197,7 @@ namespace mix::ds
     {
         if (offset >= base::size())
         {
-            throw std::out_of_range {"Peek offset (" + std::to_string(offset) + ") out of range."};
+            throw std::out_of_range("Peek offset (" + std::to_string(offset) + ") out of range.");
         }
     }
 }

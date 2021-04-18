@@ -1,8 +1,8 @@
 #include <iostream>
 #include <iomanip>
 
-#include "lib/utils/stopwatch.hpp"
-#include "lib/utils/print.hpp"
+#include "other/stopwatch.hpp"
+#include "other/print.hpp"
 #include "lib/utils/object_pool.hpp"
 #include "lib/mdd_manager.hpp"
 #include "lib/bdd_manager.hpp"
@@ -50,11 +50,11 @@ auto main () -> int
 
     // change namespace to teddy
 
-    pla_sanity_check();
-    // test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
-    // test_mdd_vector(10);
-    // test_bss();
-    // test_mss();
+    // pla_sanity_check();
+    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
+    test_mdd_vector(10);
+    test_bss();
+    test_mss();
 
     std::cout << "Done." << '\n';
     return 0;
