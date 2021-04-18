@@ -234,6 +234,35 @@ namespace teddy::utils
     {
         std::for_each(std::begin(range), std::end(range), op);
     }
+
+    /**
+     *  @brief Checks if all numbers in [ @p first , @p last ) are distinct.
+     */
+    template<class InputIt>
+    auto distinct(InputIt first, InputIt last) -> bool
+    {
+        auto const me = *std::max_element(first, last);
+        auto in = std::vector<bool>(me + 1, false);
+        while (first != last)
+        {
+            if (in[*first])
+            {
+                return false;
+            }
+            in[*first] = true;
+            ++first;
+        }
+        return true;
+    }
+
+    /**
+     *  @brief Checks if all numbers in @p range are distinct.
+     */
+    template<class Range>
+    auto distinct(Range const& range) -> bool
+    {
+        return distinct(std::begin(range), std::end(range));
+    }
 }
 
 #endif

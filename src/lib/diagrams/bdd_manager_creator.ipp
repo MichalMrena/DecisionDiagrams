@@ -8,8 +8,7 @@ namespace teddy
     auto bdd_manager<VertexData, ArcData>::variable_not
         (index_t const i) -> bdd_t
     {
-        auto constexpr leafVals = std::array {1u, 0u};
-        return base::variable_impl(i, leafVals);
+        return this->negate(this->variable(i));
     }
 
     template<class VertexData, class ArcData>

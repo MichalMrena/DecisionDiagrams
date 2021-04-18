@@ -223,7 +223,7 @@ namespace teddy
     /// Internal aliases
     private:
         using prob_table = typename base::prob_table;
-        using vertex_a      = typename base::vertex_a;
+        using vertex_a   = typename base::vertex_a;
 
     /// Creation internals
     private:

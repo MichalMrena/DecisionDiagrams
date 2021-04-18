@@ -3,15 +3,19 @@
 
 #include <stdexcept>
 
+#define TEDDY_SAFE
+
 namespace teddy::utils
 {
-    inline auto runtime_assert(bool const b, char const* msg)
+    inline auto runtime_assert
+        ([[maybe_unused]] bool const b, [[maybe_unused]] char const* msg)
     {
-        // TODO global toggle macro #define UNSAFE
+        #ifdef TEDDY_SAFE
         if (!b)
         {
             throw std::runtime_error(msg);
         }
+        #endif
     }
 }
 

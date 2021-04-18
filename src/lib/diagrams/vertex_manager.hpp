@@ -1,24 +1,16 @@
 #ifndef MIX_DD_VERTEX_MANAGER_HPP
 #define MIX_DD_VERTEX_MANAGER_HPP
 
-#include "typedefs.hpp"
 #include "graph.hpp"
 #include "operators.hpp"
 #include "unique_table.hpp"
 #include "apply_cache.hpp"
 #include "../utils/object_pool.hpp"
-#include "../utils/more_iterator.hpp"
 #include "../utils/more_algorithm.hpp"
-#include "../utils/less_functional.hpp"
 #include "../utils/more_assert.hpp"
 
-#include <cstddef>
 #include <array>
 #include <vector>
-#include <unordered_map>
-#include <memory>
-#include <algorithm>
-#include <functional>
 #include <utility>
 #include <type_traits>
 
@@ -29,11 +21,8 @@ namespace teddy
     {
     public:
         using log_t             = typename log_val_traits<P>::type;
-        using log_v             = std::vector<log_t>;
         using vertex_t          = vertex<VertexData, ArcData, P>;
         using vertex_a          = std::array<vertex_t*, P>;
-        using index_v           = std::vector<level_t>;
-        using level_v           = std::vector<level_t>;
         using op_cache_t        = apply_cache<VertexData, ArcData, P>;
         using op_cache_iterator = typename op_cache_t::iterator;
 
@@ -47,25 +36,25 @@ namespace teddy
         auto terminal_vertex  (log_t val)                           -> vertex_t*;
         auto internal_vertex  (index_t index, vertex_a const& sons) -> vertex_t*;
 
-        auto get_vertex_level        (vertex_t* v) const    -> level_t;
-        auto get_level               (index_t   i) const    -> level_t;
-        auto get_index               (level_t   l) const    -> index_t;
-        auto get_vertex_value        (vertex_t* v) const    -> log_t;
-        auto get_vertex_count        (index_t   i) const    -> std::size_t;
-        auto get_vertex_count        ()            const    -> std::size_t;
-        auto get_var_count           ()            const    -> std::size_t;
-        auto get_last_internal_level ()            const    -> level_t;
-        auto get_domain              (index_t i)   const    -> log_t;
-        auto has_domains             ()            const    -> bool;
-        auto set_domains             (log_v ds)             -> void;
-        auto set_order               (index_v levelToIndex) -> void;
-        auto get_order               ()            const    -> index_v const&;
-        auto set_cache_ratio         (std::size_t denom)    -> void;
-        auto set_pool_ratio          (std::size_t denom)    -> void;
-        auto set_reorder             (bool reorder)         -> void;
-        auto is_leaf_vertex          (vertex_t* v) const    -> bool;
-        auto is_leaf_index           (index_t   i) const    -> bool;
-        auto is_leaf_level           (level_t   l) const    -> bool;
+        auto get_vertex_level        (vertex_t* v) const         -> level_t;
+        auto get_level               (index_t   i) const         -> level_t;
+        auto get_index               (level_t   l) const         -> index_t;
+        auto get_vertex_value        (vertex_t* v) const         -> log_t;
+        auto get_vertex_count        (index_t   i) const         -> std::size_t;
+        auto get_vertex_count        ()            const         -> std::size_t;
+        auto get_var_count           ()            const         -> std::size_t;
+        auto get_last_internal_level ()            const         -> level_t;
+        auto get_domain              (index_t i)   const         -> log_t;
+        auto has_domains             ()            const         -> bool;
+        auto set_domains             (std::vector<log_t> ds)     -> void;
+        auto set_order               (std::vector<index_t> lToI) -> void;
+        auto get_order               ()            const         -> std::vector<index_t> const&;
+        auto set_cache_ratio         (std::size_t denom)         -> void;
+        auto set_pool_ratio          (std::size_t denom)         -> void;
+        auto set_reorder             (bool reorder)              -> void;
+        auto is_leaf_vertex          (vertex_t* v) const         -> bool;
+        auto is_leaf_index           (index_t   i) const         -> bool;
+        auto is_leaf_level           (level_t   l) const         -> bool;
 
         template<class Op>
         auto cache_find       (vertex_t* l, vertex_t* r) -> op_cache_iterator;
@@ -96,16 +85,13 @@ namespace teddy
         using vertex_pool_t  = utils::object_pool<vertex_t>;
 
     private:
-        auto leaf_index  () const -> index_t;
-        auto leaf_level  () const -> level_t;
-        auto leaf_count  () const -> std::size_t;
-
-        auto clear_cache () -> void;
-
-        auto swap_vertex (vertex_t* v) -> void;
-
-        auto delete_vertex  (vertex_t* v) -> void;
+        auto leaf_index     () const      -> index_t;
+        auto leaf_level     () const      -> level_t;
+        auto leaf_count     () const      -> std::size_t;
+        auto clear_cache    ()            -> void;
+        auto swap_vertex    (vertex_t* v) -> void;
         auto dec_ref_try_gc (vertex_t* v) -> void;
+        auto delete_vertex  (vertex_t* v) -> void;
 
         template<class... Args>
         auto new_vertex  (Args&&... args) -> vertex_t*;
@@ -120,17 +106,17 @@ namespace teddy
         auto for_each_level_impl (IndexMapOp op) const -> void;
 
     private:
-        unique_table_v uniqueTables_;
-        leaf_vertex_a  leaves_;
-        level_v        indexToLevel_;
-        index_v        levelToIndex_;
-        op_cache_a     opCaches_;
-        vertex_pool_t  pool_;
-        bool           needsGc_;
-        std::size_t    vertexCount_;
-        log_v          domains_;
-        std::size_t    cacheRatio_;
-        bool           reorderEnabled_;
+        unique_table_v       uniqueTables_;
+        leaf_vertex_a        leaves_;
+        std::vector<level_t> indexToLevel_;
+        std::vector<index_t> levelToIndex_;
+        op_cache_a           opCaches_;
+        vertex_pool_t        pool_;
+        bool                 needsGc_;
+        std::size_t          vertexCount_;
+        std::vector<log_t>   domains_;
+        std::size_t          cacheRatio_;
+        bool                 reorderEnabled_;
     };
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -152,13 +138,13 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::set_order
-        (index_v levelToIndex) -> void
+        (std::vector<index_t> lToI) -> void
     {
-        utils::runtime_assert(0 == this->get_vertex_count(), "vertex_manager::set_order: Manager must be empty.");
-        utils::runtime_assert(this->get_var_count() == levelToIndex.size(), "vertex_manager::set_order: Level vector size must match var count.");
-        // TODO add check aby tam bola každý index práve raz...
+        utils::runtime_assert(this->get_vertex_count() == 0, "vertex_manager::set_order: Manager must be empty.");
+        utils::runtime_assert(this->get_var_count() == lToI.size(), "vertex_manager::set_order: Level vector size must match var count.");
+        utils::runtime_assert(utils::distinct(lToI), "vertex_manager::set_order: Indices must be unique.");
 
-        levelToIndex_ = std::move(levelToIndex);
+        levelToIndex_ = std::move(lToI);
         indexToLevel_ = std::vector<level_t>(levelToIndex_.size());
         auto level    = 0u;
         for (auto const index : levelToIndex_)
@@ -171,7 +157,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto vertex_manager<VertexData, ArcData, P>::get_order
-        () const -> index_v const&
+        () const -> std::vector<index_t> const&
     {
         return levelToIndex_;
     }
@@ -180,6 +166,7 @@ namespace teddy
     auto vertex_manager<VertexData, ArcData, P>::set_cache_ratio
         (std::size_t const denom) -> void
     {
+        utils::runtime_assert(denom > 0, "vertex_manager::set_cache_ratio: Denominator must be positive.");
         cacheRatio_ = denom;
     }
 
@@ -187,6 +174,7 @@ namespace teddy
     auto vertex_manager<VertexData, ArcData, P>::set_pool_ratio
         (std::size_t const denom) -> void
     {
+        utils::runtime_assert(denom > 0, "vertex_manager::set_pool_ratio: Denominator must be positive.");
         pool_.set_overflow_ratio(denom);
     }
 
@@ -195,6 +183,14 @@ namespace teddy
         (bool const reorder) -> void
     {
         reorderEnabled_ = reorder;
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    auto vertex_manager<VertexData, ArcData, P>::set_domains
+        (std::vector<log_t> ds) -> void
+    {
+        utils::runtime_assert(ds.size() == this->get_var_count(), "vertex_manager::set_domains: Argument size must match variable count.");
+        domains_ = std::move(ds);
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -340,13 +336,6 @@ namespace teddy
         () const -> bool
     {
         return !domains_.empty();
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::set_domains
-        (log_v ds) -> void
-    {
-        domains_ = std::move(ds);
     }
 
     template<class VertexData, class ArcData, std::size_t P>

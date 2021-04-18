@@ -6,6 +6,7 @@
 #include "../utils/string_utils.hpp"
 #include "../utils/more_math.hpp"
 #include "../utils/less_functional.hpp"
+#include "../utils/more_iterator.hpp"
 
 #include <queue>
 #include <functional>
@@ -257,7 +258,7 @@ namespace teddy
             };
 
             using compare_t     = decltype(cmp);
-            using vertex_prio_q = std::priority_queue<vertex_t*, vertex_v, compare_t>;
+            using vertex_prio_q = std::priority_queue<vertex_t*, std::vector<vertex_t*>, compare_t>;
 
             auto queue = vertex_prio_q(cmp);
             v->toggle_mark();
@@ -381,7 +382,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::fill_levels
-        (mdd_t const& diagram) const -> vertex_vv
+        (mdd_t const& diagram) const -> std::vector<std::vector<vertex_t*>>
     {
         auto levels = std::vector<std::vector<vertex_t*>>(1 + manager_.get_var_count());
 
@@ -391,44 +392,5 @@ namespace teddy
         });
 
         return levels;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    template<class VariableValues, class OutputIt, class SetIthVar>
-    auto mdd_manager<VertexData, ArcData, P>::satisfy_all_step
-        ( log_t const val, level_t const l, vertex_t* const v
-        , VariableValues& xs, OutputIt& out ) const -> void
-    {
-        auto const vertexValue = manager_.get_vertex_value(v);
-        auto const vertexLevel = manager_.get_vertex_level(v);
-
-        if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val != vertexValue)
-        {
-            return;
-        }
-        else if (manager_.is_leaf_level(l) && manager_.is_leaf_vertex(v) && val == vertexValue)
-        {
-            *out++ = xs;
-            return;
-        }
-        else if (vertexLevel > l)
-        {
-            auto const index  = manager_.get_index(l);
-            auto const domain = manager_.get_domain(index);
-            for (auto iv = 0u; iv < domain; ++iv)
-            {
-                SetIthVar {} (xs, index, iv);
-                satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, l + 1, v, xs, out);
-            }
-        }
-        else
-        {
-            auto const index = v->get_index();
-            v->for_each_son_i([=, this, &out, &xs](auto const iv, auto const son)
-            {
-                SetIthVar {} (xs, index, iv);
-                this->satisfy_all_step<VariableValues, OutputIt, SetIthVar>(val, l + 1, son, xs, out);
-            });
-        }
     }
 }

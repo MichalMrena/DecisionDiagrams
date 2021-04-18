@@ -10,7 +10,7 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::constant
         (log_t const val) -> mdd_t
     {
-        return mdd_t {manager_.terminal_vertex(val)};
+        return mdd_t(manager_.terminal_vertex(val));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -18,8 +18,10 @@ namespace teddy
         (index_t const i) -> mdd_t
     {
         auto const dom  = manager_.get_domain(i);
-        auto const vals = utils::fill_array<P>(utils::identity);
-        return this->variable_impl(i, vals, dom);
+        return mdd_t(manager_.internal_vertex(i, utils::fill_array_n<P>(dom, [this](auto const j)
+        {
+            return manager_.terminal_vertex(j);
+        })));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -120,19 +122,5 @@ namespace teddy
         (Range&& range) -> mdd_t
     {
         return this->from_vector(std::begin(range), std::end(range));
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    template<class LeafVals>
-    auto mdd_manager<VertexData, ArcData, P>::variable_impl
-        (index_t const i, LeafVals&& vals, std::size_t const domain) -> mdd_t
-    {
-        auto const first  = std::begin(vals);
-        auto const last   = std::next(first, static_cast<std::ptrdiff_t>(domain));
-        auto const leaves = utils::fmap_to_array<P>(first, last, [this](auto const lv)
-        {
-            return manager_.terminal_vertex(static_cast<log_t>(lv));
-        });
-        return mdd_t {manager_.internal_vertex(i, leaves)};
     }
 }

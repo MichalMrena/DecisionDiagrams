@@ -2,6 +2,8 @@
 #include "../mdd_manager.hpp"
 #endif
 
+#include "../utils/more_iterator.hpp"
+
 namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>

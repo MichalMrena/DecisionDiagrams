@@ -18,11 +18,6 @@ namespace teddy
         using vertex_t   = vertex<VertexData, ArcData, P>;
         using log_t      = typename log_val_traits<P>::type;
         using prob_table = std::vector<std::array<double, P>>;
-            // using log_v      = std::vector<log_t>;
-            // using index_v    = std::vector<index_t>;
-            // using level_v    = std::vector<level_t>;
-            // using mdd_v      = std::vector<mdd_t>;
-            // using double_v   = std::vector<double>;
 
     /// Constructors
     public:
@@ -75,13 +70,6 @@ namespace teddy
          *  @brief Enables/disables dynamic reordering od variables.
          */
         auto set_dynamic_reorder (bool reorder) -> void;
-
-            //
-            auto swap_vars       (index_t const i)      -> void;
-            auto clear           () -> void;
-            auto clear_cache     () -> void;
-            auto collect_garbage () -> void;
-            auto sift_variables  () -> void;
 
     /// Creation
     public:
@@ -433,11 +421,17 @@ namespace teddy
                 , class SetIthVar = set_var_val<P, VariableValues> >
         auto mcvs_g (mdd_t const& sf, log_t logLevel, OutputIt out) -> void;
 
+    /// Just for testing. Will be private and accessed via friend relationship.
+    public:
+        auto swap_vars       (index_t const i) -> void;
+        auto clear           () -> void;
+        auto clear_cache     () -> void;
+        auto collect_garbage () -> void;
+        auto sift_variables  () -> void;
+
     /// Internal aliases
     protected:
         using vertex_a         = std::array<vertex_t*, P>;
-        using vertex_v         = std::vector<vertex_t*>;
-        using vertex_vv        = std::vector<vertex_v>;
         using transform_key_t  = vertex_t*;
         using transform_memo_t = std::unordered_map<vertex_t*, vertex_t*>;
         using vertex_manager_t = vertex_manager<VertexData, ArcData, P>;
@@ -449,16 +443,7 @@ namespace teddy
 
         auto domain_product (level_t const from, level_t const to) const -> std::size_t;
 
-        auto fill_levels (mdd_t const& d) const -> vertex_vv;
-
-        template< class VariableValues
-                , class OutputIt
-                , class SetIthVar = set_var_val<P, VariableValues> >
-        auto satisfy_all_step ( log_t const     val
-                              , level_t const   l
-                              , vertex_t* const v
-                              , VariableValues& xs
-                              , OutputIt&       out ) const -> void;
+        auto fill_levels (mdd_t const& d) const -> std::vector<std::vector<vertex_t*>>;
 
         template<class VertexOp>
         auto traverse_pre (mdd_t const& d, VertexOp&& op) const -> void;
@@ -476,15 +461,6 @@ namespace teddy
 
         template<class Transformator>
         auto transform_step (Transformator&& transform_sons, vertex_t* const v) -> vertex_t*;
-
-    /// Creator internals
-    protected:
-        auto variable   (index_t const i, log_t const domain) -> mdd_t;
-        auto operator() (index_t const i, log_t const domain) -> mdd_t;
-
-        // TODO toto nebude treba
-        template<class LeafVals>
-        auto variable_impl (index_t const i, LeafVals&& vals, std::size_t const domain = P) -> mdd_t;
 
     /// Reliability internals
     protected:
