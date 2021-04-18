@@ -3,14 +3,14 @@
 C++ library for creation and manipulation of decision diagrams. It is being developed at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), [University of Žilina](https://www.uniza.sk/index.php/en/) as a student project at the [Department of Informatics](https://ki.fri.uniza.sk/).
 
 ## Decision diagrams
-*TODO*
+Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDD) as described by [Bryant](https://ieeexplore.ieee.org/document/1676819) and their generalization for multiple-valued functions. Those diagrams are usually referred to as Multivalued Decisionn Diagrams (MDD).
 
 ## How to install
 Library is header only so its easy to incorporate it in your project. All you need to do is to place contents of [this](./src/lib/) directory into your project files.  
 We use features from `C++20` so you might need to set your compiler for this version. (`-std=c++20` for `clang++` and `g++`, `/std:c++latest` for MSVC)
 
 ## Basic usage
- Before using any library functions you need to include either [bdd_manager.hpp](./src/lib/bdd_manager.hpp) or [mdd_manager.hpp](./src/lib/mdd_manager.hpp) depending on which diagrams you intent to use. Library API is accessed via instance of a manager. Manager can be created using `make_bdd_manager`/`make_mdd_manager` function, that takes number of variables you want to work with as an argument.  
+ Before using any library functions you need to include either [bdd_manager.hpp](./src/lib/bdd_manager.hpp) or [mdd_manager.hpp](./src/lib/mdd_manager.hpp) depending on which diagrams you intent to use. Library API is accessed via instance of the manager. Manager can be created using `make_bdd_manager`/`make_mdd_manager` factory function, that takes number of variables you want to work with as an argument. Public interfaces of those managers contain full documentation of library API.  
 
 ### Binary Decision Diagrams
 ```C++
@@ -18,7 +18,7 @@ We use features from `C++20` so you might need to set your compiler for this ver
 
 int main()
 {
-    using namespace mix::dd;
+    using namespace teddy;
 
     // We will use variables x0, x1, x2, x3, x4.
     auto m = make_bdd_manager(5);

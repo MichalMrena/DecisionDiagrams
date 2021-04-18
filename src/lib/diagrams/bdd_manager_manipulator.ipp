@@ -2,7 +2,7 @@
 #include "../bdd_manager.hpp"
 #endif
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::negate

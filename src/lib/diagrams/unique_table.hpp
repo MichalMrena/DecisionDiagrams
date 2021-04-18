@@ -5,7 +5,7 @@
 #include <vector>
 #include <functional>
 
-namespace mix::dd
+namespace teddy
 {
     /**
      *  @brief Iterator for unique table.

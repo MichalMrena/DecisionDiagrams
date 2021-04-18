@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <charconv>
 
-namespace mix::utils
+namespace teddy::utils
 {
     template<class Num>
     struct parse_result

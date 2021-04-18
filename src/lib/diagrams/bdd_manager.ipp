@@ -4,7 +4,7 @@
 
 #include "operators.hpp"
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData>
     bdd_manager<VertexData, ArcData>::bdd_manager

@@ -1,7 +1,7 @@
 #ifndef MIX_UTILS_MATH_UTILS_HPP
 #define MIX_UTILS_MATH_UTILS_HPP
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
      *  @brief Exponentiation for integral types.

@@ -6,7 +6,7 @@
 #include <vector>
 #include <iterator>
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
      *  @brief Checks if @p T is @c std::array .

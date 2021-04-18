@@ -10,7 +10,7 @@
 #include <queue>
 #include <functional>
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::vertex_count

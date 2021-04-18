@@ -6,7 +6,7 @@
 #include <cmath>
 #include <string>
 
-namespace mix::dd::test
+namespace teddy::test
 {
     using bdd_man_t  = bdd_manager<double, void>;
     using bdd_t      = mdd<double, void, 2>;

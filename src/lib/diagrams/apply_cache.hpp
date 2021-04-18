@@ -4,7 +4,7 @@
 #include "graph.hpp"
 #include <vector>
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     class apply_cache

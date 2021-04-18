@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
      *  @brief Simple pool of pre-allocated objects in a continuous storage.

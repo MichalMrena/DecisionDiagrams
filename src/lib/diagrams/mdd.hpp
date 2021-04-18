@@ -3,7 +3,7 @@
 
 #include "graph.hpp"
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     class mdd_manager;

@@ -4,7 +4,7 @@
 
 #include "../data_structures/peekable_stack.hpp"
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::constant
@@ -24,7 +24,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::variables
-        (index_v const& is) -> mdd_v
+        (std::vector<index_t> const& is) -> std::vector<mdd_t>
     {
         // Compiler couldn't infer this one. What am I missing?
         using f_t = mdd_t(mdd_manager::*)(index_t const);

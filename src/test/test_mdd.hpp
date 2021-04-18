@@ -7,7 +7,7 @@
 
 #include <vector>
 
-namespace mix::dd::test
+namespace teddy::test
 {
     template<class T>
     using int_rng   = utils::random_uniform_int<T>;

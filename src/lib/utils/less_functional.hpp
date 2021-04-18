@@ -1,7 +1,7 @@
 #ifndef MIX_UTILS_LESS_FUNCTIONAL_HPP
 #define MIX_UTILS_LESS_FUNCTIONAL_HPP
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
      *  @brief Creates a function that negates an output of binary function @p f .

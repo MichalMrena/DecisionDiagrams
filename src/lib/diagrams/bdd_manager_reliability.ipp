@@ -7,7 +7,7 @@
 
 #include <functional>
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::calculate_probabilities

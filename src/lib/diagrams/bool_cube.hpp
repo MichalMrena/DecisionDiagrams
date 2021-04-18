@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace mix::dd
+namespace teddy
 {
     class bool_cube
     {

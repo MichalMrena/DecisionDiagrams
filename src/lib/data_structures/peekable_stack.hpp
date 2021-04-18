@@ -5,7 +5,7 @@
 #include <stack>
 #include <stdexcept>
 
-namespace mix::ds
+namespace teddy::ds
 {
     /**
      *  @brief Extension of @c std::stack that allows you to peek elements

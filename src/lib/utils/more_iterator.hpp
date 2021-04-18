@@ -3,7 +3,7 @@
 
 #include <iterator>
 
-namespace mix::utils
+namespace teddy::utils
 {
     namespace detail
     {

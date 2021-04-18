@@ -6,7 +6,7 @@
 
 #include <array>
 
-namespace mix::dd
+namespace teddy
 {
     /** vertex forward celaration */
     template<class VertexData, class ArcData, std::size_t P>

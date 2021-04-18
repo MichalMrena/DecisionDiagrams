@@ -17,7 +17,7 @@
 #include <unordered_set>
 #include <string_view>
 
-namespace mix::dd
+namespace teddy
 {
     /**
      *  @brief Representation of PLA file.

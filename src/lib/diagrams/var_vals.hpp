@@ -4,7 +4,7 @@
 #include "typedefs.hpp"
 #include "../utils/more_type_traits.hpp"
 
-namespace mix::dd
+namespace teddy
 {
     namespace vv_impl
     {

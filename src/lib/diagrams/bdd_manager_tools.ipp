@@ -4,7 +4,7 @@
 
 #include "../utils/more_math.hpp"
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData>
     auto bdd_manager<VertexData, ArcData>::satisfy_count

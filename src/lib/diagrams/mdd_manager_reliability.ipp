@@ -2,7 +2,7 @@
 #include "../mdd_manager.hpp"
 #endif
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::calculate_probabilities
@@ -109,7 +109,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbds
-        (val_change<P> const var, val_change<P> const f, mdd_t const& sf) -> mdd_v
+        (val_change<P> const var, val_change<P> const f, mdd_t const& sf) -> std::vector<mdd_t>
     {
         return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd, this, var, f, sf) );
@@ -117,7 +117,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_1
-        (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> mdd_v
+        (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> std::vector<mdd_t>
     {
         return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd_integrated_1, this, var, fVal, sf) );
@@ -125,7 +125,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_2
-        (val_change<P> const var, mdd_t const& sf) -> mdd_v
+        (val_change<P> const var, mdd_t const& sf) -> std::vector<mdd_t>
     {
         return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd_integrated_2, this, var, sf) );
@@ -133,7 +133,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_3
-        (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> mdd_v
+        (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> std::vector<mdd_t>
     {
         return utils::fill_vector( manager_.get_var_count()
                                  , std::bind_front(&mdd_manager::dpbd_integrated_3, this, var, fVal, sf) );
@@ -149,7 +149,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::structural_importances
-        (mdd_v& dpbds) -> double_v
+        (std::vector<mdd_t>& dpbds) -> std::vector<double>
     {
         auto const domProduct = this->domain_product(0, manager_.get_var_count() - 1);
         return utils::fmap_i(dpbds, [=, this](auto const i, auto& d)
@@ -168,7 +168,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::birnbaum_importances
-        (prob_table const& ps, mdd_v& dpbds) -> double_v
+        (prob_table const& ps, std::vector<mdd_t>& dpbds) -> std::vector<double>
     {
         return utils::fmap(dpbds, std::bind_front(&mdd_manager::birnbaum_importance, this, ps));
     }
@@ -185,7 +185,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::fussell_vesely_importances
-        (prob_table const& ps, double const U, mdd_v const& dpbds) -> double_v
+        (prob_table const& ps, double const U, std::vector<mdd_t> const& dpbds) -> std::vector<double>
     {
         return utils::fmap(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U));
     }

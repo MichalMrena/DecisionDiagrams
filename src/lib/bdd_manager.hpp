@@ -4,7 +4,7 @@
 #include "mdd_manager.hpp"
 #include "diagrams/pla_file.hpp"
 
-namespace mix::dd
+namespace teddy
 {
     enum class fold_e {left, tree};
 

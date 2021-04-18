@@ -4,7 +4,7 @@
 #include "typedefs.hpp"
 #include "../utils/less_functional.hpp"
 
-namespace mix::dd
+namespace teddy
 {
     namespace impl
     {

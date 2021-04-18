@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
      *  @brief Creates vector with given initial capacity.

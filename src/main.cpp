@@ -13,9 +13,9 @@
 #include <bitset>
 #include <cassert>
 
-using namespace mix::dd;
-using namespace mix::utils;
-using namespace mix::dd::test;
+using namespace teddy;
+using namespace teddy::utils;
+using namespace teddy::test;
 
 auto pla_sanity_check()
 {
@@ -27,7 +27,7 @@ auto pla_sanity_check()
 
     for (auto const fileName : files)
     {
-        auto const filePath = mix::utils::concat(plaDir , fileName);
+        auto const filePath = teddy::utils::concat(plaDir , fileName);
         auto const file     = pla_file::load_file(filePath);
         auto manager        = bdd_manager<void, void>(file.variable_count());
         auto const ds       = manager.from_pla(file, fold_e::tree);
@@ -39,7 +39,7 @@ auto pla_sanity_check()
         std::cout << fileName << " [" << sum << "] " << std::endl;
     }
 
-    // auto const filePath = mix::utils::concat(plaDir , "inc.pla");
+    // auto const filePath = teddy::utils::concat(plaDir , "inc.pla");
     // auto const file     = pla_file::load_file(filePath);
     // pla_file::save_to_file("test_pla_out.pla", file);
 }

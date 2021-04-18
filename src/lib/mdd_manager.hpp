@@ -7,7 +7,7 @@
 #include "diagrams/operators.hpp"
 #include <array>
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     class mdd_manager
@@ -18,11 +18,11 @@ namespace mix::dd
         using vertex_t   = vertex<VertexData, ArcData, P>;
         using log_t      = typename log_val_traits<P>::type;
         using prob_table = std::vector<std::array<double, P>>;
-            using log_v      = std::vector<log_t>;
-            using index_v    = std::vector<index_t>;
-            using level_v    = std::vector<level_t>;
-            using mdd_v      = std::vector<mdd_t>;
-            using double_v   = std::vector<double>;
+            // using log_v      = std::vector<log_t>;
+            // using index_v    = std::vector<index_t>;
+            // using level_v    = std::vector<level_t>;
+            // using mdd_v      = std::vector<mdd_t>;
+            // using double_v   = std::vector<double>;
 
     /// Constructors
     public:
@@ -395,7 +395,7 @@ namespace mix::dd
          *  @param ps 2D array where @c ps[i][j] is the probability that i-th variable has value j.
          *  @return @c std::vector of Birnbaum importances.
          */
-        auto birnbaum_importances (prob_table const& ps, mdd_v& dpbds) -> std::vector<double>;
+        auto birnbaum_importances (prob_table const& ps, std::vector<mdd_t>& dpbds) -> std::vector<double>;
 
         /**
          *  @param dpbd diagram representing Direct Partial Boolean Derivative of i-th variable.
@@ -410,7 +410,7 @@ namespace mix::dd
          *  @param ps 2D array where @c ps[i][j] is the probability that i-th variable has value j.
          *  @return @c std::vector of Fussell-vesely importances.
          */
-        auto fussell_vesely_importances (prob_table const& ps, double U, mdd_v const& dpbds) -> std::vector<double>;
+        auto fussell_vesely_importances (prob_table const& ps, double U, std::vector<mdd_t> const& dpbds) -> std::vector<double>;
 
         /**
          *  @brief Finds all Minimal Cut Vectors.

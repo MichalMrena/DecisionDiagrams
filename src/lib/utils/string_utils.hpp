@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <locale>
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
      *  @brief Removes spaces in place both side of the @p s .

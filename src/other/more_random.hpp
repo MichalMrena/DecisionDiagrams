@@ -3,7 +3,7 @@
 
 #include <random>
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
         @brief Base class for pseudo random generators.

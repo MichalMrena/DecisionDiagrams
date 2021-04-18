@@ -6,7 +6,7 @@
 #include <fstream>
 #include <stdexcept>
 
-namespace mix::utils
+namespace teddy::utils
 {
     class file_reader
     {

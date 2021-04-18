@@ -8,7 +8,7 @@
 #include <iterator>
 #include <utility>
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
      *  @brief Wrapper for @c std::transform that saves the result into a @c std::vector .

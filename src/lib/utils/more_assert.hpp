@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-namespace mix::utils
+namespace teddy::utils
 {
     inline auto runtime_assert(bool const b, char const* msg)
     {

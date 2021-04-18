@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iterator>
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     template<template<std::size_t> class Op>
@@ -93,7 +93,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::left_fold
-        (mdd_v const& ds) -> mdd_t
+        (std::vector<mdd_t> const& ds) -> mdd_t
     {
         return this->left_fold<Op>(std::begin(ds), std::end(ds));
     }
@@ -101,7 +101,7 @@ namespace mix::dd
     template<class VertexData, class ArcData, std::size_t P>
     template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::tree_fold
-        (mdd_v& ds) -> mdd_t
+        (std::vector<mdd_t>& ds) -> mdd_t
     {
         return this->tree_fold<Op>(std::begin(ds), std::end(ds));
     }

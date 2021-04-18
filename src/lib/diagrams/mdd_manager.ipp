@@ -7,7 +7,7 @@
 
 #include <numeric>
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     mdd_manager<VertexData, ArcData, P>::mdd_manager
@@ -18,7 +18,7 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::set_domains
-        (log_v domains) -> void
+        (std::vector<log_t> domains) -> void
     {
         utils::runtime_assert(manager_.get_var_count() == domains.size(), "mdd_manager::set_domains: Domains vector size must match var count.");
         manager_.set_domains(std::move(domains));
@@ -26,14 +26,14 @@ namespace mix::dd
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::set_order
-        (index_v levelToIndex) -> void
+        (std::vector<index_t> levelToIndex) -> void
     {
         manager_.set_order(std::move(levelToIndex));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::get_order
-        () const -> index_v const&
+        () const -> std::vector<index_t> const&
     {
         return manager_.get_order();
     }

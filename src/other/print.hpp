@@ -5,7 +5,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace mix::utils
+namespace teddy::utils
 {
     inline auto constexpr EOL = "\n";
 

@@ -4,7 +4,7 @@
 #include <chrono>
 #include <functional>
 
-namespace mix::utils
+namespace teddy::utils
 {
     /**
         Simple class for measuring elapsed time.

@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace mix::dd
+namespace teddy
 {
     /// Types used by MDDs in general.
 

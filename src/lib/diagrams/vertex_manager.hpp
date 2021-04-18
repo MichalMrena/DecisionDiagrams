@@ -22,7 +22,7 @@
 #include <utility>
 #include <type_traits>
 
-namespace mix::dd
+namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>
     class vertex_manager
