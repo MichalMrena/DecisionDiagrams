@@ -2,6 +2,7 @@
 #define MIX_DD_UNIQUE_TABLE_HPP
 
 #include "graph.hpp"
+#include "table_base.hpp"
 #include <vector>
 #include <functional>
 
@@ -46,7 +47,7 @@ namespace teddy
      *  @brief Unique table of vertices.
      */
     template<class VertexData, class ArcData, std::size_t P>
-    class unique_table
+    class unique_table : private table_base
     {
     public:
         using vertex_t         = vertex<VertexData, ArcData, P>;
@@ -75,29 +76,22 @@ namespace teddy
         auto end             () const                    -> const_iterator;
 
     private:
+        using base        = table_base;
+        using capacity_it = typename base::capacity_it;
+
+    private:
         template<class Key, class Getter>
         static auto hash      (Key key, Getter get_ith)          -> std::size_t;
         static auto vertex_eq (vertex_t* v, vertex_a const& key) -> bool;
         auto insert_impl      (vertex_t* v)                      -> vertex_t*;
         auto calculate_index  (vertex_t* v)         const        -> std::size_t;
         auto calculate_index  (vertex_a const& key) const        -> std::size_t;
-        auto is_overloaded    ()                    const        -> bool;
         auto rehash           ()                                 -> void;
 
     private:
         static inline auto constexpr LoadThreshold = 0.75;
-        static inline auto constexpr Capacities    = std::array<std::size_t, 24>
-        {
-            307u,         617u,         1'237u,         2'477u,         4'957u,
-            9'923u,       19'853u,      39'709u,        79'423u,        158'849u,
-            317'701u,     635'413u,     1'270'849u,     2'541'701u,     5'083'423u,
-            10'166'857u,  20'333'759u,  40'667'527u,    81'335'063u,    162'670'129u,
-            325'340'273u, 650'680'571u, 1'301'361'143u, 2'602'722'289u
-        };
 
     private:
-        std::size_t            size_;
-        std::size_t const*     capacity_;
         std::vector<vertex_t*> buckets_;
     };
 
@@ -191,18 +185,16 @@ namespace teddy
     template<class VertexData, class ArcData, std::size_t P>
     unique_table<VertexData, ArcData, P>::unique_table
         () :
-        size_     (0),
-        capacity_ (Capacities.data()),
-        buckets_  (*capacity_, nullptr)
+        base     (),
+        buckets_ (*capacity_, nullptr)
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     unique_table<VertexData, ArcData, P>::unique_table
         (unique_table&& other) :
-        size_     (std::exchange(other.size_, 0)),
-        capacity_ (std::exchange(other.capacity_, Capacities.data())),
-        buckets_  (std::exchange(other.buckets_, std::vector<vertex_t*>(Capacities.front(), nullptr)))
+        base     (std::move(other)),
+        buckets_ (std::exchange(other.buckets_, std::vector<vertex_t*>(*capacity_, nullptr)))
     {
     }
 
@@ -211,7 +203,7 @@ namespace teddy
         (vertex_t* const v) -> vertex_t*
     {
         auto const ret = this->insert_impl(v);
-        ++size_;
+        ++base::size_;
         return ret;
     }
 
@@ -254,7 +246,7 @@ namespace teddy
             prev->set_next(v->get_next());
         }
 
-        --size_;
+        --base::size_;
         v->set_next(nullptr);
         return nextIt;
     }
@@ -276,21 +268,21 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::size
         () const -> std::size_t
     {
-        return size_;
+        return base::size_;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto unique_table<VertexData, ArcData, P>::adjust_capacity
         () -> void
     {
-        if (size_)
+        if (base::size_)
         {
-            while (static_cast<double>(size_) / static_cast<double>(*capacity_) > LoadThreshold)
+            while (static_cast<double>(base::size_) / static_cast<double>(*base::capacity_) > LoadThreshold)
             {
-                ++capacity_;
+                ++base::capacity_;
             }
 
-            if (*capacity_ != buckets_.size())
+            if (*base::capacity_ != buckets_.size())
             {
                 this->rehash();
             }
@@ -301,7 +293,7 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::merge
         (unique_table& rhs) -> void
     {
-        size_ += rhs.size();
+        base::size_ += rhs.size();
         this->adjust_capacity();
 
         auto const end = std::end(rhs);
@@ -321,7 +313,7 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::clear
         () -> void
     {
-        size_ = 0;
+        base::size_ = 0;
         std::fill(std::begin(buckets_), std::end(buckets_), nullptr);
     }
 
@@ -418,19 +410,11 @@ namespace teddy
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto unique_table<VertexData, ArcData, P>::is_overloaded
-        () const -> bool
-    {
-        auto const currentLoad = static_cast<double>(size_) / static_cast<double>(*capacity_);
-        return currentLoad > LoadThreshold;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
     auto unique_table<VertexData, ArcData, P>::rehash
         () -> void
     {
         auto const oldBuckets = std::vector<vertex_t*>(std::move(buckets_));
-        buckets_ = std::vector<vertex_t*>(*capacity_, nullptr);
+        buckets_ = std::vector<vertex_t*>(*base::capacity_, nullptr);
         for (auto bucket : oldBuckets)
         {
             while (bucket)

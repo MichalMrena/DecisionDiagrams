@@ -7,7 +7,10 @@ namespace teddy
 {
     class table_base
     {
-    private:
+    protected:
+        using capacity_it = typename std::array<std::size_t, 24>::const_iterator;
+
+    protected:
         static inline auto constexpr Capacities = std::array<std::size_t, 24>
         {
             307u,         617u,         1'237u,         2'477u,         4'957u,
@@ -18,11 +21,16 @@ namespace teddy
         };
 
     protected:
-        using capacity_it = typename std::array<std::size_t, 24>::iterator;
+        table_base () = default;
+        table_base (table_base&& other) :
+            size_     (std::exchange(other.size_, 0)),
+            capacity_ (std::exchange(other.capacity_, Capacities.data()))
+        {
+        }
 
     protected:
         std::size_t size_     {0};
-        capacity_it capacity_ {std::begin(Capacities)};
+        capacity_it capacity_ {std::cbegin(Capacities)};
     };
 }
 
