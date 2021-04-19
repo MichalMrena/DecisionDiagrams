@@ -52,7 +52,7 @@ namespace teddy
         auto const lastIndex     = manager_.get_index(lastLevel);
         auto const lastVarDomain = manager_.get_domain(manager_.get_index(lastLevel));
 
-        auto const shrink_stack = [=, &stack]()
+        auto const shrink_stack = [=, this, &stack]()
         {
             auto const vertices_available = [&stack](auto const level)
             {

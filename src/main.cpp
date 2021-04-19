@@ -50,7 +50,7 @@ auto main () -> int
 
     // change namespace to teddy
 
-    // pla_sanity_check();
+    pla_sanity_check();
     test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
     test_mdd_vector(10);
     test_bss();

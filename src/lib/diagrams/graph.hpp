@@ -8,7 +8,7 @@
 
 namespace teddy
 {
-    /** vertex forward celaration */
+    /** vertex forward declaration */
     template<class VertexData, class ArcData, std::size_t P>
     class vertex;
 

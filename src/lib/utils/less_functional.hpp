@@ -4,110 +4,81 @@
 namespace teddy::utils
 {
     /**
-     *  @brief Creates a function that negates an output of binary function @p f .
-     */
-    auto constexpr fnot = [](auto const f)
-    {
-        using F = decltype(f);
-        return [](auto const l, auto const r)
-        {
-            return ! F {} (l, r);
-        };
-    };
-
-    /**
      *  @brief Modular addition.
      */
     template<auto M>
-    auto constexpr plus_mod = [](auto const l, auto const r) { return (l + r) % M; };
-    template<auto M>
-    using plus_mod_t = decltype(plus_mod<M>);
+    struct plus_mod_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return (l + r) % M; } };
 
     /**
      *  @brief Modular multiplication.
      */
     template<auto M>
-    auto constexpr multiplies_mod = [](auto const l, auto const r) { return (l * r) % M; };
-    template<auto M>
-    using multiplies_mod_t = decltype(multiplies_mod<M>);
+    struct multiplies_mod_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return (l * r) % M; } };
 
     /**
      *  @brief Logical and.
      */
-    auto constexpr logical_and = [](auto const l, auto const r) { return l && r; };
-    using logical_and_t = decltype(logical_and);
+    struct logical_and_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l && r; } };
 
     /**
      *  @brief Logical or.
      */
-    auto constexpr logical_or = [](auto const l, auto const r) { return l || r; };
-    using logical_or_t = decltype(logical_or);
+    struct logical_or_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l || r; } };
 
     /**
      *  @brief Logical nand.
      */
-    auto constexpr logical_nand = fnot(logical_and);
-    using logical_nand_t = decltype(logical_nand);
+    struct logical_nand_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return !(l && r); } };
 
     /**
      *  @brief Logical nor.
      */
-    auto constexpr logical_nor = fnot(logical_or);
-    using logical_nor_t = decltype(logical_nor);
+    struct logical_nor_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return !(l || r); } };
 
     /**
      *  @brief Logical xor.
      */
-    auto constexpr logical_xor = [](auto const l, auto const r) { return l != r; };
-    using logical_xor_t = decltype(logical_xor);
+    struct logical_xor_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l != r; } };
 
     /**
      *  @brief Equal to.
      */
-    auto constexpr equal_to = [](auto const l, auto const r) { return l == r; };
-    using equal_to_t = decltype(equal_to);
+    struct equal_to_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l == r; } };
 
     /**
      *  @brief Not equal to.
      */
-    auto constexpr not_equal_to = fnot(equal_to);
-    using not_equal_to_t = decltype(not_equal_to);
+    struct not_equal_to_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l != r; } };
 
     /**
      *  @brief Less.
      */
-    auto constexpr less = [](auto const l, auto const r) { return l < r; };
-    using less_t = decltype(less);
+    struct less_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l < r; } };
 
     /**
      *  @brief Less equal.
      */
-    auto constexpr less_equal = [](auto const l, auto const r) { return l <= r; };
-    using less_equal_t = decltype(less_equal);
+    struct less_equal_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l <= r; } };
 
     /**
      *  @brief Greater.
      */
-    auto constexpr greater = [](auto const l, auto const r){ return l > r; };
-    using greater_t = decltype(greater);
+    struct greater_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l > r; } };
 
     /**
      *  @brief Greater equal.
      */
-    auto constexpr greater_equal = [](auto const l, auto const r){ return l >= r; };
-    using greater_equal_t = decltype(greater_equal);
+    struct greater_equal_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l >= r; } };
 
     /**
      *  @brief Min.
      */
-    auto constexpr min = [](auto const l, auto const r) { return l < r ? l : r; };
-    using min_t = decltype(min);
+    struct min_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l < r ? l : r; } };
 
     /**
      *  @brief Max.
      */
-    auto constexpr max = [](auto const l, auto const r) { return l > r ? l : r; };
-    using max_t = decltype(max);
+    struct max_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return l > r ? l : r; } };
 
     /**
      *  @brief Function that does nothing.

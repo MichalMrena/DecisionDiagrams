@@ -163,7 +163,7 @@ namespace teddy
     {
         auto xs = VariableValues {};
 
-        auto go = [=, this, &xs](auto&& go, auto const l, auto const v) mutable
+        auto go = [=, this, &xs](auto&& go_, auto const l, auto const v) mutable
         {
             auto const vertexValue = manager_.get_vertex_value(v);
             auto const vertexLevel = manager_.get_vertex_level(v);
@@ -184,7 +184,7 @@ namespace teddy
                 for (auto iv = 0u; iv < domain; ++iv)
                 {
                     SetIthVar {} (xs, index, iv);
-                    go(go, l + 1, v);
+                    go_(go_, l + 1, v);
                 }
             }
             else
@@ -193,7 +193,7 @@ namespace teddy
                 v->for_each_son_i([=, &xs](auto const iv, auto const son) mutable
                 {
                     SetIthVar {} (xs, index, iv);
-                    go(go, l + 1, son);
+                    go_(go_, l + 1, son);
                 });
             }
         };
@@ -206,15 +206,15 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::traverse_pre
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        auto const go = [](auto&& go, auto const v, auto&& op)
+        auto const go = [](auto&& go_, auto const v, auto&& op_)
         {
             v->toggle_mark();
-            op(v);
-            v->for_each_son([&go, v, &op](auto const son)
+            op_(v);
+            v->for_each_son([&go_, v, &op_](auto const son)
             {
                 if (v->get_mark() != son->get_mark())
                 {
-                    go(go, son, op);
+                    go_(go_, son, op_);
                 }
             });
         };
@@ -228,17 +228,17 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::traverse_post
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        auto const go = [](auto&& go, auto const v, auto&& op)
+        auto const go = [](auto&& go_, auto const v, auto&& op_)
         {
             v->toggle_mark();
-            v->for_each_son([&go, v, &op](auto const son)
+            v->for_each_son([&go_, v, &op_](auto const son)
             {
                 if (v->get_mark() != son->get_mark())
                 {
-                    go(go, son, op);
+                    go_(go_, son, op_);
                 }
             });
-            op(v);
+            op_(v);
         };
 
         go(go, d.get_root(), op);
@@ -250,7 +250,7 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::traverse_level
         (mdd_t const& d, VertexOp&& op) const -> void
     {
-        auto const go_level = [this](auto const v, auto&& op)
+        auto const go_level = [this](auto const v, auto&& op_)
         {
             auto const cmp = [this](auto const l, auto const r)
             {
@@ -267,7 +267,7 @@ namespace teddy
             {
                 auto const current = queue.top();
                 queue.pop();
-                op(current);
+                op_(current);
                 current->for_each_son([&queue, current](auto const son)
                 {
                     if (son->get_mark() != current->get_mark())
@@ -279,15 +279,15 @@ namespace teddy
             }
         };
 
-        auto const go_pre = [](auto&& go, auto const v, auto&& op)
+        auto const go_pre = [](auto&& go, auto const v, auto&& op_)
         {
             v->toggle_mark();
-            op(v);
-            v->for_each_son([&go, v, &op](auto const son)
+            op_(v);
+            v->for_each_son([&go, v, &op_](auto const son)
             {
                 if (v->get_mark() != son->get_mark())
                 {
-                    go(go, son, op);
+                    go(go, son, op_);
                 }
             });
         };

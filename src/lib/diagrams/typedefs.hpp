@@ -48,8 +48,8 @@ namespace teddy
      */
     struct bool_var
     {
-        index_t index;
         bool    complemented;
+        index_t index;
     };
 
     /// Definitions.

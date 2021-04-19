@@ -12,7 +12,7 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::apply
         (mdd_t const& lhs, mdd_t const& rhs) -> mdd_t
     {
-        auto const go = [this](auto&& go, auto l, auto r)
+        auto const go = [this](auto&& go_, auto l, auto r)
         {
             auto const cacheIterator = manager_.template cache_find<Op<P>>(l, r);
             if (cacheIterator->matches(l, r))
@@ -37,11 +37,11 @@ namespace teddy
                 auto const topVertex = topLevel == lhsLevel ? l : r;
                 auto const topIndex  = topVertex->get_index();
                 auto const domain    = manager_.get_domain(topIndex);
-                auto const sons      = utils::fill_array_n<P>(domain, [=, &go](auto const i)
+                auto const sons      = utils::fill_array_n<P>(domain, [=, &go_](auto const i)
                 {
                     auto const first  = lhsLevel == topLevel ? l->get_son(i) : l;
                     auto const second = rhsLevel == topLevel ? r->get_son(i) : r;
-                    return go(go, first, second);
+                    return go_(go_, first, second);
                 });
 
                 u = manager_.internal_vertex(topIndex, sons);
@@ -75,9 +75,9 @@ namespace teddy
             else
             {
                 // Nothing to restrict here so we just continue downwards.
-                return utils::fill_array_n<P>(domain, [this, &l_this, v](auto const i)
+                return utils::fill_array_n<P>(domain, [this, &l_this, v](auto const j)
                 {
-                    return this->transform_step(l_this, v->get_son(i));
+                    return this->transform_step(l_this, v->get_son(j));
                 });
             }
         });

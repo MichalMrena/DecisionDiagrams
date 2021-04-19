@@ -169,7 +169,7 @@ namespace teddy::test
     auto test_bss(seed_t const seed = 0u)
     {
         auto const initSeed = 0u == seed ? std::random_device () () : seed;
-        auto seeder         = int_rng<seed_t>(0u, UIntMax, initSeed);
+        // auto seeder         = int_rng<seed_t>(0u, UIntMax, initSeed);
         std::cout << "Test BSS. Init seed was " << initSeed << '.' << '\n';
 
         {

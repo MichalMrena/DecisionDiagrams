@@ -521,7 +521,7 @@ namespace teddy::test
         auto seeder          = int_rng<seed_t>(0u, UIntMax, initSeed);
         auto rngProductSize  = int_rng<std::size_t>(1, MddMaxProductSize, seeder.next_int());
         auto rngVarIndex     = int_rng<index_t>(0, MddVariableCount - 1, seeder.next_int());
-        auto rngVarLevel     = int_rng<level_t>(0, MddVariableCount - 2, seeder.next_int());
+        [[maybe_unused]] auto rngVarLevel     = int_rng<level_t>(0, MddVariableCount - 2, seeder.next_int());
         auto rngRestVarIndex = int_rng<index_t>(0, MddVariableCount - 1, seeder.next_int());
         auto rngOrderShuffle = std::mt19937(seeder.next_int());
         auto rngDomain       = int_rng<unsigned>(2, P, seeder.next_int());

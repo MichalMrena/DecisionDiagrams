@@ -58,10 +58,10 @@ namespace teddy
     {
         switch (i % 4)
         {
-            case 0: values_[i / 4].b0 = val; break;
-            case 1: values_[i / 4].b1 = val; break;
-            case 2: values_[i / 4].b2 = val; break;
-            case 3: values_[i / 4].b3 = val; break;
+            case 0: values_[i / 4].b0 = val & 0b00000011; break;
+            case 1: values_[i / 4].b1 = val & 0b00000011; break;
+            case 2: values_[i / 4].b2 = val & 0b00000011; break;
+            case 3: values_[i / 4].b3 = val & 0b00000011; break;
         }
     }
 }

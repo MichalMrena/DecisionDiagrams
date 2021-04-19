@@ -86,13 +86,13 @@ namespace teddy
 
     private:
         static inline auto constexpr LoadThreshold = 0.75;
-        static inline auto constexpr Capacities    = std::array<std::size_t, 25>
+        static inline auto constexpr Capacities    = std::array<std::size_t, 24>
         {
-            307,         617,         1'237,         2'477,         4'957,
-            9'923,       19'853,      39'709,        79'423,        158'849,
-            317'701,     635'413,     1'270'849,     2'541'701,     5'083'423,
-            10'166'857,  20'333'759,  40'667'527,    81'335'063,    162'670'129,
-            325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289, 5'205'444'619
+            307u,         617u,         1'237u,         2'477u,         4'957u,
+            9'923u,       19'853u,      39'709u,        79'423u,        158'849u,
+            317'701u,     635'413u,     1'270'849u,     2'541'701u,     5'083'423u,
+            10'166'857u,  20'333'759u,  40'667'527u,    81'335'063u,    162'670'129u,
+            325'340'273u, 650'680'571u, 1'301'361'143u, 2'602'722'289u
         };
 
     private:
@@ -399,9 +399,9 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::calculate_index
         (vertex_t* const v) const -> std::size_t
     {
-        auto const h = unique_table::hash<vertex_t*>(v, [](auto const i, auto const v)
+        auto const h = unique_table::hash<vertex_t*>(v, [](auto const i, auto const ve)
         {
-            return v->get_son(i);
+            return ve->get_son(i);
         });
         return h % buckets_.size();
     }
