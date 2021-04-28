@@ -2,8 +2,6 @@
 #include "../bdd_manager.hpp"
 #endif
 
-#include "operators.hpp"
-
 namespace teddy
 {
     template<class VertexData, class ArcData>

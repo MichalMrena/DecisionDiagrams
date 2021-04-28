@@ -17,7 +17,7 @@ namespace teddy::utils
     /**
      *  @brief Removes spaces in place both side of the @p s .
      */
-    auto trim (std::string& s) -> void
+    inline auto trim (std::string& s) -> void
     {
         s.erase(std::begin(s), std::find_if(std::begin(s), std::end(s), [](auto const c)
         {
@@ -34,7 +34,7 @@ namespace teddy::utils
      *  @brief Replaces groups of spaces (' ') with a single one.
      *  @return new string with no consecutive spaces.
      */
-    auto shrink_spaces (std::string& s) -> void
+    inline auto shrink_spaces (std::string& s) -> void
     {
         auto const newEnd = std::unique(std::begin(s), std::end(s), [](auto const l, auto const r)
         {
@@ -49,7 +49,7 @@ namespace teddy::utils
      *  and the second one constains the rest of the string (tail).
      *  @return pair of string_view that are the head and the tail of @p sv .
      */
-    auto to_head_tail (std::string_view sv) -> std::pair<std::string_view, std::string_view>
+    inline auto to_head_tail (std::string_view sv) -> std::pair<std::string_view, std::string_view>
     {
         auto const firstSpaceIt = std::find(std::begin(sv), std::end(sv), ' ');
 
@@ -67,7 +67,7 @@ namespace teddy::utils
      *  @brief Splits the string into words using space as a delimiter.
      *  @return vector of new string that are words from @p s .
      */
-    auto to_words (std::string_view sv, std::string_view delimiters = " ") -> std::vector<std::string>
+    inline auto to_words (std::string_view sv, std::string_view delimiters = " ") -> std::vector<std::string>
     {
         auto const end = std::cend(sv);
         auto first     = std::cbegin(sv);
@@ -97,7 +97,7 @@ namespace teddy::utils
      *  @brief Check if @p sv begins with @p prefix . Ignores spaces.
      *  @return true if @p sv starts with @p prefix false otherwise.
      */
-    auto starts_with (std::string_view sv, std::string_view prefix) -> bool
+    inline auto starts_with (std::string_view sv, std::string_view prefix) -> bool
     {
         if (sv.size() < prefix.size())
         {

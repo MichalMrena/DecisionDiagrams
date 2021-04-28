@@ -152,7 +152,7 @@ namespace teddy
         (log_t const val, mdd_t const& d) const -> std::vector<VariableValues>
     {
         auto vals = std::vector<VariableValues>();
-        this->satisfy_all_g<VariableValues>(val, d, std::back_inserter(vals));
+        this->template satisfy_all_g<VariableValues>(val, d, std::back_inserter(vals));
         return vals;
     }
 

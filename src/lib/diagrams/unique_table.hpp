@@ -77,7 +77,7 @@ namespace teddy
 
     private:
         using base        = table_base;
-        using capacity_it = typename base::capacity_it;
+        using capacity_it = base::capacity_it;
 
     private:
         template<class Key, class Getter>
@@ -228,7 +228,7 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::erase
         (iterator const it) -> iterator
     {
-        auto const nextIt   = ++iterator(it);
+        auto       nextIt   = ++iterator(it);
         auto const bucketIt = it.get_bucket();
         auto const v        = *it;
 
@@ -364,7 +364,7 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::hash
         (Key key, Getter get_ith) -> std::size_t
     {
-        auto seed = 0ull;
+        auto seed = std::size_t(0);
         for (auto i = 0u; i < P; ++i)
         {
             auto const hash = std::hash<vertex_t*>()(get_ith(i, key));
@@ -391,7 +391,7 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::calculate_index
         (vertex_t* const v) const -> std::size_t
     {
-        auto const h = unique_table::hash<vertex_t*>(v, [](auto const i, auto const ve)
+        auto const h = hash<vertex_t*>(v, [](auto const i, auto const ve)
         {
             return ve->get_son(i);
         });

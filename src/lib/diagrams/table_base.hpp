@@ -2,13 +2,14 @@
 #define MIX_DD_TABLE_BASE_HPP
 
 #include <array>
+#include <utility>
 
 namespace teddy
 {
     class table_base
     {
     protected:
-        using capacity_it = typename std::array<std::size_t, 24>::const_iterator;
+        using capacity_it = std::array<std::size_t, 24>::const_iterator;
 
     protected:
         static inline auto constexpr Capacities = std::array<std::size_t, 24>
@@ -22,9 +23,9 @@ namespace teddy
 
     protected:
         table_base () = default;
-        table_base (table_base&& other) :
+        table_base (table_base&& other) noexcept :
             size_     (std::exchange(other.size_, 0)),
-            capacity_ (std::exchange(other.capacity_, Capacities.data()))
+            capacity_ (std::exchange(other.capacity_, std::begin(Capacities)))
         {
         }
 

@@ -3,8 +3,6 @@
 #endif
 
 #include "../utils/more_vector.hpp"
-#include "../utils/more_iterator.hpp"
-
 #include <functional>
 
 namespace teddy
@@ -134,7 +132,7 @@ namespace teddy
     {
         auto dpbdes = utils::fmap_i(dpbds, std::bind_front(&bdd_manager::to_dpbd_e, this));
         auto const conj = this->template tree_fold<PI_CONJ>(dpbdes);
-        return this->satisfy_all<VectorType>(conj);
+        return this->template satisfy_all<VectorType>(conj);
     }
 
     template<class VertexData, class ArcData>

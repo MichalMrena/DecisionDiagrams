@@ -41,7 +41,7 @@ namespace teddy
     /// Types used only by BDDs.
 
     using bool_vals_t = std::uint64_t;
-    using bool_t      = typename log_val_traits<2>::type;
+    using bool_t      = log_val_traits<2>::type;
 
     /**
      *  @brief Description of a Boolean variable.
@@ -73,12 +73,7 @@ namespace teddy
         (type const t) -> std::string
     {
         auto constexpr U = log_val_traits::undefined;
-
-        switch (t)
-        {
-            case U:  return "*";
-            default: return std::to_string(t);
-        }
+        return t == U ? "*" : std::to_string(t);
     }
 }
 

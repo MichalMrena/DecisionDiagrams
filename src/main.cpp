@@ -44,17 +44,41 @@ auto pla_sanity_check()
     // pla_file::save_to_file("test_pla_out.pla", file);
 }
 
+auto pla_test_speed(auto const n)
+{
+    auto constexpr plaDir = "/mnt/c/Users/mrena/Desktop/pla_files/IWLS93/pla/";
+    // auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
+    // auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    // auto const files = {"15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
+    auto const files = {"16-adder_col.pla"};
+
+    auto const build_diagrams = [](auto const& plaFileRef)
+    {
+        auto manager  = bdd_manager<void, void>(plaFileRef.get().variable_count(), 2'000'000);
+        auto const ds = manager.from_pla(plaFileRef.get(), fold_e::tree);
+    };
+
+    for (auto fileName : files)
+    {
+        auto const filePath = concat(plaDir , fileName);
+        auto const plaFile  = pla_file::load_file(filePath);
+        auto const elapsed  = avg_run_time(n, std::bind_front(build_diagrams, std::cref(plaFile)));
+        printl(concat(fileName , " -> " , elapsed , "ms"));
+    }
+}
+
 auto main () -> int
 {
     // satisfy_count to go step
 
     // change namespace to teddy
 
+    pla_test_speed(1);
     // pla_sanity_check();
-    test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
-    test_mdd_vector(10);
-    test_bss();
-    test_mss();
+    // test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
+    // test_mdd_vector(10);
+    // test_bss();
+    // test_mss();
 
     std::cout << "Done." << '\n';
     return 0;

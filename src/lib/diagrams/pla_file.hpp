@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <stdexcept>
 #include <unordered_map>
-#include <unordered_set>
 #include <string_view>
 
 namespace teddy
@@ -108,7 +107,7 @@ namespace teddy
 
             if (labelsIt != std::end(options))
             {
-                return utils::to_words(std::move(labelsIt->second));
+                return utils::to_words(labelsIt->second);
             }
 
             return utils::fmap(utils::range(0ul, count), [=](auto const i)

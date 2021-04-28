@@ -431,8 +431,6 @@ namespace teddy
     auto vertex_manager<VertexData, ArcData, P>::swap_vars
         (index_t const i) -> void
     {
-        // TODO dokončiť celý sift, ak je počet vrcholov vyšší, postupne sa vracať
-
         auto const iLevel    = this->get_level(i);
         auto const nextIndex = this->get_index(1 + iLevel);
         auto tmpTable        = unique_table_t(std::move(uniqueTables_[i]));

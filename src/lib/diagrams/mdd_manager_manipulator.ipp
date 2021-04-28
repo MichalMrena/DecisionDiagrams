@@ -52,7 +52,7 @@ namespace teddy
         };
 
         auto const v = go(go, lhs.get_root(), rhs.get_root());
-        auto const d = mdd_t(v);
+        auto d       = mdd_t(v);
         manager_.adjust_sizes();
         return d;
     }
@@ -95,7 +95,7 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::left_fold
         (std::vector<mdd_t> const& ds) -> mdd_t
     {
-        return this->left_fold<Op>(std::begin(ds), std::end(ds));
+        return this->template left_fold<Op>(std::begin(ds), std::end(ds));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -103,7 +103,7 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::tree_fold
         (std::vector<mdd_t>& ds) -> mdd_t
     {
-        return this->tree_fold<Op>(std::begin(ds), std::end(ds));
+        return this->template tree_fold<Op>(std::begin(ds), std::end(ds));
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -116,7 +116,7 @@ namespace teddy
 
         while (first != last)
         {
-            r = this->apply<Op>(r, *first);
+            r = this->template apply<Op>(r, *first);
             ++first;
         }
 

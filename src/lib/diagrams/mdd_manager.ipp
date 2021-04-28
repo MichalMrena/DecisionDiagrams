@@ -2,9 +2,7 @@
 #include "../mdd_manager.hpp"
 #endif
 
-#include "../utils/more_math.hpp"
 #include "../utils/more_assert.hpp"
-
 #include <numeric>
 
 namespace teddy

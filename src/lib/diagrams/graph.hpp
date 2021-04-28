@@ -238,7 +238,7 @@ namespace teddy
         auto const end = std::end(forwardStar_);
         auto it = std::begin(forwardStar_);
 
-        while (it->target && it != end)
+        while (it != end && it->target)
         {
             op(it->target);
             ++it;
@@ -254,7 +254,7 @@ namespace teddy
         auto it = std::begin(forwardStar_);
         auto i  = 0u;
 
-        while (it->target && it != end)
+        while (it != end && it->target)
         {
             op(i, it->target);
             ++it;

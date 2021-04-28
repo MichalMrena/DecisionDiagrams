@@ -39,7 +39,7 @@ namespace teddy
 
     private:
         using base        = table_base;
-        using capactiy_it = typename table_base::capacity_it;
+        using capactiy_it = base::capacity_it;
 
     private:
         static auto hash       (vertex_t* l, vertex_t* r)        -> std::size_t;

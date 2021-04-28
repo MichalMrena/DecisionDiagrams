@@ -24,12 +24,12 @@ namespace teddy
     public:
         mdd  ();
         ~mdd ();
-        mdd  (mdd&& other);
+        mdd  (mdd&& other) noexcept;
         mdd  (mdd const& other);
         explicit mdd (vertex_t* root);
 
         auto operator= (mdd rhs)              -> mdd&;
-        auto swap      (mdd& rhs)             -> void;
+        auto swap      (mdd& rhs) noexcept    -> void;
         auto equals    (mdd const& rhs) const -> bool;
 
     private:
@@ -55,7 +55,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     mdd<VertexData, ArcData, P>::mdd
-        (mdd&& other) :
+        (mdd&& other) noexcept :
         root_ {std::exchange(other.root_, nullptr)}
     {
     }
@@ -88,7 +88,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd<VertexData, ArcData, P>::swap
-        (mdd& rhs) -> void
+        (mdd& rhs) noexcept -> void
     {
         std::swap(root_, rhs.root_);
     }
