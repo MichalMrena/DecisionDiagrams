@@ -2,7 +2,7 @@ BIN := main
 COMPILE_FLAGS = -MMD -MP -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
 LINK_FLAGS = 
 SRC_DIRS := ./src
-CXX = clang++-10
+CXX = clang++
 
 ifdef DEBUG
 	COMPILE_FLAGS += -g

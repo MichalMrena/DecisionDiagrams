@@ -50,7 +50,7 @@ auto pla_test_speed(auto const n)
     // auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
     // auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
     // auto const files = {"15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla"};
-    auto const files = {"16-adder_col.pla"};
+    auto const files = {"15-adder_col.pla"};
 
     auto const build_diagrams = [](auto const& plaFileRef)
     {
@@ -70,16 +70,17 @@ auto pla_test_speed(auto const n)
 auto main () -> int
 {
     // satisfy_count to go step
-
     // change namespace to teddy
+    // TODO union on forwardStar_ / value_
+    // merge vertexdata a arcdata do jedneho parametra
 
-    pla_test_speed(1);
+    // pla_test_speed(1);
     // pla_sanity_check();
     // test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
     // test_mdd_vector(10);
     // test_bss();
     // test_mss();
-
+    
     std::cout << "Done." << '\n';
     return 0;
 }
