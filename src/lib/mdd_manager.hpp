@@ -221,6 +221,14 @@ namespace teddy
 
         /**
          *  @brief Combines diagrams in @p ds using given binary operation.
+         *         Associates to the right:
+         *  @result Result of combining.
+         */
+        template<template<std::size_t> class Op>
+        auto right_fold (std::vector<mdd_t> const& ds) -> mdd_t;
+
+        /**
+         *  @brief Combines diagrams in @p ds using given binary operation.
          *         Associates in tree-like way: ((d1 op d2) op (d3 op d4)) op (d5 op d6)
          *         Uses @p ds for storing partial results.
          *  @result Result of combining.

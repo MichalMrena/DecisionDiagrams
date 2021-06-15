@@ -100,6 +100,14 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     template<template<std::size_t> class Op>
+    auto mdd_manager<VertexData, ArcData, P>::right_fold
+        (std::vector<mdd_t> const& ds) -> mdd_t
+    {
+        return this->template left_fold<Op>(std::rbegin(ds), std::rend(ds));
+    }
+
+    template<class VertexData, class ArcData, std::size_t P>
+    template<template<std::size_t> class Op>
     auto mdd_manager<VertexData, ArcData, P>::tree_fold
         (std::vector<mdd_t>& ds) -> mdd_t
     {

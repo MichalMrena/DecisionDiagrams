@@ -6,7 +6,7 @@
 
 namespace teddy
 {
-    enum class fold_e {left, tree};
+    enum class fold_e {left, right, tree};
 
     template<class VertexData, class ArcData>
     class bdd_manager : public mdd_manager<VertexData, ArcData, 2>

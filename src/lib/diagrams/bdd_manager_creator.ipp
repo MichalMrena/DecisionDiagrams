@@ -121,6 +121,9 @@ namespace teddy
             case fold_e::left:
                 return this->template left_fold<OR>(std::begin(diagrams), std::end(diagrams));
 
+            case fold_e::right:
+                return this->template right_fold<OR>(diagrams);
+
             default:
                 throw std::runtime_error("Non-exhaustive enum switch.");
         }
