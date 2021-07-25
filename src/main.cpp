@@ -64,56 +64,31 @@ auto pla_test_speed(auto const n)
     {
         auto const filePath = concat(plaDir , fileName);
         auto const plaFile  = pla_file::load_file(filePath);
-        auto const elapsed  = avg_run_time(n, std::bind_front(build_diagrams, std::cref(plaFile)));
+        auto const elapsed  = avg_run_time(static_cast<std::size_t>(n), std::bind_front(build_diagrams, std::cref(plaFile)));
         printl(concat(fileName , " -> " , elapsed , "ms"));
     }
 }
 
 auto main () -> int
 {
-    // TODO union on forwardStar_ / value_
-
     // bdd_manager
     // mdd_manager
     // imdd_manager
     // reliability_tools
 
-    // template<
-    //     class TData,
-    //     std::size_t Degree = 2 | P | teddy::integer_f
-    // > class vertex;
-    // auto teddy::integer_f = -1;
-
-    // template<class T>
-    // struct data_holder
-    // {
-    //     T data_;
-    // };
-
-    // template<>
-    // struct data_holder<void>
-    // {
-    // };
-
-    // template<class T>
-    // struct vertex
-    // {
-    //     vertex* l_;
-    //     vertex* r_;
-    //     [[no_unique_address]] data_holder<T> data_;
-    //      auto data () -> T&;
-    //      auto data () const -> T const&;
-    // };
-
     // TODO bit flag in-use, set when vertex is moved back into pool,
     // vertices can be removed from cache based on this flag
+    // unused vertices can be chained using the next member
 
-    pla_test_speed(1);
+    // pla_test_speed(1);
     // pla_sanity_check();
     // test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
     // test_mdd_vector(10);
     // test_bss();
     // test_mss();
+
+    [[maybe_unused]]
+    auto n = dd_node<int, binary>(1);
 
     std::cout << "Done." << '\n';
     return 0;

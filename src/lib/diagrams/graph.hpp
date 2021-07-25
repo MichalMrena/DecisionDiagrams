@@ -5,9 +5,191 @@
 #include "../utils/more_algorithm.hpp"
 
 #include <array>
+#include <vector>
+#include <concepts>
+#include <type_traits>
+#include <cstddef>
+#include <memory>
+#include <cassert>
 
 namespace teddy
 {
+    template<class T>
+    struct opt_member
+    {
+        T m;
+    };
+
+    template<>
+    struct opt_member<void>
+    {
+    };
+
+    struct binary {};
+    struct mixed {};
+    template<std::size_t N> struct nary {};
+
+    template<class T>
+    struct is_nary : public std::false_type {};
+
+    template<std::size_t N>
+    struct is_nary<nary<N>> : public std::true_type {};
+
+    template<class T>
+    concept degree = std::same_as<T, binary>
+                  || std::same_as<T, mixed>
+                  || is_nary<T>()();
+
+    template<class Data, degree D>
+    class dd_node
+    {
+    public:
+        template<std::size_t N>
+        static auto container (nary<N>) -> std::array<dd_node*, N>;
+        static auto container (binary)  -> std::array<dd_node*, 2>;
+        static auto container (mixed)   -> dd_node*;
+
+    public:
+        using sons_t = decltype(container(D()));
+
+    public:
+        explicit dd_node (int_t);
+        dd_node (index_t, sons_t);
+        ~dd_node () = default;
+        ~dd_node () requires(std::is_same_v<D, mixed>);
+
+        auto data ()       -> Data&       requires(!std::is_void_v<Data>);
+        auto data () const -> Data const& requires(!std::is_void_v<Data>);
+
+        auto get_next () const   -> dd_node*;
+        auto set_next (dd_node*) -> void;
+
+        auto is_internal () const -> bool;
+        auto is_terminal () const -> bool;
+
+    private:
+        using refs_t   = unsigned int;
+        using terminal = int_t;
+        using internal = struct
+        {
+            sons_t sons;
+            index_t index;
+        };
+        using union_t  = std::array<std::byte, sizeof(internal)>;
+
+    private:
+        auto as_internal ()       -> internal&;
+        auto as_internal () const -> internal const&;
+        auto as_terminal ()       -> terminal&;
+        auto as_terminal () const -> terminal const&;
+
+    private:
+        inline static constexpr auto MarkMask = refs_t(1) << (8 * sizeof(refs_t) - 1);
+        inline static constexpr auto UsedMask = refs_t(1) << (8 * sizeof(refs_t) - 2);
+        inline static constexpr auto LeafMask = refs_t(1) << (8 * sizeof(refs_t) - 3);
+        inline static constexpr auto RefsMax  = 1ul << (8 * sizeof(refs_t) - 3);
+
+    private:
+        union_t          union_;
+        [[no_unique_address]]
+        opt_member<Data> data_;
+        dd_node*         next_;
+        refs_t           refs_;
+    };
+
+    template<class Data, degree D>
+    dd_node<Data, D>::dd_node
+        (int_t const i) :
+        next_ {nullptr},
+        refs_ {LeafMask}
+    {
+        std::construct_at(reinterpret_cast<terminal*>(union_.data()), i);
+    }
+
+    template<class Data, degree D>
+    dd_node<Data, D>::dd_node
+        (index_t const i, sons_t sons) :
+        next_ {nullptr},
+        refs_ {0}
+    {
+        std::construct_at(reinterpret_cast<internal*>(union_.data()), i, sons);
+    }
+
+    template<class Data, degree D>
+    dd_node<Data, D>::~dd_node
+        () requires(std::is_same_v<D, mixed>)
+    {
+        if (this->is_internal())
+        {
+            delete[] this->as_internal().sons;
+        }
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::data
+        () -> Data& requires(!std::is_void_v<Data>)
+    {
+        return data_.m;
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::data
+        () const -> Data const& requires(!std::is_void_v<Data>)
+    {
+        return data_.m;
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::get_next
+        () const -> dd_node*
+    {
+        return next_;
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::set_next
+        (dd_node* const n) -> void
+    {
+        next_ = n;
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::as_internal
+        () -> internal&
+    {
+        assert(this->is_internal());
+        return *reinterpret_cast<internal*>(union_.data());
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::as_internal
+        () const -> internal const&
+    {
+        assert(this->is_internal());
+        return *reinterpret_cast<internal*>(union_.data());
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::as_terminal
+        () -> terminal&
+    {
+        assert(this->is_terminal());
+        return *reinterpret_cast<terminal*>(union_.data());
+    }
+
+    template<class Data, degree D>
+    auto dd_node<Data, D>::as_terminal
+        () const -> terminal const&
+    {
+        assert(this->is_terminal());
+        return *reinterpret_cast<terminal*>(union_.data());
+    }
+
+
+
+
+
+
     /** vertex forward declaration */
     template<class VertexData, class ArcData, std::size_t P>
     class vertex;

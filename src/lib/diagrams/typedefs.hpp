@@ -9,6 +9,7 @@ namespace teddy
 
     using index_t = unsigned int;
     using level_t = unsigned int;
+    using int_t   = unsigned int;
 
     /**
      *  @brief Traits for logical types and constants.
