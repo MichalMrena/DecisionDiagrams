@@ -71,9 +71,10 @@ auto pla_test_speed(auto const n)
 
 auto main () -> int
 {
-    // bdd_manager
-    // mdd_manager
-    // imdd_manager
+    // bdd_manager()
+    // mdd_manager<P>()
+    // imdd_manager(domains)
+    // ifmdd_manager<P>(domains)
     // reliability_tools
 
     // TODO bit flag in-use, set when vertex is moved back into pool,
@@ -88,7 +89,7 @@ auto main () -> int
     // test_mss();
 
     [[maybe_unused]]
-    auto n = dd_node<int, binary>(1);
+    auto n = node<int, degrees::nary<2>>(1);
 
     std::cout << "Done." << '\n';
     return 0;

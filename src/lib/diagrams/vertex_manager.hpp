@@ -11,11 +11,75 @@
 
 #include <array>
 #include <vector>
+#include <span>
 #include <utility>
 #include <type_traits>
 
 namespace teddy
 {
+    // TODO move to util data structures
+    template<class T>
+    class own_span
+    {
+    public:
+        explicit own_span (std::size_t);
+        auto span () -> std::span<T>; // TODO ref alebo val alebo iba operator[]?
+
+    private:
+        std::vector<T> data_;
+    };
+
+    namespace domains
+    {
+        class mixed
+        {
+        private:
+            own_span<int_t> ds_;
+
+        public:
+            mixed (own_span<int_t>);
+            auto operator[] (std::size_t const i)
+            {
+                return ds_.span()[i]; // TODO
+            }
+        };
+
+        template<std::size_t N>
+        struct nary
+        {
+            constexpr auto operator[] (std::size_t const)
+            {
+                return static_cast<int_t>(N);
+            }
+        };
+
+        template<class T>
+        struct is_nary : public std::false_type {};
+
+        template<std::size_t N>
+        struct is_nary<nary<N>> : public std::true_type {};
+    }
+
+    template<class T>
+    concept domain = std::same_as<T, domains::mixed> || domains::is_nary<T>()();
+
+    template<class Data, degree Degree, domain Domain>
+    class node_namager
+    {
+    public:
+        using node_t = node<Data, Degree>;
+
+    public:
+        node_namager (domains::mixed);
+
+    // vo funkciách sa doména i-tej premennej získa ako domains[i], v prípade BDD a MDD to bude constexpr!
+
+    private:
+        [[no_unique_address]]
+        Domain domains_;
+    };
+
+
     template<class VertexData, class ArcData, std::size_t P>
     class vertex_manager
     {
