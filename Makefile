@@ -28,4 +28,7 @@ $(BUILD_DIR)/%.cpp.o: %.cpp
 clean:
 	rm -r ./build
 
+# install:
+# copy ./include/teddy to /usr/local/include/ or selected path
+
 -include $(DEPS)

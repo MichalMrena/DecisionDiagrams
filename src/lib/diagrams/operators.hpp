@@ -1,7 +1,7 @@
 #ifndef MIX_DD_OPERATORS_HPP
 #define MIX_DD_OPERATORS_HPP
 
-#include "typedefs.hpp"
+#include "types.hpp"
 #include "../utils/less_functional.hpp"
 
 namespace teddy

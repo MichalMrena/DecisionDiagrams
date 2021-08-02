@@ -1,8 +1,8 @@
 #ifndef MIX_DD_MDD_MANAGER_HPP
 #define MIX_DD_MDD_MANAGER_HPP
 
+#include "diagrams/node_manager.hpp"
 #include "diagrams/mdd.hpp"
-#include "diagrams/vertex_manager.hpp"
 #include "diagrams/var_vals.hpp"
 #include "diagrams/operators.hpp"
 #include <array>

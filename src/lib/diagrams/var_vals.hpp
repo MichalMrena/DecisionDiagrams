@@ -1,7 +1,7 @@
 #ifndef MIX_DD_VAR_VALS_HPP
 #define MIX_DD_VAR_VALS_HPP
 
-#include "typedefs.hpp"
+#include "types.hpp"
 #include "../utils/more_type_traits.hpp"
 
 namespace teddy

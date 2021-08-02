@@ -1,7 +1,7 @@
 #ifndef MIX_DD_PLA_FILE_HPP
 #define MIX_DD_PLA_FILE_HPP
 
-#include "typedefs.hpp"
+#include "types.hpp"
 #include "bool_cube.hpp"
 #include "../utils/string_utils.hpp"
 #include "../utils/parsing_utils.hpp"

@@ -1,10 +1,12 @@
 #ifndef MIX_DD_VERTEX_MANAGER_HPP
 #define MIX_DD_VERTEX_MANAGER_HPP
 
-#include "graph.hpp"
+#include "node.hpp"
+#include "node_pool.hpp"
+#include "hash_tables.hpp"
+
+
 #include "operators.hpp"
-#include "unique_table.hpp"
-#include "apply_cache.hpp"
 #include "../utils/object_pool.hpp"
 #include "../utils/more_algorithm.hpp"
 #include "../utils/more_assert.hpp"
@@ -17,51 +19,44 @@
 
 namespace teddy
 {
-    // TODO move to util data structures
-    template<class T>
-    class own_span
-    {
-    public:
-        explicit own_span (std::size_t);
-        auto span () -> std::span<T>; // TODO ref alebo val alebo iba operator[]?
-
-    private:
-        std::vector<T> data_;
-    };
-
     namespace domains
     {
         class mixed
         {
         private:
-            own_span<int_t> ds_;
-
+            std::vector<uint_t> ds_;
         public:
-            mixed (own_span<int_t>);
-            auto operator[] (std::size_t const i)
+            mixed (std::vector<uint_t> ds) :
+                ds_ (std::move(ds))
             {
-                return ds_.span()[i]; // TODO
+            };
+            auto operator[] (uint_t const i) -> uint_t
+            {
+                return ds_[i];
             }
         };
 
-        template<std::size_t N>
-        struct nary
+        template<uint_t N>
+        struct fixed
         {
-            constexpr auto operator[] (std::size_t const)
+            constexpr auto operator[] (uint_t const)
             {
-                return static_cast<int_t>(N);
+                return static_cast<uint_t>(N);
             }
         };
 
         template<class T>
-        struct is_nary : public std::false_type {};
+        struct is_fixed : public std::false_type {};
 
-        template<std::size_t N>
-        struct is_nary<nary<N>> : public std::true_type {};
+        template<uint_t N>
+        struct is_fixed<fixed<N>> : public std::true_type {};
+
+        template<class T>
+        struct is_mixed : public std::is_same<T, domains::mixed> {};
     }
 
     template<class T>
-    concept domain = std::same_as<T, domains::mixed> || domains::is_nary<T>()();
+    concept domain = domains::is_mixed<T>()() || domains::is_fixed<T>()();
 
     template<class Data, degree Degree, domain Domain>
     class node_namager
@@ -70,7 +65,8 @@ namespace teddy
         using node_t = node<Data, Degree>;
 
     public:
-        node_namager (domains::mixed);
+        node_namager () requires(domains::is_fixed<Domain>()());
+        node_namager (domains::mixed) requires(domains::is_mixed<Domain>()());
 
     // vo funkciách sa doména i-tej premennej získa ako domains[i], v prípade BDD a MDD to bude constexpr!
 

@@ -1,8 +1,6 @@
 #ifndef MIX_DD_MDD_HPP
 #define MIX_DD_MDD_HPP
 
-#include "graph.hpp"
-
 namespace teddy
 {
     template<class VertexData, class ArcData, std::size_t P>

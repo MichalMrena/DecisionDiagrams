@@ -87,6 +87,8 @@ namespace teddy::utils
         if (p)
         {
             auto alloc = currentPool_->get_allocator();
+            // TODO ak sa znovupoužíva vrchol (cez next) treba ho deštruovať!
+            // riešiť možno cez pole bajtov, aby nemusel byť default konštruktor?
             traits_t::construct(alloc, p, std::forward<Args>(args)...);
         }
 

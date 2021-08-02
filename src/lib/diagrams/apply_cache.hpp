@@ -1,7 +1,6 @@
 #ifndef MIX_DD_BIN_OP_CACHE_HPP
 #define MIX_DD_BIN_OP_CACHE_HPP
 
-#include "graph.hpp"
 #include "table_base.hpp"
 #include <vector>
 
