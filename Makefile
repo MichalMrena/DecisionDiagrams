@@ -1,5 +1,5 @@
 BIN := main
-COMPILE_FLAGS = -MMD -MP -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow
+COMPILE_FLAGS = -MMD -MP -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow -Iinclude
 LINK_FLAGS = 
 SRC_DIRS := ./src
 CXX = clang++

@@ -4,18 +4,9 @@
 #include "node.hpp"
 #include "node_pool.hpp"
 #include "hash_tables.hpp"
-
-
 #include "operators.hpp"
-#include "../utils/object_pool.hpp"
-#include "../utils/more_algorithm.hpp"
-#include "../utils/more_assert.hpp"
 
-#include <array>
 #include <vector>
-#include <span>
-#include <utility>
-#include <type_traits>
 
 namespace teddy
 {
@@ -52,7 +43,7 @@ namespace teddy
         struct is_fixed<fixed<N>> : public std::true_type {};
 
         template<class T>
-        struct is_mixed : public std::is_same<T, domains::mixed> {};
+        using is_mixed = std::is_same<T, mixed>;
     }
 
     template<class T>
