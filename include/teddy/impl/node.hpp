@@ -1,5 +1,5 @@
-#ifndef MIX_DD_GRAPH_HPP
-#define MIX_DD_GRAPH_HPP
+#ifndef MIX_DD_NODE_HPP
+#define MIX_DD_NODE_HPP
 
 #include "types.hpp"
 
@@ -23,13 +23,13 @@ namespace teddy
     {
     };
 
-    template<class Node>
-    using dyn_sons = std::unique_ptr<Node*[]>;
-
     namespace degrees
     {
         struct mixed {};
-        template<uint_t N> struct fixed {};
+        template<uint_t N> struct fixed
+        {
+            static_assert(N > 1);
+        };
 
         template<class T>
         struct is_fixed : public std::false_type {};
@@ -42,15 +42,15 @@ namespace teddy
     }
 
     template<class T>
-    concept degree = degrees::is_mixed<T>()() || degrees::is_fixed<T>()();
+    concept degree = degrees::is_mixed<T>()() or degrees::is_fixed<T>()();
 
     template<class Data, degree D>
     class node
     {
-    public:
+    private:
         template<uint_t N>
         static auto container (degrees::fixed<N>) -> std::array<node*, N>;
-        static auto container (degrees::mixed)    -> dyn_sons<node*>;
+        static auto container (degrees::mixed)    -> std::unique_ptr<node*[]>;
 
     public:
         using sons_t = decltype(container(D()));
@@ -86,12 +86,17 @@ namespace teddy
         auto get_value     () const       -> uint_t;
 
     private:
-        using terminal = uint_t;
-        using internal = struct
+        struct internal
         {
             sons_t  sons;
             index_t index;
+            internal (sons_t ss, index_t i) :
+                sons  {std::move(ss)},
+                index {i}
+            {
+            }
         };
+        using terminal = uint_t;
         using union_t  = std::array<std::byte, sizeof(internal)>;
 
     private:
@@ -130,7 +135,7 @@ namespace teddy
         next_ {nullptr},
         refs_ {UsedM}
     {
-        std::construct_at(&this->union_internal(), i, sons);
+        std::construct_at(&this->union_internal(), std::move(sons), i);
     }
 
     template<class Data, degree D>
@@ -139,7 +144,8 @@ namespace teddy
     {
         if (this->is_internal())
         {
-            this->as_internal().~dyn_sons();
+            std::destroy_at(this->as_internal());
+            // this->as_internal().~dyn_sons();
         }
     }
 

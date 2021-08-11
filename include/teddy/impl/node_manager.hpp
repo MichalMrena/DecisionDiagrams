@@ -1,6 +1,7 @@
-#ifndef MIX_DD_VERTEX_MANAGER_HPP
-#define MIX_DD_VERTEX_MANAGER_HPP
+#ifndef MIX_DD_node_manager_HPP
+#define MIX_DD_node_manager_HPP
 
+#include "utils.hpp"
 #include "node.hpp"
 #include "node_pool.hpp"
 #include "hash_tables.hpp"
@@ -21,7 +22,7 @@ namespace teddy
                 ds_ (std::move(ds))
             {
             };
-            auto operator[] (uint_t const i) -> uint_t
+            auto operator[] (uint_t const i)
             {
                 return ds_[i];
             }
@@ -30,9 +31,10 @@ namespace teddy
         template<uint_t N>
         struct fixed
         {
+            static_assert(N > 1);
             constexpr auto operator[] (uint_t const)
             {
-                return static_cast<uint_t>(N);
+                return N;
             }
         };
 
@@ -47,50 +49,48 @@ namespace teddy
     }
 
     template<class T>
-    concept domain = domains::is_mixed<T>()() || domains::is_fixed<T>()();
+    concept domain = domains::is_mixed<T>()() or domains::is_fixed<T>()();
 
     template<class Data, degree Degree, domain Domain>
-    class node_namager
+    class node_manager
     {
     public:
-        using node_t = node<Data, Degree>;
+        using node_t            = node<Data, Degree>;
+        using sons_t            = typename node_t::sons_t;
 
-    public:
-        node_namager () requires(domains::is_fixed<Domain>()());
-        node_namager (domains::mixed) requires(domains::is_mixed<Domain>()());
-
-    // vo funkciách sa doména i-tej premennej získa ako domains[i], v prípade BDD a MDD to bude constexpr!
-
-    private:
-        [[no_unique_address]]
-        Domain domains_;
-    };
-
-
-    template<class VertexData, class ArcData, std::size_t P>
-    class vertex_manager
-    {
-    public:
-        using log_t             = typename log_val_traits<P>::type;
-        using vertex_t          = vertex<VertexData, ArcData, P>;
-        using vertex_a          = std::array<vertex_t*, P>;
         using op_cache_t        = apply_cache<VertexData, ArcData, P>;
         using op_cache_iterator = typename op_cache_t::iterator;
 
-    public:
-        vertex_manager  (std::size_t varCount, std::size_t vertexCount);
-        vertex_manager  (vertex_manager&& other) noexcept = default;
-        vertex_manager  (vertex_manager const& other) = delete;
+    private:
+        inline static constexpr auto FixDomain = domains::is_fixed<Domain>()();
+        inline static constexpr auto MixDomain = domains::is_mixed<Domain>()();
+        struct common_init {};
 
     public:
-        auto terminal_vertex  (log_t val) const                     -> vertex_t*;
-        auto terminal_vertex  (log_t val)                           -> vertex_t*;
-        auto internal_vertex  (index_t index, vertex_a const& sons) -> vertex_t*;
+        node_manager ( std::size_t vars
+                     , std::size_t nodes ) requires(FixDomain);
+        node_manager ( std::size_t vars
+                     , std::size_t nodes
+                     , domains::mixed ) requires(MixDomain);
 
-        auto get_vertex_level        (vertex_t* v) const         -> level_t;
+        node_manager (node_manager&&) noexcept = default;
+        node_manager (node_manager const&) = delete;
+
+    private:
+        node_manager ( common_init
+                     , std::size_t vars
+                     , std::size_t nodes
+                     , Domain );
+
+    public:
+        auto get_terminal_node (uint_t) const      -> node_t*;
+        auto terminal_node     (uint_t)            -> node_t*;
+        auto internal_node     (index_t, sons_t&&) -> node_t*;
+
+        auto get_vertex_level        (node_t* v) const         -> level_t;
         auto get_level               (index_t   i) const         -> level_t;
         auto get_index               (level_t   l) const         -> index_t;
-        auto get_vertex_value        (vertex_t* v) const         -> log_t;
+        auto get_vertex_value        (node_t* v) const         -> log_t;
         auto get_vertex_count        (index_t   i) const         -> std::size_t;
         auto get_vertex_count        ()            const         -> std::size_t;
         auto get_var_count           ()            const         -> std::size_t;
@@ -103,14 +103,14 @@ namespace teddy
         auto set_cache_ratio         (std::size_t denom)         -> void;
         auto set_pool_ratio          (std::size_t denom)         -> void;
         auto set_reorder             (bool reorder)              -> void;
-        auto is_leaf_vertex          (vertex_t* v) const         -> bool;
+        auto is_leaf_vertex          (node_t* v) const         -> bool;
         auto is_leaf_index           (index_t   i) const         -> bool;
         auto is_leaf_level           (level_t   l) const         -> bool;
 
         template<class Op>
-        auto cache_find       (vertex_t* l, vertex_t* r) -> op_cache_iterator;
+        auto cache_find       (node_t* l, node_t* r) -> op_cache_iterator;
         template<class Op>
-        auto cache_put        (op_cache_iterator it, vertex_t* l, vertex_t* r, vertex_t* res) -> void;
+        auto cache_put        (op_cache_iterator it, node_t* l, node_t* r, node_t* res) -> void;
 
         auto adjust_sizes     ()                  -> void;
         auto collect_garbage  ()                  -> void;
@@ -122,30 +122,35 @@ namespace teddy
         auto for_each_vertex (VertexOp op) const -> void;
 
         template<class VertexOp>
-        auto for_each_terminal_vertex (VertexOp op) const -> void;
+        auto for_each_terminal_node (VertexOp op) const -> void;
 
-        static auto is_redundant  (vertex_a const& sons) -> bool;
-        static auto inc_ref_count (vertex_t* v)          -> vertex_t*;
-        static auto dec_ref_count (vertex_t* v)          -> void;
+
+        auto is_redundant (index_t, sons_t const&) const -> bool;
+
+        template<class NodeOp>
+        auto for_each_son (node_t*, NodeOp&&) -> void;
+
+        static auto inc_ref_count (node_t* v)       -> node_t*;
+        static auto dec_ref_count (node_t* v)       -> void;
 
     private:
         using unique_table_t = unique_table<VertexData, ArcData, P>;
         using unique_table_v = std::vector<unique_table_t>;
-        using leaf_vertex_a  = std::array<vertex_t*, log_val_traits<P>::valuecount>;
+        using leaf_vertex_a  = std::array<node_t*, log_val_traits<P>::valuecount>;
         using op_cache_a     = std::array<op_cache_t, op_count()>;
-        using vertex_pool_t  = utils::object_pool<vertex_t>;
+        using vertex_pool_t  = utils::object_pool<node_t>;
 
     private:
         auto leaf_index     () const      -> index_t;
         auto leaf_level     () const      -> level_t;
         auto leaf_count     () const      -> std::size_t;
         auto clear_cache    ()            -> void;
-        auto swap_vertex    (vertex_t* v) -> void;
-        auto dec_ref_try_gc (vertex_t* v) -> void;
-        auto delete_vertex  (vertex_t* v) -> void;
+        auto swap_vertex    (node_t* v) -> void;
+        auto dec_ref_try_gc (node_t* v) -> void;
+        auto delete_vertex  (node_t* v) -> void;
 
         template<class... Args>
-        auto new_vertex  (Args&&... args) -> vertex_t*;
+        auto new_vertex  (Args&&... args) -> node_t*;
 
         template<class IndexMapOp>
         auto for_each_level (IndexMapOp op) -> void;
@@ -158,42 +163,120 @@ namespace teddy
 
     private:
         unique_table_v       uniqueTables_;
-        leaf_vertex_a        leaves_;
+        std::vector<node_t*> terminals_;
         std::vector<level_t> indexToLevel_;
         std::vector<index_t> levelToIndex_;
         op_cache_a           opCaches_;
         vertex_pool_t        pool_;
         bool                 needsGc_;
-        std::size_t          vertexCount_;
-        std::vector<log_t>   domains_;
+        std::size_t          nodeCount_;
         std::size_t          cacheRatio_;
         bool                 reorderEnabled_;
+
+        [[no_unique_address]]
+        Domain               domains_;
     };
 
-    template<class VertexData, class ArcData, std::size_t P>
-    vertex_manager<VertexData, ArcData, P>::vertex_manager
-        (std::size_t const varCount, std::size_t const vertexCount) :
-        uniqueTables_   (varCount),
-        leaves_         ({}),
-        indexToLevel_   (utils::fill_vector(varCount + 1, utils::identity)),
-        levelToIndex_   (utils::fill_vector(varCount + 1, utils::identity)),
+    template<class Data, degree Degree, domain Domain>
+    node_manager<Data, Degree, Domain>::node_manager
+        ( std::size_t const vars
+        , std::size_t const nodes ) requires(FixDomain) :
+        node_manager (common_init(), vars, nodes, {})
+    {
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    node_manager<Data, Degree, Domain>::node_manager
+        ( std::size_t const vars
+        , std::size_t const nodes
+        , domains::mixed    ds ) requires(MixDomain) :
+        node_manager (common_init(), vars, nodes, std::move(ds))
+    {
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    node_manager<Data, Degree, Domain>::node_manager
+        ( common_init
+        , std::size_t const vars
+        , std::size_t const nodes
+        , Domain            ds ) :
+        uniqueTables_   (vars),
+        terminals_      ({}),
+        indexToLevel_   (utils::fill_vector(vars, utils::identity)),
+        levelToIndex_   (utils::fill_vector(vars, utils::identity)),
         opCaches_       ({}),
-        pool_           (vertexCount),
+        pool_           (nodes),
         needsGc_        (false),
-        vertexCount_    (0),
-        domains_        ({}),
+        nodeCount_      (0),
+        domains_        (std::move(ds)),
         cacheRatio_     (4),
         reorderEnabled_ (false)
     {
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::set_order
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_terminal_node
+        (uint_t const v) const -> node_t*
+    {
+        return v < terminals_.size() ? terminals_[v] : nullptr;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::terminal_node
+        (uint_t const v) -> node_t*
+    {
+        if (v >= terminals_.size())
+        {
+            terminals_.resize(v + 1, nullptr);
+        }
+
+        if (not terminals_[v])
+        {
+            terminals_[v] = this->new_terminal(v);
+        }
+
+        return terminals_[v];
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::internal_node
+        (index_t const i, sons_t&& sons) -> node_t*
+    {
+        if (this->is_redundant(i, sons))
+        {
+            return sons[0];
+        }
+
+        auto& indexMap      = uniqueTables_[i];
+        // auto const hash     = this->hash(i, sons);
+        auto const existing = indexMap.find(sons);
+        // auto const existing = indexMap.find(hash, sons);
+        if (existing)
+        {
+            return existing;
+        }
+
+        auto n = this->new_internal(i, sons);
+        indexMap.insert(n);
+        // indexMap.insert(hash, n);
+        this->for_each_son(n, inc_ref_count);
+
+        return n;
+    }
+
+
+
+
+
+
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_order
         (std::vector<index_t> lToI) -> void
     {
-        utils::runtime_assert(this->get_vertex_count() == 0, "vertex_manager::set_order: Manager must be empty.");
-        utils::runtime_assert(this->get_var_count() == lToI.size(), "vertex_manager::set_order: Level vector size must match var count.");
-        utils::runtime_assert(utils::distinct(lToI), "vertex_manager::set_order: Indices must be unique.");
+        utils::runtime_assert(this->get_vertex_count() == 0, "node_manager::set_order: Manager must be empty.");
+        utils::runtime_assert(this->get_var_count() == lToI.size(), "node_manager::set_order: Level vector size must match var count.");
+        utils::runtime_assert(utils::distinct(lToI), "node_manager::set_order: Indices must be unique.");
 
         levelToIndex_ = std::move(lToI);
         indexToLevel_ = std::vector<level_t>(levelToIndex_.size());
@@ -206,117 +289,77 @@ namespace teddy
         indexToLevel_.push_back(static_cast<level_t>(this->get_var_count()));
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_order
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_order
         () const -> std::vector<index_t> const&
     {
         return levelToIndex_;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::set_cache_ratio
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_cache_ratio
         (std::size_t const denom) -> void
     {
-        utils::runtime_assert(denom > 0, "vertex_manager::set_cache_ratio: Denominator must be positive.");
+        utils::runtime_assert(denom > 0, "node_manager::set_cache_ratio: Denominator must be positive.");
         cacheRatio_ = denom;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::set_pool_ratio
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_pool_ratio
         (std::size_t const denom) -> void
     {
-        utils::runtime_assert(denom > 0, "vertex_manager::set_pool_ratio: Denominator must be positive.");
+        utils::runtime_assert(denom > 0, "node_manager::set_pool_ratio: Denominator must be positive.");
         pool_.set_overflow_ratio(denom);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::set_reorder
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_reorder
         (bool const reorder) -> void
     {
         reorderEnabled_ = reorder;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::set_domains
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_domains
         (std::vector<log_t> ds) -> void
     {
-        utils::runtime_assert(ds.size() == this->get_var_count(), "vertex_manager::set_domains: Argument size must match variable count.");
+        utils::runtime_assert(ds.size() == this->get_var_count(), "node_manager::set_domains: Argument size must match variable count.");
         domains_ = std::move(ds);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::terminal_vertex
-        (log_t const val) const -> vertex_t*
-    {
-        return leaves_[val];
-    }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::terminal_vertex
-        (log_t const val) -> vertex_t*
-    {
-        if (leaves_[val])
-        {
-            return leaves_[val];
-        }
 
-        auto const v = this->new_vertex(this->leaf_index());
-        leaves_[val] = v;
-        return v;
-    }
+    
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::internal_vertex
-        (index_t const index, vertex_a const& sons) -> vertex_t*
-    {
-        if (is_redundant(sons))
-        {
-            return sons.front();
-        }
-
-        auto& indexMap      = uniqueTables_[index];
-        auto const existing = indexMap.find(sons);
-        if (existing)
-        {
-            return existing;
-        }
-
-        auto v = this->new_vertex(index, sons);
-        indexMap.insert(v);
-        v->for_each_son(inc_ref_count);
-
-        return v;
-    }
-
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_vertex_level
-        (vertex_t* const v) const -> level_t
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_vertex_level
+        (node_t* const v) const -> level_t
     {
         return this->get_level(v->get_index());
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_level
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_level
         (index_t const i) const -> level_t
     {
         return indexToLevel_[i];
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_index
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_index
         (level_t const l) const -> index_t
     {
         return levelToIndex_[l];
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_vertex_value
-        (vertex_t* const v) const -> log_t
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_vertex_value
+        (node_t* const v) const -> log_t
     {
         if (this->is_leaf_vertex(v))
         {
-            return static_cast<log_t>(utils::index_of( std::begin(leaves_)
-                                                     , std::end(leaves_), v ));
+            return static_cast<log_t>(utils::index_of( std::begin(terminals_)
+                                                     , std::end(terminals_), v ));
         }
         else
         {
@@ -324,29 +367,29 @@ namespace teddy
         }
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::is_leaf_vertex
-        (vertex_t* const v) const -> bool
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::is_leaf_vertex
+        (node_t* const v) const -> bool
     {
         return this->is_leaf_index(v->get_index());
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::is_leaf_index
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::is_leaf_index
         (index_t const i) const -> bool
     {
         return i == this->leaf_index();
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::is_leaf_level
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::is_leaf_level
         (level_t const l) const -> bool
     {
         return l == this->leaf_level();
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_vertex_count
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_vertex_count
         (index_t const i) const -> std::size_t
     {
         return this->is_leaf_index(i)
@@ -354,61 +397,61 @@ namespace teddy
             : uniqueTables_[i].size();
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_vertex_count
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_vertex_count
         () const -> std::size_t
     {
-        return vertexCount_;
+        return nodeCount_;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_var_count
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_var_count
         () const -> std::size_t
     {
         return uniqueTables_.size();
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_last_internal_level
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_last_internal_level
         () const -> level_t
     {
         return static_cast<level_t>(this->get_var_count() - 1);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::get_domain
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_domain
         (index_t const i) const -> log_t
     {
         return domains_.size() ? domains_[i] : P;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::has_domains
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::has_domains
         () const -> bool
     {
         return !domains_.empty();
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<class Op>
-    auto vertex_manager<VertexData, ArcData, P>::cache_find
-        (vertex_t* const l, vertex_t* const r) -> op_cache_iterator
+    auto node_manager<Data, Degree, Domain>::cache_find
+        (node_t* const l, node_t* const r) -> op_cache_iterator
     {
         auto& cache = opCaches_[op_id(Op())];
         return cache.find(l, r);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<class Op>
-    auto vertex_manager<VertexData, ArcData, P>::cache_put
-        (op_cache_iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void
+    auto node_manager<Data, Degree, Domain>::cache_put
+        (op_cache_iterator it, node_t* const l, node_t* const r, node_t* const res) -> void
     {
         auto& cache = opCaches_[op_id(Op())];
         cache.put(it, l, r, res);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::adjust_sizes
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::adjust_sizes
         () -> void
     {
         if (needsGc_)
@@ -427,12 +470,12 @@ namespace teddy
 
         for (auto& c : opCaches_)
         {
-            c.adjust_capacity(vertexCount_ / cacheRatio_);
+            c.adjust_capacity(nodeCount_ / cacheRatio_);
         }
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::collect_garbage
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::collect_garbage
         () -> void
     {
         needsGc_ = false;
@@ -459,27 +502,27 @@ namespace teddy
             }
         });
 
-        for (auto i = 0u; i < leaves_.size(); ++i)
+        for (auto i = 0u; i < terminals_.size(); ++i)
         {
-            if (leaves_[i] && 0 == leaves_[i]->get_ref_count())
+            if (terminals_[i] && 0 == terminals_[i]->get_ref_count())
             {
-                this->delete_vertex(std::exchange(leaves_[i], nullptr));
+                this->delete_vertex(std::exchange(terminals_[i], nullptr));
             }
         }
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::clear
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::clear
         () -> void
     {
         this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
         this->for_each_level([](auto& levelMap) { levelMap.clear(); });
-        std::fill(std::begin(leaves_), std::end(leaves_), nullptr);
-        vertexCount_ = 0;
+        std::fill(std::begin(terminals_), std::end(terminals_), nullptr);
+        nodeCount_ = 0;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::swap_vars
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::swap_vars
         (index_t const i) -> void
     {
         auto const iLevel    = this->get_level(i);
@@ -497,8 +540,8 @@ namespace teddy
         --indexToLevel_[nextIndex];
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::sift_vars
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::sift_vars
         () -> void
     {
         using count_pair = struct { index_t index; std::size_t count; };
@@ -529,16 +572,16 @@ namespace teddy
         {
             auto level        = this->get_level(index);
             auto optimalLevel = level;
-            auto optimalCount = vertexCount_;
+            auto optimalCount = nodeCount_;
 
             // Sift down.
             while (level != this->get_last_internal_level())
             {
                 move_var_down(index);
                 ++level;
-                if (vertexCount_ < optimalCount)
+                if (nodeCount_ < optimalCount)
                 {
-                    optimalCount = vertexCount_;
+                    optimalCount = nodeCount_;
                     optimalLevel = level;
                 }
             }
@@ -548,9 +591,9 @@ namespace teddy
             {
                 move_var_up(index);
                 --level;
-                if (vertexCount_ < optimalCount)
+                if (nodeCount_ < optimalCount)
                 {
-                    optimalCount = vertexCount_;
+                    optimalCount = nodeCount_;
                     optimalLevel = level;
                 }
             }
@@ -570,9 +613,9 @@ namespace teddy
         }
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<class VertexOp>
-    auto vertex_manager<VertexData, ArcData, P>::for_each_vertex
+    auto node_manager<Data, Degree, Domain>::for_each_vertex
         (VertexOp op) const -> void
     {
         for (auto const& table : uniqueTables_)
@@ -587,7 +630,7 @@ namespace teddy
             }
         }
 
-        for (auto const v : leaves_)
+        for (auto const v : terminals_)
         {
             if (v)
             {
@@ -596,12 +639,12 @@ namespace teddy
         }
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<class VertexOp>
-    auto vertex_manager<VertexData, ArcData, P>::for_each_terminal_vertex
+    auto node_manager<Data, Degree, Domain>::for_each_terminal_node
         (VertexOp op) const -> void
     {
-        for (auto const v : leaves_)
+        for (auto const v : terminals_)
         {
             if (v)
             {
@@ -610,57 +653,90 @@ namespace teddy
         }
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::is_redundant
-        (vertex_a const& sons) -> bool
+
+
+
+
+
+
+    template<class Data, degree Degree, domain Domain>
+    template<std::size_t N>
+    auto node_manager<Data, Degree, Domain>::is_redundant
+        (index_t const i, sons_t const& sons) const -> bool
     {
-        auto const end = std::find(std::begin(sons), std::end(sons), nullptr);
-        return end == std::adjacent_find( std::begin(sons)
-                                        , end
-                                        , std::not_equal_to<>() );
+        for (auto j = 1u; j < domains_[i]; ++j)
+        {
+            if (sons[j - 1] != sons[j])
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::inc_ref_count
-        (vertex_t* const v) -> vertex_t*
+    template<class Data, degree Degree, domain Domain>
+    template<class NodeOp>
+    auto node_manager<Data, Degree, Domain>::for_each_son
+        (node_t* const node, NodeOp&& f) -> void
+    {
+        auto const i = node->get_index();
+        for (auto j = 0u; j < domains_[i]; ++j)
+        {
+            f(node->get_son(j));
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::inc_ref_count
+        (node_t* const v) -> node_t*
     {
         v->inc_ref_count();
         return v;
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::dec_ref_count
-        (vertex_t* const v) -> void
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::dec_ref_count
+        (node_t* const v) -> void
     {
         v->dec_ref_count();
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::leaf_index
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::leaf_index
         () const -> index_t
     {
         return static_cast<index_t>(this->get_var_count());
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::leaf_level
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::leaf_level
         () const -> level_t
     {
         return static_cast<level_t>(this->get_var_count());
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::leaf_count
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::leaf_count
         () const -> std::size_t
     {
-        auto const nulls = std::count( std::begin(leaves_)
-                                     , std::end(leaves_)
+        auto const nulls = std::count( std::begin(terminals_)
+                                     , std::end(terminals_)
                                      , nullptr );
-        return leaves_.size() - static_cast<std::size_t>(nulls);
+        return terminals_.size() - static_cast<std::size_t>(nulls);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::clear_cache
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::clear_cache
         () -> void
     {
         for (auto& c : opCaches_)
@@ -669,45 +745,45 @@ namespace teddy
         }
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::swap_vertex
-        (vertex_t* const v) -> void
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::swap_vertex
+        (node_t* const v) -> void
     {
         auto const index     = v->get_index();
         auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
         auto const vDomain   = this->get_domain(index);
         auto const sonDomain = this->get_domain(nextIndex);
-        auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&vertex_t::get_son, v));
+        auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&node_t::get_son, v));
         auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
         {
             auto const son = v->get_son(sonIndex);
             return son->get_index() == nextIndex
-                ? utils::fill_array_n<P>(sonDomain, std::bind_front(&vertex_t::get_son, son))
+                ? utils::fill_array_n<P>(sonDomain, std::bind_front(&node_t::get_son, son))
                 : utils::fill_array_n<P>(sonDomain, utils::constant(son));
         });
         v->set_index(nextIndex);
         v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
         {
-            return this->internal_vertex(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
+            return this->internal_node(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
             {
                 return cofactors[j][i];
             }));
         }));
         v->for_each_son(inc_ref_count);
-        utils::for_all(oldSons, std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        utils::for_all(oldSons, std::bind_front(&node_manager::dec_ref_try_gc, this));
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::delete_vertex
-        (vertex_t* const v) -> void
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::delete_vertex
+        (node_t* const v) -> void
     {
-        --vertexCount_;
+        --nodeCount_;
         pool_.destroy(v);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
-    auto vertex_manager<VertexData, ArcData, P>::dec_ref_try_gc
-        (vertex_t* const v) -> void
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::dec_ref_try_gc
+        (node_t* const v) -> void
     {
         v->dec_ref_count();
 
@@ -716,17 +792,17 @@ namespace teddy
             return;
         }
 
-        v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        v->for_each_son(std::bind_front(&node_manager::dec_ref_try_gc, this));
         uniqueTables_[v->get_index()].erase(v);
         this->delete_vertex(v);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<class... Args>
-    auto vertex_manager<VertexData, ArcData, P>::new_vertex
-        (Args&&... args) -> vertex_t*
+    auto node_manager<Data, Degree, Domain>::new_vertex
+        (Args&&... args) -> node_t*
     {
-        ++vertexCount_;
+        ++nodeCount_;
         auto const v = pool_.try_create(std::forward<Args>(args)...);
         if (v)
         {
@@ -738,25 +814,25 @@ namespace teddy
         return pool_.force_create(std::forward<Args>(args)...);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<class IndexMapOp>
-    auto vertex_manager<VertexData, ArcData, P>::for_each_level
+    auto node_manager<Data, Degree, Domain>::for_each_level
         (IndexMapOp op) -> void
     {
         this->for_each_level_impl<false>(op);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<class IndexMapOp>
-    auto vertex_manager<VertexData, ArcData, P>::for_each_level
+    auto node_manager<Data, Degree, Domain>::for_each_level
         (IndexMapOp op) const -> void
     {
         this->for_each_level_impl<true>(op);
     }
 
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree Degree, domain Domain>
     template<bool IsConst, class IndexMapOp>
-    auto vertex_manager<VertexData, ArcData, P>::for_each_level_impl
+    auto node_manager<Data, Degree, Domain>::for_each_level_impl
         (IndexMapOp op) const -> void
     {
         using index_map_v_ref = std::conditional_t<IsConst, unique_table_v const&, unique_table_v&>;
@@ -768,7 +844,7 @@ namespace teddy
             }
             else
             {
-                return const_cast<vertex_manager&>(*this).uniqueTables_;
+                return const_cast<node_manager&>(*this).uniqueTables_;
             }
         }();
 

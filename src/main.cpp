@@ -36,8 +36,12 @@ auto main () -> int
     // test_bss();
     // test_mss();
 
+    using node_t = node<int, degrees::fixed<2>>;
+
     [[maybe_unused]]
-    auto n = node<int, degrees::fixed<2>>(1);
+    auto internal = node_t(1);
+    [[maybe_unused]]
+    auto terminal = node_t(1, {&internal, &internal});
 
     std::cout << "Done." << '\n';
     return 0;
