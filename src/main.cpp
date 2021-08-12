@@ -1,6 +1,6 @@
+#include <iostream>
 #include "teddy/teddy.hpp"
 
-#include <iostream>
 
 using namespace teddy;
 
@@ -39,9 +39,12 @@ auto main () -> int
     using node_t = node<int, degrees::fixed<2>>;
 
     [[maybe_unused]]
-    auto internal = node_t(1);
+    auto terminal = node_t(1);
     [[maybe_unused]]
-    auto terminal = node_t(1, {&internal, &internal});
+    // auto internal = node_t(1, std::make_unique<node_t*[]>(2));
+    auto internal = node_t(1, {&terminal, &terminal});
+    auto const i = internal.get_index();
+    std::cout << i << '\n';
 
     std::cout << "Done." << '\n';
     return 0;

@@ -44,11 +44,11 @@ namespace teddy
     class unique_table_iterator
     {
     public:
-        using vertex_t          = vertex<VertexData, ArcData, P>;
+        using node_t          = vertex<VertexData, ArcData, P>;
         using difference_type   = std::ptrdiff_t;
-        using value_type        = vertex_t*;
-        using pointer           = vertex_t*;
-        using reference         = vertex_t*;
+        using value_type        = node_t*;
+        using pointer           = node_t*;
+        using reference         = node_t*;
         using iterator_category = std::forward_iterator_tag;
 
     public:
@@ -64,25 +64,28 @@ namespace teddy
         auto get_bucket () const -> BucketIterator;
 
     private:
-        auto find_first ()       -> vertex_t*;
+        auto find_first ()       -> node_t*;
 
     private:
         BucketIterator current_;
         BucketIterator last_;
-        vertex_t*      vertex_;
+        node_t*      vertex_;
     };
 
     /**
      *  @brief Table of unique nodes.
      */
-    template<class VertexData, class ArcData, std::size_t P>
+    template<class Data, degree D>
     class unique_table : private table_base
     {
     public:
-        using vertex_t         = vertex<VertexData, ArcData, P>;
-        using vertex_a         = std::array<vertex_t*, P>;
-        using bucket_iterator  = typename std::vector<vertex_t*>::iterator;
-        using cbucket_iterator = typename std::vector<vertex_t*>::const_iterator;
+        using node_t   = node<Data, D>;
+        using sons_t   = typename node_t::sons_t;
+        using hash_t   = std::size_t;
+
+
+        using bucket_iterator  = typename std::vector<node_t*>::iterator;
+        using cbucket_iterator = typename std::vector<node_t*>::const_iterator;
         using iterator         = unique_table_iterator<bucket_iterator, VertexData, ArcData, P>;
         using const_iterator   = unique_table_iterator<cbucket_iterator, VertexData, ArcData, P>;
 
@@ -91,10 +94,13 @@ namespace teddy
         unique_table (unique_table&& other);
 
     public:
-        auto insert          (vertex_t* v)               -> vertex_t*;
-        auto find            (vertex_a const& key) const -> vertex_t*;
+        auto insert (node_t*, hash_t) -> node_t*;
+
+        template<class Eq>
+        auto find (sons_t const&, hash_t, Eq&&) const -> node_t*;
+
         auto erase           (iterator it)               -> iterator;
-        auto erase           (vertex_t* v)               -> iterator;
+        auto erase           (node_t* v)               -> iterator;
         auto size            () const                    -> std::size_t;
         auto adjust_capacity ()                          -> void;
         auto merge           (unique_table& rhs)         -> void;
@@ -109,11 +115,11 @@ namespace teddy
         using capacity_it = base::capacity_it;
 
     private:
-        template<class Key, class Getter>
-        static auto hash      (Key key, Getter get_ith)          -> std::size_t;
-        static auto vertex_eq (vertex_t* v, vertex_a const& key) -> bool;
-        auto insert_impl      (vertex_t* v)                      -> vertex_t*;
-        auto calculate_index  (vertex_t* v)         const        -> std::size_t;
+        static auto node_eq (node_t*, domain_t, sons_t const&) -> bool;
+
+        auto insert_impl (node_t*, hash_t) -> node_t*;
+
+        auto calculate_index  (node_t* v)         const        -> std::size_t;
         auto calculate_index  (vertex_a const& key) const        -> std::size_t;
         auto rehash           ()                                 -> void;
 
@@ -121,7 +127,7 @@ namespace teddy
         static inline auto constexpr LoadThreshold = 0.75;
 
     private:
-        std::vector<vertex_t*> buckets_;
+        std::vector<node_t*> buckets_;
     };
 
     /**
@@ -131,15 +137,15 @@ namespace teddy
     class apply_cache : private table_base
     {
     public:
-        using vertex_t = vertex<VertexData, ArcData, P>;
+        using node_t = vertex<VertexData, ArcData, P>;
 
     public:
         struct entry
         {
-            vertex_t* lhs    {nullptr};
-            vertex_t* rhs    {nullptr};
-            vertex_t* result {nullptr};
-            auto matches (vertex_t* l, vertex_t* r) const -> bool;
+            node_t* lhs    {nullptr};
+            node_t* rhs    {nullptr};
+            node_t* result {nullptr};
+            auto matches (node_t* l, node_t* r) const -> bool;
         };
 
     public:
@@ -149,8 +155,8 @@ namespace teddy
         apply_cache ();
 
     public:
-        auto find            (vertex_t* l, vertex_t* r) -> iterator;
-        auto put             (iterator it, vertex_t* l, vertex_t* r, vertex_t* res) -> void;
+        auto find            (node_t* l, node_t* r) -> iterator;
+        auto put             (iterator it, node_t* l, node_t* r, node_t* res) -> void;
         auto adjust_capacity (std::size_t aproxCapacity) -> void;
         auto clear           () -> void;
 
@@ -162,8 +168,8 @@ namespace teddy
         using capactiy_it = base::capacity_it;
 
     private:
-        static auto hash       (vertex_t* l, vertex_t* r)        -> std::size_t;
-        auto calculate_index   (vertex_t* l, vertex_t* r)  const -> std::size_t;
+        static auto hash       (node_t* l, node_t* r)        -> std::size_t;
+        auto calculate_index   (node_t* l, node_t* r)  const -> std::size_t;
         auto rehash            (capactiy_it capacity)            -> void;
         auto find_gte_capacity (std::size_t aproxCapacity) const -> capactiy_it;
 
@@ -175,7 +181,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto apply_cache<VertexData, ArcData, P>::entry::matches
-        (vertex_t* const l, vertex_t* const r) const -> bool
+        (node_t* const l, node_t* const r) const -> bool
     {
         return result && l == lhs && r == rhs;
     }
@@ -189,7 +195,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto apply_cache<VertexData, ArcData, P>::find
-        (vertex_t* const l, vertex_t* const r) -> iterator
+        (node_t* const l, node_t* const r) -> iterator
     {
         auto const index = this->calculate_index(l, r);
         return std::begin(entries_) + static_cast<std::ptrdiff_t>(index);
@@ -197,7 +203,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto apply_cache<VertexData, ArcData, P>::put
-        (iterator it, vertex_t* const l, vertex_t* const r, vertex_t* const res) -> void
+        (iterator it, node_t* const l, node_t* const r, node_t* const res) -> void
     {
         if (!it->result)
         {
@@ -248,11 +254,11 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto apply_cache<VertexData, ArcData, P>::hash
-        (vertex_t* const l, vertex_t* const r) -> std::size_t
+        (node_t* const l, node_t* const r) -> std::size_t
     {
         auto seed = 0ul;
-        auto const hash1 = std::hash<vertex_t*>()(l);
-        auto const hash2 = std::hash<vertex_t*>()(r);
+        auto const hash1 = std::hash<node_t*>()(l);
+        auto const hash2 = std::hash<node_t*>()(r);
         seed ^= hash1 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         seed ^= hash2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         return seed;
@@ -260,7 +266,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto apply_cache<VertexData, ArcData, P>::calculate_index
-        (vertex_t* const l, vertex_t* const r) const -> std::size_t
+        (node_t* const l, node_t* const r) const -> std::size_t
     {
         return hash(l, r) % entries_.size();
     }
@@ -367,7 +373,7 @@ namespace teddy
 
     template<class BucketIterator, class VertexData, class ArcData, std::size_t P>
     auto unique_table_iterator<BucketIterator, VertexData, ArcData, P>::find_first
-        () -> vertex_t*
+        () -> node_t*
     {
         while (current_ != last_ && !*current_)
         {
@@ -390,28 +396,29 @@ namespace teddy
     unique_table<VertexData, ArcData, P>::unique_table
         (unique_table&& other) :
         base     (std::move(other)),
-        buckets_ (std::exchange(other.buckets_, std::vector<vertex_t*>(*capacity_, nullptr)))
+        buckets_ (std::exchange(other.buckets_, std::vector<node_t*>(*capacity_, nullptr)))
     {
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto unique_table<VertexData, ArcData, P>::insert
-        (vertex_t* const v) -> vertex_t*
+        (node_t* const n, hash_t const h) -> node_t*
     {
-        auto const ret = this->insert_impl(v);
+        auto const ret = this->insert_impl(n, h);
         ++base::size_;
         return ret;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
+    template<class Eq>
     auto unique_table<VertexData, ArcData, P>::find
-        (vertex_a const& key) const -> vertex_t*
+        (sons_t const& ss, hash_t const h, Eq&& eq) const -> node_t*
     {
-        auto const index = this->calculate_index(key);
+        auto const index = h % buckets_.size();
         auto current     = buckets_[index];
         while (current)
         {
-            if (unique_table::vertex_eq(current, key))
+            if (eq(current, ss))
             {
                 return current;
             }
@@ -449,7 +456,7 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto unique_table<VertexData, ArcData, P>::erase
-        (vertex_t* const v) -> iterator
+        (node_t* const v) -> iterator
     {
         auto const index = static_cast<std::ptrdiff_t>(this->calculate_index(v));
         auto       it    = iterator(std::begin(buckets_) + index, std::end(buckets_));
@@ -542,12 +549,12 @@ namespace teddy
     }
 
     template<class VertexData, class ArcData, std::size_t P>
-    auto unique_table<VertexData, ArcData, P>::vertex_eq
-        (vertex_t* const v, vertex_a const& key) -> bool
+    auto unique_table<VertexData, ArcData, P>::node_eq
+        (node_t* const n, domain_t const d, sons_t const& ss) -> bool
     {
-        for (auto i = 0u; i < P; ++i)
+        for (auto j = 0u; j < d; ++j)
         {
-            if (v->get_son(i) != key[i])
+            if (n->get_son(j) != ss[j])
             {
                 return false;
             }
@@ -563,7 +570,7 @@ namespace teddy
         auto seed = std::size_t(0);
         for (auto i = 0u; i < P; ++i)
         {
-            auto const hash = std::hash<vertex_t*>()(get_ith(i, key));
+            auto const hash = std::hash<node_t*>()(get_ith(i, key));
             seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         }
         return seed;
@@ -571,23 +578,23 @@ namespace teddy
 
     template<class VertexData, class ArcData, std::size_t P>
     auto unique_table<VertexData, ArcData, P>::insert_impl
-        (vertex_t* const v) -> vertex_t*
+        (node_t* const n, hash_t const h) -> node_t*
     {
-        auto const index  = this->calculate_index(v);
+        auto const index  = h % buckets_.size();
         auto const bucket = buckets_[index];
         if (bucket)
         {
-            v->set_next(bucket);
+            n->set_next(bucket);
         }
-        buckets_[index] = v;
-        return v;
+        buckets_[index] = n;
+        return n;
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto unique_table<VertexData, ArcData, P>::calculate_index
-        (vertex_t* const v) const -> std::size_t
+        (node_t* const v) const -> std::size_t
     {
-        auto const h = hash<vertex_t*>(v, [](auto const i, auto const ve)
+        auto const h = hash<node_t*>(v, [](auto const i, auto const ve)
         {
             return ve->get_son(i);
         });
@@ -609,8 +616,8 @@ namespace teddy
     auto unique_table<VertexData, ArcData, P>::rehash
         () -> void
     {
-        auto const oldBuckets = std::vector<vertex_t*>(std::move(buckets_));
-        buckets_ = std::vector<vertex_t*>(*base::capacity_, nullptr);
+        auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));
+        buckets_ = std::vector<node_t*>(*base::capacity_, nullptr);
         for (auto bucket : oldBuckets)
         {
             while (bucket)

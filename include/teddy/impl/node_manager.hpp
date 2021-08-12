@@ -8,6 +8,7 @@
 #include "operators.hpp"
 
 #include <vector>
+#include <span>
 
 namespace teddy
 {
@@ -68,10 +69,12 @@ namespace teddy
 
     public:
         node_manager ( std::size_t vars
-                     , std::size_t nodes ) requires(FixDomain);
+                     , std::size_t nodes
+                     , std::vector<index_t> order = {} ) requires(FixDomain);
         node_manager ( std::size_t vars
                      , std::size_t nodes
-                     , domains::mixed ) requires(MixDomain);
+                     , domains::mixed
+                     , std::vector<index_t> order = {} ) requires(MixDomain);
 
         node_manager (node_manager&&) noexcept = default;
         node_manager (node_manager const&) = delete;
@@ -80,26 +83,24 @@ namespace teddy
         node_manager ( common_init
                      , std::size_t vars
                      , std::size_t nodes
-                     , Domain );
+                     , Domain
+                     , std::vector<index_t> order );
 
     public:
         auto get_terminal_node (uint_t) const      -> node_t*;
         auto terminal_node     (uint_t)            -> node_t*;
         auto internal_node     (index_t, sons_t&&) -> node_t*;
+        auto get_level         (index_t) const     -> level_t;
+        auto get_node_count    (index_t) const     -> std::size_t;
+        auto get_node_count    () const            -> std::size_t;
+        auto get_var_count     () const            -> std::size_t;
+        auto get_order         () const            -> std::span<index_t const>;
 
-        auto get_vertex_level        (node_t* v) const         -> level_t;
-        auto get_level               (index_t   i) const         -> level_t;
-        auto get_index               (level_t   l) const         -> index_t;
-        auto get_vertex_value        (node_t* v) const         -> log_t;
-        auto get_vertex_count        (index_t   i) const         -> std::size_t;
-        auto get_vertex_count        ()            const         -> std::size_t;
-        auto get_var_count           ()            const         -> std::size_t;
-        auto get_last_internal_level ()            const         -> level_t;
-        auto get_domain              (index_t i)   const         -> log_t;
-        auto has_domains             ()            const         -> bool;
-        auto set_domains             (std::vector<log_t> ds)     -> void;
-        auto set_order               (std::vector<index_t> lToI) -> void;
-        auto get_order               ()            const         -> std::vector<index_t> const&;
+
+
+
+
+
         auto set_cache_ratio         (std::size_t denom)         -> void;
         auto set_pool_ratio          (std::size_t denom)         -> void;
         auto set_reorder             (bool reorder)              -> void;
@@ -141,6 +142,9 @@ namespace teddy
         using vertex_pool_t  = utils::object_pool<node_t>;
 
     private:
+        auto node_hash  (index_t, sons_t const&) const -> std::size_t;
+        auto node_equal (node_t*, sons_t const&) const -> bool;
+
         auto leaf_index     () const      -> index_t;
         auto leaf_level     () const      -> level_t;
         auto leaf_count     () const      -> std::size_t;
@@ -150,7 +154,7 @@ namespace teddy
         auto delete_vertex  (node_t* v) -> void;
 
         template<class... Args>
-        auto new_vertex  (Args&&... args) -> node_t*;
+        auto new_node (Args&&...) -> node_t*;
 
         template<class IndexMapOp>
         auto for_each_level (IndexMapOp op) -> void;
@@ -177,11 +181,22 @@ namespace teddy
         Domain               domains_;
     };
 
+    template<class Data, degree D>
+    auto node_value (node<Data, D>* const n) -> uint_t
+    {
+        return n->is_terminal() ? n->get_value() : Nondetermined;
+    }
+
     template<class Data, degree Degree, domain Domain>
     node_manager<Data, Degree, Domain>::node_manager
         ( std::size_t const vars
-        , std::size_t const nodes ) requires(FixDomain) :
-        node_manager (common_init(), vars, nodes, {})
+        , std::size_t const nodes
+        , std::vector<index_t> order ) requires(FixDomain) :
+        node_manager ( common_init()
+                     , vars
+                     , nodes
+                     , {}
+                     , std::move(order) )
     {
     }
 
@@ -189,21 +204,29 @@ namespace teddy
     node_manager<Data, Degree, Domain>::node_manager
         ( std::size_t const vars
         , std::size_t const nodes
-        , domains::mixed    ds ) requires(MixDomain) :
-        node_manager (common_init(), vars, nodes, std::move(ds))
+        , domains::mixed    ds
+        , std::vector<index_t> order ) requires(MixDomain) :
+        node_manager ( common_init()
+                     , vars
+                     , nodes
+                     , std::move(ds)
+                     , std::move(order) )
     {
     }
 
     template<class Data, degree Degree, domain Domain>
     node_manager<Data, Degree, Domain>::node_manager
         ( common_init
-        , std::size_t const vars
-        , std::size_t const nodes
-        , Domain            ds ) :
+        , std::size_t const    vars
+        , std::size_t const    nodes
+        , Domain               ds
+        , std::vector<index_t> order ) :
         uniqueTables_   (vars),
         terminals_      ({}),
-        indexToLevel_   (utils::fill_vector(vars, utils::identity)),
-        levelToIndex_   (utils::fill_vector(vars, utils::identity)),
+        indexToLevel_   (vars),
+        levelToIndex_   (order.empty()
+                         ? utils::fill_vector(vars, utils::identity)
+                         : std::move(order)),
         opCaches_       ({}),
         pool_           (nodes),
         needsGc_        (false),
@@ -212,6 +235,14 @@ namespace teddy
         cacheRatio_     (4),
         reorderEnabled_ (false)
     {
+        assert(levelToIndex_.size() == this->get_var_count());
+        assert(true); // TODO assert unique
+
+        auto level = 0u;
+        for (auto const index : levelToIndex_)
+        {
+            indexToLevel_[index] = level++;
+        }
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -232,7 +263,7 @@ namespace teddy
 
         if (not terminals_[v])
         {
-            terminals_[v] = this->new_terminal(v);
+            terminals_[v] = this->new_node(v);
         }
 
         return terminals_[v];
@@ -247,54 +278,75 @@ namespace teddy
             return sons[0];
         }
 
-        auto& indexMap      = uniqueTables_[i];
-        // auto const hash     = this->hash(i, sons);
-        auto const existing = indexMap.find(sons);
-        // auto const existing = indexMap.find(hash, sons);
+        auto const eq = [this, =](auto const n, auto&& ss)
+        {
+            return this->node_equal(n, ss);
+        };
+
+        auto& table         = uniqueTables_[i];
+        auto const hash     = this->node_hash(i, sons);
+        auto const existing = table.find(sons, hash, eq);
         if (existing)
         {
             return existing;
         }
 
-        auto n = this->new_internal(i, sons);
-        indexMap.insert(n);
-        // indexMap.insert(hash, n);
+        auto n = this->new_node(i, std::move(sons));
+        table.insert(n, hash);
         this->for_each_son(n, inc_ref_count);
 
         return n;
     }
 
-
-
-
-
-
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_level
+        (index_t const i) const -> level_t
+    {
+        return indexToLevel_[i];
+    }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::set_order
-        (std::vector<index_t> lToI) -> void
+    auto node_manager<Data, Degree, Domain>::get_node_count
+        (index_t const i) const -> std::size_t
     {
-        utils::runtime_assert(this->get_vertex_count() == 0, "node_manager::set_order: Manager must be empty.");
-        utils::runtime_assert(this->get_var_count() == lToI.size(), "node_manager::set_order: Level vector size must match var count.");
-        utils::runtime_assert(utils::distinct(lToI), "node_manager::set_order: Indices must be unique.");
+        return uniqueTables_[i].size();
+    }
 
-        levelToIndex_ = std::move(lToI);
-        indexToLevel_ = std::vector<level_t>(levelToIndex_.size());
-        auto level    = 0u;
-        for (auto const index : levelToIndex_)
-        {
-            indexToLevel_[index] = level++;
-        }
-        levelToIndex_.push_back(static_cast<index_t>(this->get_var_count()));
-        indexToLevel_.push_back(static_cast<level_t>(this->get_var_count()));
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_node_count
+        () const -> std::size_t
+    {
+        return nodeCount_;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_var_count
+        () const -> std::size_t
+    {
+        return uniqueTables_.size();
     }
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::get_order
-        () const -> std::vector<index_t> const&
+        () const -> std::span<index_t const>
     {
-        return levelToIndex_;
+        auto const first = levelToIndex_.data();
+        auto const last  = levelToIndex_.data() + levelToIndex_.size();
+        return std::span<index_t const>(first, last);
     }
+
+
+
+
+
+
+
+
+
+
+
+
+    
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::set_cache_ratio
@@ -319,31 +371,10 @@ namespace teddy
         reorderEnabled_ = reorder;
     }
 
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::set_domains
-        (std::vector<log_t> ds) -> void
-    {
-        utils::runtime_assert(ds.size() == this->get_var_count(), "node_manager::set_domains: Argument size must match variable count.");
-        domains_ = std::move(ds);
-    }
 
 
 
-    
 
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_vertex_level
-        (node_t* const v) const -> level_t
-    {
-        return this->get_level(v->get_index());
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_level
-        (index_t const i) const -> level_t
-    {
-        return indexToLevel_[i];
-    }
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::get_index
@@ -352,20 +383,7 @@ namespace teddy
         return levelToIndex_[l];
     }
 
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_vertex_value
-        (node_t* const v) const -> log_t
-    {
-        if (this->is_leaf_vertex(v))
-        {
-            return static_cast<log_t>(utils::index_of( std::begin(terminals_)
-                                                     , std::end(terminals_), v ));
-        }
-        else
-        {
-            return log_val_traits<P>::nondetermined;
-        }
-    }
+
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::is_leaf_vertex
@@ -388,49 +406,7 @@ namespace teddy
         return l == this->leaf_level();
     }
 
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_vertex_count
-        (index_t const i) const -> std::size_t
-    {
-        return this->is_leaf_index(i)
-            ? this->leaf_count()
-            : uniqueTables_[i].size();
-    }
 
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_vertex_count
-        () const -> std::size_t
-    {
-        return nodeCount_;
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_var_count
-        () const -> std::size_t
-    {
-        return uniqueTables_.size();
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_last_internal_level
-        () const -> level_t
-    {
-        return static_cast<level_t>(this->get_var_count() - 1);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_domain
-        (index_t const i) const -> log_t
-    {
-        return domains_.size() ? domains_[i] : P;
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::has_domains
-        () const -> bool
-    {
-        return !domains_.empty();
-    }
 
     template<class Data, degree Degree, domain Domain>
     template<class Op>
@@ -550,7 +526,7 @@ namespace teddy
         {
             auto counts = utils::fill_vector(this->get_var_count(), [this](auto const i)
             {
-                return count_pair {i, this->get_vertex_count(i)};
+                return count_pair {i, this->get_node_count(i)};
             });
             std::sort(std::begin(counts), std::end(counts), [](auto&& l, auto&& r){ return l.count > r.count; });
             return counts;
@@ -711,6 +687,48 @@ namespace teddy
         v->dec_ref_count();
     }
 
+
+
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::node_hash
+        (index_t const i, sons_t const& ss) const -> std::size_t
+    {
+        auto result = std::size_t(0);
+        for (auto j = 0u; j < domains_[i]; ++j)
+        {
+            auto const hash = std::hash<node_t*>()(ss[j]);
+            result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
+        }
+        return result;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::node_equal
+        (node_t* const n, sons_t const& ss) const -> bool
+    {
+        auto const i = node->get_index();
+        for (auto j = 0u; j < domains_[i]; ++j)
+        {
+            if (n->get_son(j) != ss[j])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::leaf_index
         () const -> index_t
@@ -799,14 +817,14 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     template<class... Args>
-    auto node_manager<Data, Degree, Domain>::new_vertex
+    auto node_manager<Data, Degree, Domain>::new_node
         (Args&&... args) -> node_t*
     {
         ++nodeCount_;
-        auto const v = pool_.try_create(std::forward<Args>(args)...);
-        if (v)
+        auto const n = pool_.try_create(std::forward<Args>(args)...);
+        if (n)
         {
-            return v;
+            return n;
         }
 
         needsGc_ = true;

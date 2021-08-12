@@ -58,14 +58,14 @@ namespace teddy
 
     public:
         explicit node (uint_t);
-        node  (index_t, sons_t);
+        node  (index_t, sons_t&&);
         node  (node const&) = delete;
         node  (node&&) = delete;
-        ~node () = default;
+        ~node () = default; // TODO zatial nefunguje v clangu !!!
         ~node () requires(degrees::is_mixed<D>()());
 
-        auto data ()       -> Data&       requires(!std::is_void<Data>()());
-        auto data () const -> Data const& requires(!std::is_void<Data>()());
+        auto data ()       -> Data&       requires(not std::is_void<Data>()());
+        auto data () const -> Data const& requires(not std::is_void<Data>()());
 
         auto get_next      () const       -> node*;
         auto set_next      (node*)        -> void;
@@ -81,6 +81,7 @@ namespace teddy
         auto dec_ref_count ()             -> void;
         auto get_index     () const       -> index_t;
         auto set_index     (index_t)      -> void;
+        auto get_sons      () const       -> sons_t const&;
         auto get_son       (uint_t) const -> node*;
         auto set_sons      (sons_t)       -> void;
         auto get_value     () const       -> uint_t;
@@ -131,7 +132,7 @@ namespace teddy
 
     template<class Data, degree D>
     node<Data, D>::node
-        (index_t const i, sons_t sons) :
+        (index_t const i, sons_t&& sons) :
         next_ {nullptr},
         refs_ {UsedM}
     {
@@ -144,21 +145,21 @@ namespace teddy
     {
         if (this->is_internal())
         {
-            std::destroy_at(this->as_internal());
-            // this->as_internal().~dyn_sons();
+            std::cout << "miexadas" << '\n';
+            std::destroy_at(&this->union_internal());
         }
     }
 
     template<class Data, degree D>
     auto node<Data, D>::data
-        () -> Data& requires(!std::is_void<Data>()())
+        () -> Data& requires(not std::is_void<Data>()())
     {
         return data_.m;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::data
-        () const -> Data const& requires(!std::is_void<Data>()())
+        () const -> Data const& requires(not std::is_void<Data>()())
     {
         return data_.m;
     }
@@ -175,6 +176,13 @@ namespace teddy
         (node* const n) -> void
     {
         next_ = n;
+    }
+
+    template<class Data, degree D>
+    auto node<Data, D>::get_sons
+        () const -> sons_t const&
+    {
+        return this->union_internal().sons;
     }
 
     template<class Data, degree D>
@@ -203,7 +211,7 @@ namespace teddy
     auto node<Data, D>::is_internal
         () const -> bool
     {
-        return !this->is_terminal();
+        return not this->is_terminal();
     }
 
     template<class Data, degree D>
@@ -298,7 +306,7 @@ namespace teddy
         () const -> internal const&
     {
         assert(this->is_internal());
-        return *reinterpret_cast<internal*>(union_.data());
+        return *reinterpret_cast<internal const*>(union_.data());
     }
 
     template<class Data, degree D>
@@ -314,7 +322,7 @@ namespace teddy
         () const -> terminal const&
     {
         assert(this->is_terminal());
-        return *reinterpret_cast<terminal*>(union_.data());
+        return *reinterpret_cast<terminal const*>(union_.data());
     }
 }
 
