@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <span>
+#include <functional>
 
 namespace teddy
 {
@@ -59,8 +60,8 @@ namespace teddy
         using node_t            = node<Data, Degree>;
         using sons_t            = typename node_t::sons_t;
 
-        using op_cache_t        = apply_cache<VertexData, ArcData, P>;
-        using op_cache_iterator = typename op_cache_t::iterator;
+            using op_cache_t        = apply_cache<VertexData, ArcData, P>;
+            using op_cache_iterator = typename op_cache_t::iterator;
 
     private:
         inline static constexpr auto FixDomain = domains::is_fixed<Domain>()();
@@ -79,6 +80,10 @@ namespace teddy
         node_manager (node_manager&&) noexcept = default;
         node_manager (node_manager const&) = delete;
 
+        auto set_cache_ratio  (std::size_t) -> void;
+        auto set_pool_ratio   (std::size_t) -> void;
+        auto set_auto_reorder (bool)        -> void;
+
     private:
         node_manager ( common_init
                      , std::size_t vars
@@ -96,43 +101,32 @@ namespace teddy
         auto get_var_count     () const            -> std::size_t;
         auto get_order         () const            -> std::span<index_t const>;
 
-
-
-
-
-
-        auto set_cache_ratio         (std::size_t denom)         -> void;
-        auto set_pool_ratio          (std::size_t denom)         -> void;
-        auto set_reorder             (bool reorder)              -> void;
-        auto is_leaf_vertex          (node_t* v) const         -> bool;
-        auto is_leaf_index           (index_t   i) const         -> bool;
-        auto is_leaf_level           (level_t   l) const         -> bool;
-
-        template<class Op>
-        auto cache_find       (node_t* l, node_t* r) -> op_cache_iterator;
-        template<class Op>
-        auto cache_put        (op_cache_iterator it, node_t* l, node_t* r, node_t* res) -> void;
-
-        auto adjust_sizes     ()                  -> void;
-        auto collect_garbage  ()                  -> void;
-        auto clear            ()                  -> void;
-        auto swap_vars        (index_t i)         -> void;
-        auto sift_vars        ()                  -> void;
-
-        template<class VertexOp>
-        auto for_each_vertex (VertexOp op) const -> void;
-
-        template<class VertexOp>
-        auto for_each_terminal_node (VertexOp op) const -> void;
-
-
-        auto is_redundant (index_t, sons_t const&) const -> bool;
-
         template<class NodeOp>
         auto for_each_son (node_t*, NodeOp&&) -> void;
 
-        static auto inc_ref_count (node_t* v)       -> node_t*;
-        static auto dec_ref_count (node_t* v)       -> void;
+
+            template<class Op>
+            auto cache_find       (node_t* l, node_t* r) -> op_cache_iterator;
+            template<class Op>
+            auto cache_put        (op_cache_iterator it, node_t* l, node_t* r, node_t* res) -> void;
+
+            auto adjust_sizes     ()                  -> void;
+            auto collect_garbage  ()                  -> void;
+            auto clear            ()                  -> void;
+            auto swap_vars        (index_t i)         -> void;
+            auto sift_vars        ()                  -> void;
+
+            template<class VertexOp>
+            auto for_each_vertex (VertexOp op) const -> void;
+
+            template<class VertexOp>
+            auto for_each_terminal_node (VertexOp op) const -> void;
+
+
+
+
+        static auto inc_ref_count (node_t* v) -> node_t*;
+        static auto dec_ref_count (node_t* v) -> void;
 
     private:
         using unique_table_t = unique_table<VertexData, ArcData, P>;
@@ -142,28 +136,34 @@ namespace teddy
         using vertex_pool_t  = utils::object_pool<node_t>;
 
     private:
-        auto node_hash  (index_t, sons_t const&) const -> std::size_t;
-        auto node_equal (node_t*, sons_t const&) const -> bool;
-
-        auto leaf_index     () const      -> index_t;
-        auto leaf_level     () const      -> level_t;
-        auto leaf_count     () const      -> std::size_t;
-        auto clear_cache    ()            -> void;
-        auto swap_vertex    (node_t* v) -> void;
-        auto dec_ref_try_gc (node_t* v) -> void;
-        auto delete_vertex  (node_t* v) -> void;
+        auto node_hash    (index_t, sons_t const&) const -> std::size_t;
+        auto node_equal   (node_t*, sons_t const&) const -> bool;
+        auto is_redundant (index_t, sons_t const&) const -> bool;
 
         template<class... Args>
         auto new_node (Args&&...) -> node_t*;
 
-        template<class IndexMapOp>
-        auto for_each_level (IndexMapOp op) -> void;
+        static check_distinct (std::vector<index_t> const&) -> bool;
 
-        template<class IndexMapOp>
-        auto for_each_level (IndexMapOp op) const -> void;
 
-        template<bool IsConst, class IndexMapOp>
-        auto for_each_level_impl (IndexMapOp op) const -> void;
+
+            // auto leaf_level     () const      -> level_t;
+            auto clear_cache    ()            -> void;
+            auto swap_vertex    (node_t* v) -> void;
+            auto dec_ref_try_gc (node_t* v) -> void;
+            auto delete_vertex  (node_t* v) -> void;
+
+
+            template<class IndexMapOp>
+            auto for_each_level (IndexMapOp op) -> void;
+
+            template<class IndexMapOp>
+            auto for_each_level (IndexMapOp op) const -> void;
+
+            template<bool IsConst, class IndexMapOp>
+            auto for_each_level_impl (IndexMapOp op) const -> void;
+
+
 
     private:
         unique_table_v       uniqueTables_;
@@ -236,13 +236,36 @@ namespace teddy
         reorderEnabled_ (false)
     {
         assert(levelToIndex_.size() == this->get_var_count());
-        assert(true); // TODO assert unique
+        assert(check_distinct(levelToIndex_));
 
         auto level = 0u;
         for (auto const index : levelToIndex_)
         {
             indexToLevel_[index] = level++;
         }
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_cache_ratio
+        (std::size_t const denom) -> void
+    {
+        assert(denom > 0);
+        cacheRatio_ = denom;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_pool_ratio
+        (std::size_t const denom) -> void
+    {
+        assert(denom > 0);
+        pool_.set_overflow_ratio(denom);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_auto_reorder
+        (bool const reorder) -> void
+    {
+        reorderEnabled_ = reorder;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -278,10 +301,7 @@ namespace teddy
             return sons[0];
         }
 
-        auto const eq = [this, =](auto const n, auto&& ss)
-        {
-            return this->node_equal(n, ss);
-        };
+        auto const eq = std::bind_front(&node_manager::node_equal, this);
 
         auto& table         = uniqueTables_[i];
         auto const hash     = this->node_hash(i, sons);
@@ -335,321 +355,6 @@ namespace teddy
         return std::span<index_t const>(first, last);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::set_cache_ratio
-        (std::size_t const denom) -> void
-    {
-        utils::runtime_assert(denom > 0, "node_manager::set_cache_ratio: Denominator must be positive.");
-        cacheRatio_ = denom;
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::set_pool_ratio
-        (std::size_t const denom) -> void
-    {
-        utils::runtime_assert(denom > 0, "node_manager::set_pool_ratio: Denominator must be positive.");
-        pool_.set_overflow_ratio(denom);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::set_reorder
-        (bool const reorder) -> void
-    {
-        reorderEnabled_ = reorder;
-    }
-
-
-
-
-
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_index
-        (level_t const l) const -> index_t
-    {
-        return levelToIndex_[l];
-    }
-
-
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::is_leaf_vertex
-        (node_t* const v) const -> bool
-    {
-        return this->is_leaf_index(v->get_index());
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::is_leaf_index
-        (index_t const i) const -> bool
-    {
-        return i == this->leaf_index();
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::is_leaf_level
-        (level_t const l) const -> bool
-    {
-        return l == this->leaf_level();
-    }
-
-
-
-    template<class Data, degree Degree, domain Domain>
-    template<class Op>
-    auto node_manager<Data, Degree, Domain>::cache_find
-        (node_t* const l, node_t* const r) -> op_cache_iterator
-    {
-        auto& cache = opCaches_[op_id(Op())];
-        return cache.find(l, r);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    template<class Op>
-    auto node_manager<Data, Degree, Domain>::cache_put
-        (op_cache_iterator it, node_t* const l, node_t* const r, node_t* const res) -> void
-    {
-        auto& cache = opCaches_[op_id(Op())];
-        cache.put(it, l, r, res);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::adjust_sizes
-        () -> void
-    {
-        if (needsGc_)
-        {
-            this->collect_garbage();
-            if (reorderEnabled_)
-            {
-                this->sift_vars();
-            }
-        }
-
-        for (auto& t : uniqueTables_)
-        {
-            t.adjust_capacity();
-        }
-
-        for (auto& c : opCaches_)
-        {
-            c.adjust_capacity(nodeCount_ / cacheRatio_);
-        }
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::collect_garbage
-        () -> void
-    {
-        needsGc_ = false;
-        this->clear_cache();
-
-        this->for_each_level([this](auto& indexMap)
-        {
-            auto const end = std::end(indexMap);
-            auto it = std::begin(indexMap);
-
-            while (it != end)
-            {
-                auto const v = *it;
-                if (0 == v->get_ref_count())
-                {
-                    v->for_each_son(dec_ref_count);
-                    it = indexMap.erase(it);
-                    this->delete_vertex(v);
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-        });
-
-        for (auto i = 0u; i < terminals_.size(); ++i)
-        {
-            if (terminals_[i] && 0 == terminals_[i]->get_ref_count())
-            {
-                this->delete_vertex(std::exchange(terminals_[i], nullptr));
-            }
-        }
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::clear
-        () -> void
-    {
-        this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
-        this->for_each_level([](auto& levelMap) { levelMap.clear(); });
-        std::fill(std::begin(terminals_), std::end(terminals_), nullptr);
-        nodeCount_ = 0;
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::swap_vars
-        (index_t const i) -> void
-    {
-        auto const iLevel    = this->get_level(i);
-        auto const nextIndex = this->get_index(1 + iLevel);
-        auto tmpTable        = unique_table_t(std::move(uniqueTables_[i]));
-        for (auto const v : tmpTable)
-        {
-            this->swap_vertex(v);
-        }
-        uniqueTables_[i].adjust_capacity();
-        uniqueTables_[nextIndex].merge(tmpTable);
-
-        std::swap(levelToIndex_[iLevel], levelToIndex_[1 + iLevel]);
-        ++indexToLevel_[i];
-        --indexToLevel_[nextIndex];
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::sift_vars
-        () -> void
-    {
-        using count_pair = struct { index_t index; std::size_t count; };
-
-        auto const get_sift_order = [this]()
-        {
-            auto counts = utils::fill_vector(this->get_var_count(), [this](auto const i)
-            {
-                return count_pair {i, this->get_node_count(i)};
-            });
-            std::sort(std::begin(counts), std::end(counts), [](auto&& l, auto&& r){ return l.count > r.count; });
-            return counts;
-        };
-
-        auto const move_var_down = [this](auto const index)
-        {
-            this->swap_vars(index);
-        };
-
-        auto const move_var_up = [this](auto const index)
-        {
-            auto const level     = this->get_level(index);
-            auto const prevIndex = this->get_index(level - 1);
-            this->swap_vars(prevIndex);
-        };
-
-        auto const place_variable = [&, this](auto const index)
-        {
-            auto level        = this->get_level(index);
-            auto optimalLevel = level;
-            auto optimalCount = nodeCount_;
-
-            // Sift down.
-            while (level != this->get_last_internal_level())
-            {
-                move_var_down(index);
-                ++level;
-                if (nodeCount_ < optimalCount)
-                {
-                    optimalCount = nodeCount_;
-                    optimalLevel = level;
-                }
-            }
-
-            // Sift up.
-            while (level != 0)
-            {
-                move_var_up(index);
-                --level;
-                if (nodeCount_ < optimalCount)
-                {
-                    optimalCount = nodeCount_;
-                    optimalLevel = level;
-                }
-            }
-
-            // Restore optimal position.
-            while (level != optimalLevel)
-            {
-                move_var_down(index);
-                ++level;
-            }
-        };
-
-        auto const siftOrder = get_sift_order();
-        for (auto pair : siftOrder)
-        {
-            place_variable(pair.index);
-        }
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    template<class VertexOp>
-    auto node_manager<Data, Degree, Domain>::for_each_vertex
-        (VertexOp op) const -> void
-    {
-        for (auto const& table : uniqueTables_)
-        {
-            auto const end = std::end(table);
-            auto it = std::begin(table);
-            while (it != end)
-            {
-                auto const v = *it;
-                ++it;
-                op(v);
-            }
-        }
-
-        for (auto const v : terminals_)
-        {
-            if (v)
-            {
-                op(v);
-            }
-        }
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    template<class VertexOp>
-    auto node_manager<Data, Degree, Domain>::for_each_terminal_node
-        (VertexOp op) const -> void
-    {
-        for (auto const v : terminals_)
-        {
-            if (v)
-            {
-                op(v);
-            }
-        }
-    }
-
-
-
-
-
-
-
-    template<class Data, degree Degree, domain Domain>
-    template<std::size_t N>
-    auto node_manager<Data, Degree, Domain>::is_redundant
-        (index_t const i, sons_t const& sons) const -> bool
-    {
-        for (auto j = 1u; j < domains_[i]; ++j)
-        {
-            if (sons[j - 1] != sons[j])
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
     template<class Data, degree Degree, domain Domain>
     template<class NodeOp>
     auto node_manager<Data, Degree, Domain>::for_each_son
@@ -661,6 +366,7 @@ namespace teddy
             f(node->get_son(j));
         }
     }
+
 
 
 
@@ -686,7 +392,6 @@ namespace teddy
     {
         v->dec_ref_count();
     }
-
 
 
 
@@ -718,101 +423,19 @@ namespace teddy
         return true;
     }
 
-
-
-
-
-
-
-
-
-
-
-
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::leaf_index
-        () const -> index_t
+    template<std::size_t N>
+    auto node_manager<Data, Degree, Domain>::is_redundant
+        (index_t const i, sons_t const& sons) const -> bool
     {
-        return static_cast<index_t>(this->get_var_count());
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::leaf_level
-        () const -> level_t
-    {
-        return static_cast<level_t>(this->get_var_count());
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::leaf_count
-        () const -> std::size_t
-    {
-        auto const nulls = std::count( std::begin(terminals_)
-                                     , std::end(terminals_)
-                                     , nullptr );
-        return terminals_.size() - static_cast<std::size_t>(nulls);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::clear_cache
-        () -> void
-    {
-        for (auto& c : opCaches_)
+        for (auto j = 1u; j < domains_[i]; ++j)
         {
-            c.clear();
-        }
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::swap_vertex
-        (node_t* const v) -> void
-    {
-        auto const index     = v->get_index();
-        auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
-        auto const vDomain   = this->get_domain(index);
-        auto const sonDomain = this->get_domain(nextIndex);
-        auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&node_t::get_son, v));
-        auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
-        {
-            auto const son = v->get_son(sonIndex);
-            return son->get_index() == nextIndex
-                ? utils::fill_array_n<P>(sonDomain, std::bind_front(&node_t::get_son, son))
-                : utils::fill_array_n<P>(sonDomain, utils::constant(son));
-        });
-        v->set_index(nextIndex);
-        v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
-        {
-            return this->internal_node(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
+            if (sons[j - 1] != sons[j])
             {
-                return cofactors[j][i];
-            }));
-        }));
-        v->for_each_son(inc_ref_count);
-        utils::for_all(oldSons, std::bind_front(&node_manager::dec_ref_try_gc, this));
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::delete_vertex
-        (node_t* const v) -> void
-    {
-        --nodeCount_;
-        pool_.destroy(v);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::dec_ref_try_gc
-        (node_t* const v) -> void
-    {
-        v->dec_ref_count();
-
-        if (v->get_ref_count() > 0 || this->is_leaf_vertex(v))
-        {
-            return;
+                return false;
+            }
         }
-
-        v->for_each_son(std::bind_front(&node_manager::dec_ref_try_gc, this));
-        uniqueTables_[v->get_index()].erase(v);
-        this->delete_vertex(v);
+        return true;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -832,45 +455,386 @@ namespace teddy
         return pool_.force_create(std::forward<Args>(args)...);
     }
 
-    template<class Data, degree Degree, domain Domain>
-    template<class IndexMapOp>
-    auto node_manager<Data, Degree, Domain>::for_each_level
-        (IndexMapOp op) -> void
-    {
-        this->for_each_level_impl<false>(op);
-    }
 
     template<class Data, degree Degree, domain Domain>
-    template<class IndexMapOp>
-    auto node_manager<Data, Degree, Domain>::for_each_level
-        (IndexMapOp op) const -> void
+    auto node_manager<Data, Degree, Domain>::check_distinct
+        (std::vector<index_t> const& is) -> bool
     {
-        this->for_each_level_impl<true>(op);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    template<bool IsConst, class IndexMapOp>
-    auto node_manager<Data, Degree, Domain>::for_each_level_impl
-        (IndexMapOp op) const -> void
-    {
-        using index_map_v_ref = std::conditional_t<IsConst, unique_table_v const&, unique_table_v&>;
-        auto&& indexToMapRef = [this]() -> index_map_v_ref
+        auto const me = *std::max_element(std::begin(is), std::end(is));
+        auto in = std::vector<bool>(me + 1, false);
+        for (auto const i : is)
         {
-            if constexpr (IsConst)
+            if (in[i])
             {
-                return uniqueTables_;
+                return false;
             }
-            else
-            {
-                return const_cast<node_manager&>(*this).uniqueTables_;
-            }
-        }();
-
-        std::for_each_n(std::begin(levelToIndex_), this->get_var_count(), [&](auto const i)
-        {
-            op(indexToMapRef[i]);
-        });
+            in[i] = true;
+        }
+        return true;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::leaf_level
+                () const -> level_t
+            {
+                return static_cast<level_t>(this->get_var_count());
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::clear_cache
+                () -> void
+            {
+                for (auto& c : opCaches_)
+                {
+                    c.clear();
+                }
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::swap_vertex
+                (node_t* const v) -> void
+            {
+                auto const index     = v->get_index();
+                auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
+                auto const vDomain   = this->get_domain(index);
+                auto const sonDomain = this->get_domain(nextIndex);
+                auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&node_t::get_son, v));
+                auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
+                {
+                    auto const son = v->get_son(sonIndex);
+                    return son->get_index() == nextIndex
+                        ? utils::fill_array_n<P>(sonDomain, std::bind_front(&node_t::get_son, son))
+                        : utils::fill_array_n<P>(sonDomain, utils::constant(son));
+                });
+                v->set_index(nextIndex);
+                v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
+                {
+                    return this->internal_node(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
+                    {
+                        return cofactors[j][i];
+                    }));
+                }));
+                v->for_each_son(inc_ref_count);
+                utils::for_all(oldSons, std::bind_front(&node_manager::dec_ref_try_gc, this));
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::delete_vertex
+                (node_t* const v) -> void
+            {
+                --nodeCount_;
+                pool_.destroy(v);
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::dec_ref_try_gc
+                (node_t* const v) -> void
+            {
+                v->dec_ref_count();
+
+                if (v->get_ref_count() > 0 || this->is_leaf_vertex(v))
+                {
+                    return;
+                }
+
+                v->for_each_son(std::bind_front(&node_manager::dec_ref_try_gc, this));
+                uniqueTables_[v->get_index()].erase(v);
+                this->delete_vertex(v);
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            template<class IndexMapOp>
+            auto node_manager<Data, Degree, Domain>::for_each_level
+                (IndexMapOp op) -> void
+            {
+                this->for_each_level_impl<false>(op);
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            template<class IndexMapOp>
+            auto node_manager<Data, Degree, Domain>::for_each_level
+                (IndexMapOp op) const -> void
+            {
+                this->for_each_level_impl<true>(op);
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            template<bool IsConst, class IndexMapOp>
+            auto node_manager<Data, Degree, Domain>::for_each_level_impl
+                (IndexMapOp op) const -> void
+            {
+                using index_map_v_ref = std::conditional_t<IsConst, unique_table_v const&, unique_table_v&>;
+                auto&& indexToMapRef = [this]() -> index_map_v_ref
+                {
+                    if constexpr (IsConst)
+                    {
+                        return uniqueTables_;
+                    }
+                    else
+                    {
+                        return const_cast<node_manager&>(*this).uniqueTables_;
+                    }
+                }();
+
+                std::for_each_n(std::begin(levelToIndex_), this->get_var_count(), [&](auto const i)
+                {
+                    op(indexToMapRef[i]);
+                });
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::get_index
+                (level_t const l) const -> index_t
+            {
+                return levelToIndex_[l];
+            }
+
+
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::is_leaf_vertex
+                (node_t* const v) const -> bool
+            {
+                return this->is_leaf_index(v->get_index());
+            }
+
+
+
+
+
+            template<class Data, degree Degree, domain Domain>
+            template<class Op>
+            auto node_manager<Data, Degree, Domain>::cache_find
+                (node_t* const l, node_t* const r) -> op_cache_iterator
+            {
+                auto& cache = opCaches_[op_id(Op())];
+                return cache.find(l, r);
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            template<class Op>
+            auto node_manager<Data, Degree, Domain>::cache_put
+                (op_cache_iterator it, node_t* const l, node_t* const r, node_t* const res) -> void
+            {
+                auto& cache = opCaches_[op_id(Op())];
+                cache.put(it, l, r, res);
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::adjust_sizes
+                () -> void
+            {
+                if (needsGc_)
+                {
+                    this->collect_garbage();
+                    if (reorderEnabled_)
+                    {
+                        this->sift_vars();
+                    }
+                }
+
+                for (auto& t : uniqueTables_)
+                {
+                    t.adjust_capacity();
+                }
+
+                for (auto& c : opCaches_)
+                {
+                    c.adjust_capacity(nodeCount_ / cacheRatio_);
+                }
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::collect_garbage
+                () -> void
+            {
+                needsGc_ = false;
+                this->clear_cache();
+
+                this->for_each_level([this](auto& indexMap)
+                {
+                    auto const end = std::end(indexMap);
+                    auto it = std::begin(indexMap);
+
+                    while (it != end)
+                    {
+                        auto const v = *it;
+                        if (0 == v->get_ref_count())
+                        {
+                            v->for_each_son(dec_ref_count);
+                            it = indexMap.erase(it);
+                            this->delete_vertex(v);
+                        }
+                        else
+                        {
+                            ++it;
+                        }
+                    }
+                });
+
+                for (auto i = 0u; i < terminals_.size(); ++i)
+                {
+                    if (terminals_[i] && 0 == terminals_[i]->get_ref_count())
+                    {
+                        this->delete_vertex(std::exchange(terminals_[i], nullptr));
+                    }
+                }
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::clear
+                () -> void
+            {
+                this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
+                this->for_each_level([](auto& levelMap) { levelMap.clear(); });
+                std::fill(std::begin(terminals_), std::end(terminals_), nullptr);
+                nodeCount_ = 0;
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::swap_vars
+                (index_t const i) -> void
+            {
+                auto const iLevel    = this->get_level(i);
+                auto const nextIndex = this->get_index(1 + iLevel);
+                auto tmpTable        = unique_table_t(std::move(uniqueTables_[i]));
+                for (auto const v : tmpTable)
+                {
+                    this->swap_vertex(v);
+                }
+                uniqueTables_[i].adjust_capacity();
+                uniqueTables_[nextIndex].merge(tmpTable);
+
+                std::swap(levelToIndex_[iLevel], levelToIndex_[1 + iLevel]);
+                ++indexToLevel_[i];
+                --indexToLevel_[nextIndex];
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            auto node_manager<Data, Degree, Domain>::sift_vars
+                () -> void
+            {
+                using count_pair = struct { index_t index; std::size_t count; };
+
+                auto const get_sift_order = [this]()
+                {
+                    auto counts = utils::fill_vector(this->get_var_count(), [this](auto const i)
+                    {
+                        return count_pair {i, this->get_node_count(i)};
+                    });
+                    std::sort(std::begin(counts), std::end(counts), [](auto&& l, auto&& r){ return l.count > r.count; });
+                    return counts;
+                };
+
+                auto const move_var_down = [this](auto const index)
+                {
+                    this->swap_vars(index);
+                };
+
+                auto const move_var_up = [this](auto const index)
+                {
+                    auto const level     = this->get_level(index);
+                    auto const prevIndex = this->get_index(level - 1);
+                    this->swap_vars(prevIndex);
+                };
+
+                auto const place_variable = [&, this](auto const index)
+                {
+                    auto level        = this->get_level(index);
+                    auto optimalLevel = level;
+                    auto optimalCount = nodeCount_;
+
+                    // Sift down.
+                    while (level != this->get_last_internal_level())
+                    {
+                        move_var_down(index);
+                        ++level;
+                        if (nodeCount_ < optimalCount)
+                        {
+                            optimalCount = nodeCount_;
+                            optimalLevel = level;
+                        }
+                    }
+
+                    // Sift up.
+                    while (level != 0)
+                    {
+                        move_var_up(index);
+                        --level;
+                        if (nodeCount_ < optimalCount)
+                        {
+                            optimalCount = nodeCount_;
+                            optimalLevel = level;
+                        }
+                    }
+
+                    // Restore optimal position.
+                    while (level != optimalLevel)
+                    {
+                        move_var_down(index);
+                        ++level;
+                    }
+                };
+
+                auto const siftOrder = get_sift_order();
+                for (auto pair : siftOrder)
+                {
+                    place_variable(pair.index);
+                }
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            template<class VertexOp>
+            auto node_manager<Data, Degree, Domain>::for_each_vertex
+                (VertexOp op) const -> void
+            {
+                for (auto const& table : uniqueTables_)
+                {
+                    auto const end = std::end(table);
+                    auto it = std::begin(table);
+                    while (it != end)
+                    {
+                        auto const v = *it;
+                        ++it;
+                        op(v);
+                    }
+                }
+
+                for (auto const v : terminals_)
+                {
+                    if (v)
+                    {
+                        op(v);
+                    }
+                }
+            }
+
+            template<class Data, degree Degree, domain Domain>
+            template<class VertexOp>
+            auto node_manager<Data, Degree, Domain>::for_each_terminal_node
+                (VertexOp op) const -> void
+            {
+                for (auto const v : terminals_)
+                {
+                    if (v)
+                    {
+                        op(v);
+                    }
+                }
+            }
 }
 
 #endif

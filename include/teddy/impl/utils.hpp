@@ -1,6 +1,8 @@
 #ifndef MIX_DD_UTILS_HPP
 #define MIX_DD_UTILS_HPP
 
+#include <hash_set>
+
 namespace teddy::utils
 {
     template<class Gen>
