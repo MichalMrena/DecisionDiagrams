@@ -147,7 +147,7 @@ namespace teddy
         template<class T>
         auto constexpr operator() (T const l, T const r) const noexcept
         {
-            return utils::min_t()(utils::min_t()(l, r), Undefined);
+            return min_t()(min_t()(l, r), Undefined);
         };
     };
 
@@ -208,7 +208,7 @@ namespace teddy
     struct PLUS : public bin_op<plus_mod_t<P>> {};
 
     template<uint_t P>
-    struct MULTIPLIES : public bin_op<multiplies_mod_t<P> 0> {};
+    struct MULTIPLIES : public bin_op<multiplies_mod_t<P>, 0> {};
 
     constexpr auto op_id (AND)           { return uint_t {0};  }
     constexpr auto op_id (OR)            { return uint_t {1};  }
@@ -247,6 +247,8 @@ namespace teddy
     constexpr auto op_is_commutative (PLUS<P>)       { return true;  }
     template<uint_t P>
     constexpr auto op_is_commutative (MULTIPLIES<P>) { return true;  }
+
+    inline constexpr auto OpCount = std::size_t {16};
 }
 
 #endif

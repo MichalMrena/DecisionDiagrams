@@ -1,7 +1,9 @@
 #ifndef MIX_DD_UTILS_HPP
 #define MIX_DD_UTILS_HPP
 
-#include <hash_set>
+#include "types.hpp"
+#include <functional>
+#include <vector>
 
 namespace teddy::utils
 {
@@ -11,7 +13,7 @@ namespace teddy::utils
         using T = decltype(std::invoke(f, uint_t {}));
         auto xs = std::vector<T>();
         xs.reserve(n);
-        for (auto i = uint_t(0); i < n; ++i)
+        for (auto i = uint_t {0}; i < n; ++i)
         {
             xs.emplace_back(std::invoke(f, i));
         }

@@ -145,7 +145,6 @@ namespace teddy
     {
         if (this->is_internal())
         {
-            std::cout << "miexadas" << '\n';
             std::destroy_at(&this->union_internal());
         }
     }

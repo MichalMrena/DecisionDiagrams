@@ -1,2 +1,0 @@
-10-adder_col.pla -> 117.000000ms
-Done.

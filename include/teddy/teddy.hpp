@@ -2,8 +2,7 @@
 #define MIX_DD_TEDDY_HPP
 
 // #include diagram_manager.hpp
-    #include "impl/node.hpp"
-    #include "impl/hash_tables.hpp"
+    #include "impl/node_manager.hpp"
 
 namespace teddy
 {
