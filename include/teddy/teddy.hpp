@@ -3,6 +3,7 @@
 
 // #include diagram_manager.hpp
     #include "impl/node.hpp"
+    #include "impl/hash_tables.hpp"
 
 namespace teddy
 {
