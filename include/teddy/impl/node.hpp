@@ -23,6 +23,15 @@ namespace teddy
     {
     };
 
+    template<class, class T>
+    struct second
+    {
+        using type = T;
+    };
+
+    template<class X, class T>
+    using second_t = typename second<X, T>::type;
+
     namespace degrees
     {
         struct mixed {};
@@ -69,8 +78,13 @@ namespace teddy
         ~node () = default; // TODO zatial nefunguje v clangu !!!
         ~node () requires(degrees::is_mixed<D>()());
 
-        auto data ()       -> Data&       requires(not std::is_void<Data>()());
-        auto data () const -> Data const& requires(not std::is_void<Data>()());
+        // notice: Making it a dummy template and making the return type
+        //         dependent on the template makes it SFINE.
+        template<class Foo = void> requires (not std::is_void_v<Data>)
+        auto data () -> second_t<Foo, Data>&;
+
+        template<class Foo = void> requires (not std::is_void_v<Data>)
+        auto data () const -> second_t<Foo, Data> const&;
 
         auto get_next      () const       -> node*;
         auto set_next      (node*)        -> void;
@@ -155,15 +169,17 @@ namespace teddy
     }
 
     template<class Data, degree D>
+    template<class Foo> requires (not std::is_void_v<Data>)
     auto node<Data, D>::data
-        () -> Data& requires(not std::is_void<Data>()())
+        () -> second_t<Foo, Data>&
     {
         return data_.m;
     }
 
     template<class Data, degree D>
+    template<class Foo> requires (not std::is_void_v<Data>)
     auto node<Data, D>::data
-        () const -> Data const& requires(not std::is_void<Data>()())
+        () const -> second_t<Foo, Data> const&
     {
         return data_.m;
     }

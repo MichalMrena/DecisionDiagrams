@@ -70,12 +70,13 @@ namespace teddy
     public:
         node_manager ( std::size_t vars
                      , std::size_t nodes
-                     , std::vector<index_t> order = {} )
+                     , std::vector<index_t> order )
                      requires(domains::is_fixed<Domain>()());
+
         node_manager ( std::size_t vars
                      , std::size_t nodes
-                     , domains::mixed
-                     , std::vector<index_t> order = {} )
+                     , std::vector<index_t> order
+                     , domains::mixed )
                      requires(domains::is_mixed<Domain>()());
 
         node_manager (node_manager&&) noexcept = default;
@@ -89,8 +90,8 @@ namespace teddy
         node_manager ( common_init
                      , std::size_t vars
                      , std::size_t nodes
-                     , Domain
-                     , std::vector<index_t> order );
+                     , std::vector<index_t> order
+                     , Domain );
 
     public:
         auto get_terminal_node (uint_t) const      -> node_t*;
@@ -178,8 +179,8 @@ namespace teddy
         node_manager ( common_init()
                      , vars
                      , nodes
-                     , {}
-                     , std::move(order) )
+                     , std::move(order)
+                     , {} )
     {
     }
 
@@ -187,14 +188,14 @@ namespace teddy
     node_manager<Data, Degree, Domain>::node_manager
         ( std::size_t const    vars
         , std::size_t const    nodes
-        , domains::mixed       ds
-        , std::vector<index_t> order )
+        , std::vector<index_t> order
+        , domains::mixed       ds )
         requires(domains::is_mixed<Domain>()()) :
         node_manager ( common_init()
                      , vars
                      , nodes
-                     , std::move(ds)
-                     , std::move(order) )
+                     , std::move(order)
+                     , std::move(ds) )
     {
     }
 
@@ -203,14 +204,12 @@ namespace teddy
         ( common_init
         , std::size_t const    vars
         , std::size_t const    nodes
-        , Domain               ds
-        , std::vector<index_t> order ) :
+        , std::vector<index_t> order
+        , Domain               ds ) :
         uniqueTables_   (vars),
         terminals_      ({}),
         indexToLevel_   (vars),
-        levelToIndex_   (order.empty()
-                         ? utils::fill_vector(vars, utils::identity)
-                         : std::move(order)),
+        levelToIndex_   (std::move(order)),
         opCaches_       ({}),
         pool_           (nodes),
         needsGc_        (false),

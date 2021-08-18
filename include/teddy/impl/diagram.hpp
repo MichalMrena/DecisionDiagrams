@@ -85,7 +85,7 @@ namespace teddy
     auto diagram<Data, D>::operator=
         (diagram d) -> diagram&
     {
-        std::swap(root_, d.root_);
+        swap(*this, d);
         return *this;
     }
 

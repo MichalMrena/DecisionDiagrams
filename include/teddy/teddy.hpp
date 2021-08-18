@@ -1,34 +1,51 @@
 #ifndef MIX_DD_TEDDY_HPP
 #define MIX_DD_TEDDY_HPP
 
-// #include diagram_manager.hpp
-    #include "impl/node_manager.hpp"
-    #include "impl/diagram.hpp"
+#include "impl/diagram_manager.hpp"
 
 namespace teddy
 {
-    // template<bool B, class T, class U>
-    // using t_if = std::conditional_t<B, T, U>;
+    using default_oder = std::vector<index_t>;
 
-    // using bdd_manager = bin_diagram_manager<void>;
+    struct bdd_manager : public diagram_manager< void
+                                               , degrees::fixed<2>
+                                               , domains::fixed<2> >
+    {
+        bdd_manager ( std::size_t varCount
+                    , std::size_t initNodeCount
+                    , std::vector<index_t> order = default_oder() );
+    };
 
-    // template<uint_t P>
-    // using mdd_manager = t_if< P == 2
-    //                         , bdd_manager
-    //                         , diagram_manager< void
-    //                                         , degrees::fixed<P>
-    //                                         , domains::fixed<P>> >;
+    template<uint_t P>
+    struct mdd_manager : public diagram_manager< void
+                                               , degrees::fixed<P>
+                                               , domains::fixed<P> >
+    {
+        mdd_manager ( std::size_t varCount
+                    , std::size_t initNodeCount
+                    , std::vector<index_t> order = default_oder() );
+    };
 
-    // using imdd_manager = diagram_manager< void
-    //                                     , degrees::fixed<P>
-    //                                     , domains::fixed<P> >;
+    struct imdd_manager : public diagram_manager< void
+                                                , degrees::mixed
+                                                , domains::mixed >
+    {
+        imdd_manager ( std::size_t varCount
+                     , std::size_t initNodeCount
+                     , std::vector<uint_t> domains
+                     , std::vector<index_t> order = default_oder() );
+    };
 
-    // template<uint_t PMax>
-    // using ifmdd_manager = t_if< P == 2
-    //                           , bdd_manager
-    //                           , diagram_manager< void
-    //                                            , degrees::fixed<PMax>
-    //                                            , domains::mixed >;
+    template<uint_t PMax>
+    struct ifmdd_manager : public diagram_manager< void
+                                                 , degrees::fixed<PMax>
+                                                 , domains::mixed >
+    {
+        ifmdd_manager ( std::size_t varCount
+                      , std::size_t initNodeCount
+                      , std::vector<uint_t> domains
+                      , std::vector<index_t> order = default_oder() );
+    };
 }
 
 #endif
