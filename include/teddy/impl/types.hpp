@@ -9,7 +9,7 @@ namespace teddy
     using level_t = unsigned int;
     using uint_t  = unsigned int;
 
-    inline constexpr auto UintMax       = std::numeric_limits<uint_t>::max();
+    inline constexpr auto UintMax       = (std::numeric_limits<uint_t>::max)();
     inline constexpr auto Undefined     = UintMax;
     inline constexpr auto Nondetermined = UintMax - 1;
 }

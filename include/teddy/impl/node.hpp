@@ -5,10 +5,10 @@
 
 #include <array>
 #include <cassert>
-#include <concepts>
 #include <cstddef>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 namespace teddy
 {
@@ -26,9 +26,14 @@ namespace teddy
     namespace degrees
     {
         struct mixed {};
-        template<uint_t N> struct fixed
+        template<uint_t N>
+        struct fixed
         {
             static_assert(N > 1);
+            auto constexpr operator()()
+            {
+                return N;
+            }
         };
 
         template<class T>

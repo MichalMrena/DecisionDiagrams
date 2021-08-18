@@ -30,7 +30,7 @@ namespace teddy
         template<class T>
         auto constexpr operator() (T const l, T const r) const noexcept
         {
-            return l && r;
+            return l and r;
         }
     };
 
@@ -39,7 +39,7 @@ namespace teddy
         template<class T>
         auto constexpr operator() (T const l, T const r) const noexcept
         {
-            return l || r;
+            return l or r;
         }
     };
 
@@ -48,7 +48,7 @@ namespace teddy
         template<class T>
         auto constexpr operator() (T const l, T const r) const noexcept
         {
-            return !(l && r);
+            return not (l and r);
         }
     };
 
@@ -57,7 +57,7 @@ namespace teddy
         template<class T>
         auto constexpr operator() (T const l, T const r) const noexcept
         {
-            return !(l || r);
+            return not (l or r);
         }
     };
 
@@ -170,7 +170,8 @@ namespace teddy
                 return Nondetermined;
             }
 
-            return static_cast<uint_t>(BinOp () (lhs, rhs));
+            // return static_cast<uint_t>(BinOp () (lhs, rhs));
+            return BinOp()(lhs, rhs);
         }
     };
 

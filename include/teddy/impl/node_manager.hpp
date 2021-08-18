@@ -1,15 +1,19 @@
 #ifndef MIX_DD_NODE_MANAGER_HPP
 #define MIX_DD_NODE_MANAGER_HPP
 
+#include "types.hpp"
 #include "utils.hpp"
 #include "node.hpp"
 #include "node_pool.hpp"
 #include "hash_tables.hpp"
 #include "operators.hpp"
 
-#include <vector>
-#include <span>
+#include <algorithm>
+#include <cassert>
 #include <functional>
+#include <span>
+#include <utility>
+#include <vector>
 
 namespace teddy
 {
@@ -189,8 +193,7 @@ namespace teddy
         node_manager ( common_init()
                      , vars
                      , nodes
-                     , [&]() -> decltype(auto)
-                       {assert(ds.ds_.size() == vars); return std::move(ds);}()
+                     , std::move(ds)
                      , std::move(order) )
     {
     }
@@ -218,6 +221,14 @@ namespace teddy
     {
         assert(levelToIndex_.size() == this->get_var_count());
         assert(check_distinct(levelToIndex_));
+        if constexpr ( domains::is_mixed<Domain>()()
+                   and degrees::is_fixed<Degree>()() )
+        {
+            for (auto const d : domains_.ds_)
+            {
+                assert(d < Degree()());
+            }
+        }
 
         auto level = 0u;
         for (auto const index : levelToIndex_)

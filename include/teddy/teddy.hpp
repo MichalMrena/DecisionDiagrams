@@ -3,6 +3,7 @@
 
 // #include diagram_manager.hpp
     #include "impl/node_manager.hpp"
+    #include "impl/diagram.hpp"
 
 namespace teddy
 {

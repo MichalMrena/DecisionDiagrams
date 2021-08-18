@@ -1,9 +1,11 @@
 #ifndef MIX_DD_NODE_POOL_HPP
 #define MIX_DD_NODE_POOL_HPP
 
-#include <memory>
-#include <cstddef>
+#include "node.hpp"
+
 #include <array>
+#include <cstddef>
+#include <memory>
 
 namespace teddy
 {
