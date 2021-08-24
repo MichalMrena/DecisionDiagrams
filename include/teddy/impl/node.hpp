@@ -61,13 +61,16 @@ namespace teddy
     template<class Data, degree D>
     class node
     {
-    private:
+    public:
         template<uint_t N>
-        static auto container (degrees::fixed<N>) -> std::array<node*, N>;
-        static auto container (degrees::mixed)    -> std::unique_ptr<node*[]>;
+        static auto container
+            (uint_t, degrees::fixed<N>) -> std::array<node*, N>;
+
+        static auto container
+            (uint_t, degrees::mixed) -> std::unique_ptr<node*[]>;
 
     public:
-        using sons_t = decltype(container(D()));
+        using sons_t = decltype(container(uint_t{}, D()));
         using refs_t = unsigned int;
 
     public:
@@ -139,6 +142,23 @@ namespace teddy
         node*            next_;
         refs_t           refs_;
     };
+
+    template<class Data, degree D>
+    template<uint_t N>
+    auto node<Data, D>::container
+        (uint_t, degrees::fixed<N>) -> std::array<node*, N>
+    {
+        return std::array<node*, N>();
+    }
+
+    template<class Data, degree D>
+    auto node<Data, D>::container
+        (uint_t const domain, degrees::mixed) -> std::unique_ptr<node*[]>
+    {
+        // Not supported yet.
+        // return std::make_unique_for_overwrite<node*[]>(domain);
+        return std::make_unique<node*[]>(domain);
+    }
 
     template<class Data, degree D>
     node<Data, D>::node

@@ -1,8 +1,8 @@
-BIN := main
-COMPILE_FLAGS = -MMD -MP -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow -Iinclude
-LINK_FLAGS = 
-SRC_DIRS := ./src
+COMPILE_FLAGS = -MMD -MP -std=c++20 -Iinclude
+COMPILE_FLAGS += -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow
 CXX = clang++
+LINK_HEADER = "\e[1;33mLinking:\e[0m"
+COMPILE_HEADER = "\e[1;33mCompiling:\e[0m"
 
 ifdef DEBUG
 	COMPILE_FLAGS += -g
@@ -12,14 +12,20 @@ else
 	BUILD_DIR ?= ./build/release
 endif
 
-SRCS := $(shell find $(SRC_DIRS) -name *.cpp)
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-DEPS := $(OBJS:.o=.d)
+main: $(BUILD_DIR)/main
+test: $(BUILD_DIR)/test
 
-$(BUILD_DIR)/$(BIN): $(OBJS)
-	$(CXX) $(OBJS) $(LINK_FLAGS) -o $@
+$(BUILD_DIR)/%: $(BUILD_DIR)/%.cpp.o
+	@echo $(LINK_HEADER)
+	$(CXX) $< -o $@
 
-$(BUILD_DIR)/%.cpp.o: %.cpp
+$(BUILD_DIR)/test.cpp.o: test/test.cpp
+	@echo $(COMPILE_HEADER)
+	mkdir -p $(dir $@)
+	$(CXX) $(COMPILE_FLAGS) -c $< -o $@
+
+$(BUILD_DIR)/main.cpp.o: src/main.cpp
+	@echo $(COMPILE_HEADER)
 	mkdir -p $(dir $@)
 	$(CXX) $(COMPILE_FLAGS) -c $< -o $@
 

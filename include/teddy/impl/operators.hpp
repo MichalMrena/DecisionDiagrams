@@ -2,6 +2,7 @@
 #define MIX_DD_OPERATORS_HPP
 
 #include "types.hpp"
+#include <type_traits>
 
 namespace teddy
 {
@@ -152,7 +153,7 @@ namespace teddy
     };
 
     template<class BinOp, uint_t AbsorbingVal = Undefined>
-    struct bin_op
+    struct bin_op_base
     {
         [[nodiscard]] constexpr auto operator()
             (uint_t const lhs, uint_t const rhs) const noexcept -> uint_t
@@ -177,39 +178,39 @@ namespace teddy
 
     struct NOT {};
 
-    struct AND : public bin_op<logical_and_t, 0> {};
+    struct AND : public bin_op_base<logical_and_t, 0> {};
 
-    struct OR : public bin_op< logical_or_t, 1> {};
+    struct OR : public bin_op_base< logical_or_t, 1> {};
 
-    struct XOR : public bin_op<logical_xor_t> {};
+    struct XOR : public bin_op_base<logical_xor_t> {};
 
-    struct PI_CONJ : public bin_op<pi_conj_t, 0> {};
+    struct PI_CONJ : public bin_op_base<pi_conj_t, 0> {};
 
-    struct NAND : public bin_op<logical_nand_t> {};
+    struct NAND : public bin_op_base<logical_nand_t> {};
 
-    struct NOR : public bin_op<logical_nor_t> {};
+    struct NOR : public bin_op_base<logical_nor_t> {};
 
-    struct EQUAL_TO : public bin_op<equal_to_t> {};
+    struct EQUAL_TO : public bin_op_base<equal_to_t> {};
 
-    struct NOT_EQUAL_TO : public bin_op<not_equal_to_t> {};
+    struct NOT_EQUAL_TO : public bin_op_base<not_equal_to_t> {};
 
-    struct LESS : public bin_op<less_t> {};
+    struct LESS : public bin_op_base<less_t> {};
 
-    struct LESS_EQUAL : public bin_op<less_equal_t> {};
+    struct LESS_EQUAL : public bin_op_base<less_equal_t> {};
 
-    struct GREATER : public bin_op<greater_t> {};
+    struct GREATER : public bin_op_base<greater_t> {};
 
-    struct GREATER_EQUAL : public bin_op<greater_equal_t> {};
+    struct GREATER_EQUAL : public bin_op_base<greater_equal_t> {};
 
-    struct MIN : public bin_op<min_t, 0> {};
+    struct MIN : public bin_op_base<min_t, 0> {};
 
-    struct MAX : public bin_op<max_t> {};
-
-    template<uint_t P>
-    struct PLUS : public bin_op<plus_mod_t<P>> {};
+    struct MAX : public bin_op_base<max_t> {};
 
     template<uint_t P>
-    struct MULTIPLIES : public bin_op<multiplies_mod_t<P>, 0> {};
+    struct PLUS : public bin_op_base<plus_mod_t<P>> {};
+
+    template<uint_t P>
+    struct MULTIPLIES : public bin_op_base<multiplies_mod_t<P>, 0> {};
 
     constexpr auto op_id (AND)           { return uint_t {0};  }
     constexpr auto op_id (OR)            { return uint_t {1};  }
@@ -250,6 +251,22 @@ namespace teddy
     constexpr auto op_is_commutative (MULTIPLIES<P>) { return true;  }
 
     inline constexpr auto OpCount = std::size_t {16};
+
+    template<class O>
+    concept bin_op = std::is_same_v<O, AND>
+                  or std::is_same_v<O, OR>
+                  or std::is_same_v<O, XOR>
+                  or std::is_same_v<O, PI_CONJ>
+                  or std::is_same_v<O, NAND>
+                  or std::is_same_v<O, NOR>
+                  or std::is_same_v<O, EQUAL_TO>
+                  or std::is_same_v<O, NOT_EQUAL_TO>
+                  or std::is_same_v<O, LESS>
+                  or std::is_same_v<O, LESS_EQUAL>
+                  or std::is_same_v<O, GREATER>
+                  or std::is_same_v<O, GREATER_EQUAL>
+                  or std::is_same_v<O, MIN>
+                  or std::is_same_v<O, MAX>;
 }
 
 #endif

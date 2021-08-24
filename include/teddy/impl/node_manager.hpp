@@ -96,14 +96,18 @@ namespace teddy
     public:
         auto get_terminal_node (uint_t) const      -> node_t*;
         auto terminal_node     (uint_t)            -> node_t*;
-        auto internal_node     (index_t, sons_t&&) -> node_t*;
-        auto get_level         (index_t) const     -> level_t;
+        auto internal_node     (index_t, sons_t&&) -> node_t*; // tu si treba premyslieť, či to alokovať hneď, alebo sem posielať iba
+        auto get_level         (index_t) const     -> level_t; // pointer na jedno spoločné miesto pre jeden apply a alokovať až pri nových
+        auto get_level         (node_t*) const     -> level_t;
         auto get_node_count    (index_t) const     -> std::size_t;
         auto get_node_count    () const            -> std::size_t;
         auto get_var_count     () const            -> std::size_t;
         auto get_order         () const            -> std::span<index_t const>;
         auto adjust_sizes      ()                  -> void;
         auto collect_garbage   ()                  -> void;
+
+        template<utils::i_gen Gen>
+        auto make_sons (index_t, Gen&&) -> sons_t;
 
         template<class NodeOp>
         auto for_each_son (node_t*, NodeOp&&) -> void;
@@ -123,6 +127,8 @@ namespace teddy
 
         // template<class VertexOp>
         // auto for_each_terminal_node (VertexOp op) const -> void;
+
+        auto is_valid (index_t, uint_t) const -> bool;
 
         static auto inc_ref_count (node_t* v) -> node_t*;
         static auto dec_ref_count (node_t* v) -> void;
@@ -317,6 +323,15 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_level
+        (node_t* const n) const -> level_t
+    {
+        return n->is_terminal()
+                   ? TerminalLevel
+                   : this->get_level(n->get_index());
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::get_node_count
         (index_t const i) const -> std::size_t
     {
@@ -399,14 +414,27 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<utils::i_gen Gen>
+    auto node_manager<Data, Degree, Domain>::make_sons
+        (index_t const i, Gen&& g) -> sons_t
+    {
+        auto ss = node_t::container(domains_[i], Degree());
+        for (auto k = uint_t {0}; k < domains_[i]; ++k)
+        {
+            ss[k] = std::invoke(g, k);
+        }
+        return ss;
+    }
+
+    template<class Data, degree Degree, domain Domain>
     template<class NodeOp>
     auto node_manager<Data, Degree, Domain>::for_each_son
         (node_t* const node, NodeOp&& f) -> void
     {
         auto const i = node->get_index();
-        for (auto j = 0u; j < domains_[i]; ++j)
+        for (auto k = 0u; k < domains_[i]; ++k)
         {
-            f(node->get_son(j));
+            std::invoke(f, node->get_son(k));
         }
     }
 
@@ -430,6 +458,14 @@ namespace teddy
         auto& cache = opCaches_[op_id(Op())];
         cache.put(it, l, r, res);
     }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::is_valid
+        (index_t const i, uint_t const v) const -> bool
+    {
+        return v < domains_[i];
+    }
+
 
 
 

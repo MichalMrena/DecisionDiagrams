@@ -12,6 +12,7 @@ namespace teddy
     inline constexpr auto UintMax       = (std::numeric_limits<uint_t>::max)();
     inline constexpr auto Undefined     = UintMax;
     inline constexpr auto Nondetermined = UintMax - 1;
+    inline constexpr auto TerminalLevel = (std::numeric_limits<level_t>::max)();
 }
 
 #endif

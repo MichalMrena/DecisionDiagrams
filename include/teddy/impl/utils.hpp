@@ -7,7 +7,13 @@
 
 namespace teddy::utils
 {
-    template<class Gen>
+    template<class F>
+    concept i_gen = requires (F f, uint_t k)
+    {
+        std::invoke(f, k);
+    };
+
+    template<i_gen Gen>
     auto fill_vector (std::size_t const n, Gen&& f)
     {
         using T = decltype(std::invoke(f, uint_t {}));
