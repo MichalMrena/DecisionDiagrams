@@ -84,7 +84,7 @@ namespace teddy
             }
 
             // Destroy other fully used pools.
-            auto poolPtr = &overflowPools_.first();
+            auto poolPtr = &overflowPools_.front();
             while (poolPtr != currentPoolPtr_)
             {
                 for (auto& mem : *poolPtr)

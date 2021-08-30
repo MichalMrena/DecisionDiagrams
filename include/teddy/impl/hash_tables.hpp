@@ -42,7 +42,6 @@ namespace teddy
         using iterator_category = std::forward_iterator_tag;
 
     public:
-        unique_table_it () = default;
         unique_table_it (BucketIt, BucketIt);
 
     public:
@@ -59,9 +58,9 @@ namespace teddy
         auto move_next  ()       -> node_t*;
 
     private:
-        BucketIt bucketIt_ {};
-        BucketIt lastBucketIt_ {};
-        node_t*  node_ {};
+        BucketIt bucketIt_;
+        BucketIt lastBucketIt_;
+        node_t*  node_;
     };
 
     /**
@@ -90,20 +89,24 @@ namespace teddy
         template<class Hash>
         auto merge (unique_table&, Hash&&) -> void;
 
-        auto insert          (node_t*, hash_t) -> node_t*;
-        auto erase           (iterator)        -> iterator;
-        auto erase           (node_t*, hash_t) -> iterator;
-        auto size            () const          -> std::size_t;
-        auto adjust_capacity ()                -> void;
-        auto clear           ()                -> void;
-        auto begin           ()                -> iterator;
-        auto end             ()                -> iterator;
-        auto begin           () const          -> const_iterator;
-        auto end             () const          -> const_iterator;
+        auto insert (node_t*, hash_t) -> node_t*;
+        auto erase  (iterator)        -> iterator;
+        auto erase  (node_t*, hash_t) -> iterator;
+        auto size   () const          -> std::size_t;
+        auto clear  ()                -> void;
+        auto begin  ()                -> iterator;
+        auto end    ()                -> iterator;
+        auto begin  () const          -> const_iterator;
+        auto end    () const          -> const_iterator;
+
+        template<class Hash>
+        auto adjust_capacity (Hash&&) -> void;
 
     private:
+        template<class Hash>
+        auto rehash (std::size_t, Hash&&) -> void;
+
         auto insert_impl (node_t*, hash_t) -> node_t*;
-        auto rehash      (std::size_t)     -> void;
 
     private:
         std::vector<node_t*> buckets_;
@@ -267,7 +270,7 @@ namespace teddy
         entries_              = std::vector<entry>(newCapacity);
         for (auto const& e : oldEntries)
         {
-            auto const index = hash(e.l, e.r) % entries_.size();
+            auto const index = hash(e.lhs, e.rhs) % entries_.size();
             entries_[index]  = e;
         }
     }
@@ -468,15 +471,6 @@ namespace teddy
     }
 
     template<class Data, degree D>
-    auto unique_table<Data, D>::adjust_capacity
-        () -> void
-    {
-        auto const aproxCapacity = 4 * (size_ / 3);
-        auto const newCapacity   = table_base::gte_capacity(aproxCapacity);
-        this->rehash(newCapacity);
-    }
-
-    template<class Data, degree D>
     auto unique_table<Data, D>::clear
         () -> void
     {
@@ -495,7 +489,7 @@ namespace teddy
     auto unique_table<Data, D>::end
         () -> iterator
     {
-        return iterator();
+        return iterator(std::end(buckets_), std::end(buckets_));
     }
 
     template<class Data, degree D>
@@ -509,7 +503,42 @@ namespace teddy
     auto unique_table<Data, D>::end
         () const -> const_iterator
     {
-        return const_iterator();
+        return const_iterator(std::end(buckets_), std::end(buckets_));
+    }
+
+    template<class Data, degree D>
+    template<class Hash>
+    auto unique_table<Data, D>::adjust_capacity
+        (Hash&& h) -> void
+    {
+        auto const aproxCapacity = 4 * (size_ / 3);
+        auto const newCapacity   = table_base::gte_capacity(aproxCapacity);
+        this->rehash(newCapacity, h);
+    }
+
+    template<class Data, degree D>
+    template<class Hash>
+    auto unique_table<Data, D>::rehash
+        (std::size_t const newCapacity, Hash&& hash) -> void
+    {
+        if (buckets_.size() == newCapacity)
+        {
+            return;
+        }
+
+        auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));
+        buckets_ = std::vector<node_t*>(newCapacity, nullptr);
+        for (auto bucket : oldBuckets)
+        {
+            while (bucket)
+            {
+                auto const next = bucket->get_next();
+                auto const h = hash(bucket->get_index(), bucket->get_sons());
+                bucket->set_next(nullptr);
+                this->insert_impl(bucket, h);
+                bucket = next;
+            }
+        };
     }
 
     template<class Data, degree D>
@@ -524,29 +553,6 @@ namespace teddy
         }
         buckets_[index] = n;
         return n;
-    }
-
-    template<class Data, degree D>
-    auto unique_table<Data, D>::rehash
-        (std::size_t const newCapacity) -> void
-    {
-        if (buckets_.size() == newCapacity)
-        {
-            return;
-        }
-
-        auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));
-        buckets_ = std::vector<node_t*>(newCapacity, nullptr);
-        for (auto bucket : oldBuckets)
-        {
-            while (bucket)
-            {
-                auto const next = bucket->get_next();
-                bucket->set_next(nullptr);
-                this->insert_impl(bucket);
-                bucket = next;
-            }
-        };
     }
 }
 

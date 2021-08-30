@@ -1,40 +1,46 @@
-COMPILE_FLAGS = -MMD -MP -std=c++20 -Iinclude
-COMPILE_FLAGS += -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow
 CXX = clang++
-LINK_HEADER = "\e[1;33mLinking:\e[0m"
-COMPILE_HEADER = "\e[1;33mCompiling:\e[0m"
+CXXFLAGS = -MMD -MP -std=c++20 -Iinclude -Wall -Wextra \
+ -Wpedantic -Wconversion -Wsign-conversion -Wshadow
+SRC_DIR = ./src
+LINK_NOTICE = "\e[1;33mLinking:\e[0m"
+COMPILE_NOTICE = "\e[1;33mCompiling:\e[0m"
 
 ifdef DEBUG
-	COMPILE_FLAGS += -g
+	CXXFLAGS += -g
 	BUILD_DIR ?= ./build/debug
 else
-	COMPILE_FLAGS += -O3
+	CXXFLAGS += -O3
 	BUILD_DIR ?= ./build/release
 endif
 
+SRCS := main.cpp test.cpp
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
+-include $(DEPS)
+
 main: $(BUILD_DIR)/main
+
 test: $(BUILD_DIR)/test
 
 $(BUILD_DIR)/%: $(BUILD_DIR)/%.cpp.o
-	@echo $(LINK_HEADER)
-	$(CXX) $< -o $@
+	@echo $(LINK_NOTICE)
+	$(CXX) $< -o $@ $(LDFLAGS)
 
-$(BUILD_DIR)/test.cpp.o: test/test.cpp
-	@echo $(COMPILE_HEADER)
+$(BUILD_DIR)/%.cpp.o: src/%.cpp
+	@echo $(COMPILE_NOTICE)
 	mkdir -p $(dir $@)
-	$(CXX) $(COMPILE_FLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/main.cpp.o: src/main.cpp
-	@echo $(COMPILE_HEADER)
-	mkdir -p $(dir $@)
-	$(CXX) $(COMPILE_FLAGS) -c $< -o $@
+.PHONY: clean dps
 
-.PHONY: clean
+dps:
+	@echo $(SRCS)
+	@echo $(OBJS)
+	@echo $(DEPS)
 
 clean:
 	rm -r ./build
 
 # install:
-# copy ./include/teddy to /usr/local/include/ or selected path
-
--include $(DEPS)
+# 	cp -r ./include/teddy /usr/local/include/
+# TODO install_manifest

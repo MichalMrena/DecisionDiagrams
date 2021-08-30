@@ -46,6 +46,17 @@ namespace teddy
                       , std::vector<uint_t> domains
                       , std::vector<index_t> order = default_oder() );
     };
+
+
+
+
+    inline bdd_manager::bdd_manager
+        ( std::size_t const varCount
+        , std::size_t const initNodeCount
+        , std::vector<index_t> order ) :
+        diagram_manager(varCount, initNodeCount, std::move(order))
+    {
+    }
 }
 
 #endif

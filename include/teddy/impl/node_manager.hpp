@@ -28,7 +28,7 @@ namespace teddy
             {
             };
 
-            auto operator[] (uint_t const i)
+            auto operator[] (uint_t const i) const
             {
                 return ds_[i];
             }
@@ -38,7 +38,7 @@ namespace teddy
         struct fixed
         {
             static_assert(N > 1);
-            constexpr auto operator[] (uint_t const)
+            constexpr auto operator[] (uint_t const) const
             {
                 return N;
             }
@@ -110,7 +110,10 @@ namespace teddy
         auto make_sons (index_t, Gen&&) -> sons_t;
 
         template<class NodeOp>
-        auto for_each_son (node_t*, NodeOp&&) -> void;
+        auto for_each_son (node_t*, NodeOp&&) const -> void;
+
+        template<class NodeOp>
+        auto for_each_node (NodeOp&&) const -> void;
 
         template<class Op>
         auto cache_find (node_t*, node_t*) -> op_cache_it;
@@ -220,9 +223,9 @@ namespace teddy
         pool_           (nodes),
         needsGc_        (false),
         nodeCount_      (0),
-        domains_        (std::move(ds)),
         cacheRatio_     (4),
-        reorderEnabled_ (false)
+        reorderEnabled_ (false),
+        domains_        (std::move(ds))
     {
         assert(levelToIndex_.size() == this->get_var_count());
         assert(check_distinct(levelToIndex_));
@@ -374,9 +377,10 @@ namespace teddy
             }
         }
 
+        auto const hash = std::bind_front(&node_manager::node_hash, this);
         for (auto& t : uniqueTables_)
         {
-            t.adjust_capacity();
+            t.adjust_capacity(hash);
         }
 
         for (auto& c : opCaches_)
@@ -429,12 +433,34 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<class NodeOp>
     auto node_manager<Data, Degree, Domain>::for_each_son
-        (node_t* const node, NodeOp&& f) -> void
+        (node_t* const node, NodeOp&& f) const -> void
     {
         auto const i = node->get_index();
         for (auto k = 0u; k < domains_[i]; ++k)
         {
             std::invoke(f, node->get_son(k));
+        }
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<class NodeOp>
+    auto node_manager<Data, Degree, Domain>::for_each_node
+        (NodeOp&& f) const -> void
+    {
+        for (auto const& table : uniqueTables_)
+        {
+            for (auto const n : table)
+            {
+                std::invoke(f, n);
+            }
+        }
+
+        for (auto const n : terminals_)
+        {
+            if (n)
+            {
+                std::invoke(f, n);
+            }
         }
     }
 
