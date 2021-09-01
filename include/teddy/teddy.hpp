@@ -54,7 +54,18 @@ namespace teddy
         ( std::size_t const varCount
         , std::size_t const initNodeCount
         , std::vector<index_t> order ) :
-        diagram_manager(varCount, initNodeCount, std::move(order))
+        diagram_manager<void, degrees::fixed<2>, domains::fixed<2>>
+            (varCount, initNodeCount, std::move(order))
+    {
+    }
+
+    template<uint_t P>
+    mdd_manager<P>::mdd_manager
+        ( std::size_t const varCount
+        , std::size_t const initNodeCount
+        , std::vector<index_t> order ) :
+        diagram_manager<void, degrees::fixed<P>, domains::fixed<P>>
+            (varCount, initNodeCount, std::move(order))
     {
     }
 }

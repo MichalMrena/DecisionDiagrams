@@ -40,6 +40,11 @@ namespace teddy
 
         auto to_dot_graph (std::ostream&, diagram_t const&) const -> void;
 
+    public:
+        auto get_var_count () const -> std::size_t;
+        auto get_order () const -> std::span<index_t const>;
+        auto get_domains () const -> std::vector<uint_t>;
+
     protected:
         diagram_manager ( std::size_t vars
                         , std::size_t nodes
@@ -199,6 +204,27 @@ namespace teddy
         {
             this->traverse_pre(d, f);
         });
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::get_var_count
+        () const -> std::size_t
+    {
+        return nodes_.get_var_count();
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::get_order
+        () const -> std::span<index_t const>
+    {
+        return nodes_.get_order();
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::get_domains
+        () const -> std::vector<uint_t>
+    {
+        return nodes_.get_domains();
     }
 
     template<class Data, degree Degree, domain Domain>
