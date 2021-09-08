@@ -36,6 +36,8 @@ auto main () -> int
     // test_bss();
     // test_mss();
 
+    // TODO move to_dot_graph, vertex_count to vertex_manager
+
     using node_t = node<int, degrees::fixed<2>>;
 
     [[maybe_unused]]
