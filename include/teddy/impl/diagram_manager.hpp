@@ -26,19 +26,27 @@ namespace teddy
 
         auto variable (index_t) -> diagram_t;
 
+        auto variables (std::vector<index_t> const&) -> std::vector<diagram_t>;
+
         template<bin_op Op>
         auto apply (diagram_t const&, diagram_t const&) -> diagram_t;
+
+        template<bin_op Op>
+        auto left_fold (std::vector<diagram_t> const&) -> diagram_t;
+
+        template<bin_op Op>
+        auto tree_fold (std::vector<diagram_t> const&) -> diagram_t;
 
         template<var_values Vars>
         auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
 
-        auto node_count () const -> std::size_t;
+            auto node_count () const -> std::size_t;
 
-        auto node_count (diagram_t const&) const -> std::size_t;
+            auto node_count (diagram_t const&) const -> std::size_t;
 
-        auto to_dot_graph (std::ostream&) const -> void;
+            auto to_dot_graph (std::ostream&) const -> void;
 
-        auto to_dot_graph (std::ostream&, diagram_t const&) const -> void;
+            auto to_dot_graph (std::ostream&, diagram_t const&) const -> void;
 
     public:
         auto get_var_count () const -> std::size_t;
