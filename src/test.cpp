@@ -208,13 +208,13 @@ namespace teddy::test
         ( expression const&               expr
         , diagram_manager<Dat, Deg, Dom>& manager )
     {
-        using diagram_t = typename diagram_manager<Dat, Deg, Dom>::diagram_t
-        auto termsDs = std::vector<diagram_t>();
+        using diagram_t = typename diagram_manager<Dat, Deg, Dom>::diagram_t;
+        auto termDs = std::vector<diagram_t>();
         for (auto const& eTerm : expr.terms)
         {
-            termDs.emplace_back(manager.left_fold(manager.variables(eTerm)));
+            termDs.emplace_back(manager.template left_fold<MIN>(manager.variables(eTerm)));
         }
-        return manager.left_fold(termDs);
+        return manager.template left_fold<MAX>(termDs);
     }
 
     // /**
@@ -330,15 +330,16 @@ namespace teddy::test
         ( expression const&          expr
         , std::vector<uint_t> const& vs )
     {
-        auto const var_val = [&vs](auto)
+        namespace rs = std::ranges;
+        auto const var_val = [&vs](auto const i)
         {
-
+            return vs[i];
         };
-
-        for (auto const& term : expr.terms)
+        auto const term_val = [&var_val](auto const& xs)
         {
-            std::ranges::transform_view(terms)
-        }
+            return rs::min(rs::transform_view(xs, var_val));
+        };
+        return rs::max(rs::transform_view(expr.terms, term_val));
     }
 
     auto constexpr CodeRed    = "\x1B[91m";
@@ -353,12 +354,12 @@ namespace teddy::test
     auto test_evaluate
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg> const&        diagram
-        , expr_tree const&                expr )
+        , expression const&               expr )
     {
         auto iterator = domain_iterator(manager.get_domains());
         while (iterator.has_more())
         {
-            auto const expectedVal = evaluate_exprression(expr, *iterator);
+            auto const expectedVal = evaluate_expression(expr, *iterator);
             auto const diagramVal  = manager.evaluate(diagram, *iterator);
             if (expectedVal != diagramVal)
             {

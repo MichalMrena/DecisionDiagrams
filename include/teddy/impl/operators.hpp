@@ -149,7 +149,7 @@ namespace teddy
         auto constexpr operator() (T const l, T const r) const noexcept
         {
             return min_t()(min_t()(l, r), Undefined);
-        };
+        }
     };
 
     template<class BinOp, uint_t AbsorbingVal = Undefined>

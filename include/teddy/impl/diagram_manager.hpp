@@ -106,7 +106,7 @@ namespace teddy
         (index_t const i) -> diagram_t
     {
         return diagram_t(nodes_.internal_node(i, nodes_.make_sons(i,
-            [=](auto const v)
+            [=, this](auto const v)
         {
             return nodes_.terminal_node(v);
         })));
