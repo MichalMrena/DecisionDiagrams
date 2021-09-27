@@ -1,3 +1,5 @@
+#define VERBOSE 1
+
 #include "teddy/teddy.hpp"
 #include <random>
 #include <cstdio>
@@ -5,7 +7,6 @@
 #include <ranges>
 #include <vector>
 #include <algorithm>
-
 
 namespace teddy::test
 {

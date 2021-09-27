@@ -48,15 +48,15 @@ namespace teddy
         template<var_values Vars>
         auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
 
-            auto node_count () const -> std::size_t;
+        auto node_count () const -> std::size_t;
 
-            auto node_count (diagram_t const&) const -> std::size_t;
+        auto node_count (diagram_t const&) const -> std::size_t;
 
-            auto to_dot_graph (std::ostream&) const -> void;
+        auto to_dot_graph (std::ostream&) const -> void;
 
-            auto to_dot_graph (std::ostream&, diagram_t const&) const -> void;
+        auto to_dot_graph (std::ostream&, diagram_t const&) const -> void;
 
-            auto gc () -> void;
+        auto gc () -> void;
 
     public:
         auto get_var_count () const -> std::size_t;
@@ -74,13 +74,6 @@ namespace teddy
                         , domains::mixed
                         , std::vector<index_t> order )
                         requires(domains::is_mixed<Domain>()());
-
-    private:
-        template<class ForEachNode>
-        auto to_dot_graph_common (std::ostream&, ForEachNode&&) const -> void;
-
-        template<class NodeOp>
-        auto traverse_pre (diagram_t const&, NodeOp&&) const -> void;
 
     public:
         diagram_manager (diagram_manager const&) = delete;
@@ -256,7 +249,7 @@ namespace teddy
         while (not n->is_terminal())
         {
             auto const i = n->get_index();
-            nodes_.is_valid(n->get_index(), vs[i]);
+            assert(nodes_.is_valid(i, vs[i]));
             n = n->get_son(vs[i]);
         }
 
@@ -274,29 +267,21 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::node_count
         (diagram_t const& d) const -> std::size_t
     {
-        auto count = 0ul;
-        this->traverse_pre(d, [&count](auto const){ ++count; });
-        return count;
+        return nodes_.get_node_count(d.get_root());
     }
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::to_dot_graph
         (std::ostream& ost) const -> void
     {
-        this->to_dot_graph_common(ost, [this](auto&& f)
-        {
-            nodes_.for_each_node(f);
-        });
+        nodes_.to_dot_graph(ost);
     }
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::to_dot_graph
         (std::ostream& ost, diagram_t const& d) const -> void
     {
-        this->to_dot_graph_common(ost, [this, &d](auto&& f)
-        {
-            this->traverse_pre(d, f);
-        });
+        nodes_.to_dot_graph(ost, d.get_root());
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -351,140 +336,6 @@ namespace teddy
                , detail::default_or_fwd(vars, order)
                , std::move(ds) )
     {
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    template<class ForEachNode>
-    auto diagram_manager<Data, Degree, Domain>::to_dot_graph_common
-        (std::ostream& ost, ForEachNode&& for_each_node) const -> void
-    {
-        auto const make_label = [](auto const n)
-        {
-            return n->is_terminal()
-                       ? std::to_string(n->get_value())
-                       : "x" + std::to_string(n->get_index());
-        };
-
-        auto const get_id_str = [](auto const n)
-        {
-            return std::to_string(reinterpret_cast<std::uintptr_t>(n));
-        };
-
-        auto const output_range = [](auto&& ostr, auto&& xs, auto&& sep)
-        {
-            auto const end = std::end(xs);
-            auto it = std::begin(xs);
-            while (it != end)
-            {
-                ostr << *it;
-                ++it;
-                if (it != end)
-                {
-                    ostr << sep;
-                }
-            }
-        };
-
-        auto const levelCount = 1 + nodes_.get_var_count();
-        auto labels       = std::vector<std::string>();
-        auto rankGroups   = std::vector<std::vector<std::string>>(levelCount);
-        auto arcs         = std::vector<std::string>();
-        auto squareShapes = std::vector<std::string>();
-
-        for_each_node([&, this](auto const n)
-        {
-            // Create label.
-            auto const level = nodes_.get_level(n);
-            labels.emplace_back( get_id_str(n)
-                               + R"( [label = ")"
-                               + make_label(n)
-                               + R"("];)" );
-
-            if (n->is_terminal())
-            {
-                squareShapes.emplace_back(get_id_str(n));
-                rankGroups.back().emplace_back(get_id_str(n) + ";");
-                return;
-            }
-
-            // Add to same level.
-            rankGroups[level].emplace_back(get_id_str(n) + ";");
-
-            // Add arcs.
-            nodes_.for_each_son(n, [&, k = 0](auto const son) mutable
-            {
-                if constexpr (std::is_same_v<Degree, degrees::fixed<2>>)
-                {
-                    arcs.emplace_back( get_id_str(n)
-                                     + " -> "
-                                     + get_id_str(son)
-                                     + " [style = "
-                                     + (0 == k ? "dashed" : "solid")
-                                     + "];" );
-                }
-                else
-                {
-                    arcs.emplace_back( get_id_str(n)
-                                     + " -> "
-                                     + get_id_str(son)
-                                     + R"( [label = )"
-                                     + std::to_string(k)
-                                     + "];" );
-                }
-                ++k;
-            });
-        });
-
-        // Finally, output everything into the output stream.
-        ost << "digraph DD {" << '\n';
-        ost << "    node [shape = square] ";
-        output_range(ost, squareShapes, " ");
-        ost << ";\n";
-        ost << "    node [shape = circle];" << "\n\n";
-
-        ost << "    ";
-        output_range(ost, labels, "\n    ");
-        ost << "\n\n";
-        ost << "    ";
-        output_range(ost, arcs, "\n    ");
-        ost << "\n\n";
-
-        for (auto const& rs : rankGroups)
-        {
-            if (not rs.empty())
-            {
-                ost << "    { rank = same; ";
-                output_range(ost, rs, " ");
-                ost << " }" << '\n';
-            }
-        }
-        ost << '\n';
-        ost << "}" << '\n';
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
-    auto diagram_manager<Data, Degree, Domain>::traverse_pre
-        (diagram_t const& d, NodeOp&& op) const -> void
-    {
-        auto const go = [this](auto&& go_, auto const n, auto&& op_)
-        {
-            n->toggle_marked();
-            std::invoke(op_, n);
-            if (n->is_internal())
-            {
-                nodes_.for_each_son(n, [&go_, n, &op_](auto const son)
-                {
-                    if (n->is_marked() != son->is_marked())
-                    {
-                        go_(go_, son, op_);
-                    }
-                });
-            }
-        };
-
-        go(go, d.get_root(), op);
-        go(go, d.get_root(), [](auto const){});
     }
 }
 

@@ -14,6 +14,7 @@
 #include <span>
 #include <utility>
 #include <vector>
+#include <ranges>
 
 namespace teddy
 {
@@ -100,12 +101,16 @@ namespace teddy
         auto get_level         (index_t) const     -> level_t; // pointer na jedno spoločné miesto pre jeden apply a alokovať až pri nových
         auto get_level         (node_t*) const     -> level_t;
         auto get_node_count    (index_t) const     -> std::size_t;
+        auto get_node_count    (node_t*) const     -> std::size_t;
         auto get_node_count    () const            -> std::size_t;
         auto get_var_count     () const            -> std::size_t;
         auto get_order         () const            -> std::span<index_t const>;
         auto get_domains       () const            -> std::vector<uint_t>;
         auto adjust_sizes      ()                  -> void;
         auto collect_garbage   ()                  -> void;
+
+        auto to_dot_graph (std::ostream&) const -> void;
+        auto to_dot_graph (std::ostream&, node_t*) const -> void;
 
         template<utils::i_gen Gen>
         auto make_sons (index_t, Gen&&) -> sons_t;
@@ -122,15 +127,11 @@ namespace teddy
         template<class Op>
         auto cache_put (op_cache_it, node_t*, node_t*, node_t*) -> void;
 
+        template<class NodeOp>
+        auto traverse_pre (node_t*, NodeOp&&) const -> void;
 
             auto swap_vars        (index_t i)         -> void;
             auto sift_vars        ()                  -> void;
-
-        // template<class VertexOp>
-        // auto for_each_vertex (VertexOp op) const -> void;
-
-        // template<class VertexOp>
-        // auto for_each_terminal_node (VertexOp op) const -> void;
 
         auto is_valid (index_t, uint_t) const -> bool;
 
@@ -151,6 +152,9 @@ namespace teddy
         template<class... Args>
         auto new_node (Args&&...) -> node_t*;
         auto delete_node (node_t* v) -> void;
+
+        template<class ForEachNode>
+        auto to_dot_graph_common (std::ostream&, ForEachNode&&) const -> void;
 
         static auto check_distinct (std::vector<index_t> const&) -> bool;
 
@@ -239,6 +243,9 @@ namespace teddy
             }
         }
 
+
+        // Create reverse mapping from (level_t -> index_t)
+        // to (index_t -> level_t).
         auto level = 0u;
         for (auto const index : levelToIndex_)
         {
@@ -344,6 +351,15 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::get_node_count
+        (node_t* const n) const -> std::size_t
+    {
+        auto count = 0ul;
+        this->traverse_pre(n, [&count](auto const){ ++count; });
+        return count;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_node_count
         () const -> std::size_t
     {
         return nodeCount_;
@@ -369,11 +385,11 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::get_domains
         () const -> std::vector<uint_t>
     {
-        auto ds = std::vector<uint_t>(this->get_var_count());
-        std::generate_n(std::begin(ds), ds.size(), [this, k = 0u]() mutable
+        auto ds = std::vector<uint_t>();
+        for (auto k = 0u; k < this->get_var_count(); ++k)
         {
-            return domains_[k++];
-        });
+            ds.emplace_back(domains_[k]);
+        }
         return ds;
     }
 
@@ -428,6 +444,26 @@ namespace teddy
                 }
             }
         }
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::to_dot_graph
+        (std::ostream& ost) const -> void
+    {
+        this->to_dot_graph_common(ost, [this](auto&& f)
+        {
+            this->for_each_node(f);
+        });
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::to_dot_graph
+        (std::ostream& ost, node_t* const n) const -> void
+    {
+        this->to_dot_graph_common(ost, [this, n](auto&& f)
+        {
+            this->traverse_pre(n, f);
+        });
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -505,6 +541,31 @@ namespace teddy
         return v < domains_[i];
     }
 
+    template<class Data, degree Degree, domain Domain>
+    template<class NodeOp>
+    auto node_manager<Data, Degree, Domain>::traverse_pre
+        (node_t* const node, NodeOp&& op) const -> void
+    {
+        auto const go = [this](auto&& go_, auto const n, auto&& op_)
+        {
+            n->toggle_marked();
+            std::invoke(op_, n);
+            if (n->is_internal())
+            {
+                this->for_each_son(n, [&go_, n, &op_](auto const son)
+                {
+                    if (n->is_marked() != son->is_marked())
+                    {
+                        go_(go_, son, op_);
+                    }
+                });
+            }
+        };
+
+        go(go, node, op);
+        go(go, node, [](auto const){});
+    }
+
 
 
 
@@ -533,8 +594,6 @@ namespace teddy
     {
         v->dec_ref_count();
     }
-
-
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::node_hash
@@ -612,10 +671,119 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<class ForEachNode>
+    auto node_manager<Data, Degree, Domain>::to_dot_graph_common
+        (std::ostream& ost, ForEachNode&& for_each_node) const -> void
+    {
+        auto const make_label = [](auto const n)
+        {
+            return n->is_terminal()
+                       ? std::to_string(n->get_value())
+                       : "x" + std::to_string(n->get_index());
+        };
+
+        auto const get_id_str = [](auto const n)
+        {
+            return std::to_string(reinterpret_cast<std::uintptr_t>(n));
+        };
+
+        auto const output_range = [](auto&& ostr, auto&& xs, auto&& sep)
+        {
+            auto const end = std::end(xs);
+            auto it = std::begin(xs);
+            while (it != end)
+            {
+                ostr << *it;
+                ++it;
+                if (it != end)
+                {
+                    ostr << sep;
+                }
+            }
+        };
+
+        auto const levelCount = 1 + this->get_var_count();
+        auto labels       = std::vector<std::string>();
+        auto rankGroups   = std::vector<std::vector<std::string>>(levelCount);
+        auto arcs         = std::vector<std::string>();
+        auto squareShapes = std::vector<std::string>();
+
+        for_each_node([&, this](auto const n)
+        {
+            // Create label.
+            auto const level = this->get_level(n);
+            labels.emplace_back( get_id_str(n)
+                               + R"( [label = ")"
+                               + make_label(n)
+                               + R"("];)" );
+
+            if (n->is_terminal())
+            {
+                squareShapes.emplace_back(get_id_str(n));
+                rankGroups.back().emplace_back(get_id_str(n) + ";");
+                return;
+            }
+
+            // Add to same level.
+            rankGroups[level].emplace_back(get_id_str(n) + ";");
+
+            // Add arcs.
+            this->for_each_son(n, [&, k = 0](auto const son) mutable
+            {
+                if constexpr (std::is_same_v<Degree, degrees::fixed<2>>)
+                {
+                    arcs.emplace_back( get_id_str(n)
+                                     + " -> "
+                                     + get_id_str(son)
+                                     + " [style = "
+                                     + (0 == k ? "dashed" : "solid")
+                                     + "];" );
+                }
+                else
+                {
+                    arcs.emplace_back( get_id_str(n)
+                                     + " -> "
+                                     + get_id_str(son)
+                                     + R"( [label = )"
+                                     + std::to_string(k)
+                                     + "];" );
+                }
+                ++k;
+            });
+        });
+
+        // Finally, output everything into the output stream.
+        ost << "digraph DD {" << '\n';
+        ost << "    node [shape = square] ";
+        output_range(ost, squareShapes, " ");
+        ost << ";\n";
+        ost << "    node [shape = circle];" << "\n\n";
+
+        ost << "    ";
+        output_range(ost, labels, "\n    ");
+        ost << "\n\n";
+        ost << "    ";
+        output_range(ost, arcs, "\n    ");
+        ost << "\n\n";
+
+        for (auto const& rs : rankGroups)
+        {
+            if (not rs.empty())
+            {
+                ost << "    { rank = same; ";
+                output_range(ost, rs, " ");
+                ost << " }" << '\n';
+            }
+        }
+        ost << '\n';
+        ost << "}" << '\n';
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::check_distinct
         (std::vector<index_t> const& is) -> bool
     {
-        auto const me = *std::max_element(std::begin(is), std::end(is));
+        auto const me = std::ranges::max(is);
         auto in = std::vector<bool>(me + 1, false);
         for (auto const i : is)
         {
@@ -779,46 +947,6 @@ namespace teddy
             //     place_variable(pair.index);
             // }
         }
-
-            // template<class Data, degree Degree, domain Domain>
-            // template<class VertexOp>
-            // auto node_manager<Data, Degree, Domain>::for_each_vertex
-            //     (VertexOp op) const -> void
-            // {
-            //     for (auto const& table : uniqueTables_)
-            //     {
-            //         auto const end = std::end(table);
-            //         auto it = std::begin(table);
-            //         while (it != end)
-            //         {
-            //             auto const v = *it;
-            //             ++it;
-            //             op(v);
-            //         }
-            //     }
-
-            //     for (auto const v : terminals_)
-            //     {
-            //         if (v)
-            //         {
-            //             op(v);
-            //         }
-            //     }
-            // }
-
-            // template<class Data, degree Degree, domain Domain>
-            // template<class VertexOp>
-            // auto node_manager<Data, Degree, Domain>::for_each_terminal_node
-            //     (VertexOp op) const -> void
-            // {
-            //     for (auto const v : terminals_)
-            //     {
-            //         if (v)
-            //         {
-            //             op(v);
-            //         }
-            //     }
-            // }
 }
 
 #endif
