@@ -1,4 +1,4 @@
-CXX = clang++
+CXX = g++
 CXXFLAGS = -MMD -MP -std=c++20 -Iinclude -Wall -Wextra \
  -Wpedantic -Wconversion -Wsign-conversion -Wshadow
 SRC_DIR = ./src

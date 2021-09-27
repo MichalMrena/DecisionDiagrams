@@ -26,6 +26,19 @@ namespace teddy::utils
         return xs;
     }
 
+    template<class T, class F>
+    auto fmap (std::vector<T> const& xs, F&& f)
+    {
+        using U = decltype(std::invoke(f, xs.front()));
+        auto ys = std::vector<U>();
+        ys.reserve(xs.size());
+        for (auto const& x : xs)
+        {
+            ys.emplace_back(std::invoke(f, x));
+        }
+        return ys;
+    }
+
     auto constexpr identity = [](auto const a) { return a; };
 }
 

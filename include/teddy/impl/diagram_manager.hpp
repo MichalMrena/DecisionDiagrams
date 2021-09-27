@@ -4,7 +4,9 @@
 #include "node_manager.hpp"
 #include "diagram.hpp"
 #include "utils.hpp"
+#include "operators.hpp"
 #include <concepts>
+#include <cmath>
 
 namespace teddy
 {
@@ -34,8 +36,14 @@ namespace teddy
         template<bin_op Op>
         auto left_fold (std::vector<diagram_t> const&) -> diagram_t;
 
+        template<bin_op Op, class InputIt>
+        auto left_fold (InputIt, InputIt) -> diagram_t;
+
         template<bin_op Op>
-        auto tree_fold (std::vector<diagram_t> const&) -> diagram_t;
+        auto tree_fold (std::vector<diagram_t>&) -> diagram_t;
+
+        template<bin_op Op, class RandomIt>
+        auto tree_fold (RandomIt, RandomIt) -> diagram_t;
 
         template<var_values Vars>
         auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
@@ -47,6 +55,8 @@ namespace teddy
             auto to_dot_graph (std::ostream&) const -> void;
 
             auto to_dot_graph (std::ostream&, diagram_t const&) const -> void;
+
+            auto gc () -> void;
 
     public:
         auto get_var_count () const -> std::size_t;
@@ -106,10 +116,20 @@ namespace teddy
         (index_t const i) -> diagram_t
     {
         return diagram_t(nodes_.internal_node(i, nodes_.make_sons(i,
-            [=, this](auto const v)
+            [this](auto const v)
         {
             return nodes_.terminal_node(v);
         })));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::variables
+        (std::vector<index_t> const& is) -> std::vector<diagram_t>
+    {
+        return utils::fmap(is, [this](auto const i)
+        {
+            return this->variable(i);
+        });
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -159,6 +179,71 @@ namespace teddy
         auto d       = diagram_t(r);
         nodes_.adjust_sizes();
         return d;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<bin_op Op>
+    auto diagram_manager<Data, Degree, Domain>::left_fold
+        (std::vector<diagram_t> const& ds) -> diagram_t
+    {
+        return this->left_fold<Op>(std::begin(ds), std::end(ds));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<bin_op Op, class InputIt>
+    auto diagram_manager<Data, Degree, Domain>::left_fold
+        (InputIt first, InputIt const last) -> diagram_t
+    {
+        auto r = std::move(*first);
+        ++first;
+
+        while (first != last)
+        {
+            r = this->apply<Op>(r, *first);
+            ++first;
+        }
+
+        return r;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<bin_op Op>
+    auto diagram_manager<Data, Degree, Domain>::tree_fold
+        (std::vector<diagram_t>& ds) -> diagram_t
+    {
+        return this->tree_fold<Op>(std::begin(ds), std::end(ds));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<bin_op Op, class RandomIt>
+    auto diagram_manager<Data, Degree, Domain>::tree_fold
+        (RandomIt first, RandomIt const last) -> diagram_t
+    {
+        auto const count      = std::distance(first, last);
+        auto currentCount     = count;
+        auto const numOfSteps
+            = static_cast<std::size_t>(std::ceil(std::log2(count)));
+
+        for (auto step = 0u; step < numOfSteps; ++step)
+        {
+            auto const justMoveLast = currentCount & 1;
+            currentCount = (currentCount >> 1) + justMoveLast;
+            auto const pairCount    = currentCount - justMoveLast;
+
+            for (auto i = 0u; i < pairCount; ++i)
+            {
+                *(first + i) = this->apply<Op>( *(first + 2 * i)
+                                              , *(first + 2 * i + 1) );
+            }
+
+            if (justMoveLast)
+            {
+                *(first + currentCount - 1)
+                    = std::move(*(first + 2 * (currentCount - 1)));
+            }
+        }
+
+        return diagram_t(std::move(*first));
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -236,6 +321,13 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::gc
+        () -> void
+    {
+        nodes_.collect_garbage();
+    }
+
+    template<class Data, degree Degree, domain Domain>
     diagram_manager<Data, Degree, Domain>::diagram_manager
         ( std::size_t          vars
         , std::size_t          nodes
@@ -278,17 +370,17 @@ namespace teddy
             return std::to_string(reinterpret_cast<std::uintptr_t>(n));
         };
 
-        auto const output_range = [](auto&& ost, auto&& xs, auto&& sep)
+        auto const output_range = [](auto&& ostr, auto&& xs, auto&& sep)
         {
             auto const end = std::end(xs);
             auto it = std::begin(xs);
             while (it != end)
             {
-                ost << *it;
+                ostr << *it;
                 ++it;
                 if (it != end)
                 {
-                    ost << sep;
+                    ostr << sep;
                 }
             }
         };
