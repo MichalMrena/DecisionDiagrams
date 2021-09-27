@@ -137,13 +137,12 @@ namespace teddy::test
         , std::vector<uint_t> const& vs )
     {
         namespace rs = std::ranges;
-        auto const var_val = [&vs](auto const i)
+        auto const term_val = [&vs](auto const& is)
         {
-            return vs[i];
-        };
-        auto const term_val = [&var_val](auto const& xs)
-        {
-            return rs::min(rs::transform_view(xs, var_val));
+            return vs[rs::min(is, {}, [&vs](auto const i)
+            {
+                return vs[i];
+            })];
         };
         return rs::max(rs::transform_view(expr.terms, term_val));
     }
