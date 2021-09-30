@@ -154,12 +154,24 @@ namespace teddy::test
 
     auto out_green (std::string_view const s)
     {
-        std::cout << CodeGreen << s << CodeReset << '\n';
+        std::cout << CodeGreen << s << CodeReset;
     }
 
     auto out_red (std::string_view const s)
     {
-        std::cout << CodeRed << s << CodeReset << '\n';
+        std::cout << CodeRed << s << CodeReset;
+    }
+
+    auto outl_green (std::string_view const s)
+    {
+        out_green(s);
+        std::cout << '\n';
+    }
+
+    auto outl_red (std::string_view const s)
+    {
+        out_red(s);
+        std::cout << '\n';
     }
 
     /**
@@ -178,7 +190,7 @@ namespace teddy::test
             auto const diagramVal  = manager.evaluate(diagram, *iterator);
             if (expectedVal != diagramVal)
             {
-                out_red("!!!");
+                outl_red("!!!");
                 break;
             }
             ++iterator;
@@ -186,7 +198,7 @@ namespace teddy::test
 
         if (not iterator.has_more())
         {
-            out_green("OK");
+            outl_green("OK");
         }
     }
 
@@ -200,11 +212,11 @@ namespace teddy::test
     {
         if (diagram1.equals(diagram2))
         {
-            out_green("OK");
+            outl_green("OK");
         }
         else
         {
-            out_red("!!!");
+            outl_red("!!!");
         }
     }
 
@@ -222,11 +234,13 @@ namespace teddy::test
         auto const diagramNodeCount = manager.node_count(diagram);
         if (totalNodeCount == diagramNodeCount)
         {
-            out_green("OK");
+            outl_green("OK");
         }
         else
         {
             out_red("!!!");
+            std::cout << " expected " << diagramNodeCount
+                      << " got "      << totalNodeCount;
         }
     }
 
@@ -261,12 +275,14 @@ namespace teddy::test
 
 auto main () -> int
 {
-    auto const seed      = std::random_device()();
-    // auto const seed      = 144;
-    auto const varCount  = 15;
+    // auto const seed      = std::random_device()();
+    auto const seed      = 2010909674;
+    auto const varCount  = 17;
+    // auto const varCount  = 15;
     auto const termCount = 20;
     auto const termSize  = 5;
-    auto const nodeCount = 10'000;
+    // auto const nodeCount = 10'000;
+    auto const nodeCount = 500;
 
     auto seeder     = std::default_random_engine(seed);
     auto expr       = teddy::test::generate_expression( seeder, varCount
@@ -276,7 +292,7 @@ auto main () -> int
 
     std::cout << "Seed is " << seed << '.' << '\n';
     test_all("BDD manager", bddManager, expr, seeder);
-    test_all("MDD manager", mddManager, expr, seeder);
+    // test_all("MDD manager", mddManager, expr, seeder);
 
     std::puts("\nEnd of main.");
 

@@ -2,6 +2,7 @@
 #define MIX_DD_NODE_POOL_HPP
 
 #include "node.hpp"
+#include "debug.hpp"
 
 #include <array>
 #include <cstddef>

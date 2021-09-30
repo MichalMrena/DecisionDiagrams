@@ -424,6 +424,7 @@ namespace teddy
     {
         needsGc_ = false;
 
+        // TODO pri inom ako defaultnom poradi treba ist po leveloch !!!
         for (auto& table : uniqueTables_)
         {
             auto const end = std::end(table);

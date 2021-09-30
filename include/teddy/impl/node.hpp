@@ -78,8 +78,9 @@ namespace teddy
         node  (index_t, sons_t&&);
         node  (node const&) = delete;
         node  (node&&) = delete;
-        ~node () = default; // TODO zatial nefunguje v clangu !!!
-        ~node () requires(degrees::is_mixed<D>()());
+        // ~node () = default; // TODO zatial nefunguje v clangu !!!
+        // ~node () requires(degrees::is_mixed<D>()());
+        ~node();
 
         // notice: Making it a dummy template and making the return type
         //         dependent on the template makes it SFINE.
@@ -178,9 +179,19 @@ namespace teddy
         std::construct_at(&this->union_internal(), std::move(sons), i);
     }
 
+    // template<class Data, degree D>
+    // node<Data, D>::~node
+    //     () requires(degrees::is_mixed<D>()())
+    // {
+    //     if (this->is_internal())
+    //     {
+    //         std::destroy_at(&this->union_internal());
+    //     }
+    // }
+
     template<class Data, degree D>
     node<Data, D>::~node
-        () requires(degrees::is_mixed<D>()())
+        ()
     {
         if (this->is_internal())
         {
