@@ -3,14 +3,14 @@
 
 namespace teddy
 {
-    inline auto dout(std::string_view const s)
+    inline auto dout([[maybe_unused]] std::string_view const s)
     {
         #ifdef DEBUG
         std::cout << "s";
         #endif
     }
 
-    inline auto doutl(std::string_view const s)
+    inline auto doutl([[maybe_unused]] std::string_view const s)
     {
         #ifdef DEBUG
         dout(s);
@@ -19,7 +19,7 @@ namespace teddy
     }
 
     template<class Int>
-    auto dout(Int const n)
+    auto dout([[maybe_unused]] Int const n)
     {
         #ifdef DEBUG
         std::cout << n;
@@ -27,7 +27,7 @@ namespace teddy
     }
 
     template<class Int>
-    auto doutl(Int const n)
+    auto doutl([[maybe_unused]] Int const n)
     {
         #ifdef DEBUG
         dout(n);
