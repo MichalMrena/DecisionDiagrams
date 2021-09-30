@@ -279,7 +279,7 @@ namespace teddy
 
     template<class BucketIt, class Data, degree D>
     unique_table_it<BucketIt, Data, D>::unique_table_it
-        (BucketIt first, BucketIt last) :
+        (BucketIt const first, BucketIt const last) :
         bucketIt_     (first),
         lastBucketIt_ (last),
         node_         (this->move_next())
