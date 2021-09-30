@@ -58,6 +58,7 @@ namespace teddy
         node_t*                                    freeNode_;
         pool_it                                    nextPoolNodeIt_;
         std::size_t                                overflowRatio_;
+            std::vector<node_t*> freeNodes_;
     };
 
     template<class Data, degree D>
@@ -70,6 +71,7 @@ namespace teddy
         nextPoolNodeIt_ (std::begin(mainPool_)),
         overflowRatio_  (2)
     {
+        overflowPools_.reserve(100);
     }
 
     template<class Data, degree D>
@@ -119,16 +121,22 @@ namespace teddy
     {
         auto p = static_cast<node_t*>(nullptr);
 
-        if (nextPoolNodeIt_ != std::end(*currentPoolPtr_))
+        if (not freeNodes_.empty())
+        {
+            p = freeNodes_.back();
+            freeNodes_.pop_back();
+            std::destroy_at(p);
+        }
+        // if (freeNode_)
+        // {
+        //     p = freeNode_;
+        //     freeNode_ = freeNode_->get_next();
+        //     std::destroy_at(p);
+        // }
+        else if (nextPoolNodeIt_ != std::end(*currentPoolPtr_))
         {
             p = nextPoolNodeIt_->get();
             ++nextPoolNodeIt_;
-        }
-        else if (freeNode_)
-        {
-            p = freeNode_;
-            freeNode_ = freeNode_->get_next();
-            std::destroy_at(p);
         }
 
         if (p)
@@ -154,8 +162,9 @@ namespace teddy
     auto node_pool<Data, D>::destroy
         (node_t* const p) -> void
     {
-        p->set_next(freeNode_);
-        freeNode_ = p;
+        // p->set_next(freeNode_);
+        // freeNode_ = p;
+        freeNodes_.emplace_back(p);
     }
 }
 

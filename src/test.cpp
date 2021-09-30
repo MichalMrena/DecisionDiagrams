@@ -275,8 +275,8 @@ namespace teddy::test
 
 auto main () -> int
 {
-    // auto const seed      = std::random_device()();
-    auto const seed      = 2010909674;
+    auto const seed      = std::random_device()();
+    // auto const seed      = 2010909674;
     auto const varCount  = 17;
     // auto const varCount  = 15;
     auto const termCount = 20;
