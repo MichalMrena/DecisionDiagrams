@@ -135,8 +135,8 @@ namespace teddy
 
         auto is_valid (index_t, uint_t) const -> bool;
 
-        static auto inc_ref_count (node_t* v) -> node_t*;
-        static auto dec_ref_count (node_t* v) -> void;
+        static auto inc_ref_count (node_t*) -> node_t*;
+        static auto dec_ref_count (node_t*) -> void;
 
     private:
         using unique_table_t = unique_table<Data, Degree>;
@@ -151,7 +151,7 @@ namespace teddy
 
         template<class... Args>
         auto new_node (Args&&...) -> node_t*;
-        auto delete_node (node_t* v) -> void;
+        auto delete_node (node_t*) -> void;
 
         template<class ForEachNode>
         auto to_dot_graph_common (std::ostream&, ForEachNode&&) const -> void;
@@ -175,7 +175,7 @@ namespace teddy
         bool                    reorderEnabled_;
 
         [[no_unique_address]]
-        Domain               domains_;
+        Domain                  domains_;
     };
 
     template<class Data, degree D>
@@ -601,9 +601,9 @@ namespace teddy
         (index_t const i, sons_t const& ss) const -> std::size_t
     {
         auto result = std::size_t(0);
-        for (auto j = 0u; j < domains_[i]; ++j)
+        for (auto k = 0u; k < domains_[i]; ++k)
         {
-            auto const hash = std::hash<node_t*>()(ss[j]);
+            auto const hash = std::hash<node_t*>()(ss[k]);
             result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
         }
         return result;
@@ -614,9 +614,9 @@ namespace teddy
         (node_t* const n, sons_t const& ss) const -> bool
     {
         auto const i = n->get_index();
-        for (auto j = 0u; j < domains_[i]; ++j)
+        for (auto k = 0u; k < domains_[i]; ++k)
         {
-            if (n->get_son(j) != ss[j])
+            if (n->get_son(k) != ss[k])
             {
                 return false;
             }
