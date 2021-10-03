@@ -120,13 +120,13 @@ namespace teddy
     {
         auto p = static_cast<node_t*>(nullptr);
 
-        if (freeNode_)
-        {
-            p = freeNode_;
-            freeNode_ = freeNode_->get_next();
-            std::destroy_at(p);
-        }
-        else if (nextPoolNodeIt_ != std::end(*currentPoolPtr_))
+        // if (freeNode_)
+        // {
+        //     p = freeNode_;
+        //     freeNode_ = freeNode_->get_next();
+        //     std::destroy_at(p);
+        // }
+        /*else*/ if (nextPoolNodeIt_ != std::end(*currentPoolPtr_))
         {
             p = nextPoolNodeIt_->get();
             ++nextPoolNodeIt_;
@@ -155,8 +155,8 @@ namespace teddy
     auto node_pool<Data, D>::destroy
         (node_t* const p) -> void
     {
-        p->set_next(freeNode_);
-        freeNode_ = p;
+        // p->set_next(freeNode_);
+        // freeNode_ = p;
     }
 }
 

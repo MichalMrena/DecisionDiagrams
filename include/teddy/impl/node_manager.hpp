@@ -320,6 +320,18 @@ namespace teddy
         }
 
         auto n = this->new_node(i, std::move(sons));
+
+            // TODO chyba!
+            // v tomto momente by ešte nemal byť v tabuľke
+            // dokonca to vyhadzuje aj keď ich znovu nepoužijem
+            for (auto& tbl : uniqueTables_)
+            {
+                for (auto const tn : tbl)
+                {
+                    assert(not node_manager::node_equal(tn, sons));
+                }
+            }
+
         table.insert(n, hash);
         this->for_each_son(n, inc_ref_count);
 
