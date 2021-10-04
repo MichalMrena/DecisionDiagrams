@@ -174,7 +174,7 @@ namespace teddy
     auto apply_cache<Data, D>::entry::matches
         (node_t* const l, node_t* const r) const -> bool
     {
-        return result and result->is_used() and l == lhs and r == rhs;
+        return result and l == lhs and r == rhs;
     }
 
     template<class Data, degree D>

@@ -321,15 +321,10 @@ namespace teddy
 
         auto n = this->new_node(i, std::move(sons));
 
-            // TODO chyba!
-            // v tomto momente by ešte nemal byť v tabuľke
-            // dokonca to vyhadzuje aj keď ich znovu nepoužijem
-            for (auto& tbl : uniqueTables_)
+            // TODO
+            for (auto const tn : uniqueTables_[i])
             {
-                for (auto const tn : tbl)
-                {
-                    assert(not node_manager::node_equal(tn, sons));
-                }
+                assert(not node_manager::node_equal(tn, sons));
             }
 
         table.insert(n, hash);
