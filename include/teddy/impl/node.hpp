@@ -71,7 +71,8 @@ namespace teddy
 
     public:
         using sons_t = decltype(container(uint_t{}, D()));
-        using refs_t = unsigned int;
+        using refs_t = uint_t;
+        using bits_t = unsigned int;
 
     public:
         explicit node (uint_t);
@@ -95,7 +96,6 @@ namespace teddy
         auto is_internal   () const       -> bool;
         auto is_terminal   () const       -> bool;
         auto is_used       () const       -> bool;
-        auto set_used      ()             -> void;
         auto set_unused    ()             -> void;
         auto is_marked     () const       -> bool;
         auto toggle_marked ()             -> void;
@@ -110,6 +110,8 @@ namespace teddy
         auto get_value     () const       -> uint_t;
 
     private:
+        // TODO In C++20, constructors are not necessary (I think).
+
         struct internal
         {
             sons_t  sons;
@@ -120,8 +122,17 @@ namespace teddy
             {
             }
         };
-        using terminal = uint_t;
-        using union_t  = std::array<std::byte, sizeof(internal)>;
+
+        struct terminal
+        {
+            uint_t value;
+            terminal (uint_t const v) :
+                value {v}
+            {
+            }
+        };
+
+        using union_t = std::array<std::byte, sizeof(internal)>;
 
     private:
         auto union_internal ()       -> internal&;
@@ -130,9 +141,9 @@ namespace teddy
         auto union_terminal () const -> terminal const&;
 
     private:
-        inline static constexpr auto MarkM   = 1u << (8 * sizeof(refs_t) - 1);
-        inline static constexpr auto UsedM   = 1u << (8 * sizeof(refs_t) - 2);
-        inline static constexpr auto LeafM   = 1u << (8 * sizeof(refs_t) - 3);
+        inline static constexpr auto MarkM   = 1u << (8 * sizeof(bits_t) - 1);
+        inline static constexpr auto UsedM   = 1u << (8 * sizeof(bits_t) - 2);
+        inline static constexpr auto LeafM   = 1u << (8 * sizeof(bits_t) - 3);
         inline static constexpr auto RefsM   = ~(MarkM | UsedM | LeafM);
         inline static constexpr auto RefsMax = ~RefsM;
 
@@ -141,7 +152,7 @@ namespace teddy
         [[no_unique_address]]
         opt_member<Data> data_;
         node*            next_;
-        refs_t           refs_;
+        bits_t           bits_;
     };
 
     template<class Data, degree D>
@@ -165,7 +176,7 @@ namespace teddy
     node<Data, D>::node
         (uint_t const i) :
         next_ {nullptr},
-        refs_ {LeafM | UsedM}
+        bits_ {LeafM | UsedM}
     {
         std::construct_at(&this->union_terminal(), i);
     }
@@ -174,7 +185,7 @@ namespace teddy
     node<Data, D>::node
         (index_t const i, sons_t&& sons) :
         next_ {nullptr},
-        refs_ {UsedM}
+        bits_ {UsedM}
     {
         std::construct_at(&this->union_internal(), std::move(sons), i);
     }
@@ -204,6 +215,7 @@ namespace teddy
     auto node<Data, D>::data
         () -> second_t<Foo, Data>&
     {
+        assert(this->is_used());
         return data_.m;
     }
 
@@ -212,6 +224,7 @@ namespace teddy
     auto node<Data, D>::data
         () const -> second_t<Foo, Data> const&
     {
+        assert(this->is_used());
         return data_.m;
     }
 
@@ -255,63 +268,56 @@ namespace teddy
     auto node<Data, D>::get_value
         () const -> uint_t
     {
-        return this->union_terminal();
+        return this->union_terminal().value;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::is_internal
         () const -> bool
     {
-        return not this->is_terminal();
+        return this->is_used() and not this->is_terminal();
     }
 
     template<class Data, degree D>
     auto node<Data, D>::is_terminal
         () const -> bool
     {
-        return refs_ & LeafM;
+        return this->is_used() and (bits_ & LeafM);
     }
 
     template<class Data, degree D>
     auto node<Data, D>::is_used
         () const -> bool
     {
-        return refs_ & UsedM;
-    }
-
-    template<class Data, degree D>
-    auto node<Data, D>::set_used
-        () -> void
-    {
-        refs_ |= UsedM;
+        return bits_ & UsedM;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::set_unused
         () -> void
     {
-        refs_ &= ~UsedM;
+        bits_ &= ~UsedM;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::is_marked
         () const -> bool
     {
-        return refs_ & MarkM;
+        return bits_ & MarkM;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::toggle_marked
         () -> void
     {
-        refs_ ^= MarkM;
+        bits_ ^= MarkM;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::get_ref_count
         () const -> refs_t
     {
-        return refs_ & RefsM;
+        return static_cast<refs_t>(bits_ & RefsM);
     }
 
     template<class Data, degree D>
@@ -319,7 +325,7 @@ namespace teddy
         () -> void
     {
         assert(this->get_ref_count() < RefsMax);
-        ++refs_;
+        ++bits_;
     }
 
     template<class Data, degree D>
@@ -327,7 +333,7 @@ namespace teddy
         () -> void
     {
         assert(this->get_ref_count() > 0);
-        --refs_;
+        --bits_;
     }
 
     template<class Data, degree D>
