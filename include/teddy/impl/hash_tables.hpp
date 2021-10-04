@@ -129,6 +129,7 @@ namespace teddy
             node_t* rhs    {nullptr};
             node_t* result {nullptr};
             auto matches (node_t*, node_t*) const -> bool;
+            auto reset () -> void;
         };
 
     public:
@@ -177,6 +178,13 @@ namespace teddy
         (node_t* const l, node_t* const r) const -> bool
     {
         return l == lhs and r == rhs;
+    }
+
+    template<class Data, degree D>
+    auto apply_cache<Data, D>::entry::reset
+        () -> void
+    {
+        *this = {};
     }
 
     template<class Data, degree D>
@@ -248,7 +256,7 @@ namespace teddy
                                   and e.result->is_used();
                     if (not used)
                     {
-                        e = {};
+                        e.reset();
                         --size_;
                     }
                 }
