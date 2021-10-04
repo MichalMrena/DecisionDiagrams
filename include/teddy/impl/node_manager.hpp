@@ -429,13 +429,13 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::collect_garbage
         () -> void
     {
-        needsGc_ = false;
+        needsGc_ = false;        
 
-        // TODO pri inom ako defaultnom poradi treba ist po leveloch !!!
-        for (auto& table : uniqueTables_)
+        for (auto level = 0u; level < this->get_var_count(); ++level)
         {
+            auto& table    = uniqueTables_[levelToIndex_[level]];
             auto const end = std::end(table);
-            auto it = std::begin(table);
+            auto it        = std::begin(table);
 
             while (it != end)
             {
@@ -451,6 +451,11 @@ namespace teddy
                     ++it;
                 }
             }
+        }
+
+        for (auto& cache : opCaches_)
+        {
+            cache.rm_unused();
         }
     }
 

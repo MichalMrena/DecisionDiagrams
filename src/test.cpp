@@ -275,14 +275,12 @@ namespace teddy::test
 
 auto main () -> int
 {
-    // auto const seed      = std::random_device()();
-    auto const seed      = 1604277796;
-    auto const varCount  = 17;
-    // auto const varCount  = 15;
+    auto const seed      = std::random_device()();
+    auto const varCount  = 15;
     auto const termCount = 20;
     auto const termSize  = 5;
     // auto const nodeCount = 10'000;
-    auto const nodeCount = 500;
+    auto const nodeCount = 200;
 
     auto seeder     = std::default_random_engine(seed);
     auto expr       = teddy::test::generate_expression( seeder, varCount
@@ -292,7 +290,7 @@ auto main () -> int
 
     std::cout << "Seed is " << seed << '.' << '\n';
     test_all("BDD manager", bddManager, expr, seeder);
-    // test_all("MDD manager", mddManager, expr, seeder);
+    test_all("MDD manager", mddManager, expr, seeder);
 
     std::puts("\nEnd of main.");
 

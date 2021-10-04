@@ -142,6 +142,7 @@ namespace teddy
         auto find            (node_t*, node_t*) -> iterator;
         auto put             (iterator, node_t*, node_t*, node_t*) -> void;
         auto adjust_capacity (std::size_t) -> void;
+        auto rm_unused       () -> void;
         auto clear           () -> void;
 
     private:
@@ -161,7 +162,8 @@ namespace teddy
     inline auto table_base::gte_capacity
         (std::size_t const target) -> std::size_t
     {
-        auto const p  = [=](auto const c){ return c > target; };
+        // TODO use ranges
+        auto const p  = [target](auto const c){ return c > target; };
         auto const it = std::find_if( std::begin(Capacities)
                                     , std::end(Capacities)
                                     , p );
@@ -174,7 +176,7 @@ namespace teddy
     auto apply_cache<Data, D>::entry::matches
         (node_t* const l, node_t* const r) const -> bool
     {
-        return result and l == lhs and r == rhs;
+        return l == lhs and r == rhs;
     }
 
     template<class Data, degree D>
@@ -229,6 +231,29 @@ namespace teddy
         }
 
         this->rehash(table_base::gte_capacity(aproxCapacity));
+    }
+
+    template<class Data, degree D>
+    auto apply_cache<Data, D>::rm_unused
+        () -> void
+    {
+        if (size_ > 0)
+        {
+            for (auto& e : entries_)
+            {
+                if (e.result)
+                {
+                    auto const used = e.lhs->is_used()
+                                  and e.rhs->is_used()
+                                  and e.result->is_used();
+                    if (not used)
+                    {
+                        e = {};
+                        --size_;
+                    }
+                }
+            }
+        }
     }
 
     template<class Data, degree D>

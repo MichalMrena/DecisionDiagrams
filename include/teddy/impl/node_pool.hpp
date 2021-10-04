@@ -70,6 +70,7 @@ namespace teddy
         nextPoolNodeIt_ (std::begin(mainPool_)),
         overflowRatio_  (2)
     {
+        // TODO nope
         overflowPools_.reserve(100);
     }
 
