@@ -32,7 +32,7 @@ namespace teddy
     public:
         node_pool  (std::size_t);
         node_pool  (node_pool const&) = delete;
-        node_pool  (node_pool&&)      = default;
+        node_pool  (node_pool&&);
         ~node_pool ();
 
         auto operator= (node_pool const&) -> node_pool& = delete;
@@ -75,6 +75,32 @@ namespace teddy
 
         // TODO nope
         overflowPools_.reserve(100);
+    }
+
+    template<class Data, degree D>
+    node_pool<Data, D>::node_pool
+        (node_pool&& other)
+    {
+        auto constexpr MainPool = static_cast<std::size_t>(-1);
+        auto const currPollPtrOffset = other.currentPoolPtr_ == &other.mainPool_
+            ? MainPool
+            : static_cast<std::size_t>( other.currentPoolPtr_
+                                      - &other.overflowPools_.front() );
+        auto const nextNodeItOffset
+            = std::distance( std::begin(*other.currentPoolPtr_)
+                           , other.nextPoolNodeIt_ );
+
+        mainPool_       = std::move(other.mainPool_);
+        overflowPools_  = std::move(other.overflowPools_);
+        currentPoolPtr_ = currPollPtrOffset == MainPool
+            ? &mainPool_
+            : &overflowPools_[currPollPtrOffset];
+        freeNode_       = std::exchange(other.freeNode_, nullptr);
+        nextPoolNodeIt_ = std::next( std::begin(*currentPoolPtr_)
+                                   , nextNodeItOffset );
+        overflowRatio_  = other.overflowRatio_;
+
+        other.currentPoolPtr_ = &other.mainPool_;
     }
 
     template<class Data, degree D>
