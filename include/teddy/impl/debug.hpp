@@ -1,37 +1,42 @@
+#ifndef TEDDY_DEBUG_HPP
+#define TEDDY_DEBUG_HPP
+
 #include <iostream>
 #include <string_view>
 
-namespace teddy
+namespace teddy::debug
 {
-    inline auto dout([[maybe_unused]] std::string_view const s)
+    inline auto out([[maybe_unused]] std::string_view const s)
     {
-        #ifdef DEBUG
+        #ifdef TEDDY_VERBOSE
         std::cout << "s";
         #endif
     }
 
-    inline auto doutl([[maybe_unused]] std::string_view const s)
+    inline auto outl([[maybe_unused]] std::string_view const s)
     {
-        #ifdef DEBUG
-        dout(s);
+        #ifdef TEDDY_VERBOSE
+        out(s);
         std::cout << '\n';
         #endif
     }
 
     template<class Int>
-    auto dout([[maybe_unused]] Int const n)
+    auto out([[maybe_unused]] Int const n)
     {
-        #ifdef DEBUG
+        #ifdef TEDDY_VERBOSE
         std::cout << n;
         #endif
     }
 
     template<class Int>
-    auto doutl([[maybe_unused]] Int const n)
+    auto outl([[maybe_unused]] Int const n)
     {
-        #ifdef DEBUG
-        dout(n);
+        #ifdef TEDDY_VERBOSE
+        out(n);
         std::cout << '\n';
         #endif
     }
 }
+
+#endif

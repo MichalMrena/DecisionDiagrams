@@ -1,4 +1,4 @@
-#define VERBOSE 1
+#define TEDDY_VERBOSE 1
 
 #include "teddy/teddy.hpp"
 #include <random>

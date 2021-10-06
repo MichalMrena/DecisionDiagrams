@@ -70,6 +70,9 @@ namespace teddy
         nextPoolNodeIt_ (std::begin(mainPool_)),
         overflowRatio_  (2)
     {
+        debug::out("Allocating initial pool with size = ");
+        debug::outl(mainPool_.size());
+
         // TODO nope
         overflowPools_.reserve(100);
     }
@@ -146,6 +149,9 @@ namespace teddy
     auto node_pool<Data, D>::force_create
         (Args&&... as) -> node_t*
     {
+        debug::out("Allocating new pool with size = ");
+        debug::outl(mainPool_.size() / overflowRatio_);
+
         overflowPools_.emplace_back(mainPool_.size() / overflowRatio_);
         currentPoolPtr_ = &overflowPools_.back();
         nextPoolNodeIt_ = std::begin(*currentPoolPtr_);

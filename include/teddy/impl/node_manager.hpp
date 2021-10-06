@@ -3,6 +3,7 @@
 
 #include "types.hpp"
 #include "utils.hpp"
+#include "debug.hpp"
 #include "node.hpp"
 #include "node_pool.hpp"
 #include "hash_tables.hpp"
@@ -429,7 +430,10 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::collect_garbage
         () -> void
     {
-        needsGc_ = false;        
+        debug::out("Collecting garbage. Node count = ");
+        debug::outl(nodeCount_);
+
+        needsGc_ = false;
 
         for (auto level = 0u; level < this->get_var_count(); ++level)
         {
