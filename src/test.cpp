@@ -1,4 +1,5 @@
-#define TEDDY_VERBOSE 1
+#define TEDDY_VERBOSE
+#undef TEDDY_VERBOSE
 
 #include "teddy/teddy.hpp"
 #include <random>
@@ -190,7 +191,7 @@ namespace teddy::test
             auto const diagramVal  = manager.evaluate(diagram, *iterator);
             if (expectedVal != diagramVal)
             {
-                outl_red("!!!");
+                out_red("!!");
                 break;
             }
             ++iterator;
@@ -198,7 +199,7 @@ namespace teddy::test
 
         if (not iterator.has_more())
         {
-            outl_green("OK");
+            out_green("OK");
         }
     }
 
@@ -212,11 +213,11 @@ namespace teddy::test
     {
         if (diagram1.equals(diagram2))
         {
-            outl_green("OK");
+            out_green("OK");
         }
         else
         {
-            outl_red("!!!");
+            out_red("!!");
         }
     }
 
@@ -234,40 +235,68 @@ namespace teddy::test
         auto const diagramNodeCount = manager.node_count(diagram);
         if (totalNodeCount == diagramNodeCount)
         {
-            outl_green("OK");
+            out_green("OK");
         }
         else
         {
-            out_red("!!!");
-            std::cout << " expected " << diagramNodeCount
-                      << " got "      << totalNodeCount;
+            out_red("!!");
+            // std::cout << " expected " << diagramNodeCount
+            //           << " got "      << totalNodeCount;
         }
     }
 
     /**
      *  Runs all test. Creates diagram represeting @p expr using @p manager .
      */
-    template<class Dat, class Deg, class Dom>
+    template<class Manager>
     auto test_all
-        ( std::string_view                name
-        , diagram_manager<Dat, Deg, Dom>& manager
-        , expression const&               expr
-        , std::default_random_engine&      )
+        ( std::string_view                         name
+        , std::vector<Manager>&                    managers
+        , std::vector<expression> const&           exprs
+        , std::vector<std::default_random_engine>& seeders )
     {
+        auto const testCount = managers.size();
         std::cout << CodeYellow << name << CodeReset << '\n';
 
-        auto const diagram1 = create_diagram(expr, manager, fold_e::Left);
-        auto       diagram2 = create_diagram(expr, manager, fold_e::Tree);
-        std::cout << "  node count: " << manager.node_count(diagram1) << "\n\n";
+        auto diagram1s = utils::fill_vector(testCount, [&](auto const k)
+        {
+            return create_diagram(exprs[k], managers[k], fold_e::Left);
+        });
+
+        auto diagram2s = utils::fill_vector(testCount, [&](auto const k)
+        {
+            return create_diagram(exprs[k], managers[k], fold_e::Tree);
+        });
+
+        std::cout << "  node counts: ";
+        for (auto k = 0u; k < testCount; ++k)
+        {
+            std::cout << managers[k].node_count(diagram1s[k]) << ' ';
+        }
+        std::cout << "\n\n";
 
         std::cout << "  evaluate: ";
-        test_evaluate(manager, diagram1, expr);
+        for (auto k = 0u; k < testCount; ++k)
+        {
+            test_evaluate(managers[k], diagram1s[k], exprs[k]);
+            std::cout << ' ';
+        }
+        std::cout << '\n';
 
         std::cout << "  fold:     ";
-        test_fold(diagram1, diagram2);
+        for (auto k = 0u; k < testCount; ++k)
+        {
+            test_fold(diagram1s[k], diagram2s[k]);
+            std::cout << ' ';
+        }
+        std::cout << '\n';
 
         std::cout << "  gc:       ";
-        test_gc(manager, diagram1);
+        for (auto k = 0u; k < testCount; ++k)
+        {
+            test_gc(managers[k], diagram1s[k]);
+            std::cout << '\n';
+        }
 
         std::cout << '\n';
     }
@@ -275,22 +304,36 @@ namespace teddy::test
 
 auto main () -> int
 {
-    auto const seed      = std::random_device()();
+    namespace us = teddy::utils;
+    namespace ts = teddy::test;
+
     auto const varCount  = 15;
     auto const termCount = 20;
     auto const termSize  = 5;
-    // auto const nodeCount = 10'000;
     auto const nodeCount = 200;
+    auto const testCount = 1;
+    auto const initSeed  = std::random_device()();
+    auto initSeeder = std::default_random_engine(initSeed);
+    auto seeders = us::fill_vector(testCount, [&initSeeder](auto const)
+    {
+        return std::default_random_engine(initSeeder());
+    });
+    auto const exprs = us::fmap(seeders, [=](auto& seeder)
+    {
+        return ts::generate_expression(seeder, varCount, termCount, termSize);
+    });
+    auto bddManagers = us::fill_vector(testCount, [=](auto const)
+    {
+        return teddy::bdd_manager(varCount, nodeCount);
+    });
+    auto mddManagers = us::fill_vector(testCount, [=](auto const)
+    {
+        return teddy::mdd_manager<3>(varCount, nodeCount);
+    });
 
-    auto seeder     = std::default_random_engine(seed);
-    auto expr       = teddy::test::generate_expression( seeder, varCount
-                                                      , termCount, termSize );
-    auto bddManager = teddy::bdd_manager(varCount, nodeCount);
-    auto mddManager = teddy::mdd_manager<3>(varCount, nodeCount);
-
-    std::cout << "Seed is " << seed << '.' << '\n';
-    test_all("BDD manager", bddManager, expr, seeder);
-    test_all("MDD manager", mddManager, expr, seeder);
+    std::cout << "Seed is " << initSeed << '.' << '\n';
+    test_all("BDD manager", bddManagers, exprs, seeders);
+    test_all("MDD manager", mddManagers, exprs, seeders);
 
     std::puts("\nEnd of main.");
 

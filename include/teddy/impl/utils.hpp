@@ -26,15 +26,15 @@ namespace teddy::utils
         return xs;
     }
 
-    template<class T, class F>
-    auto fmap (std::vector<T> const& xs, F&& f)
+    template<class Xs, class F>
+    auto fmap (Xs&& xs, F&& f)
     {
-        using U = decltype(std::invoke(f, xs.front()));
+        using U = decltype(std::invoke(f, *std::begin(xs)));
         auto ys = std::vector<U>();
-        ys.reserve(xs.size());
-        for (auto const& x : xs)
+        ys.reserve(std::size(xs));
+        for (auto&& x : xs)
         {
-            ys.emplace_back(std::invoke(f, x));
+            ys.emplace_back(std::invoke(f, x)); // TODO forward x?
         }
         return ys;
     }
