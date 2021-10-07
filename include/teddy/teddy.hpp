@@ -68,6 +68,16 @@ namespace teddy
             (varCount, initNodeCount, std::move(order))
     {
     }
+
+    inline imdd_manager::imdd_manager
+        ( std::size_t          varCount
+        , std::size_t          initNodeCount
+        , std::vector<uint_t>  domains
+        , std::vector<index_t> order ) :
+        diagram_manager<void, degrees::mixed, domains::mixed>
+            (varCount, initNodeCount, std::move(domains), std::move(order))
+    {
+    }
 }
 
 #endif
