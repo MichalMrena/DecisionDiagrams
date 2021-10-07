@@ -2,12 +2,11 @@
 #undef TEDDY_VERBOSE
 
 #include "teddy/teddy.hpp"
-#include <random>
-#include <cstdio>
+#include <algorithm>
 #include <iostream>
+#include <random>
 #include <ranges>
 #include <vector>
-#include <algorithm>
 
 namespace teddy::test
 {
@@ -106,19 +105,20 @@ namespace teddy::test
         return max_fold(termDs);
     }
 
+    using rng_t = std::mt19937_64;
+
     template<class Int>
     using int_dist = std::uniform_int_distribution<Int>;
 
     auto generate_expression
-        ( std::default_random_engine& seeder
-        , std::size_t const           varCount
-        , std::size_t const           termCount
-        , std::size_t const           termSize )
+        ( rng_t&            indexRng
+        , std::size_t const varCount
+        , std::size_t const termCount
+        , std::size_t const termSize )
     {
         assert(varCount > 0);
         static auto indexFrom = index_t {0};
         static auto indexTo   = static_cast<index_t>(varCount - 1u);
-        static auto indexRng  = std::default_random_engine(seeder());
         static auto indexDst  = int_dist<index_t>(indexFrom, indexTo);
 
         auto terms = std::vector<std::vector<uint_t>>(termCount);
@@ -250,11 +250,24 @@ namespace teddy::test
      */
     template<class Manager>
     auto test_all
-        ( std::string_view                         name
-        , std::vector<Manager>&                    managers
-        , std::vector<expression> const&           exprs
-        , std::vector<std::default_random_engine>& seeders )
+        ( std::string_view               name
+        , std::vector<Manager>&          managers
+        , std::vector<expression> const& exprs
+        , std::vector<rng_t>&            seeders )
     {
+        auto const flushed_space = []()
+        {
+            std::cout << ' ' << std::flush;
+        };
+        auto const endl = []()
+        {
+            std::cout << '\n';
+        };
+        auto const out = [](auto const& s)
+        {
+            std::cout << s;
+        };
+
         auto const testCount = managers.size();
         std::cout << CodeYellow << name << CodeReset << '\n';
 
@@ -268,37 +281,39 @@ namespace teddy::test
             return create_diagram(exprs[k], managers[k], fold_e::Tree);
         });
 
-        std::cout << "  node counts: ";
+        out("  node counts: ");
         for (auto k = 0u; k < testCount; ++k)
         {
             std::cout << managers[k].node_count(diagram1s[k]) << ' ';
         }
-        std::cout << "\n\n";
+        endl();
+        endl();
 
-        std::cout << "  evaluate: ";
+        out("  evaluate: ");
         for (auto k = 0u; k < testCount; ++k)
         {
             test_evaluate(managers[k], diagram1s[k], exprs[k]);
-            std::cout << ' ';
+            flushed_space();
         }
-        std::cout << '\n';
+        endl();
 
-        std::cout << "  fold:     ";
+        out("  fold:     ");
         for (auto k = 0u; k < testCount; ++k)
         {
             test_fold(diagram1s[k], diagram2s[k]);
-            std::cout << ' ';
+            flushed_space();
         }
-        std::cout << '\n';
+        endl();
 
-        std::cout << "  gc:       ";
+        out("  gc:       ");
         for (auto k = 0u; k < testCount; ++k)
         {
             test_gc(managers[k], diagram1s[k]);
-            std::cout << '\n';
+            flushed_space();
         }
 
-        std::cout << '\n';
+        endl();
+        endl();
     }
 }
 
@@ -311,16 +326,26 @@ auto main () -> int
     auto const termCount = 20;
     auto const termSize  = 5;
     auto const nodeCount = 200;
-    auto const testCount = 1;
+    auto const testCount = 10;
     auto const initSeed  = std::random_device()();
-    auto initSeeder = std::default_random_engine(initSeed);
-    auto seeders = us::fill_vector(testCount, [&initSeeder](auto const)
+
+    auto initSeeder = ts::rng_t(initSeed);
+    auto seeders    = us::fill_vector(testCount, [&initSeeder](auto const)
     {
-        return std::default_random_engine(initSeeder());
+        return ts::rng_t(initSeeder());
     });
-    auto const exprs = us::fmap(seeders, [=](auto& seeder)
+    auto indexRngs = us::fmap(seeders, [](auto& seeder)
     {
-        return ts::generate_expression(seeder, varCount, termCount, termSize);
+        return ts::rng_t(seeder());
+    });
+    auto domainRngs = us::fmap(seeders, [](auto& seeder)
+    {
+        return ts::rng_t(seeder());
+    });
+
+    auto const exprs = us::fmap(indexRngs, [=](auto& indexRng)
+    {
+        return ts::generate_expression(indexRng, varCount, termCount, termSize);
     });
     auto bddManagers = us::fill_vector(testCount, [=](auto const)
     {
@@ -330,12 +355,23 @@ auto main () -> int
     {
         return teddy::mdd_manager<3>(varCount, nodeCount);
     });
+    auto imddManagers = us::fill_vector(testCount, [=, &seeders]
+        (auto const k) mutable
+    {
+        auto& domainRng = domainRngs[k];
+        auto domainDst  = ts::int_dist<teddy::uint_t>(2, 3);
+        auto domains    = us::fill_vector(varCount, [&](auto const)
+        {
+            return domainDst(domainRng);
+        });
+        return teddy::imdd_manager(varCount, nodeCount, std::move(domains));
+    });
 
     std::cout << "Seed is " << initSeed << '.' << '\n';
     test_all("BDD manager", bddManagers, exprs, seeders);
-    test_all("MDD manager", mddManagers, exprs, seeders);
+    // test_all("MDD manager", mddManagers, exprs, seeders);
 
-    std::puts("\nEnd of main.");
+    std::cout << '\n' << "End of main." << '\n';
 
     return 0;
 }
