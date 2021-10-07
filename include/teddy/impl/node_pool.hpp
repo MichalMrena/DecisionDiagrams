@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstddef>
+#include <iterator>
 #include <memory>
 
 namespace teddy
@@ -81,26 +82,31 @@ namespace teddy
     node_pool<Data, D>::node_pool
         (node_pool&& other)
     {
-        auto constexpr MainPool = static_cast<std::size_t>(-1);
-        auto const currPollPtrOffset = other.currentPoolPtr_ == &other.mainPool_
-            ? MainPool
+        // Calculate others pointer and iterator positions.
+        auto constexpr MainPoolOffset = static_cast<std::size_t>(-1);
+        auto const poolOffset = other.currentPoolPtr_ == &other.mainPool_
+            ? MainPoolOffset
             : static_cast<std::size_t>( other.currentPoolPtr_
                                       - &other.overflowPools_.front() );
-        auto const nextNodeItOffset
+        auto const nodeItOffset
             = std::distance( std::begin(*other.currentPoolPtr_)
                            , other.nextPoolNodeIt_ );
 
+        // Steal from other.
         mainPool_       = std::move(other.mainPool_);
         overflowPools_  = std::move(other.overflowPools_);
-        currentPoolPtr_ = currPollPtrOffset == MainPool
+        currentPoolPtr_ = poolOffset == MainPoolOffset
             ? &mainPool_
-            : &overflowPools_[currPollPtrOffset];
-        freeNode_       = std::exchange(other.freeNode_, nullptr);
+            : &overflowPools_[poolOffset];
+        freeNode_       = other.freeNode_;
         nextPoolNodeIt_ = std::next( std::begin(*currentPoolPtr_)
-                                   , nextNodeItOffset );
+                                   , nodeItOffset );
         overflowRatio_  = other.overflowRatio_;
 
+        // Set other into correct state.
         other.currentPoolPtr_ = &other.mainPool_;
+        other.freeNode_       = nullptr;
+        other.nextPoolNodeIt_ = std::begin(other.mainPool_);
     }
 
     template<class Data, degree D>
