@@ -240,7 +240,7 @@ namespace teddy
         {
             for (auto const d : domains_.ds_)
             {
-                assert(d < Degree()());
+                assert(d <= Degree()());
             }
         }
 
@@ -321,13 +321,6 @@ namespace teddy
         }
 
         auto n = this->new_node(i, std::move(sons));
-
-            // TODO
-            for (auto const tn : uniqueTables_[i])
-            {
-                assert(not node_manager::node_equal(tn, sons));
-            }
-
         table.insert(n, hash);
         this->for_each_son(n, inc_ref_count);
 
@@ -430,8 +423,9 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::collect_garbage
         () -> void
     {
-        debug::out("Collecting garbage. Node count = ");
-        debug::outl(nodeCount_);
+        debug::out("Collecting garbage. Node count before = ");
+        debug::out(nodeCount_);
+        debug::out(".");
 
         needsGc_ = false;
 
@@ -461,6 +455,10 @@ namespace teddy
         {
             cache.rm_unused();
         }
+
+        debug::out("Node count after = ");
+        debug::out(nodeCount_);
+        debug::outl(". ");
     }
 
     template<class Data, degree Degree, domain Domain>

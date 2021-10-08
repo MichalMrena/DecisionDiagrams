@@ -253,7 +253,7 @@ namespace teddy::test
         ( std::string_view               name
         , std::vector<Manager>&          managers
         , std::vector<expression> const& exprs
-        , std::vector<rng_t>&            seeders )
+        , std::vector<rng_t>&             )
     {
         auto const flushed_space = []()
         {
@@ -315,6 +315,15 @@ namespace teddy::test
         endl();
         endl();
     }
+
+    auto random_domains (std::size_t const n, rng_t& rng)
+    {
+        auto domainDst = int_dist<teddy::uint_t>(2, 3);
+        return utils::fill_vector(n, [&](auto const)
+        {
+            return domainDst(rng);
+        });
+    }
 }
 
 auto main () -> int
@@ -325,9 +334,10 @@ auto main () -> int
     auto const varCount  = 15;
     auto const termCount = 20;
     auto const termSize  = 5;
-    auto const nodeCount = 200;
-    auto const testCount = 10;
-    auto const initSeed  = std::random_device()();
+    auto const nodeCount = 1000;
+    auto const testCount = 5;
+    // auto const initSeed  = std::random_device()();
+    auto const initSeed  = 144;
 
     auto initSeeder = ts::rng_t(initSeed);
     auto seeders    = us::fill_vector(testCount, [&initSeeder](auto const)
@@ -358,18 +368,31 @@ auto main () -> int
     auto imddManagers = us::fill_vector(testCount, [=, &seeders]
         (auto const k) mutable
     {
-        auto& domainRng = domainRngs[k];
-        auto domainDst  = ts::int_dist<teddy::uint_t>(2, 3);
-        auto domains    = us::fill_vector(varCount, [&](auto const)
-        {
-            return domainDst(domainRng);
-        });
+        auto domains = ts::random_domains(varCount, domainRngs[k]);
         return teddy::imdd_manager(varCount, nodeCount, std::move(domains));
     });
+    auto ifmddManagers = us::fill_vector(testCount, [=, &seeders]
+        (auto const k) mutable
+    {
+        auto domains = ts::random_domains(varCount, domainRngs[k]);
+        return teddy::ifmdd_manager<3>(varCount, nodeCount, std::move(domains));
+    });
+
+    if (imddManagers.front().get_domains() == ifmddManagers.front().get_domains())
+    {
+        std::cout << "rovanke\n";
+    }
+
+    if (ts::random_domains(10, domainRngs[0]) == ts::random_domains(10, domainRngs[0]))
+    {
+        std::cout << "stale rovnake\n";
+    }
 
     std::cout << "Seed is " << initSeed << '.' << '\n';
-    test_all("BDD manager", bddManagers, exprs, seeders);
-    // test_all("MDD manager", mddManagers, exprs, seeders);
+    // test_all("BDD manager",   bddManagers,  exprs, seeders);
+    // test_all("MDD manager",   mddManagers,  exprs, seeders);
+    test_all("iMDD manager",  imddManagers,  exprs, seeders);
+    test_all("ifMDD manager", ifmddManagers, exprs, seeders);
 
     std::cout << '\n' << "End of main." << '\n';
 

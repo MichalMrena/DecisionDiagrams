@@ -78,6 +78,17 @@ namespace teddy
             (varCount, initNodeCount, std::move(domains), std::move(order))
     {
     }
+
+    template<uint_t PMax>
+    ifmdd_manager<PMax>::ifmdd_manager
+        ( std::size_t          varCount
+        , std::size_t          initNodeCount
+        , std::vector<uint_t>  domains
+        , std::vector<index_t> order ) :
+        diagram_manager<void, degrees::fixed<PMax>, domains::mixed>
+            (varCount, initNodeCount, std::move(domains), std::move(order))
+    {
+    }
 }
 
 #endif
