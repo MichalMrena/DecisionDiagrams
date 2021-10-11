@@ -451,6 +451,15 @@ namespace teddy
             }
         }
 
+        for (auto& t : terminals_)
+        {
+            if (t and 0 == t->get_ref_count())
+            {
+                this->delete_node(t);
+                t = nullptr;
+            }
+        }
+
         for (auto& cache : opCaches_)
         {
             cache.rm_unused();

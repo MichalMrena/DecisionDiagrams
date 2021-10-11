@@ -135,10 +135,12 @@ namespace teddy
         using union_t = std::array<std::byte, sizeof(internal)>;
 
     private:
-        auto union_internal ()       -> internal&;
-        auto union_internal () const -> internal const&;
-        auto union_terminal ()       -> terminal&;
-        auto union_terminal () const -> terminal const&;
+        auto union_internal        ()       -> internal&;
+        auto union_internal        () const -> internal const&;
+        auto union_terminal        ()       -> terminal&;
+        auto union_terminal        () const -> terminal const&;
+        auto union_internal_unsafe ()       -> internal&;
+        auto is_or_was_internal    () const -> bool;
 
     private:
         inline static constexpr auto MarkM   = 1u << (8 * sizeof(bits_t) - 1);
@@ -194,9 +196,9 @@ namespace teddy
     // node<Data, D>::~node
     //     () requires(degrees::is_mixed<D>()())
     // {
-    //     if (this->is_internal())
+    //     if (this->is_or_was_internal())
     //     {
-    //         std::destroy_at(&this->union_internal());
+    //         std::destroy_at(&this->union_internal_unsafe());
     //     }
     // }
 
@@ -204,9 +206,9 @@ namespace teddy
     node<Data, D>::~node
         ()
     {
-        if (this->is_internal())
+        if (this->is_or_was_internal())
         {
-            std::destroy_at(&this->union_internal());
+            std::destroy_at(&this->union_internal_unsafe());
         }
     }
 
@@ -380,6 +382,21 @@ namespace teddy
     {
         assert(this->is_terminal());
         return *reinterpret_cast<terminal const*>(union_.data());
+    }
+
+    template<class Data, degree D>
+    auto node<Data, D>::union_internal_unsafe
+        () -> internal&
+    {
+        return *reinterpret_cast<internal*>(union_.data());
+    }
+
+    template<class Data, degree D>
+    auto node<Data, D>::is_or_was_internal
+        () const -> bool
+    {
+        // We don't care if it is used.
+        return not (bits_ & LeafM);
     }
 }
 
