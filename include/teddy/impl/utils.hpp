@@ -34,7 +34,7 @@ namespace teddy::utils
         ys.reserve(std::size(xs));
         for (auto&& x : xs)
         {
-            ys.emplace_back(std::invoke(f, x)); // TODO forward x?
+            ys.emplace_back(std::invoke(f, std::forward<decltype(x)>(x)));
         }
         return ys;
     }

@@ -35,6 +35,7 @@ namespace teddy
     namespace degrees
     {
         struct mixed {};
+
         template<uint_t N>
         struct fixed
         {
@@ -81,7 +82,7 @@ namespace teddy
         node  (node&&) = delete;
         // ~node () = default; // TODO zatial nefunguje v clangu !!!
         // ~node () requires(degrees::is_mixed<D>()());
-        ~node();
+        ~node ();
 
         // notice: Making it a dummy template and making the return type
         //         dependent on the template makes it SFINE.

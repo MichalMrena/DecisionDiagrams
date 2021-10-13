@@ -164,19 +164,17 @@ namespace teddy
             auto dec_ref_try_gc (node_t* v) -> void;
 
     private:
-        unique_table_v          uniqueTables_;
-        std::vector<node_t*>    terminals_;
-        std::vector<level_t>    indexToLevel_;
-        std::vector<index_t>    levelToIndex_;
-        op_cache_a              opCaches_;
-        node_pool<Data, Degree> pool_;
-        bool                    needsGc_;
-        std::size_t             nodeCount_;
-        std::size_t             cacheRatio_;
-        bool                    reorderEnabled_;
-
-        [[no_unique_address]]
-        Domain                  domains_;
+        std::array<op_cache_t, OpCount> opCaches_;
+        node_pool<Data, Degree>         pool_;
+        std::vector<unique_table_t>     uniqueTables_;
+        std::vector<node_t*>            terminals_;
+        std::vector<level_t>            indexToLevel_;
+        std::vector<index_t>            levelToIndex_;
+        [[no_unique_address]] Domain    domains_;
+        std::size_t                     nodeCount_;
+        std::size_t                     cacheRatio_;
+        bool                            needsGc_;
+        bool                            reorderEnabled_;
     };
 
     template<class Data, degree D>
@@ -221,17 +219,17 @@ namespace teddy
         , std::size_t const    nodes
         , std::vector<index_t> order
         , Domain               ds ) :
+        opCaches_       ({}),
+        pool_           (nodes),
         uniqueTables_   (vars),
         terminals_      ({}),
         indexToLevel_   (vars),
         levelToIndex_   (std::move(order)),
-        opCaches_       ({}),
-        pool_           (nodes),
-        needsGc_        (false),
+        domains_        (std::move(ds)),
         nodeCount_      (0),
         cacheRatio_     (4),
-        reorderEnabled_ (false),
-        domains_        (std::move(ds))
+        needsGc_        (false),
+        reorderEnabled_ (false)
     {
         assert(levelToIndex_.size() == this->get_var_count());
         assert(check_distinct(levelToIndex_));
@@ -243,7 +241,6 @@ namespace teddy
                 assert(d <= Degree()());
             }
         }
-
 
         // Create reverse mapping from (level_t -> index_t)
         // to (index_t -> level_t).

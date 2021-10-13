@@ -5,8 +5,9 @@
 #include "diagram.hpp"
 #include "utils.hpp"
 #include "operators.hpp"
-#include <concepts>
 #include <cmath>
+#include <concepts>
+#include <iterator>
 
 namespace teddy
 {
@@ -36,13 +37,13 @@ namespace teddy
         template<bin_op Op>
         auto left_fold (std::vector<diagram_t> const&) -> diagram_t;
 
-        template<bin_op Op, class InputIt>
+        template<bin_op Op, std::input_iterator InputIt>
         auto left_fold (InputIt, InputIt) -> diagram_t;
 
         template<bin_op Op>
         auto tree_fold (std::vector<diagram_t>&) -> diagram_t;
 
-        template<bin_op Op, class RandomIt>
+        template<bin_op Op, std::random_access_iterator RandomIt>
         auto tree_fold (RandomIt, RandomIt) -> diagram_t;
 
         template<var_values Vars>
@@ -60,8 +61,8 @@ namespace teddy
 
     public:
         auto get_var_count () const -> std::size_t;
-        auto get_order () const -> std::span<index_t const>;
-        auto get_domains () const -> std::vector<uint_t>;
+        auto get_order     () const -> std::span<index_t const>;
+        auto get_domains   () const -> std::vector<uint_t>;
 
     protected:
         diagram_manager ( std::size_t vars
@@ -168,7 +169,7 @@ namespace teddy
         };
 
         auto const r = go(go, d1.get_root(), d2.get_root());
-        auto d       = diagram_t(r);
+        auto const d = diagram_t(r);
         nodes_.adjust_sizes();
         return d;
     }
@@ -182,7 +183,7 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<bin_op Op, class InputIt>
+    template<bin_op Op, std::input_iterator InputIt>
     auto diagram_manager<Data, Degree, Domain>::left_fold
         (InputIt first, InputIt const last) -> diagram_t
     {
@@ -207,19 +208,19 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<bin_op Op, class RandomIt>
+    template<bin_op Op, std::random_access_iterator RandomIt>
     auto diagram_manager<Data, Degree, Domain>::tree_fold
         (RandomIt first, RandomIt const last) -> diagram_t
     {
-        auto const count      = std::distance(first, last);
-        auto currentCount     = count;
+        auto const count  = std::distance(first, last);
+        auto currentCount = count;
         auto const numOfSteps
             = static_cast<std::size_t>(std::ceil(std::log2(count)));
 
         for (auto step = 0u; step < numOfSteps; ++step)
         {
             auto const justMoveLast = currentCount & 1;
-            currentCount = (currentCount >> 1) + justMoveLast;
+            currentCount = (currentCount / 2) + justMoveLast;
             auto const pairCount    = currentCount - justMoveLast;
 
             for (auto i = 0u; i < pairCount; ++i)

@@ -23,7 +23,7 @@ namespace teddy
     public:
         explicit diagram (node_t*);
         diagram (diagram const&);
-        diagram (diagram&&);
+        diagram (diagram&&) noexcept;
         ~diagram();
 
         auto operator= (diagram)  -> diagram&;
@@ -65,7 +65,7 @@ namespace teddy
 
     template<class Data, degree D>
     diagram<Data, D>::diagram
-        (diagram&& d) :
+        (diagram&& d) noexcept :
         root_ (std::exchange(d.root_, nullptr))
     {
     }

@@ -253,20 +253,11 @@ namespace teddy
     inline constexpr auto OpCount = std::size_t {16};
 
     template<class O>
-    concept bin_op = std::is_same_v<O, AND>
-                  or std::is_same_v<O, OR>
-                  or std::is_same_v<O, XOR>
-                  or std::is_same_v<O, PI_CONJ>
-                  or std::is_same_v<O, NAND>
-                  or std::is_same_v<O, NOR>
-                  or std::is_same_v<O, EQUAL_TO>
-                  or std::is_same_v<O, NOT_EQUAL_TO>
-                  or std::is_same_v<O, LESS>
-                  or std::is_same_v<O, LESS_EQUAL>
-                  or std::is_same_v<O, GREATER>
-                  or std::is_same_v<O, GREATER_EQUAL>
-                  or std::is_same_v<O, MIN>
-                  or std::is_same_v<O, MAX>;
+    concept bin_op = requires (O o)
+    {
+        { op_id(o) } -> std::convertible_to<uint_t>;
+        { op_is_commutative(o) } -> std::same_as<bool>;
+    };
 }
 
 #endif
