@@ -240,9 +240,50 @@ namespace teddy::test
         else
         {
             out_red("!!");
-            // std::cout << " expected " << diagramNodeCount
-            //           << " got "      << totalNodeCount;
         }
+    }
+
+    /**
+     *  Tests the satisfy_count algorithm.
+     */
+    template<std::size_t Max, class Dat, class Deg, class Dom>
+    auto test_satisfy_count
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , diagram<Dat, Deg>&              diagram
+        , expression const&               expr )
+    {
+        auto const expectedCounts = [&manager, &expr]()
+        {
+            auto cs = std::array<std::size_t, Max>{};
+            auto iterator = domain_iterator(manager.get_domains());
+            while (iterator.has_more())
+            {
+                ++cs[evaluate_expression(expr, *iterator)];
+                ++iterator;
+            }
+            return cs;
+        }();
+
+        auto const realCounts = [&manager, &expr, &diagram]() mutable
+        {
+            auto cs = std::array<std::size_t, Max>{};
+            for (auto v = 0u; v < Max; ++v)
+            {
+                cs[v] = manager.satisfy_count(v, diagram);
+            }
+            return cs;
+        }();
+
+        for (auto k = 0u; k < Max; ++k)
+        {
+            if (realCounts[k] != expectedCounts[k])
+            {
+                out_red("!!");
+                return;
+            }
+        }
+
+        out_green("OK");
     }
 
     /**
@@ -289,7 +330,7 @@ namespace teddy::test
         endl();
         endl();
 
-        out("  evaluate: ");
+        out("  evaluate:      ");
         for (auto k = 0u; k < testCount; ++k)
         {
             test_evaluate(managers[k], diagram1s[k], exprs[k]);
@@ -297,7 +338,7 @@ namespace teddy::test
         }
         endl();
 
-        out("  fold:     ");
+        out("  fold:          ");
         for (auto k = 0u; k < testCount; ++k)
         {
             test_fold(diagram1s[k], diagram2s[k]);
@@ -305,18 +346,23 @@ namespace teddy::test
         }
         endl();
 
-        out("  gc:       ");
+        out("  gc:            ");
         for (auto k = 0u; k < testCount; ++k)
         {
             test_gc(managers[k], diagram1s[k]);
             flushed_space();
         }
-
-        endl();
         endl();
 
-        // managers.front().to_dot_graph(std::cout);
-        // managers.front().to_dot_graph(std::cout, diagram1s.front());
+        out("  satisfy-count: ");
+        for (auto k = 0u; k < testCount; ++k)
+        {
+            test_satisfy_count<3>(managers[k], diagram1s[k], exprs[k]);
+            flushed_space();
+        }
+        endl();
+
+        endl();
     }
 
     auto random_domains (std::size_t const n, rng_t& rng)
@@ -342,21 +388,14 @@ auto main () -> int
     auto const initSeed  = std::random_device()();
     // auto const initSeed  = 144;
 
-    auto initSeeder = ts::rng_t(initSeed);
-    auto seeders    = us::fill_vector(testCount, [&initSeeder](auto const)
-    {
-        return ts::rng_t(initSeeder());
-    });
-    auto indexRngs = us::fmap(seeders, [](auto& seeder)
-    {
-        return ts::rng_t(seeder());
-    });
-    auto domainRngs = us::fmap(seeders, [](auto& seeder)
+    // One rng for one test should be enough for the purpose of this test.
+    auto seeder = ts::rng_t(initSeed);
+    auto rngs = us::fill_vector(testCount, [&seeder](auto const)
     {
         return ts::rng_t(seeder());
     });
 
-    auto const exprs = us::fmap(indexRngs, [=](auto& indexRng)
+    auto const exprs = us::fmap(rngs, [=](auto& indexRng)
     {
         return ts::generate_expression(indexRng, varCount, termCount, termSize);
     });
@@ -368,9 +407,9 @@ auto main () -> int
     {
         return teddy::mdd_manager<3>(varCount, nodeCount);
     });
-    auto domains = us::fill_vector(testCount, [&](auto const k)
+    auto domains = us::fmap(rngs, [&](auto& rng)
     {
-        return ts::random_domains(varCount, domainRngs[k]);
+        return ts::random_domains(varCount, rng);
     });
     auto imddManagers = us::fill_vector(testCount, [&]
         (auto const k) mutable
@@ -384,10 +423,10 @@ auto main () -> int
     });
 
     std::cout << "Seed is " << initSeed << '.' << '\n';
-    test_all("BDD manager",   bddManagers,  exprs, seeders);
-    test_all("MDD manager",   mddManagers,  exprs, seeders);
-    test_all("iMDD manager",  imddManagers,  exprs, seeders);
-    test_all("ifMDD manager", ifmddManagers, exprs, seeders);
+    test_all("BDD manager",   bddManagers,   exprs, rngs);
+    test_all("MDD manager",   mddManagers,   exprs, rngs);
+    test_all("iMDD manager",  imddManagers,  exprs, rngs);
+    test_all("ifMDD manager", ifmddManagers, exprs, rngs);
 
     std::cout << '\n' << "End of main." << '\n';
 

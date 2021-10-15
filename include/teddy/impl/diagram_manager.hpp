@@ -29,6 +29,8 @@ namespace teddy
 
         auto variable (index_t) -> diagram_t;
 
+        auto operator() (index_t) -> diagram_t;
+
         auto variables (std::vector<index_t> const&) -> std::vector<diagram_t>;
 
         template<bin_op Op>
@@ -48,6 +50,10 @@ namespace teddy
 
         template<var_values Vars>
         auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
+
+        auto satisfy_count (uint_t, diagram_t&) -> std::size_t;
+
+
 
         auto node_count () const -> std::size_t;
 
@@ -113,6 +119,13 @@ namespace teddy
         {
             return nodes_.terminal_node(v);
         })));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::operator()
+        (index_t const i) -> diagram_t
+    {
+        return this->variable(i);
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -254,6 +267,66 @@ namespace teddy
         }
 
         return n->get_value();
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::satisfy_count
+        (uint_t const val, diagram_t& d) -> std::size_t
+    {
+        auto constexpr CanUseDataMember
+            = std::is_floating_point_v<Data> or std::is_integral_v<Data>;
+        using T = std::conditional_t<CanUseDataMember, Data, std::size_t>;
+
+        // Returns a function that returns reference to
+        // the data associated with given node.
+        auto data = []()
+        {
+            if constexpr (CanUseDataMember)
+            {
+                // Simply return reference to the data member.
+                return [](auto const n) mutable -> decltype(auto)
+                {
+                    return (n->data);
+                };
+            }
+            else
+            {
+                // Return reference to the data that is stored int the map.
+                return [map = std::unordered_map<node_t*, T>()]
+                    (auto const n) mutable -> T&
+                {
+                    return map[n];
+                };
+            }
+        }();
+
+        // Actual satisfy count algorithm.
+        nodes_.traverse_post(d.get_root(), [this, val, &data]
+            (auto const n) mutable
+        {
+            if (n->is_terminal())
+            {
+                data(n) = n->get_value() == val ? 1 : 0;
+            }
+            else
+            {
+                data(n) = 0;
+                auto const nLevel = nodes_.get_level(n);
+                nodes_.for_each_son(n, [=, this, &data](auto const son) mutable
+                {
+                    auto const sonLevel = son->is_terminal()
+                        ? static_cast<level_t>(nodes_.get_var_count())
+                        : nodes_.get_level(son);
+                    auto const diff = nodes_.domain_product( nLevel + 1
+                                                           , sonLevel );
+                    data(n) += data(son) * static_cast<T>(diff);
+                });
+            }
+        });
+
+        auto const rootAlpha = static_cast<std::size_t>(data(d.get_root()));
+        auto const rootLevel = nodes_.get_level(d.get_root());
+        return rootAlpha * nodes_.domain_product(0, rootLevel);
     }
 
     template<class Data, degree Degree, domain Domain>

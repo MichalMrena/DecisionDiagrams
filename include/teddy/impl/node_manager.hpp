@@ -44,6 +44,11 @@ namespace teddy
             {
                 return N;
             }
+
+            constexpr auto operator() () const
+            {
+                return N;
+            }
         };
 
         template<class T>
@@ -113,6 +118,8 @@ namespace teddy
         auto to_dot_graph (std::ostream&) const -> void;
         auto to_dot_graph (std::ostream&, node_t*) const -> void;
 
+        auto domain_product (level_t, level_t) const -> std::size_t;
+
         template<utils::i_gen Gen>
         auto make_sons (index_t, Gen&&) -> sons_t;
 
@@ -130,6 +137,9 @@ namespace teddy
 
         template<class NodeOp>
         auto traverse_pre (node_t*, NodeOp&&) const -> void;
+
+        template<class NodeOp>
+        auto traverse_post (node_t*, NodeOp&&) const -> void;
 
             auto swap_vars        (index_t i)         -> void;
             auto sift_vars        ()                  -> void;
@@ -488,6 +498,25 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::domain_product
+        (level_t const from, level_t const to) const -> std::size_t
+    {
+        if constexpr (domains::is_fixed<Domain>()())
+        {
+            return utils::int_pow(Domain()(), to - from);
+        }
+        else
+        {
+            auto product = 1u;
+            for (auto l = from; l < to; ++ l)
+            {
+                product *= domains_[l];
+            }
+            return product;
+        }
+    }
+
+    template<class Data, degree Degree, domain Domain>
     template<utils::i_gen Gen>
     auto node_manager<Data, Degree, Domain>::make_sons
         (index_t const i, Gen&& g) -> sons_t
@@ -581,6 +610,31 @@ namespace teddy
                     }
                 });
             }
+        };
+
+        go(go, node, op);
+        go(go, node, [](auto const){});
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<class NodeOp>
+    auto node_manager<Data, Degree, Domain>::traverse_post
+        (node_t* const node, NodeOp&& op) const -> void
+    {
+        auto const go = [this](auto&& go_, auto const n, auto&& op_)
+        {
+            n->toggle_marked();
+            if (n->is_internal())
+            {
+                this->for_each_son(n, [&go_, n, &op_](auto const son)
+                {
+                    if (n->is_marked() != son->is_marked())
+                    {
+                        go_(go_, son, op_);
+                    }
+                });
+            }
+            std::invoke(op_, n);
         };
 
         go(go, node, op);

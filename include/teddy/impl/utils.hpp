@@ -2,6 +2,7 @@
 #define MIX_DD_UTILS_HPP
 
 #include "types.hpp"
+#include <concepts>
 #include <functional>
 #include <vector>
 
@@ -40,6 +41,31 @@ namespace teddy::utils
     }
 
     auto constexpr identity = [](auto const a) { return a; };
+
+    template<class Base, std::integral Exponent>
+    auto constexpr int_pow (Base base, Exponent exponent) -> Base
+    {
+        auto result = Base {1};
+
+        for (;;)
+        {
+            if (exponent & 1)
+            {
+                result *= base;
+            }
+
+            exponent >>= 1;
+
+            if (0 == exponent)
+            {
+                break;
+            }
+
+            base *= base;
+        }
+
+        return result;
+    }
 }
 
 #endif
