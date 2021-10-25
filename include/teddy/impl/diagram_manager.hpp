@@ -12,9 +12,15 @@
 namespace teddy
 {
     template<class Vars>
-    concept var_values = requires (Vars vs, index_t i)
+    concept in_var_values = requires (Vars vs, index_t i)
     {
         { vs[i] } -> std::convertible_to<uint_t>;
+    };
+
+    template<class Vars>
+    concept out_var_values = requires (Vars vs, index_t i, uint_t v)
+    {
+        vs[i] = v;
     };
 
     template<class Data, degree Degree, domain Domain>
@@ -48,10 +54,14 @@ namespace teddy
         template<bin_op Op, std::random_access_iterator RandomIt>
         auto tree_fold (RandomIt, RandomIt) -> diagram_t;
 
-        template<var_values Vars>
+        template<in_var_values Vars>
         auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
 
         auto satisfy_count (uint_t, diagram_t&) -> std::size_t;
+
+        template< out_var_values             Vars
+                , std::output_iterator<Vars> Out >
+        auto satisfy_all_g (uint_t, diagram_t const&, Out) const -> void;
 
 
 
@@ -253,7 +263,7 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<var_values Vars>
+    template<in_var_values Vars>
     auto diagram_manager<Data, Degree, Domain>::evaluate
         (diagram_t const& d, Vars const& vs) const -> uint_t
     {
@@ -262,7 +272,7 @@ namespace teddy
         while (not n->is_terminal())
         {
             auto const i = n->get_index();
-            assert(nodes_.is_valid(i, vs[i]));
+            assert(nodes_.is_valid_var_value(i, vs[i]));
             n = n->get_son(vs[i]);
         }
 
@@ -314,9 +324,8 @@ namespace teddy
                 auto const nLevel = nodes_.get_level(n);
                 nodes_.for_each_son(n, [=, this, &data](auto const son) mutable
                 {
-                    auto const sonLevel = son->is_terminal()
-                        ? static_cast<level_t>(nodes_.get_var_count())
-                        : nodes_.get_level(son);
+                    // TODO
+                    auto const sonLevel = nodes_.get_level(son);
                     auto const diff = nodes_.domain_product( nLevel + 1
                                                            , sonLevel );
                     data(n) += data(son) * static_cast<T>(diff);
@@ -327,6 +336,61 @@ namespace teddy
         auto const rootAlpha = static_cast<std::size_t>(data(d.get_root()));
         auto const rootLevel = nodes_.get_level(d.get_root());
         return rootAlpha * nodes_.domain_product(0, rootLevel);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<out_var_values Vars, std::output_iterator<Vars> Out>
+    auto diagram_manager<Data, Degree, Domain>::satisfy_all_g
+        (uint_t const val, diagram_t const& d, Out out) const -> void
+    {
+        if constexpr (domains::is_fixed<Domain>()())
+        {
+            assert(val < Domain()());
+        }
+
+        auto xs = Vars {};
+        auto go = [=, this, &xs]
+            (auto&& go_, auto const l, auto const n) mutable
+        {
+            auto const nodeValue = node_value(n);
+            auto const nodeLevel = nodes_.get_level(n);
+
+            if (n->is_terminal() && val != nodeValue)
+            {
+                return;
+            }
+            // else if (manager_.is_leaf_level(l) && val == nodeValue)
+            else if (l == this->get_var_count() && val == nodeValue)
+            {
+                *out++ = xs;
+                return;
+            }
+            else if (nodeLevel > l)
+            {
+                auto const index  = nodes_.get_index(l);
+                auto const domain = nodes_.get_domain(index);
+                for (auto iv = 0u; iv < domain; ++iv)
+                {
+                    // SetIthVar {} (xs, index, iv);
+                    xs[index] = iv;
+                    go_(go_, l + 1, n);
+                }
+            }
+            else
+            {
+                auto const index = n->get_index();
+                nodes_.for_each_son(n, [=, &xs, iv = uint_t {0}]
+                    (auto const son) mutable
+                {
+                    // SetIthVar {} (xs, index, iv);
+                    xs[index] = iv;
+                    go_(go_, l + 1, son);
+                    ++iv;
+                });
+            }
+        };
+
+        go(go, level_t(0), d.get_root());
     }
 
     template<class Data, degree Degree, domain Domain>

@@ -106,6 +106,8 @@ namespace teddy
         auto internal_node     (index_t, sons_t&&) -> node_t*; // tu si treba premyslieť, či to alokovať hneď, alebo sem posielať iba
         auto get_level         (index_t) const     -> level_t; // pointer na jedno spoločné miesto pre jeden apply a alokovať až pri nových
         auto get_level         (node_t*) const     -> level_t;
+        auto get_index         (level_t) const     -> index_t;
+        auto get_domain        (index_t) const     -> uint_t; // TODO conditionally constexpr?
         auto get_node_count    (index_t) const     -> std::size_t;
         auto get_node_count    (node_t*) const     -> std::size_t;
         auto get_node_count    () const            -> std::size_t;
@@ -144,7 +146,7 @@ namespace teddy
             auto swap_vars        (index_t i)         -> void;
             auto sift_vars        ()                  -> void;
 
-        auto is_valid (index_t, uint_t) const -> bool;
+        auto is_valid_var_value (index_t, uint_t) const -> bool;
 
         static auto inc_ref_count (node_t*) -> node_t*;
         static auto dec_ref_count (node_t*) -> void;
@@ -158,7 +160,7 @@ namespace teddy
         auto node_hash    (index_t, sons_t const&) const -> std::size_t;
         auto node_equal   (node_t*, sons_t const&) const -> bool;
         auto is_redundant (index_t, sons_t const&) const -> bool;
-        auto get_index    (level_t) const                -> index_t;
+
 
         template<class... Args>
         auto new_node (Args&&...) -> node_t*;
@@ -295,6 +297,11 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::terminal_node
         (uint_t const v) -> node_t*
     {
+        if constexpr (domains::is_fixed<Domain>()())
+        {
+            assert(v < Domain()());
+        }
+
         if (v >= terminals_.size())
         {
             terminals_.resize(v + 1, nullptr);
@@ -346,8 +353,22 @@ namespace teddy
         (node_t* const n) const -> level_t
     {
         return n->is_terminal()
-                   ? TerminalLevel
+                   ? static_cast<level_t>(this->get_var_count())
                    : this->get_level(n->get_index());
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_index
+        (level_t const l) const -> index_t
+    {
+        return levelToIndex_[l];
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_domain
+        (index_t const i) const -> uint_t
+    {
+        return domains_[i];
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -585,7 +606,7 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::is_valid
+    auto node_manager<Data, Degree, Domain>::is_valid_var_value
         (index_t const i, uint_t const v) const -> bool
     {
         return v < domains_[i];
@@ -710,13 +731,6 @@ namespace teddy
             }
         }
         return true;
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::get_index
-        (level_t const l) const -> index_t
-    {
-        return levelToIndex_[l];
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -858,6 +872,10 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::check_distinct
         (std::vector<index_t> const& is) -> bool
     {
+        if (is.empty())
+        {
+            return true;
+        }
         auto const me = std::ranges::max(is);
         auto in = std::vector<bool>(me + 1, false);
         for (auto const i : is)
