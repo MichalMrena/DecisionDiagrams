@@ -59,6 +59,9 @@ namespace teddy
 
         auto satisfy_count (uint_t, diagram_t&) -> std::size_t;
 
+        template<out_var_values Vars>
+        auto satisfy_all (uint_t, diagram_t const&) const -> std::vector<Vars>;
+
         template< out_var_values             Vars
                 , std::output_iterator<Vars> Out >
         auto satisfy_all_g (uint_t, diagram_t const&, Out) const -> void;
@@ -283,6 +286,11 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::satisfy_count
         (uint_t const val, diagram_t& d) -> std::size_t
     {
+        if constexpr (domains::is_fixed<Domain>()())
+        {
+            assert(val < Domain()());
+        }
+
         auto constexpr CanUseDataMember
             = std::is_floating_point_v<Data> or std::is_integral_v<Data>;
         using T = std::conditional_t<CanUseDataMember, Data, std::size_t>;
@@ -305,6 +313,8 @@ namespace teddy
                 return [map = std::unordered_map<node_t*, T>()]
                     (auto const n) mutable -> T&
                 {
+                    // If there is no value for given key [] creates new pair
+                    // and value-initializes the value (0 for primitive types).
                     return map[n];
                 };
             }
@@ -324,10 +334,9 @@ namespace teddy
                 auto const nLevel = nodes_.get_level(n);
                 nodes_.for_each_son(n, [=, this, &data](auto const son) mutable
                 {
-                    // TODO
                     auto const sonLevel = nodes_.get_level(son);
-                    auto const diff = nodes_.domain_product( nLevel + 1
-                                                           , sonLevel );
+                    auto const diff     = nodes_.domain_product( nLevel + 1
+                                                               , sonLevel );
                     data(n) += data(son) * static_cast<T>(diff);
                 });
             }
@@ -336,6 +345,16 @@ namespace teddy
         auto const rootAlpha = static_cast<std::size_t>(data(d.get_root()));
         auto const rootLevel = nodes_.get_level(d.get_root());
         return rootAlpha * nodes_.domain_product(0, rootLevel);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<out_var_values Vars>
+    auto diagram_manager<Data, Degree, Domain>::satisfy_all
+        (uint_t const val, diagram_t const& d) const -> std::vector<Vars>
+    {
+        auto vs = std::vector<Vars>();
+        this->satisfy_all_g(val, d, std::back_inserter(vs));
+        return vs;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -349,7 +368,7 @@ namespace teddy
         }
 
         auto xs = Vars {};
-        auto go = [=, this, &xs]
+        auto go = [this, &xs, val, out]
             (auto&& go_, auto const l, auto const n) mutable
         {
             auto const nodeValue = node_value(n);
@@ -359,8 +378,7 @@ namespace teddy
             {
                 return;
             }
-            // else if (manager_.is_leaf_level(l) && val == nodeValue)
-            else if (l == this->get_var_count() && val == nodeValue)
+            else if (l == nodes_.get_leaf_level() && val == nodeValue)
             {
                 *out++ = xs;
                 return;
@@ -371,7 +389,6 @@ namespace teddy
                 auto const domain = nodes_.get_domain(index);
                 for (auto iv = 0u; iv < domain; ++iv)
                 {
-                    // SetIthVar {} (xs, index, iv);
                     xs[index] = iv;
                     go_(go_, l + 1, n);
                 }
@@ -382,7 +399,6 @@ namespace teddy
                 nodes_.for_each_son(n, [=, &xs, iv = uint_t {0}]
                     (auto const son) mutable
                 {
-                    // SetIthVar {} (xs, index, iv);
                     xs[index] = iv;
                     go_(go_, l + 1, son);
                     ++iv;
@@ -390,7 +406,7 @@ namespace teddy
             }
         };
 
-        go(go, level_t(0), d.get_root());
+        go(go, level_t {0}, d.get_root());
     }
 
     template<class Data, degree Degree, domain Domain>

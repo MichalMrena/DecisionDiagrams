@@ -106,6 +106,7 @@ namespace teddy
         auto internal_node     (index_t, sons_t&&) -> node_t*; // tu si treba premyslieť, či to alokovať hneď, alebo sem posielať iba
         auto get_level         (index_t) const     -> level_t; // pointer na jedno spoločné miesto pre jeden apply a alokovať až pri nových
         auto get_level         (node_t*) const     -> level_t;
+        auto get_leaf_level    ()        const     -> level_t;
         auto get_index         (level_t) const     -> index_t;
         auto get_domain        (index_t) const     -> uint_t; // TODO conditionally constexpr?
         auto get_node_count    (index_t) const     -> std::size_t;
@@ -353,8 +354,15 @@ namespace teddy
         (node_t* const n) const -> level_t
     {
         return n->is_terminal()
-                   ? static_cast<level_t>(this->get_var_count())
+                   ? this->get_leaf_level()
                    : this->get_level(n->get_index());
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::get_leaf_level
+        () const -> level_t
+    {
+        return static_cast<level_t>(this->get_var_count());
     }
 
     template<class Data, degree Degree, domain Domain>

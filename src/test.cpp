@@ -286,7 +286,7 @@ namespace teddy::test
     /**
      *  Tests if garbage collection collects all nodes except nodes
      *  that are part of @p diagram .
-7     */
+     */
     template<class Dat, class Deg, class Dom>
     auto test_gc
         ( diagram_manager<Dat, Deg, Dom>& manager
@@ -305,46 +305,59 @@ namespace teddy::test
         }
     }
 
+    template<class Dat, class Deg, class Dom>
+    auto expected_counts
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , expr_var const&                 expr )
+    {
+        auto counts = std::vector<std::size_t>();
+        auto const domains = manager.get_domains();
+        auto const inc     = [](auto& cs, auto const v)
+        {
+            if (v >= cs.size())
+            {
+                cs.resize(v + 1, 0);
+            }
+            ++cs[v];
+        };
+        if (domains.empty())
+        {
+            inc(counts, evaluate_expression(expr, {}));
+        }
+        else
+        {
+            auto iterator = domain_iterator(domains);
+            while (iterator.has_more())
+            {
+                inc(counts, evaluate_expression(expr, *iterator));
+                ++iterator;
+            }
+        }
+        return counts;
+    }
+
     /**
      *  Tests the satisfy_count algorithm.
      */
-    template<std::size_t Max, class Dat, class Deg, class Dom>
+    template<class Dat, class Deg, class Dom>
     auto test_satisfy_count
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr )
     {
-        auto const expectedCounts = [&manager, &expr]()
+        auto const domains        = manager.get_domains();
+        auto const expectedCounts = expected_counts(manager, expr);
+        auto const realCounts     = [&]()
         {
-            auto cs = std::array<std::size_t, Max>{};
-            auto domains = manager.get_domains();
-            if (domains.empty())
-            {
-                ++cs[evaluate_expression(expr, {})];
-            }
-            else
-            {
-                auto iterator = domain_iterator(std::move(domains));
-                while (iterator.has_more())
-                {
-                    ++cs[evaluate_expression(expr, *iterator)];
-                    ++iterator;
-                }
-            }
-            return cs;
-        }();
-
-        auto const realCounts = [&manager, &expr, &diagram]() mutable
-        {
-            auto cs = std::array<std::size_t, Max>{};
-            for (auto v = 0u; v < Max; ++v)
+            auto cs = std::vector<std::size_t>(expectedCounts.size(), 0);
+            for (auto v = 0u; v < cs.size(); ++v)
             {
                 cs[v] = manager.satisfy_count(v, diagram);
             }
             return cs;
         }();
 
-        for (auto k = 0u; k < Max; ++k)
+        for (auto k = 0u; k < realCounts.size(); ++k)
         {
             if (realCounts[k] != expectedCounts[k])
             {
@@ -359,41 +372,18 @@ namespace teddy::test
     /**
      *  Test the satisfy_all algorithm;
      */
-    template<std::size_t Max, class Dat, class Deg, class Dom>
+    template<class Dat, class Deg, class Dom>
     auto test_satisfy_all
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr )
     {
-        auto const domains = manager.get_domains();
-        auto const expectedCounts = [&manager, &expr, &domains]()
+        auto const domains        = manager.get_domains();
+        auto const expectedCounts = expected_counts(manager, expr);
+        auto const realCounts     = [&]()
         {
-            auto vals = std::array<std::size_t, Max> {};
-            auto it = domain_iterator(manager.get_domains());
-            if (domains.empty())
-            {
-                ++vals[evaluate_expression(expr, {})];
-            }
-            else
-            {
-                auto iterator = domain_iterator(std::move(domains));
-                while (iterator.has_more())
-                {
-                    ++vals[evaluate_expression(expr, *iterator)];
-                    ++iterator;
-                }
-            }
-            return vals;
-        }();
-
-        auto const realCounts = [&manager, &diagram, &domains]()
-        {
-            namespace rs = std::ranges;
-            auto const max = domains.empty()
-                ? 2
-                : rs::max(manager.get_domains());
-            auto vals = std::array<std::size_t, Max> {};
-            for (auto k = 0u; k < max; ++k)
+            auto vals = std::vector<std::size_t>(expectedCounts.size(), 0);
+            for (auto k = 0u; k < expectedCounts.size(); ++k)
             {
                 using out_var_vals = std::array<uint_t, 100>;
                 auto outF = [&vals, k](auto&&)
@@ -406,7 +396,7 @@ namespace teddy::test
             return vals;
         }();
 
-        for (auto k = 0u; k < Max; ++k)
+        for (auto k = 0u; k < expectedCounts.size(); ++k)
         {
             if (expectedCounts[k] != realCounts[k])
             {
@@ -489,7 +479,7 @@ namespace teddy::test
         out("  satisfy-count: ");
         for (auto k = 0u; k < testCount; ++k)
         {
-            test_satisfy_count<3>(managers[k], diagram1s[k], exprs[k]);
+            test_satisfy_count(managers[k], diagram1s[k], exprs[k]);
             flushed_space();
         }
         endl();
@@ -497,7 +487,7 @@ namespace teddy::test
         out("  satisfy-all:   ");
         for (auto k = 0u; k < testCount; ++k)
         {
-            test_satisfy_all<3>(managers[k], diagram1s[k], exprs[k]);
+            test_satisfy_all(managers[k], diagram1s[k], exprs[k]);
             flushed_space();
         }
         endl();
@@ -528,10 +518,12 @@ auto main () -> int
     auto const initSeed  = std::random_device()();
     // auto const initSeed  = 144;
 
-    // One rng for one test should be enough for the purpose of this tests.
     auto seeder = ts::rng_t(initSeed);
     auto rngs = us::fill_vector(testCount - 2, [&seeder](auto const)
     {
+        // One rng to rule them all.
+        // Not technically correct but
+        // it should be good enough for the purpose of these tests.
         return ts::rng_t(seeder());
     });
     auto const exprs = [=, &rngs]()
@@ -581,14 +573,6 @@ auto main () -> int
     ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
     ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
     ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
-
-    // auto m    = teddy::imdd_manager(0, 10, {});
-    // auto zero = m.constant(0);
-    // auto one  = m.constant(1);
-    // std::cout << m.satisfy_count(0, zero) << '\n';
-    // std::cout << m.satisfy_count(1, zero) << '\n';
-    // std::cout << m.satisfy_count(0, one)  << '\n';
-    // std::cout << m.satisfy_count(1, one)  << '\n';
 
     std::cout << '\n' << "End of main." << '\n';
 
