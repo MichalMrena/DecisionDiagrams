@@ -4,6 +4,7 @@
 #include "types.hpp"
 #include <concepts>
 #include <functional>
+#include <ranges>
 #include <vector>
 
 namespace teddy::utils
@@ -27,14 +28,19 @@ namespace teddy::utils
         return xs;
     }
 
-    template<class Xs, class F>
+    template<std::ranges::input_range Xs, class F>
     auto fmap (Xs&& xs, F&& f)
     {
-        using U = decltype(std::invoke(f, *std::begin(xs)));
+        namespace rs = std::ranges;
+        using U = decltype(std::invoke(f, *rs::begin(xs)));
         auto ys = std::vector<U>();
-        ys.reserve(std::size(xs));
-        for (auto&& x : xs)
+        if constexpr (std::ranges::sized_range<Xs>)
         {
+            ys.reserve(rs::size(xs));
+        }
+        for (auto it = rs::begin(xs); it != rs::end(xs); ++it)
+        {
+            auto&& x = *it;
             ys.emplace_back(std::invoke(f, std::forward<decltype(x)>(x)));
         }
         return ys;

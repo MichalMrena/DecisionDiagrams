@@ -8,6 +8,7 @@
 #include <cmath>
 #include <concepts>
 #include <iterator>
+#include <ranges>
 
 namespace teddy
 {
@@ -37,22 +38,27 @@ namespace teddy
 
         auto operator() (index_t) -> diagram_t;
 
-        auto variables (std::vector<index_t> const&) -> std::vector<diagram_t>;
+        template<std::ranges::input_range Is>
+        auto variables (Is const&) -> std::vector<diagram_t>;
 
         template<bin_op Op>
         auto apply (diagram_t const&, diagram_t const&) -> diagram_t;
 
-        template<bin_op Op>
-        auto left_fold (std::vector<diagram_t> const&) -> diagram_t;
+        template<bin_op Op, std::ranges::input_range R>
+        auto left_fold (R const&) -> diagram_t;
 
-        template<bin_op Op, std::input_iterator InputIt>
-        auto left_fold (InputIt, InputIt) -> diagram_t;
+        template< bin_op               Op
+                , std::input_iterator  I
+                , std::sentinel_for<I> S >
+        auto left_fold (I, S) -> diagram_t;
 
-        template<bin_op Op>
-        auto tree_fold (std::vector<diagram_t>&) -> diagram_t;
+        template<bin_op Op, std::ranges::random_access_range R>
+        auto tree_fold (R&) -> diagram_t;
 
-        template<bin_op Op, std::random_access_iterator RandomIt>
-        auto tree_fold (RandomIt, RandomIt) -> diagram_t;
+        template< bin_op                      Op
+                , std::random_access_iterator I
+                , std::sentinel_for<I>        S >
+        auto tree_fold (I, S) -> diagram_t;
 
         template<in_var_values Vars>
         auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
@@ -65,8 +71,6 @@ namespace teddy
         template< out_var_values             Vars
                 , std::output_iterator<Vars> Out >
         auto satisfy_all_g (uint_t, diagram_t const&, Out) const -> void;
-
-
 
         auto node_count () const -> std::size_t;
 
@@ -142,12 +146,15 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<std::ranges::input_range Is>
     auto diagram_manager<Data, Degree, Domain>::variables
-        (std::vector<index_t> const& is) -> std::vector<diagram_t>
+        (Is const& is) -> std::vector<diagram_t>
     {
+        static_assert(
+            std::convertible_to<std::ranges::range_value_t<Is>, index_t> );
         return utils::fmap(is, [this](auto const i)
         {
-            return this->variable(i);
+            return this->variable(static_cast<index_t>(i));
         });
     }
 
@@ -201,18 +208,23 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<bin_op Op>
+    template<bin_op Op, std::ranges::input_range R>
     auto diagram_manager<Data, Degree, Domain>::left_fold
-        (std::vector<diagram_t> const& ds) -> diagram_t
+        (R const& ds) -> diagram_t
     {
-        return this->left_fold<Op>(std::begin(ds), std::end(ds));
+        namespace rs = std::ranges;
+        return this->left_fold<Op>(rs::begin(ds), rs::end(ds));
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<bin_op Op, std::input_iterator InputIt>
+    template< bin_op               Op
+            , std::input_iterator  I
+            , std::sentinel_for<I> S >
     auto diagram_manager<Data, Degree, Domain>::left_fold
-        (InputIt first, InputIt const last) -> diagram_t
+        (I first, S const last) -> diagram_t
     {
+        static_assert(std::same_as<std::iter_value_t<I>, diagram_t>);
+
         auto r = std::move(*first);
         ++first;
 
@@ -226,18 +238,23 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<bin_op Op>
+    template<bin_op Op, std::ranges::random_access_range R>
     auto diagram_manager<Data, Degree, Domain>::tree_fold
-        (std::vector<diagram_t>& ds) -> diagram_t
+        (R& ds) -> diagram_t
     {
-        return this->tree_fold<Op>(std::begin(ds), std::end(ds));
+        namespace rs = std::ranges;
+        return this->tree_fold<Op>(rs::begin(ds), rs::end(ds));
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<bin_op Op, std::random_access_iterator RandomIt>
+    template< bin_op                      Op
+            , std::random_access_iterator I
+            , std::sentinel_for<I>        S >
     auto diagram_manager<Data, Degree, Domain>::tree_fold
-        (RandomIt first, RandomIt const last) -> diagram_t
+        (I first, S const last) -> diagram_t
     {
+        static_assert(std::same_as<std::iter_value_t<I>, diagram_t>);
+
         auto const count  = std::distance(first, last);
         auto currentCount = count;
         auto const numOfSteps

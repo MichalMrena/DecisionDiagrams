@@ -495,9 +495,10 @@ namespace teddy::test
         endl();
     }
 
+    template<std::size_t M>
     auto random_domains (std::size_t const n, rng_t& rng)
     {
-        auto domainDst = int_dist<teddy::uint_t>(2, 3);
+        auto domainDst = int_dist<teddy::uint_t>(2, M);
         return utils::fill_vector(n, [&](auto const)
         {
             return domainDst(rng);
@@ -510,7 +511,8 @@ auto main () -> int
     namespace us = teddy::utils;
     namespace ts = teddy::test;
 
-    auto const varCount  = 17;
+    auto constexpr M     = 4;
+    auto const varCount  = 13;
     auto const termCount = 20;
     auto const termSize  = 5;
     auto const nodeCount = 1000;
@@ -545,13 +547,13 @@ auto main () -> int
     bddManagers.emplace_back(0, 2);
     auto mddManagers = us::fill_vector(testCount - 2, [=](auto const)
     {
-        return teddy::mdd_manager<3>(varCount, nodeCount);
+        return teddy::mdd_manager<M>(varCount, nodeCount);
     });
     mddManagers.emplace_back(0, 2);
     mddManagers.emplace_back(0, 2);
     auto domains = us::fmap(rngs, [&](auto& rng)
     {
-        return ts::random_domains(varCount, rng);
+        return ts::random_domains<M>(varCount, rng);
     });
     auto imddManagers = us::fill_vector(testCount - 2, [&]
         (auto const k) mutable
@@ -563,7 +565,7 @@ auto main () -> int
     auto ifmddManagers = us::fill_vector(testCount - 2, [&]
         (auto const k) mutable
     {
-        return teddy::ifmdd_manager<3>(varCount, nodeCount, domains[k]);
+        return teddy::ifmdd_manager<M>(varCount, nodeCount, domains[k]);
     });
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
