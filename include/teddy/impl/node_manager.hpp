@@ -12,10 +12,11 @@
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <ranges>
 #include <span>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <ranges>
 
 namespace teddy
 {
@@ -64,6 +65,18 @@ namespace teddy
     template<class T>
     concept domain = domains::is_mixed<T>()() or domains::is_fixed<T>()();
 
+    template<class F>
+    concept uint_to_bool = requires (F f, uint_t x)
+    {
+        { f(x) } -> std::convertible_to<bool>;
+    };
+
+    template<class F>
+    concept uint_to_uint = requires (F f, uint_t x)
+    {
+        { f(x) } -> std::convertible_to<uint_t>;
+    };
+
     template<class Data, degree Degree, domain Domain>
     class node_manager
     {
@@ -103,12 +116,12 @@ namespace teddy
     public:
         auto get_terminal_node (uint_t) const      -> node_t*;
         auto terminal_node     (uint_t)            -> node_t*;
-        auto internal_node     (index_t, sons_t&&) -> node_t*; // tu si treba premyslieť, či to alokovať hneď, alebo sem posielať iba
-        auto get_level         (index_t) const     -> level_t; // pointer na jedno spoločné miesto pre jeden apply a alokovať až pri nových
+        auto internal_node     (index_t, sons_t&&) -> node_t*;
+        auto get_level         (index_t) const     -> level_t;
         auto get_level         (node_t*) const     -> level_t;
         auto get_leaf_level    ()        const     -> level_t;
         auto get_index         (level_t) const     -> index_t;
-        auto get_domain        (index_t) const     -> uint_t; // TODO conditionally constexpr?
+        auto get_domain        (index_t) const     -> uint_t;
         auto get_node_count    (index_t) const     -> std::size_t;
         auto get_node_count    (node_t*) const     -> std::size_t;
         auto get_node_count    () const            -> std::size_t;
@@ -123,8 +136,8 @@ namespace teddy
 
         auto domain_product (level_t, level_t) const -> std::size_t;
 
-        template<utils::i_gen Gen>
-        auto make_sons (index_t, Gen&&) -> sons_t;
+        template<utils::i_gen F>
+        auto make_sons (index_t, F&&) -> sons_t;
 
         template<class NodeOp>
         auto for_each_son (node_t*, NodeOp&&) const -> void;
@@ -546,14 +559,14 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<utils::i_gen Gen>
+    template<utils::i_gen F>
     auto node_manager<Data, Degree, Domain>::make_sons
-        (index_t const i, Gen&& g) -> sons_t
+        (index_t const i, F&& f) -> sons_t
     {
         auto ss = node_t::container(domains_[i], Degree());
         for (auto k = uint_t {0}; k < domains_[i]; ++k)
         {
-            ss[k] = std::invoke(g, k);
+            ss[k] = std::invoke(f, k);
         }
         return ss;
     }
@@ -669,6 +682,8 @@ namespace teddy
         go(go, node, op);
         go(go, node, [](auto const){});
     }
+
+
 
 
 

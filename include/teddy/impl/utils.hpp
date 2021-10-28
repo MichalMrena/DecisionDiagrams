@@ -48,6 +48,8 @@ namespace teddy::utils
 
     auto constexpr identity = [](auto const a) { return a; };
 
+    auto constexpr not_zero = [](auto const x) { return x != 0; };
+
     template<class Base, std::integral Exponent>
     auto constexpr int_pow (Base base, Exponent exponent) -> Base
     {

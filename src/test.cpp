@@ -407,6 +407,114 @@ namespace teddy::test
         out_green("✓");
     }
 
+    template<class Dat, class Deg, class Dom>
+    auto test_operators
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , diagram<Dat, Deg>&              diagram
+        , expr_var const&                 expr )
+    {
+        namespace rs = std::ranges;
+        auto const cs   = expected_counts(manager, expr);
+        auto const max  = rs::max(cs);
+        auto const zero = manager.constant(0);
+        auto const one  = manager.constant(1);
+        auto const sup  = manager.constant(max);
+        auto const bd   = manager.booleanize(diagram);
+        // auto const rd   = m.reduce(diagram);
+
+        // if (not m.template apply<AND>(bd, zero).equals(zero))
+        // {
+        //     return std::string("AND Absorbing element failed.");
+        // }
+
+        // if (not m.template apply<AND>(bd, one).equals(bd))
+        // {
+        //     return std::string("AND Neutral element failed.");
+        // }
+
+        // if (not m.template apply<OR>(bd, one).equals(one))
+        // {
+        //     return std::string("OR Absorbing element failed.");
+        // }
+
+        // if (not m.template apply<OR>(bd, zero).equals(bd))
+        // {
+        //     return std::string("OR Neutral element failed.");
+        // }
+
+        // if (not m.template apply<XOR>(bd, bd).equals(zero))
+        // {
+        //     return std::string("XOR Annihilate failed.");
+        // }
+
+        // if (not m.template apply<MULTIPLIES>(rd, zero).equals(zero))
+        // {
+        //     return std::string("(*) Absorbing element failed.");
+        // }
+
+        // if (not m.template apply<MULTIPLIES>(rd, one).equals(rd))
+        // {
+        //     return std::string("(*) Neutral element failed.");
+        // }
+
+        // if (not m.template apply<PLUS>(rd, zero).equals(rd))
+        // {
+        //     return std::string("(+) Neutral element failed.");
+        // }
+
+        // if (not m.template apply<EQUAL_TO>(rd, rd).equals(one))
+        // {
+        //     return std::string("(==) Annihilate failed.");
+        // }
+
+        // if (not m.template apply<NOT_EQUAL_TO>(rd, rd).equals(zero))
+        // {
+        //     return std::string("(!=) Annihilate failed.");
+        // }
+
+        // if (not m.template apply<LESS>(rd, rd).equals(zero))
+        // {
+        //     return std::string("(<) Annihilate failed.");
+        // }
+
+        // if (not m.template apply<GREATER>(rd, rd).equals(zero))
+        // {
+        //     return std::string("(>) Annihilate failed.");
+        // }
+
+        // if (not m.template apply<LESS_EQUAL>(rd, rd).equals(one))
+        // {
+        //     return std::string("(<=) Annihilate failed.");
+        // }
+
+        // if (not m.template apply<GREATER_EQUAL>(rd, rd).equals(one))
+        // {
+        //     return std::string("(>=) Annihilate failed.");
+        // }
+
+        // if (not m.template apply<MIN>(rd, zero).equals(zero))
+        // {
+        //     return std::string("MIN Absorbing element failed.");
+        // }
+
+        // if (not m.template apply<MIN>(rd, sup).equals(rd))
+        // {
+        //     return std::string("MIN Neutral element failed.");
+        // }
+
+        // if (not m.template apply<MAX>(rd, sup).equals(sup))
+        // {
+        //     return std::string("MAX Absorbing element failed.");
+        // }
+
+        // if (not m.template apply<MAX>(rd, zero).equals(rd))
+        // {
+        //     return std::string("MAX Neutral element failed.");
+        // }
+
+        // return std::string("OK");
+    }
+
     /**
      *  Runs all test. Creates diagram represeting @p expr using @p manager .
      */

@@ -72,6 +72,11 @@ namespace teddy
                 , std::output_iterator<Vars> Out >
         auto satisfy_all_g (uint_t, diagram_t const&, Out) const -> void;
 
+        template<uint_to_bool F>
+        auto booleanize (diagram_t const&, F = utils::not_zero) -> diagram_t;
+
+        auto reduce (diagram_t const&) -> diagram_t;
+
         auto node_count () const -> std::size_t;
 
         auto node_count (diagram_t const&) const -> std::size_t;
@@ -86,6 +91,13 @@ namespace teddy
         auto get_var_count () const -> std::size_t;
         auto get_order     () const -> std::span<index_t const>;
         auto get_domains   () const -> std::vector<uint_t>;
+
+    private:
+        template<class F>
+        auto transform_internal (node_t*, F&&) -> node_t*;
+
+        template<uint_to_uint F>
+        auto transform_terminal (node_t*, F) -> node_t*;
 
     protected:
         diagram_manager ( std::size_t vars
@@ -427,6 +439,22 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<uint_to_bool F>
+    auto diagram_manager<Data, Degree, Domain>::booleanize
+        (diagram_t const& d, F f) -> diagram_t
+    {
+        return diagram_t(nodes_.transform_terminal(d.get_root(), f));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::reduce
+        (diagram_t const& d) -> diagram_t
+    {
+        // TODO transform terminal with id
+        return diagram_t();
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::node_count
         () const -> std::size_t
     {
@@ -481,6 +509,62 @@ namespace teddy
     {
         nodes_.collect_garbage();
     }
+
+
+    template<class Data, degree Degree, domain Domain>
+    template<class F>
+    auto diagram_manager<Data, Degree, Domain>::transform_internal
+        (node_t* const root, F&& f) -> node_t*
+    {
+        auto memo = std::unordered_map<node_t*, node_t*>();
+        auto const go = [this, &memo](auto&& go_, auto&& f_, auto const n)
+        {
+            auto const it = memo.find(n);
+            if (memo.end() != it)
+            {
+                return it->second;
+            }
+
+            if (n->is_terminal())
+            {
+                return n;
+            }
+
+            auto const u = nodes_.internal_vertex( n->get_index()
+                                                 , f_(go_, f_, n) );
+            memo.emplace(n, u);
+            return u;
+        };
+
+        return go(go, f, root);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<uint_to_uint F>
+    auto diagram_manager<Data, Degree, Domain>::transform_terminal
+        (node_t* const root, F f) -> node_t*
+    {
+        auto memo = std::unordered_map<node_t*, node_t*>();
+        auto const go = [this, &f](auto&& go_, auto const n)
+        {
+            if (n->is_terminal())
+            {
+                auto const newVal = static_cast<uint_t>(f(n->get_value()));
+                return nodes_.terminal_node(newVal);
+            }
+            else
+            {
+                auto const i = n->get_index();
+                return nodes_.internal_node(i, nodes_.make_sons(i,
+                    [&go_, &f, n](auto const k)
+                {
+                    return go_(go_, n->get_son(k));
+                }));
+            }
+        };
+        return go(go, root);
+    }
+
 
     template<class Data, degree Degree, domain Domain>
     diagram_manager<Data, Degree, Domain>::diagram_manager
