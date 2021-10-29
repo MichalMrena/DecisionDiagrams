@@ -213,28 +213,16 @@ namespace teddy::test
 
     auto constexpr CodeReset  = "\x1B[0m";
 
-    auto out_green (std::string_view const s)
+    auto out_mark_ok ()
     {
         auto constexpr CodeGreen = "\x1B[92m";
-        std::cout << CodeGreen << s << CodeReset;
+        std::cout << CodeGreen << "✓" << CodeReset;
     }
 
-    auto out_red (std::string_view const s)
+    auto out_mark_err ()
     {
         auto constexpr CodeRed = "\x1B[91m";
-        std::cout << CodeRed << s << CodeReset;
-    }
-
-    auto outl_green (std::string_view const s)
-    {
-        out_green(s);
-        std::cout << '\n';
-    }
-
-    auto outl_red (std::string_view const s)
-    {
-        out_red(s);
-        std::cout << '\n';
+        std::cout << CodeRed << "!" << CodeReset;
     }
 
     /**
@@ -253,7 +241,7 @@ namespace teddy::test
             auto const diagramVal  = manager.evaluate(diagram, *iterator);
             if (expectedVal != diagramVal)
             {
-                out_red("!");
+                out_mark_err();
                 break;
             }
             ++iterator;
@@ -261,7 +249,7 @@ namespace teddy::test
 
         if (not iterator.has_more())
         {
-            out_green("✓");
+            out_mark_ok();
         }
     }
 
@@ -275,11 +263,11 @@ namespace teddy::test
     {
         if (diagram1.equals(diagram2))
         {
-            out_green("✓");
+            out_mark_ok();
         }
         else
         {
-            out_red("!");
+            out_mark_err();
         }
     }
 
@@ -297,11 +285,11 @@ namespace teddy::test
         auto const diagramNodeCount = manager.node_count(diagram);
         if (totalNodeCount == diagramNodeCount)
         {
-            out_green("✓");
+            out_mark_ok();
         }
         else
         {
-            out_red("!");
+            out_mark_err();
         }
     }
 
@@ -361,12 +349,12 @@ namespace teddy::test
         {
             if (realCounts[k] != expectedCounts[k])
             {
-                out_red("!");
+                out_mark_err();
                 return;
             }
         }
 
-        out_green("✓");
+        out_mark_ok();
     }
 
     /**
@@ -400,11 +388,11 @@ namespace teddy::test
         {
             if (expectedCounts[k] != realCounts[k])
             {
-                out_red("!");
+                out_mark_err();
                 return;
             }
         }
-        out_green("✓");
+        out_mark_ok();
     }
 
     template<class Dat, class Deg, class Dom>
@@ -414,105 +402,156 @@ namespace teddy::test
         , expr_var const&                 expr )
     {
         namespace rs = std::ranges;
+        auto const max  = [&expr](auto domains)
+        {
+            if (domains.empty())
+            {
+                return evaluate_expression(expr, {});
+            }
+
+            auto m = uint_t {0};
+            auto iterator = domain_iterator(std::move(domains));
+            while (iterator.has_more())
+            {
+                m = std::max(m, evaluate_expression(expr, *iterator));
+                ++iterator;
+            }
+            return m;
+        }(manager.get_domains());
         auto const cs   = expected_counts(manager, expr);
-        auto const max  = rs::max(cs);
         auto const zero = manager.constant(0);
         auto const one  = manager.constant(1);
         auto const sup  = manager.constant(max);
-        auto const bd   = manager.booleanize(diagram);
-        // auto const rd   = m.reduce(diagram);
+        auto const bd   = manager.booleanize(diagram, utils::not_zero);
+        auto const rd   = manager.reduce(diagram);
 
-        // if (not m.template apply<AND>(bd, zero).equals(zero))
-        // {
-        //     return std::string("AND Absorbing element failed.");
-        // }
+        if (not manager.template apply<AND>(bd, zero).equals(zero))
+        {
+            out_mark_err();
+            return;
+            // return std::string("AND Absorbing element failed.");
+        }
 
-        // if (not m.template apply<AND>(bd, one).equals(bd))
-        // {
-        //     return std::string("AND Neutral element failed.");
-        // }
+        if (not manager.template apply<AND>(bd, one).equals(bd))
+        {
+            out_mark_err();
+            return;
+            // return std::string("AND Neutral element failed.");
+        }
 
-        // if (not m.template apply<OR>(bd, one).equals(one))
-        // {
-        //     return std::string("OR Absorbing element failed.");
-        // }
+        if (not manager.template apply<OR>(bd, one).equals(one))
+        {
+            out_mark_err();
+            return;
+            // return std::string("OR Absorbing element failed.");
+        }
 
-        // if (not m.template apply<OR>(bd, zero).equals(bd))
-        // {
-        //     return std::string("OR Neutral element failed.");
-        // }
+        if (not manager.template apply<OR>(bd, zero).equals(bd))
+        {
+            out_mark_err();
+            return;
+            // return std::string("OR Neutral element failed.");
+        }
 
-        // if (not m.template apply<XOR>(bd, bd).equals(zero))
-        // {
-        //     return std::string("XOR Annihilate failed.");
-        // }
+        if (not manager.template apply<XOR>(bd, bd).equals(zero))
+        {
+            out_mark_err();
+            return;
+            // return std::string("XOR Annihilate failed.");
+        }
 
-        // if (not m.template apply<MULTIPLIES>(rd, zero).equals(zero))
-        // {
-        //     return std::string("(*) Absorbing element failed.");
-        // }
+        if (not manager.template apply<MULTIPLIES<2>>(rd, zero).equals(zero))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(*) Absorbing element failed.");
+        }
 
-        // if (not m.template apply<MULTIPLIES>(rd, one).equals(rd))
-        // {
-        //     return std::string("(*) Neutral element failed.");
-        // }
+        if (not manager.template apply<MULTIPLIES<4>>(rd, one).equals(rd))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(*) Neutral element failed.");
+        }
 
-        // if (not m.template apply<PLUS>(rd, zero).equals(rd))
-        // {
-        //     return std::string("(+) Neutral element failed.");
-        // }
+        if (not manager.template apply<PLUS<4>>(rd, zero).equals(rd))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(+) Neutral element failed.");
+        }
 
-        // if (not m.template apply<EQUAL_TO>(rd, rd).equals(one))
-        // {
-        //     return std::string("(==) Annihilate failed.");
-        // }
+        if (not manager.template apply<EQUAL_TO>(rd, rd).equals(one))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(==) Annihilate failed.");
+        }
 
-        // if (not m.template apply<NOT_EQUAL_TO>(rd, rd).equals(zero))
-        // {
-        //     return std::string("(!=) Annihilate failed.");
-        // }
+        if (not manager.template apply<NOT_EQUAL_TO>(rd, rd).equals(zero))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(!=) Annihilate failed.");
+        }
 
-        // if (not m.template apply<LESS>(rd, rd).equals(zero))
-        // {
-        //     return std::string("(<) Annihilate failed.");
-        // }
+        if (not manager.template apply<LESS>(rd, rd).equals(zero))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(<) Annihilate failed.");
+        }
 
-        // if (not m.template apply<GREATER>(rd, rd).equals(zero))
-        // {
-        //     return std::string("(>) Annihilate failed.");
-        // }
+        if (not manager.template apply<GREATER>(rd, rd).equals(zero))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(>) Annihilate failed.");
+        }
 
-        // if (not m.template apply<LESS_EQUAL>(rd, rd).equals(one))
-        // {
-        //     return std::string("(<=) Annihilate failed.");
-        // }
+        if (not manager.template apply<LESS_EQUAL>(rd, rd).equals(one))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(<=) Annihilate failed.");
+        }
 
-        // if (not m.template apply<GREATER_EQUAL>(rd, rd).equals(one))
-        // {
-        //     return std::string("(>=) Annihilate failed.");
-        // }
+        if (not manager.template apply<GREATER_EQUAL>(rd, rd).equals(one))
+        {
+            out_mark_err();
+            return;
+            // return std::string("(>=) Annihilate failed.");
+        }
 
-        // if (not m.template apply<MIN>(rd, zero).equals(zero))
-        // {
-        //     return std::string("MIN Absorbing element failed.");
-        // }
+        if (not manager.template apply<MIN>(rd, zero).equals(zero))
+        {
+            out_mark_err();
+            return;
+            // return std::string("MIN Absorbing element failed.");
+        }
 
-        // if (not m.template apply<MIN>(rd, sup).equals(rd))
-        // {
-        //     return std::string("MIN Neutral element failed.");
-        // }
+        if (not manager.template apply<MIN>(rd, sup).equals(rd))
+        {
+            out_mark_err();
+            return;
+            // return std::string("MIN Neutral element failed.");
+        }
 
-        // if (not m.template apply<MAX>(rd, sup).equals(sup))
-        // {
-        //     return std::string("MAX Absorbing element failed.");
-        // }
+        if (not manager.template apply<MAX>(rd, sup).equals(sup))
+        {
+            out_mark_err();
+            return;
+            // return std::string("MAX Absorbing element failed.");
+        }
 
-        // if (not m.template apply<MAX>(rd, zero).equals(rd))
-        // {
-        //     return std::string("MAX Neutral element failed.");
-        // }
+        if (not manager.template apply<MAX>(rd, zero).equals(rd))
+        {
+            out_mark_err();
+            return;
+            // return std::string("MAX Neutral element failed.");
+        }
 
-        // return std::string("OK");
+        out_mark_ok();
     }
 
     /**
@@ -596,6 +635,14 @@ namespace teddy::test
         for (auto k = 0u; k < testCount; ++k)
         {
             test_satisfy_all(managers[k], diagram1s[k], exprs[k]);
+            flushed_space();
+        }
+        endl();
+
+        out("  operators:     ");
+        for (auto k = 0u; k < testCount; ++k)
+        {
+            test_operators(managers[k], diagram1s[k], exprs[k]);
             flushed_space();
         }
         endl();

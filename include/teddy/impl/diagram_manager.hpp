@@ -443,15 +443,16 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::booleanize
         (diagram_t const& d, F f) -> diagram_t
     {
-        return diagram_t(nodes_.transform_terminal(d.get_root(), f));
+        return diagram_t(this->transform_terminal(d.get_root(), f));
     }
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::reduce
         (diagram_t const& d) -> diagram_t
     {
-        // TODO transform terminal with id
-        return diagram_t();
+        auto const newRoot = this->transform_terminal( d.get_root()
+                                                     , utils::identity );
+        return diagram_t(newRoot);
     }
 
     template<class Data, degree Degree, domain Domain>
