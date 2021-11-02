@@ -3,9 +3,14 @@
 
 #include "teddy/teddy.hpp"
 #include <algorithm>
+#include <array>
 #include <iostream>
+#include <mutex>
 #include <random>
 #include <ranges>
+#include <tuple>
+#include <type_traits>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -211,18 +216,29 @@ namespace teddy::test
         }
     }
 
-    auto constexpr CodeReset  = "\x1B[0m";
-
-    auto out_mark_ok ()
+    auto wrap_green(std::string_view const s)
     {
-        auto constexpr CodeGreen = "\x1B[92m";
-        std::cout << CodeGreen << "✓" << CodeReset;
+        return std::string("\x1B[92m") + std::string(s) + "\x1B[0m";
     }
 
-    auto out_mark_err ()
+    auto wrap_red(std::string_view const s)
     {
-        auto constexpr CodeRed = "\x1B[91m";
-        std::cout << CodeRed << "!" << CodeReset;
+        return std::string("\x1B[91m") + std::string(s) + "\x1B[0m";
+    }
+
+    auto wrap_yellow(std::string_view const s)
+    {
+        return std::string("\x1B[93m") + std::string(s) + "\x1B[0m";
+    }
+
+    auto constexpr char_ok()
+    {
+        return "✓";
+    }
+
+    auto constexpr char_err()
+    {
+        return "!";
     }
 
     /**
@@ -241,16 +257,17 @@ namespace teddy::test
             auto const diagramVal  = manager.evaluate(diagram, *iterator);
             if (expectedVal != diagramVal)
             {
-                out_mark_err();
-                break;
+                return char_err();
             }
             ++iterator;
         }
 
         if (not iterator.has_more())
         {
-            out_mark_ok();
+            return char_ok();
         }
+
+        return char_err();
     }
 
     /**
@@ -263,11 +280,11 @@ namespace teddy::test
     {
         if (diagram1.equals(diagram2))
         {
-            out_mark_ok();
+            return char_ok();
         }
         else
         {
-            out_mark_err();
+            return char_err();
         }
     }
 
@@ -285,11 +302,11 @@ namespace teddy::test
         auto const diagramNodeCount = manager.node_count(diagram);
         if (totalNodeCount == diagramNodeCount)
         {
-            out_mark_ok();
+            return char_ok();
         }
         else
         {
-            out_mark_err();
+            return char_err();
         }
     }
 
@@ -349,12 +366,11 @@ namespace teddy::test
         {
             if (realCounts[k] != expectedCounts[k])
             {
-                out_mark_err();
-                return;
+                return char_err();
             }
         }
 
-        out_mark_ok();
+        return char_ok();
     }
 
     /**
@@ -388,11 +404,10 @@ namespace teddy::test
         {
             if (expectedCounts[k] != realCounts[k])
             {
-                out_mark_err();
-                return;
+                return char_err();
             }
         }
-        out_mark_ok();
+        return char_ok();
     }
 
     template<class Dat, class Deg, class Dom>
@@ -427,131 +442,95 @@ namespace teddy::test
 
         if (not manager.template apply<AND>(bd, zero).equals(zero))
         {
-            out_mark_err();
-            return;
-            // return std::string("AND Absorbing element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<AND>(bd, one).equals(bd))
         {
-            out_mark_err();
-            return;
-            // return std::string("AND Neutral element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<OR>(bd, one).equals(one))
         {
-            out_mark_err();
-            return;
-            // return std::string("OR Absorbing element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<OR>(bd, zero).equals(bd))
         {
-            out_mark_err();
-            return;
-            // return std::string("OR Neutral element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<XOR>(bd, bd).equals(zero))
         {
-            out_mark_err();
-            return;
-            // return std::string("XOR Annihilate failed.");
+            return char_err();
         }
 
         if (not manager.template apply<MULTIPLIES<2>>(rd, zero).equals(zero))
         {
-            out_mark_err();
-            return;
-            // return std::string("(*) Absorbing element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<MULTIPLIES<4>>(rd, one).equals(rd))
         {
-            out_mark_err();
-            return;
-            // return std::string("(*) Neutral element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<PLUS<4>>(rd, zero).equals(rd))
         {
-            out_mark_err();
-            return;
-            // return std::string("(+) Neutral element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<EQUAL_TO>(rd, rd).equals(one))
         {
-            out_mark_err();
-            return;
-            // return std::string("(==) Annihilate failed.");
+            return char_err();
         }
 
         if (not manager.template apply<NOT_EQUAL_TO>(rd, rd).equals(zero))
         {
-            out_mark_err();
-            return;
-            // return std::string("(!=) Annihilate failed.");
+            return char_err();
         }
 
         if (not manager.template apply<LESS>(rd, rd).equals(zero))
         {
-            out_mark_err();
-            return;
-            // return std::string("(<) Annihilate failed.");
+            return char_err();
         }
 
         if (not manager.template apply<GREATER>(rd, rd).equals(zero))
         {
-            out_mark_err();
-            return;
-            // return std::string("(>) Annihilate failed.");
+            return char_err();
         }
 
         if (not manager.template apply<LESS_EQUAL>(rd, rd).equals(one))
         {
-            out_mark_err();
-            return;
-            // return std::string("(<=) Annihilate failed.");
+            return char_err();
         }
 
         if (not manager.template apply<GREATER_EQUAL>(rd, rd).equals(one))
         {
-            out_mark_err();
-            return;
-            // return std::string("(>=) Annihilate failed.");
+            return char_err();
         }
 
         if (not manager.template apply<MIN>(rd, zero).equals(zero))
         {
-            out_mark_err();
-            return;
-            // return std::string("MIN Absorbing element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<MIN>(rd, sup).equals(rd))
         {
-            out_mark_err();
-            return;
-            // return std::string("MIN Neutral element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<MAX>(rd, sup).equals(sup))
         {
-            out_mark_err();
-            return;
-            // return std::string("MAX Absorbing element failed.");
+            return char_err();
         }
 
         if (not manager.template apply<MAX>(rd, zero).equals(rd))
         {
-            out_mark_err();
-            return;
-            // return std::string("MAX Neutral element failed.");
+            return char_err();
         }
 
-        out_mark_ok();
+        return char_ok();
     }
 
     /**
@@ -564,22 +543,8 @@ namespace teddy::test
         , std::vector<expr_var> const& exprs
         , std::vector<rng_t>&             )
     {
-        auto constexpr CodeYellow = "\x1B[93m";
-        auto const flushed_space = []()
-        {
-            std::cout << ' ' << std::flush;
-        };
-        auto const endl = []()
-        {
-            std::cout << '\n';
-        };
-        auto const out = [](auto const& s)
-        {
-            std::cout << s;
-        };
-
         auto const testCount = managers.size();
-        std::cout << CodeYellow << name << CodeReset << '\n';
+        std::cout << wrap_yellow(name) << '\n';
 
         auto diagram1s = utils::fill_vector(testCount, [&](auto const k)
         {
@@ -591,63 +556,76 @@ namespace teddy::test
             return create_diagram(exprs[k], managers[k], fold_e::Tree);
         });
 
-        out("  node counts: ");
+        std::cout << "  node counts: ";
         for (auto k = 0u; k < testCount; ++k)
         {
             std::cout << managers[k].node_count(diagram1s[k]) << ' ';
         }
-        endl();
-        endl();
+        std::cout << "\n\n";
 
-        out("  evaluate:      ");
+        using namespace std::string_view_literals;
+        auto const tests = { "evaluate"sv
+                           , "fold"sv
+                           , "gc"sv
+                           , "satisfy-count"sv
+                           , "satisfy-all"sv
+                           , "operators"sv };
+        auto results = std::unordered_map< std::string_view
+                                         , std::vector<std::string> >();
+        for (auto const test : tests)
+        {
+            results.emplace( std::piecewise_construct_t()
+                           , std::make_tuple(test)
+                           , std::make_tuple(testCount, " ") );
+        }
+
+        auto output_results = [&results]()
+        {
+            for (auto const& [k, rs] : results)
+            {
+                std::cout << "  " << k << std::string(16 - k.size(), ' ');
+                for (auto const& r : rs)
+                {
+                    std::cout << " " << (r == "✓" ? wrap_green(r) :
+                                        (r == "!" ? wrap_red(r)   : " "sv));
+                }
+                std::cout << '\n';
+            }
+        };
+
+        auto outputMutex = std::mutex();
+        auto const refresh_results = [&]()
+        {
+            auto lock = std::scoped_lock<std::mutex>(outputMutex);
+            for (auto i = 0u; i < results.size(); ++i)
+            {
+                std::cout << "\033[A";
+            }
+            output_results();
+            std::cout << std::flush;
+        };
+
+        output_results();
+        // TODO OPENMP parallel
         for (auto k = 0u; k < testCount; ++k)
         {
-            test_evaluate(managers[k], diagram1s[k], exprs[k]);
-            flushed_space();
-        }
-        endl();
+            results.at("evaluate")[k]
+                = test_evaluate(managers[k], diagram1s[k], exprs[k]);
+            results.at("fold")[k]
+                = test_fold(diagram1s[k], diagram2s[k]);
+            results.at("gc")[k]
+                = test_gc(managers[k], diagram1s[k]);
+            results.at("satisfy-count")[k]
+                = test_satisfy_count(managers[k], diagram1s[k], exprs[k]);
+            results.at("satisfy-all")[k]
+                = test_satisfy_all(managers[k], diagram1s[k], exprs[k]);
+            results.at("operators")[k]
+                = test_operators(managers[k], diagram1s[k], exprs[k]);
 
-        out("  fold:          ");
-        for (auto k = 0u; k < testCount; ++k)
-        {
-            test_fold(diagram1s[k], diagram2s[k]);
-            flushed_space();
+            refresh_results();
         }
-        endl();
 
-        out("  gc:            ");
-        for (auto k = 0u; k < testCount; ++k)
-        {
-            test_gc(managers[k], diagram1s[k]);
-            flushed_space();
-        }
-        endl();
-
-        out("  satisfy-count: ");
-        for (auto k = 0u; k < testCount; ++k)
-        {
-            test_satisfy_count(managers[k], diagram1s[k], exprs[k]);
-            flushed_space();
-        }
-        endl();
-
-        out("  satisfy-all:   ");
-        for (auto k = 0u; k < testCount; ++k)
-        {
-            test_satisfy_all(managers[k], diagram1s[k], exprs[k]);
-            flushed_space();
-        }
-        endl();
-
-        out("  operators:     ");
-        for (auto k = 0u; k < testCount; ++k)
-        {
-            test_operators(managers[k], diagram1s[k], exprs[k]);
-            flushed_space();
-        }
-        endl();
-
-        endl();
+        std::cout << '\n';
     }
 
     template<std::size_t M>
@@ -672,8 +650,11 @@ auto main () -> int
     auto const termSize  = 5;
     auto const nodeCount = 1000;
     auto const testCount = 10;
-    auto const initSeed  = std::random_device()();
-    // auto const initSeed  = 144;
+    auto       seedSrc   = std::random_device();
+    // auto const seedSrc   = std::integral_constant<int, 144>();
+    auto const initSeed  = seedSrc();
+    auto constexpr IsFixedSeed = not std::same_as< std::random_device
+                                                 , decltype(seedSrc) >;
 
     auto seeder = ts::rng_t(initSeed);
     auto rngs = us::fill_vector(testCount - 2, [&seeder](auto const)
@@ -725,7 +706,10 @@ auto main () -> int
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
 
-    std::cout << "Seed is " << initSeed << '.' << '\n';
+    auto const seedStr = IsFixedSeed
+        ? ts::wrap_red(std::to_string(initSeed))
+        : std::to_string(initSeed);
+    std::cout << "Seed is " << seedStr << '.' << '\n';
     ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
     ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
     ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
