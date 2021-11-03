@@ -1,5 +1,9 @@
-CXX = g++
-CXXFLAGS = -MMD -MP -std=c++20 -Iinclude -Wall -Wextra \
+ifdef USE_CLANG
+	CXX = clang++
+	LIB = -stdlib=libc++
+endif
+
+CXXFLAGS = -MMD -MP -std=c++20 $(LIB) -Iinclude -Wall -Wextra \
  -Wpedantic -Wconversion -Wsign-conversion -Wshadow
 SRC_DIR = ./src
 LINK_NOTICE = "\e[1;33mLinking:\e[0m"
@@ -11,6 +15,11 @@ ifdef DEBUG
 else
 	CXXFLAGS += -O3
 	BUILD_DIR ?= ./build/release
+endif
+
+ifdef USE_OMP
+	CXXFLAGS += -fopenmp
+	LDFLAGS += -fopenmp
 endif
 
 SRCS := main.cpp test.cpp

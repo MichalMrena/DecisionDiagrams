@@ -6,8 +6,10 @@
 #include <array>
 #include <iostream>
 #include <mutex>
+#include <omp.h>
 #include <random>
 #include <ranges>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -579,10 +581,11 @@ namespace teddy::test
                            , std::make_tuple(testCount, " ") );
         }
 
-        auto output_results = [&results]()
+        auto output_results = [&results, &tests]()
         {
-            for (auto const& [k, rs] : results)
+            for (auto const k : tests)
             {
+                auto const& rs = results.at(k);
                 std::cout << "  " << k << std::string(16 - k.size(), ' ');
                 for (auto const& r : rs)
                 {
@@ -606,7 +609,7 @@ namespace teddy::test
         };
 
         output_results();
-        // TODO OPENMP parallel
+        #pragma omp parallel for schedule(dynamic)
         for (auto k = 0u; k < testCount; ++k)
         {
             results.at("evaluate")[k]
@@ -649,7 +652,7 @@ auto main () -> int
     auto const termCount = 20;
     auto const termSize  = 5;
     auto const nodeCount = 1000;
-    auto const testCount = 10;
+    auto const testCount = std::thread::hardware_concurrency() + 2;
     auto       seedSrc   = std::random_device();
     // auto const seedSrc   = std::integral_constant<int, 144>();
     auto const initSeed  = seedSrc();
@@ -666,7 +669,7 @@ auto main () -> int
     });
     auto const exprs = [=, &rngs]()
     {
-        auto res = us::fmap(rngs, [=, &rngs](auto& indexRng)
+        auto res = us::fmap(rngs, [=](auto& indexRng)
         {
             return ts::generate_expression( indexRng, varCount
                                           , termCount, termSize );
