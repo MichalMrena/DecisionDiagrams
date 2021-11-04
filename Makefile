@@ -3,8 +3,8 @@ ifdef USE_CLANG
 	LIB = -stdlib=libc++
 endif
 
-CXXFLAGS = -MMD -MP -std=c++20 $(LIB) -Iinclude -Wall -Wextra \
- -Wpedantic -Wconversion -Wsign-conversion -Wshadow
+CXXFLAGS = -MMD -MP -std=c++20 $(LIB) -Iinclude \
+	-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow
 SRC_DIR = ./src
 LINK_NOTICE = "\e[1;33mLinking:\e[0m"
 COMPILE_NOTICE = "\e[1;33mCompiling:\e[0m"
@@ -40,12 +40,7 @@ $(BUILD_DIR)/%.cpp.o: src/%.cpp
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: clean dps
-
-dps:
-	@echo $(SRCS)
-	@echo $(OBJS)
-	@echo $(DEPS)
+.PHONY: clean
 
 clean:
 	rm -r ./build

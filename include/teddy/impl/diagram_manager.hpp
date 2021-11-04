@@ -72,6 +72,8 @@ namespace teddy
                 , std::output_iterator<Vars> Out >
         auto satisfy_all_g (uint_t, diagram_t const&, Out) const -> void;
 
+        auto cofactor (diagram_t const&, index_t, uint_t) -> diagram_t;
+
         template<uint_to_bool F>
         auto booleanize (diagram_t const&, F = utils::not_zero) -> diagram_t;
 
@@ -439,6 +441,34 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::cofactor
+        (diagram_t const& d, index_t const i, uint_t const v) -> diagram_t
+    {
+        auto const newRoot = this->transform_internal(d.get_root(), [this, i, v]
+            (auto&& go, auto&& self, auto const n)
+        {
+            if (n->get_index() == i)
+            {
+                // Create redundant node that will
+                // be handled by the node manager.
+                return nodes_.make_sons(i, [n](auto const)
+                {
+                    return n;
+                });
+            }
+            else
+            {
+                // Nothing to restrict here so we just continue downwards.
+                return nodes_.make_sons(n->get_index(), [&](auto const k)
+                {
+                    return go(go, self, n->get_son(k));
+                });
+            }
+        });
+        return diagram_t(newRoot);
+    }
+
+    template<class Data, degree Degree, domain Domain>
     template<uint_to_bool F>
     auto diagram_manager<Data, Degree, Domain>::booleanize
         (diagram_t const& d, F f) -> diagram_t
@@ -531,8 +561,8 @@ namespace teddy
                 return n;
             }
 
-            auto const u = nodes_.internal_vertex( n->get_index()
-                                                 , f_(go_, f_, n) );
+            auto const u = nodes_.internal_node( n->get_index()
+                                               , f_(go_, f_, n) );
             memo.emplace(n, u);
             return u;
         };

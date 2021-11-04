@@ -30,6 +30,8 @@ namespace teddy::test
 
     using expr_var = std::variant<minmax_expr, constant_expr>;
 
+    auto constexpr fst = [](auto const& xs){ return std::get<0>(xs); };
+
     /**
      *  Iterates domain of a function. @p domains contains
      *  domains of individual variables.
@@ -80,9 +82,73 @@ namespace teddy::test
             }
         }
 
-    private:
+    protected:
         std::vector<uint_t> domains_;
         std::vector<uint_t> varVals_;
+    };
+
+    class cofactored_domain_iterator : domain_iterator
+    {
+    public:
+        using base = domain_iterator;
+
+        cofactored_domain_iterator
+            ( std::vector<uint_t>                     domains
+            , std::vector<std::pair<index_t, uint_t>> fixed ) :
+            domain_iterator (std::move(domains)),
+            is_ ([this, &fixed]()
+            {
+                namespace rs = std::ranges;
+                auto const not_elem_ps = [&fixed](auto const x)
+                {;
+                    return rs::find(fixed, x, fst) == rs::end(fixed);
+                };
+
+                auto is = std::vector<index_t>();
+                is.reserve(domains_.size());
+                for (auto const i : rs::iota_view(0ul, domains_.size())
+                                  | rs::views::filter(not_elem_ps) )
+                {
+                    is.emplace_back(i);
+                }
+                return is;
+            }())
+        {
+            for (auto const& [i, v] : fixed)
+            {
+                base::varVals_[i] = v;
+            }
+        };
+
+        auto operator++ () -> void
+        {
+            auto overflow = false;
+            for (auto const i : is_)
+            {
+                ++varVals_[i];
+                overflow = varVals_[i] == domains_[i];
+                if (overflow)
+                {
+                    varVals_[i] = 0;
+                }
+
+                if (not overflow)
+                {
+                    break;
+                }
+            }
+
+            if (overflow)
+            {
+                varVals_.clear();
+            }
+        }
+
+        using base::has_more;
+        using base::operator*;
+
+    private:
+        std::vector<index_t> is_;
     };
 
     template<class F>
@@ -116,13 +182,13 @@ namespace teddy::test
         auto operator= (auto&& arg) -> dummy_output&
         {
             (*f_)(std::forward<decltype(arg)>(arg));
-            return (*this);
+            return *this;
         }
 
         auto operator= (auto&& arg) const -> dummy_output const&
         {
             (*f_)(std::forward<decltype(arg)>(arg));
-            return (*this);
+            return *this;
         }
     };
 
@@ -170,7 +236,7 @@ namespace teddy::test
     using rng_t = std::mt19937_64;
 
     template<class Int>
-    using int_dist = std::uniform_int_distribution<Int>;
+    using int_dist_t = std::uniform_int_distribution<Int>;
 
     auto generate_expression
         ( rng_t&            indexRng
@@ -181,7 +247,7 @@ namespace teddy::test
         assert(varCount > 0);
         static auto indexFrom = index_t {0};
         static auto indexTo   = static_cast<index_t>(varCount - 1u);
-        static auto indexDst  = int_dist<index_t>(indexFrom, indexTo);
+        static auto indexDst  = int_dist_t<index_t>(indexFrom, indexTo);
 
         auto terms = std::vector<std::vector<uint_t>>(termCount);
         for (auto t = 0u; t < termCount; ++t)
@@ -246,13 +312,13 @@ namespace teddy::test
     /**
      *  Tests if @p diagram evaluates to the same value as @p expr .
      */
-    template<class Dat, class Deg, class Dom>
+    template<class Dat, class Deg, class Dom, class DomainIt>
     auto test_evaluate
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg> const&        diagram
-        , expr_var const&                 expr )
+        , expr_var const&                 expr
+        , DomainIt                        iterator )
     {
-        auto iterator = domain_iterator(manager.get_domains());
         while (iterator.has_more())
         {
             auto const expectedVal = evaluate_expression(expr, *iterator);
@@ -270,6 +336,21 @@ namespace teddy::test
         }
 
         return char_err();
+    }
+
+    /**
+     *  Tests if @p diagram evaluates to the same value as @p expr .
+     */
+    template<class Dat, class Deg, class Dom>
+    auto test_evaluate
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , diagram<Dat, Deg> const&        diagram
+        , expr_var const&                 expr )
+    {
+        return test_evaluate( manager
+                            , diagram
+                            , expr
+                            , domain_iterator(manager.get_domains()) );
     }
 
     /**
@@ -412,6 +493,9 @@ namespace teddy::test
         return char_ok();
     }
 
+    /**
+     *  Tests neutral and absorbing elements of different operators.
+     */
     template<class Dat, class Deg, class Dom>
     auto test_operators
         ( diagram_manager<Dat, Deg, Dom>& manager
@@ -535,6 +619,50 @@ namespace teddy::test
         return char_ok();
     }
 
+
+    /**
+     *  Tests cofactor algorithm.
+     */
+    template<class Dat, class Deg, class Dom>
+    auto test_cofactor
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , diagram<Dat, Deg>&              diagram
+        , expr_var const&                 expr
+        , rng_t&                          rng )
+    {
+        auto const varIMax = static_cast<index_t>(manager.get_var_count() - 1);
+        auto indexDist     = int_dist_t<index_t>(0u, varIMax);
+        auto const i1      = indexDist(rng);
+        auto const i2      = [&indexDist, &rng, i1]()
+        {
+            for (;;)
+            {
+                // Potentially dangerous but should be ok...
+                auto const i = indexDist(rng);
+                if (i != i1)
+                {
+                    return i;
+                }
+            }
+        }();
+        auto const v1   = uint_t {0};
+        auto const v2   = uint_t {1};
+        auto const dTmp = manager.cofactor(diagram, i1, v1);
+        auto const d    = manager.cofactor(dTmp, i2, v2);
+
+        if (std::holds_alternative<constant_expr>(expr))
+        {
+            return test_evaluate(manager, d, expr);
+        }
+        else
+        {
+            auto it = cofactored_domain_iterator( manager.get_domains()
+                                                , { std::make_pair(i1, v1)
+                                                  , std::make_pair(i2, v2) } );
+            return test_evaluate(manager, d, expr, std::move(it));
+        }
+    }
+
     /**
      *  Runs all test. Creates diagram represeting @p expr using @p manager .
      */
@@ -543,7 +671,7 @@ namespace teddy::test
         ( std::string_view             name
         , std::vector<Manager>&        managers
         , std::vector<expr_var> const& exprs
-        , std::vector<rng_t>&             )
+        , std::vector<rng_t>&          rngs )
     {
         auto const testCount = managers.size();
         std::cout << wrap_yellow(name) << '\n';
@@ -571,7 +699,8 @@ namespace teddy::test
                            , "gc"sv
                            , "satisfy-count"sv
                            , "satisfy-all"sv
-                           , "operators"sv };
+                           , "operators"sv
+                           , "cofactors"sv };
         auto results = std::unordered_map< std::string_view
                                          , std::vector<std::string> >();
         for (auto const test : tests)
@@ -602,6 +731,7 @@ namespace teddy::test
             auto lock = std::scoped_lock<std::mutex>(outputMutex);
             for (auto i = 0u; i < results.size(); ++i)
             {
+                // Erase one line from console.
                 std::cout << "\033[A";
             }
             output_results();
@@ -624,6 +754,8 @@ namespace teddy::test
                 = test_satisfy_all(managers[k], diagram1s[k], exprs[k]);
             results.at("operators")[k]
                 = test_operators(managers[k], diagram1s[k], exprs[k]);
+            results.at("cofactors")[k]
+                = test_cofactor(managers[k], diagram1s[k], exprs[k], rngs[k]);
 
             refresh_results();
         }
@@ -634,7 +766,7 @@ namespace teddy::test
     template<std::size_t M>
     auto random_domains (std::size_t const n, rng_t& rng)
     {
-        auto domainDst = int_dist<teddy::uint_t>(2, M);
+        auto domainDst = int_dist_t<teddy::uint_t>(2, M);
         return utils::fill_vector(n, [&](auto const)
         {
             return domainDst(rng);
@@ -653,8 +785,8 @@ auto main () -> int
     auto const termSize  = 5;
     auto const nodeCount = 1000;
     auto const testCount = std::thread::hardware_concurrency() + 2;
-    auto       seedSrc   = std::random_device();
-    // auto const seedSrc   = std::integral_constant<int, 144>();
+    // auto       seedSrc   = std::random_device();
+    auto const seedSrc   = std::integral_constant<int, 144>();
     auto const initSeed  = seedSrc();
     auto constexpr IsFixedSeed = not std::same_as< std::random_device
                                                  , decltype(seedSrc) >;
@@ -717,6 +849,23 @@ auto main () -> int
     ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
     ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
     ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
+
+    // auto rng = ts::rng_t(144);
+    // auto ds = ts::random_domains<M>(4, rng);
+    // auto fs = std::vector
+    //     { std::make_pair(teddy::index_t {0}, teddy::uint_t {1})
+    //     , std::make_pair(teddy::index_t {2}, teddy::uint_t {2}) };
+    // auto it = ts::cofactored_domain_iterator(ds, fs);
+
+    // while (it.has_more())
+    // {
+    //     for (auto const v : *it)
+    //     {
+    //         std::cout << v;
+    //     }
+    //     std::cout << '\n';
+    //     ++it;
+    // }
 
     std::cout << '\n' << "End of main." << '\n';
 

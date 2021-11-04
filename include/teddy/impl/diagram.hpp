@@ -2,8 +2,8 @@
 #define MIX_DD_DIAGRAM_HPP
 
 #include "node.hpp"
-#include <utility>
 #include <cassert>
+#include <utility>
 
 namespace teddy
 {
