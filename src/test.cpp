@@ -847,25 +847,6 @@ auto main () -> int
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
 
-    auto const print_expr = [](auto const& evar)
-    {
-        if (std::holds_alternative<ts::minmax_expr>(evar))
-        {
-            auto const& e = std::get<ts::minmax_expr>(evar);
-            std::cout << std::addressof(e) << ":" << '\n';
-            for (auto const& is : e.terms)
-            {
-                std::cout << "(";
-                for (auto const i : is)
-                {
-                    std::cout << i << ' ';
-                }
-                std::cout << ")";
-            }
-            std::cout << std::endl;
-        }
-    };
-
     auto const seedStr = IsFixedSeed
         ? ts::wrap_red(std::to_string(initSeed))
         : std::to_string(initSeed);
@@ -874,23 +855,6 @@ auto main () -> int
     ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
     ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
     ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
-
-    // auto rng = ts::rng_t(144);
-    // auto ds = ts::random_domains<M>(4, rng);
-    // auto fs = std::vector
-    //     { std::make_pair(teddy::index_t {0}, teddy::uint_t {1})
-    //     , std::make_pair(teddy::index_t {2}, teddy::uint_t {2}) };
-    // auto it = ts::cofactored_domain_iterator(ds, fs);
-
-    // while (it.has_more())
-    // {
-    //     for (auto const v : *it)
-    //     {
-    //         std::cout << v;
-    //     }
-    //     std::cout << '\n';
-    //     ++it;
-    // }
 
     std::cout << '\n' << "End of main." << '\n';
 

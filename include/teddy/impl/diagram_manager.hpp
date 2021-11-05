@@ -77,6 +77,11 @@ namespace teddy
         template<uint_to_bool F>
         auto booleanize (diagram_t const&, F = utils::not_zero) -> diagram_t;
 
+        auto dependency_set (diagram_t const&) const -> std::vector<index_t>;
+
+        template<std::output_iterator<index_t> O>
+        auto dependency_set_g (diagram_t const&, O) const -> void;
+
         auto reduce (diagram_t const&) -> diagram_t;
 
         auto node_count () const -> std::size_t;
@@ -474,6 +479,37 @@ namespace teddy
         (diagram_t const& d, F f) -> diagram_t
     {
         return diagram_t(this->transform_terminal(d.get_root(), f));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::dependency_set
+        (diagram_t const& d) const -> std::vector<index_t>
+    {
+        auto is = std::vector<index_t>();
+        is.reserve(this->get_var_count());
+        this->dependency_set_g(d, std::back_inserter(is));
+        is.shrink_to_fit();
+        return is;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<std::output_iterator<index_t> O>
+    auto diagram_manager<Data, Degree, Domain>::dependency_set_g
+        (diagram_t const& d, O o) const -> void
+    {
+        auto memo = std::vector<bool>(this->get_var_count(), false);
+        nodes_.traverse_pre(d.get_root(), [&memo, o](auto const n)
+        {
+            if (n->is_internal())
+            {
+                auto const i = n->get_index();
+                if (not memo[i])
+                {
+                    *o++ = i;
+                }
+                memo[i] = true;
+            }
+        });
     }
 
     template<class Data, degree Degree, domain Domain>
