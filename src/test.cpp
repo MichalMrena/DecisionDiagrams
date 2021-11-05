@@ -628,37 +628,39 @@ namespace teddy::test
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr
-        , rng_t&                          rng )
+        , rng_t*                          rng )
     {
-        auto const varIMax = static_cast<index_t>(manager.get_var_count() - 1);
-        auto indexDist     = int_dist_t<index_t>(0u, varIMax);
-        auto const i1      = indexDist(rng);
-        auto const i2      = [&indexDist, &rng, i1]()
-        {
-            for (;;)
-            {
-                // Potentially dangerous but should be ok...
-                auto const i = indexDist(rng);
-                if (i != i1)
-                {
-                    return i;
-                }
-            }
-        }();
-        auto const v1   = uint_t {0};
-        auto const v2   = uint_t {1};
-        auto const dTmp = manager.cofactor(diagram, i1, v1);
-        auto const d    = manager.cofactor(dTmp, i2, v2);
-
         if (std::holds_alternative<constant_expr>(expr))
         {
+            auto const dTmp = manager.cofactor(diagram, 0, 1);
+            auto const d    = manager.cofactor(dTmp, 1, 0);
             return test_evaluate(manager, d, expr);
         }
         else
         {
+            auto const maxI = static_cast<index_t>(manager.get_var_count() - 1);
+            auto indexDist  = int_dist_t<index_t>(0u, maxI);
+            auto const i1   = indexDist(*rng);
+            auto const i2   = [&indexDist, rng, i1]()
+            {
+                for (;;)
+                {
+                    // Potentially dangerous but should be ok...
+                    auto const i = indexDist(*rng);
+                    if (i != i1)
+                    {
+                        return i;
+                    }
+                }
+            }();
+            auto const v1   = uint_t {0};
+            auto const v2   = uint_t {1};
+            auto const dTmp = manager.cofactor(diagram, i1, v1);
+            auto const d    = manager.cofactor(dTmp, i2, v2);
+
             auto it = cofactored_domain_iterator( manager.get_domains()
                                                 , { std::make_pair(i1, v1)
-                                                  , std::make_pair(i2, v2) } );
+                                                , std::make_pair(i2, v2) } );
             return test_evaluate(manager, d, expr, std::move(it));
         }
     }
@@ -742,6 +744,10 @@ namespace teddy::test
         #pragma omp parallel for schedule(dynamic)
         for (auto k = 0u; k < testCount; ++k)
         {
+            auto const rng = k < rngs.size()
+                ? std::addressof(rngs[k])
+                : nullptr;
+
             results.at("evaluate")[k]
                 = test_evaluate(managers[k], diagram1s[k], exprs[k]);
             results.at("fold")[k]
@@ -755,7 +761,7 @@ namespace teddy::test
             results.at("operators")[k]
                 = test_operators(managers[k], diagram1s[k], exprs[k]);
             results.at("cofactors")[k]
-                = test_cofactor(managers[k], diagram1s[k], exprs[k], rngs[k]);
+                = test_cofactor(managers[k], diagram1s[k], exprs[k], rng);
 
             refresh_results();
         }
@@ -840,6 +846,25 @@ auto main () -> int
     });
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
+
+    auto const print_expr = [](auto const& evar)
+    {
+        if (std::holds_alternative<ts::minmax_expr>(evar))
+        {
+            auto const& e = std::get<ts::minmax_expr>(evar);
+            std::cout << std::addressof(e) << ":" << '\n';
+            for (auto const& is : e.terms)
+            {
+                std::cout << "(";
+                for (auto const i : is)
+                {
+                    std::cout << i << ' ';
+                }
+                std::cout << ")";
+            }
+            std::cout << std::endl;
+        }
+    };
 
     auto const seedStr = IsFixedSeed
         ? ts::wrap_red(std::to_string(initSeed))
