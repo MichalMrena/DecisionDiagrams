@@ -184,6 +184,86 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<std::input_iterator I, std::sentinel_for<I> S>
+    auto diagram_manager<Data, Degree, Domain>::from_vector
+        (I first, S last) -> diagram_t
+    {
+        auto const lastLevel  = static_cast<level_t>(this->get_var_count() - 1);
+        auto const lastIndex  = nodes_.get_index(lastLevel);
+        auto const lastVarDom = nodes_.get_domain(lastIndex);
+
+        if constexpr (std::random_access_iterator<I>)
+        {
+            namespace rs = std::ranges;
+            auto const dist  = rs::distance(from, to);
+            auto const count = nodes_.domain_product(0, lastLevel + 1);
+            assert(dist > 0 and dist == count);
+        }
+
+        using stack_frame = struct { node_t* node; level_t level; };
+        auto stack = std::vector<stack_frame>();
+        auto const shrink = [this](auto& stack)
+        {
+            for (;;)
+            {
+                auto const currentLevel = stack.back().level;
+                if (0 == currentLevel)
+                {
+                    break;
+                }
+
+                auto const newIndex  = manager_.get_index(currentLevel - 1);
+                auto const newDomain = manager_.get_domain(newIndex);
+
+                auto count  = 0u;
+                auto offset = 0u;
+                while (offset < stack.size()
+                   and stack[stack.size() - offset].level == level)
+                {
+                    ++count;
+                    ++offset;
+                }
+
+                if (count < newDomain)
+                {
+                    break;
+                }
+
+                auto const newSons = nodes_.make_sons(newIndex, [](auto const o)
+                {
+                    return stack.peek[stack.size() - newDomain - o - 1].node;
+                });
+                auto const newNode = nodes_.internal_node(newIndex, newSons);
+                stack.erase(std::end(stack) - newDomain, std::end(stack));
+                stack.push_back(stack_frame {node, currentLevel - 1});
+            }
+        };
+
+        while (first != last)
+        {
+            auto sons = nodes_.make_sons(lastVarDom, [this, &first](auto const)
+            {
+                return nodes_.terminal_vertex(*first++);
+            });
+            auto const node = nodes_.internal_node(lastIndex, std::move(sons));
+            stack.push_back(stack_frame {node, lastLevel});
+            shrink(stack);
+        }
+
+        assert(stack.size() == 1);
+        return diagram_t(stack.back().vertex);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<std::ranges::input_range R>
+    auto diagram_manager<Data, Degree, Domain>::from_vector
+        (R&& r) -> diagram_t
+    {
+        namespace rs = std::ranges
+        return this->from_vector(rs::begin(r), rs::end(r));
+    }
+
+    template<class Data, degree Degree, domain Domain>
     template<bin_op Op>
     auto diagram_manager<Data, Degree, Domain>::apply
         (diagram_t const& d1, diagram_t const& d2) -> diagram_t

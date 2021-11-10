@@ -381,6 +381,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::get_index
         (level_t const l) const -> index_t
     {
+        assert(l < levelToIndex_.size());
         return levelToIndex_[l];
     }
 
@@ -388,6 +389,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::get_domain
         (index_t const i) const -> uint_t
     {
+        assert(i < this->get_var_count());
         return domains_[i];
     }
 
@@ -395,6 +397,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::get_node_count
         (index_t const i) const -> std::size_t
     {
+        assert(i < this->get_var_count());
         return uniqueTables_[i].size();
     }
 
