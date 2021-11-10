@@ -18,6 +18,8 @@
 
 namespace teddy::test
 {
+    namespace rs = std::ranges;
+
     struct minmax_expr
     {
         std::vector<std::vector<uint_t>> terms;
@@ -42,9 +44,36 @@ namespace teddy::test
         domain_iterator
             (std::vector<uint_t> domains) :
             domains_ (std::move(domains)),
+            indices_ (utils::fill_vector(domains_.size(), utils::identity)),
             varVals_ (domains_.size())
         {
-        };
+        }
+
+        domain_iterator
+            (std::vector<uint_t> domains, std::vector<index_t> order) :
+            domains_ (std::move(domains)),
+            indices_ (std::move(order)),
+            varVals_ (domains_.size())
+        {
+        }
+
+        domain_iterator
+            ( std::vector<uint_t>                     domains
+            , std::vector<index_t>                    order
+            , std::vector<std::pair<index_t, uint_t>> fixed ) :
+            domains_ (std::move(domains)),
+            indices_ (std::move(order)),
+            varVals_ ([this, &fixed, &domains]()
+            {
+                auto vs = std::vector<uint_t>(domains_.size());
+                for (auto const& [i, v] : fixed)
+                {
+                    varVals_[i] = v;
+                }
+                return vs;
+            }())
+        {
+        }
 
         auto has_more () const -> bool
         {
@@ -58,10 +87,9 @@ namespace teddy::test
 
         auto operator++ () -> void
         {
-            auto const varCount = varVals_.size();
-            auto overflow       = false;
+            auto overflow = false;
 
-            for (auto i = 0u; i < varCount; ++i)
+            for (auto const i : indices_)
             {
                 ++varVals_[i];
                 overflow = varVals_[i] == domains_[i];
@@ -83,72 +111,9 @@ namespace teddy::test
         }
 
     protected:
-        std::vector<uint_t> domains_;
-        std::vector<uint_t> varVals_;
-    };
-
-    class cofactored_domain_iterator : domain_iterator
-    {
-    public:
-        using base = domain_iterator;
-
-        cofactored_domain_iterator
-            ( std::vector<uint_t>                     domains
-            , std::vector<std::pair<index_t, uint_t>> fixed ) :
-            domain_iterator (std::move(domains)),
-            is_ ([this, &fixed]()
-            {
-                namespace rs = std::ranges;
-                auto const not_elem_ps = [&fixed](auto const x)
-                {;
-                    return rs::find(fixed, x, fst) == rs::end(fixed);
-                };
-
-                auto is = std::vector<index_t>();
-                is.reserve(domains_.size());
-                for (auto const i : rs::iota_view(0ul, domains_.size())
-                                  | rs::views::filter(not_elem_ps) )
-                {
-                    is.emplace_back(i);
-                }
-                return is;
-            }())
-        {
-            for (auto const& [i, v] : fixed)
-            {
-                base::varVals_[i] = v;
-            }
-        };
-
-        auto operator++ () -> void
-        {
-            auto overflow = false;
-            for (auto const i : is_)
-            {
-                ++varVals_[i];
-                overflow = varVals_[i] == domains_[i];
-                if (overflow)
-                {
-                    varVals_[i] = 0;
-                }
-
-                if (not overflow)
-                {
-                    break;
-                }
-            }
-
-            if (overflow)
-            {
-                varVals_.clear();
-            }
-        }
-
-        using base::has_more;
-        using base::operator*;
-
-    private:
-        std::vector<index_t> is_;
+        std::vector<uint_t>  domains_;
+        std::vector<index_t> indices_;
+        std::vector<uint_t>  varVals_;
     };
 
     template<class F>
@@ -271,7 +236,6 @@ namespace teddy::test
         }
         else
         {
-            namespace rs = std::ranges;
             auto const term_val = [&vs](auto const& is)
             {
                 return vs[rs::min(is, {}, [&vs](auto const i)
@@ -354,7 +318,7 @@ namespace teddy::test
     }
 
     /**
-     *  Tests if different fold creates the same node.
+     *  Tests if different folds create the same node.
      */
     template<class Dat, class Deg>
     auto test_fold
@@ -393,6 +357,9 @@ namespace teddy::test
         }
     }
 
+    /**
+     *  Calculates frequency table for each possible value of @p expr .
+     */
     template<class Dat, class Deg, class Dom>
     auto expected_counts
         ( diagram_manager<Dat, Deg, Dom>& manager
@@ -502,7 +469,6 @@ namespace teddy::test
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr )
     {
-        namespace rs = std::ranges;
         auto const max  = [&expr](auto domains)
         {
             if (domains.empty())
@@ -628,7 +594,7 @@ namespace teddy::test
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr
-        , rng_t*                          rng )
+        , rng_t&                          rng )
     {
         if (std::holds_alternative<constant_expr>(expr))
         {
@@ -640,13 +606,13 @@ namespace teddy::test
         {
             auto const maxI = static_cast<index_t>(manager.get_var_count() - 1);
             auto indexDist  = int_dist_t<index_t>(0u, maxI);
-            auto const i1   = indexDist(*rng);
-            auto const i2   = [&indexDist, rng, i1]()
+            auto const i1   = indexDist(rng);
+            auto const i2   = [&indexDist, &rng, i1]()
             {
                 for (;;)
                 {
                     // Potentially dangerous but should be ok...
-                    auto const i = indexDist(*rng);
+                    auto const i = indexDist(rng);
                     if (i != i1)
                     {
                         return i;
@@ -658,9 +624,11 @@ namespace teddy::test
             auto const dTmp = manager.cofactor(diagram, i1, v1);
             auto const d    = manager.cofactor(dTmp, i2, v2);
 
-            auto it = cofactored_domain_iterator( manager.get_domains()
-                                                , { std::make_pair(i1, v1)
-                                                , std::make_pair(i2, v2) } );
+            auto const is = manager.get_order();
+            auto it = domain_iterator( manager.get_domains()
+                                     , std::vector(std::begin(is), std::end(is))
+                                     , { std::make_pair(i1, v1)
+                                     ,  std::make_pair(i2, v2) } );
             return test_evaluate(manager, d, expr, std::move(it));
         }
     }
@@ -676,7 +644,6 @@ namespace teddy::test
         , std::vector<rng_t>&          rngs )
     {
         auto const testCount = managers.size();
-        std::cout << wrap_yellow(name) << '\n';
 
         auto diagram1s = utils::fill_vector(testCount, [&](auto const k)
         {
@@ -687,13 +654,6 @@ namespace teddy::test
         {
             return create_diagram(exprs[k], managers[k], fold_e::Tree);
         });
-
-        std::cout << "  node counts: ";
-        for (auto k = 0u; k < testCount; ++k)
-        {
-            std::cout << managers[k].node_count(diagram1s[k]) << ' ';
-        }
-        std::cout << "\n\n";
 
         using namespace std::string_view_literals;
         auto const tests = { "evaluate"sv
@@ -740,14 +700,18 @@ namespace teddy::test
             std::cout << std::flush;
         };
 
+        std::cout << wrap_yellow(name) << '\n';
+        std::cout << "  node counts: ";
+        for (auto k = 0u; k < testCount; ++k)
+        {
+            std::cout << managers[k].node_count(diagram1s[k]) << ' ';
+        }
+        std::cout << "\n\n";
+
         output_results();
         #pragma omp parallel for schedule(dynamic)
         for (auto k = 0u; k < testCount; ++k)
         {
-            auto const rng = k < rngs.size()
-                ? std::addressof(rngs[k])
-                : nullptr;
-
             results.at("evaluate")[k]
                 = test_evaluate(managers[k], diagram1s[k], exprs[k]);
             results.at("fold")[k]
@@ -761,7 +725,7 @@ namespace teddy::test
             results.at("operators")[k]
                 = test_operators(managers[k], diagram1s[k], exprs[k]);
             results.at("cofactors")[k]
-                = test_cofactor(managers[k], diagram1s[k], exprs[k], rng);
+                = test_cofactor(managers[k], diagram1s[k], exprs[k], rngs[k]);
 
             refresh_results();
         }
@@ -778,6 +742,13 @@ namespace teddy::test
             return domainDst(rng);
         });
     }
+
+    auto random_order (std::size_t const n, rng_t& rng)
+    {
+        auto is = utils::fill_vector(n, utils::identity);
+        std::shuffle(std::begin(is), std::end(is), rng);
+        return is;
+    }
 }
 
 auto main () -> int
@@ -791,59 +762,73 @@ auto main () -> int
     auto const termSize  = 5;
     auto const nodeCount = 1000;
     auto const testCount = std::thread::hardware_concurrency() + 2;
-    // auto       seedSrc   = std::random_device();
-    auto const seedSrc   = std::integral_constant<int, 144>();
+    auto       seedSrc   = std::random_device();
+    // auto const seedSrc   = std::integral_constant<int, 144>();
     auto const initSeed  = seedSrc();
     auto constexpr IsFixedSeed = not std::same_as< std::random_device
                                                  , decltype(seedSrc) >;
 
     auto seeder = ts::rng_t(initSeed);
-    auto rngs = us::fill_vector(testCount - 2, [&seeder](auto const)
+    auto rngs = us::fill_vector(testCount, [&seeder](auto const)
     {
         // One rng to rule them all.
         // Not technically correct but
         // it should be good enough for the purpose of these tests.
         return ts::rng_t(seeder());
     });
+
     auto const exprs = [=, &rngs]()
     {
-        auto res = us::fmap(rngs, [=](auto& indexRng)
+        auto res = us::fill_vector(testCount - 2, [=, &rngs](auto const k)
         {
-            return ts::generate_expression( indexRng, varCount
+            return ts::generate_expression( rngs[k], varCount
                                           , termCount, termSize );
         });
         res.emplace_back(std::in_place_type_t<ts::constant_expr>(), 0);
         res.emplace_back(std::in_place_type_t<ts::constant_expr>(), 1);
         return res;
     }();
-    auto bddManagers = us::fill_vector(testCount - 2, [=](auto const)
+
+    auto orders = us::fmap(rngs, [testCount](auto& rng)
     {
-        return teddy::bdd_manager(varCount, nodeCount);
+        return ts::random_order(varCount, rng);
     });
-    bddManagers.emplace_back(0, 2);
-    bddManagers.emplace_back(0, 2);
-    auto mddManagers = us::fill_vector(testCount - 2, [=](auto const)
-    {
-        return teddy::mdd_manager<M>(varCount, nodeCount);
-    });
-    mddManagers.emplace_back(0, 2);
-    mddManagers.emplace_back(0, 2);
+
     auto domains = us::fmap(rngs, [&](auto& rng)
     {
         return ts::random_domains<M>(varCount, rng);
     });
+
+    auto bddManagers = us::fill_vector(testCount - 2, [&](auto const k)
+    {
+        return teddy::bdd_manager(varCount, nodeCount, orders[k]);
+    });
+
+    auto mddManagers = us::fill_vector(testCount - 2, [&](auto const k)
+    {
+        return teddy::mdd_manager<M>(varCount, nodeCount, orders[k]);
+    });
+
     auto imddManagers = us::fill_vector(testCount - 2, [&]
         (auto const k) mutable
     {
-        return teddy::imdd_manager(varCount, nodeCount, domains[k]);
+        return teddy::imdd_manager(varCount, nodeCount, domains[k], orders[k]);
     });
-    imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
-    imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
+
     auto ifmddManagers = us::fill_vector(testCount - 2, [&]
         (auto const k) mutable
     {
-        return teddy::ifmdd_manager<M>(varCount, nodeCount, domains[k]);
+        return teddy::ifmdd_manager<M>( varCount, nodeCount
+                                      , domains[k], orders[k] );
     });
+
+    // Add constant functions.
+    bddManagers.emplace_back(0, 2);
+    bddManagers.emplace_back(0, 2);
+    mddManagers.emplace_back(0, 2);
+    mddManagers.emplace_back(0, 2);
+    imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
+    imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
 

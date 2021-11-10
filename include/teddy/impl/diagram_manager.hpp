@@ -41,6 +41,12 @@ namespace teddy
         template<std::ranges::input_range Is>
         auto variables (Is const&) -> std::vector<diagram_t>;
 
+        template<std::input_iterator I, std::sentinel_for<I> S>
+        auto from_vector (I, S) -> diagram_t;
+
+        template<std::ranges::input_range R>
+        auto from_vector (R&&) -> diagram_t;
+
         template<bin_op Op>
         auto apply (diagram_t const&, diagram_t const&) -> diagram_t;
 

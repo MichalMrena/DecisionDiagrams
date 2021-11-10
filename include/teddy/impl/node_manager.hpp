@@ -551,7 +551,7 @@ namespace teddy
             auto product = 1u;
             for (auto l = from; l < to; ++ l)
             {
-                product *= domains_[l];
+                product *= domains_[levelToIndex_[l]];
             }
             return product;
         }
