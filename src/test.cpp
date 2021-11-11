@@ -32,13 +32,29 @@ namespace teddy::test
 
     using expr_var = std::variant<minmax_expr, constant_expr>;
 
-    // TODO to real iterator
     /**
      *  Iterates domain of a function.
      */
     class domain_iterator
     {
     public:
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = std::vector<uint_t>;
+        using pointer           = value_type*;
+        using reference         = value_type&;
+        using iterator_category = std::input_iterator_tag;
+
+    public:
+        /**
+         *  Initializes this as end iterator.
+         */
+        domain_iterator () :
+            domains_ ({}),
+            indices_ ({}),
+            varVals_ ({})
+        {
+        }
+
         /**
          *  Uses implicit order where x0 is the
          *  least significant (changes most often).
@@ -93,17 +109,12 @@ namespace teddy::test
         {
         }
 
-        auto has_more () const -> bool
-        {
-            return not varVals_.empty();
-        }
-
         auto operator* () const -> std::vector<uint_t> const&
         {
             return varVals_;
         }
 
-        auto operator++ () -> void
+        auto operator++ () -> domain_iterator&
         {
             auto overflow = false;
 
@@ -124,8 +135,31 @@ namespace teddy::test
 
             if (overflow)
             {
+                domains_.clear();
+                indices_.clear();
                 varVals_.clear();
             }
+
+            return *this;
+        }
+
+        auto operator++ (int) -> domain_iterator
+        {
+            auto tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
+        auto operator== (domain_iterator const& rhs) const -> bool
+        {
+            return rs::equal(varVals_, rhs.varVals_)
+               and rs::equal(indices_, rhs.indices_)
+               and rs::equal(domains_, rhs.domains_);
+        }
+
+        auto operator!= (domain_iterator const& rhs) const -> bool
+        {
+            return !(rhs == *this);
         }
 
     protected:
@@ -137,50 +171,58 @@ namespace teddy::test
     /**
      *  TODO
      */
-    class function_evaluator
+    class evaluating_iterator
     {
     public:
-        function_evaluator(domain_iterator, expr_var);
+        evaluating_iterator(domain_iterator iterator, expr_var const& expr) :
+            iterator_ (std::move(iterator)),
+            expr_     (expr)
+        {
+        }
+
+    private:
+        domain_iterator iterator_;
+        expr_var const& expr_;
     };
 
     /**
      *  Proxy output iterator that feeds outputed values into @p f .
      */
     template<class F>
-    class dummy_output
+    class forwarding_iterator
     {
     public:
         using difference_type   = std::ptrdiff_t;
-        using value_type        = dummy_output&;
+        using value_type        = forwarding_iterator&;
         using pointer           = value_type;
         using reference         = value_type;
         using iterator_category = std::output_iterator_tag;
 
-        dummy_output ()               { }
-        dummy_output (F& f) : f_ (&f) { }
+        forwarding_iterator ()               { }
+        forwarding_iterator (F& f) : f_ (&f) { }
 
-        auto operator++ () -> dummy_output&
+        auto operator++ () -> forwarding_iterator&
         {
             return *this;
         }
 
-        auto operator++ (int) -> dummy_output&
+        auto operator++ (int) -> forwarding_iterator&
         {
             return *this;
         }
 
-        auto operator* () -> dummy_output&
+        auto operator* () -> forwarding_iterator&
         {
             return *this;
         }
 
-        auto operator= (auto&& arg) -> dummy_output&
+        auto operator= (auto&& arg) -> forwarding_iterator&
         {
             (*f_)(std::forward<decltype(arg)>(arg));
             return *this;
         }
 
-        auto operator= (auto&& arg) const -> dummy_output const&
+        auto operator= (auto&& arg) const -> forwarding_iterator const&
         {
             (*f_)(std::forward<decltype(arg)>(arg));
             return *this;
@@ -355,14 +397,15 @@ namespace teddy::test
     /**
      *  Tests if @p diagram evaluates to the same value as @p expr .
      */
-    template<class Dat, class Deg, class Dom, class DomainIt>
+    template<class Dat, class Deg, class Dom>
     auto test_evaluate
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg> const&        diagram
         , expr_var const&                 expr
-        , DomainIt                        iterator )
+        , domain_iterator                 iterator )
     {
-        while (iterator.has_more())
+        auto const end = domain_iterator();
+        while (iterator != end)
         {
             auto const expectedVal = evaluate_expression(expr, *iterator);
             auto const diagramVal  = manager.evaluate(diagram, *iterator);
@@ -373,7 +416,7 @@ namespace teddy::test
             ++iterator;
         }
 
-        if (not iterator.has_more())
+        if (iterator == end)
         {
             return test_result(true);
         }
@@ -460,8 +503,9 @@ namespace teddy::test
         }
         else
         {
-            auto iterator = domain_iterator(domains);
-            while (iterator.has_more())
+            auto iterator  = domain_iterator(domains);
+            auto const end = domain_iterator();
+            while (iterator != end)
             {
                 inc(counts, evaluate_expression(expr, *iterator));
                 ++iterator;
@@ -523,7 +567,7 @@ namespace teddy::test
                 {
                     ++vals[k];
                 };
-                auto out = dummy_output<decltype(outF)>(outF);
+                auto out = forwarding_iterator<decltype(outF)>(outF);
                 manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
             }
             return vals;
@@ -556,8 +600,9 @@ namespace teddy::test
             }
 
             auto m = uint_t {0};
-            auto iterator = domain_iterator(std::move(domains));
-            while (iterator.has_more())
+            auto iterator  = domain_iterator(std::move(domains));
+            auto const end = domain_iterator();
+            while (iterator != end)
             {
                 m = std::max(m, evaluate_expression(expr, *iterator));
                 ++iterator;
