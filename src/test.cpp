@@ -32,31 +32,49 @@ namespace teddy::test
 
     using expr_var = std::variant<minmax_expr, constant_expr>;
 
-    auto constexpr fst = [](auto const& xs){ return std::get<0>(xs); };
-
+    // TODO to real iterator
     /**
-     *  Iterates domain of a function. @p domains contains
-     *  domains of individual variables.
+     *  Iterates domain of a function.
      */
     class domain_iterator
     {
     public:
+        /**
+         *  Uses implicit order where x0 is the
+         *  least significant (changes most often).
+         *  @p domains of individual variables
+         */
         domain_iterator
             (std::vector<uint_t> domains) :
-            domains_ (std::move(domains)),
-            indices_ (utils::fill_vector(domains_.size(), utils::identity)),
-            varVals_ (domains_.size())
+            domain_iterator
+                ( std::move(domains)
+                , utils::fill_vector(domains.size(), utils::identity)
+                , {} )
         {
         }
 
+        /**
+         *  Uses order of variables defined in @p order . Variable with
+         *  index @c order[0] changes most often, then variable with
+         *  index @c order[1] and so on...
+         *  @p domains of individual variables
+         *  @p order   order in which variables are incremented
+         */
         domain_iterator
             (std::vector<uint_t> domains, std::vector<index_t> order) :
-            domains_ (std::move(domains)),
-            indices_ (std::move(order)),
-            varVals_ (domains_.size())
+            domain_iterator (std::move(domains), std::move(order), {})
         {
         }
 
+        /**
+         *  Uses order of variables defined in @p order . Variable with
+         *  index @c order[0] changes most often, then variable with
+         *  index @c order[1] and so on... while skipping variables
+         *  defined as fixed by @p fixed .
+         *  @p domains of individual variables
+         *  @p order   order in which variables are incremented
+         *  @p fixed   defines variables with fixed value
+         */
         domain_iterator
             ( std::vector<uint_t>                     domains
             , std::vector<index_t>                    order
@@ -116,16 +134,28 @@ namespace teddy::test
         std::vector<uint_t>  varVals_;
     };
 
-    template<class F>
-    struct dummy_output
+    /**
+     *  TODO
+     */
+    class function_evaluator
     {
+    public:
+        function_evaluator(domain_iterator, expr_var);
+    };
+
+    /**
+     *  Proxy output iterator that feeds outputed values into @p f .
+     */
+    template<class F>
+    class dummy_output
+    {
+    public:
         using difference_type   = std::ptrdiff_t;
         using value_type        = dummy_output&;
         using pointer           = value_type;
         using reference         = value_type;
         using iterator_category = std::output_iterator_tag;
 
-        F* f_ {nullptr};
         dummy_output ()               { }
         dummy_output (F& f) : f_ (&f) { }
 
@@ -155,6 +185,9 @@ namespace teddy::test
             (*f_)(std::forward<decltype(arg)>(arg));
             return *this;
         }
+
+    private:
+        F* f_ {nullptr};
     };
 
     enum class fold_e
@@ -162,6 +195,46 @@ namespace teddy::test
         Left, Tree
     };
 
+    /**
+     *  Describes result of a test.
+     */
+    class test_result
+    {
+    public:
+        test_result(bool status) :
+            status_ (status)
+        {
+        }
+
+        test_result(bool status, std::string msg) :
+            status_ (status),
+            msg_    (std::move(msg))
+        {
+        }
+
+        constexpr operator bool () const
+        {
+            return status_;
+        }
+
+        auto get_status()
+        {
+            return status_;
+        }
+
+        auto get_message ()
+        {
+            return std::string_view(msg_);
+        }
+
+    private:
+        bool        status_;
+        std::string msg_;
+    };
+
+    /**
+     *  Creates diagram representing the same functions as @p expr does.
+     */
     template<class Dat, degree Deg, domain Dom>
     auto create_diagram
         ( expr_var const&                 expr
@@ -203,6 +276,9 @@ namespace teddy::test
     template<class Int>
     using int_dist_t = std::uniform_int_distribution<Int>;
 
+    /**
+     *  Generates random minmax expression.
+     */
     auto generate_expression
         ( rng_t&            indexRng
         , std::size_t const varCount
@@ -226,6 +302,9 @@ namespace teddy::test
         return expr_var {std::in_place_type_t<minmax_expr>(), std::move(terms)};
     }
 
+    /**
+     *  Evaluates @p expr using vaalue of variables in @p vs .
+     */
     auto evaluate_expression
         ( expr_var const&            expr
         , std::vector<uint_t> const& vs )
@@ -289,17 +368,17 @@ namespace teddy::test
             auto const diagramVal  = manager.evaluate(diagram, *iterator);
             if (expectedVal != diagramVal)
             {
-                return char_err();
+                return test_result(false, "Value missmatch.");
             }
             ++iterator;
         }
 
         if (not iterator.has_more())
         {
-            return char_ok();
+            return test_result(true);
         }
 
-        return char_err();
+        return test_result(false, "This should not have happened.");
     }
 
     /**
@@ -327,11 +406,11 @@ namespace teddy::test
     {
         if (diagram1.equals(diagram2))
         {
-            return char_ok();
+            return test_result(true);
         }
         else
         {
-            return char_err();
+            return test_result(false, "Diagrams are different.");
         }
     }
 
@@ -349,11 +428,11 @@ namespace teddy::test
         auto const diagramNodeCount = manager.node_count(diagram);
         if (totalNodeCount == diagramNodeCount)
         {
-            return char_ok();
+            return test_result(true);
         }
         else
         {
-            return char_err();
+            return test_result(false, "Node count missmatch.");
         }
     }
 
@@ -416,11 +495,11 @@ namespace teddy::test
         {
             if (realCounts[k] != expectedCounts[k])
             {
-                return char_err();
+                return test_result(false, "Count missmatch.");
             }
         }
 
-        return char_ok();
+        return test_result(true);
     }
 
     /**
@@ -454,10 +533,10 @@ namespace teddy::test
         {
             if (expectedCounts[k] != realCounts[k])
             {
-                return char_err();
+                return test_result(false, "Count missmatch.");
             }
         }
-        return char_ok();
+        return test_result(true);
     }
 
     /**
@@ -494,97 +573,96 @@ namespace teddy::test
 
         if (not manager.template apply<AND>(bd, zero).equals(zero))
         {
-            return char_err();
+            return test_result(false, "AND absorbing failed.");
         }
 
         if (not manager.template apply<AND>(bd, one).equals(bd))
         {
-            return char_err();
+            return test_result(false, "AND neutral failed.");
         }
 
         if (not manager.template apply<OR>(bd, one).equals(one))
         {
-            return char_err();
+            return test_result(false, "OR absorbing failed.");
         }
 
         if (not manager.template apply<OR>(bd, zero).equals(bd))
         {
-            return char_err();
+            return test_result(false, "OR neutral failed.");
         }
 
         if (not manager.template apply<XOR>(bd, bd).equals(zero))
         {
-            return char_err();
+            return test_result(false, "XOR annihilate failed.");
         }
 
         if (not manager.template apply<MULTIPLIES<2>>(rd, zero).equals(zero))
         {
-            return char_err();
+            return test_result(false, "MULTIPLIES absorbing failed.");
         }
 
         if (not manager.template apply<MULTIPLIES<4>>(rd, one).equals(rd))
         {
-            return char_err();
+            return test_result(false, "MULTIPLIES neutral failed.");
         }
 
         if (not manager.template apply<PLUS<4>>(rd, zero).equals(rd))
         {
-            return char_err();
+            return test_result(false, "PLUS neutral failed.");
         }
 
         if (not manager.template apply<EQUAL_TO>(rd, rd).equals(one))
         {
-            return char_err();
+            return test_result(false, "EQUAL_TO annihilate failed.");
         }
 
         if (not manager.template apply<NOT_EQUAL_TO>(rd, rd).equals(zero))
         {
-            return char_err();
+            return test_result(false, "NOT_EQUAL_TO annihilate failed.");
         }
 
         if (not manager.template apply<LESS>(rd, rd).equals(zero))
         {
-            return char_err();
+            return test_result(false, "LESS annihilate failed.");
         }
 
         if (not manager.template apply<GREATER>(rd, rd).equals(zero))
         {
-            return char_err();
+            return test_result(false, "GREATER annihilate failed.");
         }
 
         if (not manager.template apply<LESS_EQUAL>(rd, rd).equals(one))
         {
-            return char_err();
+            return test_result(false, "LESS_EQUAL annihilate failed.");
         }
 
         if (not manager.template apply<GREATER_EQUAL>(rd, rd).equals(one))
         {
-            return char_err();
+            return test_result(false, "GREATER_EQUAL annihilate failed.");
         }
 
         if (not manager.template apply<MIN>(rd, zero).equals(zero))
         {
-            return char_err();
+            return test_result(false, "MIN absorbing failed.");
         }
 
         if (not manager.template apply<MIN>(rd, sup).equals(rd))
         {
-            return char_err();
+            return test_result(false, "MIN neutral failed.");
         }
 
         if (not manager.template apply<MAX>(rd, sup).equals(sup))
         {
-            return char_err();
+            return test_result(false, "MAX absoring failed.");
         }
 
         if (not manager.template apply<MAX>(rd, zero).equals(rd))
         {
-            return char_err();
+            return test_result(false, "MAX neutral failed.");
         }
 
-        return char_ok();
+        return test_result(true);
     }
-
 
     /**
      *  Tests cofactor algorithm.
@@ -634,6 +712,27 @@ namespace teddy::test
     }
 
     /**
+     *  Tests from vector algorithm.
+     */
+    template<class Dat, class Deg, class Dom>
+    auto test_from_vector
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , diagram<Dat, Deg>&              diagram
+        , expr_var const&                 expr )
+    {
+        // auto diagramFromVec = manager.from_vector();
+
+        // if (diagramFromVec.equals(diagram))
+        // {
+        //     return test_result(true);
+        // }
+        // else
+        // {
+        //     return test_result(false, "From vector created different diagram.");
+        // }
+    }
+
+    /**
      *  Runs all test. Creates diagram represeting @p expr using @p manager .
      */
     template<class Manager>
@@ -656,6 +755,7 @@ namespace teddy::test
         });
 
         using namespace std::string_view_literals;
+        using result_opt = std::optional<test_result>;
         auto const tests = { "evaluate"sv
                            , "fold"sv
                            , "gc"sv
@@ -664,12 +764,12 @@ namespace teddy::test
                            , "operators"sv
                            , "cofactors"sv };
         auto results = std::unordered_map< std::string_view
-                                         , std::vector<std::string> >();
+                                         , std::vector<result_opt> >();
         for (auto const test : tests)
         {
             results.emplace( std::piecewise_construct_t()
                            , std::make_tuple(test)
-                           , std::make_tuple(testCount, " ") );
+                           , std::make_tuple(testCount) );
         }
 
         auto output_results = [&results, &tests]()
@@ -680,8 +780,16 @@ namespace teddy::test
                 std::cout << "  " << k << std::string(16 - k.size(), ' ');
                 for (auto const& r : rs)
                 {
-                    std::cout << " " << (r == "✓" ? wrap_green(r) :
-                                        (r == "!" ? wrap_red(r)   : " "sv));
+                    if (r)
+                    {
+                        std::cout << " " << (*r ? wrap_green(char_ok())
+                                                : wrap_red(char_err()));
+                    }
+                    else
+                    {
+                        // Not evaluated yet.
+                        std::cout << "  ";
+                    }
                 }
                 std::cout << '\n';
             }
