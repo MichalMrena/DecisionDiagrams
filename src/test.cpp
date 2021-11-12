@@ -32,6 +32,64 @@ namespace teddy::test
 
     using expr_var = std::variant<minmax_expr, constant_expr>;
 
+    using rng_t = std::mt19937_64;
+
+    template<class Int>
+    using int_dist_t = std::uniform_int_distribution<Int>;
+
+    /**
+     *  Generates random minmax expression.
+     */
+    auto generate_expression
+        ( rng_t&            indexRng
+        , std::size_t const varCount
+        , std::size_t const termCount
+        , std::size_t const termSize )
+    {
+        assert(varCount > 0);
+        static auto indexFrom = index_t {0};
+        static auto indexTo   = static_cast<index_t>(varCount - 1u);
+        static auto indexDst  = int_dist_t<index_t>(indexFrom, indexTo);
+
+        auto terms = std::vector<std::vector<uint_t>>(termCount);
+        for (auto t = 0u; t < termCount; ++t)
+        {
+            for (auto k = 0u; k < termSize; ++k)
+            {
+                terms[t].emplace_back(indexDst(indexRng));
+            }
+        }
+
+        return expr_var {std::in_place_type_t<minmax_expr>(), std::move(terms)};
+    }
+
+    /**
+     *  Evaluates @p expr using values of variables in @p vs .
+     */
+    auto evaluate_expression
+        ( expr_var const&            expr
+        , std::vector<uint_t> const& vs )
+    {
+        if (std::holds_alternative<constant_expr>(expr))
+        {
+            return std::get<constant_expr>(expr).val;
+        }
+        else
+        {
+            auto const term_val = [&vs](auto const& is)
+            {
+                return vs[rs::min(is, {}, [&vs](auto const i)
+                {
+                    return vs[i];
+                })];
+            };
+            auto const& ts = std::get<minmax_expr>(expr).terms;
+            return rs::max(rs::transform_view(ts, term_val));
+        }
+    }
+
+    struct domain_iterator_sentinel {};
+
     /**
      *  Iterates domain of a function.
      */
@@ -162,6 +220,16 @@ namespace teddy::test
             return !(rhs == *this);
         }
 
+        auto operator== (domain_iterator_sentinel) const -> bool
+        {
+            return varVals_.empty();
+        }
+
+        auto operator!= (domain_iterator_sentinel) const -> bool
+        {
+            return not varVals_.empty();
+        }
+
     protected:
         std::vector<uint_t>  domains_;
         std::vector<index_t> indices_;
@@ -169,20 +237,66 @@ namespace teddy::test
     };
 
     /**
-     *  TODO
+     *  Evaluates @p expr for each element of its domain gived by @p iterator .
      */
     class evaluating_iterator
     {
     public:
-        evaluating_iterator(domain_iterator iterator, expr_var const& expr) :
-            iterator_ (std::move(iterator)),
-            expr_     (expr)
+        using difference_type   = std::ptrdiff_t;
+        using value_type        = uint_t;
+        using pointer           = value_type*;
+        using reference         = value_type&;
+        using iterator_category = std::input_iterator_tag;
+
+    public:
+        evaluating_iterator () :
+            iterator_ (),
+            expr_     (nullptr)
         {
+        }
+
+        evaluating_iterator (domain_iterator iterator, expr_var const& expr) :
+            iterator_ (std::move(iterator)),
+            expr_     (&expr)
+        {
+        }
+
+        auto operator* () const -> uint_t
+        {
+            return evaluate_expression(*expr_, *iterator_);
+        }
+
+        auto operator++ () -> evaluating_iterator&
+        {
+            ++iterator_;
+            return *this;
+        }
+
+        auto operator++ (int) -> evaluating_iterator
+        {
+            auto tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
+        auto operator== (domain_iterator_sentinel const s) const -> bool
+        {
+            return iterator_ == s;
+        }
+
+        auto operator!= (domain_iterator_sentinel const s) const -> bool
+        {
+            return iterator_ != s;
+        }
+
+        auto var_vals () const -> std::vector<uint_t> const&
+        {
+            return *iterator_;
         }
 
     private:
         domain_iterator iterator_;
-        expr_var const& expr_;
+        expr_var const* expr_;
     };
 
     /**
@@ -198,6 +312,7 @@ namespace teddy::test
         using reference         = value_type;
         using iterator_category = std::output_iterator_tag;
 
+    public:
         forwarding_iterator ()               { }
         forwarding_iterator (F& f) : f_ (&f) { }
 
@@ -313,62 +428,6 @@ namespace teddy::test
         return max_fold(termDs);
     }
 
-    using rng_t = std::mt19937_64;
-
-    template<class Int>
-    using int_dist_t = std::uniform_int_distribution<Int>;
-
-    /**
-     *  Generates random minmax expression.
-     */
-    auto generate_expression
-        ( rng_t&            indexRng
-        , std::size_t const varCount
-        , std::size_t const termCount
-        , std::size_t const termSize )
-    {
-        assert(varCount > 0);
-        static auto indexFrom = index_t {0};
-        static auto indexTo   = static_cast<index_t>(varCount - 1u);
-        static auto indexDst  = int_dist_t<index_t>(indexFrom, indexTo);
-
-        auto terms = std::vector<std::vector<uint_t>>(termCount);
-        for (auto t = 0u; t < termCount; ++t)
-        {
-            for (auto k = 0u; k < termSize; ++k)
-            {
-                terms[t].emplace_back(indexDst(indexRng));
-            }
-        }
-
-        return expr_var {std::in_place_type_t<minmax_expr>(), std::move(terms)};
-    }
-
-    /**
-     *  Evaluates @p expr using vaalue of variables in @p vs .
-     */
-    auto evaluate_expression
-        ( expr_var const&            expr
-        , std::vector<uint_t> const& vs )
-    {
-        if (std::holds_alternative<constant_expr>(expr))
-        {
-            return std::get<constant_expr>(expr).val;
-        }
-        else
-        {
-            auto const term_val = [&vs](auto const& is)
-            {
-                return vs[rs::min(is, {}, [&vs](auto const i)
-                {
-                    return vs[i];
-                })];
-            };
-            auto const& ts = std::get<minmax_expr>(expr).terms;
-            return rs::max(rs::transform_view(ts, term_val));
-        }
-    }
-
     auto wrap_green(std::string_view const s)
     {
         return std::string("\x1B[92m") + std::string(s) + "\x1B[0m";
@@ -402,21 +461,23 @@ namespace teddy::test
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg> const&        diagram
         , expr_var const&                 expr
-        , domain_iterator                 iterator )
+        , domain_iterator                 domainIt )
     {
-        auto const end = domain_iterator();
-        while (iterator != end)
+        auto const end = domain_iterator_sentinel();
+        auto evalIt    = evaluating_iterator(domainIt, expr);
+        while (evalIt != end)
         {
-            auto const expectedVal = evaluate_expression(expr, *iterator);
-            auto const diagramVal  = manager.evaluate(diagram, *iterator);
+            auto const expectedVal = *evalIt;
+            auto const diagramVal  = manager.evaluate( diagram
+                                                     , evalIt.var_vals() );
             if (expectedVal != diagramVal)
             {
                 return test_result(false, "Value missmatch.");
             }
-            ++iterator;
+            ++evalIt;
         }
 
-        if (iterator == end)
+        if (evalIt == end)
         {
             return test_result(true);
         }
@@ -503,12 +564,13 @@ namespace teddy::test
         }
         else
         {
-            auto iterator  = domain_iterator(domains);
-            auto const end = domain_iterator();
-            while (iterator != end)
+            auto domainIt  = domain_iterator(domains);
+            auto evalIt    = evaluating_iterator(domainIt, expr);
+            auto const end = domain_iterator_sentinel();
+            while (evalIt != end)
             {
-                inc(counts, evaluate_expression(expr, *iterator));
-                ++iterator;
+                inc(counts, *evalIt);
+                ++evalIt;
             }
         }
         return counts;
@@ -592,23 +654,26 @@ namespace teddy::test
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr )
     {
-        auto const max  = [&expr](auto domains)
+        auto const max  = [&expr, &manager]()
         {
+            auto domains = manager.get_domains();
+
             if (domains.empty())
             {
                 return evaluate_expression(expr, {});
             }
 
             auto m = uint_t {0};
-            auto iterator  = domain_iterator(std::move(domains));
-            auto const end = domain_iterator();
-            while (iterator != end)
+            auto domainIt  = domain_iterator(std::move(domains));
+            auto evalIt    = evaluating_iterator(domainIt, expr);
+            auto const end = domain_iterator_sentinel();
+            while (evalIt != end)
             {
-                m = std::max(m, evaluate_expression(expr, *iterator));
-                ++iterator;
+                m = std::max(m, *evalIt);
+                ++evalIt;
             }
             return m;
-        }(manager.get_domains());
+        }();
         auto const cs   = expected_counts(manager, expr);
         auto const zero = manager.constant(0);
         auto const one  = manager.constant(1);
@@ -747,11 +812,10 @@ namespace teddy::test
             auto const dTmp = manager.cofactor(diagram, i1, v1);
             auto const d    = manager.cofactor(dTmp, i2, v2);
 
-            auto const is = manager.get_order();
-            auto it = domain_iterator( manager.get_domains()
-                                     , std::vector(std::begin(is), std::end(is))
-                                     , { std::make_pair(i1, v1)
-                                     ,  std::make_pair(i2, v2) } );
+            auto it = domain_iterator
+                ( manager.get_domains()
+                , manager.get_order()
+                , {std::make_pair(i1, v1), std::make_pair(i2, v2)} );
             return test_evaluate(manager, d, expr, std::move(it));
         }
     }
@@ -765,16 +829,35 @@ namespace teddy::test
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr )
     {
-        // auto diagramFromVec = manager.from_vector();
+        auto const vectorDiagram = [&manager, &expr]()
+        {
+            if (std::holds_alternative<constant_expr>(expr))
+            {
+                auto const val = evaluate_expression(expr, {});
+                auto const vec = std::vector<uint_t> {val};
+                return manager.from_vector(vec);
+            }
+            else
+            {
+                auto order    = manager.get_order();
+                auto domains  = manager.get_domains();
+                rs::reverse(order);
+                auto domainIt = domain_iterator( std::move(domains)
+                                               , std::move(order) );
+                auto evalIt   = evaluating_iterator(domainIt, expr);
+                auto end      = domain_iterator_sentinel();
+                return manager.from_vector(evalIt, end);
+            }
+        }();
 
-        // if (diagramFromVec.equals(diagram))
-        // {
-        //     return test_result(true);
-        // }
-        // else
-        // {
-        //     return test_result(false, "From vector created different diagram.");
-        // }
+        if (vectorDiagram.equals(diagram))
+        {
+            return test_result(true);
+        }
+        else
+        {
+            return test_result(false, "From vector created different diagram.");
+        }
     }
 
     /**
@@ -807,7 +890,8 @@ namespace teddy::test
                            , "satisfy-count"sv
                            , "satisfy-all"sv
                            , "operators"sv
-                           , "cofactors"sv };
+                           , "cofactors"sv
+                           , "from_vector"sv };
         auto results = std::unordered_map< std::string_view
                                          , std::vector<result_opt> >();
         for (auto const test : tests)
@@ -879,6 +963,8 @@ namespace teddy::test
                 = test_operators(managers[k], diagram1s[k], exprs[k]);
             results.at("cofactors")[k]
                 = test_cofactor(managers[k], diagram1s[k], exprs[k], rngs[k]);
+            results.at("from_vector")[k]
+                = test_from_vector(managers[k], diagram1s[k], exprs[k]);
 
             refresh_results();
         }
@@ -916,7 +1002,7 @@ auto main () -> int
     auto const nodeCount = 1000;
     auto const testCount = std::thread::hardware_concurrency() + 2;
     auto       seedSrc   = std::random_device();
-    // auto const seedSrc   = std::integral_constant<int, 144>();
+    // auto const seedSrc   = std::integral_constant<long, 2928425735>();
     auto const initSeed  = seedSrc();
     auto constexpr IsFixedSeed = not std::same_as< std::random_device
                                                  , decltype(seedSrc) >;
@@ -990,9 +1076,9 @@ auto main () -> int
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
     ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
-    ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
-    ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
-    ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
+    // ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
+    // ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
+    // ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
 
     std::cout << '\n' << "End of main." << '\n';
 

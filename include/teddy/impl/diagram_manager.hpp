@@ -102,7 +102,7 @@ namespace teddy
 
     public:
         auto get_var_count () const -> std::size_t;
-        auto get_order     () const -> std::span<index_t const>; // TODO asi const vector&
+        auto get_order     () const -> std::vector<index_t> const&;
         auto get_domains   () const -> std::vector<uint_t>;
 
     private:
@@ -188,13 +188,21 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::from_vector
         (I first, S last) -> diagram_t
     {
+        // TODO
+        if (0 == this->get_var_count())
+        {
+            assert(first != last and std::next(first) == last);
+            return diagram_t(nodes_.terminal_node(*first));
+        }
+
         auto const lastLevel = static_cast<level_t>(this->get_var_count() - 1);
         auto const lastIndex = nodes_.get_index(lastLevel);
 
         if constexpr (std::random_access_iterator<I>)
         {
             namespace rs = std::ranges;
-            auto const dist  = rs::distance(first, last);
+            auto const dist  = static_cast<std::size_t>(
+                                   rs::distance(first, last));
             auto const count = nodes_.domain_product(0, lastLevel + 1);
             assert(dist > 0 and dist == count);
         }
@@ -211,14 +219,14 @@ namespace teddy
                     break;
                 }
 
-                auto it        = std::rbegin(stack);
                 auto const end = std::rend(stack);
+                auto it        = std::rbegin(stack);
+                auto count     = 0ul;
                 while (it != end and it->level == currentLevel)
                 {
                     ++it;
+                    ++count;
                 }
-
-                auto const count     = std::distance(it, end);
                 auto const newIndex  = nodes_.get_index(currentLevel - 1);
                 auto const newDomain = nodes_.get_domain(newIndex);
 
@@ -234,7 +242,7 @@ namespace teddy
                 });
                 auto const newNode = nodes_.internal_node( newIndex
                                                          , std::move(newSons) );
-                stack.erase(std::rbegin(stack), std::rbegin(stack) + newDomain);
+                stack.erase(std::end(stack) - newDomain, std::end(stack));
                 stack.push_back(stack_frame {newNode, currentLevel - 1});
             }
         };
@@ -243,11 +251,13 @@ namespace teddy
         {
             auto sons = nodes_.make_sons(lastIndex, [this, &first](auto const)
             {
-                return nodes_.terminal_vertex(*first++);
+                return nodes_.terminal_node(*first++);
             });
             auto const node = nodes_.internal_node(lastIndex, std::move(sons));
             stack.push_back(stack_frame {node, lastLevel});
             shrink_stack();
+            // TODO adjust sizes? idealne presunut do node_manazer,
+            // aby to robil sam, napriklad podla velkosti poolu
         }
 
         assert(stack.size() == 1);
@@ -644,7 +654,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::get_order
-        () const -> std::span<index_t const>
+        () const -> std::vector<index_t> const&
     {
         return nodes_.get_order();
     }

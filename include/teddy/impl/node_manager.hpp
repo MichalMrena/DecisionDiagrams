@@ -125,7 +125,7 @@ namespace teddy
         auto get_node_count    (node_t*) const     -> std::size_t;
         auto get_node_count    () const            -> std::size_t;
         auto get_var_count     () const            -> std::size_t;
-        auto get_order         () const            -> std::span<index_t const>;
+        auto get_order         () const          -> std::vector<index_t> const&;
         auto get_domains       () const            -> std::vector<uint_t>;
         auto adjust_sizes      ()                  -> void;
         auto collect_garbage   ()                  -> void;
@@ -426,11 +426,9 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::get_order
-        () const -> std::span<index_t const>
+        () const -> std::vector<index_t> const&
     {
-        auto const first = levelToIndex_.data();
-        auto const last  = levelToIndex_.data() + levelToIndex_.size();
-        return std::span<index_t const>(first, last);
+        return levelToIndex_;
     }
 
     template<class Data, degree Degree, domain Domain>
