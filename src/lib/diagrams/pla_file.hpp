@@ -1,5 +1,5 @@
-#ifndef MIX_DD_PLA_FILE_HPP
-#define MIX_DD_PLA_FILE_HPP
+#ifndef TEDDY_PLA_FILE_HPP
+#define TEDDY_PLA_FILE_HPP
 
 #include "types.hpp"
 #include "bool_cube.hpp"

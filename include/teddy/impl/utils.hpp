@@ -2,8 +2,10 @@
 #define MIX_DD_UTILS_HPP
 
 #include "types.hpp"
+#include <charconv>
 #include <concepts>
 #include <functional>
+#include <optional>
 #include <ranges>
 #include <vector>
 
@@ -14,6 +16,10 @@ namespace teddy::utils
     {
         std::invoke(f, k);
     };
+
+    auto constexpr identity = [](auto const a) { return a; };
+
+    auto constexpr not_zero = [](auto const x) { return x != 0; };
 
     template<i_gen Gen>
     auto fill_vector (std::size_t const n, Gen&& f)
@@ -46,10 +52,6 @@ namespace teddy::utils
         return ys;
     }
 
-    auto constexpr identity = [](auto const a) { return a; };
-
-    auto constexpr not_zero = [](auto const x) { return x != 0; };
-
     template<class Base, std::integral Exponent>
     auto constexpr int_pow (Base base, Exponent exponent) -> Base
     {
@@ -73,6 +75,16 @@ namespace teddy::utils
         }
 
         return result;
+    }
+
+    template<class Num>
+    auto parse (std::string_view const in) -> std::optional<Num>
+    {
+        auto ret    = Num {};
+        auto result = std::from_chars(in.data(), in.data() + in.size(), ret);
+        return std::errc {} == result.ec && result.ptr == in.data() + in.size()
+            ? std::optional<Num>(ret)
+            : std::nullopt;
     }
 }
 

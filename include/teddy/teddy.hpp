@@ -2,6 +2,7 @@
 #define MIX_DD_TEDDY_HPP
 
 #include "impl/diagram_manager.hpp"
+#include "impl/pla_file.hpp"
 
 namespace teddy
 {

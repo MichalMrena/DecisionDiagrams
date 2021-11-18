@@ -36,17 +36,7 @@ auto main () -> int
     // test_bss();
     // test_mss();
 
-    // TODO move to_dot_graph, vertex_count to vertex_manager
-
-    using node_t = node<int, degrees::fixed<2>>;
-
-    [[maybe_unused]]
-    auto terminal = node_t(1);
-    [[maybe_unused]]
-    // auto internal = node_t(1, std::make_unique<node_t*[]>(2));
-    auto internal = node_t(1, {&terminal, &terminal});
-    auto const i = internal.get_index();
-    std::cout << i << '\n';
+    auto const pla = pla_file::load_file("/home/michal/Downloads/pla/xor5.pla");
 
     std::cout << "Done." << '\n';
     return 0;

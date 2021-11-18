@@ -40,7 +40,11 @@ $(BUILD_DIR)/%.cpp.o: src/%.cpp
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-.PHONY: clean
+# My precious see:
+# https://stackoverflow.com/questions/42830131/an-unexpected-rm-occur-after-make
+.PRECIOUS: $(OBJS)
+
+.PHONY: clean main test
 
 clean:
 	rm -r ./build
