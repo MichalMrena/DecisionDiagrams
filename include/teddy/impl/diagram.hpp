@@ -2,6 +2,7 @@
 #define MIX_DD_DIAGRAM_HPP
 
 #include "node.hpp"
+#include "node_manager.hpp"
 #include <cassert>
 #include <utility>
 

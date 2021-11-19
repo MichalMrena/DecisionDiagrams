@@ -1,10 +1,11 @@
 #ifndef MIX_DD_DIAGRAM_MANAGER_HPP
 #define MIX_DD_DIAGRAM_MANAGER_HPP
 
-#include "node_manager.hpp"
 #include "diagram.hpp"
-#include "utils.hpp"
 #include "operators.hpp"
+#include "node_manager.hpp"
+#include "pla_file.hpp"
+#include "utils.hpp"
 #include <cmath>
 #include <concepts>
 #include <iterator>
@@ -24,6 +25,12 @@ namespace teddy
         vs[i] = v;
     };
 
+    enum class fold_type
+    {
+        Left,
+        Tree
+    };
+
     template<class Data, degree Degree, domain Domain>
     class diagram_manager
     {
@@ -36,6 +43,8 @@ namespace teddy
 
         auto variable (index_t) -> diagram_t;
 
+        auto variable_not (index_t) -> diagram_t; // enable only for bdd
+
         auto operator() (index_t) -> diagram_t;
 
         template<std::ranges::input_range Is>
@@ -46,6 +55,8 @@ namespace teddy
 
         template<std::ranges::input_range R>
         auto from_vector (R&&) -> diagram_t;
+
+        auto from_pla (pla_file const&, fold_type) -> diagram_t;
 
         template<bin_op Op>
         auto apply (diagram_t const&, diagram_t const&) -> diagram_t;
@@ -164,6 +175,17 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::variable_not
+        (index_t const i) -> diagram_t
+    {
+        return diagram_t(nodes_.internal_node(i, nodes_.make_sons(i,
+            [this](auto const v)
+        {
+            return nodes_.terminal_node(1 - v);
+        })));
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::operator()
         (index_t const i) -> diagram_t
     {
@@ -271,6 +293,78 @@ namespace teddy
     {
         namespace rs = std::ranges;
         return this->from_vector(rs::begin(r), rs::end(r));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::from_pla
+        (pla_file const& file, fold_type const foldType) -> diagram_t
+    {
+        auto const product = [this](auto const& cube)
+        {
+            auto vs = std::vector<diagram_t>(cube.size());
+            for (auto i = 0u; i < cube.size(); ++i)
+            {
+                if (cube.get() == 1)
+                {
+                    vs.emplace_back(this->variable(i));
+                }
+                else if (cube.get() == 0)
+                {
+                    vs.emplace_back(this->variable_not(i));
+                }
+            }
+            return this->left_fold<AND>(vs);
+        };
+
+        auto const orFold = [this, foldType](auto& ds)
+        {
+            switch (foldType)
+            {
+                case fold_type::Left:
+                    return this->left_fold<OR>(ds);
+
+                case fold_type::Tree:
+                    return this->tree_fold<OR>(ds);
+
+                default:
+                    assert(false);
+                    return this->constant(0);
+            }
+        };
+
+        auto const& plaLines      = file.get_lines();
+        auto const  lineCount     = file.line_count();
+        auto const  functionCount = file.function_count();
+
+        // Create a diagram for each function.
+        auto functionDiagrams = std::vector<diagram_t>();
+        functionDiagrams.reserve(functionCount);
+        for (auto fi = 0u; fi < functionCount; ++fi)
+        {
+            // First create a diagram for each product.
+            auto products = std::vector<diagram_t>();
+            products.reserve(lineCount);
+            for (auto li = 0u; li < lineCount; ++li)
+            {
+                // We are doing SOP so we are only interested
+                // in functions with value 1.
+                if (plaLines[li].fVals.get(fi) == 1)
+                {
+                    products.emplace_back(product(plaLines[li].cube));
+                }
+            }
+
+            // In this case we just have a constant function.
+            if (products.empty())
+            {
+                products.emplace_back(this->constant(0));
+            }
+
+            // Then merge products using OR.
+            functionDiagrams.emplace_back(orFold(products));
+        }
+
+        return functionDiagrams;
     }
 
     template<class Data, degree Degree, domain Domain>

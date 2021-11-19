@@ -1,14 +1,12 @@
 #ifndef MIX_DD_NODE_MANAGER_HPP
 #define MIX_DD_NODE_MANAGER_HPP
 
-#include "types.hpp"
-#include "utils.hpp"
 #include "debug.hpp"
+#include "hash_tables.hpp"
 #include "node.hpp"
 #include "node_pool.hpp"
-#include "hash_tables.hpp"
 #include "operators.hpp"
-
+#include "utils.hpp"
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -347,6 +345,9 @@ namespace teddy
             return existing;
         }
 
+        // TODO tu by sa rovno mohol nastavovat ref count 1
+        // potom by nebolo treba synom zvysovat referencie
+        // a GC by sa mohlo robit kedykolvek
         auto n = this->new_node(i, std::move(sons));
         table.insert(n, hash);
         this->for_each_son(n, inc_ref_count);

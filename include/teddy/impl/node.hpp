@@ -2,7 +2,6 @@
 #define MIX_DD_NODE_HPP
 
 #include "types.hpp"
-
 #include <array>
 #include <cassert>
 #include <cstddef>
