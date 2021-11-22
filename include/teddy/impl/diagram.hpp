@@ -22,6 +22,7 @@ namespace teddy
         using node_t = node<Data, D>;
 
     public:
+        diagram ();
         explicit diagram (node_t*);
         diagram (diagram const&);
         diagram (diagram&&) noexcept;
@@ -48,6 +49,13 @@ namespace teddy
     auto equals (diagram<Data, D> const& l, diagram<Data, D> const& r)
     {
         return l.equals(r);
+    }
+
+    template<class Data, degree D>
+    diagram<Data, D>::diagram
+        () :
+        root_ (nullptr)
+    {
     }
 
     template<class Data, degree D>

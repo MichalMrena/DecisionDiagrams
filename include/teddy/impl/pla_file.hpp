@@ -30,6 +30,9 @@ namespace teddy
     class cube_t
     {
     public:
+        inline static constexpr auto Undefined = std::uint8_t(0b11);
+
+    public:
         cube_t (std::size_t);
 
         auto size () const              -> std::size_t;
@@ -120,13 +123,14 @@ namespace teddy
     inline auto cube_t::set
         (std::size_t const i, uint_t const val) -> void
     {
-        assert(i < size_ and val < 4);
+        assert(i < size_);
+        assert(val < 4);
         switch (i % 4)
         {
-            case 0: values_[i / 4].b0 = val && 0x11; break;
-            case 1: values_[i / 4].b1 = val && 0x11; break;
-            case 2: values_[i / 4].b2 = val && 0x11; break;
-            case 3: values_[i / 4].b3 = val && 0x11; break;
+            case 0: values_[i / 4].b0 = val & 0b11; break;
+            case 1: values_[i / 4].b1 = val & 0b11; break;
+            case 2: values_[i / 4].b2 = val & 0b11; break;
+            case 3: values_[i / 4].b3 = val & 0b11; break;
         }
     }
 
@@ -180,6 +184,12 @@ namespace teddy
             if (first == last)
             {
                 // Skip empty line.
+                continue;
+            }
+
+            if (*first == '#')
+            {
+                // Skip comment.
                 continue;
             }
 
@@ -246,8 +256,9 @@ namespace teddy
                 return std::nullopt;
             }
             auto const fsFirst = rs::find_if_not(varsLast + 1, last, space);
+            auto const fsLast  = rs::find_if(fsFirst, last, space);
             auto const vars    = std::string(first, varsLast);
-            auto const fs      = std::string(fsFirst, last);
+            auto const fs      = std::string(fsFirst, fsLast);
 
             if (vars.size() != *varCount or fs.size() != *fCount)
             {
@@ -263,7 +274,7 @@ namespace teddy
                     case '0': variables.set(i, 0u); break;
                     case '1': variables.set(i, 1u); break;
                     case '~':
-                    case '-': variables.set(i, Undefined); break;
+                    case '-': variables.set(i, cube_t::Undefined); break;
                     default:  return std::nullopt;
                 }
             }
@@ -277,7 +288,7 @@ namespace teddy
                     case '0': functions.set(i, 0u); break;
                     case '1': functions.set(i, 1u); break;
                     case '-':
-                    case '~': functions.set(i, Undefined); break;
+                    case '~': functions.set(i, cube_t::Undefined); break;
                     default:  return std::nullopt;
                 }
             }

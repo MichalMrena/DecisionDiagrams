@@ -56,7 +56,7 @@ namespace teddy
         template<std::ranges::input_range R>
         auto from_vector (R&&) -> diagram_t;
 
-        auto from_pla (pla_file const&, fold_type) -> diagram_t;
+        auto from_pla (pla_file const&, fold_type) -> std::vector<diagram_t>;
 
         template<bin_op Op>
         auto apply (diagram_t const&, diagram_t const&) -> diagram_t;
@@ -297,18 +297,20 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::from_pla
-        (pla_file const& file, fold_type const foldType) -> diagram_t
+        ( pla_file const& file
+        , fold_type const foldType ) -> std::vector<diagram_t>
     {
         auto const product = [this](auto const& cube)
         {
-            auto vs = std::vector<diagram_t>(cube.size());
+            auto vs = std::vector<diagram_t>();
+            vs.reserve(cube.size());
             for (auto i = 0u; i < cube.size(); ++i)
             {
-                if (cube.get() == 1)
+                if (cube.get(i) == 1)
                 {
                     vs.emplace_back(this->variable(i));
                 }
-                else if (cube.get() == 0)
+                else if (cube.get(i) == 0)
                 {
                     vs.emplace_back(this->variable_not(i));
                 }

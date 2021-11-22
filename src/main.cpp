@@ -1,8 +1,36 @@
-#include <iostream>
 #include "teddy/teddy.hpp"
-
+#include <iostream>
+#include <string>
 
 using namespace teddy;
+
+auto pla_sanity_check()
+{
+    using namespace std::string_literals;
+
+    auto const plaDir = "/home/michal/Downloads/pla/"s;
+    // auto const files = {"16-adder_col.pla", "15-adder_col.pla", "14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla"};
+    // auto const files = {"14-adder_col.pla", "13-adder_col.pla", "12-adder_col.pla", "11-adder_col.pla", "10-adder_col.pla", "apex1.pla", "apex3_alt.pla", "apex5.pla", "seq.pla", "spla.pla"};
+    auto const files = {"table3.pla"s};
+
+    for (auto const& fileName : files)
+    {
+        auto const file = pla_file::load_file(plaDir + fileName);
+        if (not file)
+        {
+            std::cout << "Failed to load '" << plaDir + fileName << "'.\n";
+            continue;
+        }
+        auto manager    = bdd_manager((*file).variable_count(), 500);
+        auto const ds   = manager.from_pla(*file, fold_type::Tree);
+        auto sum        = 0ul;
+        for (auto& d : ds)
+        {
+            sum += manager.node_count(d);
+        }
+        std::cout << fileName << " [" << sum << "] " << std::endl;
+    }
+}
 
 auto main () -> int
 {
@@ -36,7 +64,7 @@ auto main () -> int
     // test_bss();
     // test_mss();
 
-    auto const pla = pla_file::load_file("/home/michal/Downloads/pla/xor5.pla");
+    pla_sanity_check();
 
     std::cout << "Done." << '\n';
     return 0;
