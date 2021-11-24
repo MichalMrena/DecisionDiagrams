@@ -61,14 +61,14 @@ namespace teddy
     template<class Data, degree D>
     diagram<Data, D>::diagram
         (node_t* const r) :
-        root_ ([](auto const n){ n->inc_ref_count(); return n; }(r))
+        root_ (id_set_notmarked(id_inc_ref_count(r)))
     {
     }
 
     template<class Data, degree D>
     diagram<Data, D>::diagram
         (diagram const& d) :
-        diagram (d.get_root())
+        root_ (id_inc_ref_count(d.get_root()))
     {
     }
 

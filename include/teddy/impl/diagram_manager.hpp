@@ -414,7 +414,6 @@ namespace teddy
 
         auto const r = go(go, d1.get_root(), d2.get_root());
         auto const d = diagram_t(r);
-        nodes_.adjust_sizes();
         return d;
     }
 

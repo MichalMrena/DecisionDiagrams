@@ -159,7 +159,7 @@ namespace teddy
 
         auto is_valid_var_value (index_t, uint_t) const -> bool;
 
-        static auto inc_ref_count (node_t*) -> node_t*;
+        static auto inc_ref_count (node_t*) -> void;
         static auto dec_ref_count (node_t*) -> void;
 
     private:
@@ -196,6 +196,8 @@ namespace teddy
         [[no_unique_address]] Domain    domains_;
         std::size_t                     nodeCount_;
         std::size_t                     cacheRatio_;
+        std::size_t                     lastGcNodeCount_;
+        std::size_t                     nextAdjustmentNodeCount_;
         bool                            needsGc_;
         bool                            reorderEnabled_;
     };
@@ -204,6 +206,27 @@ namespace teddy
     auto node_value (node<Data, D>* const n) -> uint_t
     {
         return n->is_terminal() ? n->get_value() : Nondetermined;
+    }
+
+    template<class Data, degree D>
+    auto id_inc_ref_count (node<Data, D>* const n) -> node<Data, D>*
+    {
+        n->inc_ref_count();
+        return n;
+    }
+
+    template<class Data, degree D>
+    auto id_set_marked (node<Data, D>* const n) -> node<Data, D>*
+    {
+        n->set_marked();
+        return n;
+    }
+
+    template<class Data, degree D>
+    auto id_set_notmarked (node<Data, D>* const n) -> node<Data, D>*
+    {
+        n->set_notmarked();
+        return n;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -242,17 +265,19 @@ namespace teddy
         , std::size_t const    nodes
         , std::vector<index_t> order
         , Domain               ds ) :
-        opCaches_       ({}),
-        pool_           (nodes),
-        uniqueTables_   (vars),
-        terminals_      ({}),
-        indexToLevel_   (vars),
-        levelToIndex_   (std::move(order)),
-        domains_        (std::move(ds)),
-        nodeCount_      (0),
-        cacheRatio_     (4),
-        needsGc_        (false),
-        reorderEnabled_ (false)
+        opCaches_                ({}),
+        pool_                    (nodes),
+        uniqueTables_            (vars),
+        terminals_               ({}),
+        indexToLevel_            (vars),
+        levelToIndex_            (std::move(order)),
+        domains_                 (std::move(ds)),
+        nodeCount_               (0),
+        cacheRatio_              (4),
+        lastGcNodeCount_         (0),
+        nextAdjustmentNodeCount_ (200), // TODO
+        needsGc_                 (false),
+        reorderEnabled_          (false)
     {
         assert(levelToIndex_.size() == this->get_var_count());
         assert(check_distinct(levelToIndex_));
@@ -345,12 +370,10 @@ namespace teddy
             return existing;
         }
 
-        // TODO tu by sa rovno mohol nastavovat ref count 1
-        // potom by nebolo treba synom zvysovat referencie
-        // a GC by sa mohlo robit kedykolvek
         auto n = this->new_node(i, std::move(sons));
         table.insert(n, hash);
-        this->for_each_son(n, inc_ref_count);
+        this->for_each_son(n, id_inc_ref_count<Data, Degree>);
+        this->for_each_son(n, id_set_notmarked<Data, Degree>);
 
         return n;
     }
@@ -448,15 +471,6 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::adjust_sizes
         () -> void
     {
-        if (needsGc_)
-        {
-            this->collect_garbage();
-            if (reorderEnabled_)
-            {
-                this->sift_vars();
-            }
-        }
-
         auto const hash = std::bind_front(&node_manager::node_hash, this);
         for (auto& t : uniqueTables_)
         {
@@ -702,10 +716,9 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::inc_ref_count
-        (node_t* const v) -> node_t*
+        (node_t* const v) -> void
     {
         v->inc_ref_count();
-        return v;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -763,15 +776,40 @@ namespace teddy
         (Args&&... args) -> node_t*
     {
         ++nodeCount_;
-        auto const n = pool_.try_create(std::forward<Args>(args)...);
-        if (n)
+        if (pool_.available_nodes() == 0)
         {
-            return n;
+            // TODO tento magic number dobre premyslieť
+            //                                   vvv
+            auto const dogc = lastGcNodeCount_ < 0.2 * pool_.main_pool_size();
+            if (dogc)
+            {
+                auto const beforeGc = pool_.available_nodes();
+                this->collect_garbage();
+                if (reorderEnabled_)
+                {
+                    this->sift_vars();
+                }
+                auto const afterGc = pool_.available_nodes();
+                lastGcNodeCount_ = afterGc - beforeGc;
+                if (lastGcNodeCount_ == 0)
+                {
+                    pool_.grow();
+                }
+            }
+            else
+            {
+                pool_.grow();
+            }
         }
 
-        needsGc_ = true;
+        if (nodeCount_ >= nextAdjustmentNodeCount_)
+        {
+            this->adjust_sizes();
+            // TODO pozriet rozdelenie medzi tabulkami
+            nextAdjustmentNodeCount_ += 3 * nextAdjustmentNodeCount_ / 2;
+        }
 
-        return pool_.force_create(std::forward<Args>(args)...);
+        return id_set_marked(pool_.create(std::forward<Args>(args)...));
     }
 
     template<class Data, degree Degree, domain Domain>
