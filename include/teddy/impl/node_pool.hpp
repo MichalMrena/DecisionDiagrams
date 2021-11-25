@@ -52,13 +52,6 @@ namespace teddy
 
         auto destroy (node_t*) -> void;
 
-
-        template<class... Args>
-        [[nodiscard]] auto try_create (Args&&...) -> node_t*;
-
-        template<class... Args>
-        [[nodiscard]] auto force_create (Args&&...) -> node_t*;
-
     private:
         using pool_it = typename std::vector<mem_wrap<node_t>>::iterator;
 
@@ -92,7 +85,8 @@ namespace teddy
 
     template<class Data, degree D>
     node_pool<Data, D>::node_pool
-        (node_pool&& other)
+        (node_pool&& other) :
+        availableNodes_ (std::exchange(other.availableNodes_, 0))
     {
         // Calculate others pointer and iterator positions.
         auto constexpr MainPoolOffset = static_cast<std::size_t>(-1);
@@ -216,52 +210,6 @@ namespace teddy
         currentPoolPtr_ = &overflowPools_.back();
         nextPoolNodeIt_ = std::begin(*currentPoolPtr_);
         availableNodes_ += currentPoolPtr_->size();
-    }
-
-
-
-
-
-
-    template<class Data, degree D>
-    template<class... Args>
-    auto node_pool<Data, D>::try_create
-        (Args&&... as) -> node_t*
-    {
-        auto p = static_cast<node_t*>(nullptr);
-
-        if (freeNode_)
-        {
-            p = freeNode_;
-            freeNode_ = freeNode_->get_next();
-            std::destroy_at(p);
-        }
-        else if (nextPoolNodeIt_ != std::end(*currentPoolPtr_))
-        {
-            p = nextPoolNodeIt_->get();
-            ++nextPoolNodeIt_;
-        }
-
-        if (p)
-        {
-            return std::construct_at(p, std::forward<Args>(as)...);
-        }
-
-        return p;
-    }
-
-    template<class Data, degree D>
-    template<class... Args>
-    auto node_pool<Data, D>::force_create
-        (Args&&... as) -> node_t*
-    {
-        debug::out("Allocating new pool with size = ");
-        debug::outl(mainPool_.size() / overflowRatio_);
-
-        overflowPools_.emplace_back(mainPool_.size() / overflowRatio_);
-        currentPoolPtr_ = &overflowPools_.back();
-        nextPoolNodeIt_ = std::begin(*currentPoolPtr_);
-        return this->try_create(std::forward<Args>(as)...);
     }
 }
 

@@ -23,7 +23,7 @@ namespace teddy
             325'340'273u, 650'680'571u, 1'301'361'143u, 2'602'722'289u
         };
 
-    protected:
+    public:
         static auto gte_capacity (std::size_t) -> std::size_t;
     };
 
@@ -67,7 +67,7 @@ namespace teddy
      *  @brief Table of unique nodes.
      */
     template<class Data, degree D>
-    class unique_table : private table_base
+    class unique_table
     {
     public:
         using node_t = node<Data, D>;
@@ -117,7 +117,7 @@ namespace teddy
      *  @brief Cache for the apply opertaion.
      */
     template<class Data, degree D>
-    class apply_cache : private table_base
+    class apply_cache
     {
     public:
         using node_t = node<Data, D>;

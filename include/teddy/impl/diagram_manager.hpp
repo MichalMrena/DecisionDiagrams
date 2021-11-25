@@ -408,6 +408,7 @@ namespace teddy
                 u = nodes_.internal_node(topIndex, std::move(sons));
             }
 
+            // cache tu má inú veľkosť, čiže môže byť alokované inde teda iterátory neplatia!
             nodes_.template cache_put<Op>(cacheIt, l, r, u);
             return u;
         };

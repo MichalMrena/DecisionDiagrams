@@ -125,7 +125,6 @@ namespace teddy
         auto get_var_count     () const            -> std::size_t;
         auto get_order         () const          -> std::vector<index_t> const&;
         auto get_domains       () const            -> std::vector<uint_t>;
-        auto adjust_sizes      ()                  -> void;
         auto collect_garbage   ()                  -> void;
 
         auto to_dot_graph (std::ostream&) const -> void;
@@ -172,6 +171,8 @@ namespace teddy
         auto node_equal   (node_t*, sons_t const&) const -> bool;
         auto is_redundant (index_t, sons_t const&) const -> bool;
 
+        auto adjust_tables () -> void;
+        auto adjust_caches () -> void;
 
         template<class... Args>
         auto new_node (Args&&...) -> node_t*;
@@ -197,8 +198,7 @@ namespace teddy
         std::size_t                     nodeCount_;
         std::size_t                     cacheRatio_;
         std::size_t                     lastGcNodeCount_;
-        std::size_t                     nextAdjustmentNodeCount_;
-        bool                            needsGc_;
+        std::size_t                     nextTableAdjustment_;
         bool                            reorderEnabled_;
     };
 
@@ -265,19 +265,18 @@ namespace teddy
         , std::size_t const    nodes
         , std::vector<index_t> order
         , Domain               ds ) :
-        opCaches_                ({}),
-        pool_                    (nodes),
-        uniqueTables_            (vars),
-        terminals_               ({}),
-        indexToLevel_            (vars),
-        levelToIndex_            (std::move(order)),
-        domains_                 (std::move(ds)),
-        nodeCount_               (0),
-        cacheRatio_              (4),
-        lastGcNodeCount_         (0),
-        nextAdjustmentNodeCount_ (200), // TODO
-        needsGc_                 (false),
-        reorderEnabled_          (false)
+        opCaches_            ({}),
+        pool_                (nodes),
+        uniqueTables_        (vars),
+        terminals_           ({}),
+        indexToLevel_        (vars),
+        levelToIndex_        (std::move(order)),
+        domains_             (std::move(ds)),
+        nodeCount_           (0),
+        cacheRatio_          (4),
+        lastGcNodeCount_     (pool_.main_pool_size()),
+        nextTableAdjustment_ (230),
+        reorderEnabled_      (false)
     {
         assert(levelToIndex_.size() == this->get_var_count());
         assert(check_distinct(levelToIndex_));
@@ -348,16 +347,19 @@ namespace teddy
             terminals_[v] = this->new_node(v);
         }
 
-        return terminals_[v];
+        return id_set_marked(terminals_[v]);
     }
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::internal_node
         (index_t const i, sons_t&& sons) -> node_t*
     {
+        // všetky čo odtiaľto vylezú by sa mali omarkovať
+        // neskôr sa určite stanú synom alebo koreňom, tak budú odmarkované.
+
         if (this->is_redundant(i, sons))
         {
-            return sons[0];
+            return id_set_marked(sons[0]);
         }
 
         auto const eq = std::bind_front(&node_manager::node_equal, this);
@@ -367,15 +369,18 @@ namespace teddy
         auto const existing = table.find(sons, hash, eq);
         if (existing)
         {
-            return existing;
+            this->for_each_son(existing, id_set_notmarked<Data, Degree>);
+            return id_set_marked(existing);
         }
 
         auto n = this->new_node(i, std::move(sons));
         table.insert(n, hash);
         this->for_each_son(n, id_inc_ref_count<Data, Degree>);
+
+        // už je syn niekoho, tak by sa mal dať v pohode odmarkovať
         this->for_each_son(n, id_set_notmarked<Data, Degree>);
 
-        return n;
+        return id_set_marked(n);
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -468,30 +473,12 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::adjust_sizes
-        () -> void
-    {
-        auto const hash = std::bind_front(&node_manager::node_hash, this);
-        for (auto& t : uniqueTables_)
-        {
-            t.adjust_capacity(hash);
-        }
-
-        for (auto& c : opCaches_)
-        {
-            c.adjust_capacity(nodeCount_ / cacheRatio_);
-        }
-    }
-
-    template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::collect_garbage
         () -> void
     {
         debug::out("Collecting garbage. Node count before = ");
         debug::out(nodeCount_);
         debug::out(".");
-
-        needsGc_ = false;
 
         for (auto level = 0u; level < this->get_var_count(); ++level)
         {
@@ -502,7 +489,7 @@ namespace teddy
             while (it != end)
             {
                 auto const n = *it;
-                if (0 == n->get_ref_count())
+                if (0 == n->get_ref_count() and not n->is_marked())
                 {
                     this->for_each_son(n, dec_ref_count);
                     it = table.erase(it);
@@ -517,7 +504,7 @@ namespace teddy
 
         for (auto& t : terminals_)
         {
-            if (t and 0 == t->get_ref_count())
+            if (t and 0 == t->get_ref_count() and not t->is_marked())
             {
                 this->delete_node(t);
                 t = nullptr;
@@ -625,8 +612,14 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::cache_find
         (node_t* const l, node_t* const r) -> op_cache_it
     {
+        // TODO return pair (node, iterator)
         auto& cache = opCaches_[op_id(Op())];
-        return cache.find(l, r);
+        auto const ret = cache.find(l, r);
+        if (ret->matches(l, r))
+        {
+            id_set_marked(ret->result);
+        }
+        return ret;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -771,16 +764,42 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::adjust_tables
+        () -> void
+    {
+        auto const hash = std::bind_front(&node_manager::node_hash, this);
+        for (auto& t : uniqueTables_)
+        {
+            t.adjust_capacity(hash);
+        }
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::adjust_caches
+        () -> void
+    {
+        for (auto& c : opCaches_)
+        {
+            c.adjust_capacity(nodeCount_ / cacheRatio_);
+        }
+    }
+
+    template<class Data, degree Degree, domain Domain>
     template<class... Args>
     auto node_manager<Data, Degree, Domain>::new_node
         (Args&&... args) -> node_t*
     {
+        auto constexpr as_double = [](auto const x)
+        {
+            return static_cast<double>(x);
+        };
+
         ++nodeCount_;
         if (pool_.available_nodes() == 0)
         {
-            // TODO tento magic number dobre premyslieť
-            //                                   vvv
-            auto const dogc = lastGcNodeCount_ < 0.2 * pool_.main_pool_size();
+            // TODO tento magic number 0.2 dobre premyslieť
+            auto const dogc = as_double(lastGcNodeCount_)
+                            > 0.2 * as_double(pool_.main_pool_size());
             if (dogc)
             {
                 auto const beforeGc = pool_.available_nodes();
@@ -802,14 +821,15 @@ namespace teddy
             }
         }
 
-        if (nodeCount_ >= nextAdjustmentNodeCount_)
+        if (nodeCount_ >= nextTableAdjustment_)
         {
-            this->adjust_sizes();
-            // TODO pozriet rozdelenie medzi tabulkami
-            nextAdjustmentNodeCount_ += 3 * nextAdjustmentNodeCount_ / 2;
+            assert(nodeCount_ == nextTableAdjustment_);
+            this->adjust_tables();
+            this->adjust_caches(); // TODO otazka je ci toto neriesit samostatne, skontrolovat ake su tie load factory
+            nextTableAdjustment_ *= 2;
         }
 
-        return id_set_marked(pool_.create(std::forward<Args>(args)...));
+        return pool_.create(std::forward<Args>(args)...);
     }
 
     template<class Data, degree Degree, domain Domain>

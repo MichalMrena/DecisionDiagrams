@@ -999,10 +999,10 @@ auto main () -> int
     auto const varCount  = 13;
     auto const termCount = 20;
     auto const termSize  = 5;
-    auto const nodeCount = 1000;
+    auto const nodeCount = 100;
     auto const testCount = std::thread::hardware_concurrency() + 2;
-    auto       seedSrc   = std::random_device();
-    // auto const seedSrc   = std::integral_constant<long, 2928425735>();
+    // auto       seedSrc   = std::random_device();
+    auto const seedSrc   = std::integral_constant<long, 2928425735>();
     auto const initSeed  = seedSrc();
     auto constexpr IsFixedSeed = not std::same_as< std::random_device
                                                  , decltype(seedSrc) >;
@@ -1075,10 +1075,10 @@ auto main () -> int
         ? ts::wrap_red(std::to_string(initSeed))
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
-    ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
+    // ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
     ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
-    ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
-    ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
+    // ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
+    // ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
 
     std::cout << '\n' << "End of main." << '\n';
 
