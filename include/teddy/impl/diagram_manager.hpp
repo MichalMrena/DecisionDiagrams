@@ -376,10 +376,10 @@ namespace teddy
     {
         auto const go = [this](auto&& go_, auto l, auto r)
         {
-            auto const cacheIt = nodes_.template cache_find<Op>(l, r);
-            if (cacheIt->matches(l, r))
+            auto const cached = nodes_.template cache_find<Op>(l, r);
+            if (cached)
             {
-                return cacheIt->result;
+                return cached;
             }
 
             auto const lhsVal = node_value(l);
@@ -408,8 +408,7 @@ namespace teddy
                 u = nodes_.internal_node(topIndex, std::move(sons));
             }
 
-            // cache tu má inú veľkosť, čiže môže byť alokované inde teda iterátory neplatia!
-            nodes_.template cache_put<Op>(cacheIt, l, r, u);
+            nodes_.template cache_put<Op>(l, r, u);
             return u;
         };
 
@@ -641,8 +640,8 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::cofactor
         (diagram_t const& d, index_t const i, uint_t const v) -> diagram_t
     {
-        auto const newRoot = this->transform_internal(d.get_root(), [this, i, v]
-            (auto&& go, auto&& self, auto const n)
+        auto const newRoot = this->transform_internal(d.get_root(),
+            [this, i, v] (auto&& go, auto&& self, auto const n)
         {
             if (n->get_index() == i)
             {

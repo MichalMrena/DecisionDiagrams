@@ -142,10 +142,10 @@ namespace teddy
         auto for_each_node (NodeOp&&) const -> void;
 
         template<class Op>
-        auto cache_find (node_t*, node_t*) -> op_cache_it;
+        auto cache_find (node_t*, node_t*) -> node_t*;
 
         template<class Op>
-        auto cache_put (op_cache_it, node_t*, node_t*, node_t*) -> void;
+        auto cache_put (node_t*, node_t*, node_t*) -> void;
 
         template<class NodeOp>
         auto traverse_pre (node_t*, NodeOp&&) const -> void;
@@ -354,33 +354,37 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::internal_node
         (index_t const i, sons_t&& sons) -> node_t*
     {
-        // všetky čo odtiaľto vylezú by sa mali omarkovať
-        // neskôr sa určite stanú synom alebo koreňom, tak budú odmarkované.
+        // Each node comming out of here is marked.
+        // Later on it must become son of someone or root of a diagram.
+        auto ret = static_cast<node_t*>(nullptr);
 
         if (this->is_redundant(i, sons))
         {
-            return id_set_marked(sons[0]);
+            ret = sons[0];
         }
-
-        auto const eq = std::bind_front(&node_manager::node_equal, this);
-
-        auto& table         = uniqueTables_[i];
-        auto const hash     = this->node_hash(i, sons);
-        auto const existing = table.find(sons, hash, eq);
-        if (existing)
+        else
         {
-            this->for_each_son(existing, id_set_notmarked<Data, Degree>);
-            return id_set_marked(existing);
+            auto const eq = std::bind_front(&node_manager::node_equal, this);
+
+            auto& table         = uniqueTables_[i];
+            auto const hash     = this->node_hash(i, sons);
+            auto const existing = table.find(sons, hash, eq);
+            if (existing)
+            {
+                ret = existing;
+            }
+            else
+            {
+                ret = this->new_node(i, std::move(sons));
+                table.insert(ret, hash);
+                this->for_each_son(ret, id_inc_ref_count<Data, Degree>);
+            }
+
+            // It is now safe to unmark them since they certainly have ref.
+            this->for_each_son(ret, id_set_notmarked<Data, Degree>);
         }
 
-        auto n = this->new_node(i, std::move(sons));
-        table.insert(n, hash);
-        this->for_each_son(n, id_inc_ref_count<Data, Degree>);
-
-        // už je syn niekoho, tak by sa mal dať v pohode odmarkovať
-        this->for_each_son(n, id_set_notmarked<Data, Degree>);
-
-        return id_set_marked(n);
+        return id_set_marked(ret);
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -610,28 +614,26 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<class Op>
     auto node_manager<Data, Degree, Domain>::cache_find
-        (node_t* const l, node_t* const r) -> op_cache_it
+        (node_t* const l, node_t* const r) -> node_t*
     {
-        // TODO return pair (node, iterator)
         auto& cache = opCaches_[op_id(Op())];
-        auto const ret = cache.find(l, r);
-        if (ret->matches(l, r))
+        auto const node = cache.find(l, r);
+        if (node)
         {
-            id_set_marked(ret->result);
+            id_set_marked(node);
         }
-        return ret;
+        return node;
     }
 
     template<class Data, degree Degree, domain Domain>
     template<class Op>
     auto node_manager<Data, Degree, Domain>::cache_put
-        ( op_cache_it it
-        , node_t* const l
+        ( node_t* const l
         , node_t* const r
         , node_t* const res ) -> void
     {
         auto& cache = opCaches_[op_id(Op())];
-        cache.put(it, l, r, res);
+        cache.put(l, r, res);
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -789,18 +791,13 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::new_node
         (Args&&... args) -> node_t*
     {
-        auto constexpr as_double = [](auto const x)
-        {
-            return static_cast<double>(x);
-        };
-
-        ++nodeCount_;
         if (pool_.available_nodes() == 0)
         {
             // TODO tento magic number 0.2 dobre premyslieť
-            auto const dogc = as_double(lastGcNodeCount_)
-                            > 0.2 * as_double(pool_.main_pool_size());
-            if (dogc)
+            auto const gcThreshold = static_cast<double>(pool_.main_pool_size())
+                                   * 0.2;
+
+            if (static_cast<double>(lastGcNodeCount_) > gcThreshold)
             {
                 auto const beforeGc = pool_.available_nodes();
                 this->collect_garbage();
@@ -824,11 +821,17 @@ namespace teddy
         if (nodeCount_ >= nextTableAdjustment_)
         {
             assert(nodeCount_ == nextTableAdjustment_);
+
+            // Tu je otazka ci ich adjustovat hromadne, ale postupne ako
+            // klasicke tabulky...
             this->adjust_tables();
-            this->adjust_caches(); // TODO otazka je ci toto neriesit samostatne, skontrolovat ake su tie load factory
+
+            // When the number of nodes doubles, adjust cache sizes.
+            this->adjust_caches();
             nextTableAdjustment_ *= 2;
         }
 
+        ++nodeCount_;
         return pool_.create(std::forward<Args>(args)...);
     }
 
