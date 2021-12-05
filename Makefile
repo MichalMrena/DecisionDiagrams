@@ -31,6 +31,8 @@ main: $(BUILD_DIR)/main
 
 test: $(BUILD_DIR)/test
 
+experiment: $(BUILD_DIR)/experiment
+
 $(BUILD_DIR)/%: $(BUILD_DIR)/%.cpp.o
 	@echo $(LINK_NOTICE)
 	$(CXX) $< -o $@ $(LDFLAGS)
