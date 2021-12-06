@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <queue>
 #include <ranges>
 #include <span>
 #include <utility>
@@ -148,6 +149,9 @@ namespace teddy
         template<class NodeOp>
         auto for_each_node (NodeOp&&) const -> void;
 
+        template<class NodeOp>
+        auto for_each_terminal_node (NodeOp&&) const -> void;
+
         template<class Op>
         auto cache_find (node_t*, node_t*) -> node_t*;
 
@@ -159,6 +163,9 @@ namespace teddy
 
         template<class NodeOp>
         auto traverse_post (node_t*, NodeOp&&) const -> void;
+
+        template<class NodeOp>
+        auto traverse_level (node_t*, NodeOp&&) const -> void;
 
             auto swap_vars        (index_t i)         -> void;
             auto sift_vars        ()                  -> void;
@@ -609,6 +616,14 @@ namespace teddy
             }
         }
 
+        this->for_each_terminal_node(f);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<class NodeOp>
+    auto node_manager<Data, Degree, Domain>::for_each_terminal_node
+        (NodeOp&& f) const -> void
+    {
         for (auto const n : terminals_)
         {
             if (n)
@@ -697,6 +712,67 @@ namespace teddy
         };
 
         go(go, node, op);
+        go(go, node, [](auto const){});
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<class NodeOp>
+    auto node_manager<Data, Degree, Domain>::traverse_level
+        (node_t* const node, NodeOp&& op) const -> void
+    {
+        // TODO nieje uz toto niekde?
+        auto const node_level = [this](auto const n)
+        {
+            return n->is_internal() ? this->get_level(n) : TerminalLevel;
+        };
+
+        auto const cmp = [this, node_level](auto const l, auto const r)
+        {
+            return node_level(l) > node_level(r);
+        };
+
+        using compare_t   = decltype(cmp);
+        using node_prio_q = std::priority_queue< node_t*
+                                               , std::vector<node_t*>
+                                               , compare_t >;
+        auto queue = node_prio_q(cmp);
+        node->toggle_marked();
+        queue.push(node);
+        while (not queue.empty())
+        {
+            auto const current = queue.top();
+            queue.pop();
+            std::invoke(op, current);
+            if (current->is_terminal())
+            {
+                continue;
+            }
+            this->for_each_son(current, [&queue, current](auto const son)
+            {
+                if (son->is_marked() != current->is_marked())
+                {
+                    queue.push(son);
+                    son->toggle_marked();
+                }
+            });
+        }
+
+        // TODO pre_order to reset mark, solve somehow inak
+        auto const go = [this](auto&& go_, auto const n, auto&& op_)
+        {
+            n->toggle_marked();
+            std::invoke(op_, n);
+            if (n->is_internal())
+            {
+                this->for_each_son(n, [&go_, n, &op_](auto const son)
+                {
+                    if (n->is_marked() != son->is_marked())
+                    {
+                        go_(go_, son, op_);
+                    }
+                });
+            }
+        };
         go(go, node, [](auto const){});
     }
 

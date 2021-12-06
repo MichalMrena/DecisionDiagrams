@@ -145,12 +145,15 @@ namespace teddy
         auto adjust_capacity (std::size_t) -> void;
         auto rm_unused       () -> void;
         auto clear           () -> void;
-            auto size            () const -> std::size_t;
-            auto get_load ()
-            {
-                return static_cast<double>(size_)
-                    / static_cast<double>(entries_.size());
-            }
+            // auto size            () const -> std::size_t;
+            // {
+            //     return size_;
+            // }
+            // auto get_load ()
+            // {
+            //     return static_cast<double>(size_)
+            //         / static_cast<double>(entries_.size());
+            // }
 
     private:
         inline static constexpr auto LoadThreshold = 0.75;
@@ -286,13 +289,6 @@ namespace teddy
                 e.result = nullptr;
             }
         }
-    }
-
-    template<class Data, degree D>
-    auto apply_cache<Data, D>::size
-        () const -> std::size_t
-    {
-        return size_;
     }
 
     template<class Data, degree D>

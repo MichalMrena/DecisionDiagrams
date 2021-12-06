@@ -1,8 +1,9 @@
 auto PrintLoadFactor = true;
 
-#include "teddy/teddy.hpp"
+#include "teddy/teddy_reliability.hpp"
 #include <charconv>
 #include <iostream>
+#include <numeric>
 #include <optional>
 #include <random>
 #include <ranges>
@@ -31,7 +32,7 @@ enum class structure_func_e
 namespace teddy
 {
     template<uint_t P>
-    auto create_serial (mdd_manager<P>& manager)
+    auto create_serial (mss_manager<P>& manager)
     {
         auto const n   = manager.get_var_count();
         auto variables = manager.variables(rs::iota_view(0u, n));
@@ -39,7 +40,7 @@ namespace teddy
     }
 
     template<uint_t P>
-    auto create_parallel (mdd_manager<P>& manager)
+    auto create_parallel (mss_manager<P>& manager)
     {
         auto const n   = manager.get_var_count();
         auto variables = manager.variables(rs::iota_view(0u, n));
@@ -47,7 +48,7 @@ namespace teddy
     }
 
     template<uint_t P>
-    auto create_serialparallel ( mdd_manager<P>&  manager
+    auto create_serialparallel ( mss_manager<P>&  manager
                                , std::mt19937_64& rngtype
                                , std::mt19937_64& rngbranch )
     {
@@ -77,10 +78,10 @@ namespace teddy
     }
 
     template<uint_t P>
-    auto transform_sf ( mdd_manager<P>& manager
+    auto transform_sf ( mss_manager<P>& manager
                       , auto const&     sf )
     {
-        using diagram_t = typename mdd_manager<P>::diagram_t;
+        using diagram_t = typename mss_manager<P>::diagram_t;
         auto sfs = std::vector<diagram_t>();
         for (auto k = 1u; k < P; ++k)
         {
@@ -96,13 +97,13 @@ namespace teddy
     }
 
     template<uint_t P>
-    auto create_structure_function ( mdd_manager<P>&        manager
+    auto create_structure_function ( mss_manager<P>&        manager
                                    , std::mt19937_64&       rngtype
                                    , std::mt19937_64&       rngbranch
                                    , system_type_e const    systemtype
                                    , structure_func_e const sftype )
     {
-        using diagram_t = typename mdd_manager<P>::diagram_t;
+        using diagram_t = typename mss_manager<P>::diagram_t;
 
         auto const sf = [&, systemtype]()
         {
@@ -147,15 +148,52 @@ namespace teddy
         auto seeder    = std::mt19937_64(seed);
         auto rngtype   = std::mt19937_64(seeder());
         auto rngbranch = std::mt19937_64(seeder());
-        auto manager   = mdd_manager<P>(n, 10'000);
+        auto rngps     = std::mt19937_64(seeder());
+        auto manager   = mss_manager<P>(n, 10'000);
         auto sfs       = create_structure_function( manager, rngtype, rngbranch
                                                   , systemtype, sftype );
         manager.gc();
         std::cout << "Node count: " << manager.node_count() << '\n';
-        // for (auto const& sf : sfs)
-        // {
-        //     manager.to_dot_graph(std::cout, sf);
-        // }
+
+        using probs = typename mss_manager<P>::probabilities_t;
+        auto psdist = std::uniform_real_distribution(.0, 1.0);
+        auto ps     = probs();
+        for (auto i = 0u; i < n; ++i)
+        {
+            auto ips = std::array<double, P> {};
+            for (auto j = 0u; j < P; ++j)
+            {
+                ips[j] = psdist(rngps);
+            }
+            auto const norm = std::reduce(begin(ips), end(ips));
+            for (auto j = 0u; j < P; ++j)
+            {
+                ips[j] = ips[j] / norm;
+            }
+            ps.emplace_back(ips);
+        }
+
+        auto As = std::array<double, P - 1> {};
+        if (sftype == structure_func_e::One)
+        {
+            manager.calculate_probabilities(ps, sfs.front());
+            for (auto j = 1u; j < P; ++j)
+            {
+                As[j - 1] = manager.get_availability(j);
+            }
+        }
+        else if (sftype == structure_func_e::Multiple)
+        {
+            for (auto j = 1u; j < P; ++j)
+            {
+                As[j - 1] = manager.availability(1, ps, sfs[j - 1]);
+            }
+        }
+
+        for (auto j = 1u; j < P; ++j)
+        {
+            std::cout << "A" << j << " = " << As[j - 1] << '\n';
+        }
     }
 }
 

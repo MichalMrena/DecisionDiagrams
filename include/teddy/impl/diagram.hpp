@@ -11,12 +11,18 @@ namespace teddy
     template<class Data, degree Deg, domain Dom>
     class diagram_manager;
 
+    template<degree Deg, domain Dom>
+    class reliability_manager;
+
     template<class Data, degree D>
     class diagram
     {
     public:
         template<class Da, degree De, domain Do>
         friend class diagram_manager;
+
+        template<degree De, domain Do>
+        friend class reliability_manager;
 
     public:
         using node_t = node<Data, D>;
