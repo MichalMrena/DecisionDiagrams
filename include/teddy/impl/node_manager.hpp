@@ -111,6 +111,13 @@ namespace teddy
                      , Domain );
 
     public:
+            auto clear_caches ()
+            {
+                for (auto& cache : opCaches_)
+                {
+                    cache.clear();
+                }
+            }
         auto get_terminal_node (uint_t) const      -> node_t*;
         auto terminal_node     (uint_t)            -> node_t*;
         auto internal_node     (index_t, sons_t&&) -> node_t*;
@@ -273,7 +280,7 @@ namespace teddy
         levelToIndex_        (std::move(order)),
         domains_             (std::move(ds)),
         nodeCount_           (0),
-        cacheRatio_          (4),
+        cacheRatio_          (1),
         lastGcNodeCount_     (pool_.main_pool_size()),
         nextTableAdjustment_ (230),
         reorderEnabled_      (false)

@@ -22,7 +22,7 @@ ifdef USE_OMP
 	LDFLAGS += -fopenmp
 endif
 
-SRCS := main.cpp test.cpp
+SRCS := $(shell find ./src -name *.cpp -exec basename {} \;)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 -include $(DEPS)

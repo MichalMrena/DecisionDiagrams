@@ -1,3 +1,5 @@
+auto PrintLoadFactor = true;
+
 #include "teddy/teddy.hpp"
 #include <charconv>
 #include <iostream>
@@ -59,7 +61,9 @@ namespace teddy
             {
                 auto denomdist = std::uniform_int_distribution<uint_t>(2, 10);
                 auto typedist  = std::uniform_real_distribution(0.0, 1.1);
+                // TODO cache robí problémy pri asymetrických veľkostiach
                 auto const denom   = denomdist(rngbranch);
+                // auto const denom   = 2u;
                 auto const lhssize = std::max(1u, n / denom);
                 auto const rhssize = n - lhssize;
                 auto const lhs = self(self, lhssize);
@@ -84,6 +88,9 @@ namespace teddy
             {
                 return v >= k;
             }));
+            // PrintLoadFactor = true;
+            // manager.nodes_.clear_caches();
+            // sfs.emplace_back(manager.template apply<GREATER_EQUAL>(sf, manager.constant(k)));
         }
         return sfs;
     }

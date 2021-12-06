@@ -141,7 +141,7 @@ namespace teddy
         auto operator=  (diagram_manager const&) -> diagram_manager& = delete;
         auto operator=  (diagram_manager&&)      -> diagram_manager& = default;
 
-    private:
+    public:
         node_manager<Data, Degree, Domain> nodes_;
     };
 
