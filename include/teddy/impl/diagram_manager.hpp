@@ -804,8 +804,14 @@ namespace teddy
         (node_t* const root, F f) -> node_t*
     {
         auto memo = std::unordered_map<node_t*, node_t*>();
-        auto const go = [this, &f](auto&& go_, auto const n)
+        auto const go = [this, &f, &memo](auto&& go_, auto const n)
         {
+            auto const it = memo.find(n);
+            if (memo.end() != it)
+            {
+                return it->second;
+            }
+
             if (n->is_terminal())
             {
                 auto const newVal = static_cast<uint_t>(f(n->get_value()));
@@ -814,11 +820,13 @@ namespace teddy
             else
             {
                 auto const i = n->get_index();
-                return nodes_.internal_node(i, nodes_.make_sons(i,
+                auto const newNode = nodes_.internal_node(i, nodes_.make_sons(i,
                     [&go_, &f, n](auto const k)
                 {
                     return go_(go_, n->get_son(k));
                 }));
+                memo.emplace(n, newNode);
+                return newNode;
             }
         };
         return go(go, root);
