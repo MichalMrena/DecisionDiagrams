@@ -99,6 +99,8 @@ namespace teddy
         auto set_unused    ()             -> void;
         auto is_marked     () const       -> bool;
         auto toggle_marked ()             -> void;
+        auto set_marked    ()             -> void;
+        auto set_notmarked ()             -> void;
         auto get_ref_count () const       -> refs_t;
         auto inc_ref_count ()             -> void;
         auto dec_ref_count ()             -> void;
@@ -313,6 +315,20 @@ namespace teddy
         () -> void
     {
         bits_ ^= MarkM;
+    }
+
+    template<class Data, degree D>
+    auto node<Data, D>::set_marked
+        () -> void
+    {
+        bits_ |= MarkM;
+    }
+
+    template<class Data, degree D>
+    auto node<Data, D>::set_notmarked
+        () -> void
+    {
+        bits_ &= ~MarkM;
     }
 
     template<class Data, degree D>

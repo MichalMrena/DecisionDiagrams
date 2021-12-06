@@ -41,11 +41,14 @@ namespace teddy
 
         auto set_overflow_ratio (std::size_t) -> void;
 
-        template<class... Args>
-        [[nodiscard]] auto try_create (Args&&...) -> node_t*;
+        auto available_nodes () const -> std::size_t;
+
+        auto main_pool_size () const -> std::size_t;
 
         template<class... Args>
-        [[nodiscard]] auto force_create (Args&&...) -> node_t*;
+        [[nodiscard]] auto create (Args&&...) -> node_t*;
+
+        auto grow () -> void;
 
         auto destroy (node_t*) -> void;
 
@@ -59,6 +62,7 @@ namespace teddy
         node_t*                                    freeNode_;
         pool_it                                    nextPoolNodeIt_;
         std::size_t                                overflowRatio_;
+        std::size_t                                availableNodes_;
     };
 
     template<class Data, degree D>
@@ -69,7 +73,8 @@ namespace teddy
         currentPoolPtr_ (&mainPool_),
         freeNode_       (nullptr),
         nextPoolNodeIt_ (std::begin(mainPool_)),
-        overflowRatio_  (2)
+        overflowRatio_  (2),
+        availableNodes_ (mainPool_.size())
     {
         debug::out("Allocating initial pool with size = ");
         debug::outl(mainPool_.size());
@@ -80,7 +85,8 @@ namespace teddy
 
     template<class Data, degree D>
     node_pool<Data, D>::node_pool
-        (node_pool&& other)
+        (node_pool&& other) :
+        availableNodes_ (std::exchange(other.availableNodes_, 0))
     {
         // Calculate others pointer and iterator positions.
         auto constexpr MainPoolOffset = static_cast<std::size_t>(-1);
@@ -150,52 +156,60 @@ namespace teddy
     }
 
     template<class Data, degree D>
+    auto node_pool<Data, D>::available_nodes
+        () const -> std::size_t
+    {
+        return availableNodes_;
+    }
+
+    template<class Data, degree D>
+    auto node_pool<Data, D>::main_pool_size
+        () const -> std::size_t
+    {
+        return mainPool_.size();
+    }
+
+    template<class Data, degree D>
     template<class... Args>
-    auto node_pool<Data, D>::try_create
+    auto node_pool<Data, D>::create
         (Args&&... as) -> node_t*
     {
-        auto p = static_cast<node_t*>(nullptr);
+        assert(availableNodes_ > 0);
+        --availableNodes_;
 
+        auto p = static_cast<node_t*>(nullptr);
         if (freeNode_)
         {
             p = freeNode_;
             freeNode_ = freeNode_->get_next();
             std::destroy_at(p);
         }
-        else if (nextPoolNodeIt_ != std::end(*currentPoolPtr_))
+        else
         {
             p = nextPoolNodeIt_->get();
             ++nextPoolNodeIt_;
         }
 
-        if (p)
-        {
-            return std::construct_at(p, std::forward<Args>(as)...);
-        }
-
-        return p;
-    }
-
-    template<class Data, degree D>
-    template<class... Args>
-    auto node_pool<Data, D>::force_create
-        (Args&&... as) -> node_t*
-    {
-        debug::out("Allocating new pool with size = ");
-        debug::outl(mainPool_.size() / overflowRatio_);
-
-        overflowPools_.emplace_back(mainPool_.size() / overflowRatio_);
-        currentPoolPtr_ = &overflowPools_.back();
-        nextPoolNodeIt_ = std::begin(*currentPoolPtr_);
-        return this->try_create(std::forward<Args>(as)...);
+        return std::construct_at(p, std::forward<Args>(as)...);
     }
 
     template<class Data, degree D>
     auto node_pool<Data, D>::destroy
         (node_t* const p) -> void
     {
+        ++availableNodes_;
         p->set_next(freeNode_);
         freeNode_ = p;
+    }
+
+    template<class Data, degree D>
+    auto node_pool<Data, D>::grow
+        () -> void
+    {
+        overflowPools_.emplace_back(mainPool_.size() / overflowRatio_);
+        currentPoolPtr_ = &overflowPools_.back();
+        nextPoolNodeIt_ = std::begin(*currentPoolPtr_);
+        availableNodes_ += currentPoolPtr_->size();
     }
 }
 

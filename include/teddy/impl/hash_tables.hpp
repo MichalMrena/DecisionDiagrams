@@ -23,7 +23,7 @@ namespace teddy
             325'340'273u, 650'680'571u, 1'301'361'143u, 2'602'722'289u
         };
 
-    protected:
+    public:
         static auto gte_capacity (std::size_t) -> std::size_t;
     };
 
@@ -67,7 +67,7 @@ namespace teddy
      *  @brief Table of unique nodes.
      */
     template<class Data, degree D>
-    class unique_table : private table_base
+    class unique_table
     {
     public:
         using node_t = node<Data, D>;
@@ -117,7 +117,7 @@ namespace teddy
      *  @brief Cache for the apply opertaion.
      */
     template<class Data, degree D>
-    class apply_cache : private table_base
+    class apply_cache
     {
     public:
         using node_t = node<Data, D>;
@@ -140,8 +140,8 @@ namespace teddy
         apply_cache (apply_cache&&);
 
     public:
-        auto find            (node_t*, node_t*) -> iterator;
-        auto put             (iterator, node_t*, node_t*, node_t*) -> void;
+        auto find            (node_t*, node_t*) -> node_t*;
+        auto put             (node_t*, node_t*, node_t*) -> void;
         auto adjust_capacity (std::size_t) -> void;
         auto rm_unused       () -> void;
         auto clear           () -> void;
@@ -205,26 +205,30 @@ namespace teddy
 
     template<class Data, degree D>
     auto apply_cache<Data, D>::find
-        (node_t* const l, node_t* const r) -> iterator
+        ( node_t* const l
+        , node_t* const r ) -> node_t*
     {
         auto const index = hash(l, r) % entries_.size();
-        return std::begin(entries_) + static_cast<std::ptrdiff_t>(index);
+        auto& e = entries_[index];
+        // TODO metodu netreba
+        return e.result and e.matches(l, r) ? e.result : nullptr;
     }
 
     template<class Data, degree D>
     auto apply_cache<Data, D>::put
-        ( iterator      it
-        , node_t* const l
+        ( node_t* const l
         , node_t* const r
         , node_t* const res ) -> void
     {
-        if (not it->result)
+        auto const index = hash(l, r) % entries_.size();
+        auto& e = entries_[index];
+        if (not e.result)
         {
             ++size_;
         }
-        it->lhs    = l;
-        it->rhs    = r;
-        it->result = res;
+        e.lhs    = l;
+        e.rhs    = r;
+        e.result = res;
     }
 
     template<class Data, degree D>

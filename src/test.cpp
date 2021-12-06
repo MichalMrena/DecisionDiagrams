@@ -999,7 +999,7 @@ auto main () -> int
     auto const varCount  = 13;
     auto const termCount = 20;
     auto const termSize  = 5;
-    auto const nodeCount = 1000;
+    auto const nodeCount = 100;
     auto const testCount = std::thread::hardware_concurrency() + 2;
     auto       seedSrc   = std::random_device();
     // auto const seedSrc   = std::integral_constant<long, 2928425735>();
