@@ -799,14 +799,12 @@ namespace teddy
 
             if (static_cast<double>(lastGcNodeCount_) > gcThreshold)
             {
-                auto const beforeGc = pool_.available_nodes();
                 this->collect_garbage();
                 if (reorderEnabled_)
                 {
                     this->sift_vars();
                 }
-                auto const afterGc = pool_.available_nodes();
-                lastGcNodeCount_ = afterGc - beforeGc;
+                lastGcNodeCount_ = pool_.available_nodes();
                 if (lastGcNodeCount_ == 0)
                 {
                     pool_.grow();
@@ -987,33 +985,44 @@ namespace teddy
 
 
 
-            template<class Data, degree Degree, domain Domain>
-            auto node_manager<Data, Degree, Domain>::swap_vertex
-                (node_t* const) -> void
-            {
-                // auto const index     = v->get_index();
-                // auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
-                // auto const vDomain   = this->get_domain(index);
-                // auto const sonDomain = this->get_domain(nextIndex);
-                // auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&node_t::get_son, v));
-                // auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
-                // {
-                //     auto const son = v->get_son(sonIndex);
-                //     return son->get_index() == nextIndex
-                //         ? utils::fill_array_n<P>(sonDomain, std::bind_front(&node_t::get_son, son))
-                //         : utils::fill_array_n<P>(sonDomain, utils::constant(son));
-                // });
-                // v->set_index(nextIndex);
-                // v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
-                // {
-                //     return this->internal_node(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
-                //     {
-                //         return cofactors[j][i];
-                //     }));
-                // }));
-                // v->for_each_son(inc_ref_count);
-                // utils::for_all(oldSons, std::bind_front(&node_manager::dec_ref_try_gc, this));
-            }
+        // template<class Data, degree Degree, domain Domain>
+        // auto node_manager<Data, Degree, Domain>::swap_vertex
+        //     (node_t* const n) -> void
+        // {
+        //     auto const index     = n->get_index();
+        //     auto const nextIndex = this->get_index(1 + this->get_level(n));
+        //     auto const nDomain   = this->get_domain(index);
+        //     auto const sonDomain = this->get_domain(nextIndex);
+        //     // auto const oldSons   = utils::fill_vector(nDomain, std::bind_front(&node_t::get_son, v));
+        //     auto const oldSons   = this->make_sons(index, [n](auto const k)
+        //     {
+        //         return n->get_son(k);
+        //     });
+
+        //     // TODO tak aby to bolo fixne 2d pole pri fixnych domenach, inak vektory!
+        //     auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
+        //     {
+        //         auto const son = v->get_son(sonIndex);
+        //         return son->get_index() == nextIndex
+        //             ? utils::fill_array_n<P>(sonDomain, std::bind_front(&node_t::get_son, son))
+        //             : utils::fill_array_n<P>(sonDomain, utils::constant(son));
+        //     });
+        //     v->set_index(nextIndex);
+        //     v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
+        //     {
+        //         return this->internal_node(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
+        //         {
+        //             return cofactors[j][i];
+        //         }));
+        //     }));
+        //     v->for_each_son(inc_ref_count);
+
+        //     // utils::for_all(oldSons, std::bind_front(&node_manager::dec_ref_try_gc, this));
+        //     for (auto const os : oldSons)
+        //     {
+        //         this->dec_ref_try_gc(os);
+        //     }
+        // }
 
 
             template<class Data, degree Degree, domain Domain>
