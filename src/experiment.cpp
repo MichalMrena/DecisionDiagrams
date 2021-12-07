@@ -2,6 +2,7 @@ auto PrintLoadFactor = true;
 
 #include "teddy/teddy_reliability.hpp"
 #include <charconv>
+#include <cassert>
 #include <iostream>
 #include <numeric>
 #include <optional>
@@ -140,21 +141,8 @@ namespace teddy
     }
 
     template<uint_t P>
-    auto do_experiment ( uint_t const           seed
-                       , uint_t const           n
-                       , system_type_e const    systemtype
-                       , structure_func_e const sftype )
+    auto generate_probabilities (uint_t const n, std::mt19937_64& rngps)
     {
-        auto seeder    = std::mt19937_64(seed);
-        auto rngtype   = std::mt19937_64(seeder());
-        auto rngbranch = std::mt19937_64(seeder());
-        auto rngps     = std::mt19937_64(seeder());
-        auto manager   = mss_manager<P>(n, 10'000);
-        auto sfs       = create_structure_function( manager, rngtype, rngbranch
-                                                  , systemtype, sftype );
-        manager.gc();
-        std::cout << "Node count: " << manager.node_count() << '\n';
-
         using probs = typename mss_manager<P>::probabilities_t;
         auto psdist = std::uniform_real_distribution(.0, 1.0);
         auto ps     = probs();
@@ -172,7 +160,15 @@ namespace teddy
             }
             ps.emplace_back(ips);
         }
+        return ps;
+    }
 
+    template<uint_t P>
+    auto calculate_availabilities ( mss_manager<P>&        manager
+                                  , structure_func_e const sftype
+                                  , auto const&            ps
+                                  , auto&                  sfs )
+    {
         auto As = std::array<double, P - 1> {};
         if (sftype == structure_func_e::One)
         {
@@ -189,6 +185,27 @@ namespace teddy
                 As[j - 1] = manager.availability(1, ps, sfs[j - 1]);
             }
         }
+        return As;
+    }
+
+    template<uint_t P>
+    auto do_experiment ( uint_t const           seed
+                       , uint_t const           n
+                       , system_type_e const    systemtype
+                       , structure_func_e const sftype )
+    {
+        auto seeder    = std::mt19937_64(seed);
+        auto rngtype   = std::mt19937_64(seeder());
+        auto rngbranch = std::mt19937_64(seeder());
+        auto rngps     = std::mt19937_64(seeder());
+        auto manager   = mss_manager<P>(n, 10'000);
+        auto sfs       = create_structure_function( manager, rngtype, rngbranch
+                                                  , systemtype, sftype );
+        manager.gc();
+        std::cout << "Node count: " << manager.node_count() << '\n';
+
+        auto const ps = generate_probabilities<P>(n, rngps);
+        auto const As = calculate_availabilities(manager, sftype, ps, sfs);
 
         for (auto j = 1u; j < P; ++j)
         {

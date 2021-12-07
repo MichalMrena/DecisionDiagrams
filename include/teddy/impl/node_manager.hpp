@@ -1068,44 +1068,73 @@ namespace teddy
 
 
 
-        // template<class Data, degree Degree, domain Domain>
-        // auto node_manager<Data, Degree, Domain>::swap_vertex
-        //     (node_t* const n) -> void
-        // {
-        //     auto const index     = n->get_index();
-        //     auto const nextIndex = this->get_index(1 + this->get_level(n));
-        //     auto const nDomain   = this->get_domain(index);
-        //     auto const sonDomain = this->get_domain(nextIndex);
-        //     // auto const oldSons   = utils::fill_vector(nDomain, std::bind_front(&node_t::get_son, v));
-        //     auto const oldSons   = this->make_sons(index, [n](auto const k)
-        //     {
-        //         return n->get_son(k);
-        //     });
+        template<class Data, degree Degree, domain Domain>
+        auto node_manager<Data, Degree, Domain>::swap_vertex
+            (node_t* const node) -> void
+        {
+            // auto const mkmatrix = [](auto const nRow, auto const nCol)
+            // {
+            //     auto constexpr FixedDegree = degrees::is_fixed<Degree>;
+            //     auto constexpr FixedDomain = domain::is_fixed<Domain>;
+            //     if constexpr (FixedDegree)
+            //     {
+            //         auto constexpr N = Degree()();
+            //         return std::array<node_t*, N> {};
+            //     }
+            //     else
+            //     {
+            //         // TODO niečo kompaktnejšie, ideálne na stacku
+            //         auto const row = std::vector<node_t*>(nCol, nullptr);
+            //         return std::vector<std::vector<node_t*>>(nRow, row);
+            //     }
+            // };
 
-        //     // TODO tak aby to bolo fixne 2d pole pri fixnych domenach, inak vektory!
-        //     auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
-        //     {
-        //         auto const son = v->get_son(sonIndex);
-        //         return son->get_index() == nextIndex
-        //             ? utils::fill_array_n<P>(sonDomain, std::bind_front(&node_t::get_son, son))
-        //             : utils::fill_array_n<P>(sonDomain, utils::constant(son));
-        //     });
-        //     v->set_index(nextIndex);
-        //     v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
-        //     {
-        //         return this->internal_node(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
-        //         {
-        //             return cofactors[j][i];
-        //         }));
-        //     }));
-        //     v->for_each_son(inc_ref_count);
+            // auto const nodeIndex  = node->get_index();
+            // auto const nextIndex  = this->get_index(1 + this->get_level(node));
+            // auto const nodeDomain = this->get_domain(nodeIndex);
+            // auto const sonDomain  = this->get_domain(nextIndex);
+            // auto const oldSons    = this->make_sons(nodeIndex, [n](auto const k)
+            // {
+            //     return n->get_son(k);
+            // });
+            // // auto const oldSons   = utils::fill_vector(nDomain, std::bind_front(&node_t::get_son, v));
 
-        //     // utils::for_all(oldSons, std::bind_front(&node_manager::dec_ref_try_gc, this));
-        //     for (auto const os : oldSons)
-        //     {
-        //         this->dec_ref_try_gc(os);
-        //     }
-        // }
+            // // TODO tak aby cofactorMatrix bolo fixne 2d pole pri fixnych domenach, inak vektory!
+            // auto cofactorMatrix = mkmatrix(nodeDomain, sonDomain);
+            // for (auto nk = 0; nk < nDomain; ++nk)
+            // {
+            //     auto const son = n->get_son(k);
+            //     for (sk = 0; sk < sonDomain; ++sk)
+            //     {
+            //         cofactorMatrix[nk][sk] = son->get_index() == nextIndex
+            //             ? son->get_son(sk)
+            //             : son;
+            //     }
+            // }
+
+            //     auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
+            //     {
+            //         auto const son = v->get_son(sonIndex);
+            //         return son->get_index() == nextIndex
+            //             ? utils::fill_array_n<P>(sonDomain, std::bind_front(&node_t::get_son, son))
+            //             : utils::fill_array_n<P>(sonDomain, utils::constant(son));
+            //     });
+            //     v->set_index(nextIndex);
+            //     v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
+            //     {
+            //         return this->internal_node(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
+            //         {
+            //             return cofactors[j][i];
+            //         }));
+            //     }));
+            //     v->for_each_son(inc_ref_count);
+
+            // // utils::for_all(oldSons, std::bind_front(&node_manager::dec_ref_try_gc, this));
+            // for (auto const os : oldSons)
+            // {
+            //     this->dec_ref_try_gc(os);
+            // }
+        }
 
 
             template<class Data, degree Degree, domain Domain>
