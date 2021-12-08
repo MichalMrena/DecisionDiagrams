@@ -111,6 +111,8 @@ namespace teddy
 
         auto gc () -> void;
 
+        auto sift () -> void;
+
     public:
         auto get_var_count () const -> std::size_t;
         auto get_order     () const -> std::vector<index_t> const&;
@@ -768,6 +770,12 @@ namespace teddy
         nodes_.collect_garbage();
     }
 
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::sift
+        () -> void
+    {
+        nodes_.sift_vars();
+    }
 
     template<class Data, degree Degree, domain Domain>
     template<class F>

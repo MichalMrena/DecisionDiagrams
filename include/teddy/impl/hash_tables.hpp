@@ -418,6 +418,7 @@ namespace teddy
         buckets_ (std::move(other.buckets_)),
         size_    (std::exchange(other.size_, 0))
     {
+        other.buckets_.resize(table_base::gte_capacity(0), nullptr);
     }
 
     template<class Data, degree D>
@@ -444,7 +445,7 @@ namespace teddy
         (unique_table& rhs, Hash&& hash) -> void
     {
         size_ += rhs.size();
-        this->adjust_capacity();
+        this->adjust_capacity(hash);
 
         auto const end = std::end(rhs);
         auto it = std::begin(rhs);
@@ -454,7 +455,7 @@ namespace teddy
             ++it;
 
             n->set_next(nullptr);
-            this->insert_impl(n, hash(n));
+            this->insert_impl(n, hash(n->get_index(), n->get_sons()));
         }
         rhs.clear();
     }

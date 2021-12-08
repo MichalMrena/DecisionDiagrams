@@ -4,6 +4,7 @@
 #include "teddy/teddy.hpp"
 #include <algorithm>
 #include <array>
+#include <fstream>
 #include <iostream>
 #include <mutex>
 #include <omp.h>
@@ -16,9 +17,11 @@
 #include <variant>
 #include <vector>
 
+
 namespace teddy::test
 {
     namespace rs = std::ranges;
+        auto ofs = std::ofstream("sift_data.txt");
 
     struct minmax_expr
     {
@@ -154,7 +157,19 @@ namespace teddy::test
             , std::vector<index_t>                    order
             , std::vector<std::pair<index_t, uint_t>> fixed ) :
             domains_ (std::move(domains)),
-            indices_ (std::move(order)),
+            indices_ ([&order, &fixed]()
+            {
+                auto is = std::vector<index_t>();
+                rs::copy_if(order, std::back_inserter(is),
+                    [&fixed](auto const i)
+                {
+                    return rs::end(fixed) == rs::find_if(fixed, [i](auto&& p)
+                    {
+                        return p.first == i;
+                    });
+                });
+                return is;
+            }()),
             varVals_ ([this, &fixed, &domains]()
             {
                 auto vs = std::vector<uint_t>(domains_.size());
@@ -861,6 +876,22 @@ namespace teddy::test
     }
 
     /**
+     * 
+     */
+    template<class Dat, class Deg, class Dom>
+    auto test_var_sift
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , diagram<Dat, Deg>&              diagram
+        , expr_var const&                 expr )
+    {
+        manager.gc();
+        ofs << manager.node_count() << " ";
+        manager.sift();
+        ofs << manager.node_count() << "\n";
+        return test_evaluate(manager, diagram, expr);
+    }
+
+    /**
      *  Runs all test. Creates diagram represeting @p expr using @p manager .
      */
     template<class Manager>
@@ -887,11 +918,12 @@ namespace teddy::test
         auto const tests = { "evaluate"sv
                            , "fold"sv
                            , "gc"sv
-                           , "satisfy-count"sv
-                           , "satisfy-all"sv
+                           , "satisfy_count"sv
+                           , "satisfy_all"sv
                            , "operators"sv
                            , "cofactors"sv
-                           , "from_vector"sv };
+                           , "from_vector"sv
+                           , "var_sift"sv };
         auto results = std::unordered_map< std::string_view
                                          , std::vector<result_opt> >();
         for (auto const test : tests)
@@ -955,9 +987,9 @@ namespace teddy::test
                 = test_fold(diagram1s[k], diagram2s[k]);
             results.at("gc")[k]
                 = test_gc(managers[k], diagram1s[k]);
-            results.at("satisfy-count")[k]
+            results.at("satisfy_count")[k]
                 = test_satisfy_count(managers[k], diagram1s[k], exprs[k]);
-            results.at("satisfy-all")[k]
+            results.at("satisfy_all")[k]
                 = test_satisfy_all(managers[k], diagram1s[k], exprs[k]);
             results.at("operators")[k]
                 = test_operators(managers[k], diagram1s[k], exprs[k]);
@@ -965,6 +997,8 @@ namespace teddy::test
                 = test_cofactor(managers[k], diagram1s[k], exprs[k], rngs[k]);
             results.at("from_vector")[k]
                 = test_from_vector(managers[k], diagram1s[k], exprs[k]);
+            results.at("var_sift")[k]
+                = test_var_sift(managers[k], diagram1s[k], exprs[k]);
 
             refresh_results();
         }
@@ -1070,6 +1104,12 @@ auto main () -> int
     imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
+
+    if (not teddy::test::ofs.is_open())
+    {
+        std::cout << "not opened" << '\n';
+        return 1;
+    }
 
     auto const seedStr = IsFixedSeed
         ? ts::wrap_red(std::to_string(initSeed))
