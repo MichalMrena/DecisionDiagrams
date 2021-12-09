@@ -227,9 +227,9 @@ namespace teddy
 
 
     template<uint_t P>
-    auto time_evaluate ( mss_manager<P>&        manager
-                       , auto&                  sfs
-                       , std::mt19937_64&       rngval )
+    auto time_evaluate ( mss_manager<P>&  manager
+                       , auto&            sfs
+                       , std::mt19937_64& rngval )
     {
         namespace ch = std::chrono;
         auto const before = ch::high_resolution_clock::now();
@@ -252,7 +252,8 @@ namespace teddy
     }
 
     template<uint_t P>
-    auto do_experiment ( uint_t const           seed
+    auto do_experiment ( uint_t const           iterations
+                       , uint_t const           seed
                        , uint_t const           n
                        , system_type_e const    systemtype
                        , structure_func_e const sftype )
@@ -265,12 +266,9 @@ namespace teddy
         auto manager   = mss_manager<P>(n, 1'000'000);
         auto const ps  = generate_probabilities<P>(n, rngps);
 
-        using time_units_t   = unsigned long long;
-        auto constexpr Iters = 100u;
-        auto counts          = std::vector<std::size_t> {};
-        auto avails          = std::vector<time_units_t> {};
-        auto values          = std::vector<time_units_t> {};
-        for (auto iter = 0u; iter < Iters; ++iter)
+        std::cout << "node_count;time_availabilities[μs];time_evaluate[ms]\n";
+
+        for (auto iter = 0u; iter < iterations; ++iter)
         {
             auto sfs = create_structure_function( manager, rngtype, rngbranch
                                                 , systemtype, sftype );
@@ -321,7 +319,7 @@ namespace teddy
 
 auto print_help () -> void;
 auto print_params
-    (uint_t, uint_t, system_type_e, structure_func_e, uint_t) -> void;
+    (uint_t, uint_t, uint_t, system_type_e, structure_func_e, uint_t) -> void;
 auto string_to_uint (std::string_view) -> std::optional<uint_t>;
 auto sf_type_to_string (structure_func_e) -> std::string_view;
 auto string_to_sf_type (std::string_view) -> structure_func_e;
@@ -336,43 +334,48 @@ auto main (int argc, char** argv) -> int
     // TODO počítanie derivácií s použitím projekcií pre koncové vrcholy
     // a pre projekcie na get_sony
 
+    // iterations: 10'000
+    // components: 100, 500, 1'000, 1'500, 2'000, 2'500, 3'000
+
     if (argc < 6)
     {
         print_help();
         return -1;
     }
 
-    auto const seed       = string_to_uint(argv[1]);
-    auto const P          = string_to_uint(argv[2]);
-    auto const systemtype = string_to_system_type(argv[3]);
-    auto const sftype     = string_to_sf_type(argv[4]);
-    auto const n          = string_to_uint(argv[5]);
+    auto const iterations = string_to_uint(argv[1]);
+    auto const seed       = string_to_uint(argv[2]);
+    auto const P          = string_to_uint(argv[3]);
+    auto const systemtype = string_to_system_type(argv[4]);
+    auto const sftype     = string_to_sf_type(argv[5]);
+    auto const n          = string_to_uint(argv[6]);
 
-    if ( not P or not n or systemtype == system_type_e::Unknown
+    if ( not P or not n or not iterations or not seed
+                        or systemtype == system_type_e::Unknown
                         or sftype == structure_func_e::Unknown )
     {
         print_help();
         return -1;
     }
 
-    print_params(*seed, *P, systemtype, sftype, *n);
+    print_params(*iterations, *seed, *P, systemtype, sftype, *n);
 
     switch (*P)
     {
         case 2:
-            teddy::do_experiment<2>(*seed, *n, systemtype, sftype);
+            teddy::do_experiment<2>(*iterations, *seed, *n, systemtype, sftype);
             break;
 
         case 3:
-            teddy::do_experiment<3>(*seed, *n, systemtype, sftype);
+            teddy::do_experiment<3>(*iterations, *seed, *n, systemtype, sftype);
             break;
 
         case 4:
-            teddy::do_experiment<4>(*seed, *n, systemtype, sftype);
+            teddy::do_experiment<4>(*iterations, *seed, *n, systemtype, sftype);
             break;
 
         case 5:
-            teddy::do_experiment<5>(*seed, *n, systemtype, sftype);
+            teddy::do_experiment<5>(*iterations, *seed, *n, systemtype, sftype);
             break;
 
         default:
@@ -385,6 +388,7 @@ auto print_help () -> void
 {
     std::cout << "Usage:"                                              << '\n'
               << "./experiment"                                        << '\n'
+              << " <iterations ∈ N>"                                   << '\n'
               << " <seed ∈ N>"                                         << '\n'
               << " <P ∈ {2, 3, 4, 5}>"                                 << '\n'
               << " <system_type ∈ {serial, parallel, serialparallel}>" << '\n'
@@ -393,13 +397,15 @@ auto print_help () -> void
               << '\n';
 }
 
-auto print_params ( uint_t const           seed
+auto print_params ( uint_t const           iterations
+                  , uint_t const           seed
                   , uint_t const           P
                   , system_type_e const    systemtype
                   , structure_func_e const sftype
                   , uint_t const           n ) -> void
 {
-    std::cout << "seed=" << seed
+    std::cout << "iterations=" << iterations
+              << ";seed=" << seed
               << ";P=" << P
               << ";system_type=" << system_type_to_string(systemtype)
               << ";structure_function=" << sf_type_to_string(sftype)
