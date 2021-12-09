@@ -1,8 +1,7 @@
-auto PrintLoadFactor = true;
-
 #include "teddy/teddy_reliability.hpp"
-#include <charconv>
 #include <cassert>
+#include <charconv>
+#include <chrono>
 #include <iostream>
 #include <numeric>
 #include <optional>
@@ -65,7 +64,6 @@ namespace teddy
                 auto typedist  = std::uniform_real_distribution(0.0, 1.1);
                 // TODO cache robí problémy pri asymetrických veľkostiach
                 auto const denom   = denomdist(rngbranch);
-                // auto const denom   = 2u;
                 auto const lhssize = std::max(1u, n / denom);
                 auto const rhssize = n - lhssize;
                 auto const lhs = self(self, lhssize);
@@ -90,9 +88,6 @@ namespace teddy
             {
                 return v >= k;
             }));
-            // PrintLoadFactor = true;
-            // manager.nodes_.clear_caches();
-            // sfs.emplace_back(manager.template apply<GREATER_EQUAL>(sf, manager.constant(k)));
         }
         return sfs;
     }
@@ -189,6 +184,74 @@ namespace teddy
     }
 
     template<uint_t P>
+    auto evaluate ( mss_manager<P>&      manager
+                  , auto&                sfs
+                  , std::vector<uint_t>& values )
+    {
+        if (sfs.size() == 1)
+        {
+            return manager.evaluate(sfs[0], values);
+        }
+
+        if (manager.evaluate(sfs[0], values) == 0)
+        {
+            return uint_t {0};
+        }
+
+        for (auto j = 1u; j < P - 1; ++j)
+        {
+            auto const vj1 = manager.evaluate(sfs[j - 1], values);
+            auto const vj2 = manager.evaluate(sfs[j], values);
+            if (vj1 != vj2)
+            {
+                return j;
+            }
+        }
+
+        return uint_t {P - 1};
+    }
+
+
+    template<uint_t P>
+    auto time_availabilities ( mss_manager<P>&        manager
+                             , structure_func_e const sftype
+                             , auto const&            ps
+                             , auto&                  sfs )
+    {
+        namespace ch = std::chrono;
+        auto const before = ch::high_resolution_clock::now();
+        calculate_availabilities(manager, sftype, ps, sfs);
+        auto const after = ch::high_resolution_clock::now();
+        return ch::duration_cast<ch::microseconds>(after - before).count();
+    }
+
+
+    template<uint_t P>
+    auto time_evaluate ( mss_manager<P>&        manager
+                       , auto&                  sfs
+                       , std::mt19937_64&       rngval )
+    {
+        namespace ch = std::chrono;
+        auto const before = ch::high_resolution_clock::now();
+
+        auto const n = manager.get_var_count();
+        auto dist = std::uniform_int_distribution<uint_t>(0, P - 1);
+        auto constexpr Iters = 100'000;
+        auto vals = std::vector<uint_t>(n, 0);
+        for (auto iter = 0u; iter < Iters; ++iter)
+        {
+            for (auto k = 0u; k < n; ++k)
+            {
+                vals[k] = dist(rngval);
+            }
+            evaluate(manager, sfs, vals);
+        }
+
+        auto const after = ch::high_resolution_clock::now();
+        return ch::duration_cast<ch::milliseconds>(after - before).count();
+    }
+
+    template<uint_t P>
     auto do_experiment ( uint_t const           seed
                        , uint_t const           n
                        , system_type_e const    systemtype
@@ -198,18 +261,60 @@ namespace teddy
         auto rngtype   = std::mt19937_64(seeder());
         auto rngbranch = std::mt19937_64(seeder());
         auto rngps     = std::mt19937_64(seeder());
-        auto manager   = mss_manager<P>(n, 10'000);
-        auto sfs       = create_structure_function( manager, rngtype, rngbranch
-                                                  , systemtype, sftype );
-        manager.gc();
-        std::cout << "Node count: " << manager.node_count() << '\n';
+        auto rngval    = std::mt19937_64(seeder());
+        auto manager   = mss_manager<P>(n, 1'000'000);
+        auto const ps  = generate_probabilities<P>(n, rngps);
 
-        auto const ps = generate_probabilities<P>(n, rngps);
-        auto const As = calculate_availabilities(manager, sftype, ps, sfs);
-
-        for (auto j = 1u; j < P; ++j)
+        using time_units_t   = unsigned long long;
+        auto constexpr Iters = 100u;
+        auto counts          = std::vector<std::size_t> {};
+        auto avails          = std::vector<time_units_t> {};
+        auto values          = std::vector<time_units_t> {};
+        for (auto iter = 0u; iter < Iters; ++iter)
         {
-            std::cout << "A" << j << " = " << As[j - 1] << '\n';
+            auto sfs = create_structure_function( manager, rngtype, rngbranch
+                                                , systemtype, sftype );
+            manager.gc();
+
+            std::cout << manager.node_count()                          << ';';
+            std::cout << time_availabilities(manager, sftype, ps, sfs) << ';';
+            std::cout << time_evaluate(manager, sfs, rngval)           << '\n';
+        }
+    }
+
+    auto test ()
+    {
+        auto constexpr P = 3;
+        auto manager     = mss_manager<P>(4, 10'000);
+        auto rngtype1    = std::mt19937_64(144);
+        auto rngbranch1  = std::mt19937_64(911);
+        auto rngtype2    = std::mt19937_64(144);
+        auto rngbranch2  = std::mt19937_64(911);
+        auto sf          = create_structure_function
+                               ( manager, rngtype1, rngbranch1
+                               , system_type_e::SerialParallel
+                               , structure_func_e::One );
+        auto sfs         = create_structure_function
+                               ( manager, rngtype2, rngbranch2
+                               , system_type_e::SerialParallel
+                               , structure_func_e::Multiple );
+        for (auto a = 0u; a < P; ++a)
+        {
+            for (auto b = 0u; b < P; ++b)
+            {
+                for (auto c = 0u; c < P; ++c)
+                {
+                    auto values   = std::vector<uint_t> {a, b, c};
+                    auto const v1 = evaluate(manager, sf, values);
+                    auto const v2 = evaluate(manager, sfs, values);
+                    if (v1 != v2)
+                    {
+                        std::cout << "Not good. Expected "
+                                  << v1 << " got " << v2 << " for "
+                                  << a << "," << b << "," << c << '\n';
+                    }
+                }
+            }
         }
     }
 }
@@ -274,8 +379,6 @@ auto main (int argc, char** argv) -> int
             print_help();
             break;
     }
-
-    std::cout << "done" << '\n';
 }
 
 auto print_help () -> void

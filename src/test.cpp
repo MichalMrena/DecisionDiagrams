@@ -21,7 +21,6 @@
 namespace teddy::test
 {
     namespace rs = std::ranges;
-        auto ofs = std::ofstream("sift_data.txt");
 
     struct minmax_expr
     {
@@ -885,9 +884,7 @@ namespace teddy::test
         , expr_var const&                 expr )
     {
         manager.gc();
-        ofs << manager.node_count() << " ";
         manager.sift();
-        ofs << manager.node_count() << "\n";
         return test_evaluate(manager, diagram, expr);
     }
 
@@ -1104,12 +1101,6 @@ auto main () -> int
     imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
     ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
-
-    if (not teddy::test::ofs.is_open())
-    {
-        std::cout << "not opened" << '\n';
-        return 1;
-    }
 
     auto const seedStr = IsFixedSeed
         ? ts::wrap_red(std::to_string(initSeed))
