@@ -61,7 +61,7 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::cofactor
         (mdd_t const& d, index_t const i, log_t const val) -> mdd_t
     {
-        return this->transform(d, [=, this](auto&& l_this, auto const v)
+        return this->transform(d, [=](auto&& l_this, auto const v)
         {
             auto const domain = manager_.get_domain(v->get_index());
             if (v->get_index() == i)

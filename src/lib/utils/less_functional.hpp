@@ -8,10 +8,10 @@ namespace teddy::utils
      */
     auto constexpr fnot = [](auto const f)
     {
-        using F = decltype(f);
-        return [](auto const l, auto const r)
+        // using F = decltype(f);
+        return [f](auto const l, auto const r)
         {
-            return ! F {} (l, r);
+            return ! f (l, r);
         };
     };
 

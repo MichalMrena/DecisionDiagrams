@@ -1,8 +1,8 @@
 BIN := main
-COMPILE_FLAGS = -MMD -MP -std=c++20 -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-LINK_FLAGS = 
+COMPILE_FLAGS = -MMD -MP -std=c++17 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wconversion -Wshadow
+LINK_FLAGS = -stdlib=libc++
 SRC_DIRS := ./src
-CXX = clang++-10
+CXX = clang++
 
 ifdef DEBUG
 	COMPILE_FLAGS += -g

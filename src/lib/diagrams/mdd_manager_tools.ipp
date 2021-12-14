@@ -95,7 +95,7 @@ namespace teddy
             {
                 data(v) = 0;
                 auto const vLevel = manager_.get_vertex_level(v);
-                v->for_each_son([=, this, &data](auto const son) mutable
+                v->for_each_son([=, &data](auto const son) mutable
                 {
                     auto const sonLevel   = manager_.get_vertex_level(son);
                     auto const diffFactor = this->domain_product(vLevel + 1, sonLevel);
@@ -163,7 +163,7 @@ namespace teddy
     {
         auto xs = VariableValues {};
 
-        auto go = [=, this, &xs](auto&& go, auto const l, auto const v) mutable
+        auto go = [=, &xs](auto&& go, auto const l, auto const v) mutable
         {
             auto const vertexValue = manager_.get_vertex_value(v);
             auto const vertexLevel = manager_.get_vertex_level(v);

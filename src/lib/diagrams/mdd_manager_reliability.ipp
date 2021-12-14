@@ -113,32 +113,52 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::dpbds
         (val_change<P> const var, val_change<P> const f, mdd_t const& sf) -> std::vector<mdd_t>
     {
+        // return utils::fill_vector( manager_.get_var_count()
+        //                          , std::bind_front(&mdd_manager::dpbd, this, var, f, sf) );
         return utils::fill_vector( manager_.get_var_count()
-                                 , std::bind_front(&mdd_manager::dpbd, this, var, f, sf) );
+                                 , [&, this](auto const i)
+                                   {
+                                       return this->dpbd(var, f, sf, i);
+                                   });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_1
         (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> std::vector<mdd_t>
     {
+        // return utils::fill_vector( manager_.get_var_count()
+        //                          , std::bind_front(&mdd_manager::dpbd_integrated_1, this, var, fVal, sf) );
         return utils::fill_vector( manager_.get_var_count()
-                                 , std::bind_front(&mdd_manager::dpbd_integrated_1, this, var, fVal, sf) );
+                                 , [&, this](auto const i)
+                                   {
+                                       return this->dpbd_integrated_1(var, fVal, sf, i);
+                                   } );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_2
         (val_change<P> const var, mdd_t const& sf) -> std::vector<mdd_t>
     {
+        // return utils::fill_vector( manager_.get_var_count()
+        //                          , std::bind_front(&mdd_manager::dpbd_integrated_2, this, var, sf) );
         return utils::fill_vector( manager_.get_var_count()
-                                 , std::bind_front(&mdd_manager::dpbd_integrated_2, this, var, sf) );
+                                 , [&, this](auto const i)
+                                   {
+                                       return this->dpbd_integrated_2(var, sf, i);
+                                   } );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
     auto mdd_manager<VertexData, ArcData, P>::dpbds_integrated_3
         (val_change<P> const var, log_t const fVal, mdd_t const& sf) -> std::vector<mdd_t>
     {
+        // return utils::fill_vector( manager_.get_var_count()
+        //                          , std::bind_front(&mdd_manager::dpbd_integrated_3, this, var, fVal, sf) );
         return utils::fill_vector( manager_.get_var_count()
-                                 , std::bind_front(&mdd_manager::dpbd_integrated_3, this, var, fVal, sf) );
+                                 , [&, this](auto const i)
+                                   {
+                                       return this->dpbd_integrated_3(var, fVal, sf, i);
+                                   } );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -154,7 +174,7 @@ namespace teddy
         (std::vector<mdd_t>& dpbds) -> std::vector<double>
     {
         auto const domProduct = this->domain_product(0, manager_.get_var_count() - 1);
-        return utils::fmap_i(dpbds, [=, this](auto const i, auto& d)
+        return utils::fmap_i(dpbds, [=](auto const i, auto& d)
         {
             return this->structural_importance(domProduct / manager_.get_domain(i), d);
         });
@@ -172,7 +192,11 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::birnbaum_importances
         (prob_table const& ps, std::vector<mdd_t>& dpbds) -> std::vector<double>
     {
-        return utils::fmap(dpbds, std::bind_front(&mdd_manager::birnbaum_importance, this, ps));
+        // return utils::fmap(dpbds, std::bind_front(&mdd_manager::birnbaum_importance, this, ps));
+        return utils::fmap(dpbds, [&](auto& d)
+        {
+            return this->birnbaum_importance(ps, d);
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -189,7 +213,11 @@ namespace teddy
     auto mdd_manager<VertexData, ArcData, P>::fussell_vesely_importances
         (prob_table const& ps, double const U, std::vector<mdd_t> const& dpbds) -> std::vector<double>
     {
-        return utils::fmap(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U));
+        // return utils::fmap(dpbds, std::bind_front(&mdd_manager::fussell_vesely_importance, this, ps, U));
+        return utils::fmap(dpbds, [&, this](auto const& d)
+        {
+            return this->fussell_vesely_importance(ps, U, d);
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -228,8 +256,13 @@ namespace teddy
         (log_t const from, log_t const to) const -> double
     {
         auto const is = utils::range(from, to);
+        // return std::transform_reduce( std::begin(is), std::end(is), 0.0, std::plus<>()
+        //                             , std::bind_front(&mdd_manager::get_probability, this) );
         return std::transform_reduce( std::begin(is), std::end(is), 0.0, std::plus<>()
-                                    , std::bind_front(&mdd_manager::get_probability, this) );
+                                    , [&, this](auto const j)
+                                      {
+                                          return this->get_probability(j);
+                                      } );
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -253,7 +286,7 @@ namespace teddy
         // Special case when the new vertex for the i-th variable is inserted above the root.
         if (varLevel < rootLevel)
         {
-            auto const sons = utils::fill_array_n<P>(varDomain, [=, this](auto const val)
+            auto const sons = utils::fill_array_n<P>(varDomain, [=](auto const val)
             {
                 return val == varFrom ? root : manager_.terminal_vertex(U);
             });
