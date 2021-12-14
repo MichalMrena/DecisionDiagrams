@@ -1,13 +1,15 @@
 #!/bin/bash
-P=2
-ITERATIONS=2
+ITERATIONS=3000
 SEED=144
 
-for systemtype in serial parallel serialparallel
+for P in 2 3 4 5
 do
-    for n in 100 500 1000 1500 2000 2500 3000
+    for systemtype in serialparallel
     do
-        ./build/release/experiment $ITERATIONS $SEED $P $systemtype one $n >> "results/p${P}_${systemtype}_one_n${n}.csv"
-        ./build/release/experiment $ITERATIONS $SEED $P $systemtype multiple $n >> "results/p${P}_${systemtype}_multiple_n${n}.csv"
+        for n in 100 500 1000 1500 2000 2500 3000
+        do
+            ./build/release/experiment $ITERATIONS $SEED $P $systemtype one $n >> "results/p${P}_${systemtype}_one_n${n}.csv"
+            ./build/release/experiment $ITERATIONS $SEED $P $systemtype multiple $n >> "results/p${P}_${systemtype}_multiple_n${n}.csv"
+        done
     done
 done
