@@ -294,11 +294,11 @@ namespace teddy
         }
 
         // Normal case for all internal vertices.
-        return this->transform(dpbd, [=, this](auto&& l_this, auto const v)
+        return this->transform(dpbd, [=](auto&& l_this, auto const v)
         {
             auto const vertexLevel  = manager_.get_vertex_level(v);
             auto const vertexDomain = manager_.get_domain(v->get_index());
-            return utils::fill_array_n<P>(vertexDomain, [=, this, &l_this](auto const val)
+            return utils::fill_array_n<P>(vertexDomain, [=, &l_this](auto const val)
             {
                 auto const son      = v->get_son(val);
                 auto const sonLevel = manager_.get_vertex_level(son);
@@ -306,7 +306,7 @@ namespace teddy
                 // This means that the new vertex goes in between current vertex and its val-th son.
                 if (varLevel > vertexLevel && varLevel < sonLevel)
                 {
-                    auto const newSons = utils::fill_array_n<P>(varDomain, [=, this](auto const j)
+                    auto const newSons = utils::fill_array_n<P>(varDomain, [=](auto const j)
                     {
                         return j == varFrom ? son : manager_.terminal_vertex(U);
                     });
@@ -327,9 +327,9 @@ namespace teddy
     {
         auto const leaf0 = manager_.terminal_vertex(0);
         auto const leaf1 = manager_.terminal_vertex(1);
-        return this->transform(dpbd, [=, this](auto const v, auto&& l_this)
+        return this->transform(dpbd, [=](auto const v, auto&& l_this)
         {
-            auto sons = utils::fill_array<P>([=, this](auto const i)
+            auto sons = utils::fill_array<P>([=](auto const i)
             {
                 return this->transform_step(v->get_son(i), l_this);
             });

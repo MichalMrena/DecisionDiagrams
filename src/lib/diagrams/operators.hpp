@@ -14,7 +14,14 @@ namespace teddy
         template<std::size_t P>
         inline auto constexpr pi_conj = [](auto const l, auto const r) { return utils::min(utils::min(l, r), U<P>); };
         template<std::size_t P>
-        using pi_conj_t = decltype(pi_conj<P>);
+        struct pi_conj_t
+        {
+            template<class T>
+            auto operator () (T const l, T const r) const -> T
+            {
+                return utils::min(utils::min(l, r), U<P>);
+            }
+        };
 
         template<class BinOp, std::size_t P, auto AbsorbingVal>
         struct bin_op

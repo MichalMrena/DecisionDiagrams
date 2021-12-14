@@ -1,6 +1,6 @@
 BIN := main
 COMPILE_FLAGS = -MMD -MP -std=c++17 -stdlib=libc++ -Wall -Wextra -Wpedantic -Wconversion -Wshadow
-LINK_FLAGS = -stdlib=libc++
+LINK_FLAGS = -stdlib=libc++ -L/usr/local/lib/ -Wl,-rpath,/usr/local/lib/
 SRC_DIRS := ./src
 CXX = clang++
 

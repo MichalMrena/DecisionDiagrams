@@ -106,7 +106,8 @@ namespace teddy::test
         dummy_output    (F f) : f_ (f) { }
         auto operator++ (int)          { return *this; }
         auto operator*  ()             { return *this; }
-        auto operator=  (auto&& arg)   { f_(std::forward<decltype(arg)>(arg)); }
+        template<class T>
+        auto operator=  (T&& arg)   { f_(std::forward<decltype(arg)>(arg)); }
     };
 
     auto constexpr UIntMax = std::numeric_limits<unsigned int>::max();

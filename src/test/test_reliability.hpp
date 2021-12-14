@@ -151,15 +151,15 @@ namespace teddy::test
         m.calculate_probabilities(ps, sf);
         return mss_characteristic<N, P>
         {
-            .Ps = utils::fill_array<P>([&](auto const i)
+            utils::fill_array<P>([&](auto const i)
             {
                 return m.get_probability(i);
             }),
-            .As = utils::fill_array<P>([&](auto const i)
+            utils::fill_array<P>([&](auto const i)
             {
                 return m.get_availability(i);
             }),
-            .Us = utils::fill_array<P>([&](auto const i)
+            utils::fill_array<P>([&](auto const i)
             {
                 return m.get_unavailability(i);
             })
@@ -182,13 +182,13 @@ namespace teddy::test
             auto const sf = (x(0) and x(1)) or ((x(2) and x(3)) or x(4));
             auto const bs = bss_characteristic<5>
             {
-                .A    = 0.989640,
-                .U    = 0.010360,
-                .SIs  = {0.187500, 0.187500, 0.187500, 0.187500, 0.562500},
-                .BIs  = {0.029600, 0.033300, 0.025200, 0.019600, 0.103600},
-                .CIs  = {0.285714, 0.642857, 0.729730, 0.189189, 1.000000},
-                .FIs  = {0.357143, 0.714286, 0.810811, 0.270270, 1.000000},
-                .MCVs = {std::bitset<5>(0b01010), std::bitset<5>(0b00110), std::bitset<5>(0b01001), std::bitset<5>(0b00101)}
+                0.989640,
+                0.010360,
+                {0.187500, 0.187500, 0.187500, 0.187500, 0.562500},
+                {0.029600, 0.033300, 0.025200, 0.019600, 0.103600},
+                {0.285714, 0.642857, 0.729730, 0.189189, 1.000000},
+                {0.357143, 0.714286, 0.810811, 0.270270, 1.000000},
+                {std::bitset<5>(0b01010), std::bitset<5>(0b00110), std::bitset<5>(0b01001), std::bitset<5>(0b00101)}
             };
             auto const res = analyze_bss<5>(m, sf, ps);
             std::cout << "    Test 1: " << compare_bss<5>(res, bs) << '\n';
@@ -204,13 +204,13 @@ namespace teddy::test
             auto const sf = x(0) and ((x(1) and x(3)) or (x(2) and x(4)));
             auto const bs = bss_characteristic<5>
             {
-                .A    = 0.80676,
-                .U    = 0.19324,
-                .SIs  = {0.437500, 0.187500, 0.187500, 0.187500, 0.187500},
-                .BIs  = {0.896400, 0.299700, 0.226800, 0.266400, 0.176400},
-                .CIs  = {0.463879, 0.310184, 0.352101, 0.137860, 0.091285},
-                .FIs  = {0.517491, 0.382943, 0.434693, 0.191472, 0.144898},
-                .MCVs = {std::bitset<5>(0b11110), std::bitset<5>(0b11001), std::bitset<5>(0b01101), std::bitset<5>(0b10011), std::bitset<5>(0b00111)}
+                0.80676,
+                0.19324,
+                {0.437500, 0.187500, 0.187500, 0.187500, 0.187500},
+                {0.896400, 0.299700, 0.226800, 0.266400, 0.176400},
+                {0.463879, 0.310184, 0.352101, 0.137860, 0.091285},
+                {0.517491, 0.382943, 0.434693, 0.191472, 0.144898},
+                {std::bitset<5>(0b11110), std::bitset<5>(0b11001), std::bitset<5>(0b01101), std::bitset<5>(0b10011), std::bitset<5>(0b00111)}
             };
             auto const res = analyze_bss<5>(m, sf, ps);
             std::cout << "    Test 2: " << compare_bss<5>(res, bs) << '\n';
@@ -226,13 +226,13 @@ namespace teddy::test
             auto const sf = x(0) and ((x(1) and x(2)) or x(3) or x(4)) and x(5);
             auto const bs = bss_characteristic<6>
             {
-                .A    = 0.782784,
-                .U    = 0.217216,
-                .SIs  = {0.406250000, 0.031250000, 0.031250000, 0.093750000, 0.093750000, 0.406250000},
-                .BIs  = {0.869760000, 0.087480000, 0.077760000, 0.090720000, 0.068040000, 0.869760000},
-                .CIs  = {0.400412493, 0.080546553, 0.035798468, 0.125294638, 0.125294638, 0.400412493},
-                .FIs  = {0.460371243, 0.110489098, 0.055244549, 0.154684738, 0.154684738, 0.460371243},
-                .MCVs = {std::bitset<6>(0b111110), std::bitset<6>(0b100101), std::bitset<6>(0b100011), std::bitset<6>(0b011111)}
+                0.782784,
+                0.217216,
+                {0.406250000, 0.031250000, 0.031250000, 0.093750000, 0.093750000, 0.406250000},
+                {0.869760000, 0.087480000, 0.077760000, 0.090720000, 0.068040000, 0.869760000},
+                {0.400412493, 0.080546553, 0.035798468, 0.125294638, 0.125294638, 0.400412493},
+                {0.460371243, 0.110489098, 0.055244549, 0.154684738, 0.154684738, 0.460371243},
+                {std::bitset<6>(0b111110), std::bitset<6>(0b100101), std::bitset<6>(0b100011), std::bitset<6>(0b011111)}
             };
             auto const res = analyze_bss<6>(m, sf, ps);
             std::cout << "    Test 3: " << compare_bss<6>(res, bs) << '\n';
@@ -257,9 +257,9 @@ namespace teddy::test
             auto const g = analyze_mss<N, P>(m, d, p);
             auto const e = mss_characteristic<N, P>
             {
-                .Ps = {0.0084, 0.2932, 0.6984},
-                .As = {1.0000, 0.9916, 0.6984},
-                .Us = {0.0000, 0.0084, 0.3016}
+                {0.0084, 0.2932, 0.6984},
+                {1.0000, 0.9916, 0.6984},
+                {0.0000, 0.0084, 0.3016}
             };
             std::cout << "    Test 1: " << compare_mss(g, e) << '\n';
         }

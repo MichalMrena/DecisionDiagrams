@@ -169,7 +169,7 @@ namespace teddy
         (bdd_t const& dpbd) -> bdd_t
     {
         auto const leaf0 = base::manager_.terminal_vertex(0);
-        return this->transform(dpbd, [=, this](auto&& l_this, auto const v)
+        return this->transform(dpbd, [=](auto&& l_this, auto const v)
         {
             // If 0-th son is the false leaf we set 0-th son to 1-th son.
             // Otherwise we continue down to the 0-th son.
