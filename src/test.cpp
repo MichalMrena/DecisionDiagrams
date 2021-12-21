@@ -1107,9 +1107,9 @@ auto main () -> int
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
     ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
-    ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
-    ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
-    ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
+    // ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
+    // ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
+    // ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
 
     std::cout << '\n' << "End of main." << '\n';
 
