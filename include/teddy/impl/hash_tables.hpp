@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <utility>
+#include "operators.hpp"
 
 namespace teddy
 {
@@ -106,6 +107,8 @@ namespace teddy
         template<class Hash>
         auto rehash (std::size_t, Hash&&) -> void;
 
+        auto capacity    () const -> std::size_t;
+        auto load_factor () const -> double;
         auto insert_impl (node_t*, hash_t) -> node_t*;
 
     private:
@@ -123,48 +126,42 @@ namespace teddy
         using node_t = node<Data, D>;
 
     public:
-        struct entry
+        struct entry_t
         {
+            uint_t  oid    {};
             node_t* lhs    {nullptr};
             node_t* rhs    {nullptr};
             node_t* result {nullptr};
-            auto matches (node_t*, node_t*) const -> bool;
-            auto reset () -> void;
         };
-
-    public:
-        using iterator = typename std::vector<entry>::iterator;
 
     public:
         apply_cache ();
         apply_cache (apply_cache&&);
 
     public:
-        auto find            (node_t*, node_t*) -> node_t*;
-        auto put             (node_t*, node_t*, node_t*) -> void;
+        template<bin_op O>
+        auto find (node_t*, node_t*) -> node_t*;
+
+        template<bin_op O>
+        auto put (node_t*, node_t*, node_t*) -> void;
+
         auto adjust_capacity (std::size_t) -> void;
-        auto rm_unused       () -> void;
-        auto clear           () -> void;
-            // auto size            () const -> std::size_t;
-            // {
-            //     return size_;
-            // }
-            // auto get_load ()
-            // {
-            //     return static_cast<double>(size_)
-            //         / static_cast<double>(entries_.size());
-            // }
+        auto rm_unused       ()            -> void;
+        auto clear           ()            -> void;
 
     private:
         inline static constexpr auto LoadThreshold = 0.75;
 
     private:
-        auto rehash      (std::size_t)      -> void;
-        static auto hash (node_t*, node_t*) -> std::size_t;
+        auto capacity    () const -> std::size_t;
+        auto load_factor () const -> double;
+        auto put_impl (uint_t, node_t*, node_t*, node_t*) -> void;
+        auto rehash (std::size_t) -> void;
+        static auto hash (uint_t, node_t*, node_t*) -> std::size_t;
 
     public:
-        std::vector<entry> entries_;
-        std::size_t        size_;
+        std::vector<entry_t> entries_;
+        std::size_t          size_;
     };
 
 // table_base definitions:
@@ -183,20 +180,6 @@ namespace teddy
 // apply_cache definitions:
 
     template<class Data, degree D>
-    auto apply_cache<Data, D>::entry::matches
-        (node_t* const l, node_t* const r) const -> bool
-    {
-        return l == lhs and r == rhs;
-    }
-
-    template<class Data, degree D>
-    auto apply_cache<Data, D>::entry::reset
-        () -> void
-    {
-        *this = {};
-    }
-
-    template<class Data, degree D>
     apply_cache<Data, D>::apply_cache
         () :
         entries_ (table_base::gte_capacity(0)),
@@ -213,44 +196,35 @@ namespace teddy
     }
 
     template<class Data, degree D>
+    template<bin_op O>
     auto apply_cache<Data, D>::find
         ( node_t* const l
         , node_t* const r ) -> node_t*
     {
-        auto const index = hash(l, r) % entries_.size();
-        auto& e = entries_[index];
-        // TODO metodu netreba
-        return e.result and e.matches(l, r) ? e.result : nullptr;
+        auto const oid     = op_id(O());
+        auto const index   = hash(oid, l, r) % entries_.size();
+        auto&      entry   = entries_[index];
+        auto const matches = entry.oid == oid
+                         and entry.lhs == l
+                         and entry.rhs == r;
+        return matches ? entry.result : nullptr;
     }
 
     template<class Data, degree D>
+    template<bin_op O>
     auto apply_cache<Data, D>::put
         ( node_t* const l
         , node_t* const r
         , node_t* const res ) -> void
     {
-        auto const index = hash(l, r) % entries_.size();
-        auto& e = entries_[index];
-        if (not e.result)
-        {
-            ++size_;
-        }
-        e.lhs    = l;
-        e.rhs    = r;
-        e.result = res;
+        auto const oid = op_id(O());
+        this->put_impl(oid, l, r, res);
     }
 
     template<class Data, degree D>
     auto apply_cache<Data, D>::adjust_capacity
         (std::size_t const aproxCapacity) -> void
     {
-        // auto const currentLoad = static_cast<double>(size_)
-        //                        / static_cast<double>(entries_.size());
-        // if (currentLoad < LoadThreshold)
-        // {
-        //     return;
-        // }
-
         this->rehash(table_base::gte_capacity(aproxCapacity));
     }
 
@@ -258,20 +232,17 @@ namespace teddy
     auto apply_cache<Data, D>::rm_unused
         () -> void
     {
-        if (size_ > 0)
+        for (auto& e : entries_)
         {
-            for (auto& e : entries_)
+            if (e.result)
             {
-                if (e.result)
+                auto const used = e.lhs->is_used()
+                              and e.rhs->is_used()
+                              and e.result->is_used();
+                if (not used)
                 {
-                    auto const used = e.lhs->is_used()
-                                  and e.rhs->is_used()
-                                  and e.result->is_used();
-                    if (not used)
-                    {
-                        e.reset();
-                        --size_;
-                    }
+                    e = entry_t {};
+                    --size_;
                 }
             }
         }
@@ -281,44 +252,87 @@ namespace teddy
     auto apply_cache<Data, D>::clear
         () -> void
     {
-        if (size_ > 0)
+        size_ = 0;
+        for (auto& e : entries_)
         {
-            size_ = 0;
-            for (auto& e : entries_)
-            {
-                e.result = nullptr;
-            }
+            e = entry_t {};
         }
     }
 
     template<class Data, degree D>
-    auto apply_cache<Data, D>::hash
-        (node_t* const l, node_t* const r) -> std::size_t
+    auto apply_cache<Data, D>::capacity
+        () const -> std::size_t
     {
-        auto seed = 0ul;
-        auto const hash1 = std::hash<node_t*>()(l);
-        auto const hash2 = std::hash<node_t*>()(r);
-        seed ^= hash1 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        seed ^= hash2 + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        return seed;
+        return entries_.size();
+    }
+
+    template<class Data, degree D>
+    auto apply_cache<Data, D>::load_factor
+        () const -> double
+    {
+        return static_cast<double>(size_)
+             / static_cast<double>(this->capacity());
+    }
+
+    template<class Data, degree D>
+    auto apply_cache<Data, D>::hash
+        (uint_t const oid, node_t* const l, node_t* const r) -> std::size_t
+    {
+        auto const hash1 = std::hash<uint_t>()(oid);
+        auto const hash2 = std::hash<node_t*>()(l);
+        auto const hash3 = std::hash<node_t*>()(r);
+        auto result = 0ul;
+        result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
+        result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
+        result ^= hash3 + 0x9e3779b9 + (result << 6) + (result >> 2);
+        return result;
+    }
+
+    template<class Data, degree D>
+    auto apply_cache<Data, D>::put_impl
+        ( uint_t const  oid
+        , node_t* const l
+        , node_t* const r
+        , node_t* const res ) -> void
+    {
+        auto const index = hash(oid, l, r) % this->capacity();
+        auto&      entry = entries_[index];
+        if (not entry.result)
+        {
+            ++size_;
+        }
+        entry.oid    = oid;
+        entry.lhs    = l;
+        entry.rhs    = r;
+        entry.result = res;
     }
 
     template<class Data, degree D>
     auto apply_cache<Data, D>::rehash
         (std::size_t const newCapacity) -> void
     {
-        if (entries_.size() == newCapacity)
+        debug::out( "apply_cache: Load factor is ", this->load_factor()
+                  , ". Capacity is ", this->capacity()
+                  , " should be ", newCapacity, "." );
+
+        if (this->capacity() == newCapacity)
         {
+            debug::out(" No resizing necessary.\n");
             return;
         }
 
-        auto const oldEntries = std::vector<entry>(std::move(entries_));
-        entries_              = std::vector<entry>(newCapacity);
+        auto const oldEntries = std::vector<entry_t>(std::move(entries_));
+        entries_              = std::vector<entry_t>(newCapacity);
+        size_                 = 0;
         for (auto const& e : oldEntries)
         {
-            auto const index = hash(e.lhs, e.rhs) % entries_.size();
-            entries_[index]  = e;
+            if (e.result)
+            {
+                this->put_impl(e.oid, e.lhs, e.rhs, e.result);
+            }
         }
+
+        debug::out(" New load factor is ", this->load_factor(), ".\n");
     }
 
 // unique_table_it definitions:
@@ -568,8 +582,13 @@ namespace teddy
     auto unique_table<Data, D>::rehash
         (std::size_t const newCapacity, Hash&& hash) -> void
     {
+        debug::out("  unique_table: Load factor is "
+                  , this->load_factor(), ". Capacity is ", this->capacity()
+                  , " should be ", newCapacity );
+
         if (buckets_.size() == newCapacity)
         {
+            debug::out(". No resizing necessary.\n");
             return;
         }
 
@@ -586,6 +605,23 @@ namespace teddy
                 bucket = next;
             }
         };
+
+        debug::out(". New load factor is ", this->load_factor(), ".\n");
+    }
+
+    template<class Data, degree D>
+    auto unique_table<Data, D>::capacity
+        () const -> std::size_t
+    {
+        return buckets_.size();
+    }
+
+    template<class Data, degree D>
+    auto unique_table<Data, D>::load_factor
+        () const -> double
+    {
+        return static_cast<double>(size_)
+             / static_cast<double>(this->capacity());
     }
 
     template<class Data, degree D>

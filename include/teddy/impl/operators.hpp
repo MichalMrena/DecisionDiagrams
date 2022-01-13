@@ -250,8 +250,6 @@ namespace teddy
     template<uint_t P>
     constexpr auto op_is_commutative (MULTIPLIES<P>) { return true;  }
 
-    inline constexpr auto OpCount = std::size_t {16};
-
     template<class O>
     concept bin_op = requires (O o)
     {

@@ -1,12 +1,15 @@
 #define TEDDY_VERBOSE
 #undef TEDDY_VERBOSE
+// #define NDEBUG
 
 #include "teddy/teddy.hpp"
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <numeric>
 #include <omp.h>
 #include <random>
 #include <ranges>
@@ -388,12 +391,12 @@ namespace teddy::test
             return status_;
         }
 
-        auto get_status()
+        auto get_status() const
         {
             return status_;
         }
 
-        auto get_message ()
+        auto get_message () const
         {
             return std::string_view(msg_);
         }
@@ -402,6 +405,13 @@ namespace teddy::test
         bool        status_;
         std::string msg_;
     };
+
+    auto operator<< (std::ostream& ost, test_result const& t) -> std::ostream&
+    {
+        using namespace std::string_view_literals;
+        ost << (t ? "OK"sv : t.get_message());
+        return ost;
+    }
 
     /**
      *  Creates diagram representing the same functions as @p expr does.
@@ -1003,6 +1013,28 @@ namespace teddy::test
         std::cout << '\n';
     }
 
+    template<class Manager>
+    auto test_one 
+        ( std::string_view name
+        , Manager&         manager
+        , expr_var const&  expr
+        , rng_t&           rng )
+    {
+        auto diagram1 = create_diagram(expr, manager, fold_e::Left);
+        auto diagram2 = create_diagram(expr, manager, fold_e::Tree);
+
+        std::cout << wrap_yellow(name)                           << '\n';
+        std::cout << test_evaluate(manager, diagram1, expr)      << '\n';
+        std::cout << test_fold(diagram1, diagram2)               << '\n';
+        std::cout << test_gc(manager, diagram1)                  << '\n';
+        std::cout << test_satisfy_count(manager, diagram1, expr) << '\n';
+        std::cout << test_satisfy_all(manager, diagram1, expr)   << '\n';
+        std::cout << test_operators(manager, diagram1, expr)     << '\n';
+        std::cout << test_cofactor(manager, diagram1, expr, rng) << '\n';
+        std::cout << test_from_vector(manager, diagram1, expr)   << '\n';
+        std::cout << test_var_sift(manager, diagram1, expr)      << '\n';
+    }
+
     template<std::size_t M>
     auto random_domains (std::size_t const n, rng_t& rng)
     {
@@ -1021,7 +1053,7 @@ namespace teddy::test
     }
 }
 
-auto main () -> int
+auto run_test_many ()
 {
     namespace us = teddy::utils;
     namespace ts = teddy::test;
@@ -1110,8 +1142,82 @@ auto main () -> int
     ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
     ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
     ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
+}
+
+auto run_verbose_test_one()
+{
+    namespace us = teddy::utils;
+    namespace ts = teddy::test;
+
+    auto constexpr M     = 4;
+    auto const varCount  = 13;
+    auto const termCount = 20;
+    auto const termSize  = 5;
+    auto const nodeCount = 10'000;
+    auto       rng       = ts::rng_t(144);
+    // auto       manager   = teddy::bdd_manager(varCount, nodeCount);
+    auto       manager   = teddy::mdd_manager<M>(varCount, nodeCount);
+    auto const expr      = ts::generate_expression( rng, varCount
+                                                  , termCount, termSize );
+
+    // ts::test_one("BDD manager", manager, expr, rng);
+    ts::test_one("MDD manager", manager, expr, rng);
+}
+
+auto run_speed_benchmark()
+{
+    using namespace std::string_literals;
+    auto const plaDir = "/mnt/c/Users/mrena/data/IWLS93/pla/"s;
+    auto const plas   = { "02-adder_col.pla"s, "03-adder_col.pla"s
+                        , "04-adder_col.pla"s, "05-adder_col.pla"s
+                        , "05-adder_col.pla"s, "06-adder_col.pla"s
+                        , "07-adder_col.pla"s, "08-adder_col.pla"s
+                        , "09-adder_col.pla"s, "10-adder_col.pla"s
+                        , "11-adder_col.pla"s, "12-adder_col.pla"s
+                        , "13-adder_col.pla"s, "14-adder_col.pla"s
+                        , "15-adder_col.pla"s, "16-adder_col.pla"s };
+    for (auto const& pla : plas)
+    {
+        namespace td = teddy;
+        namespace ch = std::chrono;
+        namespace rs = std::ranges;
+        namespace vs = std::ranges::views;
+        auto const path    = plaDir + pla;
+        auto const fileOpt = td::pla_file::load_file(path);
+        if (fileOpt)
+        {
+            auto m = td::bdd_manager(fileOpt->variable_count(), 2'000'000);
+            auto const timeBefore = ch::high_resolution_clock::now();
+            auto const ds         = m.from_pla(*fileOpt, td::fold_type::Tree);
+            auto const timeAfter  = ch::high_resolution_clock::now();
+            auto const timeMs     = ch::duration_cast<ch::milliseconds>
+                                        (timeAfter - timeBefore).count();
+            auto const nodeCounts = ds | vs::transform([&m](auto const& d)
+            {
+                return m.node_count(d);
+            });
+            auto const nodeCount  = std::reduce( rs::begin(nodeCounts)
+                                               , rs::end(nodeCounts) );
+            m.gc();
+            // std::cout << "Final manager node count is "
+            //           << m.node_count() << ".\n";
+            std::cout << pla << " [" << nodeCount << "] ("
+                                     << timeMs    <<")" << '\n';
+        }
+        else
+        {
+            std::cout << "Failed to load " << path << '\n';
+        }
+    }
+
+}
+
+auto main () -> int
+{
+    // run_test_many();
+    // run_verbose_test_one();
+    run_speed_benchmark();
 
     std::cout << '\n' << "End of main." << '\n';
-
     return 0;
 }

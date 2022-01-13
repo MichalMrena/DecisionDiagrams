@@ -180,7 +180,7 @@ namespace teddy
         {
             // Skip leading spaces.
             auto const first = rs::find_if_not(line, space);
-            auto const last  = rs::end(line);
+            auto const last  = std::end(line);
             if (first == last)
             {
                 // Skip empty line.
@@ -205,8 +205,20 @@ namespace teddy
                 ? last
                 : rs::find_if_not(keyLast + 1, last, space);
             auto key = std::string(first, keyLast);
-            auto val = std::string(valFirst, last);
-            options.emplace(std::move(key), std::move(val));
+            if (valFirst != last)
+            {
+                auto valLast = last;
+                while (space(*(valLast - 1)))
+                {
+                    --valLast;
+                }
+                auto val = std::string(valFirst, valLast);
+                options.emplace(std::move(key), std::move(val));
+            }
+            else
+            {
+                options.emplace(std::move(key), std::string());
+            }
         }
 
         // Parse header.
