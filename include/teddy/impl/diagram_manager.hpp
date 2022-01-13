@@ -225,10 +225,12 @@ namespace teddy
         if constexpr (std::random_access_iterator<I>)
         {
             namespace rs = std::ranges;
+            [[maybe_unused]]
+            auto const count = nodes_.domain_product(0, lastLevel + 1);
+            [[maybe_unused]]
             auto const dist  = static_cast<std::size_t>(
                                    rs::distance(first, last));
-            auto const count = nodes_.domain_product(0, lastLevel + 1);
-            assert(dist > 0 and dist == count);
+            assert(dist > 0 && dist == count);
         }
 
         using stack_frame = struct { node_t* node; level_t level; };

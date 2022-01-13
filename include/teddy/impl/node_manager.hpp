@@ -99,7 +99,7 @@ namespace teddy
         node_manager (node_manager&&) noexcept = default;
         node_manager (node_manager const&) = delete;
 
-        auto set_cache_ratio  (std::size_t) -> void;
+        auto set_cache_ratio  (double)      -> void;
         auto set_pool_ratio   (std::size_t) -> void;
         auto set_auto_reorder (bool)        -> void;
 
@@ -200,7 +200,7 @@ namespace teddy
         std::vector<index_t>            levelToIndex_;
         [[no_unique_address]] Domain    domains_;
         std::size_t                     nodeCount_;
-        std::size_t                     cacheRatio_;
+        double                          cacheRatio_;
         std::size_t                     lastGcNodeCount_;
         std::size_t                     nextTableAdjustment_;
         bool                            reorderEnabled_;
@@ -285,9 +285,9 @@ namespace teddy
         assert(levelToIndex_.size() == this->get_var_count());
         assert(check_distinct(levelToIndex_));
         if constexpr ( domains::is_mixed<Domain>()()
-                   and degrees::is_fixed<Degree>()() )
+                    && degrees::is_fixed<Degree>()() )
         {
-            for (auto const d : domains_.ds_)
+            for ([[maybe_unused]] auto const d : domains_.ds_)
             {
                 assert(d <= Degree()());
             }
@@ -304,10 +304,10 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::set_cache_ratio
-        (std::size_t const denom) -> void
+        (double const ratio) -> void
     {
-        assert(denom > 0);
-        cacheRatio_ = denom;
+        assert(ratio > 0);
+        cacheRatio_ = ratio;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -484,9 +484,8 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::collect_garbage
         () -> void
     {
-        debug::out("Collecting garbage. Node count before = ");
-        debug::out(nodeCount_);
-        debug::out(".");
+        debug::out("node_manager: Collecting garbage. ");
+        [[maybe_unused]] auto const before = nodeCount_;
 
         for (auto level = 0u; level < this->get_var_count(); ++level)
         {
@@ -521,9 +520,8 @@ namespace teddy
 
         opCache_.rm_unused();
 
-        debug::out("Node count after = ");
-        debug::out(nodeCount_);
-        debug::outl(". ");
+        debug::out( before - nodeCount_, " nodes collected."
+                  , " Now there are ", nodeCount_, " unique nodes.\n" );
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -825,6 +823,9 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::adjust_tables
         () -> void
     {
+        debug::out( "node_manager: Adjusting unique tables."
+                  ,  " Node count is ", nodeCount_, ".\n");
+
         auto const hash = std::bind_front(&node_manager::node_hash, this);
         for (auto& t : uniqueTables_)
         {
@@ -836,7 +837,8 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::adjust_caches
         () -> void
     {
-        opCache_.adjust_capacity(nodeCount_ / cacheRatio_);
+        auto const newSize = cacheRatio_ * static_cast<double>(nodeCount_);
+        opCache_.adjust_capacity(static_cast<std::size_t>(newSize));
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -846,9 +848,8 @@ namespace teddy
     {
         if (pool_.available_nodes() == 0)
         {
-            // TODO tento magic number 0.2 dobre premyslieť
             auto const gcThreshold = static_cast<double>(pool_.main_pool_size())
-                                   * 0.2;
+                                   * 0.05; // <-- magic number, should be settable
 
             if (static_cast<double>(lastGcNodeCount_) > gcThreshold)
             {
@@ -873,7 +874,7 @@ namespace teddy
         {
             assert(nodeCount_ == nextTableAdjustment_);
 
-            // When the number of nodes doubles, adjust cache sizes.
+            // When the number of nodes doubles, adjust cache and table sizes.
             this->adjust_tables();
             this->adjust_caches();
             nextTableAdjustment_ *= 2;
@@ -1195,11 +1196,16 @@ namespace teddy
             }
         };
 
+        debug::out( "node_manager: Sifting variables. Node count before "
+                  , nodeCount_, ".\n" );
+
         auto const siftOrder = get_sift_order();
         for (auto pair : siftOrder)
         {
             place_variable(pair.index);
         }
+
+        debug::out("node_manager: Done sifting. Node count after ", nodeCount_, ".\n");
     }
 }
 

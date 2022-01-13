@@ -107,6 +107,8 @@ namespace teddy
         template<class Hash>
         auto rehash (std::size_t, Hash&&) -> void;
 
+        auto capacity    () const -> std::size_t;
+        auto load_factor () const -> double;
         auto insert_impl (node_t*, hash_t) -> node_t*;
 
     private:
@@ -144,13 +146,16 @@ namespace teddy
         auto put (node_t*, node_t*, node_t*) -> void;
 
         auto adjust_capacity (std::size_t) -> void;
-        auto rm_unused       () -> void;
-        auto clear           () -> void;
+        auto rm_unused       ()            -> void;
+        auto clear           ()            -> void;
 
     private:
         inline static constexpr auto LoadThreshold = 0.75;
 
     private:
+        auto capacity    () const -> std::size_t;
+        auto load_factor () const -> double;
+        auto put_impl (uint_t, node_t*, node_t*, node_t*) -> void;
         auto rehash (std::size_t) -> void;
         static auto hash (uint_t, node_t*, node_t*) -> std::size_t;
 
@@ -212,17 +217,8 @@ namespace teddy
         , node_t* const r
         , node_t* const res ) -> void
     {
-        auto const oid   = op_id(O());
-        auto const index = hash(oid, l, r) % entries_.size();
-        auto&      entry = entries_[index];
-        if (not entry.result)
-        {
-            ++size_;
-        }
-        entry.oid    = oid;
-        entry.lhs    = l;
-        entry.rhs    = r;
-        entry.result = res;
+        auto const oid = op_id(O());
+        this->put_impl(oid, l, r, res);
     }
 
     template<class Data, degree D>
@@ -264,6 +260,21 @@ namespace teddy
     }
 
     template<class Data, degree D>
+    auto apply_cache<Data, D>::capacity
+        () const -> std::size_t
+    {
+        return entries_.size();
+    }
+
+    template<class Data, degree D>
+    auto apply_cache<Data, D>::load_factor
+        () const -> double
+    {
+        return static_cast<double>(size_)
+             / static_cast<double>(this->capacity());
+    }
+
+    template<class Data, degree D>
     auto apply_cache<Data, D>::hash
         (uint_t const oid, node_t* const l, node_t* const r) -> std::size_t
     {
@@ -278,21 +289,50 @@ namespace teddy
     }
 
     template<class Data, degree D>
+    auto apply_cache<Data, D>::put_impl
+        ( uint_t const  oid
+        , node_t* const l
+        , node_t* const r
+        , node_t* const res ) -> void
+    {
+        auto const index = hash(oid, l, r) % this->capacity();
+        auto&      entry = entries_[index];
+        if (not entry.result)
+        {
+            ++size_;
+        }
+        entry.oid    = oid;
+        entry.lhs    = l;
+        entry.rhs    = r;
+        entry.result = res;
+    }
+
+    template<class Data, degree D>
     auto apply_cache<Data, D>::rehash
         (std::size_t const newCapacity) -> void
     {
-        if (entries_.size() == newCapacity)
+        debug::out( "apply_cache: Load factor is ", this->load_factor()
+                  , ". Capacity is ", this->capacity()
+                  , " should be ", newCapacity, "." );
+
+        if (this->capacity() == newCapacity)
         {
+            debug::out(" No resizing necessary.\n");
             return;
         }
 
         auto const oldEntries = std::vector<entry_t>(std::move(entries_));
         entries_              = std::vector<entry_t>(newCapacity);
+        size_                 = 0;
         for (auto const& e : oldEntries)
         {
-            auto const index = hash(e.oid, e.lhs, e.rhs) % entries_.size();
-            entries_[index]  = e;
+            if (e.result)
+            {
+                this->put_impl(e.oid, e.lhs, e.rhs, e.result);
+            }
         }
+
+        debug::out(" New load factor is ", this->load_factor(), ".\n");
     }
 
 // unique_table_it definitions:
@@ -542,8 +582,13 @@ namespace teddy
     auto unique_table<Data, D>::rehash
         (std::size_t const newCapacity, Hash&& hash) -> void
     {
+        debug::out("  unique_table: Load factor is "
+                  , this->load_factor(), ". Capacity is ", this->capacity()
+                  , " should be ", newCapacity );
+
         if (buckets_.size() == newCapacity)
         {
+            debug::out(". No resizing necessary.\n");
             return;
         }
 
@@ -560,6 +605,23 @@ namespace teddy
                 bucket = next;
             }
         };
+
+        debug::out(". New load factor is ", this->load_factor(), ".\n");
+    }
+
+    template<class Data, degree D>
+    auto unique_table<Data, D>::capacity
+        () const -> std::size_t
+    {
+        return buckets_.size();
+    }
+
+    template<class Data, degree D>
+    auto unique_table<Data, D>::load_factor
+        () const -> double
+    {
+        return static_cast<double>(size_)
+             / static_cast<double>(this->capacity());
     }
 
     template<class Data, degree D>
