@@ -27,15 +27,27 @@ namespace teddy
     public:
         using probability_t = double;
 
+        /**
+         *  Homogenous system.
+         *  Probabilities are stored in vector of arrays.
+         */
         template<uint_t N>
         static auto probabilities
             ( degrees::fixed<N>
             , domains::fixed<N> ) -> std::vector<std::array<probability_t, N>>;
 
+        /**
+         *  Nonhomogenous system optimized for memory usage.
+         *  Probabilities are stored in vector of vectors.
+         */
         static auto probabilities
             ( degrees::mixed
             , domains::mixed ) -> std::vector<std::vector<probability_t>>;
 
+        /**
+         *  Nonhomogenous system optimized for speed.
+         *  Probabilities are stored in vector of arrays.
+         */
         template<uint_t N>
         static auto probabilities
             ( degrees::fixed<N>
@@ -43,7 +55,8 @@ namespace teddy
 
 
         using probabilities_t = decltype(probabilities(Degree(), Domain({})));
-        using diagram_t = typename diagram_manager<double, Degree, Domain>::diagram_t; // TODO moc dlhe
+        using diagram_t
+            = typename diagram_manager<double, Degree, Domain>::diagram_t;
 
     public:
         /**
@@ -54,37 +67,47 @@ namespace teddy
             (probabilities_t ps, diagram_t& f) -> void;
 
         /**
-         *  Calculates and returns probability that system is in state
-         *  greater or equal to @p j .
+         *  Calculates and returns probability that the system represented
+         *  by @p f is in state greater or equal to @p j
+         *  given probabilities @p ps .
          */
-        auto probability
-            (uint_t j, probabilities_t const&, diagram_t&) -> probability_t;
+        auto probability ( uint_t                 j
+                         , probabilities_t const& ps
+                         , diagram_t&             f ) -> probability_t;
 
         /**
-         *  Returns probability that system is in state @p j .
-         *  Call to @c calculate_probabilities must precede this call.
+         *  Returns probability stored in terminal node representing value @p j
+         *  after call to @c calculate_probabilities .
+         *  Zero is returned if there is no such terminal node.
+         *  If there was no call to @c calculate_probabilities then
+         *  the result is undefined.
          */
-        auto get_probability (uint_t) const -> probability_t;
+        auto get_probability (uint_t j) const -> probability_t;
 
         /**
-         *  Calculates and returns probability that system is in state 1.
+         *  Calculates and returns probability that system represented
+         *  by @p f is in state 1 given probabilities @p ps .
          *  Available only for BSS.
          */
         template<class Foo = void> requires (is_bss_v<Domain>)
         auto availability
-            (probabilities_t, diagram_t&) -> second_t<Foo, probability_t>;
+            ( probabilities_t const& ps
+            , diagram_t&             f) -> second_t<Foo, probability_t>;
 
         /**
-         *  Calculates and returns probability that system is in state
-         *  greater or equal to @p j .
+         *  Calculates and returns probability that system represetned by @p f
+         *  is in state greater or equal to @p j given probabilities @p ps .
          */
         auto availability
-            (uint_t j, probabilities_t const&, diagram_t&) -> probability_t;
+            ( uint_t                 j
+            , probabilities_t const& ps
+            , diagram_t&             f) -> probability_t;
 
         /**
          *  Returns probability that system is in state
-         *  greater or equal to @p j .
-         *  Call to @c calculate_probabilities must precede this call.
+         *  greater or equal to @p j after call to @c calculate_probabilities .
+         *  If there was no call to @c calculate_probabilities then
+         *  the result is undefined.
          */
         auto get_availability (uint_t j) const -> probability_t;
 
@@ -117,16 +140,16 @@ namespace teddy
         });
         root->data() = 1.0;
 
-        this->nodes_.traverse_level(root, [this, &ps](auto const n)
+        this->nodes_.traverse_level(root, [this, &ps](auto const node)
         {
-            if (n->is_internal())
+            if (node->is_internal())
             {
-                auto const nIndex = n->get_index();
+                auto const nodeIndex = node->get_index();
                 auto k = 0u;
-                this->nodes_.for_each_son(n, [this, n, nIndex, &ps, &k]
+                this->nodes_.for_each_son(n, [this, node, nIndex, &ps, &k]
                     (auto const son)
                 {
-                    son->data() += n->data() * ps[nIndex][k];
+                    son->data() += n->data() * ps[nodeIndex][k];
                     ++k;
                 });
             }
@@ -166,11 +189,11 @@ namespace teddy
         (uint_t const j) const -> probability_t
     {
         auto A = .0;
-        this->nodes_.for_each_terminal_node([j, &A](auto const n)
+        this->nodes_.for_each_terminal_node([j, &A](auto const node)
         {
-            if (n->get_value() >= j)
+            if (node->get_value() >= j)
             {
-                A += n->data();
+                A += node->data();
             }
         });
         return A;

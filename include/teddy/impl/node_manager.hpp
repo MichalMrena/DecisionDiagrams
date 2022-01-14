@@ -252,32 +252,32 @@ namespace teddy
         ( std::size_t const    vars
         , std::size_t const    nodes
         , std::vector<index_t> order
-        , domains::mixed       ds )
+        , domains::mixed       domains )
         requires(domains::is_mixed<Domain>()()) :
         node_manager ( common_init()
                      , vars
                      , nodes
                      , std::move(order)
-                     , std::move(ds) )
+                     , std::move(domains) )
     {
     }
 
     template<class Data, degree Degree, domain Domain>
     node_manager<Data, Degree, Domain>::node_manager
         ( common_init
-        , std::size_t const    vars
-        , std::size_t const    nodes
+        , std::size_t const    varCount
+        , std::size_t const    nodeCount
         , std::vector<index_t> order
-        , Domain               ds ) :
+        , Domain               domains ) :
         opCache_             (),
-        pool_                (nodes),
-        uniqueTables_        (vars),
+        pool_                (nodeCount),
+        uniqueTables_        (varCount),
         terminals_           ({}),
-        indexToLevel_        (vars),
+        indexToLevel_        (varCount),
         levelToIndex_        (std::move(order)),
-        domains_             (std::move(ds)),
+        domains_             (std::move(domains)),
         nodeCount_           (0),
-        cacheRatio_          (1),
+        cacheRatio_          (0.5),
         lastGcNodeCount_     (pool_.main_pool_size()),
         nextTableAdjustment_ (230),
         reorderEnabled_      (false)
@@ -293,8 +293,9 @@ namespace teddy
             }
         }
 
-        // Create reverse mapping from (level_t -> index_t)
-        // to (index_t -> level_t).
+        // Create reverse mapping
+        // from (level_t -> index_t)
+        // to   (index_t -> level_t).
         auto level = 0u;
         for (auto const index : levelToIndex_)
         {
@@ -824,7 +825,7 @@ namespace teddy
         () -> void
     {
         debug::out( "node_manager: Adjusting unique tables."
-                  ,  " Node count is ", nodeCount_, ".\n");
+                  , " Node count is ", nodeCount_, ".\n" );
 
         auto const hash = std::bind_front(&node_manager::node_hash, this);
         for (auto& t : uniqueTables_)
@@ -1205,7 +1206,8 @@ namespace teddy
             place_variable(pair.index);
         }
 
-        debug::out("node_manager: Done sifting. Node count after ", nodeCount_, ".\n");
+        debug::out( "node_manager: Done sifting. Node count after "
+                  , nodeCount_, ".\n" );
     }
 }
 

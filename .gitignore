@@ -7,3 +7,5 @@ profile.png
 valgrind.txt
 compile_flags.txt
 results
+doc
+doxygen_config
