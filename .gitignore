@@ -7,5 +7,6 @@ profile.png
 valgrind.txt
 compile_flags.txt
 results
-doc
+doc/a.out
 doxygen_config
+install_manifest.txt

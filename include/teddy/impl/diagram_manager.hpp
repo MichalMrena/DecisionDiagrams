@@ -8,6 +8,7 @@
 #include "utils.hpp"
 #include <cmath>
 #include <concepts>
+#include <initializer_list>
 #include <iterator>
 #include <ranges>
 
@@ -24,6 +25,9 @@ namespace teddy
     {
         vs[i] = v;
     };
+
+    template<class Degree>
+    concept is_bdd = std::same_as<degrees::fixed<2>, Degree>;
 
     enum class fold_type
     {
@@ -46,6 +50,12 @@ namespace teddy
         auto variable_not (index_t) -> diagram_t; // enable only for bdd
 
         auto operator() (index_t) -> diagram_t;
+
+        template<std::convertible_to<index_t> T>
+        auto variables (std::initializer_list<T>) -> std::vector<diagram_t>;
+
+        template<std::input_iterator I, std::sentinel_for<I> S>
+        auto variables (I, S) -> std::vector<diagram_t>;
 
         template<std::ranges::input_range Is>
         auto variables (Is const&) -> std::vector<diagram_t>;
@@ -80,7 +90,14 @@ namespace teddy
         template<in_var_values Vars>
         auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
 
+        template<class Foo = void> requires(is_bdd<Degree>)
+        auto satisfy_count (diagram_t&) -> second_t<Foo, std::size_t>;
+
         auto satisfy_count (uint_t, diagram_t&) -> std::size_t;
+
+        template<out_var_values Vars, class Foo = void> requires(is_bdd<Degree>)
+        auto satisfy_all
+            (diagram_t const&) const -> second_t<Foo, std::vector<Vars>>;
 
         template<out_var_values Vars>
         auto satisfy_all (uint_t, diagram_t const&) const -> std::vector<Vars>;
@@ -199,9 +216,27 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::variables
         (Is const& is) -> std::vector<diagram_t>
     {
+        namespace rs = std::ranges;
+        return this->variables(rs::begin(is), rs::end(is));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<std::convertible_to<index_t> T>
+    auto diagram_manager<Data, Degree, Domain>::variables
+        (std::initializer_list<T> const is) -> std::vector<diagram_t>
+    {
+        namespace rs = std::ranges;
+        return this->variables(rs::begin(is), rs::end(is));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<std::input_iterator I, std::sentinel_for<I> S>
+    auto diagram_manager<Data, Degree, Domain>::variables
+        (I const first, S const last) -> std::vector<diagram_t>
+    {
         static_assert(
-            std::convertible_to<std::ranges::range_value_t<Is>, index_t> );
-        return utils::fmap(is, [this](auto const i)
+            std::convertible_to<std::iter_value_t<I>, index_t> );
+        return utils::fmap(first, last, [this](auto const i)
         {
             return this->variable(static_cast<index_t>(i));
         });
@@ -282,8 +317,6 @@ namespace teddy
             auto const node = nodes_.internal_node(lastIndex, std::move(sons));
             stack.push_back(stack_frame {node, lastLevel});
             shrink_stack();
-            // TODO adjust sizes? idealne presunut do node_manazer,
-            // aby to robil sam, napriklad podla velkosti poolu
         }
 
         assert(stack.size() == 1);
@@ -319,7 +352,7 @@ namespace teddy
                     vs.emplace_back(this->variable_not(i));
                 }
             }
-            return this->left_fold<AND>(vs);
+            return this->left_fold<ops::AND>(vs);
         };
 
         auto const orFold = [this, foldType](auto& ds)
@@ -327,10 +360,10 @@ namespace teddy
             switch (foldType)
             {
                 case fold_type::Left:
-                    return this->left_fold<OR>(ds);
+                    return this->left_fold<ops::OR>(ds);
 
                 case fold_type::Tree:
-                    return this->tree_fold<OR>(ds);
+                    return this->tree_fold<ops::OR>(ds);
 
                 default:
                     assert(false);
@@ -514,6 +547,14 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<class Foo> requires(is_bdd<Degree>)
+    auto diagram_manager<Data, Degree, Domain>::satisfy_count
+        (diagram_t& d) -> second_t<Foo, std::size_t>
+    {
+        return this->satisfy_count(1, d);
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::satisfy_count
         (uint_t const val, diagram_t& d) -> std::size_t
     {
@@ -576,6 +617,14 @@ namespace teddy
         auto const rootAlpha = static_cast<std::size_t>(data(d.get_root()));
         auto const rootLevel = nodes_.get_level(d.get_root());
         return rootAlpha * nodes_.domain_product(0, rootLevel);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<out_var_values Vars, class Foo> requires(is_bdd<Degree>)
+    auto diagram_manager<Data, Degree, Domain>::satisfy_all
+        (diagram_t const& d) const -> second_t<Foo, std::vector<Vars>>
+    {
+        return this->satisfy_all<Vars>(d);
     }
 
     template<class Data, degree Degree, domain Domain>

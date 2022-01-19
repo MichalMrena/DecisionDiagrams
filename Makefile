@@ -1,20 +1,20 @@
 ifdef USE_CLANG
-	CXX = clang++
-	LIB = -stdlib=libc++
+	CXX := clang++
+	STDLIB := -stdlib=libc++
 endif
 
-CXXFLAGS = -MMD -MP -std=c++20 $(LIB) -Iinclude \
+CXXFLAGS := -MMD -MP -std=c++20 $(STDLIB) -Iinclude \
 	-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow
-SRC_DIR = ./src
-LINK_NOTICE = "\e[1;33mLinking:\e[0m"
-COMPILE_NOTICE = "\e[1;33mCompiling:\e[0m"
+SRC_DIR := ./src
+LINK_NOTICE := "\e[1;33mLinking:\e[0m"
+COMPILE_NOTICE := "\e[1;33mCompiling:\e[0m"
 
 ifdef DEBUG
 	CXXFLAGS += -g
-	BUILD_DIR ?= ./build/debug
+	BUILD_DIR := ./build/debug
 else
 	CXXFLAGS += -O3
-	BUILD_DIR ?= ./build/release
+	BUILD_DIR := ./build/release
 endif
 
 ifdef USE_OMP
@@ -25,6 +25,7 @@ endif
 SRCS := $(shell find ./src -name *.cpp -exec basename {} \;)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
+
 -include $(DEPS)
 
 main: $(BUILD_DIR)/main
@@ -46,11 +47,20 @@ $(BUILD_DIR)/%.cpp.o: src/%.cpp
 # https://stackoverflow.com/questions/42830131/an-unexpected-rm-occur-after-make
 .PRECIOUS: $(OBJS)
 
-.PHONY: clean main test
+.PHONY: clean main test experiment install
 
 clean:
 	rm -r ./build
 
-# install:
-# 	cp -r ./include/teddy /usr/local/include/
-# TODO install_manifest
+PREFIX ?= /usr/local
+
+install:
+	@rm -f install_manifest.txt
+	@echo "Installing into $(DIRNAME)$(PREFIX)."
+	@for f in $(shell find include/teddy -type f) ; do \
+		mkdir -p $$(dirname $(DIRNAME)$(PREFIX)/$$f) ; \
+		cp $$f $(DIRNAME)$(PREFIX)/$$f ; \
+		echo $(DIRNAME)$(PREFIX)/$$f >> install_manifest.txt ; \
+	done
+	@echo "Done installing. List of installed files was \
+	written into install_manifest.txt."

@@ -430,15 +430,15 @@ namespace teddy::test
         auto const min_fold = [&manager, foldType](auto& xs)
         {
             return foldType == fold_e::Left
-                ? manager.template left_fold<MIN>(xs)
-                : manager.template tree_fold<MIN>(xs);
+                ? manager.template left_fold<ops::MIN>(xs)
+                : manager.template tree_fold<ops::MIN>(xs);
         };
 
         auto const max_fold = [&manager, foldType](auto& xs)
         {
             return foldType == fold_e::Left
-                ? manager.template left_fold<MAX>(xs)
-                : manager.template tree_fold<MAX>(xs);
+                ? manager.template left_fold<ops::MAX>(xs)
+                : manager.template tree_fold<ops::MAX>(xs);
         };
 
         using diagram_t = typename diagram_manager<Dat, Deg, Dom>::diagram_t;
@@ -678,6 +678,8 @@ namespace teddy::test
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr )
     {
+        using namespace teddy::ops;
+
         auto const max  = [&expr, &manager]()
         {
             auto domains = manager.get_domains();

@@ -146,10 +146,10 @@ namespace teddy
             {
                 auto const nodeIndex = node->get_index();
                 auto k = 0u;
-                this->nodes_.for_each_son(n, [this, node, nIndex, &ps, &k]
+                this->nodes_.for_each_son(node, [this, node, nodeIndex, &ps, &k]
                     (auto const son)
                 {
-                    son->data() += n->data() * ps[nodeIndex][k];
+                    son->data() += node->data() * ps[nodeIndex][k];
                     ++k;
                 });
             }
