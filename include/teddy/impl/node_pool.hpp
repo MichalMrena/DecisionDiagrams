@@ -39,7 +39,7 @@ namespace teddy
         auto operator= (node_pool const&) -> node_pool& = delete;
         auto operator= (node_pool&&)      -> node_pool& = default;
 
-        auto set_overflow_ratio (std::size_t) -> void;
+        auto set_overflow_ratio (double) -> void;
 
         auto available_nodes () const -> std::size_t;
 
@@ -61,7 +61,7 @@ namespace teddy
         std::vector<mem_wrap<node_t>>*             currentPoolPtr_;
         node_t*                                    freeNode_;
         pool_it                                    nextPoolNodeIt_;
-        std::size_t                                overflowRatio_;
+        double                                     overflowRatio_;
         std::size_t                                availableNodes_;
     };
 
@@ -73,7 +73,7 @@ namespace teddy
         currentPoolPtr_ (&mainPool_),
         freeNode_       (nullptr),
         nextPoolNodeIt_ (std::begin(mainPool_)),
-        overflowRatio_  (2),
+        overflowRatio_  (0.5),
         availableNodes_ (mainPool_.size())
     {
         debug::out( "node_pool: Allocating initial pool with size "
@@ -150,7 +150,7 @@ namespace teddy
 
     template<class Data, degree D>
     auto node_pool<Data, D>::set_overflow_ratio
-        (std::size_t const d) -> void
+        (double const d) -> void
     {
         overflowRatio_ = d;
     }
@@ -206,10 +206,14 @@ namespace teddy
     auto node_pool<Data, D>::grow
         () -> void
     {
-        debug::out( "node_pool: Allocating overflow pool with size "
-                  , mainPool_.size() / overflowRatio_, ".\n" );
+        auto const baseSize = static_cast<double>(mainPool_.size());
+        auto const newPoolSize
+            = static_cast<std::size_t>(baseSize * overflowRatio_);
 
-        overflowPools_.emplace_back(mainPool_.size() / overflowRatio_);
+        debug::out( "node_pool: Allocating overflow pool with size "
+                  , newPoolSize, ".\n" );
+
+        overflowPools_.emplace_back(newPoolSize);
         currentPoolPtr_ = &overflowPools_.back();
         nextPoolNodeIt_ = std::begin(*currentPoolPtr_);
         availableNodes_ += currentPoolPtr_->size();

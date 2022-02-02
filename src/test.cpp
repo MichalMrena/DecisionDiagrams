@@ -1216,9 +1216,9 @@ auto run_speed_benchmark()
 
 auto main () -> int
 {
-    // run_test_many();
+    run_test_many();
     // run_verbose_test_one();
-    run_speed_benchmark();
+    // run_speed_benchmark();
 
     std::cout << '\n' << "End of main." << '\n';
     return 0;

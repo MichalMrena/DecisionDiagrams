@@ -99,9 +99,9 @@ namespace teddy
         node_manager (node_manager&&) noexcept = default;
         node_manager (node_manager const&) = delete;
 
-        auto set_cache_ratio  (double)      -> void;
-        auto set_pool_ratio   (std::size_t) -> void;
-        auto set_auto_reorder (bool)        -> void;
+        auto set_cache_ratio  (double) -> void;
+        auto set_pool_ratio   (double) -> void;
+        auto set_auto_reorder (bool)   -> void;
 
     private:
         node_manager ( common_init
@@ -313,10 +313,10 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::set_pool_ratio
-        (std::size_t const denom) -> void
+        (double const d) -> void
     {
-        assert(denom > 0);
-        pool_.set_overflow_ratio(denom);
+        assert(d > 0);
+        pool_.set_overflow_ratio(d);
     }
 
     template<class Data, degree Degree, domain Domain>
