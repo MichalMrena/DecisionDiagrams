@@ -8,18 +8,14 @@
 
 namespace teddy
 {
-    template<class...>
-    struct is_bss : public std::false_type
-    {
-    };
+    template<class Degree>
+    concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
 
-    template<>
-    struct is_bss<domains::fixed<2>> : public std::true_type
+    struct value_change
     {
+        uint_t from;
+        uint_t to;
     };
-
-    template<class Domain>
-    inline constexpr auto is_bss_v = is_bss<Domain>()();
 
     template<degree Degree, domain Domain>
     class reliability_manager : public diagram_manager<double, Degree, Domain>
@@ -89,7 +85,7 @@ namespace teddy
          *  by @p f is in state 1 given probabilities @p ps .
          *  Available only for BSS.
          */
-        template<class Foo = void> requires (is_bss_v<Domain>)
+        template<class Foo = void> requires (is_bss<Domain>)
         auto availability
             ( probabilities_t const& ps
             , diagram_t&             f) -> second_t<Foo, probability_t>;
@@ -104,12 +100,105 @@ namespace teddy
             , diagram_t&             f) -> probability_t;
 
         /**
+         *  Returns probability that system is in state 1.
+         *  after call to @c calculate_probabilities .
+         *  If there was no call to @c calculate_probabilities then
+         *  the result is undefined.
+         */
+        template<class Foo = void>
+        auto get_availability () const -> second_t<Foo, probability_t>;
+
+        /**
          *  Returns probability that system is in state
          *  greater or equal to @p j after call to @c calculate_probabilities .
          *  If there was no call to @c calculate_probabilities then
          *  the result is undefined.
          */
         auto get_availability (uint_t j) const -> probability_t;
+
+        /**
+         *  Calculates and returns probability that system represented by @p f
+         *  is in state worse than @p j given probabilities @p ps .
+         */
+        template<class Foo = void> requires(is_bss<Degree>)
+        auto unavailability
+            ( probabilities_t const& ps
+            , diagram_t&             f) -> second_t<Foo, probability_t>;
+
+        /**
+         *  Calculates and returns probability that system represented by @p f
+         *  is in state worse than @p j given probabilities @p ps .
+         */
+        auto unavailability
+            ( uint_t                 j
+            , probabilities_t const& ps
+            , diagram_t&             f) -> probability_t;
+
+        /**
+         *  Returns probability that system is in state
+         *  0 after call to @c calculate_probabilities .
+         *  If there was no call to @c calculate_probabilities then
+         *  the result is undefined.
+         */
+        template<class Foo = void>
+        auto get_unavailability () -> second_t<Foo, probability_t>;
+
+        /**
+         *  Returns probability that system is in state
+         *  worse than @p j after call to @c calculate_probabilities .
+         *  If there was no call to @c calculate_probabilities then
+         *  the result is undefined.
+         */
+        auto get_unavailability (uint_t j) -> probability_t;
+
+        /**
+         *  Calculates Direct Partial Boolean Derivative for @p i - th variable
+         *  where @p var describes change in value of @p i - th variable and
+         *  @p f describes change in value of the function represented
+         *  by @p sf .
+         */
+        auto dpbd ( value_change     var
+                  , value_change     f
+                  , diagram_t const& sf
+                  , index_t          i ) -> diagram_t;
+
+        /**
+         *  Calculate Direct Partial Boolean Derivative of type 3 for
+         *  @p i - th variable where @p var describes change in value of
+         *  @p i - th variable and @p f describes value of the function
+         *  represented by @p sf .
+         */
+        auto dpbd_i_3 ( value_change     var
+                      , uint_t           f
+                      , diagram_t const& sf
+                      , index_t          i ) -> diagram_t;
+
+        /**
+         *  Calculates Direc Partial Boolean Derivatives ( @c dpbd ) for
+         *  each variable using changes in values described by @p var and @p f .
+         */
+        auto dpbds ( value_change     var
+                   , value_change     f
+                   , diagram_t const& sf ) -> std::vector<diagram_t>;
+
+        /**
+         *  Finds all Minimal Cut Vectors of the system described by @p sf
+         *  with respect to state @p j . MCVs are stored and returned
+         *  in a vector.
+         */
+        template<out_var_values Vars>
+        auto mcvs ( diagram_t const& sf
+                  , uint_t           j ) -> std::vector<Vars>;
+
+        /**
+         *  Finds all Minimal Cut Vectors of the system described by @p sf
+         *  with respect to state @p j . MCVs are outputed
+         *  via output iterator @p out .
+         */
+        template<out_var_values Vars, std::output_iterator<Vars> Out>
+        auto mcvs_g ( diagram_t const& sf
+                    , uint_t           j
+                    , Out              out ) -> void;
 
     protected:
         reliability_manager ( std::size_t vars
@@ -122,6 +211,11 @@ namespace teddy
                             , domains::mixed
                             , std::vector<index_t> order )
                             requires(domains::is_mixed<Domain>()());
+
+    private:
+        auto to_dpbd_e ( uint_t           varFrom
+                       , index_t          i
+                       , diagram_t const& dpbd ) -> diagram_t;
     };
 
     template<degree Degree, domain Domain>
@@ -185,6 +279,15 @@ namespace teddy
     }
 
     template<degree Degree, domain Domain>
+    template<class Foo>
+    auto reliability_manager<Degree, Domain>::get_availability
+        () const -> second_t<Foo, probability_t>
+    {
+        auto const node = this->nodes_.get_terminal_node(1);
+        return node ? node->data() : 0;
+    }
+
+    template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::get_availability
         (uint_t const j) const -> probability_t
     {
@@ -197,6 +300,109 @@ namespace teddy
             }
         });
         return A;
+    }
+
+    template<degree Degree, domain Domain>
+    template<class Foo> requires(is_bss<Degree>)
+    auto reliability_manager<Degree, Domain>::unavailability
+        ( probabilities_t const& ps
+        , diagram_t&             f ) -> second_t<Foo, probability_t>
+    {
+        return this->unavailability(1, ps, f);
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::unavailability
+        ( uint_t const           j
+        , probabilities_t const& ps
+        , diagram_t&             f ) -> probability_t
+    {
+        this->calculate_probabilities(ps, f);
+        return this->get_unavailability(j);
+    }
+
+    template<degree Degree, domain Domain>
+    template<class Foo>
+    auto reliability_manager<Degree, Domain>::get_unavailability
+        () -> second_t<Foo, probability_t>
+    {
+        return this->get_unavailability(1);
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::get_unavailability
+        (uint_t const j) -> probability_t
+    {
+        auto U = .0;
+        this->nodes_.for_each_terminal_node([j, &U](auto const node)
+        {
+            if (node->get_value() < j)
+            {
+                U += node->data();
+            }
+        });
+        return U;
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::dpbd
+        ( value_change const var
+        , value_change const f
+        , diagram_t const&   sf
+        , index_t const      i ) -> diagram_t
+    {
+        auto const lhs = this->template apply<ops::EQUAL_TO>
+            ( this->cofactor(sf, i, var.from)
+            , this->constant(f.from) );
+        auto const rhs = this->template apply<ops::EQUAL_TO>
+            ( this->cofactor(sf, i, var.to)
+            , this->constant(f.to) );
+        return this->template apply<ops::AND>(lhs, rhs);
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::dpbds
+        ( value_change const var
+        , value_change const f
+        , diagram_t const&   sf ) -> std::vector<diagram_t>
+    {
+        return utils::fill_vector(this->get_var_count(), [&](auto const i)
+        {
+            return this->dpbd(var, f, sf, i);
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    template<out_var_values Vars>
+    auto reliability_manager<Degree, Domain>::mcvs
+        (diagram_t const& sf, uint_t const j) -> std::vector<Vars>
+    {
+        auto cuts = std::vector<Vars>();
+        this->mcvs_g<Vars>(sf, j, std::back_inserter(cuts));
+        return cuts;
+    }
+
+    template<degree Degree, domain Domain>
+    template<out_var_values Vars, std::output_iterator<Vars> Out>
+    auto reliability_manager<Degree, Domain>::mcvs_g
+        (diagram_t const& sf, uint_t const j, Out out) -> void
+    {
+        auto const varCount = manager_.get_var_count();
+        auto dpbdes = std::vector<diagram_t>();
+
+        for (auto varIndex = 0u; varIndex < varCount; ++varIndex)
+        {
+            auto const varDomain = this->nodes_.get_domain(varIndex);
+            for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
+            {
+                auto const varChange = {varFrom, varFrom + 1};
+                auto const dpbd = this->dpbd_i_3(varChange, j, sf, varIndex);
+                dpbdes.emplace_back(this->to_dpbd_e(varFrom, varIndex, dpbd));
+            }
+        }
+
+        auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
+        this->template satisfy_all_g<Vars, Out>(1, conj, out);
     }
 
     template<degree Degree, domain Domain>

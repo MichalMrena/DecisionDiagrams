@@ -364,3 +364,16 @@ concept uint_to_bool = requires (F f, uint_t x)
     { std::invoke(f, x) } -> std::convertible_to<bool>;
 };
 ```
+
+---
+
+### bin_op
+Type satisfying this concept must be one of the types specified in the table for the `apply` operation.
+```C++
+template<class O>
+concept bin_op = requires (O o)
+{
+    { op_id(o) } -> std::convertible_to<uint_t>;
+    { op_is_commutative(o) } -> std::same_as<bool>;
+};
+```

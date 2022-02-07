@@ -923,7 +923,6 @@ namespace teddy::test
         });
 
         using namespace std::string_view_literals;
-        using result_opt = std::optional<test_result>;
         auto const tests = { "evaluate"sv
                            , "fold"sv
                            , "gc"sv
@@ -933,8 +932,8 @@ namespace teddy::test
                            , "cofactors"sv
                            , "from_vector"sv
                            , "var_sift"sv };
-        auto results = std::unordered_map< std::string_view
-                                         , std::vector<result_opt> >();
+        auto results = std::unordered_map
+            <std::string_view, std::vector<std::optional<test_result>>>();
         for (auto const test : tests)
         {
             results.emplace( std::piecewise_construct_t()
@@ -1016,7 +1015,7 @@ namespace teddy::test
     }
 
     template<class Manager>
-    auto test_one 
+    auto test_one
         ( std::string_view name
         , Manager&         manager
         , expr_var const&  expr

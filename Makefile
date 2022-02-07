@@ -32,6 +32,8 @@ main: $(BUILD_DIR)/main
 
 test: $(BUILD_DIR)/test
 
+test_reliability: $(BUILD_DIR)/test_reliability
+
 experiment: $(BUILD_DIR)/experiment
 
 $(BUILD_DIR)/%: $(BUILD_DIR)/%.cpp.o
@@ -47,7 +49,7 @@ $(BUILD_DIR)/%.cpp.o: src/%.cpp
 # https://stackoverflow.com/questions/42830131/an-unexpected-rm-occur-after-make
 .PRECIOUS: $(OBJS)
 
-.PHONY: clean main test experiment install
+.PHONY: clean main test test_reliability experiment install
 
 clean:
 	rm -r ./build
