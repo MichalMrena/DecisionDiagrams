@@ -11,6 +11,12 @@ namespace teddy
     template<class Degree>
     concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
 
+    template<class Probabilities>
+    concept component_probabilities = requires(Probabilities ps)
+    {
+        { ps[index_t()][index_t()] } -> std::convertible_to<double>;
+    };
+
     struct value_change
     {
         uint_t from;
@@ -387,22 +393,22 @@ namespace teddy
     auto reliability_manager<Degree, Domain>::mcvs_g
         (diagram_t const& sf, uint_t const j, Out out) -> void
     {
-        auto const varCount = manager_.get_var_count();
-        auto dpbdes = std::vector<diagram_t>();
+        // auto const varCount = manager_.get_var_count();
+        // auto dpbdes = std::vector<diagram_t>();
 
-        for (auto varIndex = 0u; varIndex < varCount; ++varIndex)
-        {
-            auto const varDomain = this->nodes_.get_domain(varIndex);
-            for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
-            {
-                auto const varChange = {varFrom, varFrom + 1};
-                auto const dpbd = this->dpbd_i_3(varChange, j, sf, varIndex);
-                dpbdes.emplace_back(this->to_dpbd_e(varFrom, varIndex, dpbd));
-            }
-        }
+        // for (auto varIndex = 0u; varIndex < varCount; ++varIndex)
+        // {
+        //     auto const varDomain = this->nodes_.get_domain(varIndex);
+        //     for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
+        //     {
+        //         auto const varChange = {varFrom, varFrom + 1};
+        //         auto const dpbd = this->dpbd_i_3(varChange, j, sf, varIndex);
+        //         dpbdes.emplace_back(this->to_dpbd_e(varFrom, varIndex, dpbd));
+        //     }
+        // }
 
-        auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
-        this->template satisfy_all_g<Vars, Out>(1, conj, out);
+        // auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
+        // this->template satisfy_all_g<Vars, Out>(1, conj, out);
     }
 
     template<degree Degree, domain Domain>

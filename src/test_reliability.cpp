@@ -1,6 +1,9 @@
 #include "../include/teddy/teddy_reliability.hpp"
+#include "vector_function.hpp"
 #include <array>
+#include <cassert>
 #include <cmath>
+#include <tuple>
 #include <vector>
 
 namespace teddy::test
@@ -64,6 +67,28 @@ namespace teddy::test
         };
     }
 
+    template<class Probabilities>
+    auto analyze_system ( vector::vector_function const& sf
+                        , Probabilities                  ps )
+    {
+        auto rel = teddy::vector::vector_reliability(sf, ps);
+        return system_characteristics
+        {
+            .Ps_ = utils::fill_vector(sf.max_value(), [&](auto const j)
+            {
+                return rel.probability(j);
+            }),
+            .As_ = utils::fill_vector(sf.max_value(), [&](auto const j)
+            {
+                return rel.availability(j);
+            }),
+            .Us_ = utils::fill_vector(sf.max_value(), [&](auto const j)
+            {
+                return rel.unavailability(j);
+            })
+        };
+    }
+
     auto evaluate_test ( system_characteristics expected
                        , system_characteristics actual )
     {
@@ -80,31 +105,27 @@ namespace teddy::test
         std::cout << "unavailabilities "
             << result_char(rs::equal(expected.Us_, actual.Us_, cmp)) << '\n';
     }
-
 }
 
 auto system_1()
 {
     namespace ts = teddy::test;
-    auto const expected = ts::system_characteristics
-    {
-        .Ps_ = {0.0084, 0.2932, 0.6984},
-        .As_ = {1.0000, 0.9916, 0.6984},
-        .Us_ = {0.0000, 0.0084, 0.3016}
-    };
-    auto manager = teddy::ifmss_manager<3>(4, 1'000, {2, 3, 2, 3});
     auto const vector = std::vector<teddy::uint_t>
         { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
         , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
-    auto diagram = manager.from_vector(vector);
-    auto const ps = std::vector<std::array<double, 3>>
-    {{
+    auto domains = std::vector<teddy::uint_t>({2, 3, 2, 3});
+    auto const ps = std::vector<std::vector<double>>
+    ({
         {0.1, 0.9, 0.0},
         {0.2, 0.6, 0.2},
         {0.3, 0.7, 0.0},
         {0.1, 0.6, 0.3}
-    }};
+    });
+    auto vectorSf = teddy::vector::vector_function(vector, domains);
+    auto manager = teddy::ifmss_manager<3>(4, 1'000, {2, 3, 2, 3});
+    auto diagram = manager.from_vector(vector);
     auto const actual = ts::analyze_system<3>(manager, diagram, ps);
+    auto const expected = ts::analyze_system(vectorSf, ps);
     ts::evaluate_test(expected, actual);
 }
 
@@ -112,5 +133,52 @@ int main()
 {
     // TODO vyskúšať posielať diagramy všade hodnotami,
     // mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
+
+    // TODO use component_probabilities in rel_manager
+
     system_1();
+
+    // auto testSet = std::vector<std::tuple<teddy::uint_t, std::vector<teddy::uint_t>>>
+    // ({
+    //     std::make_tuple(0u, std::vector<teddy::uint_t>({0, 0, 0, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 0, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 0, 2})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 1, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 1, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 1, 2})),
+    //     std::make_tuple(0u, std::vector<teddy::uint_t>({0, 1, 0, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 0, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 0, 2})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 1, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 1, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 1, 2})),
+    //     std::make_tuple(0u, std::vector<teddy::uint_t>({0, 2, 0, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 0, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 0, 2})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 1, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 1, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 1, 2})),
+    //     std::make_tuple(0u, std::vector<teddy::uint_t>({1, 0, 0, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 0, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 0, 2})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 1, 0})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 1, 1})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 1, 2})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 1, 0, 0})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 0, 1})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 0, 2})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 1, 0})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 1, 1})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 1, 2})),
+    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 2, 0, 0})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 0, 1})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 0, 2})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 1, 0})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 1, 1})),
+    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 1, 2}))
+    // });
+    // for (auto const& [expected, vars] : testSet)
+    // {
+    //     assert(expected == f.evaluate(vars));
+    // }
 }
