@@ -459,7 +459,7 @@ namespace teddy
         (diagram_t& dpbd) -> probability_t
     {
         auto const from = level_t(0);
-        auto const to   = static_cast<level_t>(this->get_var_count() - 1);
+        auto const to   = static_cast<level_t>(this->get_var_count());
         auto const domainSize = this->nodes_.domain_product(from, to);
         return static_cast<probability_t>(this->satisfy_count(1, dpbd))
              / static_cast<probability_t>(domainSize);

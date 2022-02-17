@@ -74,7 +74,6 @@ namespace teddy::test
                         [&](auto const v)
                     {
                         auto dpbd = manager.dpbd_i_3({v + 1, v}, j + 1, sf, i);
-                        auto const nc = manager.node_count(dpbd);
                         return manager.structural_importance(dpbd);
                     });
                 });

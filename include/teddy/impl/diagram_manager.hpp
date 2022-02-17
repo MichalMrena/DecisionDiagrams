@@ -693,27 +693,48 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::cofactor
         (diagram_t const& d, index_t const i, uint_t const v) -> diagram_t
     {
-        auto const newRoot = this->transform_internal(d.get_root(),
-            [this, i, v] (auto&& go, auto&& self, auto const n)
+        if (d.get_root()->is_terminal())
         {
-            if (n->get_index() == i)
+            return d;
+        }
+
+        auto const root = d.get_root();
+        if (root->get_index() == i)
+        {
+            return diagram_t(root->get_son(v));
+        }
+
+        auto memo = std::unordered_map<node_t*, node_t*>();
+        auto const go = [this, &memo, i, v](auto&& self, auto const n)
+        {
+            auto memoIt = memo.find(n);
+            if (memoIt != std::end(memo))
             {
-                // Create redundant node that will
-                // be handled by the node manager.
-                return nodes_.make_sons(i, [n](auto const)
-                {
-                    return n;
-                });
+                return memoIt->second;
             }
-            else
+
+            if (n->is_terminal())
             {
-                // Nothing to restrict here so we just continue downwards.
-                return nodes_.make_sons(n->get_index(), [&](auto const k)
-                {
-                    return go(go, self, n->get_son(k));
-                });
+                return n;
             }
-        });
+
+            auto sons = n->get_index() == i
+                ? nodes_.make_sons(i, [son = n->get_son(v)](auto const)
+                {
+                    return son;
+                })
+                : nodes_.make_sons(n->get_index(), [n, &self](auto const k)
+                {
+                    return self(self, n->get_son(k));
+                });
+
+            auto const newN
+                = nodes_.internal_node(n->get_index(), std::move(sons));
+            memo.emplace(n, newN);
+            return newN;
+        };
+
+        auto const newRoot = go(go, root);
         return diagram_t(newRoot);
     }
 
