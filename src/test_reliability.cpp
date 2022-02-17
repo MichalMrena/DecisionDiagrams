@@ -15,6 +15,7 @@ namespace teddy::test
         std::vector<probability_t> Ps_;
         std::vector<probability_t> As_;
         std::vector<probability_t> Us_;
+        std::vector<std::vector<std::vector<probability_t>>> SIs_;
     };
 
     auto wrap_green(std::string_view const s)
@@ -63,6 +64,20 @@ namespace teddy::test
             .Us_ = utils::fill_vector(P, [&](auto const j)
             {
                 return manager.unavailability(j, ps, sf);
+            }),
+            .SIs_ = utils::fill_vector(manager.get_var_count(),
+                [&](auto const i)
+            {
+                return utils::fill_vector(P - 1, [&](auto const j)
+                {
+                    return utils::fill_vector(manager.get_domains()[i] - 1,
+                        [&](auto const v)
+                    {
+                        auto dpbd = manager.dpbd_i_3({v + 1, v}, j + 1, sf, i);
+                        auto const nc = manager.node_count(dpbd);
+                        return manager.structural_importance(dpbd);
+                    });
+                });
             })
         };
     }
@@ -74,17 +89,29 @@ namespace teddy::test
         auto rel = teddy::vector::vector_reliability(sf, ps);
         return system_characteristics
         {
-            .Ps_ = utils::fill_vector(sf.max_value(), [&](auto const j)
+            .Ps_ = utils::fill_vector(sf.max_value() + 1, [&](auto const j)
             {
                 return rel.probability(j);
             }),
-            .As_ = utils::fill_vector(sf.max_value(), [&](auto const j)
+            .As_ = utils::fill_vector(sf.max_value() + 1, [&](auto const j)
             {
                 return rel.availability(j);
             }),
-            .Us_ = utils::fill_vector(sf.max_value(), [&](auto const j)
+            .Us_ = utils::fill_vector(sf.max_value() + 1, [&](auto const j)
             {
                 return rel.unavailability(j);
+            }),
+            .SIs_ = utils::fill_vector(sf.get_var_count(),
+                [&](auto const i)
+            {
+                return utils::fill_vector(sf.max_value(), [&](auto const j)
+                {
+                    return utils::fill_vector(sf.get_domains()[i] - 1,
+                        [&](auto const v)
+                    {
+                        return rel.structural_importance(j + 1, {i, v + 1, v});
+                    });
+                });
             })
         };
     }
@@ -104,6 +131,15 @@ namespace teddy::test
             << result_char(rs::equal(expected.As_, actual.As_, cmp)) << '\n';
         std::cout << "unavailabilities "
             << result_char(rs::equal(expected.Us_, actual.Us_, cmp)) << '\n';
+        std::cout << "SIs              "
+            << result_char(rs::equal(expected.SIs_, actual.SIs_,
+                [cmp](auto const& lhs, auto const& rhs)
+            {
+                return rs::equal(lhs, rhs, [cmp](auto const& l, auto const& r)
+                {
+                    return rs::equal(l, r, cmp);
+                });
+            })) << '\n';
     }
 }
 
@@ -134,51 +170,5 @@ int main()
     // TODO vyskúšať posielať diagramy všade hodnotami,
     // mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
 
-    // TODO use component_probabilities in rel_manager
-
     system_1();
-
-    // auto testSet = std::vector<std::tuple<teddy::uint_t, std::vector<teddy::uint_t>>>
-    // ({
-    //     std::make_tuple(0u, std::vector<teddy::uint_t>({0, 0, 0, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 0, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 0, 2})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 1, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 1, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 0, 1, 2})),
-    //     std::make_tuple(0u, std::vector<teddy::uint_t>({0, 1, 0, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 0, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 0, 2})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 1, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 1, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 1, 1, 2})),
-    //     std::make_tuple(0u, std::vector<teddy::uint_t>({0, 2, 0, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 0, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 0, 2})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 1, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 1, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({0, 2, 1, 2})),
-    //     std::make_tuple(0u, std::vector<teddy::uint_t>({1, 0, 0, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 0, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 0, 2})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 1, 0})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 1, 1})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 0, 1, 2})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 1, 0, 0})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 0, 1})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 0, 2})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 1, 0})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 1, 1})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 1, 1, 2})),
-    //     std::make_tuple(1u, std::vector<teddy::uint_t>({1, 2, 0, 0})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 0, 1})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 0, 2})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 1, 0})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 1, 1})),
-    //     std::make_tuple(2u, std::vector<teddy::uint_t>({1, 2, 1, 2}))
-    // });
-    // for (auto const& [expected, vars] : testSet)
-    // {
-    //     assert(expected == f.evaluate(vars));
-    // }
 }

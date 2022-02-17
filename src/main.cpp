@@ -1,4 +1,5 @@
 #include "teddy/teddy.hpp"
+#include "teddy/teddy_reliability.hpp"
 #include <iostream>
 #include <string>
 
@@ -64,7 +65,21 @@ auto main () -> int
     // test_bss();
     // test_mss();
 
-    pla_sanity_check();
+    // pla_sanity_check();
+
+    auto const vector = std::vector<teddy::uint_t>
+        { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
+        , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
+    auto domains = std::vector<teddy::uint_t>({2, 3, 2, 3});
+    auto manager = teddy::ifmss_manager<3>(4, 1000, domains);
+    auto sf = manager.from_vector(vector);
+
+    auto cf1 = manager.cofactor(sf, 0, 1);
+    auto cf0 = manager.cofactor(sf, 0, 0);
+
+    manager.to_dot_graph(std::cout, sf);
+    manager.to_dot_graph(std::cout, cf1);
+    manager.to_dot_graph(std::cout, cf0);
 
     std::cout << "Done." << '\n';
     return 0;

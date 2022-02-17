@@ -54,16 +54,16 @@ namespace teddy::vector
             , std::vector<uint_t> domains ) :
             vector_   (std::move(vector)),
             domains_  (std::move(domains)),
-            offset_   (this->var_count()),
+            offset_   (this->get_var_count()),
             maxValue_ (std::ranges::max(vector_))
         {
             assert(vector_.size() == std::reduce(
                 begin(domains_), end(domains_), 1u, std::multiplies<>()));
 
-            offset_[this->var_count() - 1] = 1;
-            if (this->var_count() > 1)
+            offset_[this->get_var_count() - 1] = 1;
+            if (this->get_var_count() > 1)
             {
-                auto i = this->var_count() - 1;
+                auto i = this->get_var_count() - 1;
                 while (i > 0)
                 {
                     --i;
@@ -82,7 +82,7 @@ namespace teddy::vector
 
         /**
          *  Calculates DPBD where @p var describes variable and its change and
-         *  @p d is a function that checks whether change in value of the 
+         *  @p d is a function that checks whether change in value of the
          *  function is right for the derivative type.
          */
         template<f_val_change F>
@@ -92,9 +92,9 @@ namespace teddy::vector
             auto tmpElem = std::vector<uint_t>();
             auto k = 0u;
 
-            this->domain_for_each([&](auto const val, auto const& elem)
+            this->domain_for_each([&](auto const fValFrom, auto const& elem)
             {
-                if (val != var.from)
+                if (elem[var.index] != var.from)
                 {
                     dpbdVector[k] = U;
                 }
@@ -102,13 +102,63 @@ namespace teddy::vector
                 {
                     tmpElem = elem;
                     tmpElem[var.index] = var.to;
-                    auto const valTo = this->evaluate(tmpElem);
-                    dpbdVector[k] = d(elem[var.index], valTo) ? 1 : 0;
+                    auto const fValTo = this->evaluate(tmpElem);
+                    dpbdVector[k] = d(fValFrom, fValTo) ? 1 : 0;
                 }
                 ++k;
             });
 
             return vector_function(std::move(dpbdVector), domains_);
+        }
+
+        /**
+         *  Returns lambda that can be used in @c dpbd for type 1.
+         */
+        inline static auto constexpr dpbd_i_1 = [](auto const j)
+        {
+            return [j](auto const l, auto const r)
+            {
+                return l == j && r < j;
+            };
+        };
+
+        /**
+         *  Returns lambda that can be used in @c dpbd for type 2.
+         */
+        inline static auto constexpr dpbd_i_2 = [](auto const)
+        {
+            return [](auto const l, auto const r)
+            {
+                return l > r;
+            };
+        };
+
+        /**
+         *  Returns lambda that can be used in @c dpbd for type 3.
+         */
+        inline static auto constexpr dpbd_i_3 = [](auto const j)
+        {
+            return [j](auto const l, auto const r)
+            {
+                return l >= j && r < j;
+            };
+        };
+
+        /**
+         *  Returns numbe of domain elements
+         *  for which the function evaluates to 1.
+         */
+        auto satisfy_count (uint_t const j) const -> uint_t
+        {
+            auto result = 0u;
+            for (auto const e : vector_)
+            {
+                if (e == j)
+                {
+                    ++result;
+                }
+            }
+            return result;
         }
 
         /**
@@ -159,39 +209,39 @@ namespace teddy::vector
          *  Invokes @p f with each element of the domain.
          */
         template<domain_consumer F>
-        auto domain_for_each (F f) const -> void
+        auto domain_for_each (F const f) const -> void
         {
-            auto element = std::vector<uint_t>(this->var_count(), 0);
+            auto element = std::vector<uint_t>(this->get_var_count(), 0);
             auto wasLast = false;
             auto k = 0u;
             do
             {
                 // Invoke f.
-                f(k, element);
+                f(vector_[k], element);
 
-                // Move to the next domain element.
+                // Move to the next element of the domain.
                 auto overflow = true;
-                auto i = 0u;
-                while (i < this->var_count() && overflow)
+                auto i = this->get_var_count();
+                while (i > 0 && overflow)
                 {
+                    --i;
                     ++element[i];
                     overflow = element[i] == domains_[i];
                     if (overflow)
                     {
                         element[i] = 0;
                     }
-                    ++i;
                 }
 
-                wasLast = overflow;
+                wasLast = overflow && i == 0;
                 ++k;
-            } while (wasLast);
+            } while (not wasLast);
         }
 
         /**
          *  Returns the number of variables this function depends on.
          */
-        auto var_count () const -> uint_t
+        auto get_var_count () const -> uint_t
         {
             return static_cast<uint_t>(domains_.size());
         }
@@ -212,15 +262,23 @@ namespace teddy::vector
             return maxValue_;
         }
 
+        /**
+         *  Returns domains of variables that this function depends on.
+         */
+        auto get_domains () const -> std::vector<uint_t> const&
+        {
+            return domains_;
+        }
+
     private:
         /**
-         *  Maps values of variables to index.
+         *  Maps values of variables to index in the vector.
          */
         auto to_index (std::vector<uint_t> const& vars) const -> uint_t
         {
-            assert(vars.size() == this->var_count());
+            assert(vars.size() == this->get_var_count());
             auto index = 0u;
-            for (auto i = 0u; i < this->var_count(); ++i)
+            for (auto i = 0u; i < this->get_var_count(); ++i)
             {
                 index += vars[i] * offset_[i];
             }
@@ -234,10 +292,17 @@ namespace teddy::vector
         uint_t              maxValue_;
     };
 
-
+    /**
+     *  Uses structure function represented by @c vector_function to
+     *  compute reliability characteristics.
+     */
     class vector_reliability
     {
     public:
+        /**
+         *  Initializes instance to use structure function @p sf
+         *  and probabilities @p ps .
+         */
         vector_reliability
             ( vector_function const&           sf
             , std::vector<std::vector<double>> ps ) :
@@ -246,6 +311,9 @@ namespace teddy::vector
         {
         }
 
+        /**
+         *  Calculates probability that the system is in state @p j .
+         */
         auto probability (uint_t const j) const -> double
         {
             auto result = 0.0;
@@ -259,6 +327,9 @@ namespace teddy::vector
             return result;
         }
 
+        /**
+         *  Calculates availability for the system state @p j .
+         */
         auto availability (uint_t const j) const -> double
         {
             auto result = 0.0;
@@ -272,6 +343,9 @@ namespace teddy::vector
             return result;
         }
 
+        /**
+         *  Calculates unavailability for the system state @p j .
+         */
         auto unavailability (uint_t const j) const -> double
         {
             auto result = 0.0;
@@ -285,11 +359,20 @@ namespace teddy::vector
             return result;
         }
 
+        auto structural_importance
+            (uint_t const j, var_val_change const var) -> double
+        {
+            auto d = sf().dpbd(var, vector_function::dpbd_i_3(j));
+            return static_cast<double>(d.satisfy_count(1))
+                 / static_cast<double>(sf().domain_size()
+                   / static_cast<double>(sf().get_domains()[var.index]));
+        }
+
     private:
         auto probability (std::vector<uint_t> const& vars) const -> double
         {
             auto result = 1.0;
-            for (auto i = 0u; i < sf().var_count(); ++i)
+            for (auto i = 0u; i < sf().get_var_count(); ++i)
             {
                 result *= ps_[i][vars[i]];
             }

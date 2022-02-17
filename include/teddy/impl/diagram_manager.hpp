@@ -160,7 +160,7 @@ namespace teddy
         auto operator=  (diagram_manager const&) -> diagram_manager& = delete;
         auto operator=  (diagram_manager&&)      -> diagram_manager& = default;
 
-    public:
+    protected:
         node_manager<Data, Degree, Domain> nodes_;
     };
 
@@ -567,7 +567,7 @@ namespace teddy
             = std::is_floating_point_v<Data> or std::is_integral_v<Data>;
         using T = std::conditional_t<CanUseDataMember, Data, std::size_t>;
 
-        // Returns a function that returns reference to
+        // A function that returns reference to
         // the data associated with given node.
         auto data = []()
         {
@@ -576,12 +576,12 @@ namespace teddy
                 // Simply return reference to the data member.
                 return [](auto const n) mutable -> decltype(auto)
                 {
-                    return (n->data);
+                    return (n->data());
                 };
             }
             else
             {
-                // Return reference to the data that is stored int the map.
+                // Return reference to the data that is stored in the map.
                 return [map = std::unordered_map<node_t*, T>()]
                     (auto const n) mutable -> T&
                 {

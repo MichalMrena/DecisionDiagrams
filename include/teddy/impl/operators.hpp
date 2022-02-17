@@ -171,8 +171,8 @@ namespace teddy
                 return Nondetermined;
             }
 
-            // return static_cast<uint_t>(BinOp () (lhs, rhs));
-            return BinOp()(lhs, rhs);
+            return static_cast<uint_t>(BinOp () (lhs, rhs));
+            // return BinOp()(lhs, rhs);
         }
     };
 

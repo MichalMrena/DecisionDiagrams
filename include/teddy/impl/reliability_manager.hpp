@@ -65,17 +65,19 @@ namespace teddy
          *  Calculates probability of reaching each terminal node
          *  of @p f given state probabilities @p ps .
          */
+        template<component_probabilities Ps>
         auto calculate_probabilities
-            (probabilities_t ps, diagram_t& f) -> void;
+            (Ps const& ps, diagram_t& f) -> void;
 
         /**
          *  Calculates and returns probability that the system represented
          *  by @p f is in state greater or equal to @p j
          *  given probabilities @p ps .
          */
-        auto probability ( uint_t                 j
-                         , probabilities_t const& ps
-                         , diagram_t&             f ) -> probability_t;
+        template<component_probabilities Ps>
+        auto probability ( uint_t     j
+                         , Ps const&  ps
+                         , diagram_t& f ) -> probability_t;
 
         /**
          *  Returns probability stored in terminal node representing value @p j
@@ -91,19 +93,21 @@ namespace teddy
          *  by @p f is in state 1 given probabilities @p ps .
          *  Available only for BSS.
          */
-        template<class Foo = void> requires (is_bss<Domain>)
+        template< component_probabilities Ps
+                , class                   Foo = void> requires (is_bss<Domain>)
         auto availability
-            ( probabilities_t const& ps
-            , diagram_t&             f) -> second_t<Foo, probability_t>;
+            ( Ps const&  ps
+            , diagram_t& f ) -> second_t<Foo, probability_t>;
 
         /**
          *  Calculates and returns probability that system represetned by @p f
          *  is in state greater or equal to @p j given probabilities @p ps .
          */
+        template<component_probabilities Ps>
         auto availability
-            ( uint_t                 j
-            , probabilities_t const& ps
-            , diagram_t&             f) -> probability_t;
+            ( uint_t     j
+            , Ps const&  ps
+            , diagram_t& f ) -> probability_t;
 
         /**
          *  Returns probability that system is in state 1.
@@ -126,19 +130,21 @@ namespace teddy
          *  Calculates and returns probability that system represented by @p f
          *  is in state worse than @p j given probabilities @p ps .
          */
-        template<class Foo = void> requires(is_bss<Degree>)
+        template< component_probabilities Ps
+                , class Foo = void > requires(is_bss<Degree>)
         auto unavailability
-            ( probabilities_t const& ps
-            , diagram_t&             f) -> second_t<Foo, probability_t>;
+            ( Ps const&  ps
+            , diagram_t& f) -> second_t<Foo, probability_t>;
 
         /**
          *  Calculates and returns probability that system represented by @p f
          *  is in state worse than @p j given probabilities @p ps .
          */
+        template<component_probabilities Ps>
         auto unavailability
-            ( uint_t                 j
-            , probabilities_t const& ps
-            , diagram_t&             f) -> probability_t;
+            ( uint_t     j
+            , Ps const&  ps
+            , diagram_t& f) -> probability_t;
 
         /**
          *  Returns probability that system is in state
@@ -181,11 +187,32 @@ namespace teddy
 
         /**
          *  Calculates Direc Partial Boolean Derivatives ( @c dpbd ) for
-         *  each variable using changes in values described by @p var and @p f .
+         *  each variable.
          */
         auto dpbds ( value_change     var
                    , value_change     f
                    , diagram_t const& sf ) -> std::vector<diagram_t>;
+
+        /**
+         *  Calculate Direct Partial Boolean Derivative of
+         *  type 3 ( @c dpbd_i_3 ) for each variable.
+         */
+        auto dpbds_i_3 ( value_change     var
+                       , uint_t           f
+                       , diagram_t const& sf ) -> std::vector<diagram_t>;
+
+        /**
+         *  Calculates structural importace of @p i - th component
+         *  using @p dpbd derivative.
+         */
+        auto structural_importance (diagram_t& dpbd) -> probability_t;
+
+        /**
+         *  Calculates structural importaces for all components using
+         *  their derivatives @p dpbds .
+         */
+        auto structural_importances
+            (std::vector<diagram_t>& dpbds) -> std::vector<probability_t>;
 
         /**
          *  Finds all Minimal Cut Vectors of the system described by @p sf
@@ -225,8 +252,9 @@ namespace teddy
     };
 
     template<degree Degree, domain Domain>
+    template<component_probabilities Ps>
     auto reliability_manager<Degree, Domain>::calculate_probabilities
-        (probabilities_t ps, diagram_t& f) -> void
+        (Ps const& ps, diagram_t& f) -> void
     {
         auto const root = f.get_root();
 
@@ -257,10 +285,11 @@ namespace teddy
     }
 
     template<degree Degree, domain Domain>
+    template<component_probabilities Ps>
     auto reliability_manager<Degree, Domain>::probability
-        ( uint_t const           j
-        , probabilities_t const& ps
-        , diagram_t&             f ) -> probability_t
+        ( uint_t const j
+        , Ps const&    ps
+        , diagram_t&   f ) -> probability_t
     {
         this->calculate_probabilities(ps, f);
         return this->get_probability(j);
@@ -275,10 +304,20 @@ namespace teddy
     }
 
     template<degree Degree, domain Domain>
+    template<component_probabilities Ps, class Foo> requires (is_bss<Domain>)
     auto reliability_manager<Degree, Domain>::availability
-        ( uint_t const           j
-        , probabilities_t const& ps
-        , diagram_t&             f ) -> probability_t
+        ( Ps const&  ps
+        , diagram_t& f ) -> second_t<Foo, probability_t>
+    {
+        return this->availability(1, ps, f);
+    }
+
+    template<degree Degree, domain Domain>
+    template<component_probabilities Ps>
+    auto reliability_manager<Degree, Domain>::availability
+        ( uint_t const j
+        , Ps const&    ps
+        , diagram_t&   f ) -> probability_t
     {
         this->calculate_probabilities(ps, f);
         return this->get_availability(j);
@@ -309,19 +348,20 @@ namespace teddy
     }
 
     template<degree Degree, domain Domain>
-    template<class Foo> requires(is_bss<Degree>)
+    template<component_probabilities Ps, class Foo> requires(is_bss<Degree>)
     auto reliability_manager<Degree, Domain>::unavailability
-        ( probabilities_t const& ps
-        , diagram_t&             f ) -> second_t<Foo, probability_t>
+        ( Ps const&  ps
+        , diagram_t& f ) -> second_t<Foo, probability_t>
     {
         return this->unavailability(1, ps, f);
     }
 
     template<degree Degree, domain Domain>
+    template<component_probabilities Ps>
     auto reliability_manager<Degree, Domain>::unavailability
-        ( uint_t const           j
-        , probabilities_t const& ps
-        , diagram_t&             f ) -> probability_t
+        ( uint_t const j
+        , Ps const&    ps
+        , diagram_t&   f ) -> probability_t
     {
         this->calculate_probabilities(ps, f);
         return this->get_unavailability(j);
@@ -367,6 +407,30 @@ namespace teddy
     }
 
     template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::dpbd_i_3
+        ( value_change const var
+        , uint_t const       f
+        , diagram_t const&   sf
+        , index_t const      i ) -> diagram_t
+    {
+        auto const fVal = this->constant(f);
+        auto const cofactorFrom = this->cofactor(sf, i, var.from);
+        auto const cofactorTo = this->cofactor(sf, i, var.to);
+        if (var.from < var.to)
+        {
+            return this->template apply<ops::AND>
+                ( this->template apply<ops::LESS>(cofactorFrom, fVal)
+                , this->template apply<ops::GREATER_EQUAL>(cofactorTo, fVal) );
+        }
+        else
+        {
+            return this->template apply<ops::AND>
+                ( this->template apply<ops::GREATER_EQUAL>(cofactorFrom, fVal)
+                , this->template apply<ops::LESS>(cofactorTo, fVal) );
+        }
+    }
+
+    template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::dpbds
         ( value_change const var
         , value_change const f
@@ -375,6 +439,43 @@ namespace teddy
         return utils::fill_vector(this->get_var_count(), [&](auto const i)
         {
             return this->dpbd(var, f, sf, i);
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::dpbds_i_3
+        ( value_change const var
+        , uint_t const       f
+        , diagram_t const&   sf ) -> std::vector<diagram_t>
+    {
+        return utils::fill_vector(this->get_var_count(), [&](auto const i)
+        {
+            return this->dpbd_i_3(var, f, sf, i);
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::structural_importance
+        (diagram_t& dpbd) -> probability_t
+    {
+        auto const from = level_t(0);
+        auto const to   = static_cast<level_t>(this->get_var_count() - 1);
+        auto const domainSize = this->nodes_.domain_product(from, to);
+        return static_cast<probability_t>(this->satisfy_count(1, dpbd))
+             / static_cast<probability_t>(domainSize);
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::structural_importances
+        (std::vector<diagram_t>& dpbds) -> std::vector<probability_t>
+    {
+        auto const from = 0;
+        auto const to   = this->get_var_count() - 1;
+        auto const domainSize = this->nodes_.domain_product(from, to);
+        return utils::fill_vector(this->get_var_count(), [&](auto const i)
+        {
+            return static_cast<probability_t>(this->satisfy_count(dpbd, 1))
+                 / static_cast<probability_t>(domainSize);
         });
     }
 
