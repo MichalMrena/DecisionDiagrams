@@ -469,12 +469,13 @@ namespace teddy
     auto reliability_manager<Degree, Domain>::structural_importances
         (std::vector<diagram_t>& dpbds) -> std::vector<probability_t>
     {
-        auto const from = 0;
-        auto const to   = this->get_var_count() - 1;
+        auto const from = 0u;
+        auto const to   = static_cast<level_t>(this->get_var_count() - 1);
         auto const domainSize = this->nodes_.domain_product(from, to);
-        return utils::fill_vector(this->get_var_count(), [&](auto const i)
+        return utils::fill_vector(this->get_var_count(), [&, this](auto const i)
         {
-            return static_cast<probability_t>(this->satisfy_count(dpbd, 1))
+            auto const sc = this->satisfy_count(1, dpbds[i]);
+            return static_cast<probability_t>(sc)
                  / static_cast<probability_t>(domainSize);
         });
     }

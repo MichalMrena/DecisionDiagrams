@@ -633,7 +633,7 @@ namespace teddy
         (uint_t const val, diagram_t const& d) const -> std::vector<Vars>
     {
         auto vs = std::vector<Vars>();
-        this->satisfy_all_g(val, d, std::back_inserter(vs));
+        this->satisfy_all_g<Vars>(val, d, std::back_inserter(vs));
         return vs;
     }
 
@@ -760,17 +760,17 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<std::output_iterator<index_t> O>
     auto diagram_manager<Data, Degree, Domain>::dependency_set_g
-        (diagram_t const& d, O o) const -> void
+        (diagram_t const& d, O out) const -> void
     {
         auto memo = std::vector<bool>(this->get_var_count(), false);
-        nodes_.traverse_pre(d.get_root(), [&memo, o](auto const n)
+        nodes_.traverse_pre(d.get_root(), [&memo, out](auto const n) mutable
         {
             if (n->is_internal())
             {
                 auto const i = n->get_index();
                 if (not memo[i])
                 {
-                    *o++ = i;
+                    *out++ = i;
                 }
                 memo[i] = true;
             }
