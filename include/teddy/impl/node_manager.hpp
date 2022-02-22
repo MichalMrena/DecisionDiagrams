@@ -154,7 +154,7 @@ namespace teddy
         template<bin_op O>
         auto cache_put (node_t*, node_t*, node_t*) -> void;
 
-        template<class NodeOp>
+        template<class NodeOp> // TODO concept?
         auto traverse_pre (node_t*, NodeOp&&) const -> void;
 
         template<class NodeOp>
@@ -182,6 +182,8 @@ namespace teddy
         template<class... Args>
         auto new_node (Args&&...) -> node_t*;
         auto delete_node (node_t*) -> void;
+
+        auto traverse_no_op (node_t*) const -> void;
 
         template<class ForEachNode>
         auto to_dot_graph_common (std::ostream&, ForEachNode&&) const -> void;
@@ -663,67 +665,61 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<class NodeOp>
     auto node_manager<Data, Degree, Domain>::traverse_pre
-        (node_t* const node, NodeOp&& op) const -> void
+        (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        auto const go = [this](auto&& go_, auto const n, auto&& op_)
+        auto const go = [this](auto&& self, auto const n, auto&& op)
         {
             n->toggle_marked();
-            std::invoke(op_, n);
+            std::invoke(op, n);
             if (n->is_internal())
             {
-                this->for_each_son(n, [&go_, n, &op_](auto const son)
+                this->for_each_son(n, [&self, n, &op](auto const son)
                 {
                     if (n->is_marked() != son->is_marked())
                     {
-                        go_(go_, son, op_);
+                        self(self, son, op);
                     }
                 });
             }
         };
 
-        go(go, node, op);
-        go(go, node, [](auto const){});
+        go(go, node, nodeOp);
+        this->traverse_no_op(node); // Second traverse to reset marks.
     }
 
     template<class Data, degree Degree, domain Domain>
     template<class NodeOp>
     auto node_manager<Data, Degree, Domain>::traverse_post
-        (node_t* const node, NodeOp&& op) const -> void
+        (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        auto const go = [this](auto&& go_, auto const n, auto&& op_)
+        auto const go = [this](auto&& self, auto const n, auto&& op)
         {
             n->toggle_marked();
             if (n->is_internal())
             {
-                this->for_each_son(n, [&go_, n, &op_](auto const son)
+                this->for_each_son(n, [&self, n, &op](auto const son)
                 {
                     if (n->is_marked() != son->is_marked())
                     {
-                        go_(go_, son, op_);
+                        self(self, son, op);
                     }
                 });
             }
-            std::invoke(op_, n);
+            std::invoke(op, n);
         };
 
-        go(go, node, op);
-        go(go, node, [](auto const){});
+        go(go, node, nodeOp);
+        this->traverse_no_op(node); // Second traverse to reset marks.
     }
 
     template<class Data, degree Degree, domain Domain>
     template<class NodeOp>
     auto node_manager<Data, Degree, Domain>::traverse_level
-        (node_t* const node, NodeOp&& op) const -> void
+        (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        // TODO nieje uz toto niekde?
-        auto const node_level = [this](auto const n)
+        auto const cmp = [this](auto const l, auto const r)
         {
-            return n->is_internal() ? this->get_level(n) : TerminalLevel;
-        };
-
-        auto const cmp = [this, node_level](auto const l, auto const r)
-        {
-            return node_level(l) > node_level(r);
+            return this->get_level(l) > this->get_level(r);
         };
 
         using compare_t   = decltype(cmp);
@@ -737,38 +733,21 @@ namespace teddy
         {
             auto const current = queue.top();
             queue.pop();
-            std::invoke(op, current);
-            if (current->is_terminal())
+            std::invoke(nodeOp, current);
+            if (current->is_internal())
             {
-                continue;
-            }
-            this->for_each_son(current, [&queue, current](auto const son)
-            {
-                if (son->is_marked() != current->is_marked())
+                this->for_each_son(current, [&queue, current](auto const son)
                 {
-                    queue.push(son);
-                    son->toggle_marked();
-                }
-            });
-        }
-
-        // TODO pre_order to reset mark, solve somehow inak
-        auto const go = [this](auto&& go_, auto const n, auto&& op_)
-        {
-            n->toggle_marked();
-            std::invoke(op_, n);
-            if (n->is_internal())
-            {
-                this->for_each_son(n, [&go_, n, &op_](auto const son)
-                {
-                    if (n->is_marked() != son->is_marked())
+                    if (son->is_marked() != current->is_marked())
                     {
-                        go_(go_, son, op_);
+                        queue.push(son);
+                        son->toggle_marked();
                     }
                 });
             }
-        };
-        go(go, node, [](auto const){});
+        }
+
+        this->traverse_no_op(node); // Second traverse to reset marks.
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -892,6 +871,27 @@ namespace teddy
         --nodeCount_;
         n->set_unused();
         pool_.destroy(n);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::traverse_no_op
+        (node_t* const node) const -> void
+    {
+        auto const go = [this](auto self, auto const n)
+        {
+            n->toggle_marked();
+            if (n->is_internal())
+            {
+                this->for_each_son(n, [self, n](auto const son)
+                {
+                    if (n->is_marked() != son->is_marked())
+                    {
+                        self(self, son);
+                    }
+                });
+            }
+        };
+        go(go, node);
     }
 
     template<class Data, degree Degree, domain Domain>
