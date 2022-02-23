@@ -83,6 +83,7 @@ auto example2()
     {
         auto out = "i = " + std::to_string(i) + ", SI = " + std::to_string(si);
         std::puts(out.c_str());
+        ++i;
     }
 }
 

@@ -36,7 +36,7 @@ namespace teddy
         template<uint_t N>
         static auto probabilities
             ( degrees::fixed<N>
-            , domains::fixed<N> ) -> std::vector<std::array<probability_t, N>>;
+            , domains::fixed<N> ) -> std::vector<std::array<double, N>>;
 
         /**
          *  Nonhomogenous system optimized for memory usage.
@@ -44,7 +44,7 @@ namespace teddy
          */
         static auto probabilities
             ( degrees::mixed
-            , domains::mixed ) -> std::vector<std::vector<probability_t>>;
+            , domains::mixed ) -> std::vector<std::vector<double>>;
 
         /**
          *  Nonhomogenous system optimized for speed.
@@ -53,7 +53,7 @@ namespace teddy
         template<uint_t N>
         static auto probabilities
             ( degrees::fixed<N>
-            , domains::mixed ) -> std::vector<std::array<probability_t, N>>;
+            , domains::mixed ) -> std::vector<std::array<double, N>>;
 
 
         using probabilities_t = decltype(probabilities(Degree(), Domain({})));
@@ -77,7 +77,7 @@ namespace teddy
         template<component_probabilities Ps>
         auto probability ( uint_t     j
                          , Ps const&  ps
-                         , diagram_t& f ) -> probability_t;
+                         , diagram_t& f ) -> double;
 
         /**
          *  Returns probability stored in terminal node representing value @p j
@@ -86,7 +86,7 @@ namespace teddy
          *  If there was no call to @c calculate_probabilities then
          *  the result is undefined.
          */
-        auto get_probability (uint_t j) const -> probability_t;
+        auto get_probability (uint_t j) const -> double;
 
         /**
          *  Calculates and returns probability that system represented
@@ -97,7 +97,7 @@ namespace teddy
                 , class                   Foo = void> requires (is_bss<Domain>)
         auto availability
             ( Ps const&  ps
-            , diagram_t& f ) -> second_t<Foo, probability_t>;
+            , diagram_t& f ) -> second_t<Foo, double>;
 
         /**
          *  Calculates and returns probability that system represetned by @p f
@@ -107,7 +107,7 @@ namespace teddy
         auto availability
             ( uint_t     j
             , Ps const&  ps
-            , diagram_t& f ) -> probability_t;
+            , diagram_t& f ) -> double;
 
         /**
          *  Returns probability that system is in state 1.
@@ -116,7 +116,7 @@ namespace teddy
          *  the result is undefined.
          */
         template<class Foo = void>
-        auto get_availability () const -> second_t<Foo, probability_t>;
+        auto get_availability () const -> second_t<Foo, double>;
 
         /**
          *  Returns probability that system is in state
@@ -124,7 +124,7 @@ namespace teddy
          *  If there was no call to @c calculate_probabilities then
          *  the result is undefined.
          */
-        auto get_availability (uint_t j) const -> probability_t;
+        auto get_availability (uint_t j) const -> double;
 
         /**
          *  Calculates and returns probability that system represented by @p f
@@ -134,7 +134,7 @@ namespace teddy
                 , class Foo = void > requires(is_bss<Degree>)
         auto unavailability
             ( Ps const&  ps
-            , diagram_t& f) -> second_t<Foo, probability_t>;
+            , diagram_t& f) -> second_t<Foo, double>;
 
         /**
          *  Calculates and returns probability that system represented by @p f
@@ -144,7 +144,7 @@ namespace teddy
         auto unavailability
             ( uint_t     j
             , Ps const&  ps
-            , diagram_t& f) -> probability_t;
+            , diagram_t& f) -> double;
 
         /**
          *  Returns probability that system is in state
@@ -153,7 +153,7 @@ namespace teddy
          *  the result is undefined.
          */
         template<class Foo = void>
-        auto get_unavailability () -> second_t<Foo, probability_t>;
+        auto get_unavailability () -> second_t<Foo, double>;
 
         /**
          *  Returns probability that system is in state
@@ -161,7 +161,7 @@ namespace teddy
          *  If there was no call to @c calculate_probabilities then
          *  the result is undefined.
          */
-        auto get_unavailability (uint_t j) -> probability_t;
+        auto get_unavailability (uint_t j) -> double;
 
         /**
          *  Calculates Direct Partial Boolean Derivative for @p i - th variable
@@ -205,14 +205,14 @@ namespace teddy
          *  Calculates structural importace of @p i - th component
          *  using @p dpbd derivative.
          */
-        auto structural_importance (diagram_t& dpbd) -> probability_t;
+        auto structural_importance (diagram_t& dpbd) -> double;
 
         /**
          *  Calculates structural importaces for all components using
          *  their derivatives @p dpbds .
          */
         auto structural_importances
-            (std::vector<diagram_t>& dpbds) -> std::vector<probability_t>;
+            (std::vector<diagram_t>& dpbds) -> std::vector<double>;
 
         /**
          *  Finds all Minimal Cut Vectors of the system described by @p sf
@@ -289,7 +289,7 @@ namespace teddy
     auto reliability_manager<Degree, Domain>::probability
         ( uint_t const j
         , Ps const&    ps
-        , diagram_t&   f ) -> probability_t
+        , diagram_t&   f ) -> double
     {
         this->calculate_probabilities(ps, f);
         return this->get_probability(j);
@@ -297,7 +297,7 @@ namespace teddy
 
     template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::get_probability
-        (uint_t const j) const -> probability_t
+        (uint_t const j) const -> double
     {
         auto const n = this->nodes_.get_terminal_node(j);
         return n ? n->data() : 0.0;
@@ -307,7 +307,7 @@ namespace teddy
     template<component_probabilities Ps, class Foo> requires (is_bss<Domain>)
     auto reliability_manager<Degree, Domain>::availability
         ( Ps const&  ps
-        , diagram_t& f ) -> second_t<Foo, probability_t>
+        , diagram_t& f ) -> second_t<Foo, double>
     {
         return this->availability(1, ps, f);
     }
@@ -317,7 +317,7 @@ namespace teddy
     auto reliability_manager<Degree, Domain>::availability
         ( uint_t const j
         , Ps const&    ps
-        , diagram_t&   f ) -> probability_t
+        , diagram_t&   f ) -> double
     {
         this->calculate_probabilities(ps, f);
         return this->get_availability(j);
@@ -326,7 +326,7 @@ namespace teddy
     template<degree Degree, domain Domain>
     template<class Foo>
     auto reliability_manager<Degree, Domain>::get_availability
-        () const -> second_t<Foo, probability_t>
+        () const -> second_t<Foo, double>
     {
         auto const node = this->nodes_.get_terminal_node(1);
         return node ? node->data() : 0;
@@ -334,7 +334,7 @@ namespace teddy
 
     template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::get_availability
-        (uint_t const j) const -> probability_t
+        (uint_t const j) const -> double
     {
         auto A = .0;
         this->nodes_.for_each_terminal_node([j, &A](auto const node)
@@ -351,7 +351,7 @@ namespace teddy
     template<component_probabilities Ps, class Foo> requires(is_bss<Degree>)
     auto reliability_manager<Degree, Domain>::unavailability
         ( Ps const&  ps
-        , diagram_t& f ) -> second_t<Foo, probability_t>
+        , diagram_t& f ) -> second_t<Foo, double>
     {
         return this->unavailability(1, ps, f);
     }
@@ -361,7 +361,7 @@ namespace teddy
     auto reliability_manager<Degree, Domain>::unavailability
         ( uint_t const j
         , Ps const&    ps
-        , diagram_t&   f ) -> probability_t
+        , diagram_t&   f ) -> double
     {
         this->calculate_probabilities(ps, f);
         return this->get_unavailability(j);
@@ -370,14 +370,14 @@ namespace teddy
     template<degree Degree, domain Domain>
     template<class Foo>
     auto reliability_manager<Degree, Domain>::get_unavailability
-        () -> second_t<Foo, probability_t>
+        () -> second_t<Foo, double>
     {
         return this->get_unavailability(1);
     }
 
     template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::get_unavailability
-        (uint_t const j) -> probability_t
+        (uint_t const j) -> double
     {
         auto U = .0;
         this->nodes_.for_each_terminal_node([j, &U](auto const node)
@@ -456,27 +456,27 @@ namespace teddy
 
     template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::structural_importance
-        (diagram_t& dpbd) -> probability_t
+        (diagram_t& dpbd) -> double
     {
         auto const from = level_t(0);
         auto const to   = static_cast<level_t>(this->get_var_count());
         auto const domainSize = this->nodes_.domain_product(from, to);
-        return static_cast<probability_t>(this->satisfy_count(1, dpbd))
-             / static_cast<probability_t>(domainSize);
+        return static_cast<double>(this->satisfy_count(1, dpbd))
+             / static_cast<double>(domainSize);
     }
 
     template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::structural_importances
-        (std::vector<diagram_t>& dpbds) -> std::vector<probability_t>
+        (std::vector<diagram_t>& dpbds) -> std::vector<double>
     {
         auto const from = 0u;
-        auto const to   = static_cast<level_t>(this->get_var_count() - 1);
+        auto const to   = static_cast<level_t>(this->get_var_count());
         auto const domainSize = this->nodes_.domain_product(from, to);
         return utils::fill_vector(this->get_var_count(), [&, this](auto const i)
         {
             auto const sc = this->satisfy_count(1, dpbds[i]);
-            return static_cast<probability_t>(sc)
-                 / static_cast<probability_t>(domainSize);
+            return static_cast<double>(sc)
+                 / static_cast<double>(domainSize);
         });
     }
 
