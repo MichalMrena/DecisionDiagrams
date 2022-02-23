@@ -1,7 +1,9 @@
 #include "teddy/teddy.hpp"
 #include "teddy/teddy_reliability.hpp"
 #include <iostream>
+
 #include <string>
+#include <cstdio>
 
 using namespace teddy;
 
@@ -30,6 +32,57 @@ auto pla_sanity_check()
             sum += manager.node_count(d);
         }
         std::cout << fileName << " [" << sum << "] " << std::endl;
+    }
+}
+
+auto example1()
+{
+    using namespace teddy;
+    auto manager = mdd_manager<4>(4, 1'000);
+    auto& x = manager;
+    auto g = manager.apply<ops::MULTIPLIES<4>>(x(0), x(1));
+    auto h = manager.apply<ops::MULTIPLIES<4>>(x(2), x(3));
+    auto f = manager.apply<ops::PLUS<4>>(g, h);
+    auto sc = manager.satisfy_count(3, f);
+    if (g.equals(h))
+    {
+        std::puts("This should not happen");
+    }
+    auto sa = manager.satisfy_all<std::array<uint_t, 4>>(2, f);
+    auto ds = manager.dependency_set(f);
+    std::puts("Some number:");
+    std::puts(std::to_string(sc + sa.size() + ds.size()).c_str());
+}
+
+auto example2()
+{
+    using namespace teddy;
+    auto const vector = std::vector<teddy::uint_t>
+        { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
+        , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
+    auto domains = std::vector<uint_t>({2, 3, 2, 3});
+    auto const ps = std::vector<std::vector<double>>
+    ({
+        {0.1, 0.9, 0.0},
+        {0.2, 0.6, 0.2},
+        {0.3, 0.7, 0.0},
+        {0.1, 0.6, 0.3}
+    });
+    auto manager = teddy::ifmss_manager<3>(4, 1'000, {2, 3, 2, 3});
+    auto sf = manager.from_vector(vector);
+    std::puts("Availability");
+    std::puts(std::to_string(manager.availability(1, ps, sf)).c_str());
+
+    std::puts("Unavailability");
+    std::puts(std::to_string(manager.unavailability(1, ps, sf)).c_str());
+
+    auto dpbds = manager.dpbds_i_3({1, 0}, 2, sf);
+    auto sis = manager.structural_importances(dpbds);
+    auto i = 0;
+    for (auto const si : sis)
+    {
+        auto out = "i = " + std::to_string(i) + ", SI = " + std::to_string(si);
+        std::puts(out.c_str());
     }
 }
 
@@ -80,6 +133,9 @@ auto main () -> int
     // manager.to_dot_graph(std::cout, sf);
     // manager.to_dot_graph(std::cout, cf1);
     // manager.to_dot_graph(std::cout, cf0);
+
+    example1();
+    example2();
 
     std::cout << "Done." << '\n';
     return 0;
