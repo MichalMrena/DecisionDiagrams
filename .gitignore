@@ -1,12 +1,4 @@
 build
 .vscode
-gmon.out
-nohup.out
-profile.txt
-profile.png
 valgrind.txt
-compile_flags.txt
-results
-doc/a.out
-doxygen_config
 install_manifest.txt

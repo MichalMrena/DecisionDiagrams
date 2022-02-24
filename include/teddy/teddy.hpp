@@ -8,40 +8,107 @@ namespace teddy
 {
     using default_oder = std::vector<index_t>;
 
+    /**
+     *  @brief Diagram manager for creation and manipulation
+     *  of Binary Decision Diagrams.
+     */
     struct bdd_manager : public diagram_manager< void
                                                , degrees::fixed<2>
                                                , domains::fixed<2> >
     {
+        /**
+         *  @brief Initializes BDD manager.
+         *
+         *  @param varCount Number of variables.
+         *  @param initNodeCount Number of nodes that is pre-allocated.
+         *  @param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
         bdd_manager ( std::size_t varCount
                     , std::size_t initNodeCount
                     , std::vector<index_t> order = default_oder() );
     };
 
+    /**
+     *  @brief Diagram manager for creation and manipulation
+     *  of Multi-valued Decision Diagrams.
+     *
+     *  @tparam P domain of variables.
+     */
     template<uint_t P>
     struct mdd_manager : public diagram_manager< void
                                                , degrees::fixed<P>
                                                , domains::fixed<P> >
     {
+        /**
+         *  @brief Initializes MDD manager.
+         *
+         *  @param varCount Number of variables.
+         *  @param initNodeCount Number of nodes that is pre-allocated.
+         *  @param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
         mdd_manager ( std::size_t varCount
                     , std::size_t initNodeCount
                     , std::vector<index_t> order = default_oder() );
     };
 
+    /**
+     *  @brief Diagram manager for creation and manipulation
+     *  of (integer) Multi-valued Decision Diagrams (iMDDs).
+     *
+     *  Unlike @c mdd_manager variables in iMDDs can have
+     *  different domains. Node representation is less compact in
+     *  this case since the number of sons of a node is not known
+     *  at compile time.
+     */
     struct imdd_manager : public diagram_manager< void
                                                 , degrees::mixed
                                                 , domains::mixed >
     {
+        /**
+         *  @brief Initializes iMDD manager.
+         *
+         *  @param varCount Number of variables.
+         *  @param initNodeCount Number of nodes that is pre-allocated.
+         *  @param domains Domains of variables.
+         *  Number at index i is the domain of i-th variable.
+         *  @param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
         imdd_manager ( std::size_t varCount
                      , std::size_t initNodeCount
                      , std::vector<uint_t> domains
                      , std::vector<index_t> order = default_oder() );
     };
 
+    /**
+     *  @brief Diagram manager for creation and manipulation
+     *  of (integer) Multi-valued Decision Diagrams (iMDDs).
+     *
+     *  Unlike @c mdd_manager variables in ifMDDs can have
+     *  different domains. However, node representation is the same
+     *  since the maximal number of sons is known at compile time.
+     *  Note that some memory might be allocated but unused because
+     *  each node allocates space for @p PMax sons regardles of its domain.
+     *
+     *  @tparam PMax maximum from the sizes of domains of variables.
+     */
     template<uint_t PMax>
     struct ifmdd_manager : public diagram_manager< void
                                                  , degrees::fixed<PMax>
                                                  , domains::mixed >
     {
+        /**
+         *  @brief Initializes ifMDD manager.
+         *
+         *  @param varCount Number of variables.
+         *  @param initNodeCount Number of nodes that is pre-allocated.
+         *  @param domains Domains of variables.
+         *  Number at index i is the domain of i-th variable.
+         *  @param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
         ifmdd_manager ( std::size_t varCount
                       , std::size_t initNodeCount
                       , std::vector<uint_t> domains

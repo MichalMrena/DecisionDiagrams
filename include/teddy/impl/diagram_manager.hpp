@@ -43,36 +43,183 @@ namespace teddy
         using node_t    = typename diagram<Data, Degree>::node_t;
 
     public:
-        auto constant (uint_t) -> diagram_t;
+        /**
+         *  \brief Creates diagram representing constant function.
+         *  \param v Value of the constant function.
+         *  \return Diagram representing constant function.
+         */
+        auto constant (uint_t v) -> diagram_t;
 
-        auto variable (index_t) -> diagram_t;
+        /**
+         *  \brief Creates diagram representing function of single variable.
+         *  \param i Index of the variable.
+         *  \return Diagram of a function of single variable.
+         */
+        auto variable (index_t i) -> diagram_t;
 
-        auto variable_not (index_t) -> diagram_t; // enable only for bdd
+        /**
+         *  \brief Creates BDD representing function of complemented variable.
+         *  \param i Index of the variable.
+         *  \return Diagram of a function of single variable.
+         */
+        template<class Foo = void> requires(is_bdd<Degree>)
+        auto variable_not (index_t i) -> second_t<Foo, diagram_t>;
 
+        /**
+         *  \brief Creates diagram representing function of single variable.
+         *  \param i Index of the variable.
+         *  \return Diagram of a function of single variable.
+         */
         auto operator() (index_t) -> diagram_t;
 
+        /**
+         *  \brief Creates vector of diagrams representing functions
+         *  of single variables.
+         *
+         *  \tparam T integral type convertible to unsgined int.
+         *  \param is initializer list of indices.
+         *  \return Vector of diagrams.
+         */
         template<std::convertible_to<index_t> T>
-        auto variables (std::initializer_list<T>) -> std::vector<diagram_t>;
+        auto variables (std::initializer_list<T> is) -> std::vector<diagram_t>;
 
+        /**
+         *  \brief Creates vector of diagrams representing functions
+         *  of single variables.
+         *
+         *  \tparam I iterator type for the input range.
+         *  \tparam S sentinel type for \p I . (end iterator)
+         *  \param first iterator to the first element of range of indices
+         *  represented by integral type convertible to unsgined int.
+         *  \param last sentinel for \p first (end iterator).
+         *  \return Vector of diagrams.
+         */
         template<std::input_iterator I, std::sentinel_for<I> S>
-        auto variables (I, S) -> std::vector<diagram_t>;
+        auto variables (I first, S last) -> std::vector<diagram_t>;
 
+        /**
+         *  \brief Creates vector of diagrams representing functions
+         *  of single variables.
+         *
+         *  \tparam Is range of indices represented by integral type
+         *  convertible to unsigned int.
+         *  \param is range of Ts (e.g. std::vector<unsigned int>).
+         *  \return Vector of diagrams.
+         */
         template<std::ranges::input_range Is>
-        auto variables (Is const&) -> std::vector<diagram_t>;
+        auto variables (Is const& is) -> std::vector<diagram_t>;
 
+        /**
+         *  \brief Creates diagram from a truth vector of a function.
+         *
+         *  Example for the function f(x) = max(x0, x1, x2):
+         *  \code
+         *  // Truth table:
+         *  +----+----+----+----+---+----+-----+----+---+
+         *  | x1 | x2 | x3 | f  | _ | x1 |  x2 | x3 | f |
+         *  +----+----+----+----+---+----+-----+----+---+
+         *  | 0  | 0  | 0  | 0  |   | 1  |  0  | 0  | 1 |
+         *  | 0  | 0  | 1  | 1  |   | 1  |  0  | 1  | 1 |
+         *  | 0  | 0  | 2  | 2  |   | 1  |  0  | 2  | 2 |
+         *  | 0  | 1  | 0  | 1  |   | 1  |  1  | 0  | 1 |
+         *  | 0  | 1  | 1  | 1  |   | 1  |  1  | 1  | 1 |
+         *  | 0  | 1  | 2  | 2  |   | 1  |  1  | 2  | 2 |
+         *  +----+----+----+----+---+----+-----+----+---+
+         *  \endcode
+         *
+         *  \code
+         *  // Truth vector:
+         *  [0 1 2 1 1 2 1 1 2 1 1 2]
+         *  \endcode
+         *
+         *  \code
+         *  // Teddy code:
+         *  teddy::ifmdd_manager<3> manager(3, 100, {2, 2, 3});
+         *  std::vector<unsigned int> vec {0, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2};
+         *  diagram_t f = manager.from_vector(vec);
+         *  \endcode
+         *
+         *  \param first iterator to the first element of the truth vector.
+         *  \param last sentinel for \p first . (end iterator)
+         *  \return Diagram representing function given by the truth vector.
+         */
         template<std::input_iterator I, std::sentinel_for<I> S>
-        auto from_vector (I, S) -> diagram_t;
+        auto from_vector (I first, S last) -> diagram_t;
 
+        /**
+         *  \brief Creates diagram from a truth vector of a function.
+         *
+         *  See the other overload for details.
+         *
+         *  \tparam R Type of the range that contains the truth vector.
+         *  \param vector Range representing the truth vector.
+         *  Elements of the range must be convertible to unsigned int.
+         *  \return Diagram representing function given by the truth vector.
+         */
         template<std::ranges::input_range R>
-        auto from_vector (R&&) -> diagram_t;
+        auto from_vector (R&& vector) -> diagram_t;
 
-        auto from_pla (pla_file const&, fold_type) -> std::vector<diagram_t>;
+        /**
+         *  \brief Creates BDDs defined by PLA file.
+         *
+         *  \param file PLA file loaded in the instance of \c pla_file class.
+         *  \param foldType fold type used in diagram creation.
+         *  \return Vector of diagrams.
+         */
+        template<class Foo = void> requires(is_bdd<Degree>)
+        auto from_pla ( pla_file const& file
+                      , fold_type foldType = fold_type::Tree )
+                      -> second_t<Foo, std::vector<diagram_t>>;
 
+        /**
+         *  \brief Merges two diagrams using given binary operation.
+         *
+         *  Binary operations are defined in the namespace \c teddy::ops .
+         *  All availabe operations are listed in the following table:
+         *  \code
+         *  +-------------------+---------------------------------------+
+         *  | Binary operation  |           Description                 |
+         *  +-------------------+---------------------------------------+
+         *  | AND               | Logical and. ^                        |
+         *  | OR                | Logical or. ^                         |
+         *  | XOR               | Logical xor. ^                        |
+         *  | NAND              | Logical nand. ^                       |
+         *  | NOR               | Logical nor. ^                        |
+         *  | EQUAL_TO          | Equal to relation. ^                  |
+         *  | NOT_EQUAL_TO      | Not equal to relation. ^              |
+         *  | LESS              | Less than relation. ^                 |
+         *  | LESS_EQUAL        | Less than or equal relation. ^        |
+         *  | GREATER           | Greater than relation. ^              |
+         *  | GREATER_EQUAL     | Greater than or equal relation. ^     |
+         *  | MIN               | Minimum of two values.                |
+         *  | MAX               | Maximum of two values.                |
+         *  | PLUS              | Modular addition: (a + b) mod P.      |
+         *  | MULTIPLIES        | Modular multiplication: (a * b) mod P |
+         *  +-------------------+---------------------------------------+
+         *  ^ 0 is false and 1 is true
+         * 
+         *  // Examples:
+         *  manager.apply<teddy::ops::AND>(bdd1, bdd2);
+         *  manager.apply<teddy::ops::PLUS<4>>(mdd1, mdd2);
+         *  \endcode
+         *
+         *  \tparam Op Binary operation.
+         *  \param l first diagram.
+         *  \param r second diagram.
+         *  \return Diagram representing merger of \p l and \p r .
+         */
         template<bin_op Op>
-        auto apply (diagram_t const&, diagram_t const&) -> diagram_t;
+        auto apply (diagram_t const& l, diagram_t const& r) -> diagram_t;
 
+        /**
+         *  \brief Merges diagams in a range using apply and binary operation.
+         *
+         *  \tparam Op Binary operation.
+         *  \param range range of diagrams to be merged.
+         *  \return Diagram representing merger of all diagrams from the range.
+         */
         template<bin_op Op, std::ranges::input_range R>
-        auto left_fold (R const&) -> diagram_t;
+        auto left_fold (R const& range) -> diagram_t;
 
         template< bin_op               Op
                 , std::input_iterator  I
@@ -194,8 +341,9 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<class Foo> requires(is_bdd<Degree>)
     auto diagram_manager<Data, Degree, Domain>::variable_not
-        (index_t const i) -> diagram_t
+        (index_t const i) -> second_t<Foo, diagram_t>
     {
         return diagram_t(nodes_.internal_node(i, nodes_.make_sons(i,
             [this](auto const v)
@@ -333,9 +481,10 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    template<class Foo> requires(is_bdd<Degree>)
     auto diagram_manager<Data, Degree, Domain>::from_pla
         ( pla_file const& file
-        , fold_type const foldType ) -> std::vector<diagram_t>
+        , fold_type const foldType ) -> second_t<Foo, std::vector<diagram_t>>
     {
         auto const product = [this](auto const& cube)
         {
