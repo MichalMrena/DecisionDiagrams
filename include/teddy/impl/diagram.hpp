@@ -14,6 +14,13 @@ namespace teddy
     template<degree Deg, domain Dom>
     class reliability_manager;
 
+    /**
+     *  \brief Cheap wrapper for the internal diagram node type.
+     *
+     *  Instance of the diagram holds pointer to an internal node. Therefore,
+     *  it is a cheap value type. Multiple diagrams can point to a same node
+     *  i.e. represent the same function.
+     */
     template<class Data, degree D>
     class diagram
     {
@@ -24,37 +31,101 @@ namespace teddy
         template<degree De, domain Do>
         friend class reliability_manager;
 
-    public:
+    private:
         using node_t = node<Data, D>;
 
     public:
+        /**
+         *  \brief Default constructed diagram. Points to no node
+         *  and should not be used.
+         *
+         *  Technically, this constructor does not need to exists at all but for
+         *  the library user it might be useful to create e.g. vector
+         *  of empty diagrams and assign them later.
+         */
         diagram ();
-        explicit diagram (node_t*);
-        diagram (diagram const&);
-        diagram (diagram&&) noexcept;
+
+        /**
+         *  \brief Cheap copy constructor.
+         *  \param other Diagram to be copied
+         */
+        diagram (diagram const& other);
+
+        /**
+         *  \brief Cheap move constructor.
+         *  \param other Diagram to be moved from.
+         */
+        diagram (diagram&& other) noexcept;
+
+        /**
+         *  \brief Destructor. Ensures correct reference counting
+         *  using RAII pattern.
+         */
         ~diagram();
 
-        auto operator= (diagram)  -> diagram&;
-        auto swap      (diagram&) -> void;
-        auto equals    (diagram const&) const -> bool;
+        /**
+         *  \brief Assigns pointer from the other diagram.
+         *  \param other Diagram to be assigned into this one.
+         *  \return Reference to this diagram.
+         */
+        auto operator= (diagram other) -> diagram&;
+
+        /**
+         *  \brief Swaps pointers in this and other diagram.
+         *  \param other Diagram to be swapped with this one.
+         */
+        auto swap (diagram& other) -> void;
+
+        /**
+         *  \brief Compares node pointers in this and other diagram.
+         *  \param other Diagram to be compared with this one.
+         *  \return true iif diagrams represent the same function.
+         */
+        auto equals (diagram const& other) const -> bool;
 
     private:
+        explicit diagram (node_t*);
         auto get_root () const -> node_t*;
 
     private:
         node_t* root_ {nullptr};
     };
 
+    /**
+     *  \brief Swaps pointer in the two diagrams.
+     *  \param lhs First diagram.
+     *  \param rhs Second diagram.
+     */
     template<class Data, degree D>
-    auto swap (diagram<Data, D>& l, diagram<Data, D>& r)
+    auto swap (diagram<Data, D>& lhs, diagram<Data, D>& rhs) -> void
     {
-        l.swap(r);
+        lhs.swap(rhs);
     }
 
+    /**
+     *  \brief Compares two diagrams.
+     *  \param lhs First diagram.
+     *  \param rhs Second diagram.
+     *  \return true iif diagrams represent the same function.
+     */
     template<class Data, degree D>
-    auto equals (diagram<Data, D> const& l, diagram<Data, D> const& r)
+    auto operator==
+        (diagram<Data, D> const& lhs, diagram<Data, D> const& rhs) -> bool
     {
-        return l.equals(r);
+        return lhs.equals(rhs);
+    }
+
+    /**
+     *  \brief Compares two diagrams.
+     *  \param lhs First diagram.
+     *  \param rhs Second diagram.
+     *  \return true iif diagrams represent the same function.
+     */
+    template<class Data, degree D>
+    auto equals
+        (diagram<Data, D> const& lhs, diagram<Data, D> const& rhs) -> bool
+    {
+        return lhs.equals(rhs);
     }
 
     template<class Data, degree D>

@@ -35,12 +35,19 @@ namespace teddy
         Tree
     };
 
+    /**
+     *  \brief Base class for all diagram managers that generically
+     *  implements all of the algorithms.
+     */
     template<class Data, degree Degree, domain Domain>
     class diagram_manager
     {
     public:
+        /**
+         *  \brief Alias for the diagram type used in the
+         *  functions of this manager.
+         */
         using diagram_t = diagram<Data, Degree>;
-        using node_t    = typename diagram<Data, Degree>::node_t;
 
     public:
         /**
@@ -212,75 +219,369 @@ namespace teddy
         auto apply (diagram_t const& l, diagram_t const& r) -> diagram_t;
 
         /**
-         *  \brief Merges diagams in a range using apply and binary operation.
+         *  \brief Merges diagams in a range using the \c apply function
+         *  and binary operation.
+         *
+         *  Uses left fold order of evaluation (sequentially from the left).
+         *
+         *  @code
+         *  // Example:
+         *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
+         *  diagram_t product = manager.left_fold<teddy::ops>(vs);
+         *  @endcode
          *
          *  \tparam Op Binary operation.
-         *  \param range range of diagrams to be merged.
+         *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>).
+         *  \param range Input range of diagrams to be merged.
          *  \return Diagram representing merger of all diagrams from the range.
          */
         template<bin_op Op, std::ranges::input_range R>
         auto left_fold (R const& range) -> diagram_t;
 
+        /**
+         *  \brief Merges diagams in a range using the \c apply function
+         *  and binary operation.
+         *
+         *  Uses left fold order of evaluation (sequentially from the left).
+         *
+         *  @code
+         *  // Example:
+         *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
+         *  diagram_t product = manager.left_fold<teddy::ops>(
+         *      vs.begin(), vs.end());
+         *  @endcode
+         *
+         *  \tparam Op Binary operation.
+         *  \tparam I Range iterator type.
+         *  \tparam S Sentinel type for \c I (end iterator).
+         *  \param first Input iterator to the first diagram.
+         *  \param last Sentinel for \p first (end iterator).
+         *  \return Diagram representing merger of all diagrams from the range.
+         */
         template< bin_op               Op
                 , std::input_iterator  I
                 , std::sentinel_for<I> S >
-        auto left_fold (I, S) -> diagram_t;
+        auto left_fold (I first, S last) -> diagram_t;
 
+        /**
+         *  \brief Merges diagams in a range using the \c apply function
+         *  and binary operation.
+         *
+         *  Uses tree fold order of evaluation ((d1 op d2) op (d3 op d4) ...) .
+         *  Tree fold uses the input range \p range to store some intermediate
+         *  results. \p range is left in valid but unspecified state.
+         *
+         *  @code
+         *  // Example:
+         *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
+         *  diagram_t product = manager.tree_fold<teddy::ops>(vs);
+         *  @endcode
+         *
+         *  \tparam Op Binary operation.
+         *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>).
+         *  \param range Random access range of diagrams to be merged.
+         *  (e.g. std::vector)
+         *  \return Diagram representing merger of all diagrams from the range.
+         */
         template<bin_op Op, std::ranges::random_access_range R>
-        auto tree_fold (R&) -> diagram_t;
+        auto tree_fold (R& range) -> diagram_t;
 
+        /**
+         *  \brief Merges diagams in a range using the \c apply function
+         *  and binary operation.
+         *
+         *  Uses tree fold order of evaluation ((d1 op d2) op (d3 op d4) ...) .
+         *  Tree fold uses the input range \p range to store some intermediate
+         *  results. \p range is left in valid but unspecified state.
+         *
+         *  @code
+         *  // Example:
+         *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
+         *  diagram_t product = manager.tree_fold<teddy::ops>(
+         *      vs.begin(), vs.end());
+         *  @endcode
+         *
+         *  \tparam Op Binary operation.
+         *  \tparam I Range iterator type.
+         *  \tparam S Sentinel type for \c I (end iterator).
+         *  \param first Random access iterator to the first diagram.
+         *  \param last Sentinel for \p first (end iterator).
+         *  \return Diagram representing merger of all diagrams from the range.
+         */
         template< bin_op                      Op
                 , std::random_access_iterator I
                 , std::sentinel_for<I>        S >
-        auto tree_fold (I, S) -> diagram_t;
+        auto tree_fold (I first, S last) -> diagram_t;
 
+        /**
+         *  \brief Evaluates value of the function represented by the diagram.
+         *
+         *  Complexity is \c O(n) where \c n is the number of variables.
+         *
+         *  \tparam Vars Container type that defines operator[] and returns
+         *  value convertible to unsigned int.
+         *  \param d Diagram.
+         *  \param vs Container holding values of variables.
+         *  \return Value of the function represented by \p d for variable
+         *  values given in \p vs .
+         */
         template<in_var_values Vars>
-        auto evaluate (diagram_t const&, Vars const&) const -> uint_t;
+        auto evaluate (diagram_t const& d, Vars const& vs) const -> uint_t;
 
+        /**
+         *  \brief Calculates number of variable assignments for which
+         *  the functions evaluates to 1.
+         *
+         *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
+         *
+         *  \tparam Foo Dummy parameter to enable SFINE.
+         *  \param d Diagram representing the function.
+         *  \return Number of different variable assignments for which the
+         *  the function represented by \p d evaluates to 1.
+         */
         template<class Foo = void> requires(is_bdd<Degree>)
-        auto satisfy_count (diagram_t&) -> second_t<Foo, std::size_t>;
+        auto satisfy_count (diagram_t& d) -> second_t<Foo, std::size_t>;
 
-        auto satisfy_count (uint_t, diagram_t&) -> std::size_t;
+        /**
+         *  \brief Calculates number of variable assignments for which
+         *  the functions evaluates to certain value.
+         *
+         *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
+         *
+         *  \param val Value of the function.
+         *  \param d Diagram representing the function.
+         *  \return Number of different variable assignments for which the
+         *  the function represented by \p d evaluates to \p val .
+         */
+        auto satisfy_count (uint_t val, diagram_t& d) -> std::size_t;
 
+        /**
+         *  \brief Enumerates all elements of the satisfying set.
+         *
+         *  Enumerates all elements of the satisfying set of the function
+         *  i.e. variable assignments for which the Boolean function
+         *  evaluates to 1.
+         *
+         *  Complexity is \c O(n*|Sf|) where \c |Sf| is the size of the
+         *  satisfying set and \c n is the number of variables. Please
+         *  note that this is quite high for bigger functions and
+         *  the computation will probably not finish in reasonable time.
+         *
+         *  \tparam Vars Container type that defines \c operator[] and allows
+         *  assigning unsigned integers.
+         *  \tparam Foo Dummy parameter to enable SFINE.
+         *  \param d Diagram representing the function.
+         *  \return Vector of \p Vars .
+         */
         template<out_var_values Vars, class Foo = void> requires(is_bdd<Degree>)
         auto satisfy_all
-            (diagram_t const&) const -> second_t<Foo, std::vector<Vars>>;
+            (diagram_t const& d) const -> second_t<Foo, std::vector<Vars>>;
 
+        /**
+         *  \brief Enumerates all elements of the satisfying set.
+         *
+         *  Enumerates all elements of the satisfying set of the function
+         *  i.e. variable assignments for which the function
+         *  evaluates to certain value.
+         *
+         *  Complexity is \c O(n*|Sf|) where \c |Sf| is the size of the
+         *  satisfying set and \c n is the number of variables. Please
+         *  note that this is quite high for bigger functions and
+         *  the computation will probably not finish in reasonable time.
+         *
+         *  \tparam Vars Container type that defines \c operator[] and allows
+         *  assigning unsigned integers.
+         *  \param val Value of the function.
+         *  \param d Diagram representing the function.
+         *  \return Vector of \p Vars .
+         */
         template<out_var_values Vars>
-        auto satisfy_all (uint_t, diagram_t const&) const -> std::vector<Vars>;
+        auto satisfy_all
+            (uint_t val, diagram_t const& d) const -> std::vector<Vars>;
 
+        /**
+         *  \brief Enumerates all elements of the satisfying set.
+         *
+         *  Enumerates all elements of the satisfying set of the function
+         *  i.e. variable assignments for which the function
+         *  evaluates to certain value.
+         *
+         *  Complexity is \c O(n*|Sf|) where \c |Sf| is the size of the
+         *  satisfying set and \c n is the number of variables. Please
+         *  note that this is quite high for bigger functions and
+         *  the computation will probably not finish in reasonable time.
+         *
+         *  \tparam Vars Container type that defines \c operator[] and allows
+         *  assigning unsigned integers.
+         *  \tparam O Output iterator type.
+         *  \param val Value of the function.
+         *  \param d Diagram representing the function.
+         *  \param out Output iterator that is used to output instances
+         *  of \p Vars .
+         */
         template< out_var_values             Vars
-                , std::output_iterator<Vars> Out >
-        auto satisfy_all_g (uint_t, diagram_t const&, Out) const -> void;
+                , std::output_iterator<Vars> O >
+        auto satisfy_all_g
+            (uint_t val, diagram_t const& d, O out) const -> void;
 
-        auto cofactor (diagram_t const&, index_t, uint_t) -> diagram_t;
+        /**
+         *  \brief Calculates cofactor of the functions.
+         *
+         *  Calculates cofactor of the function i.e. fixes value of the \p i th
+         *  variable to the value \p val .
+         *
+         *  \param d Diagram representing the function.
+         *  \param i Index of the variable to be fixed.
+         *  \param val Value to which the \p i th varibale should be fixed.
+         *  \return Diagram representing cofactor of the function.
+         */
+        auto cofactor (diagram_t const& d, index_t i, uint_t val) -> diagram_t;
 
+        /**
+         *  \brief Transforms values of the function.
+         *
+         *  @code
+         *  // Example of the call with 4-valued MDD.
+         *  manager.transform(diagram, [](unsigned int v)
+         *  {
+         *      return 3 - v;
+         *  });
+         *  @endcode
+         *
+         *  \tparam F Type of the transformation function.
+         *  \param d Diagram representing the function.
+         *  \param f Transformation function that is applied
+         *  to values of the function. Default value keeps 0 and transform
+         *  everything else to 1.
+         *  \return Diagram representing transformed function.
+         */
         template<uint_to_bool F>
-        auto booleanize (diagram_t const&, F = utils::not_zero) -> diagram_t;
+        auto transform
+            (diagram_t const& d, F f = utils::not_zero) -> diagram_t;
 
-        auto dependency_set (diagram_t const&) const -> std::vector<index_t>;
+        /**
+         *  \brief Enumerates indices of variables that the function depends on.
+         *
+         *  \param d Diagram representing the function.
+         *  \return Vector of indices.
+         */
+        auto dependency_set (diagram_t const& d) const -> std::vector<index_t>;
 
+        /**
+         *  \brief Enumerates indices of variables that the function depends on.
+         *
+         *  \tparam O Output iterator type.
+         *  \param d Diagram representing the function.
+         *  \param out Output iterator that is used to output indices.
+         *  \return Vector of indices.
+         */
         template<std::output_iterator<index_t> O>
-        auto dependency_set_g (diagram_t const&, O) const -> void;
+        auto dependency_set_g (diagram_t const& d, O out) const -> void;
 
+        /**
+         *  \brief Reduces diagrams to its canonical form.
+         *
+         *  You probably won't need to call this.
+         *
+         *  \param  d Diagram.
+         *  \return Diagram in a reduced canonical form.
+         */
         auto reduce (diagram_t const&) -> diagram_t;
 
+        /**
+         *  \brief Returns number of nodes that are currently
+         *  used by the manager.
+         *
+         *  This function returns number of nodes that are currently stored
+         *  in the unique tables. Total number of allocated nodes might
+         *  and probably will be higher. See implementation details on github
+         *  for details.
+         *
+         *  \return Number of nodes.
+         */
         auto node_count () const -> std::size_t;
 
-        auto node_count (diagram_t const&) const -> std::size_t;
+        /**
+         *  \brief Returns number of nodes in the diagram including
+         *  terminal nodes.
+         *  \param d Diagram.
+         *  \return Number of node.
+         */
+        auto node_count (diagram_t const& d) const -> std::size_t;
 
-        auto to_dot_graph (std::ostream&) const -> void;
+        /**
+         *  \brief Prints dot representation of the graph.
+         *
+         *  Prints dot representation of the entire multi rooted graph to
+         *  the output stream.
+         *
+         *  \param out Output stream (e.g. \c std::cout or \c std::ofstream )
+         */
+        auto to_dot_graph (std::ostream& out) const -> void;
 
-        auto to_dot_graph (std::ostream&, diagram_t const&) const -> void;
+        /**
+         *  \brief Prints dot representation of the diagram.
+         *
+         *  Prints dot representation of the diagram to
+         *  the output stream.
+         *
+         *  \param out Output stream (e.g. \c std::cout or \c std::ofstream )
+         *  \param d Diagram.
+         */
+        auto to_dot_graph
+            (std::ostream& out, diagram_t const& d) const -> void;
 
+        /**
+         *  \brief Runs garbage collection.
+         *
+         *  Forces the garbage collection to run which removes nodes that are
+         *  not referenced from the unique tables. These nodes, however, are
+         *  not deallocated. See implementation details on github
+         *  for details.
+         *  GC is run automatically so you probably won't need to run
+         *  this function yourself.
+         */
         auto gc () -> void;
 
+        /**
+         *  \brief Runs variable sifting algorithm that tries to minimize
+         *  number of nodes.
+         */
         auto sift () -> void;
 
-    public:
+        /**
+         *  \brief Returns number of variables for this manager
+         *  set in the constructor.
+         *  \return Number of variables.
+         */
         auto get_var_count () const -> std::size_t;
-        auto get_order     () const -> std::vector<index_t> const&;
-        auto get_domains   () const -> std::vector<uint_t>;
+
+        /**
+         *  \brief Returns current order of variables.
+         *
+         *  If no sifting was performed in between call to the constructor
+         *  and call to this function then the order is the same as
+         *  specified in the constructor.
+         *
+         *  \return Vector of indices. Index at l-th position is the
+         *  index of variable at l-th level of the diagram.
+         */
+        auto get_order () const -> std::vector<index_t> const&;
+
+        /**
+         *  \brief Return domains of variables.
+         *
+         *  In case of \c bdd_manager and \c mdd_manager domains of each
+         *  variable is the same i.e. 2 or P. In case of \c imdd_manager
+         *  and \c ifmdd_manager the domains are the same as set
+         *  in the constructor.
+         *
+         *  \return Vector of domains.
+         */
+        auto get_domains () const -> std::vector<uint_t>;
+
+    private:
+        using node_t = typename diagram<Data, Degree>::node_t;
 
     private:
         template<class F>
@@ -787,9 +1088,9 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<out_var_values Vars, std::output_iterator<Vars> Out>
+    template<out_var_values Vars, std::output_iterator<Vars> O>
     auto diagram_manager<Data, Degree, Domain>::satisfy_all_g
-        (uint_t const val, diagram_t const& d, Out out) const -> void
+        (uint_t const val, diagram_t const& d, O out) const -> void
     {
         if constexpr (domains::is_fixed<Domain>()())
         {
@@ -889,7 +1190,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     template<uint_to_bool F>
-    auto diagram_manager<Data, Degree, Domain>::booleanize
+    auto diagram_manager<Data, Degree, Domain>::transform
         (diagram_t const& d, F f) -> diagram_t
     {
         return diagram_t(this->transform_terminal(d.get_root(), f));

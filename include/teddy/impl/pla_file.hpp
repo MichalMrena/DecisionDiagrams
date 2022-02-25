@@ -1,12 +1,6 @@
 #ifndef MIX_DD_PLA_FILE_HPP
 #define MIX_DD_PLA_FILE_HPP
 
-// #include "../utils/string_utils.hpp"
-// #include "../utils/parsing_utils.hpp"
-// #include "../utils/file_reader.hpp"
-// #include "../utils/more_vector.hpp"
-// #include "../utils/more_iterator.hpp"
-
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -25,7 +19,7 @@
 namespace teddy
 {
     /**
-     *  @brief Bool cube.
+     *  \brief Bool cube.
      */
     class cube_t
     {
@@ -54,15 +48,24 @@ namespace teddy
     };
 
     /**
-     *  @brief Representation of a PLA file.
+     *  \brief Representation of a PLA file.
      */
     class pla_file
     {
     public:
+        /**
+         *  \brief Loads PLA file from a file at given path.
+         *  \param path Path to the file.
+         *  \return Optional holding instance of \c pla_file or
+         *  \c std::nullopt if the loading failed.
+         */
         static auto load_file
-            (std::string const&) -> std::optional<pla_file>;
+            (std::string const& path) -> std::optional<pla_file>;
 
     public:
+        /**
+         *  \brief Represents one line of a PLA file.
+         */
         struct pla_line
         {
             cube_t cube;
@@ -70,15 +73,64 @@ namespace teddy
         };
 
     public:
-        auto variable_count    () const    -> std::size_t;
-        auto function_count    () const    -> std::size_t;
-        auto line_count        () const    -> std::size_t;
-        auto get_lines         () const &  -> std::vector<pla_line> const&;
-        auto get_lines         ()       && -> std::vector<pla_line>;
-        auto get_input_labels  () const &  -> std::vector<std::string> const&;
-        auto get_input_labels  ()       && -> std::vector<std::string>;
-        auto get_output_labels () const &  -> std::vector<std::string> const&;
-        auto get_output_labels ()       && -> std::vector<std::string>;
+        /**
+         *  \brief Returns number of variables in the file.
+         *  \return Number of variables.
+         */
+        auto variable_count () const -> std::size_t;
+
+        /**
+         *  \brief Returns number of functions in the file.
+         *  \return Number of functions.
+         */
+        auto function_count () const -> std::size_t;
+
+        /**
+         *  \brief Returns number of lines in the file
+         *
+         *  Does not count headers and comments, only lines containing cubes.
+         *
+         *  \return Number of lines.
+         */
+        auto line_count () const -> std::size_t;
+
+        /**
+         *  \brief Returns reference to a vector holding lines.
+         *  \return Reference to a vector.
+         */
+        auto get_lines () const & -> std::vector<pla_line> const&;
+
+        /**
+         *  \brief Returns copy of a vector holding lines.
+         *  \return Copy of a vector.
+         */
+        auto get_lines () && -> std::vector<pla_line>;
+
+        /**
+         *  \brief Returns reference to a vector holding
+         *  labels of input variables.
+         *  \return Reference to a vector.
+         */
+        auto get_input_labels () const & -> std::vector<std::string> const&;
+
+        /**
+         *  \brief Returns copy of a vector holding
+         *  labels of input variables.
+         *  \return Copy of a vector.
+         */
+        auto get_input_labels () && -> std::vector<std::string>;
+
+        /**
+         *  \brief Return reference to a vector holding labels of functions.
+         *  \return Reference to a vector.
+         */
+        auto get_output_labels () const & -> std::vector<std::string> const&;
+
+        /**
+         *  \brief Return copy of a vector holding labels of functions.
+         *  \return Copy a vector.
+         */
+        auto get_output_labels () && -> std::vector<std::string>;
 
     private:
         pla_file ( std::vector<pla_line>    lines

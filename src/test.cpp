@@ -704,7 +704,7 @@ namespace teddy::test
         auto const zero = manager.constant(0);
         auto const one  = manager.constant(1);
         auto const sup  = manager.constant(max);
-        auto const bd   = manager.booleanize(diagram, utils::not_zero);
+        auto const bd   = manager.transform(diagram, utils::not_zero);
         auto const rd   = manager.reduce(diagram);
 
         if (not manager.template apply<AND>(bd, zero).equals(zero))
