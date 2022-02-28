@@ -169,6 +169,7 @@ namespace teddy
         /**
          *  \brief Creates BDDs defined by PLA file.
          *
+         *  \tparam Foo Dummy template to enable SFINE.
          *  \param file PLA file loaded in the instance of \c pla_file class.
          *  \param foldType fold type used in diagram creation.
          *  \return Vector of diagrams.

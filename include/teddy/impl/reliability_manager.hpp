@@ -12,9 +12,10 @@ namespace teddy
     concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
 
     template<class Probabilities>
-    concept component_probabilities = requires(Probabilities ps)
+    concept component_probabilities =
+        requires(Probabilities ps, index_t index, uint_t val)
     {
-        { ps[index_t()][index_t()] } -> std::convertible_to<double>;
+        { ps[index][val] } -> std::convertible_to<double>;
     };
 
     struct value_change
@@ -62,29 +63,50 @@ namespace teddy
 
     public:
         /**
-         *  Calculates probability of reaching each terminal node
-         *  of @p f given state probabilities @p ps .
+         *  \brief Calculates probabilities of all system states.
+         *
+         *  When used as \c ps[i][k] parameter \p ps must return probability
+         *  that i-th component is in state k.
+         *  After a call to this method you can acces individual system
+         *  state probabilities using \c get_probability method.
+         *
+         *  \tparam Type that holds component state probabilities.
+         *  \param ps Componenet state probabilities.
+         *  \param sf Structure function.
          */
         template<component_probabilities Ps>
         auto calculate_probabilities
-            (Ps const& ps, diagram_t& f) -> void;
+            (Ps const& ps, diagram_t& sf) -> void;
 
         /**
-         *  Calculates and returns probability that the system represented
-         *  by @p f is in state greater or equal to @p j
-         *  given probabilities @p ps .
+         *  \brief Calculates probability of a system state \p j .
+         *
+         *  When used as \c ps[i][k] parameter \p ps must return probability
+         *  that i-th component is in state k.
+         *
+         *  \tparam Type that holds component state probabilities.
+         *  \param j System state.
+         *  \param ps Component state probabilities.
+         *  \param sf Structure sunction.
+         *  \return Probability that system described by \p sf is in
+         *  state \p j given probabilities \p ps .
          */
         template<component_probabilities Ps>
         auto probability ( uint_t     j
                          , Ps const&  ps
-                         , diagram_t& f ) -> double;
+                         , diagram_t& sf ) -> double;
 
         /**
-         *  Returns probability stored in terminal node representing value @p j
-         *  after call to @c calculate_probabilities .
-         *  Zero is returned if there is no such terminal node.
-         *  If there was no call to @c calculate_probabilities then
-         *  the result is undefined.
+         *  \brief Returns probability of given system state.
+         *
+         *  Call to \c calculate_probabilities must proceed call to this
+         *  funtion otherwise the result is undefined. This is a bit
+         *  unfortunate but the idea is that probabilities are calculated
+         *  once using \c calculate_probabilities and later accessed using
+         *  \c get_probability .
+         *
+         *  \param j System state.
+         *  \return Probability of a system state \p j .
          */
         auto get_probability (uint_t j) const -> double;
 
@@ -254,9 +276,9 @@ namespace teddy
     template<degree Degree, domain Domain>
     template<component_probabilities Ps>
     auto reliability_manager<Degree, Domain>::calculate_probabilities
-        (Ps const& ps, diagram_t& f) -> void
+        (Ps const& ps, diagram_t& sf) -> void
     {
-        auto const root = f.get_root();
+        auto const root = sf.get_root();
 
         this->nodes_.traverse_pre(root, [](auto const n)
         {
