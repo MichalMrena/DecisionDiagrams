@@ -2,3 +2,4 @@ build
 .vscode
 valgrind.txt
 install_manifest.txt
+doxygen/doc
