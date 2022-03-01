@@ -76,8 +76,17 @@ auto example2()
     std::puts("Unavailability");
     std::puts(std::to_string(manager.unavailability(1, ps, sf)).c_str());
 
-    auto dpbds = manager.dpbds_i_3({1, 0}, 2, sf);
-    auto sis = manager.structural_importances(dpbds);
+    using diagram_t = teddy::ifmss_manager<3>::diagram_t;
+    auto dpbds = std::vector<diagram_t>();
+    for (auto i = 0u; i < manager.get_var_count(); ++i)
+    {
+        dpbds.push_back(manager.idpbd_type_3_decrease({1, 0}, 1, sf, i));
+    }
+    auto sis = std::vector<double>();
+    for (auto i = 0u; i < manager.get_var_count(); ++i)
+    {
+        sis.push_back(manager.structural_importance(dpbds[i]));
+    }
     auto i = 0;
     for (auto const si : sis)
     {
@@ -89,28 +98,8 @@ auto example2()
 
 auto main () -> int
 {
-    // class diagram_manager<Data, Degree, Domains>
-    // class bin_diagram_manager<Data> : diagram_manager<Data, degrees::nary<2>,  domains::nary<2>>
-
-    // class bdd_manager       : bin_diagram_manager<void>
-        // TODO conditional_t pre P == 2 dediť z bin_diagram_manager
-    // class mdd_manager<P>    : diagram_manager<void, degrees::nary<P>,  domains::nary<P>>
-    // class imdd_manager      : diagram_manager<void, degrees::mixed,    domains::mixed>
-    // class ifmdd_manager<PM> : diagram_manager<void, degrees::nary<PM>, domains::mixed>
-
-        // TODO conditional_t pre P == 2 dediť z bin_diagram_manager
-    // class hom_mss_reliability<P> : diagram_manager<double, degrees::nary<P>, domains::nary<P>>
-    // class het_mss_reliability    : diagram_manager<double, degrees::mixed,   domains::mixed>
-    // class bss_reliability        : hom_mss_reliability<2>
-
-    // bdd_manager()
-    // mdd_manager<P>()
-    // imdd_manager(domains)
-    // ifmdd_manager<P>(domains)
-
-    // TODO bit flag in-use, set when vertex is moved back into pool,
-    // vertices can be removed from cache based on this flag
-    // unused vertices can be chained using the next member
+    // TODO vsetko co pouzivatel priamo nepotrebuje by mohlo by v
+    // namespace teddy::impl
 
     // pla_test_speed(1);
     // pla_sanity_check();
@@ -120,20 +109,6 @@ auto main () -> int
     // test_mss();
 
     // pla_sanity_check();
-
-    // auto const vector = std::vector<teddy::uint_t>
-    //     { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
-    //     , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
-    // auto domains = std::vector<teddy::uint_t>({2, 3, 2, 3});
-    // auto manager = teddy::ifmss_manager<3>(4, 1000, domains);
-    // auto sf = manager.from_vector(vector);
-
-    // auto cf1 = manager.cofactor(sf, 0, 1);
-    // auto cf0 = manager.cofactor(sf, 0, 0);
-
-    // manager.to_dot_graph(std::cout, sf);
-    // manager.to_dot_graph(std::cout, cf1);
-    // manager.to_dot_graph(std::cout, cf0);
 
     example1();
     example2();

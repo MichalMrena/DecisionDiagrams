@@ -25,14 +25,26 @@ namespace teddy
         { f(l, r) } -> std::convertible_to<bool>;
     };
 
+    /**
+     *  \struct value_change
+     *  \brief Describes change of a value of a variable or a function.
+     */
     struct value_change
     {
         uint_t from;
         uint_t to;
     };
 
+    /**
+     *  \class reliability_manager
+     *  \brief Base class for reliability managers.
+     *
+     *  Base class for reliability managers. Defines all functions for
+     *  reliability analysis.
+     */
     template<degree Degree, domain Domain>
-    class reliability_manager : public diagram_manager<double, Degree, Domain>
+    class reliability_manager
+        : public diagram_manager<double, Degree, Domain>
     {
     public:
         using probability_t = double;
@@ -256,15 +268,88 @@ namespace teddy
         auto get_unavailability (uint_t j) -> double;
 
         /**
-         *  Calculates Direct Partial Boolean Derivative for @p i - th variable
-         *  where @p var describes change in value of @p i - th variable and
-         *  @p f describes change in value of the function represented
-         *  by @p sf .
+         *  \brief Calculates Direct Partial Boolean Derivative.
+         *
+         *  \param var Change of the value of \p i th component.
+         *  \param f Change of the value of the system.
+         *  \param sf Structure function.
+         *  \param i Index of the component.
+         *  \return Diagram representing Direct Partial Boolean Derivative.
          */
         auto dpbd ( value_change     var
                   , value_change     f
                   , diagram_t const& sf
                   , index_t          i ) -> diagram_t;
+
+        /**
+         *  \brief Calculates Direct Partial Boolean Derivative of type 1.
+         *
+         *  Identifies situation in which change of the state of \p i th
+         *  component causes change of the system state from the state \p j
+         *  to a worse state.
+         *
+         *  \param var Change of the value of \p i th component.
+         *  \param j System state.
+         *  \param sf Structure function.
+         *  \param i Index of the component.
+         *  \return Diagram representing Direct Partial Boolean Derivative
+         *  of type 1.
+         */
+        auto idpbd_type_1_decrease ( value_change     var
+                                   , uint_t           j
+                                   , diagram_t const& sf
+                                   , index_t          i ) -> diagram_t;
+
+        /**
+         *  \brief Calculates Direct Partial Boolean Derivative of type 1.
+         *
+         *  Identifies situation in which change of the state of \p i th
+         *  component causes change of the system state from the state \p j
+         *  to a better state.
+         *
+         *  \param var Change of the value of \p i th component.
+         *  \param j System state.
+         *  \param sf Structure function.
+         *  \param i Index of the component.
+         *  \return Diagram representing Direct Partial Boolean Derivative
+         *  of type 1.
+         */
+        auto idpbd_type_1_increase ( value_change     var
+                                   , uint_t           j
+                                   , diagram_t const& sf
+                                   , index_t          i ) -> diagram_t;
+
+        /**
+         *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+         *
+         *  Identifies situation in which change of the state of \p i th
+         *  component causes degradation of the system state.
+         *
+         *  \param var Change of the value of \p i th component.
+         *  \param sf Structure function.
+         *  \param i Index of the component.
+         *  \return Diagram representing Direct Partial Boolean Derivative
+         *  of type 2.
+         */
+        auto idpbd_type_2_decrease ( value_change     var
+                                   , diagram_t const& sf
+                                   , index_t          i ) -> diagram_t;
+
+        /**
+         *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+         *
+         *  Identifies situation in which change of the state of \p i th
+         *  component causes improvement of the system state.
+         *
+         *  \param var Change of the value of \p i th component.
+         *  \param sf Structure function.
+         *  \param i Index of the component.
+         *  \return Diagram representing Direct Partial Boolean Derivative
+         *  of type 2.
+         */
+        auto idpbd_type_2_increase ( value_change     var
+                                   , diagram_t const& sf
+                                   , index_t          i ) -> diagram_t;
 
         /**
          *  Calculate Direct Partial Boolean Derivative of type 3 for
@@ -291,33 +376,10 @@ namespace teddy
             , index_t          i ) -> diagram_t;
 
         /**
-         *  Calculates Direc Partial Boolean Derivatives ( @c dpbd ) for
-         *  each variable.
-         */
-        auto dpbds ( value_change     var
-                   , value_change     f
-                   , diagram_t const& sf ) -> std::vector<diagram_t>;
-
-        /**
-         *  Calculate Direct Partial Boolean Derivative of
-         *  type 3 ( @c idpbd_type_3_decrease ) for each variable.
-         */
-        auto dpbds_i_3 ( value_change     var
-                       , uint_t           f
-                       , diagram_t const& sf ) -> std::vector<diagram_t>;
-
-        /**
          *  Calculates structural importace of @p i - th component
          *  using @p dpbd derivative.
          */
         auto structural_importance (diagram_t& dpbd) -> double;
-
-        /**
-         *  Calculates structural importaces for all components using
-         *  their derivatives @p dpbds .
-         */
-        auto structural_importances
-            (std::vector<diagram_t>& dpbds) -> std::vector<double>;
 
         /**
          *  Finds all Minimal Cut Vectors of the system described by @p sf
@@ -357,6 +419,13 @@ namespace teddy
         auto to_dpbd_e ( uint_t           varFrom
                        , index_t          i
                        , diagram_t const& dpbd ) -> diagram_t;
+
+        // TODO this will be merged with apply_dpbd in the future
+        template<f_val_change F>
+        auto dpbd_g ( diagram_t const& sf
+                    , value_change     var
+                    , index_t          i
+                    , F                change ) -> diagram_t;
 
         // TODO toto by mohlo preberat aj zmenu premennej
         // potom by to nebralo dva diagramy ale iba jeden - priamo
@@ -512,11 +581,59 @@ namespace teddy
         , diagram_t const&   sf
         , index_t const      i ) -> diagram_t
     {
-        auto const lhs = this->cofactor(sf, i, var.from);
-        auto const rhs = this->cofactor(sf, i, var.to);
-        return this->apply_dpbd(lhs, rhs, [f](auto const l, auto const r)
+        return this->dpbd_g(sf, var, i, [f](auto const l, auto const r)
         {
             return l == f.from && r == f.to;
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::idpbd_type_1_decrease
+        ( value_change     var
+        , uint_t           j
+        , diagram_t const& sf
+        , index_t          i ) -> diagram_t
+    {
+        return this->dpbd_g(sf, var, i, [j](auto const l, auto const r)
+        {
+            return l == j && r < j;
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::idpbd_type_1_increase
+        ( value_change     var
+        , uint_t           j
+        , diagram_t const& sf
+        , index_t          i ) -> diagram_t
+    {
+        return this->dpbd_g(sf, var, i, [j](auto const l, auto const r)
+        {
+            return l > j && r == j;
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::idpbd_type_2_decrease
+        ( value_change     var
+        , diagram_t const& sf
+        , index_t          i ) -> diagram_t
+    {
+        return this->dpbd_g(sf, var, i, [](auto const l, auto const r)
+        {
+            return l < r;
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::idpbd_type_2_increase
+        ( value_change     var
+        , diagram_t const& sf
+        , index_t          i ) -> diagram_t
+    {
+        return this->dpbd_g(sf, var, i, [](auto const l, auto const r)
+        {
+            return l > r;
         });
     }
 
@@ -527,9 +644,7 @@ namespace teddy
         , diagram_t const&   sf
         , index_t const      i ) -> diagram_t
     {
-        auto const lhs = this->cofactor(sf, i, var.from);
-        auto const rhs = this->cofactor(sf, i, var.to);
-        return this->apply_dpbd(lhs, rhs, [f](auto const l, auto const r)
+        return this->dpbd_g(sf, var, i, [f](auto const l, auto const r)
         {
             return l >= f && r < f;
         });
@@ -542,35 +657,9 @@ namespace teddy
         , diagram_t const&   sf
         , index_t const      i ) -> diagram_t
     {
-        auto const lhs = this->cofactor(sf, i, var.from);
-        auto const rhs = this->cofactor(sf, i, var.to);
-        return this->apply_dpbd(lhs, rhs, [f](auto const l, auto const r)
+        return this->dpbd_g(sf, var, i, [f](auto const l, auto const r)
         {
             return l < f && r >= f;
-        });
-    }
-
-    template<degree Degree, domain Domain>
-    auto reliability_manager<Degree, Domain>::dpbds
-        ( value_change const var
-        , value_change const f
-        , diagram_t const&   sf ) -> std::vector<diagram_t>
-    {
-        return utils::fill_vector(this->get_var_count(), [&](auto const i)
-        {
-            return this->dpbd(var, f, sf, i);
-        });
-    }
-
-    template<degree Degree, domain Domain>
-    auto reliability_manager<Degree, Domain>::dpbds_i_3
-        ( value_change const var
-        , uint_t const       f
-        , diagram_t const&   sf ) -> std::vector<diagram_t>
-    {
-        return utils::fill_vector(this->get_var_count(), [&](auto const i)
-        {
-            return this->idpbd_type_3_decrease(var, f, sf, i);
         });
     }
 
@@ -583,21 +672,6 @@ namespace teddy
         auto const domainSize = this->nodes_.domain_product(from, to);
         return static_cast<double>(this->satisfy_count(1, dpbd))
              / static_cast<double>(domainSize);
-    }
-
-    template<degree Degree, domain Domain>
-    auto reliability_manager<Degree, Domain>::structural_importances
-        (std::vector<diagram_t>& dpbds) -> std::vector<double>
-    {
-        auto const from = 0u;
-        auto const to   = static_cast<level_t>(this->get_var_count());
-        auto const domainSize = this->nodes_.domain_product(from, to);
-        return utils::fill_vector(this->get_var_count(), [&, this](auto const i)
-        {
-            auto const sc = this->satisfy_count(1, dpbds[i]);
-            return static_cast<double>(sc)
-                 / static_cast<double>(domainSize);
-        });
     }
 
     template<degree Degree, domain Domain>
@@ -631,6 +705,19 @@ namespace teddy
 
         // auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
         // this->template satisfy_all_g<Vars, Out>(1, conj, out);
+    }
+
+    template<degree Degree, domain Domain>
+    template<f_val_change F>
+    auto reliability_manager<Degree, Domain>::dpbd_g
+        ( diagram_t const& sf
+        , value_change     var
+        , index_t          i
+        , F                change ) -> diagram_t
+    {
+        auto const lhs = this->cofactor(sf, i, var.from);
+        auto const rhs = this->cofactor(sf, i, var.to);
+        return this->apply_dpbd(lhs, rhs, change);
     }
 
     template<degree Degree, domain Domain>

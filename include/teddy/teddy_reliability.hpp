@@ -8,6 +8,7 @@ namespace teddy
     using default_oder = std::vector<index_t>;
 
     /**
+     *  \class bss_manager
      *  \brief Manager for creation of Binary Decision Diagrams and analysis
      *  of Binary State System.
      */
@@ -27,6 +28,7 @@ namespace teddy
     };
 
     /**
+     *  \class mss_manager
      *  \brief Manager for creation of Multi-valued Decision diagrams
      *  and analysis of homogenous Multi-state Systems.
      *
@@ -50,6 +52,7 @@ namespace teddy
     };
 
     /**
+     *  \class imss_manager
      *  \brief Manager for creation of (integer) Muti-valued Decision diagrams
      *  and analysis of non-homogenous Multi-state Systems.
      */
@@ -73,6 +76,7 @@ namespace teddy
     };
 
     /**
+     *  \class ifmss_manager
      *  \brief Manager for creation of (integer) Muti-valued Decision diagrams
      *  and analysis of non-homogenous Multi-state Systems.
      *

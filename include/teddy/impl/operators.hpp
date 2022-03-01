@@ -175,6 +175,11 @@ namespace teddy
         }
     };
 
+    /**
+     *  \namespace ops
+     *  \brief Contains definision of all binary operations that can be
+     *  used in the \c apply function.
+     */
     namespace ops
     {
         struct NOT {};

@@ -36,6 +36,7 @@ namespace teddy
     };
 
     /**
+     *  \class diagram_manager
      *  \brief Base class for all diagram managers that generically
      *  implements all of the algorithms.
      */

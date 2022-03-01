@@ -9,6 +9,7 @@ namespace teddy
     using default_oder = std::vector<index_t>;
 
     /**
+     *  \class bdd_manager
      *  \brief Diagram manager for creation and manipulation
      *  of Binary Decision Diagrams.
      */
@@ -30,6 +31,7 @@ namespace teddy
     };
 
     /**
+     *  \class mdd_manager
      *  \brief Diagram manager for creation and manipulation
      *  of Multi-valued Decision Diagrams.
      *
@@ -54,6 +56,7 @@ namespace teddy
     };
 
     /**
+     *  \class imdd_manager
      *  \brief Diagram manager for creation and manipulation
      *  of (integer) Multi-valued Decision Diagrams (iMDDs).
      *
@@ -83,6 +86,7 @@ namespace teddy
     };
 
     /**
+     *  \class ifmdd_manager
      *  \brief Diagram manager for creation and manipulation
      *  of (integer) Multi-valued Decision Diagrams (iMDDs).
      *

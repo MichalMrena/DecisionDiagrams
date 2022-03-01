@@ -15,6 +15,7 @@ namespace teddy
     class reliability_manager;
 
     /**
+     *  \class diagram
      *  \brief Cheap wrapper for the internal diagram node type.
      *
      *  Instance of the diagram holds pointer to an internal node. Therefore,
