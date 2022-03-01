@@ -79,7 +79,7 @@ namespace teddy
             (Ps const& ps, diagram_t& sf) -> void;
 
         /**
-         *  \brief Calculates probability of a system state \p j .
+         *  \brief Calculates and returns probability of a system state \p j .
          *
          *  When used as \c ps[i][k] parameter \p ps must return probability
          *  that i-th component is in state k.
@@ -87,7 +87,7 @@ namespace teddy
          *  \tparam Type that holds component state probabilities.
          *  \param j System state.
          *  \param ps Component state probabilities.
-         *  \param sf Structure sunction.
+         *  \param sf Structure function.
          *  \return Probability that system described by \p sf is in
          *  state \p j given probabilities \p ps .
          */
@@ -111,19 +111,35 @@ namespace teddy
         auto get_probability (uint_t j) const -> double;
 
         /**
-         *  Calculates and returns probability that system represented
-         *  by @p f is in state 1 given probabilities @p ps .
-         *  Available only for BSS.
+         *  \brief Calculates and returns availability of a BSS.
+         *
+         *  When used as \c ps[i][k] parameter \p ps must return probability
+         *  that i-th component is in state k.
+         *
+         *  \tparam Component state probabilities.
+         *  \tparam Foo Dummy parameter to enable SFINE.
+         *  \param ps Component state probabilities.
+         *  \param sf Structure function.
+         *  \return System availability.
          */
         template< component_probabilities Ps
                 , class                   Foo = void> requires (is_bss<Domain>)
         auto availability
             ( Ps const&  ps
-            , diagram_t& f ) -> second_t<Foo, double>;
+            , diagram_t& sf ) -> second_t<Foo, double>;
 
         /**
-         *  Calculates and returns probability that system represetned by @p f
-         *  is in state greater or equal to @p j given probabilities @p ps .
+         *  \brief Calculates and returns system availability with
+         *  respect to the system state \p j .
+         *
+         *  When used as \c ps[i][k] parameter \p ps must return probability
+         *  that i-th component is in state k.
+         *
+         *  \tparam Component state probabilities.
+         *  \param j System state.
+         *  \param ps Component state probabilities.
+         *  \param sf Structure function.
+         *  \return System availability with respect to the system state \p j .
          */
         template<component_probabilities Ps>
         auto availability
@@ -132,25 +148,47 @@ namespace teddy
             , diagram_t& f ) -> double;
 
         /**
-         *  Returns probability that system is in state 1.
-         *  after call to @c calculate_probabilities .
-         *  If there was no call to @c calculate_probabilities then
-         *  the result is undefined.
+         *  \brief Returns availability of a BSS.
+         *
+         *  Call to \c calculate_probabilities must proceed call to this
+         *  funtion otherwise the result is undefined. This is a bit
+         *  unfortunate but the idea is that probabilities are calculated
+         *  once using \c calculate_probabilities and availability and
+         *  unavailability are later accessed using \c get_availability
+         *  and \c get_unavailability .
+         *
+         *  \return System availability.
          */
         template<class Foo = void>
         auto get_availability () const -> second_t<Foo, double>;
 
         /**
-         *  Returns probability that system is in state
-         *  greater or equal to @p j after call to @c calculate_probabilities .
-         *  If there was no call to @c calculate_probabilities then
-         *  the result is undefined.
+         *  \brief Returns system availability with
+         *  respect to the system state \p j .
+         *
+         *  Call to \c calculate_probabilities must proceed call to this
+         *  funtion otherwise the result is undefined. This is a bit
+         *  unfortunate but the idea is that probabilities are calculated
+         *  once using \c calculate_probabilities and availability and
+         *  unavailability are later accessed using \c get_availability
+         *  and \c get_unavailability .
+         *
+         *  \param j System state.
+         *  \return System availability with respect to the system state \p j .
          */
         auto get_availability (uint_t j) const -> double;
 
         /**
-         *  Calculates and returns probability that system represented by @p f
-         *  is in state worse than @p j given probabilities @p ps .
+         *  \brief Calculates and returns unavailability of a BSS.
+         *
+         *  When used as \c ps[i][k] parameter \p ps must return probability
+         *  that i-th component is in state k.
+         *
+         *  \tparam Component state probabilities.
+         *  \tparam Foo Dummy parameter to enable SFINE.
+         *  \param ps Component state probabilities.
+         *  \param sf Structure function.
+         *  \return System unavailtability.
          */
         template< component_probabilities Ps
                 , class Foo = void > requires(is_bss<Degree>)
@@ -159,8 +197,17 @@ namespace teddy
             , diagram_t& f) -> second_t<Foo, double>;
 
         /**
-         *  Calculates and returns probability that system represented by @p f
-         *  is in state worse than @p j given probabilities @p ps .
+         *  \brief Calculates and returns system availability with
+         *  respect to the system state \p j .
+         *
+         *  When used as \c ps[i][k] parameter \p ps must return probability
+         *  that i-th component is in state k.
+         *
+         *  \tparam Component state probabilities.
+         *  \param j System state.
+         *  \param ps Component state probabilities.
+         *  \param sf Structure function.
+         *  \return System availability with respect to the system state \p j .
          */
         template<component_probabilities Ps>
         auto unavailability
@@ -169,19 +216,35 @@ namespace teddy
             , diagram_t& f) -> double;
 
         /**
-         *  Returns probability that system is in state
-         *  0 after call to @c calculate_probabilities .
-         *  If there was no call to @c calculate_probabilities then
-         *  the result is undefined.
+         *  \brief Returns system unavailability of a BSS.
+         *
+         *  Call to \c calculate_probabilities must proceed call to this
+         *  funtion otherwise the result is undefined. This is a bit
+         *  unfortunate but the idea is that probabilities are calculated
+         *  once using \c calculate_probabilities and availability and
+         *  unavailability are later accessed using \c get_availability
+         *  and \c get_unavailability .
+         *
+         *  \param j System state.
+         *  \return System availability with respect to the system state \p j .
          */
         template<class Foo = void>
         auto get_unavailability () -> second_t<Foo, double>;
 
         /**
-         *  Returns probability that system is in state
-         *  worse than @p j after call to @c calculate_probabilities .
-         *  If there was no call to @c calculate_probabilities then
-         *  the result is undefined.
+         *  \brief Returns system unavailability with
+         *  respect to the system state \p j .
+         *
+         *  Call to \c calculate_probabilities must proceed call to this
+         *  funtion otherwise the result is undefined. This is a bit
+         *  unfortunate but the idea is that probabilities are calculated
+         *  once using \c calculate_probabilities and availability and
+         *  unavailability are later accessed using \c get_availability
+         *  and \c get_unavailability .
+         *
+         *  \param j System state.
+         *  \return System unavailability with respect to
+         *  the system state \p j .
          */
         auto get_unavailability (uint_t j) -> double;
 
