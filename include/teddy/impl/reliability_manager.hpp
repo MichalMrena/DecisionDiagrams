@@ -4,6 +4,7 @@
 #include "diagram_manager.hpp"
 #include <array>
 #include <type_traits>
+#include <unordered_map>
 #include <vector>
 
 namespace teddy
@@ -16,6 +17,12 @@ namespace teddy
         requires(Probabilities ps, index_t index, uint_t val)
     {
         { ps[index][val] } -> std::convertible_to<double>;
+    };
+
+    template<class F>
+    concept f_val_change = requires(F f, uint_t l, uint_t r)
+    {
+        { f(l, r) } -> std::convertible_to<bool>;
     };
 
     struct value_change
@@ -265,10 +272,23 @@ namespace teddy
          *  @p i - th variable and @p f describes value of the function
          *  represented by @p sf .
          */
-        auto dpbd_i_3 ( value_change     var
-                      , uint_t           f
-                      , diagram_t const& sf
-                      , index_t          i ) -> diagram_t;
+        auto idpbd_type_3_decrease
+            ( value_change     var
+            , uint_t           f
+            , diagram_t const& sf
+            , index_t          i ) -> diagram_t;
+
+        /**
+         *  Calculate Direct Partial Boolean Derivative of type 3 for
+         *  @p i - th variable where @p var describes change in value of
+         *  @p i - th variable and @p f describes value of the function
+         *  represented by @p sf .
+         */
+        auto idpbd_type_3_increase
+            ( value_change     var
+            , uint_t           f
+            , diagram_t const& sf
+            , index_t          i ) -> diagram_t;
 
         /**
          *  Calculates Direc Partial Boolean Derivatives ( @c dpbd ) for
@@ -280,7 +300,7 @@ namespace teddy
 
         /**
          *  Calculate Direct Partial Boolean Derivative of
-         *  type 3 ( @c dpbd_i_3 ) for each variable.
+         *  type 3 ( @c idpbd_type_3_decrease ) for each variable.
          */
         auto dpbds_i_3 ( value_change     var
                        , uint_t           f
@@ -331,9 +351,19 @@ namespace teddy
                             requires(domains::is_mixed<Domain>()());
 
     private:
+        using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
+
+    private:
         auto to_dpbd_e ( uint_t           varFrom
                        , index_t          i
                        , diagram_t const& dpbd ) -> diagram_t;
+
+        // TODO toto by mohlo preberat aj zmenu premennej
+        // potom by to nebralo dva diagramy ale iba jeden - priamo
+        // strukturnu funkciu. Prehladavanie v apply by sa modifikovalo
+        // podla zmien premennych.
+        template<f_val_change F>
+        auto apply_dpbd (diagram_t const&, diagram_t const&, F) -> diagram_t;
     };
 
     template<degree Degree, domain Domain>
@@ -482,37 +512,42 @@ namespace teddy
         , diagram_t const&   sf
         , index_t const      i ) -> diagram_t
     {
-        auto const lhs = this->template apply<ops::EQUAL_TO>
-            ( this->cofactor(sf, i, var.from)
-            , this->constant(f.from) );
-        auto const rhs = this->template apply<ops::EQUAL_TO>
-            ( this->cofactor(sf, i, var.to)
-            , this->constant(f.to) );
-        return this->template apply<ops::AND>(lhs, rhs);
+        auto const lhs = this->cofactor(sf, i, var.from);
+        auto const rhs = this->cofactor(sf, i, var.to);
+        return this->apply_dpbd(lhs, rhs, [f](auto const l, auto const r)
+        {
+            return l == f.from && r == f.to;
+        });
     }
 
     template<degree Degree, domain Domain>
-    auto reliability_manager<Degree, Domain>::dpbd_i_3
+    auto reliability_manager<Degree, Domain>::idpbd_type_3_decrease
         ( value_change const var
         , uint_t const       f
         , diagram_t const&   sf
         , index_t const      i ) -> diagram_t
     {
-        auto const fVal = this->constant(f);
-        auto const cofactorFrom = this->cofactor(sf, i, var.from);
-        auto const cofactorTo = this->cofactor(sf, i, var.to);
-        if (var.from < var.to)
+        auto const lhs = this->cofactor(sf, i, var.from);
+        auto const rhs = this->cofactor(sf, i, var.to);
+        return this->apply_dpbd(lhs, rhs, [f](auto const l, auto const r)
         {
-            return this->template apply<ops::AND>
-                ( this->template apply<ops::LESS>(cofactorFrom, fVal)
-                , this->template apply<ops::GREATER_EQUAL>(cofactorTo, fVal) );
-        }
-        else
+            return l >= f && r < f;
+        });
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::idpbd_type_3_increase
+        ( value_change const var
+        , uint_t const       f
+        , diagram_t const&   sf
+        , index_t const      i ) -> diagram_t
+    {
+        auto const lhs = this->cofactor(sf, i, var.from);
+        auto const rhs = this->cofactor(sf, i, var.to);
+        return this->apply_dpbd(lhs, rhs, [f](auto const l, auto const r)
         {
-            return this->template apply<ops::AND>
-                ( this->template apply<ops::GREATER_EQUAL>(cofactorFrom, fVal)
-                , this->template apply<ops::LESS>(cofactorTo, fVal) );
-        }
+            return l < f && r >= f;
+        });
     }
 
     template<degree Degree, domain Domain>
@@ -535,7 +570,7 @@ namespace teddy
     {
         return utils::fill_vector(this->get_var_count(), [&](auto const i)
         {
-            return this->dpbd_i_3(var, f, sf, i);
+            return this->idpbd_type_3_decrease(var, f, sf, i);
         });
     }
 
@@ -596,6 +631,78 @@ namespace teddy
 
         // auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
         // this->template satisfy_all_g<Vars, Out>(1, conj, out);
+    }
+
+    template<degree Degree, domain Domain>
+    template<f_val_change F>
+    auto reliability_manager<Degree, Domain>::apply_dpbd
+        (diagram_t const& lhs, diagram_t const& rhs, F change) -> diagram_t
+    {
+        using cache_pair = struct { node_t* left; node_t* right; };
+        auto constexpr cache_pair_hash = [](auto const p)
+        {
+            auto const hash1 = std::hash<node_t*>()(p.left);
+            auto const hash2 = std::hash<node_t*>()(p.right);
+            auto result = 0ul;
+            result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
+            result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
+            return result;
+        };
+        auto constexpr cache_pair_equals = [](auto const l, auto const r)
+        {
+            return l.left == r.left && l.right == r.right;
+        };
+        auto cache = std::unordered_map< cache_pair
+                                       , node_t*
+                                       , decltype(cache_pair_hash)
+                                       , decltype(cache_pair_equals) >();
+
+        auto const go
+            = [this, &cache, change](auto&& self, auto const l, auto const r)
+        {
+            auto const cached = cache.find(cache_pair(l, r));
+            if (cached != std::end(cache))
+            {
+                return cached->second;
+            }
+
+            auto const lhsVal = node_value(l);
+            auto const rhsVal = node_value(r);
+            auto const opVal // TODO toto by sa dalo lepsie
+                = lhsVal == Nondetermined || rhsVal == Nondetermined
+                    ? Nondetermined
+                    : static_cast<uint_t>(change(lhsVal, rhsVal));
+            auto u = static_cast<node_t*>(nullptr);
+
+            if (opVal != Nondetermined)
+            {
+                u = this->nodes_.terminal_node(opVal);
+            }
+            else
+            {
+                auto const lhsLevel = this->nodes_.get_level(l);
+                auto const rhsLevel = this->nodes_.get_level(r);
+                auto const topLevel = std::min(lhsLevel, rhsLevel);
+                auto const topNode  = topLevel == lhsLevel ? l : r;
+                auto const topIndex = topNode->get_index();
+                auto sons
+                    = this->nodes_.make_sons(topIndex, [=, &self](auto const k)
+                {
+                    auto const fst = lhsLevel == topLevel ? l->get_son(k) : l;
+                    auto const snd = rhsLevel == topLevel ? r->get_son(k) : r;
+                    return self(self, fst, snd);
+                });
+
+                u = this->nodes_.internal_node(topIndex, std::move(sons));
+            }
+
+            // TODO in place
+            cache.emplace(std::make_pair(cache_pair(l, r), u));
+            return u;
+        };
+
+        auto const newRoot = go(go, lhs.get_root(), rhs.get_root());
+        return diagram_t(newRoot);
     }
 
     template<degree Degree, domain Domain>

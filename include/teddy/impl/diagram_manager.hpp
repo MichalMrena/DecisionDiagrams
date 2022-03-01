@@ -581,8 +581,15 @@ namespace teddy
          */
         auto get_domains () const -> std::vector<uint_t>;
 
-    private:
+    protected:
         using node_t = typename diagram<Data, Degree>::node_t;
+
+    protected:
+
+        // verzia apply ktora na cachovanie pouzije hash tabulku
+        // a bin. operacia bude dana lambdou
+        // template<class F>
+        // auto apply_strict (diagram_t, diagram_t, F) -> diagram_t;
 
     private:
         template<class F>
@@ -862,7 +869,7 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::apply
         (diagram_t const& d1, diagram_t const& d2) -> diagram_t
     {
-        auto const go = [this](auto&& go_, auto l, auto r)
+        auto const go = [this](auto&& go_, auto const l, auto const r)
         {
             auto const cached = nodes_.template cache_find<Op>(l, r);
             if (cached)

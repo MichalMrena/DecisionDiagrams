@@ -73,7 +73,8 @@ namespace teddy::test
                     return utils::fill_vector(manager.get_domains()[i] - 1,
                         [&](auto const v)
                     {
-                        auto dpbd = manager.dpbd_i_3({v + 1, v}, j + 1, sf, i);
+                        auto dpbd = manager.idpbd_type_3_decrease(
+                            {v + 1, v}, j + 1, sf, i);
                         return manager.structural_importance(dpbd);
                     });
                 });
