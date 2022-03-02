@@ -284,7 +284,7 @@ namespace teddy
         /**
          *  \brief Calculates Direct Partial Boolean Derivative of type 1.
          *
-         *  Identifies situation in which change of the state of \p i th
+         *  Identifies situations in which change of the state of \p i th
          *  component causes change of the system state from the state \p j
          *  to a worse state.
          *
@@ -303,7 +303,7 @@ namespace teddy
         /**
          *  \brief Calculates Direct Partial Boolean Derivative of type 1.
          *
-         *  Identifies situation in which change of the state of \p i th
+         *  Identifies situations in which change of the state of \p i th
          *  component causes change of the system state from the state \p j
          *  to a better state.
          *
@@ -322,7 +322,7 @@ namespace teddy
         /**
          *  \brief Calculates Direct Partial Boolean Derivative of type 2.
          *
-         *  Identifies situation in which change of the state of \p i th
+         *  Identifies situations in which change of the state of \p i th
          *  component causes degradation of the system state.
          *
          *  \param var Change of the value of \p i th component.
@@ -338,7 +338,7 @@ namespace teddy
         /**
          *  \brief Calculates Direct Partial Boolean Derivative of type 2.
          *
-         *  Identifies situation in which change of the state of \p i th
+         *  Identifies situations in which change of the state of \p i th
          *  component causes improvement of the system state.
          *
          *  \param var Change of the value of \p i th component.
@@ -352,22 +352,38 @@ namespace teddy
                                    , index_t          i ) -> diagram_t;
 
         /**
-         *  Calculate Direct Partial Boolean Derivative of type 3 for
-         *  @p i - th variable where @p var describes change in value of
-         *  @p i - th variable and @p f describes value of the function
-         *  represented by @p sf .
+         *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+         *
+         *  Identifies situations in which change ot the state of \p i th
+         *  component causes system state degradation from a state
+         *  at least \p j to a state worse than \p j .
+         *
+         *  \param var Change of the value of \p i th component.
+         *  \param j System state.
+         *  \param sf Structure function.
+         *  \param i Index of the component.
+         *  \return Diagram representing Direct Partial Boolean Derivative
+         *  of type 3.
          */
         auto idpbd_type_3_decrease
             ( value_change     var
-            , uint_t           f
+            , uint_t           j
             , diagram_t const& sf
             , index_t          i ) -> diagram_t;
 
         /**
-         *  Calculate Direct Partial Boolean Derivative of type 3 for
-         *  @p i - th variable where @p var describes change in value of
-         *  @p i - th variable and @p f describes value of the function
-         *  represented by @p sf .
+         *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+         *
+         *  Identifies situations in which change ot the state of \p i th
+         *  component causes system state improvement from a state
+         *  state worse than \p j to a state at least \p j .
+         *
+         *  \param var Change of the value of \p i th component.
+         *  \param j System state.
+         *  \param sf Structure function.
+         *  \param i Index of the component.
+         *  \return Diagram representing Direct Partial Boolean Derivative
+         *  of type 3.
          */
         auto idpbd_type_3_increase
             ( value_change     var
@@ -376,24 +392,49 @@ namespace teddy
             , index_t          i ) -> diagram_t;
 
         /**
-         *  Calculates structural importace of @p i - th component
-         *  using @p dpbd derivative.
+         *  \brief Calculates Structural Importace (SI) of a component.
+         *
+         *  Structural Importance specifies relative number of system
+         *  states in which degradation of a component states causes
+         *  degradation of a system state.
+         *  Different types of DPBDs can be used for SI calculation.
+         *  It is up to the user to pick the one that suits his needs.
+         *
+         *  \param dpbd Direct Partial Boolean Derivative of any type.
+         *  \return Structural importance of given componentn.
          */
         auto structural_importance (diagram_t& dpbd) -> double;
 
         /**
-         *  Finds all Minimal Cut Vectors of the system described by @p sf
-         *  with respect to state @p j . MCVs are stored and returned
-         *  in a vector.
+         *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
+         *  respect to the system state \p j .
+         *
+         *  This function uses \c satisfy_all function. Please keep in mind
+         *  that for bigger systems, there can be a huge number of MCVs.
+         *
+         *  \tparam Vars Container type that defines \c operator[] and allows
+         *  assigning unsigned integers.
+         *  \param sf Structure function.
+         *  \param j System state.
+         *  \returns Vector of Minimal Cut Vectors.
          */
         template<out_var_values Vars>
         auto mcvs ( diagram_t const& sf
                   , uint_t           j ) -> std::vector<Vars>;
 
         /**
-         *  Finds all Minimal Cut Vectors of the system described by @p sf
-         *  with respect to state @p j . MCVs are outputed
-         *  via output iterator @p out .
+         *  \brief Finds all Minimal Cut Vector of the system with respect
+         *  to the system state \p j .
+         *
+         *  This function uses \c satisfy_all_g function. Please keep in mind
+         *  that for bigger systems, there can be a huge number of MCVs.
+         *
+         *  \tparam Vars Container type that defines \c operator[] and allows
+         *  assigning unsigned integers.
+         *  \param sf Structure function.
+         *  \param j System state.
+         *  \param out Output iterator that is used to output instances
+         *  of \p Vars .
          */
         template<out_var_values Vars, std::output_iterator<Vars> Out>
         auto mcvs_g ( diagram_t const& sf
@@ -689,22 +730,98 @@ namespace teddy
     auto reliability_manager<Degree, Domain>::mcvs_g
         (diagram_t const& sf, uint_t const j, Out out) -> void
     {
-        // auto const varCount = manager_.get_var_count();
-        // auto dpbdes = std::vector<diagram_t>();
+        auto const varCount = this->get_var_count();
+        auto dpbdes = std::vector<diagram_t>();
 
-        // for (auto varIndex = 0u; varIndex < varCount; ++varIndex)
-        // {
-        //     auto const varDomain = this->nodes_.get_domain(varIndex);
-        //     for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
-        //     {
-        //         auto const varChange = {varFrom, varFrom + 1};
-        //         auto const dpbd = this->dpbd_i_3(varChange, j, sf, varIndex);
-        //         dpbdes.emplace_back(this->to_dpbd_e(varFrom, varIndex, dpbd));
-        //     }
-        // }
+        for (auto i = 0u; i < varCount; ++i)
+        {
+            auto const varDomain = this->nodes_.get_domain(i);
+            for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
+            {
+                auto const varChange = {varFrom, varFrom + 1};
+                auto const dpbd
+                    = this->idpbd_type_3_increase(varChange, j, sf, i);
+                dpbdes.emplace_back(this->to_dpbd_e(varFrom, i, dpbd));
+            }
+        }
 
-        // auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
-        // this->template satisfy_all_g<Vars, Out>(1, conj, out);
+        auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
+        this->template satisfy_all_g<Vars, Out>(1, conj, out);
+    }
+
+    template<degree Degree, domain Domain>
+    auto reliability_manager<Degree, Domain>::to_dpbd_e
+        ( uint_t           varFrom
+        , index_t          i
+        , diagram_t const& dpbd ) -> diagram_t
+    {
+        auto const root      = dpbd.get_root();
+        auto const rootLevel = this->nodes_.get_level(root);
+        auto const varLevel  = this->nodes_.get_level(i);
+
+        if (varLevel < rootLevel)
+        {
+            auto sons = this->nodes_.make_sons(i,
+                [this, varFrom, root](auto const k)
+            {
+                return k == varFrom
+                    ? root
+                    : this->nodes.special_node(Undefined);
+            });
+            auto const newRoot = this->nodes_.internal_node(i, std::move(sons));
+            return diagram_t(newRoot);
+        }
+        else
+        {
+            auto memo = std::unordered_map<node_t*, node_t*>();
+            auto const go = [=, this, &memo](auto&& self, auto const n)
+            {
+                if (n->is_terminal())
+                {
+                    return n;
+                }
+
+                auto const memoIt = memo.find(n);
+                if (memoIt != std::end(memo))
+                {
+                    return memoIt->second;
+                }
+
+                auto const nodeLevel = this->nodes_.get_level(n);
+                auto const nodeIndex = n->get_index();
+                auto sons = this->nodes_.make_sons(nodeIndex,
+                    [=, this, &self](auto const k)
+                {
+                    auto const son = n->get_son(k);
+                    auto const sonLevel = this->nodes_->get_level(son);
+                    if (varLevel > nodeLevel && varLevel < sonLevel)
+                    {
+                        // A new node goes in between the current node
+                        // and its k th son.
+                        // Transformation does not need to continue.
+                        auto newNodeSons = this->nodes_.make_sons(i,
+                            [this, varFrom, son](auto const l)
+                        {
+                            return l == varFrom
+                                ? son
+                                : this->nodes_.special_node(Undefined);
+                        });
+                        return this->nodes_.internal_node(
+                            i, std::move(newNodeSons));
+                    }
+                    else
+                    {
+                        // A new node will be inserted somewhere deeper.
+                        return self(self, son);
+                    }
+                });
+                auto const transformedNode
+                    = this->nodes_.internal_node(nodeIndex, std::move(sons));
+                memo.emplace(n, transformedNode);
+                return transformedNode;
+            };
+            return diagram_t(go(go, root));
+        }
     }
 
     template<degree Degree, domain Domain>

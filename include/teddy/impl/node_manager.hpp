@@ -119,6 +119,7 @@ namespace teddy
     public:
         auto get_terminal_node (uint_t) const      -> node_t*;
         auto terminal_node     (uint_t)            -> node_t*;
+        auto special_node      (uint_t)            -> node_t*;
         auto internal_node     (index_t, sons_t&&) -> node_t*;
         auto get_level         (index_t) const     -> level_t;
         auto get_level         (node_t*) const     -> level_t;
@@ -204,6 +205,7 @@ namespace teddy
         node_pool<Data, Degree>         pool_;
         std::vector<unique_table_t>     uniqueTables_;
         std::vector<node_t*>            terminals_;
+        std::vector<node_t*>            specials_;
         std::vector<level_t>            indexToLevel_;
         std::vector<index_t>            levelToIndex_;
         [[no_unique_address]] Domain    domains_;
@@ -281,6 +283,7 @@ namespace teddy
         pool_                (nodeCount),
         uniqueTables_        (varCount),
         terminals_           ({}),
+        specials_            ({}),
         indexToLevel_        (varCount),
         levelToIndex_        (std::move(order)),
         domains_             (std::move(domains)),
@@ -361,6 +364,25 @@ namespace teddy
         }
 
         return id_set_marked(terminals_[v]);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::special_node
+        (uint_t const v) -> node_t*
+    {
+        assert(v == Undefined);
+
+        if (specials_.empty())
+        {
+            specials_.resize(1, nullptr);
+        }
+
+        if (not specials_[0])
+        {
+            specials_[0] = this->new_node(special_val_to_index(Undefined));
+        }
+
+        return id_set_marked(specials_[0]);
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -524,6 +546,15 @@ namespace teddy
             {
                 this->delete_node(t);
                 t = nullptr;
+            }
+        }
+
+        for (auto& s : specials_)
+        {
+            if (s and 0 == s->get_ref_count() and not s->is_marked())
+            {
+                this->delete_node(s);
+                s = nullptr;
             }
         }
 
