@@ -681,26 +681,26 @@ namespace teddy
     template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::idpbd_type_3_decrease
         ( value_change const var
-        , uint_t const       f
+        , uint_t const       j
         , diagram_t const&   sf
         , index_t const      i ) -> diagram_t
     {
-        return this->dpbd_g(sf, var, i, [f](auto const l, auto const r)
+        return this->dpbd_g(sf, var, i, [j](auto const l, auto const r)
         {
-            return l >= f && r < f;
+            return l >= j && r < j;
         });
     }
 
     template<degree Degree, domain Domain>
     auto reliability_manager<Degree, Domain>::idpbd_type_3_increase
         ( value_change const var
-        , uint_t const       f
+        , uint_t const       j
         , diagram_t const&   sf
         , index_t const      i ) -> diagram_t
     {
-        return this->dpbd_g(sf, var, i, [f](auto const l, auto const r)
+        return this->dpbd_g(sf, var, i, [j](auto const l, auto const r)
         {
-            return l < f && r >= f;
+            return l < j && r >= j;
         });
     }
 

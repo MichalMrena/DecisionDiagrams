@@ -136,11 +136,22 @@ namespace teddy::vector
         /**
          *  Returns lambda that can be used in @c dpbd for type 3.
          */
-        inline static auto constexpr dpbd_i_3 = [](auto const j)
+        inline static auto constexpr dpbd_i_3_decrease = [](auto const j)
         {
             return [j](auto const l, auto const r)
             {
                 return l >= j && r < j;
+            };
+        };
+
+        /**
+         *  Returns lambda that can be used in @c dpbd for type 3.
+         */
+        inline static auto constexpr dpbd_i_3_increase = [](auto const j)
+        {
+            return [j](auto const l, auto const r)
+            {
+                return l < j && r >= j;
             };
         };
 
@@ -362,7 +373,7 @@ namespace teddy::vector
         auto structural_importance
             (uint_t const j, var_val_change const var) -> double
         {
-            auto d = sf().dpbd(var, vector_function::dpbd_i_3(j));
+            auto d = sf().dpbd(var, vector_function::dpbd_i_3_decrease(j));
             return static_cast<double>(d.satisfy_count(1))
                  / static_cast<double>(sf().domain_size()
                    / static_cast<double>(sf().get_domains()[var.index]));
