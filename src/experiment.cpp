@@ -2,6 +2,7 @@
 #include "teddy/teddy.hpp"
 #include <algorithm>
 #include <array>
+#include <bitset>
 #include <cstdint>
 #include <iostream>
 #include <iterator>
@@ -10,17 +11,49 @@
 using uint_t = unsigned int;
 using word_t = std::uint64_t;
 
-auto constexpr calculate_array_size (uint_t const N) -> uint_t
+template<class Word>
+auto constexpr word_bit_count () -> uint_t
 {
-    return (1u << N) / (8 * sizeof(std::uint64_t));
+    return 8 * sizeof(Word);
+}
+
+auto constexpr calculate_array_size (uint_t const numVar) -> uint_t
+{
+    return (1u << numVar) / word_bit_count<word_t>();
+}
+
+auto constexpr calculate_bitset_size (uint_t const numVar) -> uint_t
+{
+    return 1 << numVar;
 }
 
 template<uint_t NumVar>
 using bitarray = std::array<word_t, calculate_array_size(NumVar)>;
 
+template<uint_t NumVar>
+using bitset = std::bitset<calculate_bitset_size(NumVar)>;
+
 using bitrng = std::independent_bits_engine< std::mt19937_64
-                                           , 8 * sizeof(word_t)
-                                           , std::uint64_t >;
+                                           , word_bit_count<word_t>()
+                                           , word_t >;
+
+template<uint_t NumVar>
+auto set_bit (bitarray<NumVar>& words, std::size_t bitIndex) -> void
+{
+    auto const wordIndex = bitIndex / word_bit_count<word_t>();
+    auto const wordBitIndex = bitIndex % word_bit_count<word_t>();
+    auto& word = words[wordIndex];
+    word |= word_t(1) << wordBitIndex;
+}
+
+template<uint_t NumVar>
+auto test_bit (bitarray<NumVar> const& words, std::size_t bitIndex) -> bool
+{
+    auto const wordIndex = bitIndex / word_bit_count<word_t>();
+    auto const wordBitIndex = bitIndex % word_bit_count<word_t>();
+    auto const& word = words[wordIndex];
+    return word & ~(word_t(1) << wordBitIndex);
+}
 
 struct bit_iterator_sentinel {};
 
@@ -101,9 +134,22 @@ auto generate_random_vector ( bitrng&           rng
 
 template<uint_t NumVar>
 auto generate_monotonous_vector ( std::mt19937_64&  rng
-                                , bitarray<NumVar>& out )
+                                , bitarray<NumVar>& out
+                                , bitset<NumVar>&   memo )
 {
-
+    generate_random_vector(rng, out);
+    memo.reset();
+    for (auto k = memo.size(); k > 0;)
+    {
+        --k;
+        if (not memo.test(k))
+        {
+            if (test_bit(out, k))
+            {
+                auto vars = std::bitset<8 * NumVar>(k);
+            }
+        }
+    }
 }
 
 template<uint_t NumVar>
