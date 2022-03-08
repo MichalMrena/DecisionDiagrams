@@ -143,16 +143,16 @@ namespace teddy
         template<utils::i_gen F>
         auto make_sons (index_t, F&&) -> sons_t;
 
-        template<class NodeOp>
+        template<node_op<node_t> NodeOp>
         auto for_each_son (node_t*, NodeOp&&) const -> void;
 
-        template<class NodeOp>
+        template<node_op<node_t> NodeOp>
         auto for_each_son (index_t, sons_t const&, NodeOp&&) const -> void;
 
-        template<class NodeOp>
+        template<node_op<node_t> NodeOp>
         auto for_each_node (NodeOp&&) const -> void;
 
-        template<class NodeOp>
+        template<node_op<node_t> NodeOp>
         auto for_each_terminal_node (NodeOp&&) const -> void;
 
         template<bin_op O>
@@ -161,13 +161,13 @@ namespace teddy
         template<bin_op O>
         auto cache_put (node_t*, node_t*, node_t*) -> void;
 
-        template<class NodeOp>
+        template<node_op<node_t> NodeOp>
         auto traverse_pre (node_t*, NodeOp&&) const -> void;
 
-        template<class NodeOp>
+        template<node_op<node_t> NodeOp>
         auto traverse_post (node_t*, NodeOp&&) const -> void;
 
-        template<class NodeOp>
+        template<node_op<node_t> NodeOp>
         auto traverse_level (node_t*, NodeOp&&) const -> void;
 
         auto is_valid_var_value (index_t, uint_t) const -> bool;
@@ -617,11 +617,10 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
+    template<node_op<node<Data, Degree>> NodeOp>
     auto node_manager<Data, Degree, Domain>::for_each_son
         (node_t* const node, NodeOp&& f) const -> void
     {
-        static_assert(node_op<NodeOp, node_t>);
         auto const i = node->get_index();
         for (auto k = 0u; k < domains_[i]; ++k)
         {
@@ -630,11 +629,10 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
+    template<node_op<node<Data, Degree>> NodeOp>
     auto node_manager<Data, Degree, Domain>::for_each_son
         (index_t const i, sons_t const& sons, NodeOp&& f) const -> void
     {
-        static_assert(node_op<NodeOp, node_t>);
         for (auto k = 0u; k < domains_[i]; ++k)
         {
             std::invoke(f, sons[k]);
@@ -642,11 +640,10 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
+    template<node_op<node<Data, Degree>> NodeOp>
     auto node_manager<Data, Degree, Domain>::for_each_node
         (NodeOp&& f) const -> void
     {
-        static_assert(node_op<NodeOp, node_t>);
         for (auto const& table : uniqueTables_)
         {
             for (auto const n : table)
@@ -659,11 +656,10 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
+    template<node_op<node<Data, Degree>> NodeOp>
     auto node_manager<Data, Degree, Domain>::for_each_terminal_node
         (NodeOp&& f) const -> void
     {
-        static_assert(node_op<NodeOp, node_t>);
         for (auto const n : terminals_)
         {
             if (n)
@@ -704,18 +700,17 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
+    template<node_op<node<Data, Degree>> NodeOp>
     auto node_manager<Data, Degree, Domain>::traverse_pre
         (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        static_assert(node_op<NodeOp, node_t>);
-        auto const go = [this](auto&& self, auto const n, auto&& op)
+        auto const go = [this](auto&& self, auto const n, auto&& op) -> void
         {
             n->toggle_marked();
             std::invoke(op, n);
             if (n->is_internal())
             {
-                this->for_each_son(n, [&self, n, &op](auto const son)
+                this->for_each_son(n, [&self, n, &op](auto const son) -> void
                 {
                     if (n->is_marked() != son->is_marked())
                     {
@@ -730,12 +725,11 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
+    template<node_op<node<Data, Degree>> NodeOp>
     auto node_manager<Data, Degree, Domain>::traverse_post
         (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        static_assert(node_op<NodeOp, node_t>);
-        auto const go = [this](auto&& self, auto const n, auto&& op)
+        auto const go = [this](auto&& self, auto const n, auto&& op) -> void
         {
             n->toggle_marked();
             if (n->is_internal())
@@ -756,11 +750,10 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    template<class NodeOp>
+    template<node_op<node<Data, Degree>> NodeOp>
     auto node_manager<Data, Degree, Domain>::traverse_level
         (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        static_assert(node_op<NodeOp, node_t>);
         auto const cmp = [this](auto const l, auto const r)
         {
             return this->get_level(l) > this->get_level(r);
@@ -921,12 +914,12 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::traverse_no_op
         (node_t* const node) const -> void
     {
-        auto const go = [this](auto self, auto const n)
+        auto const go = [this](auto self, auto const n) -> void
         {
             n->toggle_marked();
             if (n->is_internal())
             {
-                this->for_each_son(n, [self, n](auto const son)
+                this->for_each_son(n, [self, n](auto const son) -> void
                 {
                     if (n->is_marked() != son->is_marked())
                     {
