@@ -206,7 +206,7 @@ namespace teddy
          *  | MULTIPLIES        | Modular multiplication: (a * b) mod P |
          *  +-------------------+---------------------------------------+
          *  ^ 0 is false and 1 is true
-         * 
+         *
          *  // Examples:
          *  manager.apply<teddy::ops::AND>(bdd1, bdd2);
          *  manager.apply<teddy::ops::PLUS<4>>(mdd1, mdd2);

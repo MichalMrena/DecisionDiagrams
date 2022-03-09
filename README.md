@@ -30,8 +30,8 @@ Functions from the library are accesed via instance of a diagram manager. TeDDy 
 
 4. ` ifmdd_manager<PMax>` for (integer) Multivalued Decision Diagrams (iMDDs) representing integer functions. Domains of variables are specified in the constructor of the manager and are from the set {0, 1, 2, ...,  PMax - 1}. Functions can have values from the set {0, 1, 2, ...}.  
   
-Managers 1, 2 and 4 use nodes with more compact memory representation since maximum of the domains is known during compile time. The only difference between 3 and 4 is in this property so if `PMax` is known it is better to use manager 4.  
-**For the list of available functions please see the [documentation](doc/teddy.md).**
+Managers 1, 2 and 4 use nodes with more compact memory representation since maximum of the domains is known at compile time. The only difference between 3 and 4 is in this property so if `PMax` is known it is better to use the manager 4.  
+**Doxygen generated documentation is available at [TODO](#).**
 
 ## Basic usage
 Typical usage of the library can be summarized in 3 steps:
@@ -67,7 +67,7 @@ int main()
     std::vector<diagram_t> xs = manager.variables({0, 1, 2, 3, 4});
 
     // diagram_t is cheap handle type, multiple diagrams can point
-    // to a same node, to test whether they do .equals can be used:
+    // to a same node, to test whether they do use .equals:
     assert(&x1 != &xs[1] && x1.equals(xs[1]));
 
     using namespace teddy::ops; // (to simplify operator names)
@@ -100,14 +100,14 @@ int main()
 ```
 
 ### Memory management
-Teddy uses pool of pre-allocated nodes. Size of the pool is provided by the user in the managers constructor. If there are no nodes left in the pool, garbage collection s performed to recycle unused nodes. If the number of nodes collected during garbage collection is small then additional pool of nodes is allocated. Size of the additional pool and the threshold for its allocation can be configured. See the [documentation](doc/teddy.md) for details.
+Teddy uses pool of pre-allocated nodes. Size of the pool is provided by the user in the manager's constructor. If there are no nodes left in the pool, garbage collection s performed to recycle unused nodes. If the number of nodes collected during garbage collection is small then additional pool of nodes is allocated. Size of the additional pool and the threshold for its allocation can be configured. See the [TODO](doc/teddy.md) for details.
 
 ### Assertions
 By default, the library contains runtime assertions that perform various checks such as bounds checking for indices of variables and similar. In case you want to ignore these assertions e.g. in some performance demanding use case, you need to put `#define NDEBUG` before you include the teddy header.  
-***This feature will change in the future so that it does not rely on the macro.***
+***This feature will change in the future so that it does not rely on a macro.***
 
 ### Variable ordering
-Order of variables can be specified in the constructor of the manager. After that, the order stays the same since the automatic variable reordering is turned off by default. TODO
+Order of variables can be specified in a constructor of a manager. After that, the order stays the same since the automatic variable reordering is turned off by default. TODO
 
 ### Big integers
 ***Comming soon.***
