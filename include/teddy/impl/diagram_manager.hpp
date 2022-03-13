@@ -147,6 +147,8 @@ namespace teddy
          *  diagram_t f = manager.from_vector(vec);
          *  \endcode
          *
+         *  \tparam I Iterator type for the input range.
+         *  \tparam S Sentinel type for \p I . (end iterator)
          *  \param first iterator to the first element of the truth vector.
          *  \param last sentinel for \p first . (end iterator)
          *  \return Diagram representing function given by the truth vector.
@@ -166,6 +168,31 @@ namespace teddy
          */
         template<std::ranges::input_range R>
         auto from_vector (R&& vector) -> diagram_t;
+
+        /**
+         *  \brief Creates truth vector from the diagram.
+         *
+         *  Significance of variables is the same as in the \c from_vector
+         *  function i.e. variable on the last level of the diagram is
+         *  least significant. The following assertion holds:
+         *  \code
+         *  assert(manager.from_vector(manager.to_vector(d)))
+         *  \endcode
+         *
+         *  \param d Diagram.
+         *  \return Vector of ints representing truth vector.
+         */
+        auto to_vector (diagram_t const& d) const -> std::vector<uint_t>;
+
+        /**
+         *  \brief Creates truth vector from the diagram.
+         *
+         *  \tparam O Output iterator type
+         *  \param d Diagram.
+         *  \param out Output iterator that is used to output the truth vector.
+         */
+        template<std::output_iterator<uint_t> O>
+        auto to_vector_g (diagram_t const& d, O out) const -> void;
 
         /**
          *  \brief Creates BDDs defined by PLA file.
@@ -788,6 +815,47 @@ namespace teddy
     {
         namespace rs = std::ranges;
         return this->from_vector(rs::begin(r), rs::end(r));
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::to_vector
+        (diagram_t const& d) const -> std::vector<uint_t>
+    {
+        auto vs = std::vector<uint_t>();
+        vs.reserve(nodes_.domain_product(
+            0u, static_cast<level_t>(this->get_var_count())));
+        this->to_vector_g(d, std::back_inserter(vs));
+        return vs;
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    template<std::output_iterator<teddy::uint_t> O>
+    auto diagram_manager<Data, Degree, Domain>::to_vector_g
+        (diagram_t const& d, O out) const -> void
+    {
+        auto vars = std::vector<uint_t>(this->get_var_count());
+        auto wasLast = false;
+        do
+        {
+            *out++ = this->evaluate(d, vars);
+
+            auto overflow = true;
+            auto level = nodes_.get_leaf_level();
+            while (level > 0 && overflow)
+            {
+                --level;
+                auto const index = nodes_.get_index(level);
+                ++vars[index];
+                overflow = vars[index] == nodes_.get_domain(index);
+                if (overflow)
+                {
+                    vars[index] = 0;
+                }
+
+                wasLast = overflow && 0 == level;
+            }
+        }
+        while (not wasLast);
     }
 
     template<class Data, degree Degree, domain Domain>

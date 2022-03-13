@@ -887,7 +887,7 @@ namespace teddy::test
     }
 
     /**
-     * 
+     *  Tests variable sifting algorithm.
      */
     template<class Dat, class Deg, class Dom>
     auto test_var_sift
@@ -898,6 +898,21 @@ namespace teddy::test
         manager.gc();
         manager.sift();
         return test_evaluate(manager, diagram, expr);
+    }
+
+    /**
+     *  Tests transformation from diagram to truth vector.
+     */
+    template<class Dat, class Deg, class Dom>
+    auto test_to_vector
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , diagram<Dat, Deg>&              diagram )
+    {
+        auto const vector = manager.to_vector(diagram);
+        auto const diagram2 = manager.from_vector(vector);
+        return diagram.equals(diagram2)
+            ? test_result(true)
+            : test_result(false, "Diagram created from vector is different.");
     }
 
     /**
@@ -931,6 +946,7 @@ namespace teddy::test
                            , "operators"sv
                            , "cofactors"sv
                            , "from_vector"sv
+                           , "to_vector"sv
                            , "var_sift"sv };
         auto results = std::unordered_map
             <std::string_view, std::vector<std::optional<test_result>>>();
@@ -1005,6 +1021,8 @@ namespace teddy::test
                 = test_cofactor(managers[k], diagram1s[k], exprs[k], rngs[k]);
             results.at("from_vector")[k]
                 = test_from_vector(managers[k], diagram1s[k], exprs[k]);
+            results.at("to_vector")[k]
+                = test_to_vector(managers[k], diagram1s[k]);
             results.at("var_sift")[k]
                 = test_var_sift(managers[k], diagram1s[k], exprs[k]);
 
@@ -1064,9 +1082,10 @@ auto run_test_many ()
     auto const termCount = 20;
     auto const termSize  = 5;
     auto const nodeCount = 100;
-    auto const testCount = std::thread::hardware_concurrency() + 2;
-    auto       seedSrc   = std::random_device();
-    // auto const seedSrc   = std::integral_constant<long, 2928425735>();
+    // auto const testCount = std::thread::hardware_concurrency() + 2;
+    auto const testCount = 3;
+    // auto       seedSrc   = std::random_device();
+    auto const seedSrc   = std::integral_constant<long, 1021306696>();
     auto const initSeed  = seedSrc();
     auto constexpr IsFixedSeed = not std::same_as< std::random_device
                                                  , decltype(seedSrc) >;
@@ -1140,9 +1159,9 @@ auto run_test_many ()
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
     ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
-    ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
-    ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
-    ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
+    // ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
+    // ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
+    // ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
 }
 
 auto run_verbose_test_one()
@@ -1215,6 +1234,7 @@ auto run_speed_benchmark()
 
 auto main () -> int
 {
+    // TODO testy s konstantami to vector osetrit
     run_test_many();
     // run_verbose_test_one();
     // run_speed_benchmark();
