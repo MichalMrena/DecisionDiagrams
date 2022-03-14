@@ -1114,6 +1114,7 @@ namespace teddy
             }));
         }));
         this->for_each_son(node, id_inc_ref_count<Data, Degree>);
+        this->for_each_son(node, id_set_notmarked<Data, Degree>);
         this->for_each_son(nodeIndex, oldSons, [this](auto const os)
         {
             this->dec_ref_try_gc(os);
