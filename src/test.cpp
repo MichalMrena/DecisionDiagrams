@@ -1051,6 +1051,7 @@ namespace teddy::test
         std::cout << test_operators(manager, diagram1, expr)     << '\n';
         std::cout << test_cofactor(manager, diagram1, expr, rng) << '\n';
         std::cout << test_from_vector(manager, diagram1, expr)   << '\n';
+        std::cout << test_to_vector(manager, diagram1)           << '\n';
         std::cout << test_var_sift(manager, diagram1, expr)      << '\n';
     }
 
@@ -1082,10 +1083,9 @@ auto run_test_many ()
     auto const termCount = 20;
     auto const termSize  = 5;
     auto const nodeCount = 100;
-    // auto const testCount = std::thread::hardware_concurrency() + 2;
-    auto const testCount = 3;
-    // auto       seedSrc   = std::random_device();
-    auto const seedSrc   = std::integral_constant<long, 1021306696>();
+    auto const testCount = std::thread::hardware_concurrency() + 2;
+    auto       seedSrc   = std::random_device();
+    // auto const seedSrc   = std::integral_constant<long, 1021306696>();
     auto const initSeed  = seedSrc();
     auto constexpr IsFixedSeed = not std::same_as< std::random_device
                                                  , decltype(seedSrc) >;
@@ -1159,9 +1159,9 @@ auto run_test_many ()
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
     ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
-    // ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
-    // ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
-    // ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
+    ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
+    ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
+    ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
 }
 
 auto run_verbose_test_one()

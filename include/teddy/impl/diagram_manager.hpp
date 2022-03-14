@@ -833,6 +833,13 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::to_vector_g
         (diagram_t const& d, O out) const -> void
     {
+        if (this->get_var_count() == 0)
+        {
+            assert(d.get_root()->is_terminal());
+            *out++ = d.get_root()->get_value();
+            return;
+        }
+
         auto vars = std::vector<uint_t>(this->get_var_count());
         auto wasLast = false;
         do
