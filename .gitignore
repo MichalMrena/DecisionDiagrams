@@ -3,3 +3,4 @@ build
 valgrind.txt
 install_manifest.txt
 doxygen/doc
+data

@@ -609,6 +609,30 @@ namespace teddy
          */
         auto get_domains () const -> std::vector<uint_t>;
 
+        /**
+         *  \brief Sets ratio used in calculation of size of the new node pool.
+         *
+         *  Size of the new additional pool as calculated as:
+         *  \code
+         *  ratio * initNodeCount.
+         *  \endcode
+         *
+         *  \param ratio Number from the interval [0,1].
+         */
+        auto set_pool_ratio (double ratio) -> void;
+
+        /**
+         *  \brief Sets ratio used to determine new node pool allocation.
+         *
+         *  New pool is allocated if:
+         *  \code
+         *  garbageCollectedNodes < ratio * initNodeCount
+         *  \endcode
+         *
+         *  \param ratio Number from the interval [0,1].
+         */
+        auto set_pool_ratio (double ratio) -> void;
+
     protected:
         using node_t = typename diagram<Data, Degree>::node_t;
 
@@ -627,14 +651,35 @@ namespace teddy
         auto transform_terminal (node_t*, F) -> node_t*;
 
     protected:
-        diagram_manager ( std::size_t vars
-                        , std::size_t nodes
+        /**
+         *  \brief Initializes diagram manager.
+         *
+         *  This overload is for managers that have fixed domains
+         *  (known at copile time).
+         *
+         *  \param varCount Number of variables.
+         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param order Order of variables.
+         */
+        diagram_manager ( std::size_t varCount
+                        , std::size_t initNodeCount
                         , std::vector<index_t> order )
                         requires(domains::is_fixed<Domain>()());
 
-        diagram_manager ( std::size_t vars
-                        , std::size_t nodes
-                        , domains::mixed
+        /**
+         *  \brief Initializes diagram manager.
+         *
+         *  This overload is for managers that have mixed domains
+         *  specified by the \p ds paramter.
+         *
+         *  \param varCount Number of variables.
+         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param ds Domains of varibales.
+         *  \param order Order of variables.
+         */
+        diagram_manager ( std::size_t varCount
+                        , std::size_t initNodeCount
+                        , domains::mixed ds
                         , std::vector<index_t> order )
                         requires(domains::is_mixed<Domain>()());
 

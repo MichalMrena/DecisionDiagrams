@@ -1,37 +1,40 @@
 # 🧸 TeDDy
 
-TeDDy is a C++ library for creation and manipulation of decision diagrams. It is being developed as a project at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).
-
-## Decision diagrams
+TeDDy is a C++ library for the creation and manipulation of decision diagrams. It is being developed as a project at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), the [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).  
 This text assumes that the reader is familiar with decision diagrams to some extent. Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDDs) and their generalization Multivalued Decision Diagrams (MDDs).
 
+---
+## Contents
+TODO
+---
+
 ## How to install
-Library is header only so it is easy to incorporate it in your project. All you need to do is to place contents of the [include](./include/) directory in your project files and include a header file in your code as is shown in the examples below.  
+The library is header-only so it is easy to incorporate it into your project. All you need to do is to place the contents of the [include](./include/) directory in your project files and include a header file in your code as is shown in the examples below.  
 If you would like to use the library in multiple projects and you are a Linux user you can use the following commands to install TeDDy:
 ```bash
 git clone git@github.com:MichalMrena/DecisionDiagrams.git
 cd DecisionDiagrams
 sudo make install
 ```
-This installs library files to `/usr/local` which should be visible to your compiler. You can specify different path by setting `PREFIX` variable: `make PREFIX=<path> install`.  
+This installs library files to `/usr/local` which should be visible to your compiler. You can specify different a path by setting the `PREFIX` variable: `make PREFIX=<path> install`.  
 To uninstall the library go to the directory where you've run the install command and run `[sudo] xargs rm < install_manifest.txt`.
 
 ### Compiling
 TeDDy uses features from `C++20` so you might need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++latest` for MSVC. It was tested with `g++ 11.1.0` and `MSVC TODO`.  
-***Support for C++17 is comming soon.***
 
 ## Library API
-Functions from the library are accesed via instance of a diagram manager. TeDDy offeres four diagram managers for different kinds of decision diagrams.  
+Functions from the library are accessed via the instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
 1. `bdd_manager` for Binary Decision Diagrams (BDDs).  
 
-2. `mdd_manager<P>` for Multivalued Decision Diagrams (MDDs) representing Multiple-Valued logic functions. Variables and functions can have values from the set {0, 1, ... P - 1}.  
+2. `mdd_manager<P>` for Multivalued Decision Diagrams (MDDs) representing Multiple-Valued logic functions. The domain of each variable is `{0, 1, ... P - 1}` and the set of values of the function is also `{0, 1, ... P - 1}`.  
 
-3. `imdd_manager` for (integer) Multivalued Decision Diagrams (iMDDs) representing integer functions. Domains of variables are specified in the constructor of the manager and are from the set {0, 1, 2, ...}. Functions can have values from the set {0, 1, 2, ...}.
+3. `imdd_manager` for (integer) Multivalued Decision Diagrams (iMDDs) representing integer functions. The domain of each variable can be a different set of the form `{0, 1, 2, ..., di - 1}` where the `di` for each variable is specified in the constructor. The set of values of the function is a set of the form `{0, 1, 2, ...}`.
 
-4. ` ifmdd_manager<PMax>` for (integer) Multivalued Decision Diagrams (iMDDs) representing integer functions. Domains of variables are specified in the constructor of the manager and are from the set {0, 1, 2, ...,  PMax - 1}. Functions can have values from the set {0, 1, 2, ...}.  
+4. `ifmdd_manager<PMax>` for (integer) Multivalued Decision Diagrams (iMDDs) representing integer functions. The domain of each variable can be a different set of the form `{0, 1, 2, ..., min(di, PMax - 1)}` where the `PMax` is specified as the template parameter and `di` for each variable is specified in the constructor. The set of values of the function is a set of the form `{0, 1, 2, ...}`.  
   
-Managers 1, 2 and 4 use nodes with more compact memory representation since maximum of the domains is known at compile time. The only difference between 3 and 4 is in this property so if `PMax` is known it is better to use the manager 4.  
-**Doxygen generated documentation is available at [TODO](#).**
+Managers 1, 2, and 4 use nodes with more compact memory representation since the maximum of the domains is known at compile time. The only difference between 3 and 4 is in this property so if `PMax` is known it is better to use the manager 4.  
+
+All managers have the same API. **Full documentation** is available **[here](https://michalmrena.github.io/teddy.html)**.
 
 ## Basic usage
 Typical usage of the library can be summarized in 3 steps:
@@ -39,7 +42,7 @@ Typical usage of the library can be summarized in 3 steps:
 2. Create a decision diagram representing desired function(s).
 3. Examine properties of the function(s).  
 
-Following example shows above steps for the `bdd_manager` and Boolean function `f(x) = (x0 and x1) or (x2 and x3)`:
+The following example shows the above steps for the `bdd_manager` and Boolean function `f(x) = (x0 and x1) or (x2 and x3)`:
 
 ```C++
 #include "teddy/teddy.hpp"
@@ -99,8 +102,16 @@ int main()
 }
 ```
 
-### Memory management
-Teddy uses pool of pre-allocated nodes. Size of the pool is provided by the user in the manager's constructor. If there are no nodes left in the pool, garbage collection s performed to recycle unused nodes. If the number of nodes collected during garbage collection is small then additional pool of nodes is allocated. Size of the additional pool and the threshold for its allocation can be configured. See the [TODO](doc/teddy.md) for details.
+## Memory management
+### Node pool
+Teddy uses a pool of pre-allocated nodes. The initial number of allocated nodes (`initNodeCount`) is provided by the user in the manager's constructor. It is hard to give general advice on how many nodes you should allocate. On modern hardware, it should not be a problem to allocate a couple of millions of nodes that will occupy roughly tens or hundreds of MiBs of memory depending on the manager used. The more nodes you allocate at the beginning, the fewer allocations will be needed during computations resulting in a faster computation. Of course, for small examples, hundreds or thousands of nodes are just enough.  
+
+If there are no nodes left in the pool, automatic garbage collection (`gc`) is performed to recycle unused nodes. Let `gcCount` be the number of garbage collected nodes (returned to the pool). Then if `gcCount < gcThreshold * initNodeCount` then an additional node poll of size `poolRatio * initNodeCount` is allocated. Default values of the parameters are `gcThreshold = 0.05` and `poolRatio = 0.5`. The user can adjust the parameters using functions `set_pool_ratio` and `set_gc_ratio`.
+
+### Cache
+TODO
+
+## Other
 
 ### Assertions
 By default, the library contains runtime assertions that perform various checks such as bounds checking for indices of variables and similar. In case you want to ignore these assertions e.g. in some performance demanding use case, you need to put `#define NDEBUG` before you include the teddy header.  
