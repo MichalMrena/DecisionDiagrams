@@ -253,11 +253,11 @@ namespace teddy
          *
          *  Uses left fold order of evaluation (sequentially from the left).
          *
-         *  @code
+         *  \code
          *  // Example:
          *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
          *  diagram_t product = manager.left_fold<teddy::ops>(vs);
-         *  @endcode
+         *  \endcode
          *
          *  \tparam Op Binary operation.
          *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>).
@@ -273,12 +273,12 @@ namespace teddy
          *
          *  Uses left fold order of evaluation (sequentially from the left).
          *
-         *  @code
+         *  \code
          *  // Example:
          *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
          *  diagram_t product = manager.left_fold<teddy::ops>(
          *      vs.begin(), vs.end());
-         *  @endcode
+         *  \endcode
          *
          *  \tparam Op Binary operation.
          *  \tparam I Range iterator type.
@@ -300,11 +300,11 @@ namespace teddy
          *  Tree fold uses the input range \p range to store some intermediate
          *  results. \p range is left in valid but unspecified state.
          *
-         *  @code
+         *  \code
          *  // Example:
          *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
          *  diagram_t product = manager.tree_fold<teddy::ops>(vs);
-         *  @endcode
+         *  \endcode
          *
          *  \tparam Op Binary operation.
          *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>).
@@ -323,12 +323,12 @@ namespace teddy
          *  Tree fold uses the input range \p range to store some intermediate
          *  results. \p range is left in valid but unspecified state.
          *
-         *  @code
+         *  \code
          *  // Example:
          *  std::vector<diagram_t> vs = manager.variables({0, 1, 2});
          *  diagram_t product = manager.tree_fold<teddy::ops>(
          *      vs.begin(), vs.end());
-         *  @endcode
+         *  \endcode
          *
          *  \tparam Op Binary operation.
          *  \tparam I Range iterator type.
@@ -469,13 +469,13 @@ namespace teddy
         /**
          *  \brief Transforms values of the function.
          *
-         *  @code
+         *  \code
          *  // Example of the call with 4-valued MDD.
          *  manager.transform(diagram, [](unsigned int v)
          *  {
          *      return 3 - v;
          *  });
-         *  @endcode
+         *  \endcode
          *
          *  \tparam F Type of the transformation function.
          *  \param d Diagram representing the function.
@@ -610,6 +610,18 @@ namespace teddy
         auto get_domains () const -> std::vector<uint_t>;
 
         /**
+         *  \brief Sets the relative cache size w.r.t the number of nodes.
+         *
+         *  Size of the cache is calculated as:
+         *  \code
+         *  ratio * uniqueNodeCount
+         *  \endcode
+         *
+         *  \param ratio Number from the interval (0,oo).
+         */
+        auto set_cache_ratio (double ratio) -> void;
+
+        /**
          *  \brief Sets ratio used in calculation of size of the new node pool.
          *
          *  Size of the new additional pool as calculated as:
@@ -617,7 +629,7 @@ namespace teddy
          *  ratio * initNodeCount.
          *  \endcode
          *
-         *  \param ratio Number from the interval [0,1].
+         *  \param ratio Number from the interval (0,1].
          */
         auto set_pool_ratio (double ratio) -> void;
 
@@ -631,7 +643,7 @@ namespace teddy
          *
          *  \param ratio Number from the interval [0,1].
          */
-        auto set_pool_ratio (double ratio) -> void;
+        auto set_gc_ratio (double ratio) -> void;
 
     protected:
         using node_t = typename diagram<Data, Degree>::node_t;
@@ -1412,6 +1424,27 @@ namespace teddy
         () const -> std::vector<uint_t>
     {
         return nodes_.get_domains();
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::set_cache_ratio
+        (double ratio) -> void
+    {
+        nodes_.set_cache_ratio(ratio);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::set_pool_ratio
+        (double ratio) -> void
+    {
+        nodes_.set_pool_ratio(ratio);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::set_gc_ratio
+        (double ratio) -> void
+    {
+        nodes_.set_gc_ratio(ratio);
     }
 
     template<class Data, degree Degree, domain Domain>

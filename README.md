@@ -5,7 +5,9 @@ This text assumes that the reader is familiar with decision diagrams to some ext
 
 ---
 ## Contents
+
 TODO
+
 ---
 
 ## How to install
@@ -109,7 +111,7 @@ Teddy uses a pool of pre-allocated nodes. The initial number of allocated nodes 
 If there are no nodes left in the pool, automatic garbage collection (`gc`) is performed to recycle unused nodes. Let `gcCount` be the number of garbage collected nodes (returned to the pool). Then if `gcCount < gcThreshold * initNodeCount` then an additional node poll of size `poolRatio * initNodeCount` is allocated. Default values of the parameters are `gcThreshold = 0.05` and `poolRatio = 0.5`. The user can adjust the parameters using functions `set_pool_ratio` and `set_gc_ratio`.
 
 ### Cache
-TODO
+The library uses cache to speed up diagram manipulation by avoiding expensive recomputations. The size of the cache depends on the number of currently used nodes. The size is calculated as `cacheRatio * uniqueNodeCount`. The default value of `cacheRatio` is `0.5`. The user can adjust the ratio using `set_cache_ratio` function. The bigger the cache the better the computation speed. However, a bigger ratio means higher memory consumption. It is up to the user to keep the two factors balanced. From the experience even cache ratios `1.0` of `2.0` are fine.
 
 ## Other
 
@@ -118,17 +120,22 @@ By default, the library contains runtime assertions that perform various checks 
 ***This feature will change in the future so that it does not rely on a macro.***
 
 ### Variable ordering
-Order of variables can be specified in a constructor of a manager. After that, the order stays the same since the automatic variable reordering is turned off by default. TODO
-
-### Big integers
-***Comming soon.***
+The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke reordering the heuristic by using the function `sift`. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
 ## Reliability analysis
+TODO
+
 ### Examples
 TODO
 
 ## Publications
-TODO links to papers
+We have published several papers on decision diagrams and reliability analysis. Most of these papers had an experimental section where we examined various properties of decision diagrams using TeDDy.
 
-## Implementation
-TODO
+#### List of publications:
+Mrena, M., Sedlacek, P., &#38; Kvassay, M. (2021). **Linear Fold and Tree Fold in Creation of Binary Decision Diagrams of Standard Benchmarks.** *2021 11th IEEE International Conference on Intelligent Data Acquisition and Advanced Computing Systems: Technology and Applications (IDAACS)*, *2*, 1120–1125. https://doi.org/10.1109/IDAACS53288.2021.9660940
+&nbsp;  
+
+Mrena, M., &#38; Kvassay, M. (2021). **Comparison of Left Fold and Tree Fold Strategies in Creation of Binary Decision Diagrams**. *2021 International Conference on Information and Digital Technologies (IDT)*, 341–352. https://doi.org/10.1109/IDT52577.2021.9497593
+&nbsp;  
+
+Mrena, M., Kvassay, M., &#38; Stankovic, R. S. (2020). **Software Library for Teaching Applications of Binary Decision Diagrams in Reliability Analysis**. *2020 18th International Conference on Emerging ELearning Technologies and Applications (ICETA)*, 487–497. https://doi.org/10.1109/ICETA51985.2020.9379170

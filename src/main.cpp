@@ -98,10 +98,7 @@ auto example2()
 
 auto main () -> int
 {
-    // TODO vsetko co pouzivatel priamo nepotrebuje by mohlo by v
-    // namespace teddy::impl
-
-    // TODO generovanie nahodnych monotonnych funkcii
+    // TODO skusit prejst na explicitnu implementaciu v suvislej pamati?
     // TODO benchmarkovanie cache hit/miss
 
     // pla_test_speed(1);

@@ -107,6 +107,7 @@ namespace teddy
 
         auto set_cache_ratio  (double) -> void;
         auto set_pool_ratio   (double) -> void;
+        auto set_gc_ratio     (double) -> void;
         auto set_auto_reorder (bool)   -> void;
 
     private:
@@ -211,6 +212,7 @@ namespace teddy
         [[no_unique_address]] Domain    domains_;
         std::size_t                     nodeCount_;
         double                          cacheRatio_;
+        double                          gcRatio_;
         std::size_t                     lastGcNodeCount_;
         std::size_t                     nextTableAdjustment_;
         bool                            reorderEnabled_;
@@ -289,6 +291,7 @@ namespace teddy
         domains_             (std::move(domains)),
         nodeCount_           (0),
         cacheRatio_          (0.5),
+        gcRatio_             (0.05),
         lastGcNodeCount_     (pool_.main_pool_size()),
         nextTableAdjustment_ (230),
         reorderEnabled_      (false)
@@ -328,6 +331,14 @@ namespace teddy
     {
         assert(d > 0);
         pool_.set_overflow_ratio(d);
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::set_gc_ratio
+        (double const ratio) -> void
+    {
+        assert(d >= 0.0 && d <= 1.0);
+        gcRatio_ = ratio;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -866,8 +877,10 @@ namespace teddy
         if (pool_.available_nodes() == 0)
         {
             auto const gcThreshold = static_cast<double>(pool_.main_pool_size())
-                                   * 0.05; // <-- magic number, should be settable
+                                   * gcRatio_;
 
+            // TODO jednoduchšie, ak sa zozberalo menej ako gcRatio_ * initNodeCount, tak rovno grownut pool
+            // lastGcNodeCount_ by potom nebolo potrebne
             if (static_cast<double>(lastGcNodeCount_) > gcThreshold)
             {
                 this->collect_garbage();
@@ -875,6 +888,7 @@ namespace teddy
                 {
                     this->sift_vars();
                 }
+                // TODO tu mohli ostat nejake mrtve nody
                 lastGcNodeCount_ = pool_.available_nodes();
                 if (lastGcNodeCount_ == 0)
                 {
