@@ -4,3 +4,8 @@ valgrind.txt
 install_manifest.txt
 doxygen/doc
 data
+*.png
+*.txt
+*.out
+*.pdf
+*.R

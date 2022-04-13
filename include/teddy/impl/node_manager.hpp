@@ -11,7 +11,6 @@
 #include <cassert>
 #include <functional>
 #include <queue>
-#include <ranges>
 #include <span>
 #include <utility>
 #include <vector>
@@ -1062,7 +1061,7 @@ namespace teddy
         {
             return true;
         }
-        auto const me = std::ranges::max(is);
+        auto const me = *std::max_element(std::begin(is), std::end(is));
         auto in = std::vector<bool>(me + 1, false);
         for (auto const i : is)
         {
@@ -1122,7 +1121,7 @@ namespace teddy
         node->set_sons(this->make_sons(nextIndex, [&, this](auto const nk)
         {
             return this->internal_node(nodeIndex, this->make_sons(nodeIndex,
-                [&, this](auto const sk)
+                [&](auto const sk)
             {
                 return cofactorMatrix[sk][nk];
             }));
@@ -1180,8 +1179,6 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::sift_vars
         () -> void
     {
-        namespace rs = std::ranges;
-
         using count_pair = struct { index_t index; std::size_t count; };
 
         auto const get_sift_order = [this]()
@@ -1191,7 +1188,8 @@ namespace teddy
             {
                 return count_pair {i, this->get_node_count(i)};
             });
-            rs::sort(counts, [](auto const& l, auto const& r)
+            std::sort(std::begin(counts), std::end(counts),
+                [](auto const& l, auto const& r)
             {
                 return l.count > r.count;
             });
