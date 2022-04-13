@@ -327,17 +327,17 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::set_pool_ratio
-        (double const d) -> void
+        (double const ratio) -> void
     {
-        assert(d > 0);
-        pool_.set_overflow_ratio(d);
+        assert(ratio > 0);
+        pool_.set_overflow_ratio(ratio);
     }
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::set_gc_ratio
         (double const ratio) -> void
     {
-        assert(d >= 0.0 && d <= 1.0);
+        assert(ratio >= 0.0 && ratio <= 1.0);
         gcRatio_ = ratio;
     }
 

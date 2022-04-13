@@ -11,6 +11,7 @@
 
 namespace teddy
 {
+    // TODO nope
     template<class T>
     class mem_wrap
     {
@@ -57,10 +58,10 @@ namespace teddy
 
     private:
         std::vector<mem_wrap<node_t>>              mainPool_;
-        std::vector<std::vector<mem_wrap<node_t>>> overflowPools_;
+        std::vector<std::vector<mem_wrap<node_t>>> overflowPools_; // TODO vector of unique_pointer<T[]>
         std::vector<mem_wrap<node_t>>*             currentPoolPtr_;
         node_t*                                    freeNode_;
-        pool_it                                    nextPoolNodeIt_;
+        pool_it                                    nextPoolNodeIt_; // TODO offsety namiesto iteratorov
         double                                     overflowRatio_;
         std::size_t                                availableNodes_;
     };
