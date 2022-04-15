@@ -37,12 +37,13 @@ namespace teddy::utils
     template<std::input_iterator I, std::sentinel_for<I> S, class F>
     auto fmap (I it, S last, F f)
     {
-        namespace rs = std::ranges;
         using U = decltype(std::invoke(f, *it));
         auto ys = std::vector<U>();
         if constexpr (std::random_access_iterator<I>)
         {
-            ys.reserve(static_cast<std::size_t>(rs::distance(it, last)));
+            ys.reserve(static_cast<std::size_t>(
+                std::ranges::distance(it, last))
+            );
         }
         while (it != last)
         {
@@ -55,8 +56,7 @@ namespace teddy::utils
     template<std::ranges::input_range Xs, class F>
     auto fmap (Xs&& xs, F f)
     {
-        namespace rs = std::ranges;
-        return fmap(rs::begin(xs), rs::end(xs), f);
+        return fmap(std::ranges::begin(xs), std::ranges::end(xs), f);
     }
 
     template<class Base, std::integral Exponent>
