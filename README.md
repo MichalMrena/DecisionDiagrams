@@ -18,11 +18,11 @@ git clone git@github.com:MichalMrena/DecisionDiagrams.git
 cd DecisionDiagrams
 sudo make install
 ```
-This installs library files to `/usr/local` which should be visible to your compiler. You can specify different a path by setting the `PREFIX` variable: `make PREFIX=<path> install`.  
-To uninstall the library go to the directory where you've run the install command and run `[sudo] xargs rm < install_manifest.txt`.
+This installs library files to `/usr/local` which should be visible to your compiler. You can specify different path by setting the `PREFIX` variable: `make PREFIX=<path> install`. The installation script writes path to all installed files into the `install_manifest.txt` file.  
+To uninstall the library go to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.
 
 ### Compiling
-TeDDy uses features from `C++20` so you might need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++latest` for MSVC. It was tested with `g++ 11.1.0` and `MSVC TODO`.  
+TeDDy uses features from `C++20` so you need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. It was tested with `g++ 11.1.0`, `clang++ 15.0.0` and `MSVC TODO`.  
 
 ## Library API
 Functions from the library are accessed via the instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
@@ -123,7 +123,7 @@ By default, the library contains runtime assertions that perform various checks 
 The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke reordering the heuristic by using the function `sift`. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
 ## Reliability analysis
-TODO
+Application of Decision Diagrams
 
 ### Examples
 TODO

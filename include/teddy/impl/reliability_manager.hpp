@@ -499,7 +499,7 @@ namespace teddy
             {
                 auto const nodeIndex = node->get_index();
                 auto k = 0u;
-                this->nodes_.for_each_son(node, [this, node, nodeIndex, &ps, &k]
+                this->nodes_.for_each_son(node, [node, nodeIndex, &ps, &k]
                     (auto const son)
                 {
                     son->data() += node->data() * ps[nodeIndex][k];
@@ -861,10 +861,11 @@ namespace teddy
                                        , decltype(cache_pair_hash)
                                        , decltype(cache_pair_equals) >();
 
-        auto const go
-            = [this, &cache, change](auto&& self, auto const l, auto const r)
+        auto const go = [this, &cache, change]( auto&&     self
+                                              , auto const l
+                                              , auto const r ) -> node_t*
         {
-            auto const cached = cache.find(cache_pair(l, r));
+            auto const cached = cache.find(cache_pair {l, r});
             if (cached != std::end(cache))
             {
                 return cached->second;
@@ -901,7 +902,7 @@ namespace teddy
             }
 
             // TODO in place
-            cache.emplace(std::make_pair(cache_pair(l, r), u));
+            cache.emplace(std::make_pair(cache_pair {l, r}, u));
             return u;
         };
 

@@ -5,6 +5,7 @@ endif
 
 CXXFLAGS := -MMD -MP -std=c++20 $(STDLIB) -Iinclude \
 	-Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow
+LDFLAGS := $(STDLIB)
 SRC_DIR := ./src
 LINK_NOTICE := "\e[1;33mLinking:\e[0m"
 COMPILE_NOTICE := "\e[1;33mCompiling:\e[0m"

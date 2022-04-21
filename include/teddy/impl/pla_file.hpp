@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <fstream>
 #include <optional>
-#include <ranges>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -191,8 +190,6 @@ namespace teddy
     inline auto pla_file::load_file
         (std::string const& path) -> std::optional<pla_file>
     {
-        namespace rs = std::ranges;
-
         // Utils:
         auto constexpr space = [](auto const c)
         {
@@ -202,13 +199,13 @@ namespace teddy
         auto constexpr words = [space](auto const str)
         {
             auto ws        = std::vector<std::string>();
-            auto it        = rs::begin(str);
-            auto const end = rs::end(str);
+            auto it        = std::begin(str);
+            auto const end = std::end(str);
 
             while (it != end)
             {
-                auto const wordBegin = rs::find_if_not(it, end, space);
-                auto const wordEnd   = rs::find_if(wordBegin, end, space);
+                auto const wordBegin = std::find_if_not(it, end, space);
+                auto const wordEnd   = std::find_if(wordBegin, end, space);
                 if (wordBegin != wordEnd)
                 {
                     ws.emplace_back(wordBegin, wordEnd);
@@ -231,7 +228,9 @@ namespace teddy
         while (std::getline(ifst, line))
         {
             // Skip leading spaces.
-            auto const first = rs::find_if_not(line, space);
+            auto const first = std::find_if_not( std::begin(line)
+                                               , std::end(line)
+                                               , space );
             auto const last  = std::end(line);
             if (first == last)
             {
@@ -252,10 +251,10 @@ namespace teddy
             }
 
             // Split into (key, val) pair on the first space.
-            auto const keyLast  = rs::find_if(first, last, space);
+            auto const keyLast  = std::find_if(first, last, space);
             auto const valFirst = keyLast == last
                 ? last
-                : rs::find_if_not(keyLast + 1, last, space);
+                : std::find_if_not(keyLast + 1, last, space);
             auto key = std::string(first, keyLast);
             if (valFirst != last)
             {
@@ -274,13 +273,13 @@ namespace teddy
         }
 
         // Parse header.
-        auto const optionsEnd  = rs::end(options);
+        auto const optionsEnd  = std::end(options);
         auto const varCountIt  = options.find(".i");
         auto const fCountIt    = options.find(".o");
         auto const lineCountIt = options.find(".p");
         if ( varCountIt  == optionsEnd
-          or fCountIt    == optionsEnd
-          or lineCountIt == optionsEnd )
+          || fCountIt    == optionsEnd
+          || lineCountIt == optionsEnd )
         {
             return std::nullopt;
         }
@@ -299,8 +298,10 @@ namespace teddy
         lines.reserve(*lineCount);
         do
         {
-            auto const first = rs::find_if_not(line, space);
-            auto const last  = rs::end(line);
+            auto const first = std::find_if_not( std::begin(line)
+                                               , std::end(line)
+                                               , space );
+            auto const last  = std::end(line);
             if (first == last)
             {
                 // Skip empty line.
@@ -314,13 +315,13 @@ namespace teddy
             }
 
             // Split on the first space.
-            auto const varsLast = rs::find_if(first, last, space);
+            auto const varsLast = std::find_if(first, last, space);
             if (varsLast == last)
             {
                 return std::nullopt;
             }
-            auto const fsFirst = rs::find_if_not(varsLast + 1, last, space);
-            auto const fsLast  = rs::find_if(fsFirst, last, space);
+            auto const fsFirst = std::find_if_not(varsLast + 1, last, space);
+            auto const fsLast  = std::find_if(fsFirst, last, space);
             auto const vars    = std::string(first, varsLast);
             auto const fs      = std::string(fsFirst, fsLast);
 
@@ -364,10 +365,10 @@ namespace teddy
         // Read labels.
         auto const inLbIt = options.find(".ilb");
         auto const ouLbIt = options.find(".ob");
-        auto inputLabels  = inLbIt != rs::end(options)
+        auto inputLabels  = inLbIt != std::end(options)
             ? words(inLbIt->second)
             : std::vector<std::string>();
-        auto outputLabels = ouLbIt != rs::end(options)
+        auto outputLabels = ouLbIt != std::end(options)
             ? words(ouLbIt->second)
             : std::vector<std::string>();
 
