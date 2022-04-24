@@ -1,7 +1,7 @@
 # 🧸 TeDDy
 
 TeDDy is a C++ library for the creation and manipulation of decision diagrams. It is being developed as a project at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), the [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).  
-This text assumes that the reader is familiar with decision diagrams to some extent. Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDDs) and their generalization Multivalued Decision Diagrams (MDDs).
+This text assumes that the reader is familiar with decision diagrams to some extent. Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDDs) and their generalization Multi-Valued Decision Diagrams (MDDs).
 
 ---
 ## Contents
@@ -25,18 +25,18 @@ To uninstall the library go to the directory where the `install_manifest.txt` fi
 TeDDy uses features from `C++20` so you need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. It was tested with `g++ 11.1.0`, `clang++ 15.0.0` and `MSVC TODO`.  
 
 ## Library API
-Functions from the library are accessed via the instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
+Functions from the library are accessible via the instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
 1. `bdd_manager` for Binary Decision Diagrams (BDDs).  
 
-2. `mdd_manager<P>` for Multivalued Decision Diagrams (MDDs) representing Multiple-Valued logic functions. The domain of each variable is `{0, 1, ... P - 1}` and the set of values of the function is also `{0, 1, ... P - 1}`.  
+2. `mdd_manager<P>` for Multi-Valued Decision Diagrams (MDDs) representing Multiple-Valued logic functions. The domain of each variable is `{0, 1, ... P - 1}` and the set of values of the function is also `{0, 1, ... P - 1}`.  
 
-3. `imdd_manager` for (integer) Multivalued Decision Diagrams (iMDDs) representing integer functions. The domain of each variable can be a different set of the form `{0, 1, 2, ..., di - 1}` where the `di` for each variable is specified in the constructor. The set of values of the function is a set of the form `{0, 1, 2, ...}`.
+3. `imdd_manager` for (integer) Multi-Valued Decision Diagrams (iMDDs) representing integer functions. The domain of each variable can be a different set of the form `{0, 1, 2, ..., di - 1}` where the `di` for each variable is specified in the constructor. The set of values of the function is a set of the form `{0, 1, 2, ...}`.
 
-4. `ifmdd_manager<PMax>` for (integer) Multivalued Decision Diagrams (iMDDs) representing integer functions. The domain of each variable can be a different set of the form `{0, 1, 2, ..., min(di, PMax - 1)}` where the `PMax` is specified as the template parameter and `di` for each variable is specified in the constructor. The set of values of the function is a set of the form `{0, 1, 2, ...}`.  
+4. `ifmdd_manager<PMax>` for (integer) Multi-Valued Decision Diagrams (iMDDs) representing integer functions. The domain of each variable can be a different set of the form `{0, 1, 2, ..., min(di, PMax - 1)}` where the `PMax` is specified as the template parameter and `di` for each variable is specified in the constructor. The set of values of the function is a set of the form `{0, 1, 2, ...}`.  
   
 Managers 1, 2, and 4 use nodes with more compact memory representation since the maximum of the domains is known at compile time. The only difference between 3 and 4 is in this property so if `PMax` is known it is better to use the manager 4.  
 
-All managers have the same API. **Full documentation** is available **[here](https://michalmrena.github.io/teddy.html)**.
+All diagram managers have the same API. **Full documentation** is available **[here](https://michalmrena.github.io/teddy.html)**.
 
 ## Basic usage
 Typical usage of the library can be summarized in 3 steps:
@@ -123,7 +123,17 @@ By default, the library contains runtime assertions that perform various checks 
 The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke reordering the heuristic by using the function `sift`. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
 ## Reliability analysis
-Application of Decision Diagrams
+Application of Decision Diagrams in reliability analysis was one of the motivations for the creation of the library. TeDDy has separate API for reliability analysis. The API builds on existing API for diagram manipulation to which it adds functions that use diagrams to evaluate different reliability indices. As with diagram manipulation, the reliability API is accessible via instance of a reliability manager. There are four reliability managers analogous to diagram managers.
+1. `bss_manager` for Binary-State Systems (BSS). Uses BDDs.  
+
+2. `mss_manager<P>` for homogenous Multi-State Systems (MSS). Domains of variables and set of values of a functions correspond to the number of component/system states. Uses MDDs.  
+
+3. `imss_manager` for non-homogenous Multi-State Systems (MSS). Domains of variables and set of values of a functions correspond to the number of component/system states. Uses iMDDs.  
+
+4. `ifmss_manager<PMax>` for non-homogenous Multi-State Systems (MSS). Domains of variables and set of values of functions correspond to the number of component/system states. Uses ifMDDs.  
+  
+Note that each reliability manager is a child class of the corresponding diagram manager so advantages and disadvantages of the base managers apply e.g. node compactness in case of (if/i)MDDs.  
+All managers have the same API. **Full documentation** is available **[here](https://michalmrena.github.io/teddy.html)**.
 
 ### Examples
 TODO
