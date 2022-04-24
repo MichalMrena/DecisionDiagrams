@@ -98,6 +98,7 @@ auto example2()
 
 auto main () -> int
 {
+    // TODO node_pool align bytes as node<> !!!
     // TODO skusit prejst na explicitnu implementaciu v suvislej pamati?
     // TODO benchmarkovanie cache hit/miss
 
