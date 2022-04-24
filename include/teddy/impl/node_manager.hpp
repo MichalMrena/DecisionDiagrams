@@ -873,7 +873,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::new_node
         (Args&&... args) -> node_t*
     {
-        if (pool_.available_nodes() == 0)
+        if (pool_.available_node_count() == 0)
         {
             auto const gcThreshold = static_cast<double>(pool_.main_pool_size())
                                    * gcRatio_;
@@ -888,7 +888,7 @@ namespace teddy
                     this->sift_vars();
                 }
                 // TODO tu mohli ostat nejake mrtve nody
-                lastGcNodeCount_ = pool_.available_nodes();
+                lastGcNodeCount_ = pool_.available_node_count();
                 if (lastGcNodeCount_ == 0)
                 {
                     pool_.grow();

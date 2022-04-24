@@ -42,7 +42,7 @@ namespace teddy::utils
         auto ys = std::vector<U>();
         if constexpr (std::random_access_iterator<I>)
         {
-            ys.reserve(static_cast<std::size_t>(rs::distance(it, last)));
+            ys.reserve(static_cast<std::size_t>(std::distance(it, last)));
         }
         while (it != last)
         {

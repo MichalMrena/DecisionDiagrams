@@ -111,6 +111,11 @@ auto main () -> int
 
     // pla_sanity_check();
 
+    auto xs = std::vector<int>();
+    xs.push_back(1);
+    auto alloc = std::allocator<int>();
+    alloc.allocate(1);
+
     example1();
     example2();
 
