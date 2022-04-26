@@ -1078,7 +1078,7 @@ auto run_test_many ()
     namespace us = teddy::utils;
     namespace ts = teddy::test;
 
-    auto constexpr M     = 4;
+    auto constexpr M     = 3;
     auto const varCount  = 13;
     auto const termCount = 20;
     auto const termSize  = 5;

@@ -670,11 +670,13 @@ namespace teddy
          *  (known at copile time).
          *
          *  \param varCount Number of variables.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Number of nodes that is pre-allocated.
+         *  \param overflowNodePoolSize Size of the additional node pools.
          *  \param order Order of variables.
          */
         diagram_manager ( std::size_t varCount
-                        , std::size_t initNodeCount
+                        , std::size_t nodePoolSize
+                        , std::size_t overflowNodePoolSize
                         , std::vector<index_t> order )
                         requires(domains::is_fixed<Domain>()());
 
@@ -685,12 +687,14 @@ namespace teddy
          *  specified by the \p ds paramter.
          *
          *  \param varCount Number of variables.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Number of nodes that is pre-allocated.
+         *  \param overflowNodePoolSize Size of the additional node pools.
          *  \param ds Domains of varibales.
          *  \param order Order of variables.
          */
         diagram_manager ( std::size_t varCount
-                        , std::size_t initNodeCount
+                        , std::size_t nodePoolSize
+                        , std::size_t overflowNodePoolSize
                         , domains::mixed ds
                         , std::vector<index_t> order )
                         requires(domains::is_mixed<Domain>()());
@@ -1526,26 +1530,30 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     diagram_manager<Data, Degree, Domain>::diagram_manager
-        ( std::size_t          vars
-        , std::size_t          nodes
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , std::vector<index_t> order )
         requires(domains::is_fixed<Domain>()()) :
-        nodes_ ( vars
-               , nodes
-               , detail::default_or_fwd(vars, order) )
+        nodes_ ( varCount
+               , nodePoolSize
+               , overflowNodePoolSize
+               , detail::default_or_fwd(varCount, order) )
     {
     }
 
     template<class Data, degree Degree, domain Domain>
     diagram_manager<Data, Degree, Domain>::diagram_manager
-        ( std::size_t          vars
-        , std::size_t          nodes
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , domains::mixed       ds
         , std::vector<index_t> order )
         requires(domains::is_mixed<Domain>()()) :
-        nodes_ ( vars
-               , nodes
-               , detail::default_or_fwd(vars, order)
+        nodes_ ( varCount
+               , nodePoolSize
+               , overflowNodePoolSize
+               , detail::default_or_fwd(varCount, order)
                , std::move(ds) )
     {
     }

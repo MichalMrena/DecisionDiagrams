@@ -20,7 +20,6 @@ namespace teddy
         using sons_t = typename node_t::sons_t;
 
     public:
-        node_pool  (std::size_t mainPoolSize);
         node_pool  (std::size_t mainPoolSize, std::size_t overflowPoolSize);
         node_pool  (node_pool const&) = delete;
         node_pool  (node_pool&&);
@@ -61,22 +60,15 @@ namespace teddy
 
     template<class Data, degree D>
     node_pool<Data, D>::node_pool
-        (std::size_t const mainPoolSize) :
-        node_pool(mainPoolSize, mainPoolSize / 2)
-    {
-    }
-
-    template<class Data, degree D>
-    node_pool<Data, D>::node_pool
         (std::size_t const mainPoolSize, std::size_t const overflowPoolSize) :
         mainPool_          (allocate_pool(mainPoolSize)),
         overflowPools_     ({}),
-        currentPoolIndex_  (std::numeric_limits<std::size_t>::max()),
         freeNodeList_      (nullptr),
+        currentPoolIndex_  (std::numeric_limits<std::size_t>::max()),
         nextPoolNodeIndex_ (0),
-        availableNodes_    (mainPoolSize),
         mainPoolSize_      (mainPoolSize),
-        overflowPoolSize_  (overflowPoolSize)
+        overflowPoolSize_  (overflowPoolSize),
+        availableNodes_    (mainPoolSize)
     {
         debug::out( "node_pool: Allocating initial pool with size "
                   , mainPoolSize_, ".\n" );
@@ -87,12 +79,12 @@ namespace teddy
         (node_pool&& other) :
         mainPool_          (std::exchange(other.mainPool_, nullptr)),
         overflowPools_     (std::move(other.overflowPools_)),
-        currentPoolIndex_  (other.currentPoolIndex_),
         freeNodeList_      (std::exchange(other.freeNodeList_, nullptr)),
+        currentPoolIndex_  (other.currentPoolIndex_),
         nextPoolNodeIndex_ (other.nextPoolNodeIndex_),
-        availableNodes_    (other.availableNodes_),
         mainPoolSize_      (other.mainPoolSize_),
-        overflowPoolSize_  (other.overflowPoolSize_)
+        overflowPoolSize_  (other.overflowPoolSize_),
+        availableNodes_    (other.availableNodes_)
     {
     }
 
@@ -105,27 +97,27 @@ namespace teddy
             // Destroy main pool.
             for (auto i = 0ull; i < mainPoolSize_; ++i)
             {
-                std::destroy_at(mainPool_[i]);
+                std::destroy_at(mainPool_ + i);
             }
             deallocate_pool(mainPool_);
 
             // Destroy other fully used pools.
-            for (auto i = 0ull; i < overflowPoolSize_; ++i)
+            for (auto i = 0ull; i < currentPoolIndex_; ++i)
             {
-                auto pool = overflowPools_[i];
+                auto const pool = overflowPools_[i];
                 for (auto k = 0ull; k < overflowPoolSize_; ++k)
                 {
-                    std::destroy_at(pool[k]);
+                    std::destroy_at(pool + k);
                 }
                 deallocate_pool(pool);
             }
         }
 
         // Destroy current partially used pool (main or overflow).
-        auto pool = this->current_pool();
-        for (auto i = 0ull; i < nextPoolNodeIndex_; ++i)
+        auto const pool = this->current_pool();
+        for (auto k = 0ull; k < nextPoolNodeIndex_; ++k)
         {
-            std::destroy_at(pool[i]);
+            std::destroy_at(pool + k);
         }
         deallocate_pool(pool);
     }
@@ -169,7 +161,7 @@ namespace teddy
         }
         else
         {
-            p = this->current_pool()[nextPoolNodeIndex_];
+            p = this->current_pool() + nextPoolNodeIndex_;
             ++nextPoolNodeIndex_;
         }
 
@@ -194,7 +186,7 @@ namespace teddy
 
         overflowPools_.emplace_back(allocate_pool(overflowPoolSize_));
         currentPoolIndex_  = overflowPools_.size() - 1ull;
-        nextPoolNodeIndex_ = 0;
+        nextPoolNodeIndex_ = 0ull;
         availableNodes_   += overflowPoolSize_;
     }
 

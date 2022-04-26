@@ -90,13 +90,15 @@ namespace teddy
         struct common_init {};
 
     public:
-        node_manager ( std::size_t vars
-                     , std::size_t nodes
+        node_manager ( std::size_t varCount
+                     , std::size_t nodePoolSize
+                     , std::size_t overflowNodePoolSize
                      , std::vector<index_t> order )
                      requires(domains::is_fixed<Domain>()());
 
-        node_manager ( std::size_t vars
-                     , std::size_t nodes
+        node_manager ( std::size_t varCount
+                     , std::size_t nodePoolSize
+                     , std::size_t overflowNodePoolSize
                      , std::vector<index_t> order
                      , domains::mixed )
                      requires(domains::is_mixed<Domain>()());
@@ -105,14 +107,14 @@ namespace teddy
         node_manager (node_manager const&) = delete;
 
         auto set_cache_ratio  (double) -> void;
-        auto set_pool_ratio   (double) -> void;
         auto set_gc_ratio     (double) -> void;
         auto set_auto_reorder (bool)   -> void;
 
     private:
         node_manager ( common_init
-                     , std::size_t vars
-                     , std::size_t nodes
+                     , std::size_t varCount
+                     , std::size_t nodePoolSize
+                     , std::size_t overflowNodePoolSize
                      , std::vector<index_t> order
                      , Domain );
 
@@ -246,13 +248,15 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     node_manager<Data, Degree, Domain>::node_manager
-        ( std::size_t const    vars
-        , std::size_t const    nodes
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , std::vector<index_t> order )
         requires(domains::is_fixed<Domain>()()) :
         node_manager ( common_init()
-                     , vars
-                     , nodes
+                     , varCount
+                     , nodePoolSize
+                     , overflowNodePoolSize
                      , std::move(order)
                      , {} )
     {
@@ -260,14 +264,16 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     node_manager<Data, Degree, Domain>::node_manager
-        ( std::size_t const    vars
-        , std::size_t const    nodes
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , std::vector<index_t> order
         , domains::mixed       domains )
         requires(domains::is_mixed<Domain>()()) :
         node_manager ( common_init()
-                     , vars
-                     , nodes
+                     , varCount
+                     , nodePoolSize
+                     , overflowNodePoolSize
                      , std::move(order)
                      , std::move(domains) )
     {
@@ -277,11 +283,12 @@ namespace teddy
     node_manager<Data, Degree, Domain>::node_manager
         ( common_init
         , std::size_t const    varCount
-        , std::size_t const    nodeCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , std::vector<index_t> order
         , Domain               domains ) :
         opCache_             (),
-        pool_                (nodeCount),
+        pool_                (nodePoolSize, overflowNodePoolSize),
         uniqueTables_        (varCount),
         terminals_           ({}),
         specials_            ({}),
@@ -291,7 +298,7 @@ namespace teddy
         nodeCount_           (0),
         cacheRatio_          (0.5),
         gcRatio_             (0.05),
-        lastGcNodeCount_     (pool_.main_pool_size()),
+        lastGcNodeCount_     (pool_.main_pool_size()), // TODO nope
         nextTableAdjustment_ (230),
         reorderEnabled_      (false)
     {
@@ -322,14 +329,6 @@ namespace teddy
     {
         assert(ratio > 0);
         cacheRatio_ = ratio;
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::set_pool_ratio
-        (double const ratio) -> void
-    {
-        assert(ratio > 0);
-        pool_.set_overflow_ratio(ratio);
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -1130,6 +1129,7 @@ namespace teddy
         this->for_each_son(node, id_set_notmarked<Data, Degree>);
         this->for_each_son(nodeIndex, oldSons, [this](auto const os)
         {
+            // TODO are you sure about GC?
             this->dec_ref_try_gc(os);
         });
     }

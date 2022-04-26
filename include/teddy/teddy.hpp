@@ -21,12 +21,26 @@ namespace teddy
          *  \brief Initializes BDD manager.
          *
          *  \param varCount Number of variables.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         bdd_manager ( std::size_t varCount
-                    , std::size_t initNodeCount
+                    , std::size_t nodePoolSize
+                    , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes BDD manager.
+         *
+         *  \param varCount Number of variables.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        bdd_manager ( std::size_t varCount
+                    , std::size_t nodePoolSize
+                    , std::size_t overflowNodePoolSize
                     , std::vector<index_t> order = default_oder() );
     };
 
@@ -46,12 +60,26 @@ namespace teddy
          *  \brief Initializes MDD manager.
          *
          *  \param varCount Number of variables.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         mdd_manager ( std::size_t varCount
-                    , std::size_t initNodeCount
+                    , std::size_t nodePoolSize
+                    , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes MDD manager.
+         *
+         *  \param varCount Number of variables.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        mdd_manager ( std::size_t varCount
+                    , std::size_t nodePoolSize
+                    , std::size_t overflowNodePoolSize
                     , std::vector<index_t> order = default_oder() );
     };
 
@@ -73,14 +101,31 @@ namespace teddy
          *  \brief Initializes iMDD manager.
          *
          *  \param varCount Number of variables.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param domains Domains of variables.
          *  Number at index i is the domain of i-th variable.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         imdd_manager ( std::size_t varCount
-                     , std::size_t initNodeCount
+                     , std::size_t nodePoolSize
+                     , std::vector<uint_t> domains
+                     , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes iMDD manager.
+         *
+         *  \param varCount Number of variables.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param domains Domains of variables.
+         *  Number at index i is the domain of i-th variable.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        imdd_manager ( std::size_t varCount
+                     , std::size_t nodePoolSize
+                     , std::size_t overflowNodePoolSize
                      , std::vector<uint_t> domains
                      , std::vector<index_t> order = default_oder() );
     };
@@ -107,14 +152,31 @@ namespace teddy
          *  \brief Initializes ifMDD manager.
          *
          *  \param varCount Number of variables.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param domains Domains of variables.
          *  Number at index i is the domain of i-th variable.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         ifmdd_manager ( std::size_t varCount
-                      , std::size_t initNodeCount
+                      , std::size_t nodePoolSize
+                      , std::vector<uint_t> domains
+                      , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes ifMDD manager.
+         *
+         *  \param varCount Number of variables.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param domains Domains of variables.
+         *  Number at index i is the domain of i-th variable.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        ifmdd_manager ( std::size_t varCount
+                      , std::size_t nodePoolSize
+                      , std::size_t overflowNodePoolSize
                       , std::vector<uint_t> domains
                       , std::vector<index_t> order = default_oder() );
     };
@@ -124,41 +186,98 @@ namespace teddy
 
     inline bdd_manager::bdd_manager
         ( std::size_t const varCount
-        , std::size_t const initNodeCount
+        , std::size_t const nodePoolSize
+        , std::vector<index_t> order ) :
+        bdd_manager (varCount, nodePoolSize, nodePoolSize / 2, std::move(order))
+    {
+    }
+
+    inline bdd_manager::bdd_manager
+        ( std::size_t const varCount
+        , std::size_t const nodePoolSize
+        , std::size_t const overflowNodePoolSize
         , std::vector<index_t> order ) :
         diagram_manager<void, degrees::fixed<2>, domains::fixed<2>>
-            (varCount, initNodeCount, std::move(order))
+            (varCount, nodePoolSize, overflowNodePoolSize, std::move(order))
     {
     }
 
     template<uint_t P>
     mdd_manager<P>::mdd_manager
         ( std::size_t const varCount
-        , std::size_t const initNodeCount
+        , std::size_t const nodePoolSize
+        , std::vector<index_t> order ) :
+        mdd_manager (varCount, nodePoolSize, nodePoolSize / 2, std::move(order))
+    {
+    }
+
+    template<uint_t P>
+    mdd_manager<P>::mdd_manager
+        ( std::size_t const varCount
+        , std::size_t const nodePoolSize
+        , std::size_t const overflowNodePoolSize
         , std::vector<index_t> order ) :
         diagram_manager<void, degrees::fixed<P>, domains::fixed<P>>
-            (varCount, initNodeCount, std::move(order))
+            (varCount, nodePoolSize, overflowNodePoolSize, std::move(order))
     {
     }
 
     inline imdd_manager::imdd_manager
-        ( std::size_t          varCount
-        , std::size_t          initNodeCount
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::vector<uint_t>  domains
+        , std::vector<index_t> order ) :
+        imdd_manager ( varCount
+                     , nodePoolSize
+                     , nodePoolSize / 2
+                     , std::move(domains)
+                     , std::move(order) )
+    {
+    }
+
+    inline imdd_manager::imdd_manager
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , std::vector<uint_t>  domains
         , std::vector<index_t> order ) :
         diagram_manager<void, degrees::mixed, domains::mixed>
-            (varCount, initNodeCount, std::move(domains), std::move(order))
+            ( varCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(domains)
+            , std::move(order) )
     {
     }
 
     template<uint_t PMax>
     ifmdd_manager<PMax>::ifmdd_manager
-        ( std::size_t          varCount
-        , std::size_t          initNodeCount
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::vector<uint_t>  domains
+        , std::vector<index_t> order ) :
+        ifmdd_manager
+            ( varCount
+            , nodePoolSize
+            , nodePoolSize / 2
+            , std::move(domains)
+            , std::move(order) )
+    {
+    }
+
+    template<uint_t PMax>
+    ifmdd_manager<PMax>::ifmdd_manager
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , std::vector<uint_t>  domains
         , std::vector<index_t> order ) :
         diagram_manager<void, degrees::fixed<PMax>, domains::mixed>
-            (varCount, initNodeCount, std::move(domains), std::move(order))
+            ( varCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(domains)
+            , std::move(order) )
     {
     }
 }
