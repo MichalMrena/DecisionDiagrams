@@ -762,8 +762,7 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::variables
         (Is const& is) -> std::vector<diagram_t>
     {
-        namespace rs = std::ranges;
-        return this->variables(rs::begin(is), rs::end(is));
+        return this->variables(std::ranges::begin(is), std::ranges::end(is));
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -771,8 +770,7 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::variables
         (std::initializer_list<T> const is) -> std::vector<diagram_t>
     {
-        namespace rs = std::ranges;
-        return this->variables(rs::begin(is), rs::end(is));
+        return this->variables(std::ranges::begin(is), std::ranges::end(is));
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -805,12 +803,11 @@ namespace teddy
 
         if constexpr (std::random_access_iterator<I>)
         {
-            namespace rs = std::ranges;
             [[maybe_unused]]
             auto const count = nodes_.domain_product(0, lastLevel + 1);
             [[maybe_unused]]
             auto const dist  = static_cast<std::size_t>(
-                                   rs::distance(first, last));
+                                   std::ranges::distance(first, last));
             assert(dist > 0 && dist == count);
         }
 
@@ -874,8 +871,7 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::from_vector
         (R&& r) -> diagram_t
     {
-        namespace rs = std::ranges;
-        return this->from_vector(rs::begin(r), rs::end(r));
+        return this->from_vector(std::ranges::begin(r), std::ranges::end(r));
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -1054,8 +1050,8 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::left_fold
         (R const& ds) -> diagram_t
     {
-        namespace rs = std::ranges;
-        return this->left_fold<Op>(rs::begin(ds), rs::end(ds));
+        return this->left_fold<Op>( std::ranges::begin(ds)
+                                  , std::ranges::end(ds) );
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -1084,8 +1080,8 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::tree_fold
         (R& ds) -> diagram_t
     {
-        namespace rs = std::ranges;
-        return this->tree_fold<Op>(rs::begin(ds), rs::end(ds));
+        return this->tree_fold<Op>( std::ranges::begin(ds)
+                                  , std::ranges::end(ds) );
     }
 
     template<class Data, degree Degree, domain Domain>
