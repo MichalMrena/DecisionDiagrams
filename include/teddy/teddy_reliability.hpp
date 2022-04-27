@@ -18,12 +18,25 @@ namespace teddy
         /**
          *  \brief Initializes BSS manager.
          *  \param componentCount Number of components.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         bss_manager ( std::size_t componentCount
-                    , std::size_t initNodeCount
+                    , std::size_t nodePoolSize
+                    , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes BSS manager.
+         *  \param componentCount Number of components.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        bss_manager ( std::size_t componentCount
+                    , std::size_t nodePoolSize
+                    , std::size_t overflowNodePoolSize
                     , std::vector<index_t> order = default_oder() );
     };
 
@@ -42,12 +55,26 @@ namespace teddy
          *  \brief Initializes MSS manager.
          *
          *  \param componentCount Number of components.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         mss_manager ( std::size_t componentCount
-                    , std::size_t initNodeCount
+                    , std::size_t nodePoolSize
+                    , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes MSS manager.
+         *
+         *  \param componentCount Number of components.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        mss_manager ( std::size_t componentCount
+                    , std::size_t nodePoolSize
+                    , std::size_t overflowNodePoolSize
                     , std::vector<index_t> order = default_oder() );
     };
 
@@ -63,14 +90,31 @@ namespace teddy
          *  \brief Initializes iMSS manager.
          *
          *  \param componentCount Number of components.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param domains Domains of variables.
          *  Number at index i is the domain of i-th variable.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         imss_manager ( std::size_t componentCount
-                     , std::size_t initNodeCount
+                     , std::size_t nodePoolSize
+                     , std::vector<uint_t> domains
+                     , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes iMSS manager.
+         *
+         *  \param componentCount Number of components.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param domains Domains of variables.
+         *  Number at index i is the domain of i-th variable.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        imss_manager ( std::size_t componentCount
+                     , std::size_t nodePoolSize
+                     , std::size_t overflowNodePoolSize
                      , std::vector<uint_t> domains
                      , std::vector<index_t> order = default_oder() );
     };
@@ -90,14 +134,31 @@ namespace teddy
          *  \brief Initializes ifMSS manager.
          *
          *  \param componentCount Number of components.
-         *  \param initNodeCount Number of nodes that is pre-allocated.
+         *  \param nodePoolSize Size of the main node pool.
          *  \param domains Domains of variables.
          *  Number at index i is the domain of i-th variable.
          *  \param order Order of variables. Variables are ordered
          *  by their indices by default.
          */
         ifmss_manager ( std::size_t componentCount
-                      , std::size_t initNodeCount
+                      , std::size_t nodePoolSize
+                      , std::vector<uint_t> domains
+                      , std::vector<index_t> order = default_oder() );
+
+        /**
+         *  \brief Initializes ifMSS manager.
+         *
+         *  \param componentCount Number of components.
+         *  \param nodePoolSize Size of the main node pool.
+         *  \param overflowNodePoolSize Size of the additional node pools.
+         *  \param domains Domains of variables.
+         *  Number at index i is the domain of i-th variable.
+         *  \param order Order of variables. Variables are ordered
+         *  by their indices by default.
+         */
+        ifmss_manager ( std::size_t componentCount
+                      , std::size_t nodePoolSize
+                      , std::size_t overflowNodePoolSize
                       , std::vector<uint_t> domains
                       , std::vector<index_t> order = default_oder() );
     };
@@ -107,41 +168,113 @@ namespace teddy
 
     inline bss_manager::bss_manager
         ( std::size_t const componentCount
-        , std::size_t const initNodeCount
+        , std::size_t const nodePoolSize
+        , std::vector<index_t> order ) :
+        bss_manager
+            ( componentCount
+            , nodePoolSize
+            , nodePoolSize / 2
+            , std::move(order) )
+    {
+    }
+
+    inline bss_manager::bss_manager
+        ( std::size_t const componentCount
+        , std::size_t const nodePoolSize
+        , std::size_t const overflowNodePoolSize
         , std::vector<index_t> order ) :
         reliability_manager<degrees::fixed<2>, domains::fixed<2>>
-            (componentCount, initNodeCount, std::move(order))
+            ( componentCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(order) )
     {
     }
 
     template<uint_t P>
     mss_manager<P>::mss_manager
         ( std::size_t const componentCount
-        , std::size_t const initNodeCount
+        , std::size_t const nodePoolSize
+        , std::vector<index_t> order ) :
+        mss_manager
+            ( componentCount
+            , nodePoolSize
+            , nodePoolSize / 2
+            , std::move(order) )
+    {
+    }
+
+    template<uint_t P>
+    mss_manager<P>::mss_manager
+        ( std::size_t const componentCount
+        , std::size_t const nodePoolSize
+        , std::size_t const overflowNodePoolSize
         , std::vector<index_t> order ) :
         reliability_manager<degrees::fixed<P>, domains::fixed<P>>
-            (componentCount, initNodeCount, std::move(order))
+            ( componentCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(order) )
     {
     }
 
     inline imss_manager::imss_manager
         ( std::size_t const componentCount
-        , std::size_t const initNodeCount
+        , std::size_t const nodePoolSize
+        , std::vector<uint_t> domains
+        , std::vector<index_t> order ) :
+        imss_manager
+            ( componentCount
+            , nodePoolSize
+            , nodePoolSize / 2
+            , std::move(domains)
+            , std::move(order) )
+    {
+    }
+
+    inline imss_manager::imss_manager
+        ( std::size_t const componentCount
+        , std::size_t const nodePoolSize
+        , std::size_t const overflowNodePoolSize
         , std::vector<uint_t> domains
         , std::vector<index_t> order ) :
         reliability_manager<degrees::mixed, domains::mixed>
-            (componentCount, initNodeCount, std::move(domains), std::move(order))
+            ( componentCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(domains)
+            , std::move(order) )
     {
     }
 
     template<uint_t PMax>
     ifmss_manager<PMax>::ifmss_manager
         ( std::size_t const componentCount
-        , std::size_t const initNodeCount
+        , std::size_t const nodePoolSize
+        , std::vector<uint_t> domains
+        , std::vector<index_t> order ) :
+        ifmss_manager
+            ( componentCount
+            , nodePoolSize
+            , nodePoolSize / 2
+            , std::move(domains)
+            , std::move(order) )
+    {
+    }
+
+    template<uint_t PMax>
+    ifmss_manager<PMax>::ifmss_manager
+        ( std::size_t const componentCount
+        , std::size_t const nodePoolSize
+        , std::size_t const overflowNodePoolSize
         , std::vector<uint_t> domains
         , std::vector<index_t> order ) :
         reliability_manager<degrees::fixed<PMax>, domains::mixed>
-            (componentCount, initNodeCount, std::move(domains), std::move(order))
+            ( componentCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(domains)
+            , std::move(order) )
     {
     }
 }
