@@ -29,6 +29,11 @@ namespace teddy
     template<class Degree>
     concept is_bdd = std::same_as<degrees::fixed<2>, Degree>;
 
+    template<class T>
+    concept is_std_vector
+        = std::same_as<T, std::vector< typename T::value_type
+                                     , typename T::allocator_type >>;
+
     enum class fold_type
     {
         Left,
@@ -419,7 +424,7 @@ namespace teddy
          *  the computation will probably not finish in reasonable time.
          *
          *  \tparam Vars Container type that defines \c operator[] and allows
-         *  assigning unsigned integers.
+         *  assigning unsigned integers. std::vector is also allowed.
          *  \param val Value of the function.
          *  \param d Diagram representing the function.
          *  \return Vector of \p Vars .
@@ -441,7 +446,7 @@ namespace teddy
          *  the computation will probably not finish in reasonable time.
          *
          *  \tparam Vars Container type that defines \c operator[] and allows
-         *  assigning unsigned integers.
+         *  assigning unsigned integers. std::vector is also allowed.
          *  \tparam O Output iterator type.
          *  \param val Value of the function.
          *  \param d Diagram representing the function.
@@ -1238,7 +1243,17 @@ namespace teddy
             assert(val < Domain()());
         }
 
-        auto xs = Vars {};
+        auto xs = [this]()
+        {
+            if constexpr (is_std_vector<Vars>)
+            {
+                return Vars(this->get_var_count());
+            }
+            else
+            {
+                return Vars {};
+            }
+        }();
         auto go = [this, &xs, val, out]
             (auto&& go_, auto const l, auto const n) mutable
         {
