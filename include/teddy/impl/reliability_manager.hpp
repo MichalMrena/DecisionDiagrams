@@ -442,13 +442,15 @@ namespace teddy
                     , Out              out ) -> void;
 
     protected:
-        reliability_manager ( std::size_t vars
-                            , std::size_t nodes
+        reliability_manager ( std::size_t varCount
+                            , std::size_t nodePoolSize
+                            , std::size_t overflowNodePoolSize
                             , std::vector<index_t> order )
                             requires(domains::is_fixed<Domain>()());
 
-        reliability_manager ( std::size_t vars
-                            , std::size_t nodes
+        reliability_manager ( std::size_t varCount
+                            , std::size_t nodePoolSize
+                            , std::size_t overflowNodePoolSize
                             , domains::mixed
                             , std::vector<index_t> order )
                             requires(domains::is_mixed<Domain>()());
@@ -912,24 +914,33 @@ namespace teddy
 
     template<degree Degree, domain Domain>
     reliability_manager<Degree, Domain>::reliability_manager
-        ( std::size_t          vars
-        , std::size_t          nodes
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , std::vector<index_t> order )
         requires(domains::is_fixed<Domain>()()) :
         diagram_manager<double, Degree, Domain>
-            (vars, nodes, std::move(order))
+            ( varCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(order) )
     {
     }
 
     template<degree Degree, domain Domain>
     reliability_manager<Degree, Domain>::reliability_manager
-        ( std::size_t          vars
-        , std::size_t          nodes
+        ( std::size_t const    varCount
+        , std::size_t const    nodePoolSize
+        , std::size_t const    overflowNodePoolSize
         , domains::mixed       ds
         , std::vector<index_t> order )
         requires(domains::is_mixed<Domain>()()) :
         diagram_manager<double, Degree, Domain>
-            (vars, nodes, std::move(ds), std::move(order))
+            ( varCount
+            , nodePoolSize
+            , overflowNodePoolSize
+            , std::move(ds)
+            , std::move(order) )
     {
     }
 }
