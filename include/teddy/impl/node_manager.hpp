@@ -357,6 +357,11 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::terminal_node
         (uint_t const v) -> node_t*
     {
+        if (is_special(v))
+        {
+            return this->special_node(v);
+        }
+
         if constexpr (domains::is_fixed<Domain>()())
         {
             assert(v < Domain()());
@@ -388,7 +393,7 @@ namespace teddy
 
         if (not specials_[0])
         {
-            specials_[0] = this->new_node(special_val_to_index(Undefined));
+            specials_[0] = this->new_node(Undefined);
         }
 
         return id_set_marked(specials_[0]);
@@ -950,9 +955,16 @@ namespace teddy
     {
         auto const make_label = [](auto const n)
         {
-            return n->is_terminal()
-                       ? std::to_string(n->get_value())
-                       : "x" + std::to_string(n->get_index());
+            if (n->is_terminal())
+            {
+                using namespace std::literals::string_literals;
+                auto const val = n->get_value();
+                return val == Undefined ? "*"s : std::to_string(val);
+            }
+            else
+            {
+                return "x" + std::to_string(n->get_index());
+            }
         };
 
         auto const get_id_str = [](auto const n)

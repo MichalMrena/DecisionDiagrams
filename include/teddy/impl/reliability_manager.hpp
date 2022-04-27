@@ -740,7 +740,7 @@ namespace teddy
             auto const varDomain = this->nodes_.get_domain(i);
             for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
             {
-                auto const varChange = {varFrom, varFrom + 1};
+                auto const varChange = value_change {varFrom, varFrom + 1};
                 auto const dpbd
                     = this->idpbd_type_3_increase(varChange, j, sf, i);
                 dpbdes.emplace_back(this->to_dpbd_e(varFrom, i, dpbd));
@@ -768,7 +768,7 @@ namespace teddy
             {
                 return k == varFrom
                     ? root
-                    : this->nodes.special_node(Undefined);
+                    : this->nodes_.terminal_node(Undefined);
             });
             auto const newRoot = this->nodes_.internal_node(i, std::move(sons));
             return diagram_t(newRoot);
@@ -795,7 +795,7 @@ namespace teddy
                     [=, this, &self](auto const k)
                 {
                     auto const son = n->get_son(k);
-                    auto const sonLevel = this->nodes_->get_level(son);
+                    auto const sonLevel = this->nodes_.get_level(son);
                     if (varLevel > nodeLevel && varLevel < sonLevel)
                     {
                         // A new node goes in between the current node
@@ -806,7 +806,7 @@ namespace teddy
                         {
                             return l == varFrom
                                 ? son
-                                : this->nodes_.special_node(Undefined);
+                                : this->nodes_.terminal_node(Undefined);
                         });
                         return this->nodes_.internal_node(
                             i, std::move(newNodeSons));

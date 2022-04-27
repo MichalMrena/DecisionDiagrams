@@ -20,6 +20,11 @@ namespace teddy
     {
         return static_cast<index_t>(UintMax - val);
     }
+
+    auto is_special (uint_t const val) -> bool
+    {
+        return val == Undefined;
+    }
 }
 
 #endif

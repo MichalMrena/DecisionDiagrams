@@ -1022,7 +1022,7 @@ namespace teddy
 
             if (opVal != Nondetermined)
             {
-                u = nodes_.terminal_node(opVal);
+                u = nodes_.terminal_node(opVal); // TODO osetrit pre specialne hodnoty
             }
             else
             {

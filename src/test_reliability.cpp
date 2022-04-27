@@ -16,6 +16,7 @@ namespace teddy::test
         std::vector<probability_t> As_;
         std::vector<probability_t> Us_;
         std::vector<std::vector<std::vector<probability_t>>> SIs_;
+        std::vector<std::vector<std::vector<uint_t>>> MCVs_;
     };
 
     auto wrap_green(std::string_view const s)
@@ -78,6 +79,10 @@ namespace teddy::test
                         return manager.structural_importance(dpbd);
                     });
                 });
+            }),
+            .MCVs_ = utils::fill_vector(P - 1, [&](auto const j)
+            {
+                return manager.template mcvs<std::vector<uint_t>>(sf, j + 1);
             })
         };
     }
@@ -112,6 +117,10 @@ namespace teddy::test
                         return rel.structural_importance(j + 1, {i, v + 1, v});
                     });
                 });
+            }),
+            .MCVs_ = utils::fill_vector(sf.max_value(), [&](auto const j)
+            {
+                return rel.mcvs(j + 1);
             })
         };
     }
@@ -140,6 +149,19 @@ namespace teddy::test
                     return rs::equal(l, r, cmp);
                 });
             })) << '\n';
+        std::cout << "MCVs             "
+            << result_char([&]()
+            {
+                for (auto j = 0u; j < expected.MCVs_.size(); ++j)
+                {
+                    if (not rs::is_permutation(expected.MCVs_[j], actual.MCVs_[j]))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }())
+            << '\n';
     }
 }
 

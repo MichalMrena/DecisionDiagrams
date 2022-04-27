@@ -211,7 +211,7 @@ namespace teddy::vector
             auto newVector = std::vector<uint_t>(l.domain_size());
             for (auto k = 0u; k < l.domain_size(); ++k)
             {
-                newVector[k] = f(l.vector_, r.vector_);
+                newVector[k] = f(l.vector_[k], r.vector_[k]);
             }
             return vector_function(std::move(newVector), l.domains_);
         }
@@ -377,6 +377,35 @@ namespace teddy::vector
             return static_cast<double>(d.satisfy_count(1))
                  / static_cast<double>(sf().domain_size()
                    / static_cast<double>(sf().get_domains()[var.index]));
+        }
+
+        auto mcvs (uint_t const j) -> std::vector<std::vector<uint_t>>
+        {
+            auto const pi_conj = [](auto const l, auto const r)
+            {
+                return std::min({l, r, U});
+            };
+
+            auto dpbdes = std::vector<vector_function>();
+
+            for (auto i = 0u; i < sf().get_var_count(); ++i)
+            {
+                auto const varDomain = sf().get_domains()[i];
+                for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
+                {
+                    auto const var = var_val_change {i, varFrom, varFrom + 1};
+                    dpbdes.emplace_back(sf().dpbd(
+                        var, vector_function::dpbd_i_3_increase(j)));
+                }
+            }
+
+            auto conj = std::move(dpbdes.front());
+            for (auto i = 1u; i < dpbdes.size(); ++i)
+            {
+                conj = vector_op(pi_conj, conj, dpbdes[i]);
+            }
+
+            return conj.satisfy_all();
         }
 
     private:
