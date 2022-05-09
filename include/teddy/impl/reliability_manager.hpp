@@ -895,7 +895,7 @@ namespace teddy
                 auto sons
                     = this->nodes_.make_sons(topIndex, [=, &self](auto const k)
                 {
-                    auto const fst = lhsLevel == topLevel ? l->get_son(k) : l;
+                    auto const fst = lhsLevel == topLevel ? l->get_son(k) : l; // TODO tu by bol get_son, ktory by preskakoval fixovane premenne
                     auto const snd = rhsLevel == topLevel ? r->get_son(k) : r;
                     return self(self, fst, snd);
                 });

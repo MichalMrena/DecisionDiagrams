@@ -123,7 +123,7 @@ By default, the library contains runtime assertions that perform various checks 
 The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke reordering the heuristic by using the function `sift`. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
 ## Reliability analysis
-Application of Decision Diagrams in reliability analysis was one of the motivations for the creation of the library. TeDDy has separate API for reliability analysis. The API builds on existing API for diagram manipulation to which it adds functions that use diagrams to evaluate different reliability indices. As with diagram manipulation, the reliability API is accessible via instance of a reliability manager. There are four reliability managers analogous to diagram managers.
+Application of Decision Diagrams in reliability analysis was one of the motivations for the creation of the library. TeDDy has separate API for reliability analysis. The API builds on existing API for diagram manipulation to which it adds functions that use diagrams to evaluate reliability of systems described by a structure function. As with diagram manipulation, the reliability API is accessible via instance of a reliability manager. There are four reliability managers analogous to diagram managers.
 1. `bss_manager` for Binary-State Systems (BSS). Uses BDDs.  
 
 2. `mss_manager<P>` for homogenous Multi-State Systems (MSS). Domains of variables and set of values of a functions correspond to the number of component/system states. Uses MDDs.  
@@ -133,10 +133,74 @@ Application of Decision Diagrams in reliability analysis was one of the motivati
 4. `ifmss_manager<PMax>` for non-homogenous Multi-State Systems (MSS). Domains of variables and set of values of functions correspond to the number of component/system states. Uses ifMDDs.  
   
 Note that each reliability manager is a child class of the corresponding diagram manager so advantages and disadvantages of the base managers apply e.g. node compactness in case of (if/i)MDDs.  
-All managers have the same API. **Full documentation** is available **[here](https://michalmrena.github.io/teddy.html)**.
+All reliability managers have the same API. **Full documentation** is available **[here](https://michalmrena.github.io/teddy.html)**.
+
+### Basic usage
+Usage of reliability managers is practically identical to diagram managers. However, many of the reliability functions have a parameter that represents component state probabilities. The parameter does not have a specific type but instead uses a template. The reason is that probabilities can be stored in different combinations of containers such as `std::vector` or `std::array`. The important property of the parameter is that if `ps` is the name of the parameter then the expression `ps[i][k]` returns probability that `i`-th component is in the state `k`.
 
 ### Examples
 TODO
+```C++
+#include "teddy/teddy_reliability.hpp"
+// or use if you've installed the library
+// #include <teddy/teddy_reliability.hpp>
+
+int main()
+{
+    // First, we need to create a diagram for the structure function.
+    // We use the truth vector of the function:
+    auto const vector = std::vector<teddy::uint_t>
+        { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
+        , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
+
+    // The truth vector describes nonhomogenous system, so we also need
+    // number of states for each component:
+    auto domains = std::vector<uint_t>({2, 3, 2, 3});
+    auto manager = teddy::ifmss_manager<3>(4, 1'000, domains);
+    auto sf = manager.from_vector(vector);
+
+    // You can use different combinations of std::vector, std::array or
+    // similar containers. We chose vector of arrays here to hold
+    // component state probabilities.
+    auto const ps = std::vector<std::array<double, 3>>
+    ({
+        {0.1, 0.9, 0.0},
+        {0.2, 0.6, 0.2},
+        {0.3, 0.7, 0.0},
+        {0.1, 0.6, 0.3}
+    });
+
+    // To calculate system availability or unavailability for a given
+    // system state (1) is as simple as:
+    double A = manager.availability(1, ps, sf);
+    double U = manager.unavailability(1, ps, sf);
+
+    // We can also simply enumerate all Minimal Cut Vectors for a given system
+    // state (1). We just need to specify a type that variables will be stored
+    // into. In this case we used std::array:
+    std::vector<std::array<unsigned int, 4>> MCVs
+        = manager.mcvs<std::array<unsigned int, 4>>(sf, 1);
+
+    using diagram_t = teddy::ifmss_manager<3>::diagram_t;
+    auto dpbds = std::vector<diagram_t>();
+    for (auto i = 0u; i < manager.get_var_count(); ++i)
+    {
+        dpbds.push_back(manager.idpbd_type_3_decrease({1, 0}, 1, sf, i));
+    }
+    auto sis = std::vector<double>();
+    for (auto i = 0u; i < manager.get_var_count(); ++i)
+    {
+        sis.push_back(manager.structural_importance(dpbds[i]));
+    }
+    auto i = 0;
+    for (auto const si : sis)
+    {
+        auto out = "i = " + std::to_string(i) + ", SI = " + std::to_string(si);
+        std::puts(out.c_str());
+        ++i;
+    }
+}
+```
 
 ## Publications
 We have published several papers on decision diagrams and reliability analysis. Most of these papers had an experimental section where we examined various properties of decision diagrams using TeDDy.

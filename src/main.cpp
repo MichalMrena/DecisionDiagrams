@@ -37,7 +37,6 @@ auto pla_sanity_check()
 
 auto example1()
 {
-    using namespace teddy;
     auto manager = mdd_manager<4>(4, 1'000);
     auto& x = manager;
     auto g = manager.apply<ops::MULTIPLIES<4>>(x(0), x(1));
@@ -110,11 +109,6 @@ auto main () -> int
     // test_mss();
 
     // pla_sanity_check();
-
-    auto xs = std::vector<int>();
-    xs.push_back(1);
-    auto alloc = std::allocator<int>();
-    alloc.allocate(1);
 
     example1();
     example2();

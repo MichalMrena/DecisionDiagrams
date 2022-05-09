@@ -897,6 +897,7 @@ namespace teddy::test
     {
         manager.gc();
         manager.sift();
+        // TODO assert(|diagram| == manager.node_count()); !!!
         return test_evaluate(manager, diagram, expr);
     }
 
