@@ -95,6 +95,51 @@ auto example2()
     }
 }
 
+auto example_rel_doc()
+{
+    // First, we need to create a diagram for the structure function.
+    // We use the truth vector of the function:
+    std::vector<teddy::uint_t> vector
+        { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
+        , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
+
+    // The truth vector describes nonhomogenous system, so we also need
+    // number of states for each component:
+    std::vector<uint_t> domains({2, 3, 2, 3});
+    teddy::ifmss_manager<3> manager(4, 1'000, domains);
+    auto sf = manager.from_vector(vector);
+
+    // You can use different combinations of std::vector, std::array or
+    // similar containers. We chose vector of arrays here to hold
+    // component state probabilities.
+    std::vector<std::array<double, 3>> ps
+    ({
+        {0.1, 0.9, 0.0},
+        {0.2, 0.6, 0.2},
+        {0.3, 0.7, 0.0},
+        {0.1, 0.6, 0.3}
+    });
+
+    // To calculate system availability or unavailability for a given
+    // system state (1) is as simple as:
+    double A = manager.availability(1, ps, sf);
+    double U = manager.unavailability(1, ps, sf);
+
+    // We can also simply enumerate all Minimal Cut Vectors for a given system
+    // state (1). We just need to specify a type that variables will be stored
+    // into. In this case we used the std::array:
+    std::vector<std::array<unsigned int, 4>> MCVs
+        = manager.mcvs<std::array<unsigned int, 4>>(sf, 1);
+
+    // Importance measures are defined in terms of logic derivatives. Since there are different types derivatives the calculation of the derivatives is separated from the calculation of importance measures.
+
+    // In order to calculace Structural Importance we first need to calculate the derivative.
+    auto dpbd = manager.idpbd_type_3_decrease({1, 0}, 1, sf, 2);
+
+    // Now, to calculate Structural Importance of the second compontnt, we use the derivative.
+    auto SI = manager.structural_importance(dpbd);
+}
+
 auto main () -> int
 {
     // TODO node_pool align bytes as node<> !!!
@@ -112,6 +157,7 @@ auto main () -> int
 
     example1();
     example2();
+    example_rel_doc();
 
     std::cout << "Done." << '\n';
     return 0;
