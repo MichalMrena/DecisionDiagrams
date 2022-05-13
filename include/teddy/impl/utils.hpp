@@ -21,6 +21,8 @@ namespace teddy::utils
 
     auto constexpr not_zero = [](auto const x) { return x != 0; };
 
+    auto constexpr constant = [](auto const c) { return [c](auto){return c;}; };
+
     template<i_gen Gen>
     auto fill_vector (std::size_t const n, Gen&& f)
     {

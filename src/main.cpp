@@ -155,6 +155,9 @@ auto main () -> int
 
     // pla_sanity_check();
 
+    // TODO vyskúšať posielať diagramy všade hodnotami,
+    // mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
+
     example1();
     example2();
     example_rel_doc();
