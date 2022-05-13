@@ -123,23 +123,23 @@ By default, the library contains runtime assertions that perform various checks 
 The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke reordering the heuristic by using the function `sift`. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
 ## Reliability analysis
-Application of Decision Diagrams in reliability analysis was one of the motivations for the creation of the library. TeDDy has separate API for reliability analysis. The API builds on existing API for diagram manipulation to which it adds functions that use diagrams to evaluate reliability of systems described by a structure function. As with diagram manipulation, the reliability API is accessible via instance of a reliability manager. There are four reliability managers analogous to diagram managers.
+The application of Decision Diagrams in reliability analysis was one of the motivations for the creation of the library. TeDDy has a separate API for reliability analysis. The API builds on the existing API for diagram manipulation to which it adds functions that use diagrams to evaluate the reliability of systems described by a structure function. As with diagram manipulation, the reliability API is accessible via an instance of a reliability manager. There are four reliability managers analogous to diagram managers.
 1. `bss_manager` for Binary-State Systems (BSS). Uses BDDs.  
 
-2. `mss_manager<P>` for homogenous Multi-State Systems (MSS). Domains of variables and set of values of a functions correspond to the number of component/system states. Uses MDDs.  
+2. `mss_manager<P>` for homogenous Multi-State Systems (MSS). Domains of variables and sets of values of functions correspond to the number of component/system states. Uses MDDs.  
 
-3. `imss_manager` for non-homogenous Multi-State Systems (MSS). Domains of variables and set of values of a functions correspond to the number of component/system states. Uses iMDDs.  
+3. `imss_manager` for non-homogenous Multi-State Systems (MSS). Domains of variables and sets of values of functions correspond to the number of component/system states. Uses iMDDs.  
 
-4. `ifmss_manager<PMax>` for non-homogenous Multi-State Systems (MSS). Domains of variables and set of values of functions correspond to the number of component/system states. Uses ifMDDs.  
+4. `ifmss_manager<PMax>` for non-homogenous Multi-State Systems (MSS). Domains of variables and sets of values of functions correspond to the number of component/system states. Uses ifMDDs.  
   
 Note that each reliability manager is a child class of the corresponding diagram manager so advantages and disadvantages of the base managers apply e.g. node compactness in case of (if/i)MDDs.  
 All reliability managers have the same API. **Full documentation** is available **[here](https://michalmrena.github.io/teddy.html)**.
 
 ### Basic usage
-Usage of reliability managers is practically identical to diagram managers. Many of the reliability functions have a parameter that represents component state probabilities. The parameter does not have a specific type but instead uses a template. The reason is that probabilities can be stored in different combinations of containers such as `std::vector` or `std::array`. The important property of the parameter is that if `ps` is the name of the parameter then the expression `ps[i][k]` returns probability that `i`-th component is in the state `k`.
+The usage of reliability managers is practically identical to diagram managers. Many of the reliability functions have a parameter that represents component state probabilities. The parameter does not have a specific type but instead uses a template. The reason is that probabilities can be stored in different combinations of containers such as `std::vector` or `std::array`. The important property of the parameter is that if `ps` is the name of the parameter then the expression `ps[i][k]` returns the probability that the `i`-th component is in the state `k`.
 
 ### Example
-The following example show a basic usage of the reliability manager. For a detailed description of the managers API please see the [documentation](https://michalmrena.github.io/teddy.html).
+The following example shows the basic usage of the reliability manager. For a detailed description of the manager's API please see the [documentation](https://michalmrena.github.io/teddy.html).
 ```C++
 #include "teddy/teddy_reliability.hpp"
 // or use if you've installed the library
@@ -153,14 +153,14 @@ int main()
         { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
         , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
 
-    // The truth vector describes nonhomogenous system, so we also need
+    // The truth vector describes a nonhomogenous system, so we also need
     // number of states for each component:
     std::vector<uint_t> domains({2, 3, 2, 3});
     teddy::ifmss_manager<3> manager(4, 1'000, domains);
     auto sf = manager.from_vector(vector);
 
     // You can use different combinations of std::vector, std::array or
-    // similar containers. We chose vector of arrays here to hold
+    // similar containers. We chose a vector of arrays here to hold
     // component state probabilities.
     std::vector<std::array<double, 3>> ps
     ({
@@ -177,16 +177,20 @@ int main()
 
     // We can also simply enumerate all Minimal Cut Vectors for a given system
     // state (1). We just need to specify a type that variables will be stored
-    // into. In this case we used the std::array:
+    // into. In this case, we used the std::array:
     std::vector<std::array<unsigned int, 4>> MCVs
         = manager.mcvs<std::array<unsigned int, 4>>(sf, 1);
 
-    // Importance measures are defined in terms of logic derivatives. Since there are different types derivatives the calculation of the derivatives is separated from the calculation of importance measures.
+    // Importance measures are defined in terms of logic derivatives.
+    // Since there are different types of derivatives the calculation of
+    // the derivatives is separated from the calculation of importance measures.
 
-    // In order to calculace Structural Importance we first need to calculate the derivative.
+    // To calculate Structural Importance we first need to calculate
+    // the derivative.
     auto dpbd = manager.idpbd_type_3_decrease({1, 0}, 1, sf, 2);
 
-    // Now, to calculate Structural Importance of the second compontnt, we use the derivative.
+    // Now, to calculate the Structural Importance of the second component,
+    // we use the derivative.
     auto SI = manager.structural_importance(dpbd);
 }
 ```
