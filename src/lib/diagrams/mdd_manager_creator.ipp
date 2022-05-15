@@ -29,8 +29,12 @@ namespace teddy
         (std::vector<index_t> const& is) -> std::vector<mdd_t>
     {
         // Compiler couldn't infer this one. What am I missing?
-        using f_t = mdd_t(mdd_manager::*)(index_t const);
-        return utils::fmap(is, std::bind_front<f_t>(&mdd_manager::variable, this));
+        // using f_t = mdd_t(mdd_manager::*)(index_t const);
+        // return utils::fmap(is, std::bind_front<f_t>(&mdd_manager::variable, this));
+        return utils::fmap(is, [this](auto const i)
+        {
+            return this->variable(i);
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -92,9 +96,9 @@ namespace teddy
             }
         };
 
-        auto const new_bottom_vertex = [=, this](auto const& vals)
+        auto const new_bottom_vertex = [=](auto const& vals)
         {
-            auto const leaves = utils::fmap_to_array(vals, [=, this](auto const val)
+            auto const leaves = utils::fmap_to_array(vals, [=](auto const val)
             {
                 return manager_.terminal_vertex(val);
             });

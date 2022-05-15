@@ -12,7 +12,16 @@ namespace teddy
         inline constexpr auto U = log_val_traits<P>::undefined;
 
         template<std::size_t P>
-        struct pi_conj_t { template<class T> auto constexpr operator() (T const l, T const r) const noexcept { return utils::min_t()(utils::min_t()(l, r), U<P>); }; };
+        inline auto constexpr pi_conj = [](auto const l, auto const r) { return utils::min(utils::min(l, r), U<P>); };
+        template<std::size_t P>
+        struct pi_conj_t
+        {
+            template<class T>
+            auto operator () (T const l, T const r) const -> T
+            {
+                return utils::min(utils::min(l, r), U<P>);
+            }
+        };
 
         template<class BinOp, std::size_t P, auto AbsorbingVal>
         struct bin_op

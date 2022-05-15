@@ -56,8 +56,13 @@ namespace teddy
     auto bdd_manager<VertexData, ArcData>::dpbds
         (bdd_t const& f) -> std::vector<bdd_t>
     {
+        // return utils::fill_vector( base::manager_.get_var_count()
+        //                          , std::bind_front(&bdd_manager::dpbd, this, f) );
         return utils::fill_vector( base::manager_.get_var_count()
-                                 , std::bind_front(&bdd_manager::dpbd, this, f) );
+                                 , [this, &f](auto const i)
+                                   {
+                                       return this->dpbd(f, i);
+                                   } );
     }
 
     template<class VertexData, class ArcData>
@@ -73,7 +78,11 @@ namespace teddy
     auto bdd_manager<VertexData, ArcData>::structural_importances
         (std::vector<bdd_t>& dpbds) -> std::vector<double>
     {
-        return utils::fmap(dpbds, std::bind_front(&bdd_manager::structural_importance, this));
+        // return utils::fmap(dpbds, std::bind_front(&bdd_manager::structural_importance, this));
+        return utils::fmap(dpbds, [this](auto& d)
+        {
+            return this->structural_importance(d);
+        });
     }
 
     template<class VertexData, class ArcData>
@@ -87,7 +96,11 @@ namespace teddy
     auto bdd_manager<VertexData, ArcData>::birnbaum_importances
         (std::vector<double> const& ps, std::vector<bdd_t>& dpbds) -> std::vector<double>
     {
-        return utils::fmap(dpbds, std::bind_front(&bdd_manager::birnbaum_importance, this, ps));
+        // return utils::fmap(dpbds, std::bind_front(&bdd_manager::birnbaum_importance, this, ps));
+        return utils::fmap(dpbds, [this, &ps](auto& d)
+        {
+            return this->birnbaum_importance(ps, d);
+        });
     }
 
     template<class VertexData, class ArcData>
@@ -130,7 +143,11 @@ namespace teddy
     auto bdd_manager<VertexData, ArcData>::mcvs
         (std::vector<bdd_t> const& dpbds) -> std::vector<VectorType>
     {
-        auto dpbdes = utils::fmap_i(dpbds, std::bind_front(&bdd_manager::to_dpbd_e, this));
+        // auto dpbdes = utils::fmap_i(dpbds, std::bind_front(&bdd_manager::to_dpbd_e, this));
+        auto dpbdes = utils::fmap_i(dpbds, [this](auto const i, auto const& d)
+        {
+            return this->to_dpbd_e(i, d);
+        });
         auto const conj = this->template tree_fold<PI_CONJ>(dpbdes);
         return this->template satisfy_all<VectorType>(conj);
     }
@@ -150,7 +167,7 @@ namespace teddy
         (bdd_t const& dpbd) -> bdd_t
     {
         auto const leaf0 = base::manager_.terminal_vertex(0);
-        return this->transform(dpbd, [=, this](auto&& l_this, auto const v)
+        return this->transform(dpbd, [=](auto&& l_this, auto const v)
         {
             // If 0-th son is the false leaf we set 0-th son to 1-th son.
             // Otherwise we continue down to the 0-th son.

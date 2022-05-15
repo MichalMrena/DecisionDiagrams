@@ -421,7 +421,11 @@ namespace teddy
     auto vertex_manager<VertexData, ArcData, P>::clear
         () -> void
     {
-        this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
+        // this->for_each_vertex(std::bind_front(&vertex_pool_t::destroy, std::ref(pool_)));
+        this->for_each_vertex([this](auto const v)
+        {
+            pool_.destroy(v);
+        });
         this->for_each_level([](auto& levelMap) { levelMap.clear(); });
         std::fill(std::begin(leaves_), std::end(leaves_), nullptr);
         vertexCount_ = 0;
@@ -626,16 +630,21 @@ namespace teddy
         auto const nextIndex = this->get_index(1 + this->get_vertex_level(v));
         auto const vDomain   = this->get_domain(index);
         auto const sonDomain = this->get_domain(nextIndex);
-        auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&vertex_t::get_son, v));
+        // auto const oldSons   = utils::fill_vector(vDomain, std::bind_front(&vertex_t::get_son, v));
+        auto const oldSons   = utils::fill_vector(vDomain, [v](auto const i)
+        {
+            return v->get_son(i);
+        });
         auto const cofactors = utils::fill_array_n<P>(vDomain, [=](auto const sonIndex)
         {
             auto const son = v->get_son(sonIndex);
             return son->get_index() == nextIndex
-                ? utils::fill_array_n<P>(sonDomain, std::bind_front(&vertex_t::get_son, son))
+                // ? utils::fill_array_n<P>(sonDomain, std::bind_front(&vertex_t::get_son, son))
+                ? utils::fill_array_n<P>(sonDomain, [son](auto const i){ return son->get_son(i); })
                 : utils::fill_array_n<P>(sonDomain, utils::constant(son));
         });
         v->set_index(nextIndex);
-        v->set_sons(utils::fill_array_n<P>(sonDomain, [=, this, &cofactors](auto const i)
+        v->set_sons(utils::fill_array_n<P>(sonDomain, [=, &cofactors](auto const i)
         {
             return this->internal_vertex(index, utils::fill_array_n<P>(vDomain, [=, &cofactors](auto const j)
             {
@@ -643,7 +652,11 @@ namespace teddy
             }));
         }));
         v->for_each_son(inc_ref_count);
-        utils::for_all(oldSons, std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        // utils::for_all(oldSons, std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        utils::for_all(oldSons, [this](auto const s)
+        {
+            this->dec_ref_try_gc(s);
+        });
     }
 
     template<class VertexData, class ArcData, std::size_t P>
@@ -665,7 +678,11 @@ namespace teddy
             return;
         }
 
-        v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        // v->for_each_son(std::bind_front(&vertex_manager::dec_ref_try_gc, this));
+        v->for_each_son([this](auto const s)
+        {
+            this->dec_ref_try_gc(s);
+        });
         uniqueTables_[v->get_index()].erase(v);
         this->delete_vertex(v);
     }

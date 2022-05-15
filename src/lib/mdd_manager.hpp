@@ -6,6 +6,7 @@
 #include "diagrams/var_vals.hpp"
 #include "diagrams/operators.hpp"
 #include <array>
+#include <unordered_map>
 
 namespace teddy
 {
