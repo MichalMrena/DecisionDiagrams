@@ -6,7 +6,21 @@ This text assumes that the reader is familiar with decision diagrams to some ext
 ---
 ## Contents
 
-TODO
+  * [How to install](#how-to-install)
+    + [Compiling](#compiling)
+  * [Library API](#library-api)
+  * [Basic usage](#basic-usage)
+  * [Memory management](#memory-management)
+    + [Node pool](#node-pool)
+    + [Cache](#cache)
+  * [Other](#other)
+    + [Assertions](#assertions)
+    + [Variable ordering](#variable-ordering)
+  * [Reliability analysis](#reliability-analysis)
+    + [Basic usage](#basic-usage-1)
+    + [Example](#example)
+  * [Publications](#publications)
+      - [List of publications:](#list-of-publications-)
 
 ---
 
@@ -22,7 +36,7 @@ This installs library files to `/usr/local` which should be visible to your comp
 To uninstall the library go to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.
 
 ### Compiling
-TeDDy uses features from `C++20` so you need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. It was tested with `g++ 11.1.0`, `clang++ 15.0.0` and `MSVC TODO`.  
+TeDDy uses features from `C++20` so you need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. It was tested with `g++ 11.1.0`, `clang++ 15.0.0` and `MSVC 19.31.31107`.  
 
 ## Library API
 Functions from the library are accessible via the instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
@@ -198,7 +212,7 @@ int main()
 ## Publications
 We have published several papers on decision diagrams and reliability analysis. Most of these papers had an experimental section where we examined various properties of decision diagrams using TeDDy.
 
-#### List of publications:
+#### List of publications
 Mrena, M., Sedlacek, P., &#38; Kvassay, M. (2021). **Linear Fold and Tree Fold in Creation of Binary Decision Diagrams of Standard Benchmarks.** *2021 11th IEEE International Conference on Intelligent Data Acquisition and Advanced Computing Systems: Technology and Applications (IDAACS)*, *2*, 1120–1125. https://doi.org/10.1109/IDAACS53288.2021.9660940
 &nbsp;  
 
