@@ -71,7 +71,6 @@ namespace teddy
 
     public:
         using sons_t = decltype(container(uint_t{}, D()));
-        using refs_t = uint_t;
         using bits_t = unsigned int;
 
     public:
@@ -101,7 +100,7 @@ namespace teddy
         auto toggle_marked ()             -> void;
         auto set_marked    ()             -> void;
         auto set_notmarked ()             -> void;
-        auto get_ref_count () const       -> refs_t;
+        auto get_ref_count () const       -> uint_t;
         auto inc_ref_count ()             -> void;
         auto dec_ref_count ()             -> void;
         auto get_index     () const       -> index_t;
@@ -112,7 +111,7 @@ namespace teddy
         auto get_value     () const       -> uint_t;
 
     private:
-        // TODO In C++20, constructors are not necessary (I think).
+        // TODO: c++20, constructors not necessary
 
         struct internal
         {
@@ -134,14 +133,12 @@ namespace teddy
             }
         };
 
-        using union_t = std::array<std::byte, sizeof(internal)>;
-
     private:
-        auto union_internal        ()       -> internal&;
-        auto union_internal        () const -> internal const&;
-        auto union_terminal        ()       -> terminal&;
-        auto union_terminal        () const -> terminal const&;
-        auto union_internal_unsafe ()       -> internal&;
+        auto union_internal        ()       -> internal*;
+        auto union_internal        () const -> internal const*;
+        auto union_terminal        ()       -> terminal*;
+        auto union_terminal        () const -> terminal const*;
+        auto union_internal_unsafe ()       -> internal*;
         auto is_or_was_internal    () const -> bool;
 
     private:
@@ -152,11 +149,11 @@ namespace teddy
         inline static constexpr auto RefsMax = ~RefsM;
 
     private:
-        union_t          union_;
+        alignas(internal) std::byte union_[sizeof(internal)];
         [[no_unique_address]]
-        opt_member<Data> data_;
-        node*            next_;
-        bits_t           bits_;
+        opt_member<Data>            data_;
+        node*                       next_;
+        bits_t                      bits_;
     };
 
     template<class Data, degree D>
@@ -182,7 +179,7 @@ namespace teddy
         next_ {nullptr},
         bits_ {LeafM | UsedM}
     {
-        std::construct_at(&this->union_terminal(), i);
+        std::construct_at(this->union_terminal(), i);
     }
 
     template<class Data, degree D>
@@ -191,7 +188,7 @@ namespace teddy
         next_ {nullptr},
         bits_ {UsedM}
     {
-        std::construct_at(&this->union_internal(), std::move(sons), i);
+        std::construct_at(this->union_internal(), std::move(sons), i);
     }
 
     // template<class Data, degree D>
@@ -200,7 +197,7 @@ namespace teddy
     // {
     //     if (this->is_or_was_internal())
     //     {
-    //         std::destroy_at(&this->union_internal_unsafe());
+    //         std::destroy_at(this->union_internal_unsafe());
     //     }
     // }
 
@@ -210,7 +207,7 @@ namespace teddy
     {
         if (this->is_or_was_internal())
         {
-            std::destroy_at(&this->union_internal_unsafe());
+            std::destroy_at(this->union_internal_unsafe());
         }
     }
 
@@ -250,14 +247,14 @@ namespace teddy
     auto node<Data, D>::get_sons
         () const -> sons_t const&
     {
-        return this->union_internal().sons;
+        return this->union_internal()->sons;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::get_son
         (uint_t const k) const -> node*
     {
-        return this->union_internal().sons[k];
+        return (this->union_internal()->sons)[k];
     }
 
     template<class Data, degree D>
@@ -265,28 +262,28 @@ namespace teddy
         (sons_t ss) -> void
     {
         using std::swap;
-        swap(this->union_internal().sons, ss);
+        swap(this->union_internal()->sons, ss);
     }
 
     template<class Data, degree D>
     auto node<Data, D>::get_value
         () const -> uint_t
     {
-        return this->union_terminal().value;
+        return this->union_terminal()->value;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::is_internal
         () const -> bool
     {
-        return this->is_used() and not this->is_terminal();
+        return this->is_used() && not this->is_terminal();
     }
 
     template<class Data, degree D>
     auto node<Data, D>::is_terminal
         () const -> bool
     {
-        return this->is_used() and (bits_ & LeafM);
+        return this->is_used() && (bits_ & LeafM);
     }
 
     template<class Data, degree D>
@@ -333,9 +330,9 @@ namespace teddy
 
     template<class Data, degree D>
     auto node<Data, D>::get_ref_count
-        () const -> refs_t
+        () const -> uint_t
     {
-        return static_cast<refs_t>(bits_ & RefsM);
+        return static_cast<uint_t>(bits_ & RefsM);
     }
 
     template<class Data, degree D>
@@ -358,60 +355,59 @@ namespace teddy
     auto node<Data, D>::get_index
         () const -> index_t
     {
-        return this->union_internal().index;
+        return this->union_internal()->index;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::set_index
         (index_t const i) -> void
     {
-        this->union_internal().index = i;
+        this->union_internal()->index = i;
     }
 
     template<class Data, degree D>
     auto node<Data, D>::union_internal
-        () -> internal&
+        () -> internal*
     {
         assert(this->is_internal());
-        return *reinterpret_cast<internal*>(union_.data());
+        return reinterpret_cast<internal*>(&union_);
     }
 
     template<class Data, degree D>
     auto node<Data, D>::union_internal
-        () const -> internal const&
+        () const -> internal const*
     {
         assert(this->is_internal());
-        return *reinterpret_cast<internal const*>(union_.data());
+        return reinterpret_cast<internal const*>(&union_);
     }
 
     template<class Data, degree D>
     auto node<Data, D>::union_terminal
-        () -> terminal&
+        () -> terminal*
     {
         assert(this->is_terminal());
-        return *reinterpret_cast<terminal*>(union_.data());
+        return reinterpret_cast<terminal*>(&union_);
     }
 
     template<class Data, degree D>
     auto node<Data, D>::union_terminal
-        () const -> terminal const&
+        () const -> terminal const*
     {
         assert(this->is_terminal());
-        return *reinterpret_cast<terminal const*>(union_.data());
+        return reinterpret_cast<terminal const*>(&union_);
     }
 
     template<class Data, degree D>
     auto node<Data, D>::union_internal_unsafe
-        () -> internal&
+        () -> internal*
     {
-        return *reinterpret_cast<internal*>(union_.data());
+        return reinterpret_cast<internal*>(&union_);
     }
 
     template<class Data, degree D>
     auto node<Data, D>::is_or_was_internal
         () const -> bool
     {
-        // We don't care if it is used.
         return not (bits_ & LeafM);
     }
 }
