@@ -369,6 +369,31 @@ namespace teddy::test
         Left, Tree
     };
 
+    auto wrap_green(std::string_view const s)
+    {
+        return std::string("\x1B[92m") + std::string(s) + "\x1B[0m";
+    }
+
+    auto wrap_red(std::string_view const s)
+    {
+        return std::string("\x1B[91m") + std::string(s) + "\x1B[0m";
+    }
+
+    auto wrap_yellow(std::string_view const s)
+    {
+        return std::string("\x1B[93m") + std::string(s) + "\x1B[0m";
+    }
+
+    auto constexpr char_ok()
+    {
+        return "✓";
+    }
+
+    auto constexpr char_err()
+    {
+        return "x";
+    }
+
     /**
      *  Describes result of a test.
      */
@@ -409,7 +434,14 @@ namespace teddy::test
     auto operator<< (std::ostream& ost, test_result const& t) -> std::ostream&
     {
         using namespace std::string_view_literals;
-        ost << (t ? "OK"sv : t.get_message());
+        if (t)
+        {
+            ost << wrap_green(char_ok());
+        }
+        else
+        {
+            ost << wrap_red(char_err()) << " " << t.get_message();
+        }
         return ost;
     }
 
@@ -450,31 +482,6 @@ namespace teddy::test
             termDs.emplace_back(min_fold(vars));
         }
         return max_fold(termDs);
-    }
-
-    auto wrap_green(std::string_view const s)
-    {
-        return std::string("\x1B[92m") + std::string(s) + "\x1B[0m";
-    }
-
-    auto wrap_red(std::string_view const s)
-    {
-        return std::string("\x1B[91m") + std::string(s) + "\x1B[0m";
-    }
-
-    auto wrap_yellow(std::string_view const s)
-    {
-        return std::string("\x1B[93m") + std::string(s) + "\x1B[0m";
-    }
-
-    auto constexpr char_ok()
-    {
-        return "✓";
-    }
-
-    auto constexpr char_err()
-    {
-        return "!";
     }
 
     /**
@@ -705,7 +712,7 @@ namespace teddy::test
         auto const one  = manager.constant(1);
         auto const sup  = manager.constant(max);
         auto const bd   = manager.transform(diagram, utils::not_zero);
-        auto const rd   = manager.reduce(diagram);
+        auto const rd   = manager.reduce(diagram); // TODO Do we need this?
 
         if (not manager.template apply<AND>(bd, zero).equals(zero))
         {
@@ -867,7 +874,7 @@ namespace teddy::test
             {
                 auto order    = manager.get_order();
                 auto domains  = manager.get_domains();
-                rs::reverse(order);
+                std::ranges::reverse(order);
                 auto domainIt = domain_iterator( std::move(domains)
                                                , std::move(order) );
                 auto evalIt   = evaluating_iterator(domainIt, expr);
@@ -897,7 +904,19 @@ namespace teddy::test
     {
         manager.gc();
         manager.sift();
-        // TODO assert(|diagram| == manager.node_count()); !!!
+        manager.gc();
+        auto const actualCount = manager.node_count();
+        auto const expectedCount = manager.node_count(diagram);
+
+        if (actualCount != expectedCount)
+        {
+            return test_result(false, "Expected "
+                                    + std::to_string(expectedCount)
+                                    + " nodes, got "
+                                    + std::to_string(actualCount)
+                                    + ".");
+        }
+
         return test_evaluate(manager, diagram, expr);
     }
 
@@ -920,7 +939,7 @@ namespace teddy::test
      *  Runs all test. Creates diagram represeting @p expr using @p manager .
      */
     template<class Manager>
-    auto test_all
+    auto test_many
         ( std::string_view             name
         , std::vector<Manager>&        managers
         , std::vector<expr_var> const& exprs
@@ -1043,17 +1062,27 @@ namespace teddy::test
         auto diagram1 = create_diagram(expr, manager, fold_e::Left);
         auto diagram2 = create_diagram(expr, manager, fold_e::Tree);
 
-        std::cout << wrap_yellow(name)                           << '\n';
-        std::cout << test_evaluate(manager, diagram1, expr)      << '\n';
-        std::cout << test_fold(diagram1, diagram2)               << '\n';
-        std::cout << test_gc(manager, diagram1)                  << '\n';
-        std::cout << test_satisfy_count(manager, diagram1, expr) << '\n';
-        std::cout << test_satisfy_all(manager, diagram1, expr)   << '\n';
-        std::cout << test_operators(manager, diagram1, expr)     << '\n';
-        std::cout << test_cofactor(manager, diagram1, expr, rng) << '\n';
-        std::cout << test_from_vector(manager, diagram1, expr)   << '\n';
-        std::cout << test_to_vector(manager, diagram1)           << '\n';
-        std::cout << test_var_sift(manager, diagram1, expr)      << '\n';
+        std::cout << '\n' << wrap_yellow(name)             << '\n';
+        std::cout << "Evaluate      "
+            << test_evaluate(manager, diagram1, expr)      << '\n';
+        std::cout << "Fold          "
+            << test_fold(diagram1, diagram2)               << '\n';
+        std::cout << "GC            "
+            << test_gc(manager, diagram1)                  << '\n';
+        std::cout << "Satisfy-count "
+            << test_satisfy_count(manager, diagram1, expr) << '\n';
+        std::cout << "Satisfy-all   "
+            << test_satisfy_all(manager, diagram1, expr)   << '\n';
+        std::cout << "Operators     "
+            << test_operators(manager, diagram1, expr)     << '\n';
+        std::cout << "Cofactor      "
+            << test_cofactor(manager, diagram1, expr, rng) << '\n';
+        std::cout << "From-vector   "
+            << test_from_vector(manager, diagram1, expr)   << '\n';
+        std::cout << "To-vector     "
+            << test_to_vector(manager, diagram1)           << '\n';
+        std::cout << "Var-sift      "
+            << test_var_sift(manager, diagram1, expr)      << '\n';
     }
 
     template<std::size_t M>
@@ -1084,7 +1113,7 @@ auto run_test_many ()
     auto const termCount = 20;
     auto const termSize  = 5;
     auto const nodeCount = 100;
-    auto const testCount = std::thread::hardware_concurrency() + 2;
+    auto const testCount = std::thread::hardware_concurrency();
     auto       seedSrc   = std::random_device();
     // auto const seedSrc   = std::integral_constant<long, 1021306696>();
     auto const initSeed  = seedSrc();
@@ -1094,23 +1123,13 @@ auto run_test_many ()
     auto seeder = ts::rng_t(initSeed);
     auto rngs = us::fill_vector(testCount, [&seeder](auto const)
     {
-        // One rng to rule them all.
-        // Not technically correct but
-        // it should be good enough for the purpose of these tests.
         return ts::rng_t(seeder());
     });
 
-    auto const exprs = [=, &rngs]()
+    auto const exprs = us::fill_vector(testCount, [=, &rngs](auto const k)
     {
-        auto res = us::fill_vector(testCount - 2, [=, &rngs](auto const k)
-        {
-            return ts::generate_expression( rngs[k], varCount
-                                          , termCount, termSize );
-        });
-        res.emplace_back(std::in_place_type_t<ts::constant_expr>(), 0);
-        res.emplace_back(std::in_place_type_t<ts::constant_expr>(), 1);
-        return res;
-    }();
+        return ts::generate_expression(rngs[k], varCount, termCount, termSize);
+    });
 
     auto orders = us::fmap(rngs, [testCount](auto& rng)
     {
@@ -1122,67 +1141,82 @@ auto run_test_many ()
         return ts::random_domains<M>(varCount, rng);
     });
 
-    auto bddManagers = us::fill_vector(testCount - 2, [&](auto const k)
+    auto bddManagers = us::fill_vector(testCount, [&](auto const k)
     {
         return teddy::bdd_manager(varCount, nodeCount, orders[k]);
     });
 
-    auto mddManagers = us::fill_vector(testCount - 2, [&](auto const k)
+    auto mddManagers = us::fill_vector(testCount, [&](auto const k)
     {
         return teddy::mdd_manager<M>(varCount, nodeCount, orders[k]);
     });
 
-    auto imddManagers = us::fill_vector(testCount - 2, [&]
+    auto imddManagers = us::fill_vector(testCount, [&]
         (auto const k) mutable
     {
         return teddy::imdd_manager(varCount, nodeCount, domains[k], orders[k]);
     });
 
-    auto ifmddManagers = us::fill_vector(testCount - 2, [&]
+    auto ifmddManagers = us::fill_vector(testCount, [&]
         (auto const k) mutable
     {
         return teddy::ifmdd_manager<M>( varCount, nodeCount
                                       , domains[k], orders[k] );
     });
 
-    // Add constant functions.
-    bddManagers.emplace_back(0, 2);
-    bddManagers.emplace_back(0, 2);
-    mddManagers.emplace_back(0, 2);
-    mddManagers.emplace_back(0, 2);
-    imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
-    imddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
-    ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
-    ifmddManagers.emplace_back(0, 2, std::vector<teddy::uint_t>());
+    auto const seedStr = IsFixedSeed
+        ? ts::wrap_red(std::to_string(initSeed))
+        : std::to_string(initSeed);
+    std::cout << "Seed is " << seedStr << '.' << '\n';
+    ts::test_many("BDD manager",   bddManagers,   exprs, rngs);
+    ts::test_many("MDD manager",   mddManagers,   exprs, rngs);
+    ts::test_many("iMDD manager",  imddManagers,  exprs, rngs);
+    ts::test_many("ifMDD manager", ifmddManagers, exprs, rngs);
+}
+
+auto run_test_one()
+{
+    namespace us = teddy::utils;
+    namespace ts = teddy::test;
+
+    // auto       seedSrc   = std::random_device();
+    auto const seedSrc   = std::integral_constant<long, 1021306696>();
+    auto const initSeed  = seedSrc();
+    auto constexpr IsFixedSeed = not std::same_as< std::random_device
+                                                 , decltype(seedSrc) >;
+    auto seeder     = ts::rng_t(initSeed);
+    auto rngDomains = teddy::test::rng_t(seeder());
+    auto rngOrder   = teddy::test::rng_t(seeder());
+    auto rngExpr    = teddy::test::rng_t(seeder());
+    auto rngsTest   = teddy::utils::fill_vector(4, [&](auto const)
+    {
+        return teddy::test::rng_t(seeder());
+    });
+
+    auto constexpr M     = 4;
+    auto const varCount  = 13;
+    auto const nodeCount = 10'000;
+    auto const domains   = teddy::test::random_domains<M>(varCount, rngDomains);
+    auto const order     = teddy::test::random_order(varCount, rngOrder);
+    auto const termCount = 20;
+    auto const termSize  = 5;
+
+    auto bddM   = teddy::bdd_manager(varCount, nodeCount);
+    auto mddM   = teddy::mdd_manager<M>(varCount, nodeCount);
+    auto imddM  = teddy::imdd_manager(varCount, nodeCount, domains, order);
+    auto ifmddM = teddy::ifmdd_manager<M>(varCount, nodeCount, domains, order);
+
+    auto const expr   = ts::generate_expression( rngExpr, varCount
+                                               , termCount, termSize );
 
     auto const seedStr = IsFixedSeed
         ? ts::wrap_red(std::to_string(initSeed))
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
-    ts::test_all("BDD manager",   bddManagers,   exprs, rngs);
-    ts::test_all("MDD manager",   mddManagers,   exprs, rngs);
-    ts::test_all("iMDD manager",  imddManagers,  exprs, rngs);
-    ts::test_all("ifMDD manager", ifmddManagers, exprs, rngs);
-}
-
-auto run_verbose_test_one()
-{
-    namespace us = teddy::utils;
-    namespace ts = teddy::test;
-
-    auto constexpr M     = 4;
-    auto const varCount  = 13;
-    auto const termCount = 20;
-    auto const termSize  = 5;
-    auto const nodeCount = 10'000;
-    auto       rng       = ts::rng_t(144);
-    // auto       manager   = teddy::bdd_manager(varCount, nodeCount);
-    auto       manager   = teddy::mdd_manager<M>(varCount, nodeCount);
-    auto const expr      = ts::generate_expression( rng, varCount
-                                                  , termCount, termSize );
-
-    // ts::test_one("BDD manager", manager, expr, rng);
-    ts::test_one("MDD manager", manager, expr, rng);
+    teddy::test::test_one("BDD manager",   bddM,   expr, rngsTest[0]);
+    teddy::test::test_one("MDD manager",   mddM,   expr, rngsTest[1]);
+    teddy::test::test_one("iMDD manager",  imddM,  expr, rngsTest[2]);
+    teddy::test::test_one("ifMDD manager", ifmddM, expr, rngsTest[3]);
 }
 
 auto run_speed_benchmark()
@@ -1220,8 +1254,6 @@ auto run_speed_benchmark()
             auto const nodeCount  = std::reduce( rs::begin(nodeCounts)
                                                , rs::end(nodeCounts) );
             m.gc();
-            // std::cout << "Final manager node count is "
-            //           << m.node_count() << ".\n";
             std::cout << pla << " [" << nodeCount << "] ("
                                      << timeMs    <<")" << '\n';
         }
@@ -1230,14 +1262,17 @@ auto run_speed_benchmark()
             std::cout << "Failed to load " << path << '\n';
         }
     }
-
 }
 
 auto main () -> int
 {
     // TODO testy s konstantami to vector osetrit
-    run_test_many();
-    // run_verbose_test_one();
+    // TODO benchmarkovanie cache hit/miss
+    // TODO vyskúšať posielať diagramy všade hodnotami,
+    // mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
+
+    // run_test_many();
+    run_test_one();
     // run_speed_benchmark();
 
     std::cout << '\n' << "End of main." << '\n';

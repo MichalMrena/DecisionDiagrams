@@ -275,7 +275,11 @@ namespace teddy
                      , nodePoolSize
                      , overflowNodePoolSize
                      , std::move(order)
-                     , std::move(domains) )
+                     , [&]() -> decltype(auto)
+                     {
+                         assert(domains.ds_.size() == varCount);
+                         return std::move(domains);
+                     }() )
     {
     }
 
@@ -1142,6 +1146,8 @@ namespace teddy
         this->for_each_son(nodeIndex, oldSons, [this](auto const os)
         {
             // TODO are you sure about GC?
+            // TODO asi ano, lebo to ovplyvnuje pocet nodov,
+            // ktory je pri siftovani rozhodujuci
             this->dec_ref_try_gc(os);
         });
     }

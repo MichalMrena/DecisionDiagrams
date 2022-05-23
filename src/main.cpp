@@ -142,10 +142,6 @@ auto example_rel_doc()
 
 auto main () -> int
 {
-    // TODO node_pool align bytes as node<> !!!
-    // TODO skusit prejst na explicitnu implementaciu v suvislej pamati?
-    // TODO benchmarkovanie cache hit/miss
-
     // pla_test_speed(1);
     // pla_sanity_check();
     // test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
@@ -154,9 +150,6 @@ auto main () -> int
     // test_mss();
 
     // pla_sanity_check();
-
-    // TODO vyskúšať posielať diagramy všade hodnotami,
-    // mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
 
     example1();
     example2();
