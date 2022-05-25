@@ -311,15 +311,14 @@ namespace teddy
     auto apply_cache<Data, D>::rehash
         (std::size_t const newCapacity) -> void
     {
+        if (this->capacity() == newCapacity)
+        {
+            return;
+        }
+
         debug::out( "apply_cache: Load factor is ", this->load_factor()
                   , ". Capacity is ", this->capacity()
                   , " should be ", newCapacity, "." );
-
-        if (this->capacity() == newCapacity)
-        {
-            debug::out(" No resizing necessary.\n");
-            return;
-        }
 
         auto const oldEntries = std::vector<entry_t>(std::move(entries_));
         entries_              = std::vector<entry_t>(newCapacity);
@@ -582,15 +581,14 @@ namespace teddy
     auto unique_table<Data, D>::rehash
         (std::size_t const newCapacity, Hash&& hash) -> void
     {
+        if (buckets_.size() == newCapacity)
+        {
+            return;
+        }
+
         debug::out("  unique_table: Load factor is "
                   , this->load_factor(), ". Capacity is ", this->capacity()
                   , " should be ", newCapacity );
-
-        if (buckets_.size() == newCapacity)
-        {
-            debug::out(". No resizing necessary.\n");
-            return;
-        }
 
         auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));
         buckets_ = std::vector<node_t*>(newCapacity, nullptr);

@@ -1108,7 +1108,7 @@ auto run_test_many ()
     namespace us = teddy::utils;
     namespace ts = teddy::test;
 
-    auto constexpr M     = 3;
+    auto constexpr M     = 4;
     auto const varCount  = 13;
     auto const termCount = 20;
     auto const termSize  = 5;
@@ -1201,7 +1201,7 @@ auto run_test_one()
     auto const termCount = 20;
     auto const termSize  = 5;
 
-    auto bddM   = teddy::bdd_manager(varCount, nodeCount);
+    auto bddM   = teddy::bdd_manager(varCount, nodeCount, nodeCount);
     auto mddM   = teddy::mdd_manager<M>(varCount, nodeCount);
     auto imddM  = teddy::imdd_manager(varCount, nodeCount, domains, order);
     auto ifmddM = teddy::ifmdd_manager<M>(varCount, nodeCount, domains, order);
@@ -1268,11 +1268,10 @@ auto main () -> int
 {
     // TODO testy s konstantami to vector osetrit
     // TODO benchmarkovanie cache hit/miss
-    // TODO vyskúšať posielať diagramy všade hodnotami,
-    // mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
+    // TODO vyskúšať posielať diagramy všade hodnotami, mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
 
-    // run_test_many();
-    run_test_one();
+    run_test_many();
+    // run_test_one();
     // run_speed_benchmark();
 
     std::cout << '\n' << "End of main." << '\n';

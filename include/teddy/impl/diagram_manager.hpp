@@ -627,18 +627,6 @@ namespace teddy
         auto set_cache_ratio (double ratio) -> void;
 
         /**
-         *  \brief Sets ratio used in calculation of size of the new node pool.
-         *
-         *  Size of the new additional pool as calculated as:
-         *  \code
-         *  ratio * initNodeCount.
-         *  \endcode
-         *
-         *  \param ratio Number from the interval (0,1].
-         */
-        auto set_pool_ratio (double ratio) -> void;
-
-        /**
          *  \brief Sets ratio used to determine new node pool allocation.
          *
          *  New pool is allocated if:
@@ -1446,13 +1434,6 @@ namespace teddy
         (double ratio) -> void
     {
         nodes_.set_cache_ratio(ratio);
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto diagram_manager<Data, Degree, Domain>::set_pool_ratio
-        (double ratio) -> void
-    {
-        nodes_.set_pool_ratio(ratio);
     }
 
     template<class Data, degree Degree, domain Domain>

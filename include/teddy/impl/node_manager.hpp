@@ -214,7 +214,6 @@ namespace teddy
         std::size_t                     nodeCount_;
         double                          cacheRatio_;
         double                          gcRatio_;
-        std::size_t                     lastGcNodeCount_;
         std::size_t                     nextTableAdjustment_;
         bool                            reorderEnabled_;
     };
@@ -302,7 +301,6 @@ namespace teddy
         nodeCount_           (0),
         cacheRatio_          (0.5),
         gcRatio_             (0.05),
-        lastGcNodeCount_     (pool_.main_pool_size()), // TODO nope
         nextTableAdjustment_ (230),
         reorderEnabled_      (false)
     {
@@ -883,29 +881,19 @@ namespace teddy
     {
         if (pool_.available_node_count() == 0)
         {
-            auto const gcThreshold = static_cast<double>(pool_.main_pool_size())
-                                   * gcRatio_;
-
-            // TODO jednoduchšie, ak sa zozberalo menej ako gcRatio_ * initNodeCount, tak rovno grownut pool
-            // lastGcNodeCount_ by potom nebolo potrebne
-            if (static_cast<double>(lastGcNodeCount_) > gcThreshold)
-            {
-                this->collect_garbage();
-                if (reorderEnabled_)
-                {
-                    this->sift_vars();
-                }
-                // TODO tu mohli ostat nejake mrtve nody
-                lastGcNodeCount_ = pool_.available_node_count();
-                if (lastGcNodeCount_ == 0)
-                {
-                    pool_.grow();
-                }
-            }
-            else
+            auto const growThreshold = static_cast<std::size_t>(
+                gcRatio_ * static_cast<double>(pool_.main_pool_size()));
+            this->collect_garbage();
+            if (pool_.available_node_count() < growThreshold)
             {
                 pool_.grow();
             }
+
+            // TODO
+            // if (reorderEnabled_)
+            // {
+            //     this->sift_vars();
+            // }
         }
 
         if (nodeCount_ >= nextTableAdjustment_)
