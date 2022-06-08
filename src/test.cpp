@@ -1222,7 +1222,7 @@ auto run_test_one()
 auto run_speed_benchmark()
 {
     using namespace std::string_literals;
-    auto const plaDir = "/mnt/c/Users/mrena/data/IWLS93/pla/"s;
+    auto const plaDir = "/home/michal/Downloads/pla/"s;
     auto const plas   = { "02-adder_col.pla"s, "03-adder_col.pla"s
                         , "04-adder_col.pla"s, "05-adder_col.pla"s
                         , "05-adder_col.pla"s, "06-adder_col.pla"s
@@ -1254,8 +1254,8 @@ auto run_speed_benchmark()
             auto const nodeCount  = std::reduce( rs::begin(nodeCounts)
                                                , rs::end(nodeCounts) );
             m.gc();
-            std::cout << pla << " [" << nodeCount << "] ("
-                                     << timeMs    <<")" << '\n';
+            std::cout << pla << " [" << nodeCount << " nodes] ("
+                                     << timeMs    <<" ms)" << '\n';
         }
         else
         {
@@ -1268,7 +1268,6 @@ auto main () -> int
 {
     // TODO testy s konstantami to vector osetrit
     // TODO benchmarkovanie cache hit/miss
-    // TODO vyskúšať posielať diagramy všade hodnotami, mohlo by to byť krajšie a na funkciu by to nemalo mať žiadny vplyv
 
     run_test_many();
     // run_test_one();

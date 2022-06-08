@@ -384,7 +384,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::special_node
-        (uint_t const v) -> node_t*
+        ([[maybe_unused]] uint_t const v) -> node_t*
     {
         assert(v == Undefined);
 

@@ -82,7 +82,7 @@ namespace teddy
          *  \param other Diagram to be compared with this one.
          *  \return true iif diagrams represent the same function.
          */
-        auto equals (diagram const& other) const -> bool;
+        auto equals (diagram other) const -> bool;
 
     private:
         explicit diagram (node_t*);
@@ -110,8 +110,7 @@ namespace teddy
      *  \return true iif diagrams represent the same function.
      */
     template<class Data, degree D>
-    auto operator==
-        (diagram<Data, D> const& lhs, diagram<Data, D> const& rhs) -> bool
+    auto operator== (diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
     {
         return lhs.equals(rhs);
     }
@@ -123,8 +122,7 @@ namespace teddy
      *  \return true iif diagrams represent the same function.
      */
     template<class Data, degree D>
-    auto equals
-        (diagram<Data, D> const& lhs, diagram<Data, D> const& rhs) -> bool
+    auto equals (diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
     {
         return lhs.equals(rhs);
     }
@@ -192,7 +190,7 @@ namespace teddy
 
     template<class Data, degree D>
     auto diagram<Data, D>::equals
-        (diagram const& d) const -> bool
+        (diagram d) const -> bool
     {
         return root_ == d.get_root();
     }

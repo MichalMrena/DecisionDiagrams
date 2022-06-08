@@ -187,7 +187,7 @@ namespace teddy
          *  \param d Diagram.
          *  \return Vector of ints representing truth vector.
          */
-        auto to_vector (diagram_t const& d) const -> std::vector<uint_t>;
+        auto to_vector (diagram_t d) const -> std::vector<uint_t>;
 
         /**
          *  \brief Creates truth vector from the diagram.
@@ -197,7 +197,7 @@ namespace teddy
          *  \param out Output iterator that is used to output the truth vector.
          */
         template<std::output_iterator<uint_t> O>
-        auto to_vector_g (diagram_t const& d, O out) const -> void;
+        auto to_vector_g (diagram_t d, O out) const -> void;
 
         /**
          *  \brief Creates BDDs defined by PLA file.
@@ -250,7 +250,7 @@ namespace teddy
          *  \return Diagram representing merger of \p l and \p r .
          */
         template<bin_op Op>
-        auto apply (diagram_t const& l, diagram_t const& r) -> diagram_t;
+        auto apply (diagram_t l, diagram_t r) -> diagram_t;
 
         /**
          *  \brief Merges diagams in a range using the \c apply function
@@ -360,7 +360,7 @@ namespace teddy
          *  values given in \p vs .
          */
         template<in_var_values Vars>
-        auto evaluate (diagram_t const& d, Vars const& vs) const -> uint_t;
+        auto evaluate (diagram_t d, Vars const& vs) const -> uint_t;
 
         /**
          *  \brief Calculates number of variable assignments for which
@@ -409,7 +409,7 @@ namespace teddy
          */
         template<out_var_values Vars, class Foo = void> requires(is_bdd<Degree>)
         auto satisfy_all
-            (diagram_t const& d) const -> second_t<Foo, std::vector<Vars>>;
+            (diagram_t d) const -> second_t<Foo, std::vector<Vars>>;
 
         /**
          *  \brief Enumerates all elements of the satisfying set.
@@ -431,7 +431,7 @@ namespace teddy
          */
         template<out_var_values Vars>
         auto satisfy_all
-            (uint_t val, diagram_t const& d) const -> std::vector<Vars>;
+            (uint_t val, diagram_t d) const -> std::vector<Vars>;
 
         /**
          *  \brief Enumerates all elements of the satisfying set.
@@ -456,7 +456,7 @@ namespace teddy
         template< out_var_values             Vars
                 , std::output_iterator<Vars> O >
         auto satisfy_all_g
-            (uint_t val, diagram_t const& d, O out) const -> void;
+            (uint_t val, diagram_t d, O out) const -> void;
 
         /**
          *  \brief Calculates cofactor of the functions.
@@ -469,7 +469,7 @@ namespace teddy
          *  \param val Value to which the \p i th varibale should be fixed.
          *  \return Diagram representing cofactor of the function.
          */
-        auto cofactor (diagram_t const& d, index_t i, uint_t val) -> diagram_t;
+        auto cofactor (diagram_t d, index_t i, uint_t val) -> diagram_t;
 
         /**
          *  \brief Transforms values of the function.
@@ -491,7 +491,7 @@ namespace teddy
          */
         template<uint_to_bool F>
         auto transform
-            (diagram_t const& d, F f = utils::not_zero) -> diagram_t;
+            (diagram_t d, F f = utils::not_zero) -> diagram_t;
 
         /**
          *  \brief Enumerates indices of variables that the function depends on.
@@ -499,7 +499,7 @@ namespace teddy
          *  \param d Diagram representing the function.
          *  \return Vector of indices.
          */
-        auto dependency_set (diagram_t const& d) const -> std::vector<index_t>;
+        auto dependency_set (diagram_t d) const -> std::vector<index_t>;
 
         /**
          *  \brief Enumerates indices of variables that the function depends on.
@@ -510,7 +510,7 @@ namespace teddy
          *  \return Vector of indices.
          */
         template<std::output_iterator<index_t> O>
-        auto dependency_set_g (diagram_t const& d, O out) const -> void;
+        auto dependency_set_g (diagram_t d, O out) const -> void;
 
         /**
          *  \brief Reduces diagrams to its canonical form.
@@ -520,7 +520,7 @@ namespace teddy
          *  \param  d Diagram.
          *  \return Diagram in a reduced canonical form.
          */
-        auto reduce (diagram_t const&) -> diagram_t;
+        auto reduce (diagram_t) -> diagram_t;
 
         /**
          *  \brief Returns number of nodes that are currently
@@ -541,7 +541,7 @@ namespace teddy
          *  \param d Diagram.
          *  \return Number of node.
          */
-        auto node_count (diagram_t const& d) const -> std::size_t;
+        auto node_count (diagram_t d) const -> std::size_t;
 
         /**
          *  \brief Prints dot representation of the graph.
@@ -563,7 +563,7 @@ namespace teddy
          *  \param d Diagram.
          */
         auto to_dot_graph
-            (std::ostream& out, diagram_t const& d) const -> void;
+            (std::ostream& out, diagram_t d) const -> void;
 
         /**
          *  \brief Runs garbage collection.
@@ -869,7 +869,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::to_vector
-        (diagram_t const& d) const -> std::vector<uint_t>
+        (diagram_t d) const -> std::vector<uint_t>
     {
         auto vs = std::vector<uint_t>();
         vs.reserve(nodes_.domain_product(
@@ -881,7 +881,7 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<std::output_iterator<teddy::uint_t> O>
     auto diagram_manager<Data, Degree, Domain>::to_vector_g
-        (diagram_t const& d, O out) const -> void
+        (diagram_t d, O out) const -> void
     {
         if (this->get_var_count() == 0)
         {
@@ -993,7 +993,7 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<bin_op Op>
     auto diagram_manager<Data, Degree, Domain>::apply
-        (diagram_t const& d1, diagram_t const& d2) -> diagram_t
+        (diagram_t d1, diagram_t d2) -> diagram_t
     {
         auto const go = [this](auto&& go_, auto const l, auto const r)
         {
@@ -1116,7 +1116,7 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<in_var_values Vars>
     auto diagram_manager<Data, Degree, Domain>::evaluate
-        (diagram_t const& d, Vars const& vs) const -> uint_t
+        (diagram_t d, Vars const& vs) const -> uint_t
     {
         auto n = d.get_root();
 
@@ -1206,7 +1206,7 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<out_var_values Vars, class Foo> requires(is_bdd<Degree>)
     auto diagram_manager<Data, Degree, Domain>::satisfy_all
-        (diagram_t const& d) const -> second_t<Foo, std::vector<Vars>>
+        (diagram_t d) const -> second_t<Foo, std::vector<Vars>>
     {
         return this->satisfy_all<Vars>(d);
     }
@@ -1214,7 +1214,7 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<out_var_values Vars>
     auto diagram_manager<Data, Degree, Domain>::satisfy_all
-        (uint_t const val, diagram_t const& d) const -> std::vector<Vars>
+        (uint_t const val, diagram_t d) const -> std::vector<Vars>
     {
         auto vs = std::vector<Vars>();
         this->satisfy_all_g<Vars>(val, d, std::back_inserter(vs));
@@ -1224,7 +1224,7 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<out_var_values Vars, std::output_iterator<Vars> O>
     auto diagram_manager<Data, Degree, Domain>::satisfy_all_g
-        (uint_t const val, diagram_t const& d, O out) const -> void
+        (uint_t const val, diagram_t d, O out) const -> void
     {
         if constexpr (domains::is_fixed<Domain>()())
         {
@@ -1285,7 +1285,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::cofactor
-        (diagram_t const& d, index_t const i, uint_t const v) -> diagram_t
+        (diagram_t d, index_t const i, uint_t const v) -> diagram_t
     {
         if (d.get_root()->is_terminal())
         {
@@ -1335,14 +1335,14 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<uint_to_bool F>
     auto diagram_manager<Data, Degree, Domain>::transform
-        (diagram_t const& d, F f) -> diagram_t
+        (diagram_t d, F f) -> diagram_t
     {
         return diagram_t(this->transform_terminal(d.get_root(), f));
     }
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::dependency_set
-        (diagram_t const& d) const -> std::vector<index_t>
+        (diagram_t d) const -> std::vector<index_t>
     {
         auto is = std::vector<index_t>();
         is.reserve(this->get_var_count());
@@ -1354,7 +1354,7 @@ namespace teddy
     template<class Data, degree Degree, domain Domain>
     template<std::output_iterator<index_t> O>
     auto diagram_manager<Data, Degree, Domain>::dependency_set_g
-        (diagram_t const& d, O out) const -> void
+        (diagram_t d, O out) const -> void
     {
         auto memo = std::vector<bool>(this->get_var_count(), false);
         nodes_.traverse_pre(d.get_root(), [&memo, out](auto const n) mutable
@@ -1373,7 +1373,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::reduce
-        (diagram_t const& d) -> diagram_t
+        (diagram_t d) -> diagram_t
     {
         auto const newRoot = this->transform_terminal( d.get_root()
                                                      , utils::identity );
@@ -1389,7 +1389,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::node_count
-        (diagram_t const& d) const -> std::size_t
+        (diagram_t d) const -> std::size_t
     {
         return nodes_.get_node_count(d.get_root());
     }
@@ -1403,7 +1403,7 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::to_dot_graph
-        (std::ostream& ost, diagram_t const& d) const -> void
+        (std::ostream& ost, diagram_t d) const -> void
     {
         nodes_.to_dot_graph(ost, d.get_root());
     }
