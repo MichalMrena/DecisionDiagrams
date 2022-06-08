@@ -164,7 +164,7 @@ namespace teddy
         auto availability
             ( uint_t     j
             , Ps const&  ps
-            , diagram_t& f ) -> double;
+            , diagram_t& sf ) -> double;
 
         /**
          *  \brief Returns availability of a BSS.
@@ -213,7 +213,7 @@ namespace teddy
                 , class Foo = void > requires(is_bss<Degree>)
         auto unavailability
             ( Ps const&  ps
-            , diagram_t& f) -> second_t<Foo, double>;
+            , diagram_t& sf) -> second_t<Foo, double>;
 
         /**
          *  \brief Calculates and returns system availability with
@@ -232,7 +232,7 @@ namespace teddy
         auto unavailability
             ( uint_t     j
             , Ps const&  ps
-            , diagram_t& f) -> double;
+            , diagram_t& sf) -> double;
 
         /**
          *  \brief Returns system unavailability of a BSS.
@@ -387,7 +387,7 @@ namespace teddy
          */
         auto idpbd_type_3_increase
             ( value_change var
-            , uint_t       f
+            , uint_t       j
             , diagram_t    sf
             , index_t      i ) -> diagram_t;
 

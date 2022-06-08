@@ -253,7 +253,7 @@ namespace teddy
         auto apply (diagram_t l, diagram_t r) -> diagram_t;
 
         /**
-         *  \brief Merges diagams in a range using the \c apply function
+         *  \brief Merges diagams in the range using the \c apply function
          *  and binary operation.
          *
          *  Uses left fold order of evaluation (sequentially from the left).
@@ -273,7 +273,7 @@ namespace teddy
         auto left_fold (R const& range) -> diagram_t;
 
         /**
-         *  \brief Merges diagams in a range using the \c apply function
+         *  \brief Merges diagams in the range using the \c apply function
          *  and binary operation.
          *
          *  Uses left fold order of evaluation (sequentially from the left).
@@ -298,7 +298,7 @@ namespace teddy
         auto left_fold (I first, S last) -> diagram_t;
 
         /**
-         *  \brief Merges diagams in a range using the \c apply function
+         *  \brief Merges diagams in the range using the \c apply function
          *  and binary operation.
          *
          *  Uses tree fold order of evaluation ((d1 op d2) op (d3 op d4) ...) .
@@ -321,7 +321,7 @@ namespace teddy
         auto tree_fold (R& range) -> diagram_t;
 
         /**
-         *  \brief Merges diagams in a range using the \c apply function
+         *  \brief Merges diagams in the range using the \c apply function
          *  and binary operation.
          *
          *  Uses tree fold order of evaluation ((d1 op d2) op (d3 op d4) ...) .
@@ -507,7 +507,6 @@ namespace teddy
          *  \tparam O Output iterator type.
          *  \param d Diagram representing the function.
          *  \param out Output iterator that is used to output indices.
-         *  \return Vector of indices.
          */
         template<std::output_iterator<index_t> O>
         auto dependency_set_g (diagram_t d, O out) const -> void;
