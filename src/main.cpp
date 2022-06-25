@@ -142,6 +142,9 @@ auto example_rel_doc()
 
 auto main () -> int
 {
+    // TODO Fibonacci hashing + power of 2 size:
+    // see: https://www.boost.org/doc/libs/develop/libs/unordered/doc/html/unordered.html#rationale_number_of_buckets
+
     // pla_test_speed(1);
     // pla_sanity_check();
     // test_mdd_random<3>(10, order_e::Random, domain_e::Nonhomogenous);
