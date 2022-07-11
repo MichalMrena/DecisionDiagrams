@@ -145,16 +145,16 @@ namespace teddy
         template<utils::i_gen F>
         auto make_sons (index_t, F&&) -> sons_t;
 
-        template<node_op<node_t> NodeOp>
+        template<node_op<node<Data, Degree>> NodeOp>
         auto for_each_son (node_t*, NodeOp&&) const -> void;
 
-        template<node_op<node_t> NodeOp>
+        template<node_op<node<Data, Degree>> NodeOp>
         auto for_each_son (index_t, sons_t const&, NodeOp&&) const -> void;
 
-        template<node_op<node_t> NodeOp>
+        template<node_op<node<Data, Degree>> NodeOp>
         auto for_each_node (NodeOp&&) const -> void;
 
-        template<node_op<node_t> NodeOp>
+        template<node_op<node<Data, Degree>> NodeOp>
         auto for_each_terminal_node (NodeOp&&) const -> void;
 
         template<bin_op O>
@@ -163,13 +163,13 @@ namespace teddy
         template<bin_op O>
         auto cache_put (node_t*, node_t*, node_t*) -> void;
 
-        template<node_op<node_t> NodeOp>
+        template<node_op<node<Data, Degree>> NodeOp>
         auto traverse_pre (node_t*, NodeOp&&) const -> void;
 
-        template<node_op<node_t> NodeOp>
+        template<node_op<node<Data, Degree>> NodeOp>
         auto traverse_post (node_t*, NodeOp&&) const -> void;
 
-        template<node_op<node_t> NodeOp>
+        template<node_op<node<Data, Degree>> NodeOp>
         auto traverse_level (node_t*, NodeOp&&) const -> void;
 
         auto is_valid_var_value (index_t, uint_t) const -> bool;

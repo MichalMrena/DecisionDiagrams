@@ -196,7 +196,7 @@ namespace teddy
          *  \param d Diagram.
          *  \param out Output iterator that is used to output the truth vector.
          */
-        template<std::output_iterator<uint_t> O>
+        template<std::output_iterator<teddy::uint_t> O>
         auto to_vector_g (diagram_t d, O out) const -> void;
 
         /**
