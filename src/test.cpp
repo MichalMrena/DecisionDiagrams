@@ -228,8 +228,8 @@ namespace teddy::test
         auto operator== (domain_iterator const& rhs) const -> bool
         {
             return rs::equal(varVals_, rhs.varVals_)
-               and rs::equal(indices_, rhs.indices_)
-               and rs::equal(domains_, rhs.domains_);
+                && rs::equal(indices_, rhs.indices_)
+                && rs::equal(domains_, rhs.domains_);
         }
 
         auto operator!= (domain_iterator const& rhs) const -> bool
@@ -970,6 +970,8 @@ namespace teddy::test
                            , "var_sift"sv };
         auto results = std::unordered_map
             <std::string_view, std::vector<std::optional<test_result>>>();
+
+        // Inserts vector of nullopts for each test name.
         for (auto const test : tests)
         {
             results.emplace( std::piecewise_construct_t()
@@ -1006,7 +1008,7 @@ namespace teddy::test
             auto lock = std::scoped_lock<std::mutex>(outputMutex);
             for (auto i = 0u; i < results.size(); ++i)
             {
-                // Erase one line from console.
+                // Erase one line from the console.
                 std::cout << "\033[A";
             }
             output_results();
@@ -1266,9 +1268,6 @@ auto run_speed_benchmark()
 
 auto main () -> int
 {
-    // TODO testy s konstantami to vector osetrit
-    // TODO benchmarkovanie cache hit/miss
-
     run_test_many();
     // run_test_one();
     // run_speed_benchmark();

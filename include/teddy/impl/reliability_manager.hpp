@@ -47,36 +47,6 @@ namespace teddy
         : public diagram_manager<double, Degree, Domain>
     {
     public:
-        using probability_t = double;
-
-        /**
-         *  Homogenous system.
-         *  Probabilities are stored in vector of arrays.
-         */
-        template<uint_t N>
-        static auto probabilities
-            ( degrees::fixed<N>
-            , domains::fixed<N> ) -> std::vector<std::array<double, N>>;
-
-        /**
-         *  Nonhomogenous system optimized for memory usage.
-         *  Probabilities are stored in vector of vectors.
-         */
-        static auto probabilities
-            ( degrees::mixed
-            , domains::mixed ) -> std::vector<std::vector<double>>;
-
-        /**
-         *  Nonhomogenous system optimized for speed.
-         *  Probabilities are stored in vector of arrays.
-         */
-        template<uint_t N>
-        static auto probabilities
-            ( degrees::fixed<N>
-            , domains::mixed ) -> std::vector<std::array<double, N>>;
-
-
-        using probabilities_t = decltype(probabilities(Degree(), Domain({})));
         using diagram_t
             = typename diagram_manager<double, Degree, Domain>::diagram_t;
 

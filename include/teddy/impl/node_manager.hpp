@@ -60,7 +60,7 @@ namespace teddy
     }
 
     template<class T>
-    concept domain = domains::is_mixed<T>()() or domains::is_fixed<T>()();
+    concept domain = domains::is_mixed<T>()() || domains::is_fixed<T>()();
 
     template<class F>
     concept uint_to_bool = requires (F f, uint_t x)

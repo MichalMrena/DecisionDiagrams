@@ -37,20 +37,22 @@ test_reliability: $(BUILD_DIR)/test_reliability
 
 experiment: $(BUILD_DIR)/experiment
 
+examples: $(BUILD_DIR)/examples
+
 $(BUILD_DIR)/%: $(BUILD_DIR)/%.cpp.o
 	@echo $(LINK_NOTICE)
 	$(CXX) $< -o $@ $(LDFLAGS)
 
 $(BUILD_DIR)/%.cpp.o: src/%.cpp
 	@echo $(COMPILE_NOTICE)
-	mkdir -p $(dir $@)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # My precious see:
 # https://stackoverflow.com/questions/42830131/an-unexpected-rm-occur-after-make
 .PRECIOUS: $(OBJS)
 
-.PHONY: clean main test test_reliability experiment install
+.PHONY: clean main test test_reliability experiment install examples
 
 clean:
 	rm -r ./build

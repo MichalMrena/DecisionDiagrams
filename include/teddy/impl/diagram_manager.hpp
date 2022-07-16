@@ -799,7 +799,7 @@ namespace teddy
             auto const count = nodes_.domain_product(0, lastLevel + 1);
             [[maybe_unused]]
             auto const dist  = static_cast<std::size_t>(
-                                   std::ranges::distance(first, last));
+                                   std::distance(first, last));
             assert(dist > 0 && dist == count);
         }
 
@@ -1300,7 +1300,7 @@ namespace teddy
         auto memo = std::unordered_map<node_t*, node_t*>();
         auto const go = [this, &memo, i, v](auto&& self, auto const n)
         {
-            auto memoIt = memo.find(n);
+            auto const memoIt = memo.find(n);
             if (memoIt != std::end(memo))
             {
                 return memoIt->second;
@@ -1321,8 +1321,10 @@ namespace teddy
                     return self(self, n->get_son(k));
                 });
 
-            auto const newN
-                = nodes_.internal_node(n->get_index(), std::move(sons));
+            auto const newN = nodes_.internal_node(
+                n->get_index(),
+                std::move(sons)
+            );
             memo.emplace(n, newN);
             return newN;
         };
