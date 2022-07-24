@@ -84,7 +84,7 @@ namespace teddy
          */
         auto equals (diagram other) const -> bool;
 
-    private:
+    public:
         explicit diagram (node_t*);
         auto get_root () const -> node_t*;
 

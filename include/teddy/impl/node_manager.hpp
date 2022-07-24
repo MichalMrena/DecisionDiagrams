@@ -174,6 +174,8 @@ namespace teddy
 
         auto is_valid_var_value (index_t, uint_t) const -> bool;
 
+        auto run_deferred () -> void;
+
         static auto dec_ref_count (node_t*) -> void;
 
     private:
@@ -184,7 +186,7 @@ namespace teddy
         auto adjust_tables () -> void;
         auto adjust_caches () -> void;
 
-        auto swap_vars (index_t) -> void;
+        auto swap_with_next_var (index_t) -> void;
         auto swap_node (node_t*) -> void;
         auto dec_ref_try_gc (node_t*) -> void;
 
@@ -197,7 +199,11 @@ namespace teddy
         template<class ForEachNode>
         auto to_dot_graph_common (std::ostream&, ForEachNode&&) const -> void;
 
+        auto deferr_gc_reorder () -> void;
+
         static auto check_distinct (std::vector<index_t> const&) -> bool;
+
+        static auto can_be_gced (node_t*) -> bool;
 
     private:
         using unique_table_t = unique_table<Data, Degree>;
@@ -215,7 +221,8 @@ namespace teddy
         double                          cacheRatio_;
         double                          gcRatio_;
         std::size_t                     nextTableAdjustment_;
-        bool                            reorderEnabled_;
+        bool                            autoReorderEnabled_;
+        bool                            gcReorderDeferred_;
     };
 
     template<class Data, degree D>
@@ -302,7 +309,8 @@ namespace teddy
         cacheRatio_          (0.5),
         gcRatio_             (0.05),
         nextTableAdjustment_ (230),
-        reorderEnabled_      (false)
+        autoReorderEnabled_  (false),
+        gcReorderDeferred_   (false)
     {
         assert(levelToIndex_.size() == this->get_var_count());
         assert(check_distinct(levelToIndex_));
@@ -345,7 +353,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::set_auto_reorder
         (bool const reorder) -> void
     {
-        reorderEnabled_ = reorder;
+        autoReorderEnabled_ = reorder;
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -543,7 +551,7 @@ namespace teddy
             while (it != end)
             {
                 auto const n = *it;
-                if (0 == n->get_ref_count() and not n->is_marked())
+                if (can_be_gced(n))
                 {
                     this->for_each_son(n, dec_ref_count);
                     it = table.erase(it);
@@ -558,7 +566,7 @@ namespace teddy
 
         for (auto& t : terminals_)
         {
-            if (t and 0 == t->get_ref_count() and not t->is_marked())
+            if (t && can_be_gced(t))
             {
                 this->delete_node(t);
                 t = nullptr;
@@ -567,14 +575,12 @@ namespace teddy
 
         for (auto& s : specials_)
         {
-            if (s and 0 == s->get_ref_count() and not s->is_marked())
+            if (s && can_be_gced(s))
             {
                 this->delete_node(s);
                 s = nullptr;
             }
         }
-
-        opCache_.rm_unused();
 
         debug::out( before - nodeCount_, " nodes collected."
                   , " Now there are ", nodeCount_, " unique nodes.\n" );
@@ -713,6 +719,18 @@ namespace teddy
         (index_t const i, uint_t const v) const -> bool
     {
         return v < domains_[i];
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::run_deferred
+        () -> void
+    {
+        if (gcReorderDeferred_)
+        {
+            this->collect_garbage();
+            opCache_.clear();
+            this->sift_vars();
+        }
     }
 
     template<class Data, degree Degree, domain Domain>
@@ -879,28 +897,40 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::new_node
         (Args&&... args) -> node_t*
     {
-        if (pool_.available_node_count() == 0)
+        if (autoReorderEnabled_)
         {
-            auto const growThreshold = static_cast<std::size_t>(
-                gcRatio_ * static_cast<double>(pool_.main_pool_size()));
-            this->collect_garbage();
-            if (pool_.available_node_count() < growThreshold)
+            // GC + reorder will be done after current
+            // high level operations finishes.
+            // Until then, just create a new pool.
+
+            if (pool_.available_node_count() == 0)
             {
                 pool_.grow();
+                this->deferr_gc_reorder();
             }
+        }
+        else
+        {
+            // Run GC. If not enough nodes are collected,
+            // preventively create a new pool.
 
-            // TODO
-            // if (reorderEnabled_)
-            // {
-            //     this->sift_vars();
-            // }
+            if (pool_.available_node_count() == 0)
+            {
+                auto const growThreshold = static_cast<std::size_t>(
+                    gcRatio_ * static_cast<double>(pool_.main_pool_size()));
+                this->collect_garbage();
+                opCache_.rm_unused();
+                if (pool_.available_node_count() < growThreshold)
+                {
+                    pool_.grow();
+                }
+            }
         }
 
         if (nodeCount_ >= nextTableAdjustment_)
         {
-            assert(nodeCount_ == nextTableAdjustment_);
-
-            // When the number of nodes doubles, adjust cache and table sizes.
+            // When the number of nodes doubles,
+            // adjust cache and table sizes.
             this->adjust_tables();
             this->adjust_caches();
             nextTableAdjustment_ *= 2;
@@ -914,6 +944,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::delete_node
         (node_t* const n) -> void
     {
+        assert(not n->is_marked());
         --nodeCount_;
         n->set_unused();
         pool_.destroy(n);
@@ -992,6 +1023,8 @@ namespace teddy
             labels.emplace_back( get_id_str(n)
                                + R"( [label = ")"
                                + make_label(n)
+                               + R"(", tooltip = ")"
+                               + std::to_string(n->get_ref_count())
                                + R"("];)" );
 
             if (n->is_terminal())
@@ -1057,6 +1090,13 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::deferr_gc_reorder
+        () -> void
+    {
+        gcReorderDeferred_ = true;
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::check_distinct
         (std::vector<index_t> const& is) -> bool
     {
@@ -1078,20 +1118,25 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::can_be_gced
+        (node_t* const n) -> bool
+    {
+        return n->get_ref_count() == 0 && not n->is_marked();
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::swap_node
         (node_t* const node) -> void
     {
         auto const mkmatrix = [](auto const nRow, auto const nCol)
         {
-            auto constexpr IsFixedDegree = degrees::is_fixed<Degree>()();
-            if constexpr (IsFixedDegree)
+            if constexpr (degrees::is_fixed<Degree>()())
             {
                 auto constexpr N = Degree()();
                 return std::array<std::array<node_t*, N>, N> {};
             }
             else
             {
-                // TODO niečo kompaktnejšie, ideálne na stacku
                 auto const row = std::vector<node_t*>(nCol, nullptr);
                 return std::vector<std::vector<node_t*>>(nRow, row);
             }
@@ -1113,7 +1158,7 @@ namespace teddy
             for (auto sk = 0u; sk < sonDomain; ++sk)
             {
                 auto const justUseSon = son->is_terminal()
-                                     or son->get_index() != nextIndex;
+                                     || son->get_index() != nextIndex;
                 cofactorMatrix[nk][sk] = justUseSon
                     ? son
                     : son->get_son(sk);
@@ -1121,21 +1166,20 @@ namespace teddy
         }
 
         node->set_index(nextIndex);
-        node->set_sons(this->make_sons(nextIndex, [&, this](auto const nk)
+        auto newSons = this->make_sons(nextIndex, [&, this](auto const nk)
         {
             return this->internal_node(nodeIndex, this->make_sons(nodeIndex,
                 [&](auto const sk)
             {
                 return cofactorMatrix[sk][nk];
             }));
-        }));
+        });
+        // TODO ak je node redundant a ma 0 referencii, moze sa zmazat
+        node->set_sons(std::move(newSons));
         this->for_each_son(node, id_inc_ref_count<Data, Degree>);
         this->for_each_son(node, id_set_notmarked<Data, Degree>);
         this->for_each_son(nodeIndex, oldSons, [this](auto const os)
         {
-            // TODO are you sure about GC?
-            // TODO asi ano, lebo to ovplyvnuje pocet nodov,
-            // ktory je pri siftovani rozhodujuci
             this->dec_ref_try_gc(os);
         });
     }
@@ -1146,23 +1190,38 @@ namespace teddy
     {
         n->dec_ref_count();
 
-        if (n->get_ref_count() > 0 || n->is_terminal())
+        if (not can_be_gced(n))
         {
             return;
         }
 
-        this->for_each_son(n, [this](auto const s)
+        if (n->is_internal())
         {
-            this->dec_ref_try_gc(s);
-        });
+            this->for_each_son(n, [this](auto const s)
+            {
+                this->dec_ref_try_gc(s);
+            });
 
-        auto const hash = this->node_hash(n->get_index(), n->get_sons());
-        uniqueTables_[n->get_index()].erase(n, hash);
+            auto const hash = this->node_hash(n->get_index(), n->get_sons());
+            uniqueTables_[n->get_index()].erase(n, hash);
+        }
+        else
+        {
+            if (is_special(n->get_value()))
+            {
+                specials_[special_val_to_index(n->get_value())] = nullptr;
+            }
+            else
+            {
+                terminals_[n->get_value()] = nullptr;
+            }
+        }
+
         this->delete_node(n);
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::swap_vars
+    auto node_manager<Data, Degree, Domain>::swap_with_next_var
         (index_t const i) -> void
     {
         auto const iLevel    = this->get_level(i);
@@ -1204,14 +1263,14 @@ namespace teddy
 
         auto const move_var_down = [this](auto const index)
         {
-            this->swap_vars(index);
+            this->swap_with_next_var(index);
         };
 
         auto const move_var_up = [this](auto const index)
         {
             auto const level     = this->get_level(index);
             auto const prevIndex = this->get_index(level - 1);
-            this->swap_vars(prevIndex);
+            this->swap_with_next_var(prevIndex);
         };
 
         auto const place_variable = [&, this](auto const index)
@@ -1257,13 +1316,15 @@ namespace teddy
                   , nodeCount_, ".\n" );
 
         auto const siftOrder = get_sift_order();
-        for (auto pair : siftOrder)
+        for (auto const pair : siftOrder)
         {
             place_variable(pair.index);
         }
 
         debug::out( "node_manager: Done sifting. Node count after "
                   , nodeCount_, ".\n" );
+
+        gcReorderDeferred_ = false;
     }
 }
 

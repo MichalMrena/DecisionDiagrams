@@ -41,6 +41,7 @@ namespace teddy
 
     private:
         auto current_pool () const -> node_t*;
+        auto current_pool_end () const -> node_t*;
 
         auto swap (node_pool&) -> void;
 
@@ -149,7 +150,7 @@ namespace teddy
     auto node_pool<Data, D>::create
         (Args&&... as) -> node_t*
     {
-        assert(availableNodes_ > 0);
+         assert(availableNodes_ > 0);
         --availableNodes_;
 
         auto p = static_cast<node_t*>(nullptr);
@@ -197,6 +198,15 @@ namespace teddy
         return overflowPools_.empty()
             ? mainPool_
             : overflowPools_[currentPoolIndex_];
+    }
+
+    template<class Data, degree D>
+    auto node_pool<Data, D>::current_pool_end
+        () const -> node_t*
+    {
+        return overflowPools_.empty()
+            ? mainPool_ + mainPoolSize_
+            : overflowPools_[currentPoolIndex_] + overflowPoolSize_;
     }
 
     template<class Data, degree D>

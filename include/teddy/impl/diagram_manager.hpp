@@ -637,6 +637,11 @@ namespace teddy
          */
         auto set_gc_ratio (double ratio) -> void;
 
+        /**
+         *  \brief TODO
+         */
+        auto set_auto_reorder (bool) -> void;
+
     protected:
         using node_t = typename diagram<Data, Degree>::node_t;
 
@@ -1033,7 +1038,12 @@ namespace teddy
         };
 
         auto const r = go(go, d1.get_root(), d2.get_root());
+        // TODO ak je zapnuty auto reorder, bolo by asi dobre ich vzdy redukovat
+        // aj ked to nepomoze inym, uz existujucim...
         auto const d = diagram_t(r);
+        nodes_.run_deferred();
+        // TODO maybe?
+        // return this->reduce(d);
         return d;
     }
 
@@ -1445,6 +1455,13 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::set_auto_reorder
+        (bool const r) -> void
+    {
+        nodes_.set_auto_reorder(r);
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto diagram_manager<Data, Degree, Domain>::gc
         () -> void
     {
@@ -1492,7 +1509,7 @@ namespace teddy
         (node_t* const root, F f) -> node_t*
     {
         auto memo = std::unordered_map<node_t*, node_t*>();
-        auto const go = [this, &f, &memo](auto&& go_, auto const n)
+        auto const go = [this, f, &memo](auto&& go_, auto const n)
         {
             auto const it = memo.find(n);
             if (memo.end() != it)
@@ -1509,7 +1526,7 @@ namespace teddy
             {
                 auto const i = n->get_index();
                 auto const newNode = nodes_.internal_node(i, nodes_.make_sons(i,
-                    [&go_, &f, n](auto const k)
+                    [&go_, f, n](auto const k)
                 {
                     return go_(go_, n->get_son(k));
                 }));
