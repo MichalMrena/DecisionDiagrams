@@ -178,8 +178,6 @@ namespace teddy
         static auto dec_ref_count (node_t*) -> void;
 
     private:
-        auto node_hash    (index_t, sons_t const&) const -> std::size_t;
-        auto node_equal   (node_t*, sons_t const&) const -> bool;
         auto is_redundant (index_t, sons_t const&) const -> bool;
 
         auto adjust_tables () -> void;
@@ -425,11 +423,8 @@ namespace teddy
         }
         else
         {
-            auto const eq = std::bind_front(&node_manager::node_equal, this);
-
-            auto& table         = uniqueTables_[i];
-            auto const hash     = this->node_hash(i, sons);
-            auto const existing = table.find(sons, hash, eq);
+            auto& table = uniqueTables_[i];
+            auto const [existing, hash] = table.find(sons, domains_[i]);
             if (existing)
             {
                 ret = existing;
@@ -841,34 +836,6 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::node_hash
-        (index_t const i, sons_t const& ss) const -> std::size_t
-    {
-        auto result = std::size_t(0);
-        for (auto k = 0u; k < domains_[i]; ++k)
-        {
-            auto const hash = std::hash<node_t*>()(ss[k]);
-            result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
-        }
-        return result;
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::node_equal
-        (node_t* const n, sons_t const& ss) const -> bool
-    {
-        auto const i = n->get_index();
-        for (auto k = 0u; k < domains_[i]; ++k)
-        {
-            if (n->get_son(k) != ss[k])
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::is_redundant
         (index_t const i, sons_t const& sons) const -> bool
     {
@@ -889,10 +856,9 @@ namespace teddy
         debug::out( "node_manager: Adjusting unique tables."
                   , " Node count is ", nodeCount_, ".\n" );
 
-        auto const hash = std::bind_front(&node_manager::node_hash, this);
-        for (auto& t : uniqueTables_)
+        for (auto i = 0u; i < uniqueTables_.size(); ++i)
         {
-            t.adjust_capacity(hash);
+            uniqueTables_[i].adjust_capacity(domains_[i]);
         }
     }
 
@@ -1188,7 +1154,6 @@ namespace teddy
                 return cofactorMatrix[sk][nk];
             }));
         });
-        // TODO ak je node redundant a ma 0 referencii, moze sa zmazat
         node->set_sons(std::move(newSons));
         this->for_each_son(node, id_inc_ref_count<Data, Degree>);
         this->for_each_son(node, id_set_notmarked<Data, Degree>);
@@ -1216,8 +1181,7 @@ namespace teddy
                 this->dec_ref_try_gc(s);
             });
 
-            auto const hash = this->node_hash(n->get_index(), n->get_sons());
-            uniqueTables_[n->get_index()].erase(n, hash);
+            uniqueTables_[n->get_index()].erase(n, domains_[n->get_index()]);
         }
         else
         {
@@ -1245,9 +1209,11 @@ namespace teddy
         {
             this->swap_node_with_next(n);
         }
-        auto const hash = std::bind_front(&node_manager::node_hash, this);
-        uniqueTables_[index].adjust_capacity(hash);
-        uniqueTables_[nextIndex].merge(tmpTable, hash);
+        uniqueTables_[index].adjust_capacity(domains_[index]);
+        uniqueTables_[nextIndex].merge(
+            std::move(tmpTable),
+            domains_[nextIndex]
+        );
 
         using std::swap;
         swap(levelToIndex_[level], levelToIndex_[1 + level]);

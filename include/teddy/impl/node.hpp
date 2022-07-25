@@ -78,7 +78,7 @@ namespace teddy
         node  (index_t, sons_t&&);
         node  (node const&) = delete;
         node  (node&&) = delete;
-        // ~node () = default; // TODO zatial nefunguje v clangu !!!
+        // ~node () = default; // TODO zatial nefunguje v clangu
         // ~node () requires(degrees::is_mixed<D>()());
         ~node ();
 

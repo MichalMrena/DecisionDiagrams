@@ -80,36 +80,140 @@ namespace teddy
         using const_iterator   = unique_table_it<cbucket_iterator, Data, D>;
 
     public:
+        /**
+         *  \brief Initializes empty table.
+         */
         unique_table ();
-        unique_table (unique_table&&);
+
+        /**
+         *  \brief Move constructs tbale from \p other .
+         */
+        unique_table (unique_table&& other);
 
     public:
-        template<class Eq>
-        auto find (sons_t const&, hash_t, Eq&&) const -> node_t*;
+        /**
+         *  \brief Tries to find internal node.
+         *  \param sons Sons of the wanted node.
+         *  \param domain Number of sons.
+         *  \return Pointer to the found node, nullptr if not found.
+         *          Hash of the node that can be used in insertion.
+         */
+        auto find ( sons_t const& sons
+                  , std::size_t   domain ) const -> std::pair<node_t*, hash_t>;
 
-        template<class Hash>
-        auto merge (unique_table&, Hash&&) -> void;
+        /**
+         *  \brief Adds all nodes from \p other into this table.
+         *  Adjusts capacity if necessary.
+         *  \param other Table to merge into this one.
+         *  \param domain Number of sons in this and \p other .
+         */
+        auto merge (unique_table other, std::size_t domain) -> void;
 
-        auto insert (node_t*, hash_t) -> node_t*;
-        auto erase  (iterator)        -> iterator;
-        auto erase  (node_t*, hash_t) -> iterator;
-        auto size   () const          -> std::size_t;
-        auto clear  ()                -> void;
-        auto begin  ()                -> iterator;
-        auto end    ()                -> iterator;
-        auto begin  () const          -> const_iterator;
-        auto end    () const          -> const_iterator;
+        /**
+         *  \brief Inserts \p node using pre-computed \p hash .
+         *  \param node Node to be inserted.
+         *  \param hash Hash value of \p node .
+         */
+        auto insert (node_t* node, hash_t hash) -> void;
 
-        template<class Hash>
-        auto adjust_capacity (Hash&&) -> void;
+        /**
+         *  \brief Erases node pointed to by \p it .
+         *  \param it Iterator to the node to be deleted.
+         *  \return Iterator to the next node.
+         */
+        auto erase (iterator it) -> iterator;
+
+        /**
+         *  \brief Erases \p node .
+         *  \param node Node to be erased.
+         *  \param domain Number of sons.
+         *  \return Iterator to the next node.
+         */
+        auto erase (node_t* node, std::size_t domain) -> iterator;
+
+        /**
+         *  \brief Adjusts capacity of the table (number of buckets).
+         *  \param domain Number of sons.
+         */
+        auto adjust_capacity (std::size_t domain) -> void;
+
+        /**
+         *  \return Number of nodes in the table.
+         */
+        auto size () const -> std::size_t;
+
+        /**
+         *  \brief Clears the table.
+         */
+        auto clear () -> void;
+
+        /**
+         *  \return Begin iterator.
+         */
+        auto begin () -> iterator;
+
+        /**
+         *  \return End iterator.
+         */
+        auto end () -> iterator;
+
+        /**
+         *  \return Const begin iterator.
+         */
+        auto begin () const -> const_iterator;
+
+        /**
+         *  \return Const end iterator.
+         */
+        auto end () const -> const_iterator;
 
     private:
-        template<class Hash>
-        auto rehash (std::size_t, Hash&&) -> void;
+        /**
+         *  \brief Adjusts capacity of the table (number of buckets).
+         *  Does nothing if actual capacity is >= \p newCapacity .
+         *  \param newCapacity New capacity.
+         *  \param domain Number of sons.
+         */
+        auto rehash (std::size_t newCapacity, std::size_t domain) -> void;
 
-        auto capacity    () const -> std::size_t;
+        /**
+         *  \return Current capacity.
+         */
+        auto capacity () const -> std::size_t;
+
+        /**
+         *  \return Current load factor.
+         */
         auto load_factor () const -> double;
-        auto insert_impl (node_t*, hash_t) -> node_t*;
+
+        /**
+         *  \brief Inserts \p node using pre-computed \p hash .
+         *  Does NOT increase size.
+         *  \param node Node to be inserted.
+         *  \param hash Hash value of \p node .
+         */
+        auto insert_impl (node_t* node, hash_t hash) -> node_t*;
+
+        /**
+         *  \brief Computes hash value of a node with \p sons .
+         *  \param sons Sons of the node.
+         *  \param domain Number of sons.
+         *  \return Hash value of the node.
+         */
+        static auto node_hash ( sons_t const& sons
+                              , std::size_t   domain ) -> hash_t;
+
+        /**
+         *  \brief Compares two nodes for equality
+         *  (whether they have the same sons).
+         *  \param node First node.
+         *  \param sons Sons of the second node.
+         *  \param domain Number of sons.
+         *  \return True if the nodes are equal, false otherwise.
+         */
+        static auto node_equals ( node_t*       node
+                                , sons_t const& sons
+                                , std::size_t   domain ) -> bool;
 
     private:
         std::vector<node_t*> buckets_;
@@ -139,6 +243,7 @@ namespace teddy
         apply_cache (apply_cache&&);
 
     public:
+        // TODO bez zablon, posielat rovno ID
         template<bin_op O>
         auto find (node_t*, node_t*) -> node_t*;
 
@@ -169,7 +274,6 @@ namespace teddy
     inline auto table_base::gte_capacity
         (std::size_t const target) -> std::size_t
     {
-        // TODO use ranges
         auto const p  = [target](auto const c){ return c > target; };
         auto const it = std::find_if( std::begin(Capacities)
                                     , std::end(Capacities)
@@ -435,51 +539,49 @@ namespace teddy
     }
 
     template<class Data, degree D>
-    template<class Eq>
     auto unique_table<Data, D>::find
-        (sons_t const& ss, hash_t const h, Eq&& eq) const -> node_t*
+        ( sons_t const&     sons
+        , std::size_t const domain ) const -> std::pair<node_t*, hash_t>
     {
-        auto const index = h % buckets_.size();
+        auto const hash  = node_hash(sons, domain);
+        auto const index = hash % buckets_.size();
         auto current     = buckets_[index];
         while (current)
         {
-            if (eq(current, ss))
+            if (node_equals(current, sons, domain))
             {
-                return current;
+                return {current, hash};
             }
             current = current->get_next();
         }
-        return nullptr;
+        return {nullptr, hash};
     }
 
     template<class Data, degree D>
-    template<class Hash>
     auto unique_table<Data, D>::merge
-        (unique_table& rhs, Hash&& hash) -> void
+        (unique_table other, std::size_t const domain) -> void
     {
-        size_ += rhs.size();
-        this->adjust_capacity(hash);
+        size_ += other.size();
+        this->adjust_capacity(domain);
 
-        auto const end = std::end(rhs);
-        auto it = std::begin(rhs);
+        auto const end = std::end(other);
+        auto it = std::begin(other);
         while (it != end)
         {
-            auto const n = *it;
+            auto const node = *it;
             ++it;
 
-            n->set_next(nullptr);
-            this->insert_impl(n, hash(n->get_index(), n->get_sons()));
+            node->set_next(nullptr);
+            this->insert_impl(node, node_hash(node->get_sons(), domain));
         }
-        rhs.clear();
     }
 
     template<class Data, degree D>
     auto unique_table<Data, D>::insert
-        (node_t* const n, hash_t const h) -> node_t*
+        (node_t* const node, hash_t const hash) -> void
     {
-        auto const ret = this->insert_impl(n, h);
+        this->insert_impl(node, hash);
         ++size_;
-        return ret;
     }
 
     template<class Data, degree D>
@@ -511,16 +613,25 @@ namespace teddy
 
     template<class Data, degree D>
     auto unique_table<Data, D>::erase
-        (node_t* const n, hash_t const h) -> iterator
+        (node_t* const node, std::size_t const domain) -> iterator
     {
-        auto const index = static_cast<std::ptrdiff_t>(h % buckets_.size());
-        auto       it    = iterator( std::begin(buckets_) + index
-                                   , std::end(buckets_) );
-        while (*it != n)
+        auto const hash  = node_hash(node->get_sons(), domain);
+        auto const index = static_cast<std::ptrdiff_t>(hash % buckets_.size());
+        auto it = iterator(std::begin(buckets_) + index, std::end(buckets_));
+        while (*it != node)
         {
             ++it;
         }
         return this->erase(it);
+    }
+
+    template<class Data, degree D>
+    auto unique_table<Data, D>::adjust_capacity
+        (std::size_t const domain) -> void
+    {
+        auto const aproxCapacity = 4 * (size_ / 3);
+        auto const newCapacity   = table_base::gte_capacity(aproxCapacity);
+        this->rehash(newCapacity, domain);
     }
 
     template<class Data, degree D>
@@ -567,21 +678,10 @@ namespace teddy
     }
 
     template<class Data, degree D>
-    template<class Hash>
-    auto unique_table<Data, D>::adjust_capacity
-        (Hash&& h) -> void
-    {
-        auto const aproxCapacity = 4 * (size_ / 3);
-        auto const newCapacity   = table_base::gte_capacity(aproxCapacity);
-        this->rehash(newCapacity, h);
-    }
-
-    template<class Data, degree D>
-    template<class Hash>
     auto unique_table<Data, D>::rehash
-        (std::size_t const newCapacity, Hash&& hash) -> void
+        (std::size_t const newCapacity, std::size_t const domain) -> void
     {
-        if (buckets_.size() == newCapacity)
+        if (buckets_.size() >= newCapacity)
         {
             return;
         }
@@ -597,9 +697,9 @@ namespace teddy
             while (bucket)
             {
                 auto const next = bucket->get_next();
-                auto const h = hash(bucket->get_index(), bucket->get_sons());
+                auto const hash = node_hash(bucket->get_sons(), domain);
                 bucket->set_next(nullptr);
-                this->insert_impl(bucket, h);
+                this->insert_impl(bucket, hash);
                 bucket = next;
             }
         };
@@ -624,16 +724,45 @@ namespace teddy
 
     template<class Data, degree D>
     auto unique_table<Data, D>::insert_impl
-        (node_t* const n, hash_t const h) -> node_t*
+        (node_t* const node, hash_t const hash) -> node_t*
     {
-        auto const index  = h % buckets_.size();
+        auto const index  = hash % buckets_.size();
         auto const bucket = buckets_[index];
         if (bucket)
         {
-            n->set_next(bucket);
+            node->set_next(bucket);
         }
-        buckets_[index] = n;
-        return n;
+        buckets_[index] = node;
+        return node;
+    }
+
+    template<class Data, degree D>
+    auto unique_table<Data, D>::node_hash
+        (sons_t const& sons, std::size_t const domain ) -> hash_t
+    {
+        auto result = hash_t(0);
+        for (auto k = 0u; k < domain; ++k)
+        {
+            auto const hash = std::hash<node_t*>()(sons[k]);
+            result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
+        }
+        return result;
+    }
+
+    template<class Data, degree D>
+    auto unique_table<Data, D>::node_equals
+        ( node_t* const     node
+        , sons_t const&     sons
+        , std::size_t const domain) -> bool
+    {
+        for (auto k = 0u; k < domain; ++k)
+        {
+            if (node->get_son(k) != sons[k])
+            {
+                return false;
+            }
+        }
+        return true;
     }
 }
 

@@ -718,7 +718,7 @@ namespace teddy::test
         auto const one  = manager.constant(1);
         auto const sup  = manager.constant(max);
         auto const bd   = manager.transform(diagram, utils::not_zero);
-        auto const rd   = manager.reduce(diagram); // TODO Do we need this?
+        // auto const rd   = manager.reduce(diagram);
 
         if (not manager.template apply<AND>(bd, zero).equals(zero))
         {
@@ -745,67 +745,67 @@ namespace teddy::test
             return test_result(false, "XOR annihilate failed.");
         }
 
-        if (not manager.template apply<MULTIPLIES<2>>(rd, zero).equals(zero))
+        if (not manager.template apply<MULTIPLIES<2>>(bd, zero).equals(zero))
         {
             return test_result(false, "MULTIPLIES absorbing failed.");
         }
 
-        if (not manager.template apply<MULTIPLIES<4>>(rd, one).equals(rd))
+        if (not manager.template apply<MULTIPLIES<4>>(bd, one).equals(bd))
         {
             return test_result(false, "MULTIPLIES neutral failed.");
         }
 
-        if (not manager.template apply<PLUS<4>>(rd, zero).equals(rd))
+        if (not manager.template apply<PLUS<4>>(bd, zero).equals(bd))
         {
             return test_result(false, "PLUS neutral failed.");
         }
 
-        if (not manager.template apply<EQUAL_TO>(rd, rd).equals(one))
+        if (not manager.template apply<EQUAL_TO>(bd, bd).equals(one))
         {
             return test_result(false, "EQUAL_TO annihilate failed.");
         }
 
-        if (not manager.template apply<NOT_EQUAL_TO>(rd, rd).equals(zero))
+        if (not manager.template apply<NOT_EQUAL_TO>(bd, bd).equals(zero))
         {
             return test_result(false, "NOT_EQUAL_TO annihilate failed.");
         }
 
-        if (not manager.template apply<LESS>(rd, rd).equals(zero))
+        if (not manager.template apply<LESS>(bd, bd).equals(zero))
         {
             return test_result(false, "LESS annihilate failed.");
         }
 
-        if (not manager.template apply<GREATER>(rd, rd).equals(zero))
+        if (not manager.template apply<GREATER>(bd, bd).equals(zero))
         {
             return test_result(false, "GREATER annihilate failed.");
         }
 
-        if (not manager.template apply<LESS_EQUAL>(rd, rd).equals(one))
+        if (not manager.template apply<LESS_EQUAL>(bd, bd).equals(one))
         {
             return test_result(false, "LESS_EQUAL annihilate failed.");
         }
 
-        if (not manager.template apply<GREATER_EQUAL>(rd, rd).equals(one))
+        if (not manager.template apply<GREATER_EQUAL>(bd, bd).equals(one))
         {
             return test_result(false, "GREATER_EQUAL annihilate failed.");
         }
 
-        if (not manager.template apply<MIN>(rd, zero).equals(zero))
+        if (not manager.template apply<MIN>(bd, zero).equals(zero))
         {
             return test_result(false, "MIN absorbing failed.");
         }
 
-        if (not manager.template apply<MIN>(rd, sup).equals(rd))
+        if (not manager.template apply<MIN>(bd, sup).equals(bd))
         {
             return test_result(false, "MIN neutral failed.");
         }
 
-        if (not manager.template apply<MAX>(rd, sup).equals(sup))
+        if (not manager.template apply<MAX>(bd, sup).equals(sup))
         {
             return test_result(false, "MAX absoring failed.");
         }
 
-        if (not manager.template apply<MAX>(rd, zero).equals(rd))
+        if (not manager.template apply<MAX>(bd, zero).equals(bd))
         {
             return test_result(false, "MAX neutral failed.");
         }
@@ -1232,16 +1232,16 @@ auto run_test_one()
 
     auto constexpr M     = 3;
     auto const varCount  = 15;
-    auto const nodeCount = 1'000;
+    auto const nodeCount = 200;
     auto const domains   = teddy::test::random_domains<M>(varCount, rngDomains);
     auto const order     = teddy::test::random_order(varCount, rngOrder);
     auto const termCount = 20;
     auto const termSize  = 5;
 
-    // auto bddM   = teddy::bdd_manager(varCount, nodeCount, nodeCount);
-    // bddM.set_auto_reorder(true);
-    auto mddM   = teddy::mdd_manager<M>(varCount, nodeCount);
-    mddM.set_auto_reorder(true);
+    auto bddM   = teddy::bdd_manager(varCount, nodeCount, nodeCount);
+    bddM.set_auto_reorder(true);
+    // auto mddM   = teddy::mdd_manager<M>(varCount, nodeCount);
+    // mddM.set_auto_reorder(true);
     // auto imddM  = teddy::imdd_manager(varCount, nodeCount, domains, order);
     // auto ifmddM = teddy::ifmdd_manager<M>(varCount, nodeCount, domains, order);
 
@@ -1252,8 +1252,8 @@ auto run_test_one()
         ? ts::wrap_red(std::to_string(initSeed))
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
-    // teddy::test::test_one("BDD manager",   bddM,   expr, rngsTest[0]);
-    teddy::test::test_one("MDD manager",   mddM,   expr, rngsTest[1]);
+    teddy::test::test_one("BDD manager",   bddM,   expr, rngsTest[0]);
+    // teddy::test::test_one("MDD manager",   mddM,   expr, rngsTest[1]);
     // teddy::test::test_one("iMDD manager",  imddM,  expr, rngsTest[2]);
     // teddy::test::test_one("ifMDD manager", ifmddM, expr, rngsTest[3]);
 }
@@ -1308,23 +1308,6 @@ auto main () -> int
     run_test_many();
     // run_test_one();
     // run_speed_benchmark();
-
-// TODO zistit preco pri neredukovanych diagramoch neprejde *_vector
-// mrena@LAPTOP-M55UPRNC:~/Projects/DecisionDiagrams$ ./build/release/test
-// Seed is 1135204627.
-// MDD manager
-//   node counts: 2193 835 1367 1670 2592 1129 1642 3002 1416 2309 1902 2457
-
-//   evaluate         ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓
-//   fold             ✓ x ✓ x x ✓ ✓ x x ✓ ✓ x
-//   gc               ✓ x ✓ x x ✓ ✓ x x ✓ ✓ x
-//   satisfy_count    ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓
-//   satisfy_all      ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓
-//   operators        ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓
-//   cofactors        ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓ ✓
-//   from_vector      ✓ x ✓ x x ✓ ✓ x x ✓ ✓ x
-//   to_vector        ✓ x ✓ x x ✓ ✓ x x ✓ ✓ x
-//   var_sift         ✓ x ✓ x x ✓ ✓ x x ✓ ✓ x
 
     std::cout << '\n' << "End of main." << '\n';
     return 0;

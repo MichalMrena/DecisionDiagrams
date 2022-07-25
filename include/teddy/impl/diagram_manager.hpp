@@ -787,10 +787,9 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::from_vector
         (I first, S last) -> diagram_t
     {
-        // TODO
         if (0 == this->get_var_count())
         {
-            assert(first != last and std::next(first) == last);
+            assert(first != last && std::next(first) == last);
             return diagram_t(nodes_.terminal_node(*first));
         }
 
