@@ -560,7 +560,7 @@ namespace teddy::test
         ( diagram_manager<Dat, Deg, Dom>& manager
         , diagram<Dat, Deg> const&        diagram )
     {
-        manager.gc();
+        manager.force_gc();
         auto const totalNodeCount   = manager.node_count();
         auto const diagramNodeCount = manager.node_count(diagram);
         if (totalNodeCount == diagramNodeCount)
@@ -907,9 +907,9 @@ namespace teddy::test
         , diagram<Dat, Deg>&              diagram
         , expr_var const&                 expr )
     {
-        manager.gc();
+        manager.force_gc();
         manager.sift();
-        manager.gc();
+        manager.force_gc();
         auto const actualCount = manager.node_count();
         auto const expectedCount = manager.node_count(diagram);
 
@@ -957,6 +957,17 @@ namespace teddy::test
             return create_diagram(exprs[k], managers[k], fold_e::Left);
         });
 
+        auto sizesNotSifted = teddy::utils::fill_vector(diagram1s.size(),
+            [&managers, &diagram1s](auto const k)
+        {
+            return managers[k].node_count(diagram1s[k]);
+        });
+
+        for (auto& manager : managers)
+        {
+            manager.set_auto_reorder(true);
+        }
+
         auto diagram2s = utils::fill_vector(testCount, [&](auto const k)
         {
             return create_diagram(exprs[k], managers[k], fold_e::Tree);
@@ -968,6 +979,12 @@ namespace teddy::test
             diagram2s[k] = managers[k].reduce(diagram2s[k]);
         }
 
+        auto sizesSifted = teddy::utils::fill_vector(diagram2s.size(),
+            [&managers, &diagram2s](auto const k)
+        {
+            return managers[k].node_count(diagram2s[k]);
+        });
+
         using namespace std::string_view_literals;
         auto const tests = { "evaluate"sv
                            , "fold"sv
@@ -977,8 +994,7 @@ namespace teddy::test
                            , "operators"sv
                            , "cofactors"sv
                            , "from_vector"sv
-                           , "to_vector"sv
-                           , "var_sift"sv };
+                           , "to_vector"sv };
         auto results = std::unordered_map
             <std::string_view, std::vector<std::optional<test_result>>>();
 
@@ -1027,10 +1043,16 @@ namespace teddy::test
         };
 
         std::cout << wrap_yellow(name) << '\n';
-        std::cout << "  node counts: ";
-        for (auto k = 0u; k < testCount; ++k)
+        std::cout << "  node counts default: ";
+        for (auto const s : sizesNotSifted)
         {
-            std::cout << managers[k].node_count(diagram1s[k]) << ' ';
+            std::cout << s << ' ';
+        }
+        std::cout << "\n";
+        std::cout << "  node counts sifted:  ";
+        for (auto const s : sizesSifted)
+        {
+            std::cout << s << ' ';
         }
         std::cout << "\n\n";
 
@@ -1056,8 +1078,6 @@ namespace teddy::test
                 = test_from_vector(managers[k], diagram1s[k], exprs[k]);
             results.at("to_vector")[k]
                 = test_to_vector(managers[k], diagram1s[k]);
-            results.at("var_sift")[k]
-                = test_var_sift(managers[k], diagram1s[k], exprs[k]);
 
             refresh_results();
         }
@@ -1099,8 +1119,6 @@ namespace teddy::test
             << test_from_vector(manager, diagram1, expr)   << '\n';
         std::cout << "To-vector     "
             << test_to_vector(manager, diagram1)           << '\n';
-        // std::cout << "Var-sift      "
-        //     << test_var_sift(manager, diagram1, expr)      << '\n';
     }
 
     template<std::size_t M>
@@ -1182,19 +1200,14 @@ auto run_test_many ()
                                       , domains[k], orders[k] );
     });
 
-    for (auto& m : mddManagers)
-    {
-        m.set_auto_reorder(true);
-    }
-
     auto const seedStr = IsFixedSeed
         ? ts::wrap_red(std::to_string(initSeed))
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
-    // ts::test_many("BDD manager",   bddManagers,   exprs, rngs);
+    ts::test_many("BDD manager",   bddManagers,   exprs, rngs);
     ts::test_many("MDD manager",   mddManagers,   exprs, rngs);
-    // ts::test_many("iMDD manager",  imddManagers,  exprs, rngs);
-    // ts::test_many("ifMDD manager", ifmddManagers, exprs, rngs);
+    ts::test_many("iMDD manager",  imddManagers,  exprs, rngs);
+    ts::test_many("ifMDD manager", ifmddManagers, exprs, rngs);
 }
 
 auto run_test_one()
@@ -1278,7 +1291,7 @@ auto run_speed_benchmark()
             });
             auto const nodeCount  = std::reduce( rs::begin(nodeCounts)
                                                , rs::end(nodeCounts) );
-            m.gc();
+            m.force_gc();
             std::cout << pla << " [" << nodeCount << " nodes] ("
                                      << timeMs    <<" ms)" << '\n';
         }

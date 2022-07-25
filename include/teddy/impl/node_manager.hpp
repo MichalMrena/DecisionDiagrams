@@ -134,8 +134,7 @@ namespace teddy
         auto get_var_count     () const            -> std::size_t;
         auto get_order         () const          -> std::vector<index_t> const&;
         auto get_domains       () const            -> std::vector<uint_t>;
-        auto collect_garbage   ()                  -> void;
-        auto sift_vars         ()                  -> void;
+        auto force_gc          ()                  -> void;
 
         auto to_dot_graph (std::ostream&) const -> void;
         auto to_dot_graph (std::ostream&, node_t*) const -> void;
@@ -186,8 +185,9 @@ namespace teddy
         auto adjust_tables () -> void;
         auto adjust_caches () -> void;
 
-        auto swap_with_next_var (index_t) -> void;
-        auto swap_node (node_t*) -> void;
+        auto sift_variables () -> void;
+        auto swap_variable_with_next (index_t) -> void;
+        auto swap_node_with_next (node_t*) -> void;
         auto dec_ref_try_gc (node_t*) -> void;
 
         template<class... Args>
@@ -200,6 +200,8 @@ namespace teddy
         auto to_dot_graph_common (std::ostream&, ForEachNode&&) const -> void;
 
         auto deferr_gc_reorder () -> void;
+
+        auto collect_garbage () -> void;
 
         static auto check_distinct (std::vector<index_t> const&) -> bool;
 
@@ -536,6 +538,14 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
+    auto node_manager<Data, Degree, Domain>::force_gc
+        () -> void
+    {
+        this->collect_garbage();
+        opCache_.rm_unused();
+    }
+
+    template<class Data, degree Degree, domain Domain>
     auto node_manager<Data, Degree, Domain>::collect_garbage
         () -> void
     {
@@ -729,7 +739,7 @@ namespace teddy
         {
             this->collect_garbage();
             opCache_.clear();
-            this->sift_vars();
+            this->sift_variables();
         }
     }
 
@@ -918,8 +928,9 @@ namespace teddy
             {
                 auto const growThreshold = static_cast<std::size_t>(
                     gcRatio_ * static_cast<double>(pool_.main_pool_size()));
-                this->collect_garbage();
-                opCache_.rm_unused();
+
+                this->force_gc();
+
                 if (pool_.available_node_count() < growThreshold)
                 {
                     pool_.grow();
@@ -1125,7 +1136,7 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::swap_node
+    auto node_manager<Data, Degree, Domain>::swap_node_with_next
         (node_t* const node) -> void
     {
         auto const mkmatrix = [](auto const nRow, auto const nCol)
@@ -1221,32 +1232,34 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::swap_with_next_var
-        (index_t const i) -> void
+    auto node_manager<Data, Degree, Domain>::swap_variable_with_next
+        (index_t const index) -> void
     {
-        auto const iLevel    = this->get_level(i);
-        auto const nextIndex = this->get_index(1 + iLevel);
-        auto tmpTable        = unique_table_t(std::move(uniqueTables_[i]));
+        auto const level     = this->get_level(index);
+        auto const nextIndex = this->get_index(1 + level);
+        auto tmpTable = unique_table_t(std::move(uniqueTables_[index]));
         for (auto const n : tmpTable)
         {
-            this->swap_node(n);
+            this->swap_node_with_next(n);
         }
         auto const hash = std::bind_front(&node_manager::node_hash, this);
-        uniqueTables_[i].adjust_capacity(hash);
+        uniqueTables_[index].adjust_capacity(hash);
         uniqueTables_[nextIndex].merge(tmpTable, hash);
 
-        std::swap(levelToIndex_[iLevel], levelToIndex_[1 + iLevel]);
-        ++indexToLevel_[i];
+        using std::swap;
+        swap(levelToIndex_[level], levelToIndex_[1 + level]);
+        ++indexToLevel_[index];
         --indexToLevel_[nextIndex];
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto node_manager<Data, Degree, Domain>::sift_vars
+    auto node_manager<Data, Degree, Domain>::sift_variables
         () -> void
     {
-        using count_pair = struct { index_t index; std::size_t count; };
+        using count_pair = struct { index_t index_; std::size_t count_; };
 
-        auto const get_sift_order = [this]()
+        // Sorts indices by number of nodes with given index descending.
+        auto const determine_sift_order = [this]()
         {
             auto const varCount = this->get_var_count();
             auto counts = utils::fill_vector(varCount, [this](auto const i)
@@ -1256,69 +1269,73 @@ namespace teddy
             std::sort(std::begin(counts), std::end(counts),
                 [](auto const& l, auto const& r)
             {
-                return l.count > r.count;
+                return l.count_ > r.count_;
             });
             return counts;
         };
 
+        // Moves variable one level down.
         auto const move_var_down = [this](auto const index)
         {
-            this->swap_with_next_var(index);
+            this->swap_variable_with_next(index);
         };
 
+        // Moves variable one level up.
         auto const move_var_up = [this](auto const index)
         {
             auto const level     = this->get_level(index);
             auto const prevIndex = this->get_index(level - 1);
-            this->swap_with_next_var(prevIndex);
+            this->swap_variable_with_next(prevIndex);
         };
 
+        // Tries to place variable on each level.
+        // In the end, restores position with lowest total number of nodes.
         auto const place_variable = [&, this](auto const index)
         {
             auto const lastInternalLevel = this->get_var_count() - 1;
-            auto level        = this->get_level(index);
-            auto optimalLevel = level;
+            auto currentLevel = this->get_level(index);
+            auto optimalLevel = currentLevel;
             auto optimalCount = nodeCount_;
 
             // Sift down.
-            while (level != lastInternalLevel)
+            while (currentLevel != lastInternalLevel)
             {
                 move_var_down(index);
-                ++level;
+                ++currentLevel;
                 if (nodeCount_ < optimalCount)
                 {
                     optimalCount = nodeCount_;
-                    optimalLevel = level;
+                    optimalLevel = currentLevel;
                 }
             }
 
             // Sift up.
-            while (level != 0)
+            while (currentLevel != 0)
             {
                 move_var_up(index);
-                --level;
+                --currentLevel;
                 if (nodeCount_ < optimalCount)
                 {
                     optimalCount = nodeCount_;
-                    optimalLevel = level;
+                    optimalLevel = currentLevel;
                 }
             }
 
             // Restore optimal position.
-            while (level != optimalLevel)
+            while (currentLevel != optimalLevel)
             {
                 move_var_down(index);
-                ++level;
+                ++currentLevel;
             }
         };
 
         debug::out( "node_manager: Sifting variables. Node count before "
                   , nodeCount_, ".\n" );
 
-        auto const siftOrder = get_sift_order();
+        auto const siftOrder = determine_sift_order();
         for (auto const pair : siftOrder)
         {
-            place_variable(pair.index);
+            place_variable(pair.index_);
         }
 
         debug::out( "node_manager: Done sifting. Node count after "

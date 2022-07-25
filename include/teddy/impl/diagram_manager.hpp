@@ -574,13 +574,7 @@ namespace teddy
          *  GC is run automatically so you probably won't need to run
          *  this function yourself.
          */
-        auto gc () -> void;
-
-        /**
-         *  \brief Runs variable sifting algorithm that tries to minimize
-         *  number of nodes.
-         */
-        auto sift () -> void;
+        auto force_gc () -> void;
 
         /**
          *  \brief Returns number of variables for this manager
@@ -638,9 +632,17 @@ namespace teddy
         auto set_gc_ratio (double ratio) -> void;
 
         /**
-         *  \brief TODO
+         *  \brief Enables or disables automatic variable reordering.
+         *
+         *  Note that when automatic reordering is enabled the manager
+         *  can't guarantee that all diagrams will remain canonical.
+         *  To ensure that a diagram \c d is canonical
+         *  (e.g. to compare two functions), you need to call \c reduce on them.
+         *
+         *  \param r Specifies whether to disable (false) or
+         *           enable (true) automatic reordering.
          */
-        auto set_auto_reorder (bool) -> void;
+        auto set_auto_reorder (bool r) -> void;
 
     protected:
         using node_t = typename diagram<Data, Degree>::node_t;
@@ -653,9 +655,6 @@ namespace teddy
         // auto apply_strict (diagram_t, diagram_t, F) -> diagram_t;
 
     private:
-        template<class F>
-        auto transform_internal (node_t*, F&&) -> node_t*;
-
         template<uint_to_uint F>
         auto transform_terminal (node_t*, F) -> node_t*;
 
@@ -1462,45 +1461,10 @@ namespace teddy
     }
 
     template<class Data, degree Degree, domain Domain>
-    auto diagram_manager<Data, Degree, Domain>::gc
+    auto diagram_manager<Data, Degree, Domain>::force_gc
         () -> void
     {
-        nodes_.collect_garbage();
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    auto diagram_manager<Data, Degree, Domain>::sift
-        () -> void
-    {
-        nodes_.sift_vars();
-    }
-
-    template<class Data, degree Degree, domain Domain>
-    template<class F>
-    auto diagram_manager<Data, Degree, Domain>::transform_internal
-        (node_t* const root, F&& f) -> node_t*
-    {
-        auto memo = std::unordered_map<node_t*, node_t*>();
-        auto const go = [this, &memo](auto&& go_, auto&& f_, auto const n)
-        {
-            auto const it = memo.find(n);
-            if (memo.end() != it)
-            {
-                return it->second;
-            }
-
-            if (n->is_terminal())
-            {
-                return n;
-            }
-
-            auto const u = nodes_.internal_node( n->get_index()
-                                               , f_(go_, f_, n) );
-            memo.emplace(n, u);
-            return u;
-        };
-
-        return go(go, f, root);
+        nodes_.force_gc();
     }
 
     template<class Data, degree Degree, domain Domain>
