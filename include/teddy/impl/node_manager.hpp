@@ -600,7 +600,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::to_dot_graph
         (std::ostream& ost) const -> void
     {
-        this->to_dot_graph_common(ost, [this](auto&& f)
+        this->to_dot_graph_common(ost, [this](auto const& f)
         {
             this->for_each_node(f);
         });
@@ -610,7 +610,7 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::to_dot_graph
         (std::ostream& ost, node_t* const n) const -> void
     {
-        this->to_dot_graph_common(ost, [this, n](auto&& f)
+        this->to_dot_graph_common(ost, [this, n](auto const& f)
         {
             this->traverse_pre(n, f);
         });
@@ -748,7 +748,8 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::traverse_pre
         (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        auto const go = [this](auto&& self, auto const n, auto&& op) -> void
+        auto const go =
+            [this](auto const& self, auto const n, auto const& op) -> void
         {
             n->toggle_marked();
             std::invoke(op, n);
@@ -773,7 +774,8 @@ namespace teddy
     auto node_manager<Data, Degree, Domain>::traverse_post
         (node_t* const node, NodeOp&& nodeOp) const -> void
     {
-        auto const go = [this](auto&& self, auto const n, auto&& op) -> void
+        auto const go =
+            [this](auto& self, auto const n, auto& op) -> void
         {
             n->toggle_marked();
             if (n->is_internal())
@@ -1006,7 +1008,8 @@ namespace teddy
             return std::to_string(reinterpret_cast<std::uintptr_t>(n));
         };
 
-        auto const output_range = [](auto&& ostr, auto&& xs, auto&& sep)
+        auto const output_range =
+            [](auto& ostr, auto const& xs, auto const sep)
         {
             auto const end = std::end(xs);
             auto it = std::begin(xs);

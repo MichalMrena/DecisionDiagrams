@@ -746,7 +746,7 @@ namespace teddy
         else
         {
             auto memo = std::unordered_map<node_t*, node_t*>();
-            auto const go = [=, this, &memo](auto&& self, auto const n)
+            auto const go = [=, this, &memo](auto const& self, auto const n)
             {
                 if (n->is_terminal())
                 {
@@ -833,9 +833,9 @@ namespace teddy
                                        , decltype(cache_pair_hash)
                                        , decltype(cache_pair_equals) >();
 
-        auto const go = [this, &cache, change]( auto&&     self
-                                              , auto const l
-                                              , auto const r ) -> node_t*
+        auto const go = [this, &cache, change]( auto const & self
+                                              , auto const   l
+                                              , auto const   r ) -> node_t*
         {
             auto const cached = cache.find(cache_pair {l, r});
             if (cached != std::end(cache))

@@ -165,7 +165,8 @@ namespace teddy::test
                 rs::copy_if(order, std::back_inserter(is),
                     [&fixed](auto const i)
                 {
-                    return rs::end(fixed) == rs::find_if(fixed, [i](auto&& p)
+                    return rs::end(fixed) == rs::find_if(fixed,
+                        [i](auto const  p)
                     {
                         return p.first == i;
                     });
@@ -661,7 +662,7 @@ namespace teddy::test
             for (auto k = 0u; k < expectedCounts.size(); ++k)
             {
                 using out_var_vals = std::array<uint_t, 100>;
-                auto outF = [&vals, k](auto&&)
+                auto outF = [&vals, k](auto const&)
                 {
                     ++vals[k];
                 };

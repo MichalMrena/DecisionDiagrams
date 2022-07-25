@@ -998,7 +998,7 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::apply
         (diagram_t d1, diagram_t d2) -> diagram_t
     {
-        auto const go = [this](auto&& go_, auto const l, auto const r)
+        auto const go = [this](auto const self, auto const l, auto const r)
         {
             auto const cached = nodes_.template cache_find<Op>(l, r);
             if (cached)
@@ -1013,7 +1013,7 @@ namespace teddy
 
             if (opVal != Nondetermined)
             {
-                u = nodes_.terminal_node(opVal); // TODO osetrit pre specialne hodnoty
+                u = nodes_.terminal_node(opVal);
             }
             else
             {
@@ -1022,11 +1022,11 @@ namespace teddy
                 auto const topLevel = std::min(lhsLevel, rhsLevel);
                 auto const topNode  = topLevel == lhsLevel ? l : r;
                 auto const topIndex = topNode->get_index();
-                auto sons = nodes_.make_sons(topIndex, [=, &go_](auto const k)
+                auto sons = nodes_.make_sons(topIndex, [=](auto const k)
                 {
                     auto const fst = lhsLevel == topLevel ? l->get_son(k) : l;
                     auto const snd = rhsLevel == topLevel ? r->get_son(k) : r;
-                    return go_(go_, fst, snd);
+                    return self(self, fst, snd);
                 });
 
                 u = nodes_.internal_node(topIndex, std::move(sons));
@@ -1037,12 +1037,8 @@ namespace teddy
         };
 
         auto const r = go(go, d1.get_root(), d2.get_root());
-        // TODO ak je zapnuty auto reorder, bolo by asi dobre ich vzdy redukovat
-        // aj ked to nepomoze inym, uz existujucim...
         auto const d = diagram_t(r);
         nodes_.run_deferred();
-        // TODO maybe?
-        // return this->reduce(d);
         return d;
     }
 
@@ -1251,7 +1247,7 @@ namespace teddy
             }
         }();
         auto go = [this, &xs, val, out]
-            (auto&& go_, auto const l, auto const n) mutable
+            (auto& self, auto const l, auto const n) mutable
         {
             auto const nodeValue = node_value(n);
             auto const nodeLevel = nodes_.get_level(n);
@@ -1272,7 +1268,7 @@ namespace teddy
                 for (auto iv = 0u; iv < domain; ++iv)
                 {
                     xs[index] = iv;
-                    go_(go_, l + 1, n);
+                    self(self, l + 1, n);
                 }
             }
             else
@@ -1282,7 +1278,7 @@ namespace teddy
                     (auto const son) mutable
                 {
                     xs[index] = iv;
-                    go_(go_, l + 1, son);
+                    self(self, l + 1, son);
                     ++iv;
                 });
             }
@@ -1307,7 +1303,7 @@ namespace teddy
         }
 
         auto memo = std::unordered_map<node_t*, node_t*>();
-        auto const go = [this, &memo, i, v](auto&& self, auto const n)
+        auto const go = [this, &memo, i, v](auto const& self, auto const n)
         {
             auto const memoIt = memo.find(n);
             if (memoIt != std::end(memo))
@@ -1385,8 +1381,10 @@ namespace teddy
     auto diagram_manager<Data, Degree, Domain>::reduce
         (diagram_t d) -> diagram_t
     {
-        auto const newRoot = this->transform_terminal( d.get_root()
-                                                     , utils::identity );
+        auto const newRoot = this->transform_terminal(
+            d.get_root(),
+            utils::identity
+        );
         return diagram_t(newRoot);
     }
 
@@ -1473,7 +1471,7 @@ namespace teddy
         (node_t* const root, F f) -> node_t*
     {
         auto memo = std::unordered_map<node_t*, node_t*>();
-        auto const go = [this, f, &memo](auto&& go_, auto const n)
+        auto const go = [this, f, &memo](auto const& self, auto const n)
         {
             auto const it = memo.find(n);
             if (memo.end() != it)
@@ -1489,11 +1487,16 @@ namespace teddy
             else
             {
                 auto const i = n->get_index();
-                auto const newNode = nodes_.internal_node(i, nodes_.make_sons(i,
-                    [&go_, f, n](auto const k)
-                {
-                    return go_(go_, n->get_son(k));
-                }));
+                auto const newNode = nodes_.internal_node(
+                    i,
+                    nodes_.make_sons(
+                        i,
+                        [&self, f, n](auto const k)
+                        {
+                            return self(self, n->get_son(k));
+                        }
+                    )
+                );
                 memo.emplace(n, newNode);
                 return newNode;
             }
