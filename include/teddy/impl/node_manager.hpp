@@ -62,6 +62,7 @@ namespace teddy
     template<class T>
     concept domain = domains::is_mixed<T>()() || domains::is_fixed<T>()();
 
+    // TODO spravit jeden concept mapper<From, To, F>
     template<class F>
     concept uint_to_bool = requires (F f, uint_t x)
     {

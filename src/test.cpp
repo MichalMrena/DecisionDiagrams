@@ -8,6 +8,7 @@
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <numeric>
 #include <omp.h>
@@ -91,6 +92,184 @@ namespace teddy::test
             auto const& ts = std::get<minmax_expr>(expr).terms;
             return rs::max(rs::transform_view(ts, term_val));
         }
+    }
+
+    struct expr_node_variable {};
+    struct expr_node_constant {};
+    struct expr_node_operation {};
+
+    /**
+     *  Node of an Abstract Syntax Tree.
+     */
+    class expression_node
+    {
+    public:
+        using op_t = uint_t(*)(uint_t, uint_t);
+
+    private:
+        struct operation_t
+        {
+            operation_t ( op_t const                       o
+                        , std::unique_ptr<expression_node> l
+                        , std::unique_ptr<expression_node> r ) :
+                op_ (o),
+                l_  (std::move(l)),
+                r_  (std::move(r))
+            {
+            }
+
+            op_t op_;
+            std::unique_ptr<expression_node> l_;
+            std::unique_ptr<expression_node> r_;
+        };
+
+        struct variable_t
+        {
+            variable_t (index_t const i) : i_ (i) {};
+            index_t i_;
+        };
+
+        struct constant_t
+        {
+            constant_t (uint_t const c) : c_ (c) {};
+            uint_t c_;
+        };
+
+    public:
+        expression_node (expr_node_variable, index_t const i) :
+            data_ (std::in_place_type<variable_t>, i)
+        {
+        }
+
+        expression_node (expr_node_constant, uint_t const c) :
+            data_ (std::in_place_type<constant_t>, c)
+        {
+        }
+
+        expression_node ( expr_node_operation
+                        , op_t const o
+                        , std::unique_ptr<expression_node> l
+                        , std::unique_ptr<expression_node> r) :
+            data_ ( std::in_place_type<operation_t>
+                  , o
+                  , std::move(l)
+                  , std::move(r) )
+        {
+        }
+
+        auto is_variable () const -> bool
+        {
+            return std::holds_alternative<variable_t>(data_);
+        }
+
+        auto is_constant () const -> bool
+        {
+            return std::holds_alternative<constant_t>(data_);
+        }
+
+        auto is_operation () const -> bool
+        {
+            return std::holds_alternative<operation_t>(data_);
+        }
+
+        auto get_index () const -> index_t
+        {
+            return std::get<variable_t>(data_).i_;
+        }
+
+        auto get_value () const -> uint_t
+        {
+            return std::get<constant_t>(data_).c_;
+        }
+
+        auto evaluate (uint_t const l, uint_t const r) const -> uint_t
+        {
+            return std::get<operation_t>(data_).op_(l, r);
+        }
+
+        auto get_left () const -> expression_node const&
+        {
+            return *std::get<operation_t>(data_).l_;
+        }
+
+        auto get_right () const -> expression_node const&
+        {
+            return *std::get<operation_t>(data_).r_;
+        }
+
+    private:
+        std::variant<operation_t, variable_t, constant_t> data_;
+    };
+
+    namespace
+    {
+        auto op_max (uint_t const l, uint_t const r) -> uint_t
+        {
+            return l < r ? r : l;
+        }
+
+        auto op_min (uint_t const l, uint_t const r) -> uint_t
+        {
+            return l < r ? l : r;
+        }
+    }
+
+    auto generate_expression_tree
+        ( std::size_t const varcount
+        , rng_t&            rngtype
+        , rng_t&            rngbranch )
+    {
+        auto go = [&, i = 0u](auto& self, auto const n) mutable
+        {
+            if (n == 1)
+            {
+                return std::make_unique<expression_node>(
+                    expr_node_variable(),
+                    i++
+                );
+            }
+            else
+            {
+                auto denomdist = std::uniform_int_distribution<uint_t>(2, 10);
+                auto typedist  = std::uniform_real_distribution(0.0, 1.0);
+                auto const denom   = denomdist(rngbranch);
+                auto const lhssize = std::max(1ul, n / denom);
+                auto const rhssize = n - lhssize;
+                auto const p   = typedist(rngtype);
+                auto const op  = p < 0.5 ? op_min : op_max;
+                return std::make_unique<expression_node>(
+                    expr_node_operation(),
+                    op,
+                    self(self, lhssize),
+                    self(self, rhssize)
+                );
+            }
+        };
+        return go(go, varcount);
+    }
+
+    auto evaluate_expression_tree ( expression_node const&     root
+                                  , std::vector<uint_t> const& vs )
+    {
+        auto const go = [&vs](auto self, auto const& node)
+        {
+            if (node.is_variable())
+            {
+                return vs[node.get_index()];
+            }
+            else if (node.is_constant())
+            {
+                return node.get_value();
+            }
+            else
+            {
+                assert(node.is_operation());
+                auto const l = self(self, node.get_left());
+                auto const r = self(self, node.get_right());
+                return node.evaluate(l, r);
+            }
+        };
+        return go(go, root);
     }
 
     struct domain_iterator_sentinel {};
@@ -942,6 +1121,46 @@ namespace teddy::test
     }
 
     /**
+     *  Tests creation of diagra from expression tree.
+     */
+    template<class Dat, class Deg, class Dom>
+    auto test_from_expression
+        ( diagram_manager<Dat, Deg, Dom>& manager
+        , rng_t&                          rng )
+    {
+        auto const exprTree = generate_expression_tree(
+            manager.get_var_count(),
+            rng,
+            rng
+        );
+        auto const diagram = manager.from_expression_tree(*exprTree);
+            // manager.to_dot_graph(std::cout, diagram);
+        auto it = domain_iterator(manager.get_domains());
+        auto const end = domain_iterator_sentinel();
+        while (it != end)
+        {
+            auto const expected = evaluate_expression_tree(*exprTree, *it);
+            auto const actual = manager.evaluate(diagram, *it);
+            if (expected != actual)
+            {
+                return test_result( false, "Value missmatch. Expected "
+                                         + std::to_string(expected)
+                                         + " got "
+                                         + std::to_string(actual)
+                                         + "." );
+            }
+            ++it;
+        }
+
+        if (it == end)
+        {
+            return test_result(true);
+        }
+
+        return test_result(false, "This should not have happened.");
+    }
+
+    /**
      *  Runs all test. Creates diagram represeting @p expr using @p manager .
      */
     template<class Manager>
@@ -995,7 +1214,8 @@ namespace teddy::test
                            , "operators"sv
                            , "cofactors"sv
                            , "from_vector"sv
-                           , "to_vector"sv };
+                           , "to_vector"sv
+                           , "from_expression"sv };
         auto results = std::unordered_map
             <std::string_view, std::vector<std::optional<test_result>>>();
 
@@ -1079,6 +1299,8 @@ namespace teddy::test
                 = test_from_vector(managers[k], diagram1s[k], exprs[k]);
             results.at("to_vector")[k]
                 = test_to_vector(managers[k], diagram1s[k]);
+            results.at("from_expression")[k]
+                = test_from_expression(managers[k], rngs[k]);
 
             refresh_results();
         }
@@ -1100,26 +1322,28 @@ namespace teddy::test
         diagram2 = manager.reduce(diagram2);
 
         std::cout << '\n' << wrap_yellow(name)             << '\n';
-        std::cout << "Node count    " << manager.node_count(diagram1)
+        std::cout << "Node count      " << manager.node_count(diagram1)
                                                            << '\n';
-        std::cout << "Evaluate      "
+        std::cout << "Evaluate        "
             << test_evaluate(manager, diagram1, expr)      << '\n';
-        std::cout << "Fold          "
+        std::cout << "Fold            "
             << test_fold(manager, diagram1, diagram2)      << '\n';
-        std::cout << "GC            "
+        std::cout << "GC              "
             << test_gc(manager, diagram1)                  << '\n';
-        std::cout << "Satisfy-count "
+        std::cout << "Satisfy-count   "
             << test_satisfy_count(manager, diagram1, expr) << '\n';
-        std::cout << "Satisfy-all   "
+        std::cout << "Satisfy-all     "
             << test_satisfy_all(manager, diagram1, expr)   << '\n';
-        std::cout << "Operators     "
+        std::cout << "Operators       "
             << test_operators(manager, diagram1, expr)     << '\n';
-        std::cout << "Cofactor      "
+        std::cout << "Cofactor        "
             << test_cofactor(manager, diagram1, expr, rng) << '\n';
-        std::cout << "From-vector   "
+        std::cout << "From-vector     "
             << test_from_vector(manager, diagram1, expr)   << '\n';
-        std::cout << "To-vector     "
+        std::cout << "To-vector       "
             << test_to_vector(manager, diagram1)           << '\n';
+        std::cout << "From-expression "
+            << test_from_expression(manager, rng)          << '\n';
     }
 
     template<std::size_t M>
@@ -1239,11 +1463,11 @@ auto run_test_one()
     auto const termSize  = 5;
 
     auto bddM   = teddy::bdd_manager(varCount, nodeCount, nodeCount);
-    bddM.set_auto_reorder(true);
-    // auto mddM   = teddy::mdd_manager<M>(varCount, nodeCount);
+    // bddM.set_auto_reorder(true);
+    auto mddM   = teddy::mdd_manager<M>(varCount, nodeCount);
     // mddM.set_auto_reorder(true);
-    // auto imddM  = teddy::imdd_manager(varCount, nodeCount, domains, order);
-    // auto ifmddM = teddy::ifmdd_manager<M>(varCount, nodeCount, domains, order);
+    auto imddM  = teddy::imdd_manager(varCount, nodeCount, domains, order);
+    auto ifmddM = teddy::ifmdd_manager<M>(varCount, nodeCount, domains, order);
 
     auto const expr   = ts::generate_expression( rngExpr, varCount
                                                , termCount, termSize );
@@ -1253,9 +1477,9 @@ auto run_test_one()
         : std::to_string(initSeed);
     std::cout << "Seed is " << seedStr << '.' << '\n';
     teddy::test::test_one("BDD manager",   bddM,   expr, rngsTest[0]);
-    // teddy::test::test_one("MDD manager",   mddM,   expr, rngsTest[1]);
-    // teddy::test::test_one("iMDD manager",  imddM,  expr, rngsTest[2]);
-    // teddy::test::test_one("ifMDD manager", ifmddM, expr, rngsTest[3]);
+    teddy::test::test_one("MDD manager",   mddM,   expr, rngsTest[1]);
+    teddy::test::test_one("iMDD manager",  imddM,  expr, rngsTest[2]);
+    teddy::test::test_one("ifMDD manager", ifmddM, expr, rngsTest[3]);
 }
 
 auto run_speed_benchmark()

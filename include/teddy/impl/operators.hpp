@@ -176,6 +176,22 @@ namespace teddy
     };
 
     /**
+     *  \brief Wraps binary operation so that it can be used in \c apply .
+     *  Quick fix for stateful ops.
+     */
+    auto constexpr apply_op_wrap = [](auto const& op)
+    {
+        return [op](auto const l, auto const r)
+        {
+            if (l == Nondetermined || r == Nondetermined)
+            {
+                return Nondetermined;
+            }
+            return static_cast<uint_t>(op(l, r));
+        };
+    };
+
+    /**
      *  \namespace ops
      *  \brief Contains definision of all binary operations that can be
      *  used in the \c apply function.
@@ -184,39 +200,39 @@ namespace teddy
     {
         struct NOT {};
 
-        struct AND : public bin_op_base<logical_and_t, 0> {};
+        struct AND : bin_op_base<logical_and_t, 0> {};
 
-        struct OR : public bin_op_base< logical_or_t, 1> {};
+        struct OR : bin_op_base<logical_or_t, 1> {};
 
-        struct XOR : public bin_op_base<logical_xor_t> {};
+        struct XOR : bin_op_base<logical_xor_t> {};
 
-        struct PI_CONJ : public bin_op_base<pi_conj_t, 0> {};
+        struct PI_CONJ : bin_op_base<pi_conj_t, 0> {};
 
-        struct NAND : public bin_op_base<logical_nand_t> {};
+        struct NAND : bin_op_base<logical_nand_t> {};
 
-        struct NOR : public bin_op_base<logical_nor_t> {};
+        struct NOR : bin_op_base<logical_nor_t> {};
 
-        struct EQUAL_TO : public bin_op_base<equal_to_t> {};
+        struct EQUAL_TO : bin_op_base<equal_to_t> {};
 
-        struct NOT_EQUAL_TO : public bin_op_base<not_equal_to_t> {};
+        struct NOT_EQUAL_TO : bin_op_base<not_equal_to_t> {};
 
-        struct LESS : public bin_op_base<less_t> {};
+        struct LESS : bin_op_base<less_t> {};
 
-        struct LESS_EQUAL : public bin_op_base<less_equal_t> {};
+        struct LESS_EQUAL : bin_op_base<less_equal_t> {};
 
-        struct GREATER : public bin_op_base<greater_t> {};
+        struct GREATER : bin_op_base<greater_t> {};
 
-        struct GREATER_EQUAL : public bin_op_base<greater_equal_t> {};
+        struct GREATER_EQUAL : bin_op_base<greater_equal_t> {};
 
-        struct MIN : public bin_op_base<min_t, 0> {};
+        struct MIN : bin_op_base<min_t, 0> {};
 
-        struct MAX : public bin_op_base<max_t> {};
-
-        template<uint_t P>
-        struct PLUS : public bin_op_base<plus_mod_t<P>> {};
+        struct MAX : bin_op_base<max_t> {};
 
         template<uint_t P>
-        struct MULTIPLIES : public bin_op_base<multiplies_mod_t<P>, 0> {};
+        struct PLUS : bin_op_base<plus_mod_t<P>> {};
+
+        template<uint_t P>
+        struct MULTIPLIES : bin_op_base<multiplies_mod_t<P>, 0> {};
     }
 
     constexpr auto op_id (ops::AND)           { return uint_t {0};  }
