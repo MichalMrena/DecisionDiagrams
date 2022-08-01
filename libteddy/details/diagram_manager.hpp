@@ -1,11 +1,11 @@
 #ifndef MIX_DD_DIAGRAM_MANAGER_HPP
 #define MIX_DD_DIAGRAM_MANAGER_HPP
 
-#include "diagram.hpp"
-#include "operators.hpp"
-#include "node_manager.hpp"
-#include "pla_file.hpp"
-#include "utils.hpp"
+#include <libteddy/details/diagram.hpp>
+#include <libteddy/details/operators.hpp>
+#include <libteddy/details/node_manager.hpp>
+#include <libteddy/details/pla_file.hpp>
+#include <libteddy/details/utils.hpp>
 #include <cmath>
 #include <concepts>
 #include <initializer_list>

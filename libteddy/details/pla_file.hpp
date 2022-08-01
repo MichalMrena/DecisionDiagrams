@@ -1,6 +1,8 @@
 #ifndef MIX_DD_PLA_FILE_HPP
 #define MIX_DD_PLA_FILE_HPP
 
+#include <libteddy/details/types.hpp>
+#include <libteddy/details/utils.hpp>
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -11,9 +13,6 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
-
-#include "types.hpp"
-#include "utils.hpp"
 
 namespace teddy
 {

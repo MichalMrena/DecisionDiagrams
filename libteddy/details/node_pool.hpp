@@ -1,8 +1,8 @@
 #ifndef MIX_DD_NODE_POOL_HPP
 #define MIX_DD_NODE_POOL_HPP
 
-#include "node.hpp"
-#include "debug.hpp"
+#include <libteddy/details/debug.hpp>
+#include <libteddy/details/node.hpp>
 
 #include <array>
 #include <cstddef>

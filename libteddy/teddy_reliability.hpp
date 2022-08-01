@@ -1,7 +1,7 @@
 #ifndef TEDDY_RELIABILITY_HPP
 #define TEDDY_RELIABILITY_HPP
 
-#include "impl/reliability_manager.hpp"
+#include <libteddy/details/reliability_manager.hpp>
 
 namespace teddy
 {

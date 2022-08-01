@@ -1,7 +1,7 @@
 #ifndef TEDDY_RELIABILITY_MANAGER_HPP
 #define TEDDY_RELIABILITY_MANAGER_HPP
 
-#include "diagram_manager.hpp"
+#include <libteddy/details/diagram_manager.hpp>
 #include <array>
 #include <type_traits>
 #include <unordered_map>

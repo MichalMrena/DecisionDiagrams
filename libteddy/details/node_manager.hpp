@@ -1,12 +1,12 @@
 #ifndef MIX_DD_NODE_MANAGER_HPP
 #define MIX_DD_NODE_MANAGER_HPP
 
-#include "debug.hpp"
-#include "hash_tables.hpp"
-#include "node.hpp"
-#include "node_pool.hpp"
-#include "operators.hpp"
-#include "utils.hpp"
+#include <libteddy/details/debug.hpp>
+#include <libteddy/details/hash_tables.hpp>
+#include <libteddy/details/node.hpp>
+#include <libteddy/details/node_pool.hpp>
+#include <libteddy/details/operators.hpp>
+#include <libteddy/details/utils.hpp>
 #include <algorithm>
 #include <cassert>
 #include <functional>

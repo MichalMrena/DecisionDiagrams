@@ -1,8 +1,8 @@
 #ifndef MIX_DD_TEDDY_HPP
 #define MIX_DD_TEDDY_HPP
 
-#include "impl/diagram_manager.hpp"
-#include "impl/pla_file.hpp"
+#include <libteddy/details/diagram_manager.hpp>
+#include <libteddy/details/pla_file.hpp>
 
 namespace teddy
 {

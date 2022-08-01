@@ -1,8 +1,8 @@
 #ifndef MIX_DD_DIAGRAM_HPP
 #define MIX_DD_DIAGRAM_HPP
 
-#include "node.hpp"
-#include "node_manager.hpp"
+#include <libteddy/details/node.hpp>
+#include <libteddy/details/node_manager.hpp>
 #include <cassert>
 #include <utility>
 

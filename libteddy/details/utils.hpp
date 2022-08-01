@@ -1,7 +1,7 @@
 #ifndef MIX_DD_UTILS_HPP
 #define MIX_DD_UTILS_HPP
 
-#include "types.hpp"
+#include <libteddy/details/types.hpp>
 #include <charconv>
 #include <concepts>
 #include <functional>

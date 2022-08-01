@@ -1,7 +1,7 @@
 #ifndef MIX_DD_NODE_HPP
 #define MIX_DD_NODE_HPP
 
-#include "types.hpp"
+#include <libteddy/details/types.hpp>
 #include <array>
 #include <cassert>
 #include <cstddef>

@@ -1,7 +1,7 @@
 #ifndef MIX_DD_OPERATORS_HPP
 #define MIX_DD_OPERATORS_HPP
 
-#include "types.hpp"
+#include <libteddy/details/types.hpp>
 #include <type_traits>
 
 namespace teddy

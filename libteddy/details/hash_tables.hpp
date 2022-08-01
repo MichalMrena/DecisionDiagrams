@@ -1,10 +1,10 @@
 #ifndef MIX_DD_HASH_TABLES_HPP
 #define MIX_DD_HASH_TABLES_HPP
 
+#include <libteddy/details/operators.hpp>
 #include <array>
 #include <vector>
 #include <utility>
-#include "operators.hpp"
 
 namespace teddy
 {
