@@ -1,7 +1,5 @@
 build
 .vscode
-valgrind.txt
-install_manifest.txt
 doxygen/doc
 data
 *.png
@@ -9,4 +7,3 @@ data
 *.out
 *.pdf
 *.R
-null.d

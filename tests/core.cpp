@@ -1,8 +1,8 @@
-#define TEDDY_VERBOSE
-#undef TEDDY_VERBOSE
+#define LIBTEDDY_VERBOSE
+#undef LIBTEDDY_VERBOSE
 // #define NDEBUG
 
-#include "teddy/teddy.hpp"
+#include <libteddy/teddy.hpp>
 #include <algorithm>
 #include <array>
 #include <chrono>

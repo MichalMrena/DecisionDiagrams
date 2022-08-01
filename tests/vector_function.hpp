@@ -1,5 +1,5 @@
-#ifndef TEDDY_VECTOR_FUNCTION_HPP
-#define TEDDY_VECTOR_FUNCTION_HPP
+#ifndef LIBTEDDY_TESTS_VECTOR_FUNCTION_HPP
+#define LIBTEDDY_TESTS_VECTOR_FUNCTION_HPP
 
 #include <algorithm>
 #include <cassert>

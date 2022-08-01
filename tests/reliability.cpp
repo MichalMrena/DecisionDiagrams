@@ -1,5 +1,4 @@
-#include "../include/teddy/teddy_reliability.hpp"
-#include "vector_function.hpp"
+#include <libteddy/teddy_reliability.hpp>
 #include <array>
 #include <cassert>
 #include <cmath>
@@ -8,6 +7,7 @@
 #include <random>
 #include <tuple>
 #include <vector>
+#include "vector_function.hpp"
 
 namespace teddy::test
 {
