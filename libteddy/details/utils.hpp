@@ -1,5 +1,5 @@
-#ifndef MIX_DD_UTILS_HPP
-#define MIX_DD_UTILS_HPP
+#ifndef LIBTEDDY_DETAILS_UTILS_HPP
+#define LIBTEDDY_DETAILS_UTILS_HPP
 
 #include <libteddy/details/types.hpp>
 #include <charconv>

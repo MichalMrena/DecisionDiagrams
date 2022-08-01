@@ -1,5 +1,5 @@
-#ifndef MIX_DD_DIAGRAM_HPP
-#define MIX_DD_DIAGRAM_HPP
+#ifndef LIBTEDDY_DETAILS_DIAGRAM_HPP
+#define LIBTEDDY_DETAILS_DIAGRAM_HPP
 
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_manager.hpp>

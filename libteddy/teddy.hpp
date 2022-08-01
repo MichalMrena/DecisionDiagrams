@@ -1,5 +1,5 @@
-#ifndef MIX_DD_TEDDY_HPP
-#define MIX_DD_TEDDY_HPP
+#ifndef LIBTEDDY_TEDDY_HPP
+#define LIBTEDDY_TEDDY_HPP
 
 #include <libteddy/details/diagram_manager.hpp>
 #include <libteddy/details/pla_file.hpp>

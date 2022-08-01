@@ -1,5 +1,5 @@
-#ifndef MIX_DD_OPERATORS_HPP
-#define MIX_DD_OPERATORS_HPP
+#ifndef LIBTEDDY_DETAILS_OPERATORS_HPP
+#define LIBTEDDY_DETAILS_OPERATORS_HPP
 
 #include <libteddy/details/types.hpp>
 #include <type_traits>

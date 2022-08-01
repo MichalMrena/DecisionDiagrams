@@ -1,5 +1,5 @@
-#ifndef TEDDY_RELIABILITY_MANAGER_HPP
-#define TEDDY_RELIABILITY_MANAGER_HPP
+#ifndef LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
+#define LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 
 #include <libteddy/details/diagram_manager.hpp>
 #include <array>

@@ -1,5 +1,5 @@
-#ifndef MIX_DD_NODE_MANAGER_HPP
-#define MIX_DD_NODE_MANAGER_HPP
+#ifndef LIBTEDDY_DETAILS_NODE_MANAGER_HPP
+#define LIBTEDDY_DETAILS_NODE_MANAGER_HPP
 
 #include <libteddy/details/debug.hpp>
 #include <libteddy/details/hash_tables.hpp>

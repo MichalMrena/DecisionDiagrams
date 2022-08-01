@@ -1,5 +1,5 @@
-#ifndef MIX_DD_PLA_FILE_HPP
-#define MIX_DD_PLA_FILE_HPP
+#ifndef LIBTEDDY_DETAILS_PLA_FILE_HPP
+#define LIBTEDDY_DETAILS_PLA_FILE_HPP
 
 #include <libteddy/details/types.hpp>
 #include <libteddy/details/utils.hpp>

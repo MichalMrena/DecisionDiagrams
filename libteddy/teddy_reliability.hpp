@@ -1,5 +1,5 @@
-#ifndef TEDDY_RELIABILITY_HPP
-#define TEDDY_RELIABILITY_HPP
+#ifndef LIBTEDDY_TEDDY_RELIABILITY_HPP
+#define LIBTEDDY_TEDDY_RELIABILITY_HPP
 
 #include <libteddy/details/reliability_manager.hpp>
 

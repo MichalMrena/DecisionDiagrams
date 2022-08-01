@@ -1,5 +1,5 @@
-#ifndef MIX_DD_NODE_POOL_HPP
-#define MIX_DD_NODE_POOL_HPP
+#ifndef LIBTEDDY_DETAILS_NODE_POOL_HPP
+#define LIBTEDDY_DETAILS_NODE_POOL_HPP
 
 #include <libteddy/details/debug.hpp>
 #include <libteddy/details/node.hpp>

@@ -1,5 +1,5 @@
-#ifndef MIX_DD_TYPEDEFS_HPP
-#define MIX_DD_TYPEDEFS_HPP
+#ifndef LIBTEDDY_DETAILS_TYPES_HPP
+#define LIBTEDDY_DETAILS_TYPES_HPP
 
 #include <limits>
 
