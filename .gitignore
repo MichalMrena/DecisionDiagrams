@@ -3,7 +3,7 @@ build
 doxygen/doc
 data
 *.png
-*.txt
+*.log
 *.out
 *.pdf
-*.R
+*.sh
