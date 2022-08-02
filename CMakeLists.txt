@@ -23,26 +23,13 @@ find_package(OpenMP)
 add_library(
         libteddy
     INTERFACE
-        libteddy/teddy.hpp
-        libteddy/teddy_reliability.hpp
-        libteddy/details/debug.hpp
-        libteddy/details/diagram.hpp
-        libteddy/details/diagram_manager.hpp
-        libteddy/details/hash_tables.hpp
-        libteddy/details/node.hpp
-        libteddy/details/node_manager.hpp
-        libteddy/details/node_pool.hpp
-        libteddy/details/operators.hpp
-        libteddy/details/pla_file.hpp
-        libteddy/details/reliability_manager.hpp
-        libteddy/details/types.hpp
-        libteddy/details/utils.hpp
 )
 
 target_include_directories(
         libteddy
     INTERFACE
-        .
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 #
@@ -54,10 +41,10 @@ add_executable(
     tests/core.cpp
 )
 
-target_include_directories(
+target_link_libraries(
         libteddy-test-core
-    PUBLIC
-        .
+    PRIVATE
+        libteddy
 )
 
 target_compile_options(
@@ -102,10 +89,10 @@ add_executable(
     tests/vector_function.hpp
 )
 
-target_include_directories(
+target_link_libraries(
         libteddy-test-reliability
-    PUBLIC
-        .
+    PRIVATE
+        libteddy
 )
 
 target_compile_options(
@@ -136,3 +123,9 @@ set_target_properties(
 # libteddy-install
 #
 
+install(
+    DIRECTORY
+        libteddy
+    DESTINATION
+        ${CMAKE_INSTALL_INCLUDEDIR}
+)
