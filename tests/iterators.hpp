@@ -87,6 +87,11 @@ namespace teddy
     };
 
     /**
+     *  \brief Sentinel for evaluating iterator.
+     */
+    struct evaluating_iterator_sentinel {};
+
+    /**
      *  \brief Iterator that evaluates expression over a domain.
      */
     template<class Expression>
@@ -110,9 +115,9 @@ namespace teddy
 
         auto operator++ (int) -> evaluating_iterator;
 
-        auto operator== (domain_iterator_sentinel const s) const -> bool;
+        auto operator== (evaluating_iterator_sentinel const s) const -> bool;
 
-        auto operator!= (domain_iterator_sentinel const s) const -> bool;
+        auto operator!= (evaluating_iterator_sentinel const s) const -> bool;
 
         auto var_vals () const -> std::vector<uint_t> const&;
 
@@ -124,30 +129,49 @@ namespace teddy
     /**
      *  \brief Proxy output iterator that feeds outputed values into function.
      */
-    class counting_iterator
+    template<class F>
+    class forwarding_iterator
     {
     public:
         using difference_type   = std::ptrdiff_t;
-        using value_type        = counting_iterator&;
+        using value_type        = forwarding_iterator&;
         using pointer           = value_type;
         using reference         = value_type;
         using iterator_category = std::output_iterator_tag;
 
     public:
-        counting_iterator () = default;
+        forwarding_iterator ()               { }
+        forwarding_iterator (F& f) : f_ (&f) { }
 
-        counting_iterator (std::size_t max);
+        auto operator++ () -> forwarding_iterator&
+        {
+            return *this;
+        }
 
-        auto operator++ () -> counting_iterator&;
+        auto operator++ (int) -> forwarding_iterator&
+        {
+            return *this;
+        }
 
-        auto operator++ (int) -> counting_iterator&;
+        auto operator* () -> forwarding_iterator&
+        {
+            return *this;
+        }
 
-        auto operator* () -> counting_iterator&;
+        auto operator= (auto&& arg) -> forwarding_iterator&
+        {
+            (*f_)(std::forward<decltype(arg)>(arg));
+            return *this;
+        }
 
-        auto operator= (uint_t v) -> counting_iterator&;
+        auto operator= (auto&& arg) const -> forwarding_iterator const&
+        {
+            (*f_)(std::forward<decltype(arg)>(arg));
+            return *this;
+        }
 
     private:
-        std::vector<std::size_t> frequency_;
+        F* f_ {nullptr};
     };
 }
 

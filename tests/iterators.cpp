@@ -177,16 +177,16 @@ namespace teddy
 
     template<class Expression>
     auto evaluating_iterator<Expression>::operator==
-        (domain_iterator_sentinel const s) const -> bool
+        (evaluating_iterator_sentinel const s) const -> bool
     {
-        return iterator_ == s;
+        return iterator_ == domain_iterator_sentinel();
     }
 
     template<class Expression>
     auto evaluating_iterator<Expression>::operator!=
-        (domain_iterator_sentinel const s) const -> bool
+        (evaluating_iterator_sentinel const s) const -> bool
     {
-        return iterator_ != s;
+        return iterator_ != domain_iterator_sentinel();
     }
 
     template<class Expression>
@@ -198,38 +198,4 @@ namespace teddy
 
     template<> class evaluating_iterator<minmax_expr>;
     template<> class evaluating_iterator<expr_node>;
-
-// counting_iterator:
-
-    counting_iterator::counting_iterator
-        (std::size_t max) :
-        frequency_ (max)
-    {
-    }
-
-    auto counting_iterator::operator++
-        () -> counting_iterator&
-    {
-        return *this;
-    }
-
-    auto counting_iterator::operator++
-        (int) -> counting_iterator&
-    {
-        return *this;
-    }
-
-    auto counting_iterator::operator*
-        () -> counting_iterator&
-    {
-        return *this;
-    }
-
-    auto counting_iterator::operator=
-        (uint_t const v) -> counting_iterator&
-    {
-        ++frequency_[v];
-        return *this;
-    }
-
 }

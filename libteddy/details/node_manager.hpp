@@ -9,6 +9,7 @@
 #include <libteddy/details/utils.hpp>
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <functional>
 #include <queue>
 #include <span>
@@ -972,7 +973,7 @@ namespace teddy
 
         auto const get_id_str = [](auto const n)
         {
-            return std::to_string(reinterpret_cast<std::uintptr_t>(n));
+            return std::to_string(reinterpret_cast<std::uintmax_t>(n));
         };
 
         auto const output_range =

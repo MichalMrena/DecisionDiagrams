@@ -3,6 +3,7 @@
 // #define NDEBUG
 
 #include <libteddy/teddy.hpp>
+#include <librog/rog.hpp>
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -25,285 +26,523 @@
 
 namespace teddy::test
 {
-    enum class fold_e
+    /**
+     *  \brief Type of fold to use for diagram creation.
+     */
+    enum class fold_type
     {
         Left, Tree
     };
 
-    auto wrap_green(std::string_view const s)
-    {
-        return std::string("\x1B[92m") + std::string(s) + "\x1B[0m";
-    }
-
-    auto wrap_red(std::string_view const s)
-    {
-        return std::string("\x1B[91m") + std::string(s) + "\x1B[0m";
-    }
-
-    auto wrap_yellow(std::string_view const s)
-    {
-        return std::string("\x1B[93m") + std::string(s) + "\x1B[0m";
-    }
-
-    auto constexpr char_ok()
-    {
-        return "✓";
-    }
-
-    auto constexpr char_err()
-    {
-        return "x";
-    }
+    /**
+     *  \brief Specifies that order should be randomly generated.
+     */
+    struct random_order_tag {};
 
     /**
-     *  Describes result of a test.
+     *  \brief Explicitly gives the order.
      */
-    class test_result
+    struct given_order
     {
-    public:
-        test_result(bool status) :
-            status_ (status)
-        {
-        }
-
-        test_result(bool status, std::string msg) :
-            status_ (status),
-            msg_    (std::move(msg))
-        {
-        }
-
-        constexpr operator bool () const
-        {
-            return status_;
-        }
-
-        auto get_status() const
-        {
-            return status_;
-        }
-
-        auto get_message () const
-        {
-            return std::string_view(msg_);
-        }
-
-    private:
-        bool        status_;
-        std::string msg_;
+        std::vector<index_t> order_;
     };
 
-    auto operator<< (std::ostream& ost, test_result const& t) -> std::ostream&
+    /**
+     *  \brief Specifies that domains should be randomly generated.
+     */
+    struct random_domains_tag {};
+
+    /**
+     *  \brief Explicitly gives the domains.
+     */
+    struct given_domains
     {
-        using namespace std::string_view_literals;
-        if (t)
-        {
-            ost << wrap_green(char_ok());
-        }
-        else
-        {
-            ost << wrap_red(char_err()) << " " << t.get_message();
-        }
-        return ost;
+        std::vector<index_t> domains_;
+    };
+
+    /**
+     *  \brief Settings for a test.
+     */
+    struct common_settings
+    {
+        std::size_t seed_;
+        uint_t termcount_;
+        uint_t termsize_;
+    };
+
+    /**
+     *  \brief Describes how to initialize a bdd_manager.
+     */
+    struct bdd_manager_settings : common_settings
+    {
+        uint_t varcount_;
+        uint_t nodecount_;
+        std::variant<random_order_tag, given_order> order_;
+    };
+
+    /**
+     *  \brief Describes how to initialize a mdd_manager.
+     */
+    template<uint_t M>
+    struct mdd_manager_settings : common_settings
+    {
+        uint_t varcount_;
+        uint_t nodecount_;
+        std::variant<random_order_tag, given_order> order_;
+    };
+
+    /**
+     *  \brief Describes how to initialize imdd_manager.
+     */
+    struct imdd_manager_settings : common_settings
+    {
+        uint_t varcount_;
+        uint_t nodecount_;
+        std::variant<random_order_tag, given_order> order_;
+        std::variant<random_domains_tag, given_domains> domains_;
+    };
+
+    /**
+     *  \brief Describes how to initialize a ifmdd_manager.
+     */
+    template<uint_t M>
+    struct ifmdd_manager_settings : common_settings
+    {
+        uint_t varcount_;
+        uint_t nodecount_;
+        std::variant<random_order_tag, given_order> order_;
+        std::variant<random_domains_tag, given_domains> domains_;
+    };
+
+    template<uint_t M>
+    using SettingsType = std::variant<
+        bdd_manager_settings,
+        mdd_manager_settings<M>,
+        imdd_manager_settings,
+        ifmdd_manager_settings<M>
+    >;
+
+    /**
+     *  \brief Helper type to implement wannabe pattern matching.
+     */
+    template<class... Ts> struct match
+        : Ts...
+    {
+        using Ts::operator()...;
+    };
+
+    /**
+     *  \brief Helper function to deduce return type.
+     */
+    template<class Dat, class Deg, class Dom>
+    auto declmanager( diagram_manager<Dat, Deg, Dom> const& m
+                    ) -> diagram_manager<Dat, Deg, Dom>
+    {
+        return m;
     }
 
     /**
-     *  Creates diagram representing the same functions as @p expr does.
+     *  \brief Creates manager of the type defined by settings.
+     */
+    template<uint_t M>
+    auto create_manager
+        (SettingsType<M> s, [[maybe_unused]] std::mt19937_64* rng)
+    {
+        auto makeorder = [rng](auto const type)
+        {
+            return match(
+                [](random_order_tag)
+                {
+                    auto dist = std::uniform_int_distribution<index_t>(
+                        0u,
+                        s.varcount_ - 1
+                    );
+                    return utils::fill_vector(
+                        s.varcount_,
+                        [rng, &dist](auto const)
+                        {
+                            return dist(*rng);
+                        }
+                    );
+                },
+                [](given_order const& is)
+                {
+                    return is.order_;
+                },
+            );
+        };
+
+        auto makedomains = []()
+        {
+            return std::visit(s.domains_, match(
+                [rng](random_domains_tag)
+                {
+                    auto dist = std::uniform_int_distribution<index_t>(
+                        2u,
+                        get_M(s) - 1
+                    );
+                    return utils::fill_vector(s.varcount_, [rng, &dist]()
+                    {
+                        return dist(*rng);
+                    });
+                },
+                [](given_domains const& ds)
+                {
+                    return ds.domains_;
+                }
+            ));
+        };
+
+        auto m = std::visit(s, match(
+            [](bdd_manager_settings bbds)
+            {
+                return bdd_manager(
+                    bdds.varcount_,
+                    bdds.nodecount_,
+                    makeorder()
+                );
+            },
+            [](mdd_manager_settings<M> mdds)
+            {
+                return mdd_manager<M>(
+                    mdds.varcount_,
+                    mdds.nodecount_,
+                    makeorder()
+                );
+            },
+            [](imdd_manager_settings imdds)
+            {
+                return imdd_manager(
+                    s.varcount_,
+                    s.nodecount_,
+                    makeorder(),
+                    makedomains()
+                );
+            },
+            [](ifmdd_manager_settings<M> ifmdds)
+            {
+                return ifmdd_manager<M>(
+                    ifmdds.varcount_,
+                    ifmdds.nodecount_,
+                    makeorder(),
+                    makedomains()
+                );
+            }
+        ));
+
+        return static_cast<decltype(declmanager(m))>(m);
+    }
+
+    /**
+     *  \brief Creates diagram representing \p expr .
      */
     template<class Dat, degree Deg, domain Dom>
     auto create_diagram
-        ( expr_var const&                 expr
+        ( minmax_expr const&              expr
         , diagram_manager<Dat, Deg, Dom>& manager
-        , fold_e const                    foldType )
+        , fold_type const                 foldtype = fold_type::Left )
     {
-        if (std::holds_alternative<constant_expr>(expr))
+        auto const min_fold = [&manager, foldtype](auto& xs)
         {
-            return manager.constant(std::get<constant_expr>(expr).val);
-        }
-
-        auto const min_fold = [&manager, foldType](auto& xs)
-        {
-            return foldType == fold_e::Left
+            return foldtype == fold_e::Left
                 ? manager.template left_fold<ops::MIN>(xs)
                 : manager.template tree_fold<ops::MIN>(xs);
         };
 
-        auto const max_fold = [&manager, foldType](auto& xs)
+        auto const max_fold = [&manager, foldtype](auto& xs)
         {
-            return foldType == fold_e::Left
+            return foldtype == fold_e::Left
                 ? manager.template left_fold<ops::MAX>(xs)
                 : manager.template tree_fold<ops::MAX>(xs);
         };
 
         using diagram_t = typename diagram_manager<Dat, Deg, Dom>::diagram_t;
         auto termDs = std::vector<diagram_t>();
-        auto const& ts = std::get<minmax_expr>(expr).terms;
-        for (auto const& eTerm : ts)
+        for (auto const& eTerm : expr.terms_)
         {
             auto vars = manager.variables(eTerm);
             termDs.emplace_back(min_fold(vars));
         }
-
         return max_fold(termDs);
     }
 
     /**
-     *  Tests if @p diagram evaluates to the same value as @p expr .
-     */
-    template<class Dat, class Deg, class Dom>
-    auto test_evaluate
-        ( diagram_manager<Dat, Deg, Dom>& manager
-        , diagram<Dat, Deg> const&        diagram
-        , expr_var const&                 expr
-        , domain_iterator                 domainIt )
-    {
-        auto const end = domain_iterator_sentinel();
-        auto evalIt    = evaluating_iterator(domainIt, expr);
-        while (evalIt != end)
-        {
-            auto const expectedVal = *evalIt;
-            auto const diagramVal  = manager.evaluate( diagram
-                                                     , evalIt.var_vals() );
-            if (expectedVal != diagramVal)
-            {
-                return test_result(false, "Value missmatch.");
-            }
-            ++evalIt;
-        }
-
-        if (evalIt == end)
-        {
-            return test_result(true);
-        }
-
-        return test_result(false, "This should not have happened.");
-    }
-
-    /**
-     *  Tests if @p diagram evaluates to the same value as @p expr .
-     */
-    template<class Dat, class Deg, class Dom>
-    auto test_evaluate
-        ( diagram_manager<Dat, Deg, Dom>& manager
-        , diagram<Dat, Deg> const&        diagram
-        , expr_var const&                 expr )
-    {
-        return test_evaluate( manager
-                            , diagram
-                            , expr
-                            , domain_iterator(manager.get_domains()) );
-    }
-
-    /**
-     *  Tests if different folds create the same node.
-     */
-    template<class Dat, class Deg, class Dom>
-    auto test_fold
-        ( diagram_manager<Dat, Deg, Dom>&
-        , diagram<Dat, Deg> const&        diagram1
-        , diagram<Dat, Deg> const&        diagram2 )
-    {
-        if (diagram1.equals(diagram2))
-        {
-            return test_result(true);
-        }
-        else
-        {
-            return test_result(false, "Diagrams are different.");
-        }
-    }
-
-    /**
-     *  Tests if garbage collection collects all nodes except nodes
-     *  that are part of @p diagram .
-     */
-    template<class Dat, class Deg, class Dom>
-    auto test_gc
-        ( diagram_manager<Dat, Deg, Dom>& manager
-        , diagram<Dat, Deg> const&        diagram )
-    {
-        manager.force_gc();
-        auto const totalNodeCount   = manager.node_count();
-        auto const diagramNodeCount = manager.node_count(diagram);
-        if (totalNodeCount == diagramNodeCount)
-        {
-            return test_result(true);
-        }
-        else
-        {
-            return test_result( false, "Node count missmatch. Expected "
-                              + std::to_string(diagramNodeCount)
-                              + " got "
-                              + std::to_string(totalNodeCount) + ".");
-        }
-    }
-
-    /**
-     *  Calculates frequency table for each possible value of @p expr .
+     *  \brief Calculates frequency table for each possible value of @p expr .
      */
     template<class Dat, class Deg, class Dom>
     auto expected_counts
         ( diagram_manager<Dat, Deg, Dom>& manager
-        , expr_var const&                 expr )
+        , minmax_expr const&              expr )
     {
-        auto counts = std::vector<std::size_t>();
-        auto const domains = manager.get_domains();
-        auto const inc     = [](auto& cs, auto const v)
+        auto counts   = std::vector<std::size_t>();
+        auto domainit = domain_iterator(manager.get_domains());
+        auto evalit   = evaluating_iterator(domainit, expr);
+        auto evalend  = evaluating_iterator_sentinel();
+        while (evalit != evalend)
         {
-            if (v >= cs.size())
+            auto const v = *evalit;
+            if (v >= counts.size())
             {
-                cs.resize(v + 1, 0);
+                counts.resize(v + 1, 0);
             }
-            ++cs[v];
-        };
-        if (domains.empty())
-        {
-            inc(counts, evaluate_expression(expr, {}));
-        }
-        else
-        {
-            auto domainIt  = domain_iterator(domains);
-            auto evalIt    = evaluating_iterator(domainIt, expr);
-            auto const end = domain_iterator_sentinel();
-            while (evalIt != end)
-            {
-                inc(counts, *evalIt);
-                ++evalIt;
-            }
+            ++counts[v];
+            ++evalit;
         }
         return counts;
     }
 
     /**
-     *  Tests the satisfy_count algorithm.
+     *  \brief Holds data common for all tests.
      */
-    template<class Dat, class Deg, class Dom>
-    auto test_satisfy_count
-        ( diagram_manager<Dat, Deg, Dom>& manager
-        , diagram<Dat, Deg>&              diagram
-        , expr_var const&                 expr )
+    template<uint_t M>
+    class test_base
+        : public rog::LeafTest
     {
-        auto const domains        = manager.get_domains();
-        auto const expectedCounts = expected_counts(manager, expr);
-        auto const realCounts     = [&]()
+    public:
+        test_base (std::string name, SettingsType<M> settings) :
+            rog::LeafTest(std::move(name)),
+            settings_ (std::move(settings))
         {
-            auto cs = std::vector<std::size_t>(expectedCounts.size(), 0);
-            for (auto v = 0u; v < cs.size(); ++v)
-            {
-                cs[v] = manager.satisfy_count(v, diagram);
-            }
-            return cs;
-        }();
-
-        for (auto k = 0u; k < realCounts.size(); ++k)
-        {
-            if (realCounts[k] != expectedCounts[k])
-            {
-                return test_result(false, "Count missmatch.");
-            }
+            auto rng = std::mt19937_64(settings_.seed_);
+            expr_ = generate_minmax_expression(
+                rng,
+                settings_.varcount_,
+                settings_.termcount_,
+                settings_.termsize_
+            );
         }
 
-        return test_result(true);
-    }
+    protected:
+        auto get_expr () const -> minmax_expr const&
+        {
+            return expr_;
+        }
+
+        auto get_settings () const -> Settings<M> const&
+        {
+            return settings_;
+        }
+
+    private:
+        minmax_expr expr_;
+        SettingsType<M> settings_;
+    };
+
+    /**
+     *  \brief Tests the \c evaluate method.
+     */
+    template<uint_t M>
+    class test_evaluate
+        : public test_base<M>
+    {
+    public:
+        test_evaluate (SettingsType<M> settings) :
+            test_base ("evaluate", std::move(settings))
+        {
+        }
+
+    protected:
+        auto test () -> void override
+        {
+            auto manager  = create_manager(this->get_settings());
+            auto diagram  = create_diagram(this->get_expr(), manager);
+            auto domainit = domain_iterator(manager.get_domains());
+            auto evalit   = evaluating_iterator(domainit, this->get_expr());
+            auto evalend  = evaluating_iterator_sentinel();
+            while (evalit != evalend)
+            {
+                auto const expectedval = *evalit;
+                auto const diagramval = manager.evaluate(
+                    diagram,
+                    evalIt.var_vals()
+                );
+                if (expectedval != diagramval)
+                {
+                    // TODO std::format when available
+                    this->log_fail( "Expected " + std::to_string(expectedval)
+                                  + " got "  +  std::to_string(diagramval) );
+                    break;
+                }
+                ++evalit;
+            }
+
+            if (evalit == evalend)
+            {
+                this->log_pass("OK, expected == actual.");
+            }
+        }
+    };
+
+    /**
+     *  \brief Tests tree fold and left fold.
+     */
+    template<uint_t M>
+    class test_fold
+        : public test_base<M>
+    {
+    public:
+        test_fold (SettingsType<M> settings) :
+            test_base ("fold", std::move(settings))
+        {
+        }
+
+    protected:
+        auto test () -> void override
+        {
+            auto manager  = create_manager(this->get_settings());
+            auto diagram1 = manager.reduce(create_diagram(
+                this->get_expr(),
+                manager,
+                fold_type::Left
+            ));
+            auto diagram2 = manager.reduce(create_diagram(
+                this->get_expr(),
+                manager,
+                fold_type::Tree
+            ));
+            auto const aresame = diagram1.equals(diagram2);
+            this->assert_true(aresame, "Diagram1.equals(diagram2)");
+        }
+    };
+
+    /**
+     *  \brief Tests tree fold and left fold.
+     */
+    template<uint_t M>
+    class test_gc
+        : public test_base<M>
+    {
+    public:
+        test_gc (SettingsType<M> settings) :
+            test_base ("gc", std::move(settings))
+        {
+        }
+
+    protected:
+        auto test () -> void override
+        {
+            auto manager  = create_manager(this->get_settings());
+            auto diagram1 = manager.reduce(create_diagram(
+                this->get_expr(),
+                manager,
+                fold_type::Left
+            ));
+            auto diagram2 = manager.reduce(create_diagram(
+                this->get_expr(),
+                manager,
+                fold_type::Tree
+            ));
+            manager.force_gc();
+            auto const expectednodes = manager.node_count(diagram1);
+            auto const actualnodes = manager.node_count();
+            this->assert_true(
+                expectednodes == actualnodes,
+                "Expected " + std::to_string(expectednodes) + " nodes got " +
+                + std::to_string(actualnodes) + " nodes"
+            );
+        }
+    };
+
+    /**
+     *  \brief Tests satisfy-count algorithm.
+     */
+    template<uint_t M>
+    class test_satisfy_count
+        : public test_base<M>
+    {
+    public:
+        test_satisfy_count (SettingsType<M> settings) :
+            test_base ("satisfy-count", std::move(settings))
+        {
+        }
+
+    protected:
+        auto test () -> void override
+        {
+            auto manager  = create_manager(this->get_settings());
+            auto diagram  = create_diagram(this->get_expr(), manager);
+            auto expected = expected_counts(manager, this->get_expr());
+            auto actual   = std::vector<std::size_t>(expected.size(), 0);
+
+            for (auto v = 0u; v < actual.size(); ++v)
+            {
+                actual[v] = manager.satisfy_count(v, diagram);
+            }
+
+            for (auto k = 0u; k < actual.size(); ++k)
+            {
+                if (actual[k] != expected[k])
+                {
+                    this->assert_true(
+                        actual[k] != expected[k],
+                        "Expected " + std::to_string(expected[k]) +
+                        " got "  + std::to_string(actual[k]) +
+                        " for " + std::to_string(k)
+                    );
+                }
+            }
+        }
+    };
+
+    /**
+     *  \brief Tests satisfy-all algorithm.
+     */
+    template<uint_t M>
+    class test_satisfy_all
+        : public test_base<M>
+    {
+    public:
+        test_satisfy_all (SettingsType<M> settings) :
+            test_base ("satisfy-all", std::move(settings))
+        {
+        }
+
+    protected:
+        auto test () -> void override
+        {
+            auto manager  = create_manager(this->get_settings());
+            auto diagram  = create_diagram(this->get_expr(), manager);
+            auto expected = expected_counts(manager, this->get_expr());
+            auto actual   = std::vector<std::size_t>(expectedCounts.size(), 0);
+            for (auto k = 0u; k < expected.size(); ++k)
+            {
+                using out_var_vals = std::array<uint_t, M>;
+                auto outf = [&actual, k](auto const&)
+                {
+                    ++actual[k];
+                };
+                auto out = forwarding_iterator<decltype(outf)>(outf);
+                manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
+            }
+
+            for (auto k = 0u; k < actual.size(); ++k)
+            {
+                if (actual[k] != expected[k])
+                {
+                    this->assert_true(
+                        actual[k] != expected[k],
+                        "Expected " + std::to_string(expected[k]) +
+                        " got "  + std::to_string(actual[k]) +
+                        " for " + std::to_string(k)
+                    );
+                }
+            }
+        }
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     /**
      *  Test the satisfy_all algorithm;
@@ -655,7 +894,7 @@ namespace teddy::test
 
         auto diagram1s = utils::fill_vector(testCount, [&](auto const k)
         {
-            return create_diagram(exprs[k], managers[k], fold_e::Left);
+            return create_diagram(exprs[k], managers[k], fold_type::Left);
         });
 
         auto sizesNotSifted = teddy::utils::fill_vector(diagram1s.size(),
@@ -671,7 +910,7 @@ namespace teddy::test
 
         auto diagram2s = utils::fill_vector(testCount, [&](auto const k)
         {
-            return create_diagram(exprs[k], managers[k], fold_e::Tree);
+            return create_diagram(exprs[k], managers[k], fold_type::Tree);
         });
 
         for (auto k = 0u; k < managers.size(); ++k)
@@ -796,8 +1035,8 @@ namespace teddy::test
         , expr_var const&  expr
         , rng_t&           rng )
     {
-        auto diagram1 = create_diagram(expr, manager, fold_e::Left);
-        auto diagram2 = create_diagram(expr, manager, fold_e::Tree);
+        auto diagram1 = create_diagram(expr, manager, fold_type::Left);
+        auto diagram2 = create_diagram(expr, manager, fold_type::Tree);
 
         diagram1 = manager.reduce(diagram1);
         diagram2 = manager.reduce(diagram2);

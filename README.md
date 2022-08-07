@@ -36,7 +36,7 @@ This installs library files to `/usr/local` which should be visible to your comp
 To uninstall the library go to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.
 
 ### Compiling
-TeDDy uses features from `C++20` so you need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. It was tested with `g++ 11.1.0`, `clang++ 15.0.0` and `MSVC 19.31.31107`.  
+TeDDy uses features from `C++20` so you need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. It was tested with `g++ 10.1.0`, `clang++ 13.0.1` and `MSVC 19.31.31107`.  
 
 ## Library API
 Functions from the library are accessible via the instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  

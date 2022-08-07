@@ -2,6 +2,7 @@
 #define LIBTEDDY_DETAILS_HASH_TABLES_HPP
 
 #include <libteddy/details/operators.hpp>
+#include <algorithm>
 #include <array>
 #include <vector>
 #include <utility>

@@ -32,6 +32,11 @@ target_include_directories(
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+# TODO
+add_subdirectory(
+    tests
+)
+
 #
 # libteddy-test-core
 #
