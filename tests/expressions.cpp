@@ -34,7 +34,7 @@ namespace teddy
         return minmax_expr {std::move(terms)};
     }
 
-    auto evaluate_minmax_expression
+    auto evaluate_expression
         ( minmax_expr const&         expr
         , std::vector<uint_t> const& vs ) -> uint_t
     {
@@ -193,8 +193,8 @@ namespace teddy
         return go(go, varcount);
     }
 
-    auto evaluate_expression_tree ( expr_node const&           expr
-                                  , std::vector<uint_t> const& vs ) -> uint_t
+    auto evaluate_expression( expr_node const&           expr
+                            , std::vector<uint_t> const& vs ) -> uint_t
     {
         auto const go = [&vs](auto self, auto const& node)
         {

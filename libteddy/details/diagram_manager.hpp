@@ -615,6 +615,11 @@ namespace teddy
         auto force_gc () -> void;
 
         /**
+         *  \brief Runs variable reordering heuristic.
+         */
+        auto force_reorder () -> void;
+
+        /**
          *  \brief Returns number of variables for this manager
          *  set in the constructor.
          *  \return Number of variables.
@@ -1540,6 +1545,13 @@ namespace teddy
         () -> void
     {
         nodes_.force_gc();
+    }
+
+    template<class Data, degree Degree, domain Domain>
+    auto diagram_manager<Data, Degree, Domain>::force_reorder
+        () -> void
+    {
+        nodes_.sift_variables();
     }
 
     template<class Data, degree Degree, domain Domain>
