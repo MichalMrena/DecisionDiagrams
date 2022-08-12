@@ -52,11 +52,6 @@ namespace teddy
     {
     };
 
-    auto constexpr get_M (bdd_manager_settings const&) -> uint_t
-    {
-        return 2;
-    }
-
     /**
      *  \brief Describes how to initialize a mdd_manager.
      */
@@ -64,12 +59,6 @@ namespace teddy
     struct mdd_manager_settings : manager_settings
     {
     };
-
-    template<uint_t M>
-    auto constexpr get_M (mdd_manager_settings<M> const&) -> uint_t
-    {
-        return M;
-    }
 
     /**
      *  \brief Describes how to initialize imdd_manager.
@@ -80,12 +69,6 @@ namespace teddy
         std::variant<random_domains_tag, given_domains> domains_;
     };
 
-    template<uint_t M>
-    auto constexpr get_M (imdd_manager_settings<M> const&) -> uint_t
-    {
-        return M;
-    }
-
     /**
      *  \brief Describes how to initialize a ifmdd_manager.
      */
@@ -95,18 +78,11 @@ namespace teddy
         std::variant<random_domains_tag, given_domains> domains_;
     };
 
-    template<uint_t M>
-    auto constexpr get_M (ifmdd_manager_settings<M> const&) -> uint_t
-    {
-        return M;
-    }
-
     /**
      *  \brief Settings for generation of minmax expression.
      */
     struct minmax_expression_settings
     {
-        uint_t varcount_;
         uint_t termcount_;
         uint_t termsize_;
     };
@@ -155,18 +131,20 @@ namespace teddy
      *  \brief Makes order of variables for a manager.
      */
     template<uint_t M>
-    auto make_domains ( imdd_manager_settings<M> const& s
-                      , std::mt19937_64& rng ) -> std::vector<index_t>
+    auto make_domains
+        ( uint_t const varcount
+        , std::variant<random_domains_tag, given_domains> const& s
+        , std::mt19937_64& rng ) -> std::vector<index_t>
     {
         return std::visit(
             match{
                 [&](random_domains_tag)
                 {
-                    auto dist = std::uniform_int_distribution<index_t>(
+                    auto dist = std::uniform_int_distribution<uint_t>(
                         2u,
                         M - 1
                     );
-                    return utils::fill_vector(s.varcount_, [&rng, &dist]()
+                    return utils::fill_vector(varcount, [&rng, &dist](auto)
                     {
                         return dist(rng);
                     });
@@ -176,8 +154,18 @@ namespace teddy
                     return ds.domains_;
                 }
             },
-            s.domains_
+            s
         );
+    }
+
+    /**
+     *  \brief Makes domains for a manager.
+     */
+    template<uint_t M>
+    auto make_domains ( imdd_manager_settings<M> const& s
+                      , std::mt19937_64& rng ) -> std::vector<index_t>
+    {
+        return make_domains<M>(s.varcount_, s.domains_, rng);
     }
 
     /**
@@ -187,26 +175,7 @@ namespace teddy
     auto make_domains ( ifmdd_manager_settings<M> const& s
                       , std::mt19937_64& rng ) -> std::vector<index_t>
     {
-        return std::visit(
-            match{
-                [&](random_domains_tag)
-                {
-                    auto dist = std::uniform_int_distribution<index_t>(
-                        2u,
-                        M - 1
-                    );
-                    return utils::fill_vector(s.varcount_, [&rng, &dist]()
-                    {
-                        return dist(rng);
-                    });
-                },
-                [](given_domains const& ds)
-                {
-                    return ds.domains_;
-                }
-            },
-            s.domains_
-        );
+        return make_domains<M>(s.varcount_, s.domains_, rng);
     }
 
     /**
@@ -246,8 +215,8 @@ namespace teddy
         return imdd_manager(
             s.varcount_,
             s.nodecount_,
-            make_order(s, rng),
-            make_domains(s, rng)
+            make_domains(s, rng),
+            make_order(s, rng)
         );
     }
 
@@ -256,20 +225,30 @@ namespace teddy
      */
     template<uint_t M>
     auto create_manager ( ifmdd_manager_settings<M> const& s
-                        , std::mt19937_64& rng ) -> imdd_manager
+                        , std::mt19937_64& rng ) -> ifmdd_manager<M>
     {
-        return ifmdd_manager(
+        return ifmdd_manager<M>(
             s.varcount_,
             s.nodecount_,
-            make_order(s, rng),
-            make_domains(s, rng)
+            make_domains(s, rng),
+            make_order(s, rng)
         );
+    }
+
+    /**
+     *  \brief Creates manager for a test.
+     */
+    template<class Man, class Expr>
+    auto create_manager ( test_settings<Man, Expr> const& s
+                        , std::mt19937_64& rng )
+    {
+        return create_manager(s.manager_, rng);
     }
 
     /**
      *  \brief Creates diagram representing \p expr .
      */
-    template<class Dat, degree Deg, domain Dom>
+    template<class Dat, class Deg, class Dom>
     auto create_diagram
         ( minmax_expr const&              expr
         , diagram_manager<Dat, Deg, Dom>& manager
@@ -315,7 +294,7 @@ namespace teddy
     }
 
     /**
-     *  \brief Creates for a test.
+     *  \brief Creates expression for a test.
      */
     template<class Man, class Expr>
     auto create_expression ( test_settings<Man, Expr> const& s

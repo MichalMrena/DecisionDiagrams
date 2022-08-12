@@ -179,13 +179,14 @@ namespace teddy
 
         static auto dec_ref_count (node_t*) -> void;
 
+        auto sift_variables () -> void;
+
     private:
         auto is_redundant (index_t, sons_t const&) const -> bool;
 
         auto adjust_tables () -> void;
         auto adjust_caches () -> void;
 
-        auto sift_variables () -> void;
         auto swap_variable_with_next (index_t) -> void;
         auto swap_node_with_next (node_t*) -> void;
         auto dec_ref_try_gc (node_t*) -> void;

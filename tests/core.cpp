@@ -5,19 +5,24 @@
 #include <libteddy/teddy.hpp>
 #include <librog/rog.hpp>
 #include <algorithm>
-#include <array>
+#include <iomanip>
 #include <iostream>
-#include <omp.h>
+#include <memory>
 #include <random>
 #include <ranges>
-#include <tuple>
 #include <vector>
+
+#ifdef LIBTEDDY_TESTS_USE_OMP
+#include <mutex>
+#include <omp.h>
+#include <thread>
+#endif
 
 #include "core_setup.hpp"
 #include "expressions.hpp"
 #include "iterators.hpp"
 
-namespace teddy::test
+namespace teddy
 {
     /**
      *  \brief Calculates frequency table for each possible value of @p expr .
@@ -81,6 +86,7 @@ namespace teddy::test
      */
     template<class Settings>
     class evaluating_test
+        : public test_base<Settings>
     {
     public:
         evaluating_test (std::string name, Settings settings) :
@@ -134,8 +140,11 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings());
+            auto manager  = create_manager(this->settings(), this->rng());
             auto diagram  = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
             auto domainit = domain_iterator(manager.get_domains());
             auto evalit   = evaluating_iterator(domainit, expr);
             this->compare_eval(evalit, manager, diagram);
@@ -159,7 +168,7 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings());
+            auto manager  = create_manager(this->settings(), this->rng());
             auto diagram1 = create_diagram(
                 expr,
                 manager,
@@ -170,9 +179,12 @@ namespace teddy::test
                 manager,
                 fold_type::Tree
             );
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram1))
+            );
             this->assert_true(
                 diagram1.equals(diagram2),
-                "Diagram1.equals(diagram2)"
+                "Diagrams are the same"
             );
         }
     };
@@ -194,7 +206,7 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings());
+            auto manager  = create_manager(this->settings(), this->rng());
             auto diagram1 = create_diagram(
                 expr,
                 manager,
@@ -205,13 +217,16 @@ namespace teddy::test
                 manager,
                 fold_type::Tree
             );
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram1))
+            );
             manager.force_gc();
             auto const expected = manager.node_count(diagram1);
             auto const actual = manager.node_count();
             this->assert_true(
                 expected == actual,
                 "Expected " + std::to_string(expected) + " nodes got " +
-                + std::to_string(actual) + " nodes"
+                std::to_string(actual) + " nodes"
             );
         }
     };
@@ -233,9 +248,12 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings());
+            auto manager  = create_manager(this->settings(), this->rng());
             auto diagram  = create_diagram(expr, manager);
-            auto expected = expected_counts(manager, this->expr());
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
+            auto expected = expected_counts(manager, expr);
             auto actual   = std::vector<std::size_t>(expected.size(), 0);
 
             for (auto v = 0u; v < actual.size(); ++v)
@@ -245,15 +263,12 @@ namespace teddy::test
 
             for (auto k = 0u; k < actual.size(); ++k)
             {
-                if (actual[k] != expected[k])
-                {
-                    this->assert_true(
-                        actual[k] != expected[k],
-                        "Expected " + std::to_string(expected[k]) +
-                        " got "  + std::to_string(actual[k]) +
-                        " for " + std::to_string(k)
-                    );
-                }
+                this->assert_true(
+                    actual[k] == expected[k],
+                    "Expected " + std::to_string(expected[k]) +
+                    " got "  + std::to_string(actual[k]) +
+                    " for " + std::to_string(k)
+                );
             }
         }
     };
@@ -275,13 +290,16 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings());
+            auto manager  = create_manager(this->settings(), this->rng());
             auto diagram  = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
             auto expected = expected_counts(manager, expr);
             auto actual   = std::vector<std::size_t>(expected.size(), 0);
             for (auto k = 0u; k < expected.size(); ++k)
             {
-                using out_var_vals = std::array<uint_t, get_M(manager)>;
+                using out_var_vals = std::vector<uint_t>;
                 auto outf = [&actual, k](auto const&)
                 {
                     ++actual[k];
@@ -292,15 +310,12 @@ namespace teddy::test
 
             for (auto k = 0u; k < actual.size(); ++k)
             {
-                if (actual[k] != expected[k])
-                {
-                    this->assert_true(
-                        actual[k] != expected[k],
-                        "Expected " + std::to_string(expected[k]) +
-                        " got "  + std::to_string(actual[k]) +
-                        " for " + std::to_string(k)
-                    );
-                }
+                this->assert_true(
+                    actual[k] == expected[k],
+                    "Expected " + std::to_string(expected[k]) +
+                    " got "  + std::to_string(actual[k]) +
+                    " for " + std::to_string(k)
+                );
             }
         }
     };
@@ -323,12 +338,17 @@ namespace teddy::test
         {
             using namespace teddy::ops;
             auto expr       = create_expression(this->settings(), this->rng());
-            auto manager    = create_manager(this->settings());
+            auto manager    = create_manager(this->settings(), this->rng());
             auto diagram    = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
             auto const cs   = expected_counts(manager, expr);
             auto const zero = manager.constant(0);
             auto const one  = manager.constant(1);
-            auto const sup  = manager.constant(get_M(manager));
+            auto const sup  = manager.constant(
+                std::ranges::max(manager.get_domains())
+            );
             auto const bd   = manager.transform(diagram, utils::not_zero);
 
             this->assert_true(
@@ -440,17 +460,20 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr       = create_expression(this->settings(), this->rng());
-            auto manager    = create_manager(this->settings());
+            auto manager    = create_manager(this->settings(), this->rng());
             auto diagram    = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
             auto const maxi = static_cast<index_t>(manager.get_var_count() - 1);
             auto indexDist  = std::uniform_int_distribution<index_t>(0u, maxi);
-            auto const i1   = indexDist(this->get_rng());
+            auto const i1   = indexDist(this->rng());
             auto const i2   = [this, &indexDist, i1]()
             {
                 for (;;)
                 {
                     // I know ... but should be ok...
-                    auto const i = indexDist(this->get_rng());
+                    auto const i = indexDist(this->rng());
                     if (i != i1)
                     {
                         return i;
@@ -489,8 +512,11 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings());
+            auto manager  = create_manager(this->settings(), this->rng());
             auto diagram  = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
             manager.force_gc();
             manager.force_reorder();
             manager.force_gc();
@@ -529,9 +555,13 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr    = create_expression(this->settings(), this->rng());
-            auto manager = create_manager(this->settings());
+            auto manager = create_manager(this->settings(), this->rng());
             manager.set_auto_reorder(true);
             auto diagram = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
+            manager.force_gc();
             auto const actual = manager.node_count();
             auto const expected = manager.node_count(diagram);
 
@@ -567,8 +597,11 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings());
-            auto diagram  = create_diagram(expr(), manager);
+            auto manager  = create_manager(this->settings(), this->rng());
+            auto diagram  = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
             auto order    = manager.get_order();
             auto domains  = manager.get_domains();
             std::ranges::reverse(order);
@@ -603,8 +636,11 @@ namespace teddy::test
         auto test () -> void override
         {
             auto expr    = create_expression(this->settings(), this->rng());
-            auto manager = create_manager(this->settings());
+            auto manager = create_manager(this->settings(), this->rng());
             auto diagram = create_diagram(expr, manager);
+            this->log_info(
+                "Node count " + std::to_string(manager.node_count(diagram))
+            );
             auto vector  = manager.to_vector(diagram);
             auto vectord = manager.from_vector(vector);
             this->assert_true(
@@ -630,11 +666,11 @@ namespace teddy::test
     protected:
         auto test () -> void override
         {
-            auto manager = create_manager(this->settings());
+            auto manager = create_manager(this->settings(), this->rng());
             auto exprtree = generate_expression_tree(
                 manager.get_var_count(),
-                this->get_rng(),
-                this->get_rng()
+                this->rng(),
+                this->rng()
             );
             auto diagram  = manager.from_expression_tree(*exprtree);
             auto domainit = domain_iterator(manager.get_domains());
@@ -642,10 +678,297 @@ namespace teddy::test
             this->compare_eval(evalit, manager, diagram);
         }
     };
+
+    template<class ManagerSettings, class ExpressionSettings>
+    class test_manager
+        : public rog::CompositeTest
+    {
+    public:
+        test_manager
+            ( std::size_t const  seed
+            , ManagerSettings    manager
+            , ExpressionSettings expr
+            , std::string        name ) :
+            rog::CompositeTest(std::move(name))
+        {
+            auto seeder = std::mt19937_64(seed);
+
+            using settings_t = test_settings<
+                ManagerSettings,
+                ExpressionSettings
+            >;
+
+            this->add_test(std::make_unique<test_evaluate<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_fold<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_gc<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_satisfy_all<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_operators<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_cofactor<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_one_var_sift<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_auto_var_sift<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_from_vector<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_to_vector<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+
+            this->add_test(std::make_unique<test_from_expression<settings_t>>(
+                test_settings {seeder(), manager, expr}
+            ));
+        }
+    };
+
+    /**
+     *  \brief Tests bdd manager.
+     */
+    class test_bdd_manager
+        : public test_manager<bdd_manager_settings, minmax_expression_settings>
+    {
+    public:
+        test_bdd_manager (std::size_t const seed) :
+            test_manager<bdd_manager_settings, minmax_expression_settings>
+            ( seed
+            , bdd_manager_settings {21, 2'000, random_order_tag()}
+            , minmax_expression_settings {30, 6}
+            , "bdd_manager" )
+        {
+        }
+    };
+
+    /**
+     *  \brief Tests mdd manager.
+     */
+    class test_mdd_manager
+        : public test_manager< mdd_manager_settings<3>
+                             , minmax_expression_settings >
+    {
+    public:
+        test_mdd_manager (std::size_t const seed) :
+            test_manager<mdd_manager_settings<3>, minmax_expression_settings>
+            ( seed
+            , mdd_manager_settings<3> {15, 5'000, random_order_tag()}
+            , minmax_expression_settings {20, 5}
+            , "mdd_manager" )
+        {
+        }
+    };
+
+    /**
+     *  \brief Tests imdd manager.
+     */
+    class test_imdd_manager
+        : public test_manager< imdd_manager_settings<3>
+                             , minmax_expression_settings >
+    {
+    public:
+        test_imdd_manager (std::size_t const seed) :
+            test_manager<imdd_manager_settings<3>, minmax_expression_settings>
+            ( seed
+            , imdd_manager_settings<3> {21, 5'000, random_order_tag(), random_domains_tag()}
+            , minmax_expression_settings {30, 6}
+            , "imdd_manager" )
+        {
+        }
+    };
+
+    /**
+     *  \brief Tests ifmdd manager.
+     */
+    class test_ifmdd_manager
+        : public test_manager< ifmdd_manager_settings<3>
+                             , minmax_expression_settings >
+    {
+    public:
+        test_ifmdd_manager (std::size_t const seed) :
+            test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>
+            ( seed
+            , ifmdd_manager_settings<3> {21, 5'000, random_order_tag(), random_domains_tag()}
+            , minmax_expression_settings {30, 6}
+            , "ifmdd_manager" )
+        {
+        }
+    };
 }
 
-auto main () -> int
+auto run_test_one ()
 {
+    auto bddmt = teddy::test_bdd_manager(144);
+    bddmt.run();
+    rog::console_print_results(bddmt);
+
+    auto mddmt = teddy::test_mdd_manager(144);
+    mddmt.run();
+    rog::console_print_results(mddmt);
+
+    auto imddmt = teddy::test_imdd_manager(144);
+    imddmt.run();
+    rog::console_print_results(imddmt);
+
+    auto ifmddmt = teddy::test_ifmdd_manager(144);
+    ifmddmt.run();
+    rog::console_print_results(ifmddmt);
+}
+
+auto run_test_many ()
+{
+    auto constexpr Oks = "o";
+    auto constexpr Ers = "x";
+
+    auto result_to_str = [](auto const r)
+    {
+        switch (r)
+        {
+            case rog::TestResult::Fail:
+                return Ers;
+
+            case rog::TestResult::Pass:
+                return Oks;
+
+            default:
+                return " ";
+        }
+    };
+
+    auto print_results = [=](auto const& tests)
+    {
+        auto const numtest = tests.front().subtests().size();
+        auto const numrep  = tests.size();
+        auto const numw    = 1 + std::ranges::max(
+            tests.front().subtests() |
+            std::ranges::views::transform(&rog::Test::name) |
+            std::ranges::views::transform(std::ranges::size)
+        );
+
+        std::cout << Oks << " - ok; " << Ers << " - not good" << '\n';
+        std::cout << tests.front().name() << '\n';
+        for (auto k = 0u; k < numtest; ++k)
+        {
+            std::cout << " > "
+                      << std::left
+                      << std::setw(static_cast<int>(numw))
+                      << tests.front().subtests()[k]->name() << ' ';
+            for (auto l = 0u; l < numrep; ++l)
+            {
+                std::cout << result_to_str(tests[l].subtests()[k]->result())
+                          << " ";
+            }
+            std::cout << '\n';
+        }
+        std::cout << '\n';
+    };
+
+    #ifdef LIBTEDDY_TEST_USE_OMP
+    auto const numtest = omp_get_num_procs();
+    #else
+    auto const numtest = 10;
+    #endif
+
+    auto bddmts  = std::vector<teddy::test_bdd_manager>();
+    auto mddmts  = std::vector<teddy::test_mdd_manager>();
+    auto imddts  = std::vector<teddy::test_imdd_manager>();
+    auto ifmddts = std::vector<teddy::test_ifmdd_manager>();
+    auto seeder  = std::mt19937_64(144);
+
+    for (auto k = 0; k < numtest; ++k)
+    {
+        bddmts.emplace_back(teddy::test_bdd_manager(seeder()));
+        mddmts.emplace_back(teddy::test_mdd_manager(seeder()));
+        imddts.emplace_back(teddy::test_imdd_manager(seeder()));
+        ifmddts.emplace_back(teddy::test_ifmdd_manager(seeder()));
+    }
+
+    #ifdef LIBTEDDY_TESTS_USE_OMP
+    #pragma omp parallel for
+    #endif
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        bddmts[k].run();
+    }
+    print_results(bddmts);
+
+    #ifdef LIBTEDDY_TESTS_USE_OMP
+    #pragma omp parallel for
+    #endif
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        mddmts[k].run();
+    }
+    print_results(mddmts);
+
+    #ifdef LIBTEDDY_TESTS_USE_OMP
+    #pragma omp parallel for
+    #endif
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        imddts[k].run();
+    }
+    print_results(imddts);
+
+    #ifdef LIBTEDDY_TESTS_USE_OMP
+    #pragma omp parallel for
+    #endif
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        ifmddts[k].run();
+    }
+    print_results(ifmddts);
+}
+
+auto main (int const argc, char** const argv) -> int
+{
+    auto seed = 144ull;
+    if (argc > 2)
+    {
+        auto const seedopt = teddy::utils::parse<std::size_t>(argv[2]);
+        seed = seedopt ? *seedopt : seed;
+    }
+
+    std::cout << "Seed is " << seed << '\n';
+
+    if (argc > 1 && std::string_view(argv[1]) == "one")
+    {
+        run_test_one();
+    }
+    else if (argc > 1 && std::string_view(argv[1]) == "many")
+    {
+        run_test_many();
+    }
+    else
+    {
+        run_test_one();
+        run_test_many();
+    }
+
     std::cout << '\n' << "End of main." << '\n';
     return 0;
 }

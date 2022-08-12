@@ -177,14 +177,14 @@ namespace teddy
 
     template<class Expression>
     auto evaluating_iterator<Expression>::operator==
-        (evaluating_iterator_sentinel const s) const -> bool
+        (evaluating_iterator_sentinel const) const -> bool
     {
         return iterator_ == domain_iterator_sentinel();
     }
 
     template<class Expression>
     auto evaluating_iterator<Expression>::operator!=
-        (evaluating_iterator_sentinel const s) const -> bool
+        (evaluating_iterator_sentinel const) const -> bool
     {
         return iterator_ != domain_iterator_sentinel();
     }
@@ -196,6 +196,6 @@ namespace teddy
         return *iterator_;
     }
 
-    template<> class evaluating_iterator<minmax_expr>;
-    template<> class evaluating_iterator<expr_node>;
+    template class evaluating_iterator<minmax_expr>;
+    template class evaluating_iterator<expr_node>;
 }
