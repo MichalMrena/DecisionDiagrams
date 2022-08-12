@@ -1,10 +1,10 @@
 #ifndef LIBTEDDY_DETAILS_UTILS_HPP
 #define LIBTEDDY_DETAILS_UTILS_HPP
 
-#include <libteddy/details/types.hpp>
 #include <charconv>
 #include <concepts>
 #include <functional>
+#include <libteddy/details/types.hpp>
 #include <optional>
 #include <ranges>
 #include <vector>
@@ -12,19 +12,17 @@
 namespace teddy::utils
 {
     template<class F>
-    concept i_gen = requires (F f, uint_t k)
-    {
-        std::invoke(f, k);
-    };
+    concept i_gen           = requires(F f, uint_t k) { std::invoke(f, k); };
 
     auto constexpr identity = [](auto const a) { return a; };
 
     auto constexpr not_zero = [](auto const x) { return x != 0; };
 
-    auto constexpr constant = [](auto const c) { return [c](auto){return c;}; };
+    auto constexpr constant = [](auto const c)
+    { return [c](auto) { return c; }; };
 
     template<i_gen Gen>
-    auto fill_vector (std::size_t const n, Gen&& f)
+    auto fill_vector(std::size_t const n, Gen&& f)
     {
         using T = decltype(std::invoke(f, uint_t {}));
         auto xs = std::vector<T>();
@@ -37,7 +35,7 @@ namespace teddy::utils
     }
 
     template<std::input_iterator I, std::sentinel_for<I> S, class F>
-    auto fmap (I it, S last, F f)
+    auto fmap(I it, S last, F f)
     {
         using U = decltype(std::invoke(f, *it));
         auto ys = std::vector<U>();
@@ -54,13 +52,13 @@ namespace teddy::utils
     }
 
     template<std::ranges::input_range Xs, class F>
-    auto fmap (Xs&& xs, F f)
+    auto fmap(Xs&& xs, F f)
     {
         return fmap(std::ranges::begin(xs), std::ranges::end(xs), f);
     }
 
     template<class Base, std::integral Exponent>
-    auto constexpr int_pow (Base base, Exponent exponent) -> Base
+    auto constexpr int_pow(Base base, Exponent exponent) -> Base
     {
         auto result = Base {1};
 
@@ -85,14 +83,14 @@ namespace teddy::utils
     }
 
     template<class Num>
-    auto parse (std::string_view const in) -> std::optional<Num>
+    auto parse(std::string_view const in) -> std::optional<Num>
     {
         auto ret    = Num {};
         auto result = std::from_chars(in.data(), in.data() + in.size(), ret);
         return std::errc {} == result.ec && result.ptr == in.data() + in.size()
-            ? std::optional<Num>(ret)
-            : std::nullopt;
+                   ? std::optional<Num>(ret)
+                   : std::nullopt;
     }
-}
+} // namespace teddy::utils
 
 #endif

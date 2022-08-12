@@ -1,11 +1,10 @@
 ---
 Language:        Cpp
-AccessModifierOffset: 0
-# AlignAfterOpenBracket: BlockIndent
-AlignAfterOpenBracket: as
+AccessModifierOffset: -4
+AlignAfterOpenBracket: BlockIndent
 AlignArrayOfStructures: Left
 AlignConsecutiveMacros: None
-AlignConsecutiveAssignments: AcrossEmptyLines 
+AlignConsecutiveAssignments: AcrossEmptyLines
 AlignConsecutiveBitFields: None
 AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Right
@@ -99,7 +98,7 @@ PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 60
 PenaltyIndentedWhitespace: 0
-PointerAlignment: Right
+PointerAlignment: Left
 PPIndentWidth:   -1
 ReferenceAlignment: Pointer
 ReflowComments:  true
@@ -107,7 +106,7 @@ RequiresClausePosition: OwnLine
 ShortNamespaceLines: 1
 SortIncludes: CaseSensitive
 SpaceAfterLogicalNot: true
-SpaceAfterTemplateKeyword: true
+SpaceAfterTemplateKeyword: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeCaseColon: false
 SpaceBeforeCpp11BracedList: true

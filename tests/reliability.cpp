@@ -1,13 +1,13 @@
-#include <libteddy/teddy_reliability.hpp>
+#include "vector_function.hpp"
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <libteddy/teddy_reliability.hpp>
 #include <random>
 #include <tuple>
 #include <vector>
-#include "vector_function.hpp"
 
 namespace teddy::test
 {
@@ -37,191 +37,208 @@ namespace teddy::test
         return std::string("\x1B[93m") + std::string(s) + "\x1B[0m";
     }
 
-    auto constexpr char_ok()
-    {
-        return "✓";
-    }
+    auto constexpr char_ok() { return "✓"; }
 
-    auto constexpr char_err()
-    {
-        return "!";
-    }
+    auto constexpr char_err() { return "!"; }
 
-    auto result_char (bool const b)
+    auto result_char(bool const b)
     {
         return b ? wrap_green(char_ok()) : wrap_red(char_err());
     }
 
     template<uint_t P, class Manager, class Diagram, class Probabilities>
-    auto analyze_system ( Manager&             manager
-                        , Diagram&             sf
-                        , Probabilities const& ps)
+    auto analyze_system(Manager& manager, Diagram& sf, Probabilities const& ps)
     {
-        return system_characteristics
-        {
-            .Ps_ = utils::fill_vector(P, [&](auto const j)
-            {
-                return manager.probability(j, ps, sf);
-            }),
-            .As_ = utils::fill_vector(P, [&](auto const j)
-            {
-                return manager.availability(j, ps, sf);
-            }),
-            .Us_ = utils::fill_vector(P, [&](auto const j)
-            {
-                return manager.unavailability(j, ps, sf);
-            }),
-            .SIs_ = utils::fill_vector(manager.get_var_count(),
+        return system_characteristics {
+            .Ps_ = utils::fill_vector(
+                P, [&](auto const j) { return manager.probability(j, ps, sf); }
+            ),
+            .As_ = utils::fill_vector(
+                P, [&](auto const j) { return manager.availability(j, ps, sf); }
+            ),
+            .Us_ = utils::fill_vector(
+                P,
+                [&](auto const j) { return manager.unavailability(j, ps, sf); }
+            ),
+            .SIs_ = utils::fill_vector(
+                manager.get_var_count(),
                 [&](auto const i)
-            {
-                return utils::fill_vector(P - 1, [&](auto const j)
                 {
-                    return utils::fill_vector(manager.get_domains()[i] - 1,
-                        [&](auto const v)
-                    {
-                        auto dpbd = manager.idpbd_type_3_decrease(
-                            {v + 1, v}, j + 1, sf, i);
-                        return manager.structural_importance(dpbd);
-                    });
-                });
-            }),
-            .MCVs_ = utils::fill_vector(P - 1, [&](auto const j)
-            {
-                return manager.template mcvs<std::vector<uint_t>>(sf, j + 1);
-            })
-        };
+                    return utils::fill_vector(
+                        P - 1,
+                        [&](auto const j)
+                        {
+                            return utils::fill_vector(
+                                manager.get_domains()[i] - 1,
+                                [&](auto const v)
+                                {
+                                    auto dpbd = manager.idpbd_type_3_decrease(
+                                        {v + 1, v}, j + 1, sf, i
+                                    );
+                                    return manager.structural_importance(dpbd);
+                                }
+                            );
+                        }
+                    );
+                }
+            ),
+            .MCVs_ = utils::fill_vector(
+                P - 1,
+                [&](auto const j) {
+                    return manager.template mcvs<std::vector<uint_t>>(
+                        sf, j + 1
+                    );
+                }
+            )};
     }
 
     template<class Probabilities>
-    auto analyze_system ( vector::vector_function const& sf
-                        , Probabilities const&           ps )
+    auto
+    analyze_system(vector::vector_function const& sf, Probabilities const& ps)
     {
         auto rel = teddy::vector::vector_reliability(sf, ps);
-        return system_characteristics
-        {
-            .Ps_ = utils::fill_vector(sf.max_value() + 1, [&](auto const j)
-            {
-                return rel.probability(j);
-            }),
-            .As_ = utils::fill_vector(sf.max_value() + 1, [&](auto const j)
-            {
-                return rel.availability(j);
-            }),
-            .Us_ = utils::fill_vector(sf.max_value() + 1, [&](auto const j)
-            {
-                return rel.unavailability(j);
-            }),
-            .SIs_ = utils::fill_vector(sf.get_var_count(),
+        return system_characteristics {
+            .Ps_ = utils::fill_vector(
+                sf.max_value() + 1,
+                [&](auto const j) { return rel.probability(j); }
+            ),
+            .As_ = utils::fill_vector(
+                sf.max_value() + 1,
+                [&](auto const j) { return rel.availability(j); }
+            ),
+            .Us_ = utils::fill_vector(
+                sf.max_value() + 1,
+                [&](auto const j) { return rel.unavailability(j); }
+            ),
+            .SIs_ = utils::fill_vector(
+                sf.get_var_count(),
                 [&](auto const i)
-            {
-                return utils::fill_vector(sf.max_value(), [&](auto const j)
                 {
-                    return utils::fill_vector(sf.get_domains()[i] - 1,
-                        [&](auto const v)
-                    {
-                        return rel.structural_importance(j + 1, {i, v + 1, v});
-                    });
-                });
-            }),
-            .MCVs_ = utils::fill_vector(sf.max_value(), [&](auto const j)
-            {
-                return rel.mcvs(j + 1);
-            })
-        };
-    }
-
-    auto evaluate_test ( system_characteristics const& expected
-                       , system_characteristics const& actual )
-    {
-        namespace rs = std::ranges;
-        auto const cmp = [](auto const l, auto const r)
-        {
-            return std::abs(l - r) < 0.000001;
-        };
-
-        return std::vector<bool>
-        ({
-            // Probabilities.
-            std::ranges::equal(expected.Ps_, actual.Ps_, cmp),
-
-            // Availabilities.
-            std::ranges::equal(expected.As_, actual.As_, cmp),
-
-            // Unavailabilities.
-            std::ranges::equal(expected.Us_, actual.Us_, cmp),
-
-            // Structural importances.
-            std::ranges::equal(expected.SIs_, actual.SIs_,
-                [cmp](auto const& lhs, auto const& rhs)
-            {
-                return rs::equal(lhs, rhs, [cmp](auto const& l, auto const& r)
-                {
-                    return rs::equal(l, r, cmp);
-                });
-            }),
-
-            // Minimal Cut Vectors.
-            [&]()
-            {
-                for (auto j = 0u; j < expected.MCVs_.size(); ++j)
-                {
-                    if (not std::ranges::is_permutation(
-                                expected.MCVs_[j],
-                                actual.MCVs_[j] ))
-                    {
-                        return false;
-                    }
+                    return utils::fill_vector(
+                        sf.max_value(),
+                        [&](auto const j)
+                        {
+                            return utils::fill_vector(
+                                sf.get_domains()[i] - 1,
+                                [&](auto const v) {
+                                    return rel.structural_importance(
+                                        j + 1, {i, v + 1, v}
+                                    );
+                                }
+                            );
+                        }
+                    );
                 }
-                return true;
-            }()
-        });
+            ),
+            .MCVs_ = utils::fill_vector(
+                sf.max_value(), [&](auto const j) { return rel.mcvs(j + 1); }
+            )};
     }
 
-    auto print_test_evaluation ( system_characteristics const& expected
-                               , system_characteristics const& actual )
+    auto evaluate_test(
+        system_characteristics const& expected,
+        system_characteristics const& actual
+    )
     {
-        namespace rs = std::ranges;
+        namespace rs   = std::ranges;
         auto const cmp = [](auto const l, auto const r)
-        {
-            return std::abs(l - r) < 0.000001;
-        };
+        { return std::abs(l - r) < 0.000001; };
+
+        return std::vector<bool>(
+            {// Probabilities.
+             std::ranges::equal(expected.Ps_, actual.Ps_, cmp),
+
+             // Availabilities.
+             std::ranges::equal(expected.As_, actual.As_, cmp),
+
+             // Unavailabilities.
+             std::ranges::equal(expected.Us_, actual.Us_, cmp),
+
+             // Structural importances.
+             std::ranges::equal(
+                 expected.SIs_, actual.SIs_,
+                 [cmp](auto const& lhs, auto const& rhs)
+                 {
+                     return rs::equal(
+                         lhs, rhs,
+                         [cmp](auto const& l, auto const& r)
+                         { return rs::equal(l, r, cmp); }
+                     );
+                 }
+             ),
+
+             // Minimal Cut Vectors.
+             [&]()
+             {
+                 for (auto j = 0u; j < expected.MCVs_.size(); ++j)
+                 {
+                     if (not std::ranges::is_permutation(
+                             expected.MCVs_[j], actual.MCVs_[j]
+                         ))
+                     {
+                         return false;
+                     }
+                 }
+                 return true;
+             }()}
+        );
+    }
+
+    auto print_test_evaluation(
+        system_characteristics const& expected,
+        system_characteristics const& actual
+    )
+    {
+        namespace rs   = std::ranges;
+        auto const cmp = [](auto const l, auto const r)
+        { return std::abs(l - r) < 0.000001; };
 
         std::cout << "probabilities    "
-            << result_char(rs::equal(expected.Ps_, actual.Ps_, cmp)) << '\n';
+                  << result_char(rs::equal(expected.Ps_, actual.Ps_, cmp))
+                  << '\n';
         std::cout << "availabilities   "
-            << result_char(rs::equal(expected.As_, actual.As_, cmp)) << '\n';
+                  << result_char(rs::equal(expected.As_, actual.As_, cmp))
+                  << '\n';
         std::cout << "unavailabilities "
-            << result_char(rs::equal(expected.Us_, actual.Us_, cmp)) << '\n';
+                  << result_char(rs::equal(expected.Us_, actual.Us_, cmp))
+                  << '\n';
         std::cout << "SIs              "
-            << result_char(rs::equal(expected.SIs_, actual.SIs_,
-                [cmp](auto const& lhs, auto const& rhs)
-            {
-                return rs::equal(lhs, rhs, [cmp](auto const& l, auto const& r)
-                {
-                    return rs::equal(l, r, cmp);
-                });
-            })) << '\n';
+                  << result_char(rs::equal(
+                         expected.SIs_, actual.SIs_,
+                         [cmp](auto const& lhs, auto const& rhs)
+                         {
+                             return rs::equal(
+                                 lhs, rhs,
+                                 [cmp](auto const& l, auto const& r)
+                                 { return rs::equal(l, r, cmp); }
+                             );
+                         }
+                     ))
+                  << '\n';
         std::cout << "MCVs             "
-            << result_char([&]()
-            {
-                for (auto j = 0u; j < expected.MCVs_.size(); ++j)
-                {
-                    if (not rs::is_permutation(
-                                expected.MCVs_[j],
-                                actual.MCVs_[j] ))
-                    {
-                        return false;
-                    }
-                }
-                return true;
-            }())
-            << '\n';
+                  << result_char(
+                         [&]()
+                         {
+                             for (auto j = 0u; j < expected.MCVs_.size(); ++j)
+                             {
+                                 if (not rs::is_permutation(
+                                         expected.MCVs_[j], actual.MCVs_[j]
+                                     ))
+                                 {
+                                     return false;
+                                 }
+                             }
+                             return true;
+                         }()
+                     )
+                  << '\n';
     }
 
     template<uint_t P>
-    auto generate_serialparallel ( mss_manager<P>&  manager
-                                 , std::mt19937_64& rngtype
-                                 , std::mt19937_64& rngbranch )
+    auto generate_serialparallel(
+        mss_manager<P>& manager, std::mt19937_64& rngtype,
+        std::mt19937_64& rngbranch
+    )
     {
         using namespace teddy::ops;
 
@@ -233,14 +250,14 @@ namespace teddy::test
             }
             else
             {
-                auto denomdist = std::uniform_int_distribution<uint_t>(2, 10);
-                auto typedist  = std::uniform_real_distribution(0.0, 1.0);
-                auto const denom   = denomdist(rngbranch);
+                auto denomdist   = std::uniform_int_distribution<uint_t>(2, 10);
+                auto typedist    = std::uniform_real_distribution(0.0, 1.0);
+                auto const denom = denomdist(rngbranch);
                 auto const lhssize = std::max(1u, n / denom);
                 auto const rhssize = n - lhssize;
-                auto const lhs = self(self, lhssize);
-                auto const rhs = self(self, rhssize);
-                auto const p   = typedist(rngtype);
+                auto const lhs     = self(self, lhssize);
+                auto const rhs     = self(self, rhssize);
+                auto const p       = typedist(rngtype);
                 return p < 0.5 ? manager.template apply<MIN>(lhs, rhs)
                                : manager.template apply<MAX>(lhs, rhs);
             }
@@ -249,16 +266,17 @@ namespace teddy::test
     }
 
     template<uint_t P>
-    auto generate_probabilities (std::size_t const n, std::mt19937_64& rngp)
+    auto generate_probabilities(std::size_t const n, std::mt19937_64& rngp)
     {
         auto pdist = std::uniform_real_distribution<double>();
-        auto ps = utils::fill_vector(n, [&](auto)
-        {
-            return utils::fill_vector(P, [&](auto const)
-            {
-                return pdist(rngp);
-            });
-        });
+        auto ps    = utils::fill_vector(
+            n,
+            [&](auto) {
+                return utils::fill_vector(
+                    P, [&](auto const) { return pdist(rngp); }
+                );
+            }
+        );
         for (auto& varps : ps)
         {
             auto const sum = std::reduce(begin(varps), end(varps), 0.0);
@@ -271,7 +289,7 @@ namespace teddy::test
     }
 
     template<uint_t P>
-    auto test_n_random (std::size_t const testCount, std::size_t const n)
+    auto test_n_random(std::size_t const testCount, std::size_t const n)
     {
         auto seeder    = std::mt19937_64(144);
         auto rngtype   = std::mt19937_64(seeder());
@@ -285,7 +303,8 @@ namespace teddy::test
             auto diagram = generate_serialparallel(manager, rngtype, rngbranch);
             auto vectorFunc = vector::vector_function(
                 manager.to_vector(diagram),
-                utils::fill_vector(n, utils::constant(P)) );
+                utils::fill_vector(n, utils::constant(P))
+            );
             auto const ps       = generate_probabilities<P>(n, rngp);
             auto const actual   = analyze_system<P>(manager, diagram, ps);
             auto const expected = analyze_system(vectorFunc, ps);
@@ -309,25 +328,24 @@ namespace teddy::test
         print_row("SIs              ", results, 3u);
         print_row("MCVs             ", results, 4u);
     }
-}
+} // namespace teddy::test
 
 auto system_1()
 {
-    auto const vector = std::vector<teddy::uint_t>
-        { 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1
-        , 0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2 };
-    auto domains = std::vector<teddy::uint_t>({2, 3, 2, 3});
-    auto const ps = std::vector<std::vector<double>>
-    ({
+    auto const vector = std::vector<teddy::uint_t> {
+        0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
+        0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2};
+    auto domains        = std::vector<teddy::uint_t>({2, 3, 2, 3});
+    auto const ps       = std::vector<std::vector<double>>({
         {0.1, 0.9, 0.0},
         {0.2, 0.6, 0.2},
         {0.3, 0.7, 0.0},
         {0.1, 0.6, 0.3}
     });
-    auto vectorSf = teddy::vector::vector_function(vector, domains);
-    auto manager = teddy::ifmss_manager<3>(4, 1'000, {2, 3, 2, 3});
-    auto diagram = manager.from_vector(vector);
-    auto const actual = teddy::test::analyze_system<3>(manager, diagram, ps);
+    auto vectorSf       = teddy::vector::vector_function(vector, domains);
+    auto manager        = teddy::ifmss_manager<3>(4, 1'000, {2, 3, 2, 3});
+    auto diagram        = manager.from_vector(vector);
+    auto const actual   = teddy::test::analyze_system<3>(manager, diagram, ps);
     auto const expected = teddy::test::analyze_system(vectorSf, ps);
     teddy::test::print_test_evaluation(expected, actual);
 }

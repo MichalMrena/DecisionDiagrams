@@ -2,11 +2,11 @@
 #undef LIBTEDDY_VERBOSE
 // #define NDEBUG
 
-#include <libteddy/teddy.hpp>
-#include <librog/rog.hpp>
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <librog/rog.hpp>
+#include <libteddy/teddy.hpp>
 #include <memory>
 #include <random>
 #include <ranges>
@@ -28,9 +28,9 @@ namespace teddy
      *  \brief Calculates frequency table for each possible value of @p expr .
      */
     template<class Dat, class Deg, class Dom>
-    auto expected_counts
-        ( diagram_manager<Dat, Deg, Dom>& manager
-        , minmax_expr const&              expr )
+    auto expected_counts(
+        diagram_manager<Dat, Deg, Dom>& manager, minmax_expr const& expr
+    )
     {
         auto counts   = std::vector<std::size_t>();
         auto domainit = domain_iterator(manager.get_domains());
@@ -54,27 +54,19 @@ namespace teddy
      *  Each test uses some settings and random generator.
      */
     template<class Settings>
-    class test_base
-        : public rog::LeafTest
+    class test_base : public rog::LeafTest
     {
     public:
-        test_base (std::string name, Settings settings) :
-            rog::LeafTest(std::move(name)),
-            settings_ (std::move(settings)),
-            rng_ (settings_.seed_)
+        test_base(std::string name, Settings settings)
+            : rog::LeafTest(std::move(name)), settings_(std::move(settings)),
+              rng_(settings_.seed_)
         {
         }
 
     protected:
-        auto settings () const -> Settings const&
-        {
-            return settings_;
-        }
+        auto settings() const -> Settings const& { return settings_; }
 
-        auto rng () -> std::mt19937_64&
-        {
-            return rng_;
-        }
+        auto rng() -> std::mt19937_64& { return rng_; }
 
     private:
         Settings settings_;
@@ -85,32 +77,29 @@ namespace teddy
      *  \brief Implements brute-force evaluation of the entire domain.
      */
     template<class Settings>
-    class evaluating_test
-        : public test_base<Settings>
+    class evaluating_test : public test_base<Settings>
     {
     public:
-        evaluating_test (std::string name, Settings settings) :
-            test_base<Settings> (std::move(name), std::move(settings))
+        evaluating_test(std::string name, Settings settings)
+            : test_base<Settings>(std::move(name), std::move(settings))
         {
         }
 
     protected:
-        auto compare_eval ( auto evalit
-                          , auto& manager
-                          , auto& diagram ) -> void
+        auto compare_eval(auto evalit, auto& manager, auto& diagram) -> void
         {
-            auto evalend  = evaluating_iterator_sentinel();
+            auto evalend = evaluating_iterator_sentinel();
             while (evalit != evalend)
             {
                 auto const expectedval = *evalit;
-                auto const diagramval = manager.evaluate(
-                    diagram,
-                    evalit.var_vals()
-                );
+                auto const diagramval =
+                    manager.evaluate(diagram, evalit.var_vals());
                 if (expectedval != diagramval)
                 {
-                    this->log_fail( "Expected " + std::to_string(expectedval)
-                                  + " got "  +  std::to_string(diagramval) );
+                    this->log_fail(
+                        "Expected " + std::to_string(expectedval) + " got " +
+                        std::to_string(diagramval)
+                    );
                     break;
                 }
                 ++evalit;
@@ -127,21 +116,20 @@ namespace teddy
      *  \brief Tests the evaluate algorithm.
      */
     template<class Settings>
-    class test_evaluate
-        : public evaluating_test<Settings>
+    class test_evaluate : public evaluating_test<Settings>
     {
     public:
-        test_evaluate (Settings settings) :
-            evaluating_test<Settings> ("evaluate", std::move(settings))
+        test_evaluate(Settings settings)
+            : evaluating_test<Settings>("evaluate", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
-            auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings(), this->rng());
-            auto diagram  = create_diagram(expr, manager);
+            auto expr    = create_expression(this->settings(), this->rng());
+            auto manager = create_manager(this->settings(), this->rng());
+            auto diagram = create_diagram(expr, manager);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
@@ -155,36 +143,26 @@ namespace teddy
      *  \brief Tests tree fold and left fold algorithms.
      */
     template<class Settings>
-    class test_fold
-        : public test_base<Settings>
+    class test_fold : public test_base<Settings>
     {
     public:
-        test_fold (Settings settings) :
-            test_base<Settings> ("fold", std::move(settings))
+        test_fold(Settings settings)
+            : test_base<Settings>("fold", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
             auto manager  = create_manager(this->settings(), this->rng());
-            auto diagram1 = create_diagram(
-                expr,
-                manager,
-                fold_type::Left
-            );
-            auto diagram2 = create_diagram(
-                expr,
-                manager,
-                fold_type::Tree
-            );
+            auto diagram1 = create_diagram(expr, manager, fold_type::Left);
+            auto diagram2 = create_diagram(expr, manager, fold_type::Tree);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram1))
             );
             this->assert_true(
-                diagram1.equals(diagram2),
-                "Diagrams are the same"
+                diagram1.equals(diagram2), "Diagrams are the same"
             );
         }
     };
@@ -193,40 +171,31 @@ namespace teddy
      *  \brief Tests tree fold and left fold.
      */
     template<class Settings>
-    class test_gc
-        : public test_base<Settings>
+    class test_gc : public test_base<Settings>
     {
     public:
-        test_gc (Settings settings) :
-            test_base<Settings> ("gc", std::move(settings))
+        test_gc(Settings settings)
+            : test_base<Settings>("gc", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
             auto expr     = create_expression(this->settings(), this->rng());
             auto manager  = create_manager(this->settings(), this->rng());
-            auto diagram1 = create_diagram(
-                expr,
-                manager,
-                fold_type::Left
-            );
-            auto diagram2 = create_diagram(
-                expr,
-                manager,
-                fold_type::Tree
-            );
+            auto diagram1 = create_diagram(expr, manager, fold_type::Left);
+            auto diagram2 = create_diagram(expr, manager, fold_type::Tree);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram1))
             );
             manager.force_gc();
             auto const expected = manager.node_count(diagram1);
-            auto const actual = manager.node_count();
+            auto const actual   = manager.node_count();
             this->assert_true(
-                expected == actual,
-                "Expected " + std::to_string(expected) + " nodes got " +
-                std::to_string(actual) + " nodes"
+                expected == actual, "Expected " + std::to_string(expected) +
+                                        " nodes got " + std::to_string(actual) +
+                                        " nodes"
             );
         }
     };
@@ -235,21 +204,20 @@ namespace teddy
      *  \brief Tests satisfy-count algorithm.
      */
     template<class Settings>
-    class test_satisfy_count
-        : public test_base<Settings>
+    class test_satisfy_count : public test_base<Settings>
     {
     public:
-        test_satisfy_count (Settings settings) :
-            test_base<Settings> ("satisfy-count", std::move(settings))
+        test_satisfy_count(Settings settings)
+            : test_base<Settings>("satisfy-count", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
-            auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings(), this->rng());
-            auto diagram  = create_diagram(expr, manager);
+            auto expr    = create_expression(this->settings(), this->rng());
+            auto manager = create_manager(this->settings(), this->rng());
+            auto diagram = create_diagram(expr, manager);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
@@ -265,9 +233,8 @@ namespace teddy
             {
                 this->assert_true(
                     actual[k] == expected[k],
-                    "Expected " + std::to_string(expected[k]) +
-                    " got "  + std::to_string(actual[k]) +
-                    " for " + std::to_string(k)
+                    "Expected " + std::to_string(expected[k]) + " got " +
+                        std::to_string(actual[k]) + " for " + std::to_string(k)
                 );
             }
         }
@@ -277,21 +244,20 @@ namespace teddy
      *  \brief Tests satisfy-all algorithm.
      */
     template<class Settings>
-    class test_satisfy_all
-        : public test_base<Settings>
+    class test_satisfy_all : public test_base<Settings>
     {
     public:
-        test_satisfy_all (Settings settings) :
-            test_base<Settings> ("satisfy-all", std::move(settings))
+        test_satisfy_all(Settings settings)
+            : test_base<Settings>("satisfy-all", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
-            auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings(), this->rng());
-            auto diagram  = create_diagram(expr, manager);
+            auto expr    = create_expression(this->settings(), this->rng());
+            auto manager = create_manager(this->settings(), this->rng());
+            auto diagram = create_diagram(expr, manager);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
@@ -300,11 +266,8 @@ namespace teddy
             for (auto k = 0u; k < expected.size(); ++k)
             {
                 using out_var_vals = std::vector<uint_t>;
-                auto outf = [&actual, k](auto const&)
-                {
-                    ++actual[k];
-                };
-                auto out = forwarding_iterator<decltype(outf)>(outf);
+                auto outf          = [&actual, k](auto const&) { ++actual[k]; };
+                auto out           = forwarding_iterator<decltype(outf)>(outf);
                 manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
             }
 
@@ -312,9 +275,8 @@ namespace teddy
             {
                 this->assert_true(
                     actual[k] == expected[k],
-                    "Expected " + std::to_string(expected[k]) +
-                    " got "  + std::to_string(actual[k]) +
-                    " for " + std::to_string(k)
+                    "Expected " + std::to_string(expected[k]) + " got " +
+                        std::to_string(actual[k]) + " for " + std::to_string(k)
                 );
             }
         }
@@ -324,32 +286,30 @@ namespace teddy
      *  \brief Tests neutral and absorbing elements of different operators.
      */
     template<class Settings>
-    class test_operators
-        : public test_base<Settings>
+    class test_operators : public test_base<Settings>
     {
     public:
-        test_operators (Settings settings) :
-            test_base<Settings> ("operators", std::move(settings))
+        test_operators(Settings settings)
+            : test_base<Settings>("operators", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
             using namespace teddy::ops;
-            auto expr       = create_expression(this->settings(), this->rng());
-            auto manager    = create_manager(this->settings(), this->rng());
-            auto diagram    = create_diagram(expr, manager);
+            auto expr    = create_expression(this->settings(), this->rng());
+            auto manager = create_manager(this->settings(), this->rng());
+            auto diagram = create_diagram(expr, manager);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
             auto const cs   = expected_counts(manager, expr);
             auto const zero = manager.constant(0);
             auto const one  = manager.constant(1);
-            auto const sup  = manager.constant(
-                std::ranges::max(manager.get_domains())
-            );
-            auto const bd   = manager.transform(diagram, utils::not_zero);
+            auto const sup =
+                manager.constant(std::ranges::max(manager.get_domains()));
+            auto const bd = manager.transform(diagram, utils::not_zero);
 
             this->assert_true(
                 manager.template apply<AND>(bd, zero).equals(zero),
@@ -357,18 +317,15 @@ namespace teddy
             );
 
             this->assert_true(
-                manager.template apply<AND>(bd, one).equals(bd),
-                "AND neutral"
+                manager.template apply<AND>(bd, one).equals(bd), "AND neutral"
             );
 
             this->assert_true(
-                manager.template apply<OR>(bd, one).equals(one),
-                "OR absorbing"
+                manager.template apply<OR>(bd, one).equals(one), "OR absorbing"
             );
 
             this->assert_true(
-                manager.template apply<OR>(bd, zero).equals(bd),
-                "OR neutral"
+                manager.template apply<OR>(bd, zero).equals(bd), "OR neutral"
             );
 
             this->assert_true(
@@ -427,18 +384,15 @@ namespace teddy
             );
 
             this->assert_true(
-                manager.template apply<MIN>(bd, sup).equals(bd),
-                "MIN neutral"
+                manager.template apply<MIN>(bd, sup).equals(bd), "MIN neutral"
             );
 
             this->assert_true(
-                manager.template apply<MAX>(bd, sup).equals(sup),
-                "MAX absoring"
+                manager.template apply<MAX>(bd, sup).equals(sup), "MAX absoring"
             );
 
             this->assert_true(
-                manager.template apply<MAX>(bd, zero).equals(bd),
-                "MAX neutral"
+                manager.template apply<MAX>(bd, zero).equals(bd), "MAX neutral"
             );
         }
     };
@@ -447,21 +401,20 @@ namespace teddy
      *  \brief Tests cofactor algorithm.
      */
     template<class Settings>
-    class test_cofactor
-        : public evaluating_test<Settings>
+    class test_cofactor : public evaluating_test<Settings>
     {
     public:
-        test_cofactor (Settings settings) :
-            evaluating_test<Settings> ("cofactor", std::move(settings))
+        test_cofactor(Settings settings)
+            : evaluating_test<Settings>("cofactor", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
-            auto expr       = create_expression(this->settings(), this->rng());
-            auto manager    = create_manager(this->settings(), this->rng());
-            auto diagram    = create_diagram(expr, manager);
+            auto expr    = create_expression(this->settings(), this->rng());
+            auto manager = create_manager(this->settings(), this->rng());
+            auto diagram = create_diagram(expr, manager);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
@@ -485,9 +438,8 @@ namespace teddy
             auto const dtmp = manager.cofactor(diagram, i1, v1);
             auto const d    = manager.cofactor(dtmp, i2, v2);
 
-            auto domainit = domain_iterator(
-                manager.get_domains(),
-                manager.get_order(),
+            auto domainit   = domain_iterator(
+                manager.get_domains(), manager.get_order(),
                 {std::make_pair(i1, v1), std::make_pair(i2, v2)}
             );
             auto evalit = evaluating_iterator(domainit, expr);
@@ -499,40 +451,37 @@ namespace teddy
      *  \brief Tests one time var-sift algorithm.
      */
     template<class Settings>
-    class test_one_var_sift
-        : public evaluating_test<Settings>
+    class test_one_var_sift : public evaluating_test<Settings>
     {
     public:
-        test_one_var_sift (Settings settings) :
-            evaluating_test<Settings> ("one-var-sift", std::move(settings))
+        test_one_var_sift(Settings settings)
+            : evaluating_test<Settings>("one-var-sift", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
-            auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings(), this->rng());
-            auto diagram  = create_diagram(expr, manager);
+            auto expr    = create_expression(this->settings(), this->rng());
+            auto manager = create_manager(this->settings(), this->rng());
+            auto diagram = create_diagram(expr, manager);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
             manager.force_gc();
             manager.force_reorder();
             manager.force_gc();
-            auto const actual = manager.node_count();
+            auto const actual   = manager.node_count();
             auto const expected = manager.node_count(diagram);
 
             this->assert_true(
-                actual == expected,
-                "Expected " + std::to_string(expected) + " nodes, got " +
-                std::to_string(actual) + "."
+                actual == expected, "Expected " + std::to_string(expected) +
+                                        " nodes, got " +
+                                        std::to_string(actual) + "."
             );
 
-            auto domainit = domain_iterator(
-                manager.get_domains(),
-                manager.get_order()
-            );
+            auto domainit =
+                domain_iterator(manager.get_domains(), manager.get_order());
             auto evalit = evaluating_iterator(domainit, expr);
             this->compare_eval(evalit, manager, diagram);
         }
@@ -542,17 +491,16 @@ namespace teddy
      *  \brief Tests automatic var-sift algorithm.
      */
     template<class Settings>
-    class test_auto_var_sift
-        : public evaluating_test<Settings>
+    class test_auto_var_sift : public evaluating_test<Settings>
     {
     public:
-        test_auto_var_sift (Settings settings) :
-            evaluating_test<Settings> ("auto-var-sift", std::move(settings))
+        test_auto_var_sift(Settings settings)
+            : evaluating_test<Settings>("auto-var-sift", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
             auto expr    = create_expression(this->settings(), this->rng());
             auto manager = create_manager(this->settings(), this->rng());
@@ -562,19 +510,16 @@ namespace teddy
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
             manager.force_gc();
-            auto const actual = manager.node_count();
+            auto const actual   = manager.node_count();
             auto const expected = manager.node_count(diagram);
 
             this->assert_true(
-                actual == expected,
-                "Expected " + std::to_string(expected) + " nodes, got " +
-                std::to_string(actual)
+                actual == expected, "Expected " + std::to_string(expected) +
+                                        " nodes, got " + std::to_string(actual)
             );
 
-            auto domainit = domain_iterator(
-                manager.get_domains(),
-                manager.get_order()
-            );
+            auto domainit =
+                domain_iterator(manager.get_domains(), manager.get_order());
             auto evalit = evaluating_iterator(domainit, expr);
             this->compare_eval(evalit, manager, diagram);
         }
@@ -584,37 +529,33 @@ namespace teddy
      *  \brief Tests from-vector algorithm.
      */
     template<class Settings>
-    class test_from_vector
-        : public test_base<Settings>
+    class test_from_vector : public test_base<Settings>
     {
     public:
-        test_from_vector (Settings settings) :
-            test_base<Settings> ("from-vector", std::move(settings))
+        test_from_vector(Settings settings)
+            : test_base<Settings>("from-vector", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
-            auto expr     = create_expression(this->settings(), this->rng());
-            auto manager  = create_manager(this->settings(), this->rng());
-            auto diagram  = create_diagram(expr, manager);
+            auto expr    = create_expression(this->settings(), this->rng());
+            auto manager = create_manager(this->settings(), this->rng());
+            auto diagram = create_diagram(expr, manager);
             this->log_info(
                 "Node count " + std::to_string(manager.node_count(diagram))
             );
-            auto order    = manager.get_order();
-            auto domains  = manager.get_domains();
+            auto order   = manager.get_order();
+            auto domains = manager.get_domains();
             std::ranges::reverse(order);
-            auto domainit = domain_iterator(
-                std::move(domains),
-                std::move(order)
-            );
-            auto evalit   = evaluating_iterator(domainit, expr);
-            auto evalend  = evaluating_iterator_sentinel();
-            auto vectord  = manager.from_vector(evalit, evalend);
+            auto domainit =
+                domain_iterator(std::move(domains), std::move(order));
+            auto evalit  = evaluating_iterator(domainit, expr);
+            auto evalend = evaluating_iterator_sentinel();
+            auto vectord = manager.from_vector(evalit, evalend);
             this->assert_true(
-                diagram.equals(vectord),
-                "From-vector created the same diagram"
+                diagram.equals(vectord), "From-vector created the same diagram"
             );
         }
     };
@@ -623,17 +564,16 @@ namespace teddy
      *  \brief Tests to-vector algorithm.
      */
     template<class Settings>
-    class test_to_vector
-        : public test_base<Settings>
+    class test_to_vector : public test_base<Settings>
     {
     public:
-        test_to_vector (Settings settings) :
-            test_base<Settings> ("to-vector", std::move(settings))
+        test_to_vector(Settings settings)
+            : test_base<Settings>("to-vector", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
             auto expr    = create_expression(this->settings(), this->rng());
             auto manager = create_manager(this->settings(), this->rng());
@@ -654,23 +594,20 @@ namespace teddy
      *  \brief Tests from-expression algorithm.
      */
     template<class Settings>
-    class test_from_expression
-        : public evaluating_test<Settings>
+    class test_from_expression : public evaluating_test<Settings>
     {
     public:
-        test_from_expression (Settings settings) :
-            evaluating_test<Settings> ("from-expression", std::move(settings))
+        test_from_expression(Settings settings)
+            : evaluating_test<Settings>("from-expression", std::move(settings))
         {
         }
 
     protected:
-        auto test () -> void override
+        auto test() -> void override
         {
-            auto manager = create_manager(this->settings(), this->rng());
+            auto manager  = create_manager(this->settings(), this->rng());
             auto exprtree = generate_expression_tree(
-                manager.get_var_count(),
-                this->rng(),
-                this->rng()
+                manager.get_var_count(), this->rng(), this->rng()
             );
             auto diagram  = manager.from_expression_tree(*exprtree);
             auto domainit = domain_iterator(manager.get_domains());
@@ -680,23 +617,19 @@ namespace teddy
     };
 
     template<class ManagerSettings, class ExpressionSettings>
-    class test_manager
-        : public rog::CompositeTest
+    class test_manager : public rog::CompositeTest
     {
     public:
-        test_manager
-            ( std::size_t const  seed
-            , ManagerSettings    manager
-            , ExpressionSettings expr
-            , std::string        name ) :
-            rog::CompositeTest(std::move(name))
+        test_manager(
+            std::size_t const seed, ManagerSettings manager,
+            ExpressionSettings expr, std::string name
+        )
+            : rog::CompositeTest(std::move(name))
         {
             auto seeder = std::mt19937_64(seed);
 
-            using settings_t = test_settings<
-                ManagerSettings,
-                ExpressionSettings
-            >;
+            using settings_t =
+                test_settings<ManagerSettings, ExpressionSettings>;
 
             this->add_test(std::make_unique<test_evaluate<settings_t>>(
                 test_settings {seeder(), manager, expr}
@@ -706,9 +639,8 @@ namespace teddy
                 test_settings {seeder(), manager, expr}
             ));
 
-            this->add_test(std::make_unique<test_gc<settings_t>>(
-                test_settings {seeder(), manager, expr}
-            ));
+            this->add_test(std::make_unique<test_gc<settings_t>>(test_settings {
+                seeder(), manager, expr}));
 
             this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
                 test_settings {seeder(), manager, expr}
@@ -755,12 +687,11 @@ namespace teddy
         : public test_manager<bdd_manager_settings, minmax_expression_settings>
     {
     public:
-        test_bdd_manager (std::size_t const seed) :
-            test_manager<bdd_manager_settings, minmax_expression_settings>
-            ( seed
-            , bdd_manager_settings {21, 2'000, random_order_tag()}
-            , minmax_expression_settings {30, 6}
-            , "bdd_manager" )
+        test_bdd_manager(std::size_t const seed)
+            : test_manager<bdd_manager_settings, minmax_expression_settings>(
+                  seed, bdd_manager_settings {21, 2'000, random_order_tag()},
+                  minmax_expression_settings {30, 6}, "bdd_manager"
+              )
         {
         }
     };
@@ -769,16 +700,15 @@ namespace teddy
      *  \brief Tests mdd manager.
      */
     class test_mdd_manager
-        : public test_manager< mdd_manager_settings<3>
-                             , minmax_expression_settings >
+        : public test_manager<
+              mdd_manager_settings<3>, minmax_expression_settings>
     {
     public:
-        test_mdd_manager (std::size_t const seed) :
-            test_manager<mdd_manager_settings<3>, minmax_expression_settings>
-            ( seed
-            , mdd_manager_settings<3> {15, 5'000, random_order_tag()}
-            , minmax_expression_settings {20, 5}
-            , "mdd_manager" )
+        test_mdd_manager(std::size_t const seed)
+            : test_manager<mdd_manager_settings<3>, minmax_expression_settings>(
+                  seed, mdd_manager_settings<3> {15, 5'000, random_order_tag()},
+                  minmax_expression_settings {20, 5}, "mdd_manager"
+              )
         {
         }
     };
@@ -787,16 +717,18 @@ namespace teddy
      *  \brief Tests imdd manager.
      */
     class test_imdd_manager
-        : public test_manager< imdd_manager_settings<3>
-                             , minmax_expression_settings >
+        : public test_manager<
+              imdd_manager_settings<3>, minmax_expression_settings>
     {
     public:
-        test_imdd_manager (std::size_t const seed) :
-            test_manager<imdd_manager_settings<3>, minmax_expression_settings>
-            ( seed
-            , imdd_manager_settings<3> {21, 5'000, random_order_tag(), random_domains_tag()}
-            , minmax_expression_settings {30, 6}
-            , "imdd_manager" )
+        test_imdd_manager(std::size_t const seed)
+            : test_manager<
+                  imdd_manager_settings<3>, minmax_expression_settings>(
+                  seed,
+                  imdd_manager_settings<3> {
+                      21, 5'000, random_order_tag(), random_domains_tag()},
+                  minmax_expression_settings {30, 6}, "imdd_manager"
+              )
         {
         }
     };
@@ -805,22 +737,24 @@ namespace teddy
      *  \brief Tests ifmdd manager.
      */
     class test_ifmdd_manager
-        : public test_manager< ifmdd_manager_settings<3>
-                             , minmax_expression_settings >
+        : public test_manager<
+              ifmdd_manager_settings<3>, minmax_expression_settings>
     {
     public:
-        test_ifmdd_manager (std::size_t const seed) :
-            test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>
-            ( seed
-            , ifmdd_manager_settings<3> {21, 5'000, random_order_tag(), random_domains_tag()}
-            , minmax_expression_settings {30, 6}
-            , "ifmdd_manager" )
+        test_ifmdd_manager(std::size_t const seed)
+            : test_manager<
+                  ifmdd_manager_settings<3>, minmax_expression_settings>(
+                  seed,
+                  ifmdd_manager_settings<3> {
+                      21, 5'000, random_order_tag(), random_domains_tag()},
+                  minmax_expression_settings {30, 6}, "ifmdd_manager"
+              )
         {
         }
     };
-}
+} // namespace teddy
 
-auto run_test_one ()
+auto run_test_one()
 {
     auto bddmt = teddy::test_bdd_manager(144);
     bddmt.run();
@@ -839,7 +773,7 @@ auto run_test_one ()
     rog::console_print_results(ifmddmt);
 }
 
-auto run_test_many ()
+auto run_test_many()
 {
     auto constexpr Oks = "o";
     auto constexpr Ers = "x";
@@ -848,14 +782,14 @@ auto run_test_many ()
     {
         switch (r)
         {
-            case rog::TestResult::Fail:
-                return Ers;
+        case rog::TestResult::Fail:
+            return Ers;
 
-            case rog::TestResult::Pass:
-                return Oks;
+        case rog::TestResult::Pass:
+            return Oks;
 
-            default:
-                return " ";
+        default:
+            return " ";
         }
     };
 
@@ -863,19 +797,18 @@ auto run_test_many ()
     {
         auto const numtest = tests.front().subtests().size();
         auto const numrep  = tests.size();
-        auto const numw    = 1 + std::ranges::max(
-            tests.front().subtests() |
-            std::ranges::views::transform(&rog::Test::name) |
-            std::ranges::views::transform(std::ranges::size)
-        );
+        auto const numw =
+            1 + std::ranges::max(
+                    tests.front().subtests() |
+                    std::ranges::views::transform(&rog::Test::name) |
+                    std::ranges::views::transform(std::ranges::size)
+                );
 
         std::cout << Oks << " - ok; " << Ers << " - not good" << '\n';
         std::cout << tests.front().name() << '\n';
         for (auto k = 0u; k < numtest; ++k)
         {
-            std::cout << " > "
-                      << std::left
-                      << std::setw(static_cast<int>(numw))
+            std::cout << " > " << std::left << std::setw(static_cast<int>(numw))
                       << tests.front().subtests()[k]->name() << ' ';
             for (auto l = 0u; l < numrep; ++l)
             {
@@ -887,11 +820,11 @@ auto run_test_many ()
         std::cout << '\n';
     };
 
-    #ifdef LIBTEDDY_TEST_USE_OMP
+#ifdef LIBTEDDY_TEST_USE_OMP
     auto const numtest = omp_get_num_procs();
-    #else
+#else
     auto const numtest = 10;
-    #endif
+#endif
 
     auto bddmts  = std::vector<teddy::test_bdd_manager>();
     auto mddmts  = std::vector<teddy::test_mdd_manager>();
@@ -907,36 +840,36 @@ auto run_test_many ()
         ifmddts.emplace_back(teddy::test_ifmdd_manager(seeder()));
     }
 
-    #ifdef LIBTEDDY_TESTS_USE_OMP
-    #pragma omp parallel for
-    #endif
+#ifdef LIBTEDDY_TESTS_USE_OMP
+#pragma omp parallel for
+#endif
     for (auto k = 0u; k < numtest; ++k)
     {
         bddmts[k].run();
     }
     print_results(bddmts);
 
-    #ifdef LIBTEDDY_TESTS_USE_OMP
-    #pragma omp parallel for
-    #endif
+#ifdef LIBTEDDY_TESTS_USE_OMP
+#pragma omp parallel for
+#endif
     for (auto k = 0u; k < numtest; ++k)
     {
         mddmts[k].run();
     }
     print_results(mddmts);
 
-    #ifdef LIBTEDDY_TESTS_USE_OMP
-    #pragma omp parallel for
-    #endif
+#ifdef LIBTEDDY_TESTS_USE_OMP
+#pragma omp parallel for
+#endif
     for (auto k = 0u; k < numtest; ++k)
     {
         imddts[k].run();
     }
     print_results(imddts);
 
-    #ifdef LIBTEDDY_TESTS_USE_OMP
-    #pragma omp parallel for
-    #endif
+#ifdef LIBTEDDY_TESTS_USE_OMP
+#pragma omp parallel for
+#endif
     for (auto k = 0u; k < numtest; ++k)
     {
         ifmddts[k].run();
@@ -944,13 +877,13 @@ auto run_test_many ()
     print_results(ifmddts);
 }
 
-auto main (int const argc, char** const argv) -> int
+auto main(int const argc, char** const argv) -> int
 {
     auto seed = 144ull;
     if (argc > 2)
     {
         auto const seedopt = teddy::utils::parse<std::size_t>(argv[2]);
-        seed = seedopt ? *seedopt : seed;
+        seed               = seedopt ? *seedopt : seed;
     }
 
     std::cout << "Seed is " << seed << '\n';

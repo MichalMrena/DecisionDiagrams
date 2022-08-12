@@ -9,10 +9,10 @@ namespace teddy::debug
     template<class... Ts>
     auto out([[maybe_unused]] Ts... s)
     {
-        #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
         ((std::cout << s), ...);
-        #endif
+#endif
     }
-}
+} // namespace teddy::debug
 
 #endif
