@@ -466,14 +466,14 @@ namespace teddy
             auto manager = create_manager(this->settings(), this->rng());
             auto diagram = create_diagram(expr, manager);
             this->log_info(
-                "Node count " + std::to_string(manager.node_count(diagram))
+                "Nodes before " + std::to_string(manager.node_count(diagram))
             );
             manager.force_gc();
             manager.force_reorder();
             manager.force_gc();
             auto const actual   = manager.node_count();
             auto const expected = manager.node_count(diagram);
-
+            this->log_info("Nodes after " + std::to_string(actual));
             this->assert_true(
                 actual == expected, "Expected " + std::to_string(expected) +
                                         " nodes, got " +
@@ -506,9 +506,6 @@ namespace teddy
             auto manager = create_manager(this->settings(), this->rng());
             manager.set_auto_reorder(true);
             auto diagram = create_diagram(expr, manager);
-            this->log_info(
-                "Node count " + std::to_string(manager.node_count(diagram))
-            );
             manager.force_gc();
             auto const actual   = manager.node_count();
             auto const expected = manager.node_count(diagram);
