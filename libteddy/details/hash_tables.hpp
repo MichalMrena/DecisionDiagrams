@@ -210,9 +210,9 @@ namespace teddy
          *  \param domain Number of sons.
          *  \return True if the nodes are equal, false otherwise.
          */
-        static auto
-        node_equals(node_t* node, sons_t const& sons, std::size_t domain)
-            -> bool;
+        static auto node_equals(
+            node_t* node, sons_t const& sons, std::size_t domain
+        ) -> bool;
 
     private:
         std::vector<node_t*> buckets_;
@@ -273,7 +273,10 @@ namespace teddy
     inline auto table_base::gte_capacity(std::size_t const target)
         -> std::size_t
     {
-        auto const p = [target](auto const c) { return c > target; };
+        auto const p = [target](auto const c)
+        {
+            return c > target;
+        };
         auto const it =
             std::find_if(std::begin(Capacities), std::end(Capacities), p);
         return it == std::end(Capacities) ? Capacities.back() : *it;
@@ -330,8 +333,8 @@ namespace teddy
         {
             if (e.result)
             {
-                auto const used = e.lhs->is_used() && e.rhs->is_used() &&
-                                  e.result->is_used();
+                auto const used =
+                    e.lhs->is_used() && e.rhs->is_used() && e.result->is_used();
                 if (not used)
                 {
                     e = entry_t {};
@@ -466,8 +469,8 @@ namespace teddy
     }
 
     template<class BucketIt, class Data, degree D>
-    auto
-    unique_table_it<BucketIt, Data, D>::operator==(unique_table_it const& rhs
+    auto unique_table_it<BucketIt, Data, D>::operator==(
+        unique_table_it const& rhs
     ) const -> bool
     {
         return bucketIt_ == rhs.bucketIt_ and
@@ -475,8 +478,8 @@ namespace teddy
     }
 
     template<class BucketIt, class Data, degree D>
-    auto
-    unique_table_it<BucketIt, Data, D>::operator!=(unique_table_it const& rhs
+    auto unique_table_it<BucketIt, Data, D>::operator!=(
+        unique_table_it const& rhs
     ) const -> bool
     {
         return ! (*this == rhs);
@@ -534,9 +537,9 @@ namespace teddy
     }
 
     template<class Data, degree D>
-    auto
-    unique_table<Data, D>::merge(unique_table other, std::size_t const domain)
-        -> void
+    auto unique_table<Data, D>::merge(
+        unique_table other, std::size_t const domain
+    ) -> void
     {
         size_ += other.size();
         this->adjust_capacity(domain);
@@ -588,9 +591,9 @@ namespace teddy
     }
 
     template<class Data, degree D>
-    auto
-    unique_table<Data, D>::erase(node_t* const node, std::size_t const domain)
-        -> iterator
+    auto unique_table<Data, D>::erase(
+        node_t* const node, std::size_t const domain
+    ) -> iterator
     {
         auto const hash  = node_hash(node->get_sons(), domain);
         auto const index = static_cast<std::ptrdiff_t>(hash % buckets_.size());
@@ -694,9 +697,9 @@ namespace teddy
     }
 
     template<class Data, degree D>
-    auto
-    unique_table<Data, D>::insert_impl(node_t* const node, hash_t const hash)
-        -> node_t*
+    auto unique_table<Data, D>::insert_impl(
+        node_t* const node, hash_t const hash
+    ) -> node_t*
     {
         auto const index  = hash % buckets_.size();
         auto const bucket = buckets_[index];

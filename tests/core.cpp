@@ -266,8 +266,11 @@ namespace teddy
             for (auto k = 0u; k < expected.size(); ++k)
             {
                 using out_var_vals = std::vector<uint_t>;
-                auto outf          = [&actual, k](auto const&) { ++actual[k]; };
-                auto out           = forwarding_iterator<decltype(outf)>(outf);
+                auto outf          = [&actual, k](auto const&)
+                {
+                    ++actual[k];
+                };
+                auto out = forwarding_iterator<decltype(outf)>(outf);
                 manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
             }
 

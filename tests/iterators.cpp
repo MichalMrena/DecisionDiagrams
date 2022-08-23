@@ -44,7 +44,10 @@ namespace teddy
                           return std::ranges::end(fixed) ==
                                  std::ranges::find_if(
                                      fixed,
-                                     [i](auto const p) { return p.first == i; }
+                                     [i](auto const p)
+                                     {
+                                         return p.first == i;
+                                     }
                                  );
                       }
                   );

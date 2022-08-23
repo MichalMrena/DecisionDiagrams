@@ -155,8 +155,9 @@ namespace teddy
     template<class BinOp, uint_t AbsorbingVal = Undefined>
     struct bin_op_base
     {
-        [[nodiscard]] constexpr auto
-        operator()(uint_t const lhs, uint_t const rhs) const noexcept -> uint_t
+        [[nodiscard]] constexpr auto operator()(
+            uint_t const lhs, uint_t const rhs
+        ) const noexcept -> uint_t
         {
             if constexpr (AbsorbingVal != Undefined)
             {

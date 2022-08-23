@@ -428,9 +428,19 @@ namespace teddy
     {
         auto const root = sf.get_root();
 
-        this->nodes_.traverse_pre(root, [](auto const n) { n->data() = 0.0; });
-        this->nodes_.for_each_terminal_node([](auto const n)
-                                            { n->data() = 0.0; });
+        this->nodes_.traverse_pre(
+            root,
+            [](auto const n)
+            {
+                n->data() = 0.0;
+            }
+        );
+        this->nodes_.for_each_terminal_node(
+            [](auto const n)
+            {
+                n->data() = 0.0;
+            }
+        );
         root->data() = 1.0;
 
         this->nodes_.traverse_level(
@@ -571,7 +581,10 @@ namespace teddy
     {
         return this->dpbd_g(
             sf, var, i,
-            [f](auto const l, auto const r) { return l == f.from && r == f.to; }
+            [f](auto const l, auto const r)
+            {
+                return l == f.from && r == f.to;
+            }
         );
     }
 
@@ -582,7 +595,10 @@ namespace teddy
     {
         return this->dpbd_g(
             sf, var, i,
-            [j](auto const l, auto const r) { return l == j && r < j; }
+            [j](auto const l, auto const r)
+            {
+                return l == j && r < j;
+            }
         );
     }
 
@@ -593,7 +609,10 @@ namespace teddy
     {
         return this->dpbd_g(
             sf, var, i,
-            [j](auto const l, auto const r) { return l > j && r == j; }
+            [j](auto const l, auto const r)
+            {
+                return l > j && r == j;
+            }
         );
     }
 
@@ -603,7 +622,11 @@ namespace teddy
     ) -> diagram_t
     {
         return this->dpbd_g(
-            sf, var, i, [](auto const l, auto const r) { return l < r; }
+            sf, var, i,
+            [](auto const l, auto const r)
+            {
+                return l < r;
+            }
         );
     }
 
@@ -613,7 +636,11 @@ namespace teddy
     ) -> diagram_t
     {
         return this->dpbd_g(
-            sf, var, i, [](auto const l, auto const r) { return l > r; }
+            sf, var, i,
+            [](auto const l, auto const r)
+            {
+                return l > r;
+            }
         );
     }
 
@@ -624,7 +651,10 @@ namespace teddy
     {
         return this->dpbd_g(
             sf, var, i,
-            [j](auto const l, auto const r) { return l >= j && r < j; }
+            [j](auto const l, auto const r)
+            {
+                return l >= j && r < j;
+            }
         );
     }
 
@@ -635,14 +665,17 @@ namespace teddy
     {
         return this->dpbd_g(
             sf, var, i,
-            [j](auto const l, auto const r) { return l < j && r >= j; }
+            [j](auto const l, auto const r)
+            {
+                return l < j && r >= j;
+            }
         );
     }
 
     template<degree Degree, domain Domain>
-    auto
-    reliability_manager<Degree, Domain>::structural_importance(diagram_t& dpbd)
-        -> double
+    auto reliability_manager<Degree, Domain>::structural_importance(
+        diagram_t& dpbd
+    ) -> double
     {
         auto const from       = level_t(0);
         auto const to         = static_cast<level_t>(this->get_var_count());
@@ -699,7 +732,8 @@ namespace teddy
         {
             auto sons = this->nodes_.make_sons(
                 i,
-                [this, varFrom, root](auto const k) {
+                [this, varFrom, root](auto const k)
+                {
                     return k == varFrom ? root
                                         : this->nodes_.terminal_node(Undefined);
                 }
@@ -738,7 +772,8 @@ namespace teddy
                             // Transformation does not need to continue.
                             auto newNodeSons = this->nodes_.make_sons(
                                 i,
-                                [this, varFrom, son](auto const l) {
+                                [this, varFrom, son](auto const l)
+                                {
                                     return l == varFrom
                                                           ? son
                                                           : this->nodes_.terminal_node(
@@ -798,7 +833,9 @@ namespace teddy
             return result;
         };
         auto constexpr cache_pair_equals = [](auto const l, auto const r)
-        { return l.left == r.left && l.right == r.right; };
+        {
+            return l.left == r.left && l.right == r.right;
+        };
         auto cache = std::unordered_map<
             cache_pair, node_t*, decltype(cache_pair_hash),
             decltype(cache_pair_equals)>();
@@ -865,9 +902,9 @@ namespace teddy
         std::size_t const overflowNodePoolSize, std::vector<index_t> order
     )
     requires(domains::is_fixed<Domain>()())
-        : diagram_manager<double, Degree, Domain>(
-              varCount, nodePoolSize, overflowNodePoolSize, std::move(order)
-          )
+    : diagram_manager<double, Degree, Domain>(
+          varCount, nodePoolSize, overflowNodePoolSize, std::move(order)
+      )
     {
     }
 
@@ -878,10 +915,10 @@ namespace teddy
         std::vector<index_t> order
     )
     requires(domains::is_mixed<Domain>()())
-        : diagram_manager<double, Degree, Domain>(
-              varCount, nodePoolSize, overflowNodePoolSize, std::move(ds),
-              std::move(order)
-          )
+    : diagram_manager<double, Degree, Domain>(
+          varCount, nodePoolSize, overflowNodePoolSize, std::move(ds),
+          std::move(order)
+      )
     {
     }
 } // namespace teddy

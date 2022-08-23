@@ -28,9 +28,9 @@ namespace teddy
     /**
      *  \brief Evaluates \p expr using values of variables in \p vs .
      */
-    auto
-    evaluate_expression(minmax_expr const& expr, std::vector<uint_t> const& vs)
-        -> uint_t;
+    auto evaluate_expression(
+        minmax_expr const& expr, std::vector<uint_t> const& vs
+    ) -> uint_t;
 
     /**
      *  \brief Tags expression node representing variable.
@@ -132,9 +132,9 @@ namespace teddy
     /**
      *  \brief Evaluates \p expr using values of variables in \p vs .
      */
-    auto
-    evaluate_expression(expr_node const& expr, std::vector<uint_t> const& vs)
-        -> uint_t;
+    auto evaluate_expression(
+        expr_node const& expr, std::vector<uint_t> const& vs
+    ) -> uint_t;
 } // namespace teddy
 
 #endif

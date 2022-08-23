@@ -14,12 +14,23 @@ namespace teddy::utils
     template<class F>
     concept i_gen           = requires(F f, uint_t k) { std::invoke(f, k); };
 
-    auto constexpr identity = [](auto const a) { return a; };
+    auto constexpr identity = [](auto const a)
+    {
+        return a;
+    };
 
-    auto constexpr not_zero = [](auto const x) { return x != 0; };
+    auto constexpr not_zero = [](auto const x)
+    {
+        return x != 0;
+    };
 
     auto constexpr constant = [](auto const c)
-    { return [c](auto) { return c; }; };
+    {
+        return [c](auto)
+        {
+            return c;
+        };
+    };
 
     template<i_gen Gen>
     auto fill_vector(std::size_t const n, Gen&& f)

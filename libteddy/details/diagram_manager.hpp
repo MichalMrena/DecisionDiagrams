@@ -809,8 +809,9 @@ namespace teddy
 
     namespace detail
     {
-        inline auto
-        default_or_fwd(std::size_t const n, std::vector<index_t>& is)
+        inline auto default_or_fwd(
+            std::size_t const n, std::vector<index_t>& is
+        )
         {
             return is.empty() ? utils::fill_vector(n, utils::identity)
                               : std::vector<index_t>(std::move(is));
@@ -830,7 +831,11 @@ namespace teddy
     {
         return diagram_t(nodes_.internal_node(
             i, nodes_.make_sons(
-                   i, [this](auto const v) { return nodes_.terminal_node(v); }
+                   i,
+                   [this](auto const v)
+                   {
+                       return nodes_.terminal_node(v);
+                   }
                )
         ));
     }
@@ -842,10 +847,13 @@ namespace teddy
         -> second_t<Foo, diagram_t>
     {
         return diagram_t(nodes_.internal_node(
-            i,
-            nodes_.make_sons(
-                i, [this](auto const v) { return nodes_.terminal_node(1 - v); }
-            )
+            i, nodes_.make_sons(
+                   i,
+                   [this](auto const v)
+                   {
+                       return nodes_.terminal_node(1 - v);
+                   }
+               )
         ));
     }
 
@@ -883,7 +891,9 @@ namespace teddy
         return utils::fmap(
             first, last,
             [this](auto const i)
-            { return this->variable(static_cast<index_t>(i)); }
+            {
+                return this->variable(static_cast<index_t>(i));
+            }
         );
     }
 
@@ -943,8 +953,11 @@ namespace teddy
                 }
 
                 auto newSons = nodes_.make_sons(
-                    newIndex, [&stack, newDomain](auto const o)
-                    { return stack[stack.size() - newDomain + o].node; }
+                    newIndex,
+                    [&stack, newDomain](auto const o)
+                    {
+                        return stack[stack.size() - newDomain + o].node;
+                    }
                 );
                 auto const newNode =
                     nodes_.internal_node(newIndex, std::move(newSons));
@@ -956,8 +969,11 @@ namespace teddy
         while (first != last)
         {
             auto sons = nodes_.make_sons(
-                lastIndex, [this, &first](auto const)
-                { return nodes_.terminal_node(*first++); }
+                lastIndex,
+                [this, &first](auto const)
+                {
+                    return nodes_.terminal_node(*first++);
+                }
             );
             auto const node = nodes_.internal_node(lastIndex, std::move(sons));
             stack.push_back(stack_frame {node, lastLevel});
@@ -989,9 +1005,8 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     template<std::output_iterator<teddy::uint_t> O>
-    auto
-    diagram_manager<Data, Degree, Domain>::to_vector_g(diagram_t d, O out) const
-        -> void
+    auto diagram_manager<Data, Degree, Domain>::to_vector_g(diagram_t d, O out)
+        const -> void
     {
         if (this->get_var_count() == 0)
         {
@@ -1102,8 +1117,8 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     template<expression_node Node>
-    auto
-    diagram_manager<Data, Degree, Domain>::from_expression_tree(Node const& root
+    auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
+        Node const& root
     ) -> diagram_t
     {
         auto const go = [this](auto& self, auto const& exprNode)
@@ -1121,9 +1136,12 @@ namespace teddy
                 assert(exprNode.is_operation());
                 auto const lhs = self(self, exprNode.get_left());
                 auto const rhs = self(self, exprNode.get_right());
-                auto const op =
-                    apply_op_wrap([&](auto const l, auto const r)
-                                  { return exprNode.evaluate(l, r); });
+                auto const op  = apply_op_wrap(
+                    [&](auto const l, auto const r)
+                    {
+                        return exprNode.evaluate(l, r);
+                    }
+                );
                 return this->apply_local(lhs.get_root(), rhs.get_root(), op);
             }
         };
@@ -1132,9 +1150,9 @@ namespace teddy
 
     template<class Data, degree Degree, domain Domain>
     template<bin_op Op>
-    auto
-    diagram_manager<Data, Degree, Domain>::apply(diagram_t d1, diagram_t d2)
-        -> diagram_t
+    auto diagram_manager<Data, Degree, Domain>::apply(
+        diagram_t d1, diagram_t d2
+    ) -> diagram_t
     {
         return this->apply_global(d1.get_root(), d2.get_root(), Op());
     }
@@ -1260,7 +1278,9 @@ namespace teddy
             {
                 // Simply return reference to the data member.
                 return [](auto const n) mutable -> decltype(auto)
-                { return (n->data()); };
+                {
+                    return (n->data());
+                };
             }
             else
             {
@@ -1422,15 +1442,21 @@ namespace teddy
                 return n;
             }
 
-            auto sons =
-                n->get_index() == i
-                    ? nodes_.make_sons(
-                          i, [son = n->get_son(v)](auto const) { return son; }
-                      )
-                    : nodes_.make_sons(
-                          n->get_index(), [n, &self](auto const k)
-                          { return self(self, n->get_son(k)); }
-                      );
+            auto sons = n->get_index() == i
+                            ? nodes_.make_sons(
+                                  i,
+                                  [son = n->get_son(v)](auto const)
+                                  {
+                                      return son;
+                                  }
+                              )
+                            : nodes_.make_sons(
+                                  n->get_index(),
+                                  [n, &self](auto const k)
+                                  {
+                                      return self(self, n->get_son(k));
+                                  }
+                              );
 
             auto const newN =
                 nodes_.internal_node(n->get_index(), std::move(sons));
@@ -1603,8 +1629,11 @@ namespace teddy
                 auto const i       = n->get_index();
                 auto const newNode = nodes_.internal_node(
                     i, nodes_.make_sons(
-                           i, [&self, f, n](auto const k)
-                           { return self(self, n->get_son(k)); }
+                           i,
+                           [&self, f, n](auto const k)
+                           {
+                               return self(self, n->get_son(k));
+                           }
                        )
                 );
                 memo.emplace(n, newNode);
@@ -1700,10 +1729,10 @@ namespace teddy
         std::size_t const overflowNodePoolSize, std::vector<index_t> order
     )
     requires(domains::is_fixed<Domain>()())
-        : nodes_(
-              varCount, nodePoolSize, overflowNodePoolSize,
-              detail::default_or_fwd(varCount, order)
-          )
+    : nodes_(
+          varCount, nodePoolSize, overflowNodePoolSize,
+          detail::default_or_fwd(varCount, order)
+      )
     {
     }
 
@@ -1714,10 +1743,10 @@ namespace teddy
         std::vector<index_t> order
     )
     requires(domains::is_mixed<Domain>()())
-        : nodes_(
-              varCount, nodePoolSize, overflowNodePoolSize,
-              detail::default_or_fwd(varCount, order), std::move(ds)
-          )
+    : nodes_(
+          varCount, nodePoolSize, overflowNodePoolSize,
+          detail::default_or_fwd(varCount, order), std::move(ds)
+      )
     {
     }
 

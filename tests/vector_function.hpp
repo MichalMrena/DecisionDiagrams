@@ -118,25 +118,45 @@ namespace teddy::vector
          *  Returns lambda that can be used in @c dpbd for type 1.
          */
         inline static auto constexpr dpbd_i_1 = [](auto const j)
-        { return [j](auto const l, auto const r) { return l == j && r < j; }; };
+        {
+            return [j](auto const l, auto const r)
+            {
+                return l == j && r < j;
+            };
+        };
 
         /**
          *  Returns lambda that can be used in @c dpbd for type 2.
          */
         inline static auto constexpr dpbd_i_2 = [](auto const)
-        { return [](auto const l, auto const r) { return l > r; }; };
+        {
+            return [](auto const l, auto const r)
+            {
+                return l > r;
+            };
+        };
 
         /**
          *  Returns lambda that can be used in @c dpbd for type 3.
          */
         inline static auto constexpr dpbd_i_3_decrease = [](auto const j)
-        { return [j](auto const l, auto const r) { return l >= j && r < j; }; };
+        {
+            return [j](auto const l, auto const r)
+            {
+                return l >= j && r < j;
+            };
+        };
 
         /**
          *  Returns lambda that can be used in @c dpbd for type 3.
          */
         inline static auto constexpr dpbd_i_3_increase = [](auto const j)
-        { return [j](auto const l, auto const r) { return l < j && r >= j; }; };
+        {
+            return [j](auto const l, auto const r)
+            {
+                return l < j && r >= j;
+            };
+        };
 
         /**
          *  Returns numbe of domain elements
@@ -186,9 +206,9 @@ namespace teddy::vector
          *  Returns new function as a result of applying @p f on @p l and @p l .
          */
         template<uint_bin_op F>
-        friend auto
-        vector_op(F const f, vector_function const& l, vector_function const& r)
-            -> vector_function
+        friend auto vector_op(
+            F const f, vector_function const& l, vector_function const& r
+        ) -> vector_function
         {
             assert(l.domains_ == r.domains_);
 
@@ -369,7 +389,8 @@ namespace teddy::vector
 
         auto mcvs(uint_t const j) -> std::vector<std::vector<uint_t>>
         {
-            auto const pi_conj = [](auto const l, auto const r) {
+            auto const pi_conj = [](auto const l, auto const r)
+            {
                 return std::min({l, r, U});
             };
 

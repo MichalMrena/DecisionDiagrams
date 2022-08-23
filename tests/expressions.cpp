@@ -31,20 +31,24 @@ namespace teddy
         return minmax_expr {std::move(terms)};
     }
 
-    auto
-    evaluate_expression(minmax_expr const& expr, std::vector<uint_t> const& vs)
-        -> uint_t
+    auto evaluate_expression(
+        minmax_expr const& expr, std::vector<uint_t> const& vs
+    ) -> uint_t
     {
         namespace rs = std::ranges;
         return rs::max(
-            expr.terms_ |
-            rs::views::transform(
-                [&vs](auto const& is) {
-                    return vs[rs::min(
-                        is, {}, [&vs](auto const i) { return vs[i]; }
-                    )];
-                }
-            )
+            expr.terms_ | rs::views::transform(
+                              [&vs](auto const& is)
+                              {
+                                  return vs[rs::min(
+                                      is, {},
+                                      [&vs](auto const i)
+                                      {
+                                          return vs[i];
+                                      }
+                                  )];
+                              }
+                          )
         );
     }
 
@@ -161,9 +165,9 @@ namespace teddy
         return go(go, varcount);
     }
 
-    auto
-    evaluate_expression(expr_node const& expr, std::vector<uint_t> const& vs)
-        -> uint_t
+    auto evaluate_expression(
+        expr_node const& expr, std::vector<uint_t> const& vs
+    ) -> uint_t
     {
         auto const go = [&vs](auto self, auto const& node)
         {

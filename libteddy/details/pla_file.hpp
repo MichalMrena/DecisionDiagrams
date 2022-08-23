@@ -195,7 +195,10 @@ namespace teddy
         -> std::optional<pla_file>
     {
         // Utils:
-        auto constexpr space = [](auto const c) { return std::isspace(c); };
+        auto constexpr space = [](auto const c)
+        {
+            return std::isspace(c);
+        };
 
         auto constexpr words = [space](auto const str)
         {
@@ -423,8 +426,8 @@ namespace teddy
         return std::move(lines_);
     }
 
-    inline auto
-    pla_file::get_input_labels() const& -> std::vector<std::string> const&
+    inline auto pla_file::get_input_labels(
+    ) const& -> std::vector<std::string> const&
     {
         return inputLabels_;
     }
@@ -434,8 +437,8 @@ namespace teddy
         return std::move(inputLabels_);
     }
 
-    inline auto
-    pla_file::get_output_labels() const& -> std::vector<std::string> const&
+    inline auto pla_file::get_output_labels(
+    ) const& -> std::vector<std::string> const&
     {
         return outputLabels_;
     }

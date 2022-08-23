@@ -51,14 +51,25 @@ namespace teddy::test
     {
         return system_characteristics {
             .Ps_ = utils::fill_vector(
-                P, [&](auto const j) { return manager.probability(j, ps, sf); }
+                P,
+                [&](auto const j)
+                {
+                    return manager.probability(j, ps, sf);
+                }
             ),
             .As_ = utils::fill_vector(
-                P, [&](auto const j) { return manager.availability(j, ps, sf); }
+                P,
+                [&](auto const j)
+                {
+                    return manager.availability(j, ps, sf);
+                }
             ),
             .Us_ = utils::fill_vector(
                 P,
-                [&](auto const j) { return manager.unavailability(j, ps, sf); }
+                [&](auto const j)
+                {
+                    return manager.unavailability(j, ps, sf);
+                }
             ),
             .SIs_ = utils::fill_vector(
                 manager.get_var_count(),
@@ -84,7 +95,8 @@ namespace teddy::test
             ),
             .MCVs_ = utils::fill_vector(
                 P - 1,
-                [&](auto const j) {
+                [&](auto const j)
+                {
                     return manager.template mcvs<std::vector<uint_t>>(
                         sf, j + 1
                     );
@@ -93,22 +105,32 @@ namespace teddy::test
     }
 
     template<class Probabilities>
-    auto
-    analyze_system(vector::vector_function const& sf, Probabilities const& ps)
+    auto analyze_system(
+        vector::vector_function const& sf, Probabilities const& ps
+    )
     {
         auto rel = teddy::vector::vector_reliability(sf, ps);
         return system_characteristics {
             .Ps_ = utils::fill_vector(
                 sf.max_value() + 1,
-                [&](auto const j) { return rel.probability(j); }
+                [&](auto const j)
+                {
+                    return rel.probability(j);
+                }
             ),
             .As_ = utils::fill_vector(
                 sf.max_value() + 1,
-                [&](auto const j) { return rel.availability(j); }
+                [&](auto const j)
+                {
+                    return rel.availability(j);
+                }
             ),
             .Us_ = utils::fill_vector(
                 sf.max_value() + 1,
-                [&](auto const j) { return rel.unavailability(j); }
+                [&](auto const j)
+                {
+                    return rel.unavailability(j);
+                }
             ),
             .SIs_ = utils::fill_vector(
                 sf.get_var_count(),
@@ -120,7 +142,8 @@ namespace teddy::test
                         {
                             return utils::fill_vector(
                                 sf.get_domains()[i] - 1,
-                                [&](auto const v) {
+                                [&](auto const v)
+                                {
                                     return rel.structural_importance(
                                         j + 1, {i, v + 1, v}
                                     );
@@ -131,7 +154,11 @@ namespace teddy::test
                 }
             ),
             .MCVs_ = utils::fill_vector(
-                sf.max_value(), [&](auto const j) { return rel.mcvs(j + 1); }
+                sf.max_value(),
+                [&](auto const j)
+                {
+                    return rel.mcvs(j + 1);
+                }
             )};
     }
 
@@ -142,7 +169,9 @@ namespace teddy::test
     {
         namespace rs   = std::ranges;
         auto const cmp = [](auto const l, auto const r)
-        { return std::abs(l - r) < 0.000001; };
+        {
+            return std::abs(l - r) < 0.000001;
+        };
 
         return std::vector<bool>(
             {// Probabilities.
@@ -162,7 +191,9 @@ namespace teddy::test
                      return rs::equal(
                          lhs, rhs,
                          [cmp](auto const& l, auto const& r)
-                         { return rs::equal(l, r, cmp); }
+                         {
+                             return rs::equal(l, r, cmp);
+                         }
                      );
                  }
              ),
@@ -191,7 +222,9 @@ namespace teddy::test
     {
         namespace rs   = std::ranges;
         auto const cmp = [](auto const l, auto const r)
-        { return std::abs(l - r) < 0.000001; };
+        {
+            return std::abs(l - r) < 0.000001;
+        };
 
         std::cout << "probabilities    "
                   << result_char(rs::equal(expected.Ps_, actual.Ps_, cmp))
@@ -210,7 +243,9 @@ namespace teddy::test
                              return rs::equal(
                                  lhs, rhs,
                                  [cmp](auto const& l, auto const& r)
-                                 { return rs::equal(l, r, cmp); }
+                                 {
+                                     return rs::equal(l, r, cmp);
+                                 }
                              );
                          }
                      ))
@@ -271,9 +306,14 @@ namespace teddy::test
         auto pdist = std::uniform_real_distribution<double>();
         auto ps    = utils::fill_vector(
             n,
-            [&](auto) {
+            [&](auto)
+            {
                 return utils::fill_vector(
-                    P, [&](auto const) { return pdist(rngp); }
+                    P,
+                    [&](auto const)
+                    {
+                        return pdist(rngp);
+                    }
                 );
             }
         );

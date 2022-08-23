@@ -122,7 +122,10 @@ namespace teddy
                     std::ranges::shuffle(is, rng);
                     return is;
                 },
-                [](given_order const& is) { return is.order_; }},
+                [](given_order const& is)
+                {
+                    return is.order_;
+                }},
             s.order_
         );
     }
@@ -144,10 +147,17 @@ namespace teddy
                     auto dist =
                         std::uniform_int_distribution<uint_t>(2u, M - 1);
                     return utils::fill_vector(
-                        varcount, [&rng, &dist](auto) { return dist(rng); }
+                        varcount,
+                        [&rng, &dist](auto)
+                        {
+                            return dist(rng);
+                        }
                     );
                 },
-                [](given_domains const& ds) { return ds.domains_; }},
+                [](given_domains const& ds)
+                {
+                    return ds.domains_;
+                }},
             s
         );
     }
@@ -175,9 +185,9 @@ namespace teddy
     /**
      *  \brief Creates BDD manager.
      */
-    inline auto
-    create_manager(bdd_manager_settings const& s, std::mt19937_64& rng)
-        -> bdd_manager
+    inline auto create_manager(
+        bdd_manager_settings const& s, std::mt19937_64& rng
+    ) -> bdd_manager
     {
         return bdd_manager(s.varcount_, s.nodecount_, make_order(s, rng));
     }
@@ -208,9 +218,9 @@ namespace teddy
      *  \brief Creates ifMDD manager.
      */
     template<uint_t M>
-    auto
-    create_manager(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
-        -> ifmdd_manager<M>
+    auto create_manager(
+        ifmdd_manager_settings<M> const& s, std::mt19937_64& rng
+    ) -> ifmdd_manager<M>
     {
         return ifmdd_manager<M>(
             s.varcount_, s.nodecount_, make_domains(s, rng), make_order(s, rng)
@@ -276,9 +286,9 @@ namespace teddy
      *  \brief Creates expression for a test.
      */
     template<class Man, class Expr>
-    auto
-    create_expression(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
-        -> minmax_expr
+    auto create_expression(
+        test_settings<Man, Expr> const& s, std::mt19937_64& rng
+    ) -> minmax_expr
     {
         return create_expression(s.manager_.varcount_, s.expression_, rng);
     }
