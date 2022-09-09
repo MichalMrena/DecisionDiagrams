@@ -7,20 +7,20 @@
 
 namespace teddy
 {
-    auto probability(
-        truth_table const& table, std::vector<std::vector<double>> const& ps,
-        unsigned int j
-    ) -> double;
+auto probability(
+    truth_table const& table, std::vector<std::vector<double>> const& ps,
+    unsigned int j
+) -> double;
 
-    auto availability(
-        truth_table const& table, std::vector<std::vector<double>> const& ps,
-        unsigned int j
-    ) -> double;
+auto availability(
+    truth_table const& table, std::vector<std::vector<double>> const& ps,
+    unsigned int j
+) -> double;
 
-    auto unavailability(
-        truth_table const& table, std::vector<std::vector<double>> const& ps,
-        unsigned int j
-    ) -> double;
-}
+auto unavailability(
+    truth_table const& table, std::vector<std::vector<double>> const& ps,
+    unsigned int j
+) -> double;
+} // namespace teddy
 
 #endif
