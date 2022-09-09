@@ -5,7 +5,10 @@ for file in $(find libteddy tests -type f -name "*.cpp" -or -name "*.hpp"); do
     if [ $? -eq 1 ]; then
         echo "Error for: $file"
     else
-        echo "Formatting $file"
-        clang-format -i -style=file $file
+        clang-format -style=file --dry-run -Werror $file 2> /dev/null > /dev/null
+        if [ $? -eq 1 ]; then
+            echo "Formatting $file"
+            clang-format -i -style=file $file
+        fi
     fi
 done

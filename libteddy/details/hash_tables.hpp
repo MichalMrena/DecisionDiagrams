@@ -273,7 +273,10 @@ namespace teddy
     inline auto table_base::gte_capacity(std::size_t const target)
         -> std::size_t
     {
-        auto const p = [target](auto const c) { return c > target; };
+        auto const p = [target](auto const c)
+        {
+            return c > target;
+        };
         auto const it =
             std::find_if(std::begin(Capacities), std::end(Capacities), p);
         return it == std::end(Capacities) ? Capacities.back() : *it;
@@ -330,8 +333,8 @@ namespace teddy
         {
             if (e.result)
             {
-                auto const used = e.lhs->is_used() && e.rhs->is_used() &&
-                                  e.result->is_used();
+                auto const used =
+                    e.lhs->is_used() && e.rhs->is_used() && e.result->is_used();
                 if (not used)
                 {
                     e = entry_t {};

@@ -195,7 +195,10 @@ namespace teddy
         -> std::optional<pla_file>
     {
         // Utils:
-        auto constexpr space = [](auto const c) { return std::isspace(c); };
+        auto constexpr space = [](auto const c)
+        {
+            return std::isspace(c);
+        };
 
         auto constexpr words = [space](auto const str)
         {

@@ -473,7 +473,13 @@ namespace teddy
     ) const -> std::size_t
     {
         auto count = 0ul;
-        this->traverse_pre(n, [&count](auto const) { ++count; });
+        this->traverse_pre(
+            n,
+            [&count](auto const)
+            {
+                ++count;
+            }
+        );
         return count;
     }
 
@@ -574,7 +580,11 @@ namespace teddy
     ) const -> void
     {
         this->to_dot_graph_common(
-            ost, [this](auto const& f) { this->for_each_node(f); }
+            ost,
+            [this](auto const& f)
+            {
+                this->for_each_node(f);
+            }
         );
     }
 
@@ -584,7 +594,11 @@ namespace teddy
     ) const -> void
     {
         this->to_dot_graph_common(
-            ost, [this, n](auto const& f) { this->traverse_pre(n, f); }
+            ost,
+            [this, n](auto const& f)
+            {
+                this->traverse_pre(n, f);
+            }
         );
     }
 
@@ -784,7 +798,9 @@ namespace teddy
     ) const -> void
     {
         auto const cmp = [this](auto const l, auto const r)
-        { return this->get_level(l) > this->get_level(r); };
+        {
+            return this->get_level(l) > this->get_level(r);
+        };
 
         using compare_t = decltype(cmp);
         using node_prio_q =
@@ -963,7 +979,9 @@ namespace teddy
         };
 
         auto const get_id_str = [](auto const n)
-        { return std::to_string(reinterpret_cast<std::uintmax_t>(n)); };
+        {
+            return std::to_string(reinterpret_cast<std::uintmax_t>(n));
+        };
 
         auto const output_range = [](auto& ostr, auto const& xs, auto const sep)
         {
@@ -1120,7 +1138,11 @@ namespace teddy
         auto const nodeDomain = this->get_domain(nodeIndex);
         auto const sonDomain  = this->get_domain(nextIndex);
         auto const oldSons    = this->make_sons(
-            nodeIndex, [node](auto const k) { return node->get_son(k); }
+            nodeIndex,
+            [node](auto const k)
+            {
+                return node->get_son(k);
+            }
         );
 
         auto cofactorMatrix = mkmatrix(nodeDomain, sonDomain);
@@ -1142,8 +1164,11 @@ namespace teddy
             {
                 return this->internal_node(
                     nodeIndex, this->make_sons(
-                                   nodeIndex, [&](auto const sk)
-                                   { return cofactorMatrix[sk][nk]; }
+                                   nodeIndex,
+                                   [&](auto const sk)
+                                   {
+                                       return cofactorMatrix[sk][nk];
+                                   }
                                )
                 );
             }
@@ -1153,7 +1178,10 @@ namespace teddy
         this->for_each_son(node, id_set_notmarked<Data, Degree>);
         this->for_each_son(
             nodeIndex, oldSons,
-            [this](auto const os) { this->dec_ref_try_gc(os); }
+            [this](auto const os)
+            {
+                this->dec_ref_try_gc(os);
+            }
         );
     }
 
@@ -1171,7 +1199,11 @@ namespace teddy
         if (n->is_internal())
         {
             this->for_each_son(
-                n, [this](auto const s) { this->dec_ref_try_gc(s); }
+                n,
+                [this](auto const s)
+                {
+                    this->dec_ref_try_gc(s);
+                }
             );
 
             uniqueTables_[n->get_index()].erase(n, domains_[n->get_index()]);
@@ -1229,20 +1261,26 @@ namespace teddy
             auto const varCount = this->get_var_count();
             auto counts         = utils::fill_vector(
                 varCount,
-                [this](auto const i) {
+                [this](auto const i)
+                {
                     return count_pair {i, this->get_node_count(i)};
                 }
             );
             std::sort(
                 std::begin(counts), std::end(counts),
-                [](auto const& l, auto const& r) { return l.count_ > r.count_; }
+                [](auto const& l, auto const& r)
+                {
+                    return l.count_ > r.count_;
+                }
             );
             return counts;
         };
 
         // Moves variable one level down.
         auto const move_var_down = [this](auto const index)
-        { this->swap_variable_with_next(index); };
+        {
+            this->swap_variable_with_next(index);
+        };
 
         // Moves variable one level up.
         auto const move_var_up = [this](auto const index)

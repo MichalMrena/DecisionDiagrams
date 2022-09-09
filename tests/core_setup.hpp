@@ -122,7 +122,10 @@ namespace teddy
                     std::ranges::shuffle(is, rng);
                     return is;
                 },
-                [](given_order const& is) { return is.order_; }},
+                [](given_order const& is)
+                {
+                    return is.order_;
+                }},
             s.order_
         );
     }
@@ -144,10 +147,17 @@ namespace teddy
                     auto dist =
                         std::uniform_int_distribution<uint_t>(2u, M - 1);
                     return utils::fill_vector(
-                        varcount, [&rng, &dist](auto) { return dist(rng); }
+                        varcount,
+                        [&rng, &dist](auto)
+                        {
+                            return dist(rng);
+                        }
                     );
                 },
-                [](given_domains const& ds) { return ds.domains_; }},
+                [](given_domains const& ds)
+                {
+                    return ds.domains_;
+                }},
             s
         );
     }

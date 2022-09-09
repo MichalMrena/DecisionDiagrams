@@ -37,14 +37,18 @@ namespace teddy
     {
         namespace rs = std::ranges;
         return rs::max(
-            expr.terms_ |
-            rs::views::transform(
-                [&vs](auto const& is) {
-                    return vs[rs::min(
-                        is, {}, [&vs](auto const i) { return vs[i]; }
-                    )];
-                }
-            )
+            expr.terms_ | rs::views::transform(
+                              [&vs](auto const& is)
+                              {
+                                  return vs[rs::min(
+                                      is, {},
+                                      [&vs](auto const i)
+                                      {
+                                          return vs[i];
+                                      }
+                                  )];
+                              }
+                          )
         );
     }
 
