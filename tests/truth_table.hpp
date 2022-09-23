@@ -25,7 +25,7 @@ private:
 };
 
 auto satisfy_count(truth_table const& table, unsigned int j) -> std::size_t;
-auto satisfy_all(truth_table const& table)
+auto satisfy_all(truth_table const& table, unsigned int j)
     -> std::vector<std::vector<unsigned int>>;
 } // namespace teddy
 

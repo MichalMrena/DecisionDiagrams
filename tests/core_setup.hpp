@@ -12,7 +12,7 @@ namespace teddy
 /**
  *  \brief Specifies that order should be randomly generated.
  */
-struct random_order_tag
+struct random_order
 {
 };
 
@@ -27,7 +27,7 @@ struct given_order
 /**
  *  \brief Specifies that domains should be randomly generated.
  */
-struct random_domains_tag
+struct random_domains
 {
 };
 
@@ -46,7 +46,7 @@ struct manager_settings
 {
     uint_t varcount_;
     uint_t nodecount_;
-    std::variant<random_order_tag, given_order> order_;
+    std::variant<random_order, given_order> order_;
 };
 
 /**
@@ -70,7 +70,7 @@ struct mdd_manager_settings : manager_settings
 template<uint_t M>
 struct imdd_manager_settings : manager_settings
 {
-    std::variant<random_domains_tag, given_domains> domains_;
+    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
@@ -79,7 +79,7 @@ struct imdd_manager_settings : manager_settings
 template<uint_t M>
 struct ifmdd_manager_settings : manager_settings
 {
-    std::variant<random_domains_tag, given_domains> domains_;
+    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
@@ -116,7 +116,7 @@ inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
 {
     return std::visit(
         match {
-            [&](random_order_tag)
+            [&](random_order)
             {
                 auto is = utils::fill_vector(s.varcount_, utils::identity);
                 std::ranges::shuffle(is, rng);
@@ -131,18 +131,18 @@ inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
 }
 
 /**
- *  \brief Makes order of variables for a manager.
+ *  \brief Makes domains of variables for a manager.
  */
 template<uint_t M>
 auto make_domains(
     uint_t const varcount,
-    std::variant<random_domains_tag, given_domains> const& s,
+    std::variant<random_domains, given_domains> const& s,
     std::mt19937_64& rng
 ) -> std::vector<index_t>
 {
     return std::visit(
         match {
-            [&](random_domains_tag)
+            [&](random_domains)
             {
                 auto dist = std::uniform_int_distribution<uint_t>(2u, M - 1);
                 return utils::fill_vector(

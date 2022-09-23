@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <functional>
 #include <numeric>
 
 namespace teddy
@@ -22,7 +23,7 @@ auto domain_for_each(truth_table const& table, F const f) -> void
     do
     {
         // Invoke f.
-        f(vector[k], element);
+        std::invoke(f, vector[k], element);
 
         // Move to the next element of the domain.
         auto overflow = true;
@@ -70,6 +71,8 @@ truth_table::truth_table(
         std::reduce(begin(domains_), end(domains_), 1u, std::multiplies<>())
     );
 
+    assert(this->get_var_count() > 0);
+
     offset_[this->get_var_count() - 1] = 1;
     if (this->get_var_count() > 1)
     {
@@ -107,15 +110,15 @@ auto satisfy_count(truth_table const& table, unsigned int j) -> std::size_t
     return result;
 }
 
-auto satisfy_all(truth_table const& table)
+auto satisfy_all(truth_table const& table, unsigned int j)
     -> std::vector<std::vector<unsigned int>>
 {
     auto elems = std::vector<std::vector<unsigned int>>();
     domain_for_each(
         table,
-        [&elems](auto const val, auto elem)
+        [&elems, j](auto const val, auto elem)
         {
-            if (val == 1)
+            if (val == j)
             {
                 elems.emplace_back(std::move(elem));
             }

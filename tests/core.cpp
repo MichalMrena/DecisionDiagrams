@@ -64,9 +64,15 @@ public:
     }
 
 protected:
-    auto settings() const -> Settings const& { return settings_; }
+    auto settings() const -> Settings const&
+    {
+        return settings_;
+    }
 
-    auto rng() -> std::mt19937_64& { return rng_; }
+    auto rng() -> std::mt19937_64&
+    {
+        return rng_;
+    }
 
 private:
     Settings settings_;
@@ -161,7 +167,7 @@ protected:
         this->log_info(
             "Node count " + std::to_string(manager.node_count(diagram1))
         );
-        this->assert_true(diagram1.equals(diagram2), "Diagrams are the same");
+        this->assert_true(diagram1.equals(diagram2), "Diagrams are equal");
     }
 };
 
@@ -304,7 +310,6 @@ protected:
         this->log_info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
-        auto const cs   = expected_counts(manager, expr);
         auto const zero = manager.constant(0);
         auto const one  = manager.constant(1);
         auto const sup =
@@ -626,10 +631,12 @@ public:
         ));
 
         this->add_test(std::make_unique<test_fold<settings_t>>(test_settings {
-            seeder(), manager, expr}));
+            seeder(), manager, expr}
+        ));
 
         this->add_test(std::make_unique<test_gc<settings_t>>(test_settings {
-            seeder(), manager, expr}));
+            seeder(), manager, expr}
+        ));
 
         this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
             test_settings {seeder(), manager, expr}
@@ -678,7 +685,7 @@ class test_bdd_manager
 public:
     test_bdd_manager(std::size_t const seed)
         : test_manager<bdd_manager_settings, minmax_expression_settings>(
-              seed, bdd_manager_settings {21, 2'000, random_order_tag()},
+              seed, bdd_manager_settings {21, 2'000, random_order()},
               minmax_expression_settings {30, 6}, "bdd_manager"
           )
     {
@@ -694,7 +701,7 @@ class test_mdd_manager
 public:
     test_mdd_manager(std::size_t const seed)
         : test_manager<mdd_manager_settings<3>, minmax_expression_settings>(
-              seed, mdd_manager_settings<3> {15, 5'000, random_order_tag()},
+              seed, mdd_manager_settings<3> {15, 5'000, random_order()},
               minmax_expression_settings {20, 5}, "mdd_manager"
           )
     {
@@ -712,7 +719,7 @@ public:
         : test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
               seed,
               imdd_manager_settings<3> {
-                  21, 5'000, random_order_tag(), random_domains_tag()},
+                  21, 5'000, random_order(), random_domains()},
               minmax_expression_settings {30, 6}, "imdd_manager"
           )
     {
@@ -730,7 +737,7 @@ public:
         : test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
               seed,
               ifmdd_manager_settings<3> {
-                  21, 5'000, random_order_tag(), random_domains_tag()},
+                  21, 5'000, random_order(), random_domains()},
               minmax_expression_settings {30, 6}, "ifmdd_manager"
           )
     {
@@ -864,6 +871,13 @@ auto run_test_many()
 auto main(int const argc, char** const argv) -> int
 {
     auto seed = 144ull;
+
+    if (argc == 1)
+    {
+        std::cout << "./[bin] [one|many] {seed}" << '\n';
+        return 1;
+    }
+
     if (argc > 2)
     {
         auto const seedopt = teddy::utils::parse<std::size_t>(argv[2]);
