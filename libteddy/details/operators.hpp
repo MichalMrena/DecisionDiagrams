@@ -155,8 +155,8 @@ struct pi_conj_t
 template<class BinOp, uint_t AbsorbingVal = Undefined>
 struct bin_op_base
 {
-    [[nodiscard]] constexpr auto
-    operator()(uint_t const lhs, uint_t const rhs) const noexcept -> uint_t
+    [[nodiscard]] constexpr auto operator()(uint_t const lhs, uint_t const rhs)
+        const noexcept -> uint_t
     {
         if constexpr (AbsorbingVal != Undefined)
         {
@@ -269,20 +269,62 @@ struct MULTIPLIES : bin_op_base<multiplies_mod_t<P>, 0>
 };
 } // namespace ops
 
-constexpr auto op_id(ops::AND) { return uint_t {0}; }
-constexpr auto op_id(ops::OR) { return uint_t {1}; }
-constexpr auto op_id(ops::XOR) { return uint_t {2}; }
-constexpr auto op_id(ops::PI_CONJ) { return uint_t {3}; }
-constexpr auto op_id(ops::NAND) { return uint_t {4}; }
-constexpr auto op_id(ops::NOR) { return uint_t {5}; }
-constexpr auto op_id(ops::EQUAL_TO) { return uint_t {6}; }
-constexpr auto op_id(ops::NOT_EQUAL_TO) { return uint_t {7}; }
-constexpr auto op_id(ops::LESS) { return uint_t {8}; }
-constexpr auto op_id(ops::LESS_EQUAL) { return uint_t {9}; }
-constexpr auto op_id(ops::GREATER) { return uint_t {10}; }
-constexpr auto op_id(ops::GREATER_EQUAL) { return uint_t {11}; }
-constexpr auto op_id(ops::MIN) { return uint_t {12}; }
-constexpr auto op_id(ops::MAX) { return uint_t {13}; }
+constexpr auto op_id(ops::AND)
+{
+    return uint_t {0};
+}
+constexpr auto op_id(ops::OR)
+{
+    return uint_t {1};
+}
+constexpr auto op_id(ops::XOR)
+{
+    return uint_t {2};
+}
+constexpr auto op_id(ops::PI_CONJ)
+{
+    return uint_t {3};
+}
+constexpr auto op_id(ops::NAND)
+{
+    return uint_t {4};
+}
+constexpr auto op_id(ops::NOR)
+{
+    return uint_t {5};
+}
+constexpr auto op_id(ops::EQUAL_TO)
+{
+    return uint_t {6};
+}
+constexpr auto op_id(ops::NOT_EQUAL_TO)
+{
+    return uint_t {7};
+}
+constexpr auto op_id(ops::LESS)
+{
+    return uint_t {8};
+}
+constexpr auto op_id(ops::LESS_EQUAL)
+{
+    return uint_t {9};
+}
+constexpr auto op_id(ops::GREATER)
+{
+    return uint_t {10};
+}
+constexpr auto op_id(ops::GREATER_EQUAL)
+{
+    return uint_t {11};
+}
+constexpr auto op_id(ops::MIN)
+{
+    return uint_t {12};
+}
+constexpr auto op_id(ops::MAX)
+{
+    return uint_t {13};
+}
 template<uint_t P>
 constexpr auto op_id(ops::PLUS<P>)
 {
@@ -294,20 +336,62 @@ constexpr auto op_id(ops::MULTIPLIES<P>)
     return uint_t {15};
 }
 
-constexpr auto op_is_commutative(ops::AND) { return true; }
-constexpr auto op_is_commutative(ops::OR) { return true; }
-constexpr auto op_is_commutative(ops::XOR) { return true; }
-constexpr auto op_is_commutative(ops::PI_CONJ) { return true; }
-constexpr auto op_is_commutative(ops::NAND) { return true; }
-constexpr auto op_is_commutative(ops::NOR) { return true; }
-constexpr auto op_is_commutative(ops::EQUAL_TO) { return true; }
-constexpr auto op_is_commutative(ops::NOT_EQUAL_TO) { return true; }
-constexpr auto op_is_commutative(ops::LESS) { return false; }
-constexpr auto op_is_commutative(ops::LESS_EQUAL) { return false; }
-constexpr auto op_is_commutative(ops::GREATER) { return false; }
-constexpr auto op_is_commutative(ops::GREATER_EQUAL) { return false; }
-constexpr auto op_is_commutative(ops::MIN) { return true; }
-constexpr auto op_is_commutative(ops::MAX) { return true; }
+constexpr auto op_is_commutative(ops::AND)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::OR)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::XOR)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::PI_CONJ)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::NAND)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::NOR)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::EQUAL_TO)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::NOT_EQUAL_TO)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::LESS)
+{
+    return false;
+}
+constexpr auto op_is_commutative(ops::LESS_EQUAL)
+{
+    return false;
+}
+constexpr auto op_is_commutative(ops::GREATER)
+{
+    return false;
+}
+constexpr auto op_is_commutative(ops::GREATER_EQUAL)
+{
+    return false;
+}
+constexpr auto op_is_commutative(ops::MIN)
+{
+    return true;
+}
+constexpr auto op_is_commutative(ops::MAX)
+{
+    return true;
+}
 template<uint_t P>
 constexpr auto op_is_commutative(ops::PLUS<P>)
 {
@@ -323,10 +407,10 @@ template<class O>
 concept bin_op = requires(O o) {
                      {
                          op_id(o)
-                         } -> std::convertible_to<uint_t>;
+                     } -> std::convertible_to<uint_t>;
                      {
                          op_is_commutative(o)
-                         } -> std::same_as<bool>;
+                     } -> std::same_as<bool>;
                  };
 } // namespace teddy
 

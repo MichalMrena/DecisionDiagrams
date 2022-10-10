@@ -148,7 +148,10 @@ inline cube_t::cube_t(std::size_t const size)
 {
 }
 
-inline auto cube_t::size() const -> std::size_t { return size_; }
+inline auto cube_t::size() const -> std::size_t
+{
+    return size_;
+}
 
 inline auto cube_t::get(std::size_t const i) const -> unsigned int
 {
@@ -423,8 +426,8 @@ inline auto pla_file::get_lines() && -> std::vector<pla_line>
     return std::move(lines_);
 }
 
-inline auto
-pla_file::get_input_labels() const& -> std::vector<std::string> const&
+inline auto pla_file::get_input_labels(
+) const& -> std::vector<std::string> const&
 {
     return inputLabels_;
 }
@@ -434,8 +437,8 @@ inline auto pla_file::get_input_labels() && -> std::vector<std::string>
     return std::move(inputLabels_);
 }
 
-inline auto
-pla_file::get_output_labels() const& -> std::vector<std::string> const&
+inline auto pla_file::get_output_labels(
+) const& -> std::vector<std::string> const&
 {
     return outputLabels_;
 }

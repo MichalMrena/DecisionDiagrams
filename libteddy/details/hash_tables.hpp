@@ -209,8 +209,9 @@ private:
      *  \param domain Number of sons.
      *  \return True if the nodes are equal, false otherwise.
      */
-    static auto
-    node_equals(node_t* node, sons_t const& sons, std::size_t domain) -> bool;
+    static auto node_equals(
+        node_t* node, sons_t const& sons, std::size_t domain
+    ) -> bool;
 
 private:
     std::vector<node_t*> buckets_;

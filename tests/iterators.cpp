@@ -8,7 +8,9 @@ namespace teddy
 {
 // domain_iterator:
 
-domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({}) {}
+domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({})
+{
+}
 
 domain_iterator::domain_iterator(std::vector<uint_t> domains)
     : domain_iterator(

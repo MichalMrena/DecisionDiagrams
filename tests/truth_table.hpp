@@ -16,6 +16,7 @@ public:
     auto get_vector() const -> std::vector<unsigned int> const&;
     auto get_domains() const -> std::vector<unsigned int> const&;
     auto get_offsets() const -> std::vector<unsigned int> const&;
+    auto get_max_val() const -> unsigned int;
 
 private:
     std::vector<unsigned int> vector_;

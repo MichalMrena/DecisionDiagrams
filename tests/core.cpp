@@ -18,7 +18,7 @@
 #include <thread>
 #endif
 
-#include "core_setup.hpp"
+#include "common_test_setup.hpp"
 #include "expressions.hpp"
 #include "iterators.hpp"
 
@@ -48,36 +48,6 @@ auto expected_counts(
     }
     return counts;
 }
-
-/**
- *  \brief Holds data common for all tests.
- *  Each test uses some settings and random generator.
- */
-template<class Settings>
-class test_base : public rog::LeafTest
-{
-public:
-    test_base(std::string name, Settings settings)
-        : rog::LeafTest(std::move(name)), settings_(std::move(settings)),
-          rng_(settings_.seed_)
-    {
-    }
-
-protected:
-    auto settings() const -> Settings const&
-    {
-        return settings_;
-    }
-
-    auto rng() -> std::mt19937_64&
-    {
-        return rng_;
-    }
-
-private:
-    Settings settings_;
-    std::mt19937_64 rng_;
-};
 
 /**
  *  \brief Implements brute-force evaluation of the entire domain.
@@ -623,7 +593,6 @@ public:
         : rog::CompositeTest(std::move(name))
     {
         auto seeder      = std::mt19937_64(seed);
-
         using settings_t = test_settings<ManagerSettings, ExpressionSettings>;
 
         this->add_test(std::make_unique<test_evaluate<settings_t>>(
@@ -631,12 +600,10 @@ public:
         ));
 
         this->add_test(std::make_unique<test_fold<settings_t>>(test_settings {
-            seeder(), manager, expr}
-        ));
+            seeder(), manager, expr}));
 
         this->add_test(std::make_unique<test_gc<settings_t>>(test_settings {
-            seeder(), manager, expr}
-        ));
+            seeder(), manager, expr}));
 
         this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
             test_settings {seeder(), manager, expr}
@@ -685,7 +652,7 @@ class test_bdd_manager
 public:
     test_bdd_manager(std::size_t const seed)
         : test_manager<bdd_manager_settings, minmax_expression_settings>(
-              seed, bdd_manager_settings {21, 2'000, random_order()},
+              seed, bdd_manager_settings {21, 2'000, random_order_tag()},
               minmax_expression_settings {30, 6}, "bdd_manager"
           )
     {
@@ -701,7 +668,7 @@ class test_mdd_manager
 public:
     test_mdd_manager(std::size_t const seed)
         : test_manager<mdd_manager_settings<3>, minmax_expression_settings>(
-              seed, mdd_manager_settings<3> {15, 5'000, random_order()},
+              seed, mdd_manager_settings<3> {15, 5'000, random_order_tag()},
               minmax_expression_settings {20, 5}, "mdd_manager"
           )
     {
@@ -719,7 +686,7 @@ public:
         : test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
               seed,
               imdd_manager_settings<3> {
-                  21, 5'000, random_order(), random_domains()},
+                  21, 5'000, random_order_tag(), random_domains()},
               minmax_expression_settings {30, 6}, "imdd_manager"
           )
     {
@@ -737,7 +704,7 @@ public:
         : test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
               seed,
               ifmdd_manager_settings<3> {
-                  21, 5'000, random_order(), random_domains()},
+                  21, 5'000, random_order_tag(), random_domains()},
               minmax_expression_settings {30, 6}, "ifmdd_manager"
           )
     {
@@ -745,26 +712,26 @@ public:
 };
 } // namespace teddy
 
-auto run_test_one()
+auto run_test_one(std::size_t const seed)
 {
-    auto bddmt = teddy::test_bdd_manager(144);
+    auto bddmt = teddy::test_bdd_manager(seed);
     bddmt.run();
     rog::console_print_results(bddmt);
 
-    auto mddmt = teddy::test_mdd_manager(144);
+    auto mddmt = teddy::test_mdd_manager(seed);
     mddmt.run();
     rog::console_print_results(mddmt);
 
-    auto imddmt = teddy::test_imdd_manager(144);
+    auto imddmt = teddy::test_imdd_manager(seed);
     imddmt.run();
     rog::console_print_results(imddmt);
 
-    auto ifmddmt = teddy::test_ifmdd_manager(144);
+    auto ifmddmt = teddy::test_ifmdd_manager(seed);
     ifmddmt.run();
     rog::console_print_results(ifmddmt);
 }
 
-auto run_test_many()
+auto run_test_many(std::size_t const seed)
 {
     auto constexpr Oks = "o";
     auto constexpr Ers = "x";
@@ -821,7 +788,7 @@ auto run_test_many()
     auto mddmts  = std::vector<teddy::test_mdd_manager>();
     auto imddts  = std::vector<teddy::test_imdd_manager>();
     auto ifmddts = std::vector<teddy::test_ifmdd_manager>();
-    auto seeder  = std::mt19937_64(144);
+    auto seeder  = std::mt19937_64(seed);
 
     for (auto k = 0; k < numtest; ++k)
     {
@@ -888,16 +855,16 @@ auto main(int const argc, char** const argv) -> int
 
     if (argc > 1 && std::string_view(argv[1]) == "one")
     {
-        run_test_one();
+        run_test_one(seed);
     }
     else if (argc > 1 && std::string_view(argv[1]) == "many")
     {
-        run_test_many();
+        run_test_many(seed);
     }
     else
     {
-        run_test_one();
-        run_test_many();
+        run_test_one(seed);
+        run_test_many(seed);
     }
 
     std::cout << '\n' << "End of main." << '\n';

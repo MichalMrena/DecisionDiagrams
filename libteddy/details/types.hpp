@@ -18,7 +18,10 @@ auto constexpr special_val_to_index(uint_t const val) -> index_t
     return static_cast<index_t>(UintMax - val);
 }
 
-auto constexpr is_special(uint_t const val) -> bool { return val == Undefined; }
+auto constexpr is_special(uint_t const val) -> bool
+{
+    return val == Undefined;
+}
 } // namespace teddy
 
 #endif

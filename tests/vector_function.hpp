@@ -26,7 +26,7 @@ template<class F>
 concept f_val_change = requires(F f) {
                            {
                                f(uint_t(), uint_t())
-                               } -> std::convertible_to<bool>;
+                           } -> std::convertible_to<bool>;
                        };
 
 template<class F>
@@ -36,7 +36,7 @@ template<class F>
 concept uint_bin_op = requires(F f) {
                           {
                               f(uint_t(), uint_t())
-                              } -> std::convertible_to<uint_t>;
+                          } -> std::convertible_to<uint_t>;
                       };
 
 /**
@@ -202,9 +202,9 @@ public:
      *  Returns new function as a result of applying @p f on @p l and @p l .
      */
     template<uint_bin_op F>
-    friend auto
-    vector_op(F const f, vector_function const& l, vector_function const& r)
-        -> vector_function
+    friend auto vector_op(
+        F const f, vector_function const& l, vector_function const& r
+    ) -> vector_function
     {
         assert(l.domains_ == r.domains_);
 
@@ -268,12 +268,18 @@ public:
     /**
      *  Returns maximal value of the function.
      */
-    auto max_value() const -> uint_t { return maxValue_; }
+    auto max_value() const -> uint_t
+    {
+        return maxValue_;
+    }
 
     /**
      *  Returns domains of variables that this function depends on.
      */
-    auto get_domains() const -> std::vector<uint_t> const& { return domains_; }
+    auto get_domains() const -> std::vector<uint_t> const&
+    {
+        return domains_;
+    }
 
 private:
     /**
@@ -421,7 +427,10 @@ private:
         return result;
     }
 
-    auto sf() const -> vector_function const& { return *sf_; }
+    auto sf() const -> vector_function const&
+    {
+        return *sf_;
+    }
 
 private:
     vector_function const* sf_;

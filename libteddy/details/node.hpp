@@ -41,7 +41,10 @@ template<uint_t N>
 struct fixed
 {
     static_assert(N > 1);
-    auto constexpr operator()() { return N; }
+    auto constexpr operator()()
+    {
+        return N;
+    }
 };
 
 template<class T>
@@ -120,13 +123,17 @@ private:
     {
         sons_t sons;
         index_t index;
-        internal(sons_t ss, index_t i) : sons {std::move(ss)}, index {i} {}
+        internal(sons_t ss, index_t i) : sons {std::move(ss)}, index {i}
+        {
+        }
     };
 
     struct terminal
     {
         uint_t value;
-        terminal(uint_t const v) : value {v} {}
+        terminal(uint_t const v) : value {v}
+        {
+        }
     };
 
 private:

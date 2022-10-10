@@ -26,16 +26,25 @@ struct mixed
 
     mixed(std::vector<uint_t> ds) : ds_(std::move(ds)) {};
 
-    auto operator[](uint_t const i) const { return ds_[i]; }
+    auto operator[](uint_t const i) const
+    {
+        return ds_[i];
+    }
 };
 
 template<uint_t N>
 struct fixed
 {
     static_assert(N > 1);
-    constexpr auto operator[](uint_t const) const { return N; }
+    constexpr auto operator[](uint_t const) const
+    {
+        return N;
+    }
 
-    constexpr auto operator()() const { return N; }
+    constexpr auto operator()() const
+    {
+        return N;
+    }
 };
 
 template<class T>
@@ -60,14 +69,14 @@ template<class F>
 concept uint_to_bool = requires(F f, uint_t x) {
                            {
                                f(x)
-                               } -> std::convertible_to<bool>;
+                           } -> std::convertible_to<bool>;
                        };
 
 template<class F>
 concept uint_to_uint = requires(F f, uint_t x) {
                            {
                                f(x)
-                               } -> std::convertible_to<uint_t>;
+                           } -> std::convertible_to<uint_t>;
                        };
 
 template<class F, class Node>

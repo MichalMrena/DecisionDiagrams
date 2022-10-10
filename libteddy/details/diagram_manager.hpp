@@ -19,7 +19,7 @@ template<class Vars>
 concept in_var_values = requires(Vars vs, index_t i) {
                             {
                                 vs[i]
-                                } -> std::convertible_to<uint_t>;
+                            } -> std::convertible_to<uint_t>;
                         };
 
 template<class Vars>
@@ -29,35 +29,35 @@ template<class T>
 concept expression_node = requires(T t, uint_t l, uint_t r) {
                               {
                                   t.is_variable()
-                                  } -> std::same_as<bool>;
+                              } -> std::same_as<bool>;
                               {
                                   t.is_constant()
-                                  } -> std::same_as<bool>;
+                              } -> std::same_as<bool>;
                               {
                                   t.is_operation()
-                                  } -> std::same_as<bool>;
+                              } -> std::same_as<bool>;
                               {
                                   t.get_index()
-                                  } -> std::same_as<index_t>;
+                              } -> std::same_as<index_t>;
                               {
                                   t.get_value()
-                                  } -> std::same_as<uint_t>;
+                              } -> std::same_as<uint_t>;
                               {
                                   t.evaluate(l, r)
-                                  } -> std::same_as<uint_t>;
+                              } -> std::same_as<uint_t>;
                               {
                                   t.get_left()
-                                  } -> std::same_as<T const&>;
+                              } -> std::same_as<T const&>;
                               {
                                   t.get_right()
-                                  } -> std::same_as<T const&>;
+                              } -> std::same_as<T const&>;
                           };
 
 template<class O>
 concept any_bin_op = requires(O o, uint_t l, uint_t r) {
                          {
                              o(l, r)
-                             } -> std::convertible_to<uint_t>;
+                         } -> std::convertible_to<uint_t>;
                      };
 
 template<class C, class Node>
@@ -65,7 +65,7 @@ concept cache_handle = requires(C c, Node* l, Node* r, Node* u) {
                            c.put(l, r, u);
                            {
                                c.lookup(l, r)
-                               } -> std::same_as<Node*>;
+                           } -> std::same_as<Node*>;
                        };
 
 template<class Degree>

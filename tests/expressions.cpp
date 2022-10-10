@@ -59,13 +59,11 @@ expr_node::operation_t::operation_t(
 {
 }
 
-expr_node::variable_t::variable_t(index_t const i)
-    : i_(i)
+expr_node::variable_t::variable_t(index_t const i) : i_(i)
 {
 }
 
-expr_node::constant_t::constant_t(uint_t const c)
-    : c_(c)
+expr_node::constant_t::constant_t(uint_t const c) : c_(c)
 {
 }
 

@@ -17,14 +17,14 @@ concept component_probabilities =
     requires(Probabilities ps, index_t index, uint_t val) {
         {
             ps[index][val]
-            } -> std::convertible_to<double>;
+        } -> std::convertible_to<double>;
     };
 
 template<class F>
 concept f_val_change = requires(F f, uint_t l, uint_t r) {
                            {
                                f(l, r)
-                               } -> std::convertible_to<bool>;
+                           } -> std::convertible_to<bool>;
                        };
 
 /**
@@ -251,9 +251,9 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 1.
      */
-    auto
-    idpbd_type_1_decrease(value_change var, uint_t j, diagram_t sf, index_t i)
-        -> diagram_t;
+    auto idpbd_type_1_decrease(
+        value_change var, uint_t j, diagram_t sf, index_t i
+    ) -> diagram_t;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative of type 1.
@@ -269,9 +269,9 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 1.
      */
-    auto
-    idpbd_type_1_increase(value_change var, uint_t j, diagram_t sf, index_t i)
-        -> diagram_t;
+    auto idpbd_type_1_increase(
+        value_change var, uint_t j, diagram_t sf, index_t i
+    ) -> diagram_t;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative of type 2.
@@ -317,9 +317,9 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 3.
      */
-    auto
-    idpbd_type_3_decrease(value_change var, uint_t j, diagram_t sf, index_t i)
-        -> diagram_t;
+    auto idpbd_type_3_decrease(
+        value_change var, uint_t j, diagram_t sf, index_t i
+    ) -> diagram_t;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative of type 2.
@@ -335,9 +335,9 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 3.
      */
-    auto
-    idpbd_type_3_increase(value_change var, uint_t j, diagram_t sf, index_t i)
-        -> diagram_t;
+    auto idpbd_type_3_increase(
+        value_change var, uint_t j, diagram_t sf, index_t i
+    ) -> diagram_t;
 
     /**
      *  \brief Calculates Structural Importace (SI) of a component.

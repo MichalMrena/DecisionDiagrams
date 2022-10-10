@@ -142,14 +142,27 @@ public:
     using iterator_category = std::output_iterator_tag;
 
 public:
-    forwarding_iterator() {}
-    forwarding_iterator(F& f) : f_(&f) {}
+    forwarding_iterator()
+    {
+    }
+    forwarding_iterator(F& f) : f_(&f)
+    {
+    }
 
-    auto operator++() -> forwarding_iterator& { return *this; }
+    auto operator++() -> forwarding_iterator&
+    {
+        return *this;
+    }
 
-    auto operator++(int) -> forwarding_iterator& { return *this; }
+    auto operator++(int) -> forwarding_iterator&
+    {
+        return *this;
+    }
 
-    auto operator*() -> forwarding_iterator& { return *this; }
+    auto operator*() -> forwarding_iterator&
+    {
+        return *this;
+    }
 
     auto operator=(auto&& arg) -> forwarding_iterator&
     {

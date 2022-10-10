@@ -72,12 +72,22 @@ PRIVATE
 add_executable(
     libteddy-test-reliability
     reliability.cpp
+    truth_table.cpp
+    table_reliability.cpp
+    expressions.cpp
+    iterators.cpp
 )
 
 target_link_libraries(
         libteddy-test-reliability
     PRIVATE
         libteddy
+)
+
+target_link_libraries(
+    libteddy-test-reliability
+PRIVATE
+    rog::librog
 )
 
 target_compile_options(

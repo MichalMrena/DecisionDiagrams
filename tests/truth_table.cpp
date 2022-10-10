@@ -1,4 +1,5 @@
 #include "truth_table.hpp"
+#include "truth_table_utils.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -7,68 +8,15 @@
 
 namespace teddy
 {
-namespace
-{
-/**
- *  \brief Invokes \p f with each element of the domain.
- */
-template<class F>
-auto domain_for_each(truth_table const& table, F const f) -> void
-{
-    auto const& vector  = table.get_vector();
-    auto const varcount = table.get_var_count();
-    auto element        = std::vector<unsigned int>(varcount, 0);
-    auto wasLast        = false;
-    auto k              = 0u;
-    do
-    {
-        // Invoke f.
-        std::invoke(f, vector[k], element);
-
-        // Move to the next element of the domain.
-        auto overflow = true;
-        auto i        = varcount;
-        while (i > 0 && overflow)
-        {
-            --i;
-            ++element[i];
-            overflow = element[i] == domains_[i];
-            if (overflow)
-            {
-                element[i] = 0;
-            }
-        }
-
-        wasLast = overflow && i == 0;
-        ++k;
-    } while (not wasLast);
-}
-
-/**
- *  \brief Maps values of variables to index in the vector.
- */
-auto to_index(truth_table const& table, std::vector<unsigned int> const& vars)
-    -> unsigned int
-{
-    assert(vars.size() == table.get_var_count());
-    auto index = 0u;
-    for (auto i = 0u; i < table.get_var_count(); ++i)
-    {
-        index += vars[i] * table.get_offsets()[i];
-    }
-    return index;
-}
-} // namespace
-
 truth_table::truth_table(
     std::vector<unsigned int> vector, std::vector<unsigned int> domains
 )
-    : vector_(std::move(vector)), domains_(std::move(domains_)),
+    : vector_(std::move(vector)), domains_(std::move(domains)),
       offset_(this->get_var_count()), maxValue_(std::ranges::max(vector_))
 {
     assert(
         vector_.size() ==
-        std::reduce(begin(domains_), end(domains_), 1u, std::multiplies<>())
+        std::reduce(begin(domains_), end(domains_), 1ull, std::multiplies<>())
     );
 
     assert(this->get_var_count() > 0);
@@ -98,6 +46,11 @@ auto truth_table::get_vector() const -> std::vector<unsigned int> const&
 auto truth_table::get_domains() const -> std::vector<unsigned int> const&
 {
     return domains_;
+}
+
+auto truth_table::get_max_val() const -> unsigned int
+{
+    return maxValue_;
 }
 
 auto satisfy_count(truth_table const& table, unsigned int j) -> std::size_t

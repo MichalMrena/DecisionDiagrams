@@ -1,390 +1,160 @@
-#include "vector_function.hpp"
-#include <array>
-#include <cassert>
-#include <cmath>
-#include <iomanip>
 #include <iostream>
-#include <libteddy/teddy_reliability.hpp>
-#include <random>
-#include <tuple>
-#include <vector>
+#include <librog/rog.hpp>
+#include <libteddy/teddy.hpp>
 
-namespace teddy::test
+#include "common_test_setup.hpp"
+#include "table_reliability.hpp"
+
+namespace teddy
 {
-using probability_t = double;
 
-struct system_characteristics
+/**
+ *  \brief Tests calculation of system state probabilities.
+ */
+template<class Settings>
+class test_probability : public test_base<Settings>
 {
-    std::vector<probability_t> Ps_;
-    std::vector<probability_t> As_;
-    std::vector<probability_t> Us_;
-    std::vector<std::vector<std::vector<probability_t>>> SIs_;
-    std::vector<std::vector<std::vector<uint_t>>> MCVs_;
-};
-
-auto wrap_green(std::string_view const s)
-{
-    return std::string("\x1B[92m") + std::string(s) + "\x1B[0m";
-}
-
-auto wrap_red(std::string_view const s)
-{
-    return std::string("\x1B[91m") + std::string(s) + "\x1B[0m";
-}
-
-auto wrap_yellow(std::string_view const s)
-{
-    return std::string("\x1B[93m") + std::string(s) + "\x1B[0m";
-}
-
-auto constexpr char_ok() { return "✓"; }
-
-auto constexpr char_err() { return "!"; }
-
-auto result_char(bool const b)
-{
-    return b ? wrap_green(char_ok()) : wrap_red(char_err());
-}
-
-template<uint_t P, class Manager, class Diagram, class Probabilities>
-auto analyze_system(Manager& manager, Diagram& sf, Probabilities const& ps)
-{
-    return system_characteristics {
-        .Ps_ = utils::fill_vector(
-            P,
-            [&](auto const j)
-            {
-                return manager.probability(j, ps, sf);
-            }
-        ),
-        .As_ = utils::fill_vector(
-            P,
-            [&](auto const j)
-            {
-                return manager.availability(j, ps, sf);
-            }
-        ),
-        .Us_ = utils::fill_vector(
-            P,
-            [&](auto const j)
-            {
-                return manager.unavailability(j, ps, sf);
-            }
-        ),
-        .SIs_ = utils::fill_vector(
-            manager.get_var_count(),
-            [&](auto const i)
-            {
-                return utils::fill_vector(
-                    P - 1,
-                    [&](auto const j)
-                    {
-                        return utils::fill_vector(
-                            manager.get_domains()[i] - 1,
-                            [&](auto const v)
-                            {
-                                auto dpbd = manager.idpbd_type_3_decrease(
-                                    {v + 1, v}, j + 1, sf, i
-                                );
-                                return manager.structural_importance(dpbd);
-                            }
-                        );
-                    }
-                );
-            }
-        ),
-        .MCVs_ = utils::fill_vector(
-            P - 1,
-            [&](auto const j)
-            {
-                return manager.template mcvs<std::vector<uint_t>>(sf, j + 1);
-            }
-        )};
-}
-
-template<class Probabilities>
-auto analyze_system(vector::vector_function const& sf, Probabilities const& ps)
-{
-    auto rel = teddy::vector::vector_reliability(sf, ps);
-    return system_characteristics {
-        .Ps_ = utils::fill_vector(
-            sf.max_value() + 1,
-            [&](auto const j)
-            {
-                return rel.probability(j);
-            }
-        ),
-        .As_ = utils::fill_vector(
-            sf.max_value() + 1,
-            [&](auto const j)
-            {
-                return rel.availability(j);
-            }
-        ),
-        .Us_ = utils::fill_vector(
-            sf.max_value() + 1,
-            [&](auto const j)
-            {
-                return rel.unavailability(j);
-            }
-        ),
-        .SIs_ = utils::fill_vector(
-            sf.get_var_count(),
-            [&](auto const i)
-            {
-                return utils::fill_vector(
-                    sf.max_value(),
-                    [&](auto const j)
-                    {
-                        return utils::fill_vector(
-                            sf.get_domains()[i] - 1,
-                            [&](auto const v)
-                            {
-                                return rel.structural_importance(
-                                    j + 1, {i, v + 1, v}
-                                );
-                            }
-                        );
-                    }
-                );
-            }
-        ),
-        .MCVs_ = utils::fill_vector(
-            sf.max_value(),
-            [&](auto const j)
-            {
-                return rel.mcvs(j + 1);
-            }
-        )};
-}
-
-auto evaluate_test(
-    system_characteristics const& expected, system_characteristics const& actual
-)
-{
-    namespace rs   = std::ranges;
-    auto const cmp = [](auto const l, auto const r)
+public:
+    test_probability(Settings settings)
+        : test_base<Settings>("probability", std::move(settings))
     {
-        return std::abs(l - r) < 0.000001;
-    };
+    }
 
-    return std::vector<bool>({// Probabilities.
-                              std::ranges::equal(expected.Ps_, actual.Ps_, cmp),
-
-                              // Availabilities.
-                              std::ranges::equal(expected.As_, actual.As_, cmp),
-
-                              // Unavailabilities.
-                              std::ranges::equal(expected.Us_, actual.Us_, cmp),
-
-                              // Structural importances.
-                              std::ranges::equal(
-                                  expected.SIs_, actual.SIs_,
-                                  [cmp](auto const& lhs, auto const& rhs)
-                                  {
-                                      return rs::equal(
-                                          lhs, rhs,
-                                          [cmp](auto const& l, auto const& r)
-                                          {
-                                              return rs::equal(l, r, cmp);
-                                          }
-                                      );
-                                  }
-                              ),
-
-                              // Minimal Cut Vectors.
-                              [&]()
-                              {
-                                  for (auto j = 0u; j < expected.MCVs_.size();
-                                       ++j)
-                                  {
-                                      if (not std::ranges::is_permutation(
-                                              expected.MCVs_[j], actual.MCVs_[j]
-                                          ))
-                                      {
-                                          return false;
-                                      }
-                                  }
-                                  return true;
-                              }()});
-}
-
-auto print_test_evaluation(
-    system_characteristics const& expected, system_characteristics const& actual
-)
-{
-    namespace rs   = std::ranges;
-    auto const cmp = [](auto const l, auto const r)
+protected:
+    auto test() -> void override
     {
-        return std::abs(l - r) < 0.000001;
-    };
+        auto expr     = create_expression(this->settings(), this->rng());
+        auto manager  = create_manager(this->settings(), this->rng());
+        auto diagram  = create_diagram(expr, manager);
+        auto ps       = create_probabilities(manager, this->rng());
+        auto domains  = manager.get_domains();
+        auto table    = truth_table(create_vector(expr, domains), domains);
+        auto const m  = std::ranges::max(manager.get_domains());
+        auto expected = std::vector<double>(m);
+        auto actual   = std::vector<double>(m);
 
-    std::cout << "probabilities    "
-              << result_char(rs::equal(expected.Ps_, actual.Ps_, cmp)) << '\n';
-    std::cout << "availabilities   "
-              << result_char(rs::equal(expected.As_, actual.As_, cmp)) << '\n';
-    std::cout << "unavailabilities "
-              << result_char(rs::equal(expected.Us_, actual.Us_, cmp)) << '\n';
-    std::cout << "SIs              "
-              << result_char(rs::equal(
-                     expected.SIs_, actual.SIs_,
-                     [cmp](auto const& lhs, auto const& rhs)
-                     {
-                         return rs::equal(
-                             lhs, rhs,
-                             [cmp](auto const& l, auto const& r)
-                             {
-                                 return rs::equal(l, r, cmp);
-                             }
-                         );
-                     }
-                 ))
-              << '\n';
-    std::cout << "MCVs             "
-              << result_char(
-                     [&]()
-                     {
-                         for (auto j = 0u; j < expected.MCVs_.size(); ++j)
-                         {
-                             if (not rs::is_permutation(
-                                     expected.MCVs_[j], actual.MCVs_[j]
-                                 ))
-                             {
-                                 return false;
-                             }
-                         }
-                         return true;
-                     }()
-                 )
-              << '\n';
-}
+            auto v1 = manager.to_vector(diagram);
+            auto v2 = table.get_vector();
+            this->assert_true(v1 == v2, "v1 == v2");
 
-template<uint_t P>
-auto generate_serialparallel(
-    mss_manager<P>& manager, std::mt19937_64& rngtype,
-    std::mt19937_64& rngbranch
-)
-{
-    using namespace teddy::ops;
-
-    auto go = [&, i = 0u](auto& self, auto const n) mutable
-    {
-        if (n == 1)
+        for (auto j = 0u; j < m; ++j)
         {
-            return manager.variable(i++);
+            expected[j] = probability(table, ps, j);
         }
-        else
-        {
-            auto denomdist     = std::uniform_int_distribution<uint_t>(2, 10);
-            auto typedist      = std::uniform_real_distribution(0.0, 1.0);
-            auto const denom   = denomdist(rngbranch);
-            auto const lhssize = std::max(1u, n / denom);
-            auto const rhssize = n - lhssize;
-            auto const lhs     = self(self, lhssize);
-            auto const rhs     = self(self, rhssize);
-            auto const p       = typedist(rngtype);
-            return p < 0.5 ? manager.template apply<MIN>(lhs, rhs)
-                           : manager.template apply<MAX>(lhs, rhs);
-        }
-    };
-    return go(go, static_cast<uint_t>(manager.get_var_count()));
-}
 
-template<uint_t P>
-auto generate_probabilities(std::size_t const n, std::mt19937_64& rngp)
-{
-    auto pdist = std::uniform_real_distribution<double>();
-    auto ps    = utils::fill_vector(
-        n,
-        [&](auto)
+        manager.calculate_probabilities(ps, diagram);
+        for (auto j = 0u; j < m; ++j)
         {
-            return utils::fill_vector(
-                P,
-                [&](auto const)
-                {
-                    return pdist(rngp);
-                }
+            actual[j] = manager.get_probability(j);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            this->assert_true(
+                actual[j] == expected[j],
+                "Expected " + std::to_string(expected[j]) + " got " +
+                    std::to_string(actual[j])
             );
         }
-    );
-    for (auto& varps : ps)
-    {
-        auto const sum = std::reduce(begin(varps), end(varps), 0.0);
-        for (auto& p : varps)
-        {
-            p /= sum;
-        }
     }
-    return ps;
+};
+
+/**
+ *  \brief Composite test for reliability manager.
+ */
+template<class ManagerSettings, class ExpressionSettings>
+class test_reliability_manager : public rog::CompositeTest
+{
+public:
+    test_reliability_manager(
+        std::size_t const seed, ManagerSettings manager,
+        ExpressionSettings expr, std::string name
+    )
+        : rog::CompositeTest(std::move(name))
+    {
+        auto seeder      = std::mt19937_64(seed);
+        using settings_t = test_settings<ManagerSettings, ExpressionSettings>;
+
+        this->add_test(std::make_unique<test_probability<settings_t>>(
+            settings_t {seeder(), manager, expr}
+        ));
+    }
+};
+
+/**
+ *  \brief Tests bss_manager.
+ */
+class test_bss_manager : public test_reliability_manager<
+                             bss_manager_settings, expression_tree_settings>
+{
+public:
+    test_bss_manager(std::size_t const seed)
+        : test_reliability_manager<
+              bss_manager_settings, expression_tree_settings>(
+            //   seed, bss_manager_settings {21, 2'000, random_order_tag()},
+              seed, bss_manager_settings {21, 2'000, default_order_tag()},
+              expression_tree_settings {}, "bss_manager"
+          )
+    {
+    }
+};
+} // namespace teddy
+
+auto run_test_one(std::size_t const seed)
+{
+    auto bssmt = teddy::test_bss_manager(seed);
+    bssmt.run();
+    rog::console_print_results(bssmt);
+
+    // auto bddmt = teddy::test_bdd_manager(seed);
+    // bddmt.run();
+    // rog::console_print_results(bddmt);
+
+    // auto mddmt = teddy::test_mdd_manager(seed);
+    // mddmt.run();
+    // rog::console_print_results(mddmt);
+
+    // auto imddmt = teddy::test_imdd_manager(seed);
+    // imddmt.run();
+    // rog::console_print_results(imddmt);
+
+    // auto ifmddmt = teddy::test_ifmdd_manager(seed);
+    // ifmddmt.run();
+    // rog::console_print_results(ifmddmt);
 }
 
-template<uint_t P>
-auto test_n_random(std::size_t const testCount, std::size_t const n)
+auto main(int const argc, char** const argv) -> int
 {
-    auto seeder    = std::mt19937_64(144);
-    auto rngtype   = std::mt19937_64(seeder());
-    auto rngbranch = std::mt19937_64(seeder());
-    auto rngp      = std::mt19937_64(seeder());
-    auto results   = std::vector<std::vector<bool>>();
+    auto seed = 144ull;
 
-    for (auto k = 0u; k < testCount; ++k)
+    if (argc == 1)
     {
-        auto manager    = mss_manager<P>(n, 10'000);
-        auto diagram    = generate_serialparallel(manager, rngtype, rngbranch);
-        auto vectorFunc = vector::vector_function(
-            manager.to_vector(diagram),
-            utils::fill_vector(n, utils::constant(P))
-        );
-        auto const ps       = generate_probabilities<P>(n, rngp);
-        auto const actual   = analyze_system<P>(manager, diagram, ps);
-        auto const expected = analyze_system(vectorFunc, ps);
-        results.emplace_back(evaluate_test(actual, expected));
+        std::cout << "./[bin] [one|many] {seed}" << '\n';
+        return 1;
     }
 
-    auto const print_row = [](auto const& name, auto const& rs, auto const row)
+    if (argc > 2)
     {
-        std::cout << name;
-        for (auto col = 0u; col < rs.size(); ++col)
-        {
-            std::cout << result_char(rs[col][row]) << " ";
-        }
-        std::cout << '\n';
-    };
+        auto const seedopt = teddy::utils::parse<std::size_t>(argv[2]);
+        seed               = seedopt ? *seedopt : seed;
+    }
 
-    print_row("probabilities    ", results, 0u);
-    print_row("availabilities   ", results, 1u);
-    print_row("unavailabilities ", results, 2u);
-    print_row("SIs              ", results, 3u);
-    print_row("MCVs             ", results, 4u);
-}
-} // namespace teddy::test
+    std::cout << "Seed is " << seed << '\n';
 
-auto system_1()
-{
-    auto const vector = std::vector<teddy::uint_t> {
-        0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1,
-        0, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2};
-    auto domains        = std::vector<teddy::uint_t>({2, 3, 2, 3});
-    auto const ps       = std::vector<std::vector<double>>({
-        {0.1, 0.9, 0.0},
-        {0.2, 0.6, 0.2},
-        {0.3, 0.7, 0.0},
-        {0.1, 0.6, 0.3}
-    });
-    auto vectorSf       = teddy::vector::vector_function(vector, domains);
-    auto manager        = teddy::ifmss_manager<3>(4, 1'000, {2, 3, 2, 3});
-    auto diagram        = manager.from_vector(vector);
-    auto const actual   = teddy::test::analyze_system<3>(manager, diagram, ps);
-    auto const expected = teddy::test::analyze_system(vectorSf, ps);
-    teddy::test::print_test_evaluation(expected, actual);
-}
+    if (argc > 1 && std::string_view(argv[1]) == "one")
+    {
+        run_test_one(seed);
+    }
+    else if (argc > 1 && std::string_view(argv[1]) == "many")
+    {
+        // run_test_many(seed);
+    }
+    else
+    {
+        // run_test_one(seed);
+        // run_test_many(seed);
+    }
 
-int main()
-{
-    std::cout << "Fixed system:" << '\n';
-    system_1();
-    std::cout << '\n';
-
-    std::cout << "Random systems:" << '\n';
-    teddy::test::test_n_random<3>(50, 10);
+    std::cout << '\n' << "End of main." << '\n';
+    return 0;
 }
