@@ -194,8 +194,7 @@ inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
  */
 template<uint_t M>
 auto make_domains(
-    nonhomogeneous_manager_settings<M> const& s,
-    std::mt19937_64& rng
+    nonhomogeneous_manager_settings<M> const& s, std::mt19937_64& rng
 ) -> std::vector<index_t>
 {
     return std::visit(
