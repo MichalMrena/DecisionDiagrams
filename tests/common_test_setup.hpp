@@ -75,22 +75,26 @@ struct mdd_manager_settings : manager_settings
 {
 };
 
+template<uint_t M>
+struct nonhomogeneous_manager_settings : manager_settings
+{
+    std::variant<random_domains, given_domains> domains_;
+};
+
 /**
  *  \brief Describes how to initialize imdd_manager.
  */
 template<uint_t M>
-struct imdd_manager_settings : manager_settings
+struct imdd_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
  *  \brief Describes how to initialize a ifmdd_manager.
  */
 template<uint_t M>
-struct ifmdd_manager_settings : manager_settings
+struct ifmdd_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
@@ -112,18 +116,16 @@ struct mss_manager_settings : manager_settings
  *  \brief Describes how to initialize imss_manager.
  */
 template<uint_t M>
-struct imss_manager_settings : manager_settings
+struct imss_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
  *  \brief Describes how to initialize a ifmss_manager.
  */
 template<uint_t M>
-struct ifmss_manager_settings : manager_settings
+struct ifmss_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
@@ -188,11 +190,11 @@ inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
 }
 
 /**
- *  \brief Makes domains of variables for a manager.
+ *  \brief Makes domains for a manager.
  */
 template<uint_t M>
 auto make_domains(
-    uint_t const varcount, std::variant<random_domains, given_domains> const& s,
+    nonhomogeneous_manager_settings<M> const& s,
     std::mt19937_64& rng
 ) -> std::vector<index_t>
 {
@@ -200,9 +202,9 @@ auto make_domains(
         match {
             [&](random_domains)
             {
-                auto dist = std::uniform_int_distribution<uint_t>(2u, M - 1);
+                auto dist = std::uniform_int_distribution<uint_t>(2u, M);
                 return utils::fill_vector(
-                    varcount,
+                    s.varcount_,
                     [&rng, &dist](auto)
                     {
                         return dist(rng);
@@ -213,28 +215,8 @@ auto make_domains(
             {
                 return ds.domains_;
             }},
-        s
+        s.domains_
     );
-}
-
-/**
- *  \brief Makes domains for a manager.
- */
-template<uint_t M>
-auto make_domains(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
-    -> std::vector<index_t>
-{
-    return make_domains<M>(s.varcount_, s.domains_, rng);
-}
-
-/**
- *  \brief Makes domains for a manager.
- */
-template<uint_t M>
-auto make_domains(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
-    -> std::vector<index_t>
-{
-    return make_domains<M>(s.varcount_, s.domains_, rng);
 }
 
 /**
