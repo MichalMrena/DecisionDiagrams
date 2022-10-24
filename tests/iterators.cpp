@@ -85,8 +85,7 @@ auto domain_iterator::operator++() -> domain_iterator&
         {
             varVals_[i] = 0;
         }
-
-        if (not overflow)
+        else
         {
             break;
         }
@@ -118,7 +117,7 @@ auto domain_iterator::operator==(domain_iterator const& rhs) const -> bool
 
 auto domain_iterator::operator!=(domain_iterator const& rhs) const -> bool
 {
-    return ! (rhs == *this);
+    return not (rhs == *this);
 }
 
 auto domain_iterator::operator==(domain_iterator_sentinel) const -> bool

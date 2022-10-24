@@ -72,7 +72,7 @@ protected:
                 manager.evaluate(diagram, evalit.var_vals());
             if (expectedval != diagramval)
             {
-                this->log_fail(
+                this->fail(
                     "Expected " + std::to_string(expectedval) + " got " +
                     std::to_string(diagramval)
                 );
@@ -83,7 +83,7 @@ protected:
 
         if (evalit == evalend)
         {
-            this->log_pass("OK, expected == actual.");
+            this->pass("OK, expected == actual.");
         }
     }
 };
@@ -106,7 +106,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
         auto domainit = domain_iterator(manager.get_domains());
@@ -134,7 +134,7 @@ protected:
         auto manager  = create_manager(this->settings(), this->rng());
         auto diagram1 = create_diagram(expr, manager, fold_type::Left);
         auto diagram2 = create_diagram(expr, manager, fold_type::Tree);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram1))
         );
         this->assert_true(diagram1.equals(diagram2), "Diagrams are equal");
@@ -159,7 +159,7 @@ protected:
         auto manager  = create_manager(this->settings(), this->rng());
         auto diagram1 = create_diagram(expr, manager, fold_type::Left);
         auto diagram2 = create_diagram(expr, manager, fold_type::Tree);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram1))
         );
         manager.force_gc();
@@ -191,7 +191,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
         auto expected = expected_counts(manager, expr);
@@ -231,7 +231,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
         auto expected = expected_counts(manager, expr);
@@ -277,7 +277,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
         auto const zero = manager.constant(0);
@@ -385,7 +385,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
         auto const maxi = static_cast<index_t>(manager.get_var_count() - 1);
@@ -435,7 +435,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Nodes before " + std::to_string(manager.node_count(diagram))
         );
         manager.force_gc();
@@ -443,7 +443,7 @@ protected:
         manager.force_gc();
         auto const actual   = manager.node_count();
         auto const expected = manager.node_count(diagram);
-        this->log_info("Nodes after " + std::to_string(actual));
+        this->info("Nodes after " + std::to_string(actual));
         this->assert_true(
             actual == expected, "Expected " + std::to_string(expected) +
                                     " nodes, got " + std::to_string(actual) +
@@ -510,7 +510,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
         auto domainit =
@@ -542,7 +542,7 @@ protected:
         auto expr    = create_expression(this->settings(), this->rng());
         auto manager = create_manager(this->settings(), this->rng());
         auto diagram = create_diagram(expr, manager);
-        this->log_info(
+        this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
         auto vector  = manager.to_vector(diagram);
@@ -597,47 +597,47 @@ public:
             test_settings {seeder(), manager, expr}
         ));
 
-        this->add_test(std::make_unique<test_fold<settings_t>>(test_settings {
-            seeder(), manager, expr}));
+        // this->add_test(std::make_unique<test_fold<settings_t>>(test_settings {
+        //     seeder(), manager, expr}));
 
-        this->add_test(std::make_unique<test_gc<settings_t>>(test_settings {
-            seeder(), manager, expr}));
+        // this->add_test(std::make_unique<test_gc<settings_t>>(test_settings {
+        //     seeder(), manager, expr}));
 
-        this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_satisfy_all<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_satisfy_all<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_operators<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_operators<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_cofactor<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_cofactor<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_one_var_sift<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_one_var_sift<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_auto_var_sift<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_auto_var_sift<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_from_vector<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_from_vector<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_to_vector<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_to_vector<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_from_expression<settings_t>>(
-            test_settings {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_from_expression<settings_t>>(
+        //     test_settings {seeder(), manager, expr}
+        // ));
     }
 };
 
@@ -796,14 +796,14 @@ auto run_test_many(std::size_t const seed)
         ifmddts.emplace_back(teddy::test_ifmdd_manager(seeder()));
     }
 
-#ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
-#endif
-    for (auto k = 0u; k < numtest; ++k)
-    {
-        bddmts[k].run();
-    }
-    print_results(bddmts);
+// #ifdef LIBTEDDY_TESTS_USE_OMP
+// #pragma omp parallel for
+// #endif
+//     for (auto k = 0u; k < numtest; ++k)
+//     {
+//         bddmts[k].run();
+//     }
+//     print_results(bddmts);
 
 #ifdef LIBTEDDY_TESTS_USE_OMP
 #pragma omp parallel for
@@ -814,23 +814,23 @@ auto run_test_many(std::size_t const seed)
     }
     print_results(mddmts);
 
-#ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
-#endif
-    for (auto k = 0u; k < numtest; ++k)
-    {
-        imddts[k].run();
-    }
-    print_results(imddts);
+// #ifdef LIBTEDDY_TESTS_USE_OMP
+// #pragma omp parallel for
+// #endif
+//     for (auto k = 0u; k < numtest; ++k)
+//     {
+//         imddts[k].run();
+//     }
+//     print_results(imddts);
 
-#ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
-#endif
-    for (auto k = 0u; k < numtest; ++k)
-    {
-        ifmddts[k].run();
-    }
-    print_results(ifmddts);
+// #ifdef LIBTEDDY_TESTS_USE_OMP
+// #pragma omp parallel for
+// #endif
+//     for (auto k = 0u; k < numtest; ++k)
+//     {
+//         ifmddts[k].run();
+//     }
+//     print_results(ifmddts);
 }
 
 auto main(int const argc, char** const argv) -> int
