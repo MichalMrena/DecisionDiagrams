@@ -28,7 +28,8 @@ domain_iterator::domain_iterator(
 }
 
 domain_iterator::domain_iterator(
-    std::vector<uint_t> domains, std::vector<index_t> order,
+    std::vector<uint_t> domains,
+    std::vector<index_t> order,
     std::vector<std::pair<index_t, uint_t>> fixed
 )
     : domains_(std::move(domains)),
@@ -37,7 +38,8 @@ domain_iterator::domain_iterator(
           {
               auto is = std::vector<index_t>();
               std::ranges::copy_if(
-                  order, std::back_inserter(is),
+                  order,
+                  std::back_inserter(is),
                   [&fixed](auto const i)
                   {
                       return std::ranges::end(fixed) ==
@@ -85,7 +87,8 @@ auto domain_iterator::operator++() -> domain_iterator&
         {
             varVals_[i] = 0;
         }
-        else
+
+        if (not overflow)
         {
             break;
         }
@@ -117,7 +120,7 @@ auto domain_iterator::operator==(domain_iterator const& rhs) const -> bool
 
 auto domain_iterator::operator!=(domain_iterator const& rhs) const -> bool
 {
-    return not (rhs == *this);
+    return ! (rhs == *this);
 }
 
 auto domain_iterator::operator==(domain_iterator_sentinel) const -> bool

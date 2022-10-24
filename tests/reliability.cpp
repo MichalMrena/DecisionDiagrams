@@ -11,11 +11,11 @@ namespace teddy
 
 namespace
 {
-auto epsilon_eq(double const d1, double const d2, double const e) -> bool
-{
-    return std::abs(d1 - d2) < e;
+    auto epsilon_eq(double const d1, double const d2, double const e) -> bool
+    {
+        return std::abs(d1 - d2) < e;
+    }
 }
-} // namespace
 
 /**
  *  \brief Tests calculation of system state probabilities.
@@ -90,14 +90,18 @@ public:
  *  \brief Tests bss_manager.
  */
 class test_bss_manager : public test_reliability_manager<
-                             bss_manager_settings, expression_tree_settings>
+                             bss_manager_settings,
+                             expression_tree_settings
+                         >
 {
 public:
     test_bss_manager(std::size_t const seed)
         : test_reliability_manager<
               bss_manager_settings, expression_tree_settings>(
-              seed, bss_manager_settings {21, 2'000, random_order_tag()},
-              expression_tree_settings {}, "bss_manager"
+              seed,
+              bss_manager_settings {21, 2'000, random_order_tag()},
+              expression_tree_settings {},
+              "bss_manager"
           )
     {
     }
@@ -108,14 +112,18 @@ public:
  */
 template<unsigned int M>
 class test_mss_manager : public test_reliability_manager<
-                             mss_manager_settings<M>, expression_tree_settings>
+                             mss_manager_settings<M>,
+                             expression_tree_settings
+                         >
 {
 public:
     test_mss_manager(std::size_t const seed)
         : test_reliability_manager<
               mss_manager_settings<M>, expression_tree_settings>(
-              seed, mss_manager_settings<M> {15, 5'000, random_order_tag()},
-              expression_tree_settings {}, "mss_manager"
+              seed,
+              mss_manager_settings<M> {15, 5'000, random_order_tag()},
+              expression_tree_settings {},
+              "mss_manager"
           )
     {
     }
@@ -125,18 +133,19 @@ public:
  *  \brief Tests imss_manager.
  */
 template<unsigned int M>
-class test_imss_manager
-    : public test_reliability_manager<
-          imss_manager_settings<M>, expression_tree_settings>
+class test_imss_manager : public test_reliability_manager<
+                             imss_manager_settings<M>,
+                             expression_tree_settings
+                          >
 {
 public:
     test_imss_manager(std::size_t const seed)
         : test_reliability_manager<
               imss_manager_settings<M>, expression_tree_settings>(
               seed,
-              imss_manager_settings<M> {
-                  15, 5'000, random_order_tag(), random_domains()},
-              expression_tree_settings {}, "imss_manager"
+              imss_manager_settings<M> {15, 5'000, random_order_tag(), random_domains()},
+              expression_tree_settings {},
+              "imss_manager"
           )
     {
     }
@@ -146,22 +155,25 @@ public:
  *  \brief Tests imss_manager.
  */
 template<unsigned int M>
-class test_ifmss_manager
-    : public test_reliability_manager<
-          ifmss_manager_settings<M>, expression_tree_settings>
+class test_ifmss_manager : public test_reliability_manager<
+                             ifmss_manager_settings<M>,
+                             expression_tree_settings
+                           >
 {
 public:
     test_ifmss_manager(std::size_t const seed)
         : test_reliability_manager<
               ifmss_manager_settings<M>, expression_tree_settings>(
               seed,
-              ifmss_manager_settings<M> {
-                  15, 5'000, random_order_tag(), random_domains()},
-              expression_tree_settings {}, "ifmss_manager"
+              ifmss_manager_settings<M> {15, 5'000, random_order_tag(), random_domains()},
+              expression_tree_settings {},
+              "ifmss_manager"
           )
     {
     }
 };
+
+
 
 } // namespace teddy
 
