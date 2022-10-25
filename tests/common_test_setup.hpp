@@ -61,6 +61,15 @@ struct manager_settings
 };
 
 /**
+ *  \brief Settings common for managers of nonhomogeneous functions / systems.
+ */
+template<uint_t M>
+struct nonhomogeneous_manager_settings : manager_settings
+{
+    std::variant<random_domains, given_domains> domains_;
+};
+
+/**
  *  \brief Describes how to initialize a bdd_manager.
  */
 struct bdd_manager_settings : manager_settings
@@ -79,18 +88,16 @@ struct mdd_manager_settings : manager_settings
  *  \brief Describes how to initialize imdd_manager.
  */
 template<uint_t M>
-struct imdd_manager_settings : manager_settings
+struct imdd_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
  *  \brief Describes how to initialize a ifmdd_manager.
  */
 template<uint_t M>
-struct ifmdd_manager_settings : manager_settings
+struct ifmdd_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
@@ -112,18 +119,16 @@ struct mss_manager_settings : manager_settings
  *  \brief Describes how to initialize imss_manager.
  */
 template<uint_t M>
-struct imss_manager_settings : manager_settings
+struct imss_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
  *  \brief Describes how to initialize a ifmss_manager.
  */
 template<uint_t M>
-struct ifmss_manager_settings : manager_settings
+struct ifmss_manager_settings : nonhomogeneous_manager_settings<M>
 {
-    std::variant<random_domains, given_domains> domains_;
 };
 
 /**
