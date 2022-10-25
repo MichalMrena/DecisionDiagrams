@@ -50,6 +50,7 @@ domain_iterator::domain_iterator(
                              );
                   }
               );
+              std::ranges::reverse(is);
               return is;
           }()
       ),

@@ -109,7 +109,7 @@ protected:
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
-        auto domainit = domain_iterator(manager.get_domains());
+        auto domainit = make_domain_iterator(manager);
         auto evalit   = evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
@@ -450,8 +450,7 @@ protected:
                                     "."
         );
 
-        auto domainit =
-            domain_iterator(manager.get_domains(), manager.get_order());
+        auto domainit = make_domain_iterator(manager);
         auto evalit = evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
@@ -485,8 +484,7 @@ protected:
                                     " nodes, got " + std::to_string(actual)
         );
 
-        auto domainit =
-            domain_iterator(manager.get_domains(), manager.get_order());
+        auto domainit = make_domain_iterator(manager);
         auto evalit = evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
@@ -513,10 +511,7 @@ protected:
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
-        auto order   = manager.get_order();
-        auto domains = manager.get_domains();
-        std::ranges::reverse(order);
-        auto domainit = domain_iterator(std::move(domains), std::move(order));
+        auto domainit = make_domain_iterator(manager);
         auto evalit   = evaluating_iterator(domainit, expr);
         auto evalend  = evaluating_iterator_sentinel();
         auto vectord  = manager.from_vector(evalit, evalend);

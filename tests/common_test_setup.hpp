@@ -456,6 +456,12 @@ auto create_vector(
     return vector;
 }
 
+template<class Dat, class Deg, class Dom>
+auto make_domain_iterator(diagram_manager<Dat, Deg, Dom> const& m)
+{
+    return domain_iterator(m.get_domains(), m.get_order());
+}
+
 /**
  *  \brief Holds data common for all tests.
  *  Each test uses some settings and random generator.
