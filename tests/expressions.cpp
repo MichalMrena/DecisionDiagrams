@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
-#include <ranges>
+#include <limits>
 
 namespace teddy
 {
@@ -33,21 +33,18 @@ auto make_minmax_expression(
 auto evaluate_expression(minmax_expr const& expr, std::vector<uint_t> const& vs)
     -> uint_t
 {
-    namespace rs = std::ranges;
-    return rs::max(
-        expr.terms_ | rs::views::transform(
-                          [&vs](auto const& is)
-                          {
-                              return vs[rs::min(
-                                  is, {},
-                                  [&vs](auto const i)
-                                  {
-                                      return vs[i];
-                                  }
-                              )];
-                          }
-                      )
-    );
+    auto totalMaxVal = std::numeric_limits<uint_t>::min();
+    for (auto const& term : expr.terms_)
+    {
+        auto termMinVal = std::numeric_limits<uint_t>::max();
+        for (auto const var : term)
+        {
+            auto const val = vs[var];
+            termMinVal = val < termMinVal ? val : termMinVal;
+        }
+        totalMaxVal = termMinVal > totalMaxVal ? termMinVal : totalMaxVal;
+    }
+    return totalMaxVal;
 }
 
 // expr_node:
