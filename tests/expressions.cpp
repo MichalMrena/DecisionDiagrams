@@ -8,7 +8,7 @@ namespace teddy
 {
 // minmax_expr:
 
-auto generate_minmax_expression(
+auto make_minmax_expression(
     std::mt19937_64& indexRng, std::size_t const varCount,
     std::size_t const termCount, std::size_t const termSize
 ) -> minmax_expr
@@ -136,7 +136,7 @@ auto expr_node::get_right() const -> expr_node const&
     return *std::get<operation_t>(data_).r_;
 }
 
-auto generate_expression_tree(
+auto make_expression_tree(
     std::size_t varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>
 {

@@ -18,9 +18,9 @@ struct minmax_expr
 };
 
 /**
- *  \brief Generates random minmax expression.
+ *  \brief Makes random minmax expression.
  */
-auto generate_minmax_expression(
+auto make_minmax_expression(
     std::mt19937_64& indexRng, std::size_t varCount, std::size_t termCount,
     std::size_t termSize
 ) -> minmax_expr;
@@ -121,9 +121,9 @@ private:
 };
 
 /**
- *  \brief Generates random minmax expression tree.
+ *  \brief Makes random minmax expression tree.
  */
-auto generate_expression_tree(
+auto make_expression_tree(
     std::size_t varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>;
 

@@ -238,29 +238,29 @@ auto make_domains(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
 }
 
 /**
- *  \brief Creates BDD manager.
+ *  \brief Makes BDD manager.
  */
-inline auto create_manager(bdd_manager_settings const& s, std::mt19937_64& rng)
+inline auto make_manager(bdd_manager_settings const& s, std::mt19937_64& rng)
     -> bdd_manager
 {
     return bdd_manager(s.varcount_, s.nodecount_, make_order(s, rng));
 }
 
 /**
- *  \brief Creates MDD manager.
+ *  \brief Makes MDD manager.
  */
 template<uint_t M>
-auto create_manager(mdd_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager(mdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> mdd_manager<M>
 {
     return mdd_manager<M>(s.varcount_, s.nodecount_, make_order(s, rng));
 }
 
 /**
- *  \brief Creates iMDD manager.
+ *  \brief Makes iMDD manager.
  */
 template<uint_t M>
-auto create_manager(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> imdd_manager
 {
     return imdd_manager(
@@ -269,10 +269,10 @@ auto create_manager(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
 }
 
 /**
- *  \brief Creates ifMDD manager.
+ *  \brief Makes ifMDD manager.
  */
 template<uint_t M>
-auto create_manager(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> ifmdd_manager<M>
 {
     return ifmdd_manager<M>(
@@ -281,29 +281,29 @@ auto create_manager(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
 }
 
 /**
- *  \brief Creates bss_manager.
+ *  \brief Makes bss_manager.
  */
-inline auto create_manager(bss_manager_settings const& s, std::mt19937_64& rng)
+inline auto make_manager(bss_manager_settings const& s, std::mt19937_64& rng)
     -> bss_manager
 {
     return bss_manager(s.varcount_, s.nodecount_, make_order(s, rng));
 }
 
 /**
- *  \brief Creates mss_manager.
+ *  \brief Makes mss_manager.
  */
 template<uint_t M>
-auto create_manager(mss_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager(mss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> mss_manager<M>
 {
     return mss_manager<M>(s.varcount_, s.nodecount_, make_order(s, rng));
 }
 
 /**
- *  \brief Creates imss_manager.
+ *  \brief Makes imss_manager.
  */
 template<uint_t M>
-auto create_manager(imss_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager(imss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> imss_manager
 {
     return imss_manager(
@@ -312,10 +312,10 @@ auto create_manager(imss_manager_settings<M> const& s, std::mt19937_64& rng)
 }
 
 /**
- *  \brief Creates ifmss_manager.
+ *  \brief Makes ifmss_manager.
  */
 template<uint_t M>
-auto create_manager(ifmss_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager(ifmss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> ifmss_manager<M>
 {
     return ifmss_manager<M>(
@@ -324,19 +324,19 @@ auto create_manager(ifmss_manager_settings<M> const& s, std::mt19937_64& rng)
 }
 
 /**
- *  \brief Creates manager for a test.
+ *  \brief Makes manager for a test.
  */
 template<class Man, class Expr>
-auto create_manager(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
+auto make_manager(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
 {
-    return create_manager(s.manager_, rng);
+    return make_manager(s.manager_, rng);
 }
 
 /**
- *  \brief Creates diagram representing \p expr .
+ *  \brief Makes diagram representing \p expr .
  */
 template<class Dat, class Deg, class Dom>
-auto create_diagram(
+auto make_diagram(
     minmax_expr const& expr, diagram_manager<Dat, Deg, Dom>& manager,
     fold_type const foldtype = fold_type::Left
 )
@@ -366,10 +366,10 @@ auto create_diagram(
 }
 
 /**
- *  \brief Creates diagram representing \p expr .
+ *  \brief Makes diagram representing \p expr .
  */
 template<class Dat, class Deg, class Dom>
-auto create_diagram(
+auto make_diagram(
     std::unique_ptr<expr_node> const& expr,
     diagram_manager<Dat, Deg, Dom>& manager
 )
@@ -378,40 +378,40 @@ auto create_diagram(
 }
 
 /**
- *  \brief Creates minmax expression with given settings.
+ *  \brief Makes minmax expression with given settings.
  */
-inline auto create_expression(
+inline auto make_expression(
     uint_t const varcount, minmax_expression_settings const& s,
     std::mt19937_64& rng
 ) -> minmax_expr
 {
-    return generate_minmax_expression(rng, varcount, s.termcount_, s.termsize_);
+    return make_minmax_expression(rng, varcount, s.termcount_, s.termsize_);
 }
 
 /**
- *  \brief Creates expression tree with given settings.
+ *  \brief Makes expression tree with given settings.
  */
-inline auto create_expression(
+inline auto make_expression(
     uint_t const varcount, expression_tree_settings const&, std::mt19937_64& rng
 ) -> std::unique_ptr<expr_node>
 {
-    return generate_expression_tree(varcount, rng, rng);
+    return make_expression_tree(varcount, rng, rng);
 }
 
 /**
- *  \brief Creates expression for a test.
+ *  \brief Makes expression for a test.
  */
 template<class Man, class Expr>
-auto create_expression(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
+auto make_expression(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
 {
-    return create_expression(s.manager_.varcount_, s.expression_, rng);
+    return make_expression(s.manager_.varcount_, s.expression_, rng);
 }
 
 /**
- *  \brief Creates random component state probabilities
+ *  \brief Makes random component state probabilities
  */
 template<class Dat, class Deg, class Dom>
-auto create_probabilities(
+auto make_probabilities(
     diagram_manager<Dat, Deg, Dom> const& manager, std::mt19937_64& rng
 ) -> std::vector<std::vector<double>>
 {
@@ -435,7 +435,7 @@ auto create_probabilities(
     return ps;
 }
 
-auto create_vector(
+inline auto make_vector(
     std::unique_ptr<expr_node> const& root,
     std::vector<unsigned int> const& domains
 ) -> std::vector<unsigned int>

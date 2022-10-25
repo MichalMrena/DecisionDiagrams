@@ -23,12 +23,12 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr     = create_expression(this->settings(), this->rng());
-        auto manager  = create_manager(this->settings(), this->rng());
-        auto diagram  = create_diagram(expr, manager);
-        auto ps       = create_probabilities(manager, this->rng());
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram  = make_diagram(expr, manager);
+        auto ps       = make_probabilities(manager, this->rng());
         auto domains  = manager.get_domains();
-        auto table    = truth_table(create_vector(expr, domains), domains);
+        auto table    = truth_table(make_vector(expr, domains), domains);
         auto const m  = std::ranges::max(manager.get_domains());
         auto expected = std::vector<double>(m);
         auto actual   = std::vector<double>(m);

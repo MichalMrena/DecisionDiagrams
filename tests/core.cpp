@@ -103,9 +103,9 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
@@ -130,10 +130,10 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr     = create_expression(this->settings(), this->rng());
-        auto manager  = create_manager(this->settings(), this->rng());
-        auto diagram1 = create_diagram(expr, manager, fold_type::Left);
-        auto diagram2 = create_diagram(expr, manager, fold_type::Tree);
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram1 = make_diagram(expr, manager, fold_type::Left);
+        auto diagram2 = make_diagram(expr, manager, fold_type::Tree);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram1))
         );
@@ -155,10 +155,10 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr     = create_expression(this->settings(), this->rng());
-        auto manager  = create_manager(this->settings(), this->rng());
-        auto diagram1 = create_diagram(expr, manager, fold_type::Left);
-        auto diagram2 = create_diagram(expr, manager, fold_type::Tree);
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram1 = make_diagram(expr, manager, fold_type::Left);
+        auto diagram2 = make_diagram(expr, manager, fold_type::Tree);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram1))
         );
@@ -188,9 +188,9 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
@@ -228,9 +228,9 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
@@ -274,9 +274,9 @@ protected:
     auto test() -> void override
     {
         using namespace teddy::ops;
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
@@ -382,9 +382,9 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
@@ -432,9 +432,9 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Nodes before " + std::to_string(manager.node_count(diagram))
         );
@@ -471,10 +471,10 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
         manager.set_auto_reorder(true);
-        auto diagram = create_diagram(expr, manager);
+        auto diagram = make_diagram(expr, manager);
         manager.force_gc();
         auto const actual   = manager.node_count();
         auto const expected = manager.node_count(diagram);
@@ -505,9 +505,9 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
@@ -536,9 +536,9 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr    = create_expression(this->settings(), this->rng());
-        auto manager = create_manager(this->settings(), this->rng());
-        auto diagram = create_diagram(expr, manager);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
         this->info(
             "Node count " + std::to_string(manager.node_count(diagram))
         );
@@ -566,8 +566,8 @@ public:
 protected:
     auto test() -> void override
     {
-        auto manager  = create_manager(this->settings(), this->rng());
-        auto exprtree = generate_expression_tree(
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto exprtree = make_expression_tree(
             manager.get_var_count(), this->rng(), this->rng()
         );
         auto diagram  = manager.from_expression_tree(*exprtree);
