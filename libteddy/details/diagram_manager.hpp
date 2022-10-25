@@ -1016,6 +1016,7 @@ auto diagram_manager<Data, Degree, Domain>::to_vector_g(diagram_t d, O out)
     do
     {
         *out++        = this->evaluate(d, vars);
+
         auto overflow = true;
         auto level    = nodes_.get_leaf_level();
         while (level > 0 && overflow)
