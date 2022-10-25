@@ -662,7 +662,7 @@ public:
         : test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
               seed,
               imdd_manager_settings<3> {
-                  21, 5'000, random_order_tag(), random_domains()},
+                  18, 5'000, random_order_tag(), random_domains()},
               minmax_expression_settings {30, 6}, "imdd_manager"
           )
     {
@@ -680,7 +680,7 @@ public:
         : test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
               seed,
               ifmdd_manager_settings<3> {
-                  21, 5'000, random_order_tag(), random_domains()},
+                  18, 5'000, random_order_tag(), random_domains()},
               minmax_expression_settings {30, 6}, "ifmdd_manager"
           )
     {
@@ -710,7 +710,7 @@ auto run_test_one(std::size_t const seed)
 auto run_test_many(std::size_t const seed)
 {
     auto constexpr Oks = "o";
-    auto constexpr Ers = "x";
+    auto constexpr Ers = "!";
 
     auto result_to_str = [](auto const r)
     {
