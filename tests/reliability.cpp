@@ -33,10 +33,6 @@ protected:
         auto expected = std::vector<double>(m);
         auto actual   = std::vector<double>(m);
 
-            auto v1 = manager.to_vector(diagram);
-            auto v2 = table.get_vector();
-            this->assert_true(v1 == v2, "v1 == v2");
-
         for (auto j = 0u; j < m; ++j)
         {
             expected[j] = probability(table, ps, j);
@@ -87,36 +83,100 @@ public:
     test_bss_manager(std::size_t const seed)
         : test_reliability_manager<
               bss_manager_settings, expression_tree_settings>(
-            //   seed, bss_manager_settings {21, 2'000, random_order_tag()},
-              seed, bss_manager_settings {21, 2'000, default_order_tag()},
+              seed, bss_manager_settings {21, 2'000, random_order_tag()},
               expression_tree_settings {}, "bss_manager"
           )
     {
     }
 };
+
+/**
+ *  \brief Tests mss_manager.
+ */
+template<unsigned int M>
+class test_mss_manager : public test_reliability_manager<
+                             mss_manager_settings<M>,
+                             expression_tree_settings
+                         >
+{
+public:
+    test_mss_manager(std::size_t const seed)
+        : test_reliability_manager<
+              mss_manager_settings<M>, expression_tree_settings>(
+              seed,
+              mss_manager_settings<M> {15, 5'000, random_order_tag()},
+              expression_tree_settings {},
+              "mss_manager"
+          )
+    {
+    }
+};
+
+/**
+ *  \brief Tests imss_manager.
+ */
+template<unsigned int M>
+class test_imss_manager : public test_reliability_manager<
+                             imss_manager_settings<M>,
+                             expression_tree_settings
+                          >
+{
+public:
+    test_imss_manager(std::size_t const seed)
+        : test_reliability_manager<
+              imss_manager_settings<M>, expression_tree_settings>(
+              seed,
+              imss_manager_settings<M> {15, 5'000, random_order_tag(), random_domains()},
+              expression_tree_settings {},
+              "imss_manager"
+          )
+    {
+    }
+};
+
+/**
+ *  \brief Tests imss_manager.
+ */
+template<unsigned int M>
+class test_ifmss_manager : public test_reliability_manager<
+                             ifmss_manager_settings<M>,
+                             expression_tree_settings
+                           >
+{
+public:
+    test_ifmss_manager(std::size_t const seed)
+        : test_reliability_manager<
+              ifmss_manager_settings<M>, expression_tree_settings>(
+              seed,
+              ifmss_manager_settings<M> {15, 5'000, random_order_tag(), random_domains()},
+              expression_tree_settings {},
+              "ifmss_manager"
+          )
+    {
+    }
+};
+
 } // namespace teddy
 
 auto run_test_one(std::size_t const seed)
 {
+    auto const M = 3;
+
     auto bssmt = teddy::test_bss_manager(seed);
     bssmt.run();
     rog::console_print_results(bssmt);
 
-    // auto bddmt = teddy::test_bdd_manager(seed);
-    // bddmt.run();
-    // rog::console_print_results(bddmt);
+    auto mssmt = teddy::test_mss_manager<M>(seed);
+    mssmt.run();
+    rog::console_print_results(mssmt);
 
-    // auto mddmt = teddy::test_mdd_manager(seed);
-    // mddmt.run();
-    // rog::console_print_results(mddmt);
+    auto imssmt = teddy::test_imss_manager<M>(seed);
+    imssmt.run();
+    rog::console_print_results(imssmt);
 
-    // auto imddmt = teddy::test_imdd_manager(seed);
-    // imddmt.run();
-    // rog::console_print_results(imddmt);
-
-    // auto ifmddmt = teddy::test_ifmdd_manager(seed);
-    // ifmddmt.run();
-    // rog::console_print_results(ifmddmt);
+    auto ifmssmt = teddy::test_ifmss_manager<M>(seed);
+    ifmssmt.run();
+    rog::console_print_results(ifmssmt);
 }
 
 auto main(int const argc, char** const argv) -> int
