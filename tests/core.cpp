@@ -165,11 +165,7 @@ protected:
         manager.force_gc();
         auto const expected = manager.node_count(diagram1);
         auto const actual   = manager.node_count();
-        this->assert_true(
-            expected == actual, "Expected " + std::to_string(expected) +
-                                    " nodes got " + std::to_string(actual) +
-                                    " nodes"
-        );
+        this->assert_equals(expected, actual);
     }
 };
 
@@ -204,11 +200,7 @@ protected:
 
         for (auto k = 0u; k < actual.size(); ++k)
         {
-            this->assert_true(
-                actual[k] == expected[k],
-                "Expected " + std::to_string(expected[k]) + " got " +
-                    std::to_string(actual[k]) + " for " + std::to_string(k)
-            );
+            this->assert_equals(actual[k], expected[k]);
         }
     }
 };
@@ -249,11 +241,7 @@ protected:
 
         for (auto k = 0u; k < actual.size(); ++k)
         {
-            this->assert_true(
-                actual[k] == expected[k],
-                "Expected " + std::to_string(expected[k]) + " got " +
-                    std::to_string(actual[k]) + " for " + std::to_string(k)
-            );
+            this->assert_equals(actual[k], expected[k]);
         }
     }
 };
@@ -444,11 +432,7 @@ protected:
         auto const actual   = manager.node_count();
         auto const expected = manager.node_count(diagram);
         this->info("Nodes after " + std::to_string(actual));
-        this->assert_true(
-            actual == expected, "Expected " + std::to_string(expected) +
-                                    " nodes, got " + std::to_string(actual) +
-                                    "."
-        );
+        this->assert_equals(actual, expected);
 
         auto domainit = make_domain_iterator(manager);
         auto evalit = evaluating_iterator(domainit, expr);
@@ -479,10 +463,7 @@ protected:
         auto const actual   = manager.node_count();
         auto const expected = manager.node_count(diagram);
 
-        this->assert_true(
-            actual == expected, "Expected " + std::to_string(expected) +
-                                    " nodes, got " + std::to_string(actual)
-        );
+        this->assert_equals(actual, expected);
 
         auto domainit = make_domain_iterator(manager);
         auto evalit = evaluating_iterator(domainit, expr);

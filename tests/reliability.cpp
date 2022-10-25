@@ -50,11 +50,7 @@ protected:
 
         for (auto j = 0u; j < m; ++j)
         {
-            this->assert_true(
-                actual[j] == expected[j],
-                "Expected " + std::to_string(expected[j]) + " got " +
-                    std::to_string(actual[j])
-            );
+            this->assert_equals(actual[j], expected[j], 0.00000001);
         }
     }
 };
