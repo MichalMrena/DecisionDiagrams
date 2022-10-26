@@ -35,7 +35,7 @@ auto availability(
 ) -> double
 {
     auto a = 0.0;
-    while (j < table.get_max_val())
+    while (j <= table.get_max_val())
     {
         a += probability(table, ps, j);
         ++j;

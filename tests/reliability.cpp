@@ -48,6 +48,106 @@ protected:
         {
             this->assert_equals(actual[j], expected[j], 0.00000001);
         }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            actual[j] = manager.probability(j, ps, diagram);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            this->assert_equals(actual[j], expected[j], 0.00000001);
+        }
+    }
+};
+
+template<class Settings>
+class test_availability : public test_base<Settings>
+{
+public:
+    test_availability(Settings settings)
+        : test_base<Settings>("availability", std::move(settings))
+    {
+    }
+
+protected:
+    auto test () -> void override
+    {
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram  = make_diagram(expr, manager);
+        auto ps       = make_probabilities(manager, this->rng());
+        auto domains  = manager.get_domains();
+        auto table    = truth_table(make_vector(expr, domains), domains);
+        auto const m  = std::ranges::max(manager.get_domains());
+        auto expected = std::vector<double>(m);
+        auto actual   = std::vector<double>(m);
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            expected[j] = availability(table, ps, j);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            actual[j] = manager.availability(j, ps, diagram);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            this->assert_equals(expected[j], actual[j], 0.00000001);
+        }
+
+        manager.calculate_probabilities(ps, diagram);
+        for (auto j = 0u; j < m; ++j)
+        {
+            actual[j] = manager.get_availability(j);
+        }
+    }
+};
+
+template<class Settings>
+class test_unavailability : public test_base<Settings>
+{
+public:
+    test_unavailability(Settings settings)
+        : test_base<Settings>("unavailability", std::move(settings))
+    {
+    }
+
+protected:
+    auto test () -> void override
+    {
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram  = make_diagram(expr, manager);
+        auto ps       = make_probabilities(manager, this->rng());
+        auto domains  = manager.get_domains();
+        auto table    = truth_table(make_vector(expr, domains), domains);
+        auto const m  = std::ranges::max(manager.get_domains());
+        auto expected = std::vector<double>(m);
+        auto actual   = std::vector<double>(m);
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            expected[j] = unavailability(table, ps, j);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            actual[j] = manager.unavailability(j, ps, diagram);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            this->assert_equals(expected[j], actual[j], 0.00000001);
+        }
+
+        manager.calculate_probabilities(ps, diagram);
+        for (auto j = 0u; j < m; ++j)
+        {
+            actual[j] = manager.get_unavailability(j);
+        }
     }
 };
 
@@ -68,6 +168,14 @@ public:
         using settings_t = test_settings<ManagerSettings, ExpressionSettings>;
 
         this->add_test(std::make_unique<test_probability<settings_t>>(
+            settings_t {seeder(), manager, expr}
+        ));
+
+        this->add_test(std::make_unique<test_availability<settings_t>>(
+            settings_t {seeder(), manager, expr}
+        ));
+
+        this->add_test(std::make_unique<test_unavailability<settings_t>>(
             settings_t {seeder(), manager, expr}
         ));
     }
