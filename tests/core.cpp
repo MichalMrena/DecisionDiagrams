@@ -709,11 +709,11 @@ auto run_test_one(std::size_t const seed)
 
 auto run_test_many(std::size_t const seed)
 {
-    auto constexpr Oks = "o";
-    auto constexpr Ers = "!";
-
-    auto result_to_str = [](auto const r)
+    auto const result_to_str = [](auto const r)
     {
+        auto const Oks = "o";
+        auto const Ers = "!";
+
         switch (r)
         {
         case rog::TestResult::Fail:
@@ -727,7 +727,7 @@ auto run_test_many(std::size_t const seed)
         }
     };
 
-    auto print_results = [=](auto const& tests)
+    auto const print_results = [=](auto const& tests)
     {
         auto const numtest = tests.front().subtests().size();
         auto const numrep  = tests.size();
@@ -738,8 +738,11 @@ auto run_test_many(std::size_t const seed)
                     std::ranges::views::transform(std::ranges::size)
                 );
 
-        std::cout << Oks << " - ok; " << Ers << " - not good" << '\n';
+        std::cout << result_to_str(rog::TestResult::Pass) << " - ok; "
+                  << result_to_str(rog::TestResult::Fail) << " - not good"
+                  << '\n';
         std::cout << tests.front().name() << '\n';
+
         for (auto k = 0u; k < numtest; ++k)
         {
             std::cout << " > " << std::left << std::setw(static_cast<int>(numw))
@@ -754,10 +757,10 @@ auto run_test_many(std::size_t const seed)
         std::cout << '\n';
     };
 
-#ifdef LIBTEDDY_TEST_USE_OMP
-    auto const numtest = omp_get_num_procs();
+#ifdef LIBTEDDY_TESTS_USE_OMP
+    auto const numtest = static_cast<teddy::uint_t>(omp_get_num_procs());
 #else
-    auto const numtest = 10;
+    auto const numtest = 10u;
 #endif
 
     auto bddmts  = std::vector<teddy::test_bdd_manager>();
@@ -766,7 +769,7 @@ auto run_test_many(std::size_t const seed)
     auto ifmddts = std::vector<teddy::test_ifmdd_manager>();
     auto seeder  = std::mt19937_64(seed);
 
-    for (auto k = 0; k < numtest; ++k)
+    for (auto k = 0u; k < numtest; ++k)
     {
         bddmts.emplace_back(teddy::test_bdd_manager(seeder()));
         mddmts.emplace_back(teddy::test_mdd_manager(seeder()));
@@ -775,40 +778,58 @@ auto run_test_many(std::size_t const seed)
     }
 
 #ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
-#endif
+    #pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         bddmts[k].run();
     }
     print_results(bddmts);
 
-#ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
-#endif
+    #pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         mddmts[k].run();
     }
     print_results(mddmts);
 
-#ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
-#endif
+    #pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         imddts[k].run();
     }
     print_results(imddts);
 
-#ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
-#endif
+    #pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         ifmddts[k].run();
     }
     print_results(ifmddts);
+#else
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        bddmts[k].run();
+    }
+    print_results(bddmts);
+
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        mddmts[k].run();
+    }
+    print_results(mddmts);
+
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        imddts[k].run();
+    }
+    print_results(imddts);
+
+    for (auto k = 0u; k < numtest; ++k)
+    {
+        ifmddts[k].run();
+    }
+    print_results(ifmddts);
+#endif
 }
 
 auto main(int const argc, char** const argv) -> int
