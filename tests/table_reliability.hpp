@@ -21,6 +21,8 @@ auto unavailability(
     truth_table const& table, std::vector<std::vector<double>> const& ps,
     unsigned int j
 ) -> double;
+
+auto state_frequency(truth_table const& table, unsigned int j) -> double;
 } // namespace teddy
 
 #endif

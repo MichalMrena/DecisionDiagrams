@@ -151,6 +151,45 @@ protected:
     }
 };
 
+template<class Settings>
+class test_state_frequency : public test_base<Settings>
+{
+public:
+    test_state_frequency(Settings settings)
+        : test_base<Settings>("state-frequency", std::move(settings))
+    {
+    }
+
+protected:
+    auto test () -> void override
+    {
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram  = make_diagram(expr, manager);
+        auto ps       = make_probabilities(manager, this->rng());
+        auto domains  = manager.get_domains();
+        auto table    = truth_table(make_vector(expr, domains), domains);
+        auto const m  = std::ranges::max(manager.get_domains());
+        auto expected = std::vector<double>(m);
+        auto actual   = std::vector<double>(m);
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            expected[j] = state_frequency(table, j);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            actual[j] = manager.state_frequency(diagram, j);
+        }
+
+        for (auto j = 0u; j < m; ++j)
+        {
+            this->assert_equals(expected[j], actual[j], 0.00000001);
+        }
+    }
+};
+
 /**
  *  \brief Composite test for reliability manager.
  */
@@ -176,6 +215,10 @@ public:
         ));
 
         this->add_test(std::make_unique<test_unavailability<settings_t>>(
+            settings_t {seeder(), manager, expr}
+        ));
+
+        this->add_test(std::make_unique<test_state_frequency<settings_t>>(
             settings_t {seeder(), manager, expr}
         ));
     }

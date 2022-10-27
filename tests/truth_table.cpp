@@ -79,4 +79,9 @@ auto satisfy_all(truth_table const& table, unsigned int j)
     );
     return elems;
 }
+
+auto domain_size(truth_table const& table) -> std::size_t
+{
+    return size(table.get_vector());
+}
 } // namespace teddy

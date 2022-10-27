@@ -56,4 +56,10 @@ auto unavailability(
     }
     return u;
 }
+
+auto state_frequency(truth_table const& table, unsigned int j) -> double
+{
+    return static_cast<double>(satisfy_count(table, j))
+         / static_cast<double>(domain_size(table));
+}
 } // namespace teddy

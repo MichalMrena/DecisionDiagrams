@@ -226,6 +226,14 @@ public:
     auto get_unavailability(uint_t j) -> double;
 
     /**
+     *  \brief Returns system state frequency of state \p j .
+     *  \param sf Structure function.
+     *  \param j System state.
+     *  \return Frequency of system state \p j .
+     */
+    auto state_frequency(diagram_t sf, uint_t j) -> double;
+
+    /**
      *  \brief Calculates Direct Partial Boolean Derivative.
      *
      *  \param var Change of the value of \p i th component.
@@ -417,6 +425,8 @@ private:
     // podla zmien premennych.
     template<f_val_change F>
     auto apply_dpbd(diagram_t, diagram_t, F) -> diagram_t;
+
+    auto domain_size() const -> std::size_t;
 };
 
 template<degree Degree, domain Domain>
@@ -570,6 +580,14 @@ auto reliability_manager<Degree, Domain>::get_unavailability(uint_t const j)
         }
     );
     return U;
+}
+
+template<degree Degree, domain Domain>
+auto reliability_manager<Degree, Domain>::state_frequency
+    (diagram_t sf, uint_t j) -> double
+{
+    return static_cast<double>(this->satisfy_count(j, sf))
+         / static_cast<double>(this->domain_size());
 }
 
 template<degree Degree, domain Domain>
@@ -889,6 +907,15 @@ auto reliability_manager<Degree, Domain>::apply_dpbd(
 
     auto const newRoot = go(go, lhs.get_root(), rhs.get_root());
     return diagram_t(newRoot);
+}
+
+template<degree Degree, domain Domain>
+auto reliability_manager<Degree, Domain>::domain_size
+    () const -> std::size_t
+{
+    auto const from = level_t(0);
+    auto const to   = static_cast<level_t>(this->get_var_count());
+    return this->nodes_.domain_product(from, to);
 }
 
 template<degree Degree, domain Domain>
