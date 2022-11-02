@@ -242,7 +242,7 @@ public:
      *  \param i Index of the component.
      *  \return Diagram representing Direct Partial Boolean Derivative.
      */
-    auto dpbd(value_change var, value_change f, diagram_t sf, index_t i)
+    auto dpld(value_change var, value_change f, diagram_t sf, index_t i)
         -> diagram_t;
 
     /**
@@ -259,7 +259,7 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 1.
      */
-    auto idpbd_type_1_decrease(
+    auto idpld_type_1_decrease(
         value_change var, uint_t j, diagram_t sf, index_t i
     ) -> diagram_t;
 
@@ -277,7 +277,7 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 1.
      */
-    auto idpbd_type_1_increase(
+    auto idpld_type_1_increase(
         value_change var, uint_t j, diagram_t sf, index_t i
     ) -> diagram_t;
 
@@ -293,7 +293,7 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 2.
      */
-    auto idpbd_type_2_decrease(value_change var, diagram_t sf, index_t i)
+    auto idpld_type_2_decrease(value_change var, diagram_t sf, index_t i)
         -> diagram_t;
 
     /**
@@ -308,7 +308,7 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 2.
      */
-    auto idpbd_type_2_increase(value_change var, diagram_t sf, index_t i)
+    auto idpld_type_2_increase(value_change var, diagram_t sf, index_t i)
         -> diagram_t;
 
     /**
@@ -325,7 +325,7 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 3.
      */
-    auto idpbd_type_3_decrease(
+    auto idpld_type_3_decrease(
         value_change var, uint_t j, diagram_t sf, index_t i
     ) -> diagram_t;
 
@@ -343,7 +343,7 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 3.
      */
-    auto idpbd_type_3_increase(
+    auto idpld_type_3_increase(
         value_change var, uint_t j, diagram_t sf, index_t i
     ) -> diagram_t;
 
@@ -353,13 +353,13 @@ public:
      *  Structural Importance specifies relative number of system
      *  states in which degradation of a component states causes
      *  degradation of a system state.
-     *  Different types of DPBDs can be used for SI calculation.
+     *  Different types of DPLDs can be used for SI calculation.
      *  It is up to the user to pick the one that suits his needs.
      *
-     *  \param dpbd Direct Partial Boolean Derivative of any type.
+     *  \param dpld Direct Partial Boolean Derivative of any type.
      *  \return Structural importance of given componentn.
      */
-    auto structural_importance(diagram_t& dpbd) -> double;
+    auto structural_importance(diagram_t& dpld) -> double;
 
     /**
      *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
@@ -412,11 +412,11 @@ private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
 
 private:
-    auto to_dpbd_e(uint_t varFrom, index_t i, diagram_t dpbd) -> diagram_t;
+    auto to_dpld_e(uint_t varFrom, index_t i, diagram_t dpld) -> diagram_t;
 
-    // TODO this will be merged with apply_dpbd in the future
+    // TODO this will be merged with apply_dpld in the future
     template<f_val_change F>
-    auto dpbd_g(diagram_t sf, value_change var, index_t i, F change)
+    auto dpld_g(diagram_t sf, value_change var, index_t i, F change)
         -> diagram_t;
 
     // TODO toto by mohlo preberat aj zmenu premennej
@@ -424,7 +424,7 @@ private:
     // strukturnu funkciu. Prehladavanie v apply by sa modifikovalo
     // podla zmien premennych.
     template<f_val_change F>
-    auto apply_dpbd(diagram_t, diagram_t, F) -> diagram_t;
+    auto apply_dpld(diagram_t, diagram_t, F) -> diagram_t;
 
     auto domain_size() const -> std::size_t;
 };
@@ -591,11 +591,11 @@ auto reliability_manager<Degree, Domain>::state_frequency
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::dpbd(
+auto reliability_manager<Degree, Domain>::dpld(
     value_change const var, value_change const f, diagram_t sf, index_t const i
 ) -> diagram_t
 {
-    return this->dpbd_g(
+    return this->dpld_g(
         sf, var, i,
         [f](auto const l, auto const r)
         {
@@ -605,11 +605,11 @@ auto reliability_manager<Degree, Domain>::dpbd(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpbd_type_1_decrease(
+auto reliability_manager<Degree, Domain>::idpld_type_1_decrease(
     value_change var, uint_t j, diagram_t sf, index_t i
 ) -> diagram_t
 {
-    return this->dpbd_g(
+    return this->dpld_g(
         sf, var, i,
         [j](auto const l, auto const r)
         {
@@ -619,11 +619,11 @@ auto reliability_manager<Degree, Domain>::idpbd_type_1_decrease(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpbd_type_1_increase(
+auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
     value_change var, uint_t j, diagram_t sf, index_t i
 ) -> diagram_t
 {
-    return this->dpbd_g(
+    return this->dpld_g(
         sf, var, i,
         [j](auto const l, auto const r)
         {
@@ -633,11 +633,11 @@ auto reliability_manager<Degree, Domain>::idpbd_type_1_increase(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpbd_type_2_decrease(
+auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
     value_change var, diagram_t sf, index_t i
 ) -> diagram_t
 {
-    return this->dpbd_g(
+    return this->dpld_g(
         sf, var, i,
         [](auto const l, auto const r)
         {
@@ -647,11 +647,11 @@ auto reliability_manager<Degree, Domain>::idpbd_type_2_decrease(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpbd_type_2_increase(
+auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
     value_change var, diagram_t sf, index_t i
 ) -> diagram_t
 {
-    return this->dpbd_g(
+    return this->dpld_g(
         sf, var, i,
         [](auto const l, auto const r)
         {
@@ -661,11 +661,11 @@ auto reliability_manager<Degree, Domain>::idpbd_type_2_increase(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpbd_type_3_decrease(
+auto reliability_manager<Degree, Domain>::idpld_type_3_decrease(
     value_change const var, uint_t const j, diagram_t sf, index_t const i
 ) -> diagram_t
 {
-    return this->dpbd_g(
+    return this->dpld_g(
         sf, var, i,
         [j](auto const l, auto const r)
         {
@@ -675,11 +675,11 @@ auto reliability_manager<Degree, Domain>::idpbd_type_3_decrease(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpbd_type_3_increase(
+auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
     value_change const var, uint_t const j, diagram_t sf, index_t const i
 ) -> diagram_t
 {
-    return this->dpbd_g(
+    return this->dpld_g(
         sf, var, i,
         [j](auto const l, auto const r)
         {
@@ -689,13 +689,13 @@ auto reliability_manager<Degree, Domain>::idpbd_type_3_increase(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::structural_importance(diagram_t& dpbd)
+auto reliability_manager<Degree, Domain>::structural_importance(diagram_t& dpld)
     -> double
 {
     auto const from       = level_t(0);
     auto const to         = static_cast<level_t>(this->get_var_count());
     auto const domainSize = this->nodes_.domain_product(from, to);
-    return static_cast<double>(this->satisfy_count(1, dpbd)) /
+    return static_cast<double>(this->satisfy_count(1, dpld)) /
            static_cast<double>(domainSize);
 }
 
@@ -716,7 +716,7 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
 ) -> void
 {
     auto const varCount = this->get_var_count();
-    auto dpbdes         = std::vector<diagram_t>();
+    auto dpldes         = std::vector<diagram_t>();
 
     for (auto i = 0u; i < varCount; ++i)
     {
@@ -724,21 +724,21 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
         for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
         {
             auto const varChange = value_change {varFrom, varFrom + 1};
-            auto const dpbd = this->idpbd_type_3_increase(varChange, j, sf, i);
-            dpbdes.emplace_back(this->to_dpbd_e(varFrom, i, dpbd));
+            auto const dpld = this->idpld_type_3_increase(varChange, j, sf, i);
+            dpldes.emplace_back(this->to_dpld_e(varFrom, i, dpld));
         }
     }
 
-    auto const conj = this->template tree_fold<ops::PI_CONJ>(dpbdes);
+    auto const conj = this->template tree_fold<ops::PI_CONJ>(dpldes);
     this->template satisfy_all_g<Vars, Out>(1, conj, out);
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::to_dpbd_e(
-    uint_t varFrom, index_t i, diagram_t dpbd
+auto reliability_manager<Degree, Domain>::to_dpld_e(
+    uint_t varFrom, index_t i, diagram_t dpld
 ) -> diagram_t
 {
-    auto const root      = dpbd.get_root();
+    auto const root      = dpld.get_root();
     auto const rootLevel = this->nodes_.get_level(root);
     auto const varLevel  = this->nodes_.get_level(i);
 
@@ -817,18 +817,18 @@ auto reliability_manager<Degree, Domain>::to_dpbd_e(
 
 template<degree Degree, domain Domain>
 template<f_val_change F>
-auto reliability_manager<Degree, Domain>::dpbd_g(
+auto reliability_manager<Degree, Domain>::dpld_g(
     diagram_t sf, value_change var, index_t i, F change
 ) -> diagram_t
 {
     auto const lhs = this->cofactor(sf, i, var.from);
     auto const rhs = this->cofactor(sf, i, var.to);
-    return this->apply_dpbd(lhs, rhs, change);
+    return this->apply_dpld(lhs, rhs, change);
 }
 
 template<degree Degree, domain Domain>
 template<f_val_change F>
-auto reliability_manager<Degree, Domain>::apply_dpbd(
+auto reliability_manager<Degree, Domain>::apply_dpld(
     diagram_t lhs, diagram_t rhs, F change
 ) -> diagram_t
 {

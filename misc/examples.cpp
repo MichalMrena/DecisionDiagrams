@@ -92,10 +92,10 @@ auto example_reliability () -> void
     // Importance measures are defined in terms of logic derivatives. Since there are different types derivatives the calculation of the derivatives is separated from the calculation of importance measures.
 
     // In order to calculace Structural Importance we first need to calculate the derivative.
-    auto dpbd = manager.idpbd_type_3_decrease({1, 0}, 1, sf, 2);
+    auto dpld = manager.idpld_type_3_decrease({1, 0}, 1, sf, 2);
 
     // Now, to calculate Structural Importance of the second compontnt, we use the derivative.
-    auto SI = manager.structural_importance(dpbd);
+    auto SI = manager.structural_importance(dpld);
 }
 
 auto main () -> int

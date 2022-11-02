@@ -204,7 +204,7 @@ class test_dpbd : public test_base<Settings>
 {
 public:
     test_dpbd(Settings settings)
-        : test_base<Settings>("dpbd", std::move(settings))
+        : test_base<Settings>("dpld", std::move(settings))
     {
     }
 
@@ -261,14 +261,14 @@ protected:
             auto const fto = var.to;
 
             this->info(
-                "Basic dpbd ("s +
+                "Basic dpld ("s +
                 std::to_string(ffrom) + " -> " + std::to_string(fto) + ") / " +
                 "(" + std::to_string(var.from) + " -> " +
                 std::to_string(var.to) + ")"
             );
 
-            auto tabledpbd = dpbd(table, var, dpbd_basic(ffrom, fto));
-            auto diagramdpbd = manager.dpbd(
+            auto tabledpbd = dpld(table, var, dpbd_basic(ffrom, fto));
+            auto diagramdpbd = manager.dpld(
                 {var.from, var.to},
                 {ffrom, fto},
                 diagram,
