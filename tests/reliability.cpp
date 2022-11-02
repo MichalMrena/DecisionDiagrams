@@ -61,6 +61,9 @@ protected:
     }
 };
 
+/**
+ *  \brief Tests calculation of availability.
+ */
 template<class Settings>
 class test_availability : public test_base<Settings>
 {
@@ -106,6 +109,9 @@ protected:
     }
 };
 
+/**
+ *  \brief Tests calculation of unavailability.
+ */
 template<class Settings>
 class test_unavailability : public test_base<Settings>
 {
@@ -151,6 +157,9 @@ protected:
     }
 };
 
+/**
+ *  \brief Tests calculation of system state frequency.
+ */
 template<class Settings>
 class test_state_frequency : public test_base<Settings>
 {
@@ -190,6 +199,89 @@ protected:
     }
 };
 
+template<class Settings>
+class test_dpbd : public test_base<Settings>
+{
+public:
+    test_dpbd(Settings settings)
+        : test_base<Settings>("dpbd", std::move(settings))
+    {
+    }
+
+protected:
+    auto test() -> void override
+    {
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram  = make_diagram(expr, manager);
+        auto ps       = make_probabilities(manager, this->rng());
+        auto domains  = manager.get_domains();
+        auto table    = truth_table(make_vector(expr, domains), domains);
+        auto const m  = std::ranges::max(manager.get_domains());
+
+        auto comparedpbds = [&manager](auto const& tabledpbd, auto diagramdpbd)
+        {
+            auto result = true;
+            domain_for_each(
+                tabledpbd,
+                [&manager, &result, &diagramdpbd]
+                (auto const v, auto const& elem)
+                {
+                    if (v != U)
+                    {
+                        if (manager.evaluate(diagramdpbd, elem) != v)
+                        {
+                            result = false;
+                            return;
+                        }
+                    }
+                });
+            return result;
+        };
+
+        // Basic DPLD
+        {
+            auto indexdist = std::uniform_int_distribution<uint_t>(
+                0u,
+                static_cast<uint_t>(manager.get_var_count() - 1)
+            );
+            auto vartodist = std::uniform_int_distribution<uint_t>
+            (
+                1u,
+                m - 1
+            );
+            using namespace std::string_literals;
+            auto const var = var_change
+            {
+                .index = indexdist(this->rng()),
+                .from = 0u,
+                .to = vartodist(this->rng())
+            };
+            auto const ffrom = var.from;
+            auto const fto = var.to;
+
+            this->info(
+                "Basic dpbd ("s +
+                std::to_string(ffrom) + " -> " + std::to_string(fto) + ") / " +
+                "(" + std::to_string(var.from) + " -> " +
+                std::to_string(var.to) + ")"
+            );
+
+            auto tabledpbd = dpbd(table, var, dpbd_basic(ffrom, fto));
+            auto diagramdpbd = manager.dpbd(
+                {var.from, var.to},
+                {ffrom, fto},
+                diagram,
+                var.index
+            );
+            this->assert_true(
+                comparedpbds(tabledpbd, diagramdpbd),
+                "Diagram and table produced the same derivative"
+            );
+        }
+    }
+};
+
 /**
  *  \brief Composite test for reliability manager.
  */
@@ -219,6 +311,10 @@ public:
         ));
 
         this->add_test(std::make_unique<test_state_frequency<settings_t>>(
+            settings_t {seeder(), manager, expr}
+        ));
+
+        this->add_test(std::make_unique<test_dpbd<settings_t>>(
             settings_t {seeder(), manager, expr}
         ));
     }

@@ -54,9 +54,20 @@ auto unavailability(
 auto state_frequency(truth_table const& table, unsigned int j) -> double;
 
 /**
+ *  \brief Returns lambda that can be used in basic @c dpbd .
+ */
+inline static auto constexpr dpbd_basic = [](auto const ffrom, auto const fto)
+{
+    return [=](auto const l, auto const r)
+    {
+        return l == ffrom && r == fto;
+    };
+};
+
+/**
  *  \brief Returns lambda that can be used in @c dpbd of type 1.
  */
-inline static auto constexpr dpbd_i_1 = [](auto const j)
+inline static auto constexpr dpbd_i_1_decrease = [](auto const j)
 {
     return [j](auto const l, auto const r)
     {
@@ -65,13 +76,35 @@ inline static auto constexpr dpbd_i_1 = [](auto const j)
 };
 
 /**
+ *  \brief Returns lambda that can be used in @c dpbd of type 1.
+ */
+inline static auto constexpr dpbd_i_1_increase = [](auto const j)
+{
+    return [j](auto const l, auto const r)
+    {
+        return l == j && r > j;
+    };
+};
+
+/**
  *  \brief Returns lambda that can be used in @c dpbd of type 2.
  */
-inline static auto constexpr dpbd_i_2 = [](auto const)
+inline static auto constexpr dpbd_i_2_decrease = [](auto const)
 {
     return [](auto const l, auto const r)
     {
         return l > r;
+    };
+};
+
+/**
+ *  \brief Returns lambda that can be used in @c dpbd of type 2.
+ */
+inline static auto constexpr dpbd_i_2_increase = [](auto const)
+{
+    return [](auto const l, auto const r)
+    {
+        return l < r;
     };
 };
 
@@ -102,7 +135,8 @@ auto dpbd(truth_table const& table, var_change const var, F d) -> truth_table
 {
     auto dpbdvector = std::vector<unsigned int>(table.get_vector().size());
 
-    domain_for_each(table,
+    domain_for_each(
+        table,
         [&, k = 0u, tmpelem = std::vector<unsigned int>()]
         (auto const ffrom, auto const& elem) mutable
     {

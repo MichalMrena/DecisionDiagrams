@@ -11,11 +11,13 @@ namespace teddy
  *  \brief Invokes \p f with each element of the domain.
  */
 template<class F>
-auto domain_for_each(truth_table const& table, F const f) -> void
+auto domain_for_each(
+    std::size_t const varcount,
+    std::vector<unsigned int> const& vector,
+    std::vector<unsigned int> const& domains,
+    F f
+) -> void
 {
-    auto const& vector  = table.get_vector();
-    auto const varcount = table.get_var_count();
-    auto const domains  = table.get_domains();
     auto element        = std::vector<unsigned int>(varcount, 0);
     auto wasLast        = false;
     auto k              = 0u;
@@ -41,6 +43,20 @@ auto domain_for_each(truth_table const& table, F const f) -> void
         wasLast = overflow && i == 0;
         ++k;
     } while (not wasLast);
+}
+
+/**
+ *  \brief Invokes \p f with each element of the domain.
+ */
+template<class F>
+auto domain_for_each(truth_table const& table, F f) -> void
+{
+    domain_for_each(
+        table.get_var_count(),
+        table.get_vector(),
+        table.get_domains(),
+        f
+    );
 }
 
 /**
