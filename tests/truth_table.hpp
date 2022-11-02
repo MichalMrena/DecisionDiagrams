@@ -1,10 +1,13 @@
 #ifndef LIBTEDDY_TESTS_TRUTH_TABLE_HPP
 #define LIBTEDDY_TESTS_TRUTH_TABLE_HPP
 
+#include <limits>
 #include <vector>
 
 namespace teddy
 {
+inline auto constexpr U = std::numeric_limits<unsigned int>::max();
+
 class truth_table
 {
 public:
@@ -29,6 +32,10 @@ auto satisfy_count(truth_table const& table, unsigned int j) -> std::size_t;
 auto satisfy_all(truth_table const& table, unsigned int j)
     -> std::vector<std::vector<unsigned int>>;
 auto domain_size(truth_table const& table) -> std::size_t;
+auto evaluate(
+    truth_table const& table,
+    std::vector<unsigned int> const& vars
+) -> unsigned int;
 } // namespace teddy
 
 #endif
