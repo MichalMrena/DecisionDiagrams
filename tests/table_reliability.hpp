@@ -56,7 +56,7 @@ auto state_frequency(truth_table const& table, unsigned int j) -> double;
 /**
  *  \brief Returns lambda that can be used in basic @c dpld .
  */
-inline static auto constexpr dpbd_basic = [](auto const ffrom, auto const fto)
+inline static auto constexpr dpld_basic = [](auto const ffrom, auto const fto)
 {
     return [=](auto const l, auto const r)
     {
@@ -67,7 +67,7 @@ inline static auto constexpr dpbd_basic = [](auto const ffrom, auto const fto)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 1.
  */
-inline static auto constexpr dpbd_i_1_decrease = [](auto const j)
+inline static auto constexpr dpld_i_1_decrease = [](auto const j)
 {
     return [j](auto const l, auto const r)
     {
@@ -78,7 +78,7 @@ inline static auto constexpr dpbd_i_1_decrease = [](auto const j)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 1.
  */
-inline static auto constexpr dpbd_i_1_increase = [](auto const j)
+inline static auto constexpr dpld_i_1_increase = [](auto const j)
 {
     return [j](auto const l, auto const r)
     {
@@ -89,7 +89,7 @@ inline static auto constexpr dpbd_i_1_increase = [](auto const j)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 2.
  */
-inline static auto constexpr dpbd_i_2_decrease = [](auto const)
+inline static auto constexpr dpld_i_2_decrease = [](auto const)
 {
     return [](auto const l, auto const r)
     {
@@ -100,7 +100,7 @@ inline static auto constexpr dpbd_i_2_decrease = [](auto const)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 2.
  */
-inline static auto constexpr dpbd_i_2_increase = [](auto const)
+inline static auto constexpr dpld_i_2_increase = [](auto const)
 {
     return [](auto const l, auto const r)
     {
@@ -111,7 +111,7 @@ inline static auto constexpr dpbd_i_2_increase = [](auto const)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 3.
  */
-inline static auto constexpr dpbd_i_3_decrease = [](auto const j)
+inline static auto constexpr dpld_i_3_decrease = [](auto const j)
 {
     return [j](auto const l, auto const r)
     {
@@ -122,7 +122,7 @@ inline static auto constexpr dpbd_i_3_decrease = [](auto const j)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 3.
  */
-inline static auto constexpr dpbd_i_3_increase = [](auto const j)
+inline static auto constexpr dpld_i_3_increase = [](auto const j)
 {
     return [j](auto const l, auto const r)
     {
