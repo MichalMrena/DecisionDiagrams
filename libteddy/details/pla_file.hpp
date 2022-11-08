@@ -131,7 +131,8 @@ public:
 
 private:
     pla_file(
-        std::vector<pla_line> lines, std::vector<std::string> inputLabels,
+        std::vector<pla_line> lines,
+        std::vector<std::string> inputLabels,
         std::vector<std::string> outputLabels
     );
 
@@ -393,7 +394,8 @@ inline auto pla_file::load_file(std::string const& path)
 }
 
 inline pla_file::pla_file(
-    std::vector<pla_line> lines, std::vector<std::string> inputLabels,
+    std::vector<pla_line> lines,
+    std::vector<std::string> inputLabels,
     std::vector<std::string> outputLabels
 )
     : lines_(std::move(lines)), inputLabels_(std::move(inputLabels)),

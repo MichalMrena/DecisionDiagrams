@@ -9,8 +9,10 @@ namespace teddy
 // minmax_expr:
 
 auto make_minmax_expression(
-    std::mt19937_64& indexRng, std::size_t const varCount,
-    std::size_t const termCount, std::size_t const termSize
+    std::mt19937_64& indexRng,
+    std::size_t const varCount,
+    std::size_t const termCount,
+    std::size_t const termSize
 ) -> minmax_expr
 {
     assert(varCount > 0);
@@ -75,7 +77,9 @@ expr_node::expr_node(expr_node_constant, uint_t const c)
 }
 
 expr_node::expr_node(
-    expr_node_operation, operation_type const o, std::unique_ptr<expr_node> l,
+    expr_node_operation,
+    operation_type const o,
+    std::unique_ptr<expr_node> l,
     std::unique_ptr<expr_node> r
 )
     : data_(std::in_place_type<operation_t>, o, std::move(l), std::move(r))
@@ -153,7 +157,9 @@ auto make_expression_tree(
             auto const p       = typedist(rngtype);
             auto const op = p < 0.5 ? operation_type::Min : operation_type::Max;
             return std::make_unique<expr_node>(
-                expr_node_operation(), op, self(self, lhssize),
+                expr_node_operation(),
+                op,
+                self(self, lhssize),
                 self(self, rhssize)
             );
         }

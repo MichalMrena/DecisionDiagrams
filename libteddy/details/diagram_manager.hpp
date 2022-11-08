@@ -72,8 +72,8 @@ template<class Degree>
 concept is_bdd = std::same_as<degrees::fixed<2>, Degree>;
 
 template<class T>
-concept is_std_vector = std::same_as<
-    T, std::vector<typename T::value_type, typename T::allocator_type>>;
+concept is_std_vector = std::
+    same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
 
 enum class fold_type
 {
@@ -770,8 +770,10 @@ protected:
      *  \param order Order of variables.
      */
     diagram_manager(
-        std::size_t varCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, std::vector<index_t> order
+        std::size_t varCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        std::vector<index_t> order
     )
     requires(domains::is_fixed<Domain>()());
 
@@ -788,8 +790,10 @@ protected:
      *  \param order Order of variables.
      */
     diagram_manager(
-        std::size_t varCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, domains::mixed ds,
+        std::size_t varCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        domains::mixed ds,
         std::vector<index_t> order
     )
     requires(domains::is_mixed<Domain>()());
@@ -825,13 +829,14 @@ auto diagram_manager<Data, Degree, Domain>::variable(index_t const i)
     -> diagram_t
 {
     return diagram_t(nodes_.internal_node(
-        i, nodes_.make_sons(
-               i,
-               [this](auto const v)
-               {
-                   return nodes_.terminal_node(v);
-               }
-           )
+        i,
+        nodes_.make_sons(
+            i,
+            [this](auto const v)
+            {
+                return nodes_.terminal_node(v);
+            }
+        )
     ));
 }
 
@@ -842,13 +847,14 @@ auto diagram_manager<Data, Degree, Domain>::variable_not(index_t const i)
     -> second_t<Foo, diagram_t>
 {
     return diagram_t(nodes_.internal_node(
-        i, nodes_.make_sons(
-               i,
-               [this](auto const v)
-               {
-                   return nodes_.terminal_node(1 - v);
-               }
-           )
+        i,
+        nodes_.make_sons(
+            i,
+            [this](auto const v)
+            {
+                return nodes_.terminal_node(1 - v);
+            }
+        )
     ));
 }
 
@@ -884,7 +890,8 @@ auto diagram_manager<Data, Degree, Domain>::variables(
 {
     static_assert(std::convertible_to<std::iter_value_t<I>, index_t>);
     return utils::fmap(
-        first, last,
+        first,
+        last,
         [this](auto const i)
         {
             return this->variable(static_cast<index_t>(i));
@@ -1613,13 +1620,14 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
         {
             auto const i       = n->get_index();
             auto const newNode = nodes_.internal_node(
-                i, nodes_.make_sons(
-                       i,
-                       [&self, f, n](auto const k)
-                       {
-                           return self(self, n->get_son(k));
-                       }
-                   )
+                i,
+                nodes_.make_sons(
+                    i,
+                    [&self, f, n](auto const k)
+                    {
+                        return self(self, n->get_son(k));
+                    }
+                )
             );
             memo.emplace(n, newNode);
             return newNode;
@@ -1635,7 +1643,9 @@ auto diagram_manager<Data, Degree, Domain>::apply_local(
 ) -> diagram_t
 {
     auto cache = std::unordered_map<
-        std::pair<node_t*, node_t*>, node_t*, cache_pair_hash_t,
+        std::pair<node_t*, node_t*>,
+        node_t*,
+        cache_pair_hash_t,
         cache_pair_equal_t>();
 
     auto cacheHandle = local_cache_handle(cache);
@@ -1708,12 +1718,16 @@ auto diagram_manager<Data, Degree, Domain>::apply_detail(
 
 template<class Data, degree Degree, domain Domain>
 diagram_manager<Data, Degree, Domain>::diagram_manager(
-    std::size_t const varCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<index_t> order
+    std::size_t const varCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<index_t> order
 )
 requires(domains::is_fixed<Domain>()())
     : nodes_(
-          varCount, nodePoolSize, overflowNodePoolSize,
+          varCount,
+          nodePoolSize,
+          overflowNodePoolSize,
           detail::default_or_fwd(varCount, order)
       )
 {
@@ -1721,14 +1735,19 @@ requires(domains::is_fixed<Domain>()())
 
 template<class Data, degree Degree, domain Domain>
 diagram_manager<Data, Degree, Domain>::diagram_manager(
-    std::size_t const varCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, domains::mixed ds,
+    std::size_t const varCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    domains::mixed ds,
     std::vector<index_t> order
 )
 requires(domains::is_mixed<Domain>()())
     : nodes_(
-          varCount, nodePoolSize, overflowNodePoolSize,
-          detail::default_or_fwd(varCount, order), std::move(ds)
+          varCount,
+          nodePoolSize,
+          overflowNodePoolSize,
+          detail::default_or_fwd(varCount, order),
+          std::move(ds)
       )
 {
 }

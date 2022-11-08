@@ -173,7 +173,8 @@ template<class Data, degree D>
 auto node_pool<Data, D>::grow() -> void
 {
     debug::out(
-        "node_pool: Allocating overflow pool with size ", overflowPoolSize_,
+        "node_pool: Allocating overflow pool with size ",
+        overflowPoolSize_,
         ".\n"
     );
 

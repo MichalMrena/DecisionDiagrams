@@ -62,7 +62,8 @@ public:
      *  @p fixed   defines variables with fixed value
      */
     domain_iterator(
-        std::vector<uint_t> domains, std::vector<index_t> order,
+        std::vector<uint_t> domains,
+        std::vector<index_t> order,
         std::vector<std::pair<index_t, uint_t>> fixed
     );
 

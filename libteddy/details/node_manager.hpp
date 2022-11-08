@@ -95,14 +95,18 @@ public:
 
 public:
     node_manager(
-        std::size_t varCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, std::vector<index_t> order
+        std::size_t varCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        std::vector<index_t> order
     )
     requires(domains::is_fixed<Domain>()());
 
     node_manager(
-        std::size_t varCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, std::vector<index_t> order,
+        std::size_t varCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        std::vector<index_t> order,
         domains::mixed
     )
     requires(domains::is_mixed<Domain>()());
@@ -116,8 +120,12 @@ public:
 
 private:
     node_manager(
-        common_init, std::size_t varCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, std::vector<index_t> order, Domain
+        common_init,
+        std::size_t varCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        std::vector<index_t> order,
+        Domain
     );
 
 public:
@@ -257,26 +265,37 @@ auto id_set_notmarked(node<Data, D>* const n) -> node<Data, D>*
 
 template<class Data, degree Degree, domain Domain>
 node_manager<Data, Degree, Domain>::node_manager(
-    std::size_t const varCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<index_t> order
+    std::size_t const varCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<index_t> order
 )
 requires(domains::is_fixed<Domain>()())
     : node_manager(
-          common_init(), varCount, nodePoolSize, overflowNodePoolSize,
-          std::move(order), {}
+          common_init(),
+          varCount,
+          nodePoolSize,
+          overflowNodePoolSize,
+          std::move(order),
+          {}
       )
 {
 }
 
 template<class Data, degree Degree, domain Domain>
 node_manager<Data, Degree, Domain>::node_manager(
-    std::size_t const varCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<index_t> order,
+    std::size_t const varCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<index_t> order,
     domains::mixed domains
 )
 requires(domains::is_mixed<Domain>()())
     : node_manager(
-          common_init(), varCount, nodePoolSize, overflowNodePoolSize,
+          common_init(),
+          varCount,
+          nodePoolSize,
+          overflowNodePoolSize,
           std::move(order),
           [&]() -> decltype(auto)
           {
@@ -289,8 +308,11 @@ requires(domains::is_mixed<Domain>()())
 
 template<class Data, degree Degree, domain Domain>
 node_manager<Data, Degree, Domain>::node_manager(
-    common_init, std::size_t const varCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<index_t> order,
+    common_init,
+    std::size_t const varCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<index_t> order,
     Domain domains
 )
     : opCache_(), pool_(nodePoolSize, overflowNodePoolSize),
@@ -577,7 +599,10 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
     }
 
     debug::out(
-        before - nodeCount_, " nodes collected.", " Now there are ", nodeCount_,
+        before - nodeCount_,
+        " nodes collected.",
+        " Now there are ",
+        nodeCount_,
         " unique nodes.\n"
     );
 }
@@ -863,7 +888,9 @@ template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
 {
     debug::out(
-        "node_manager: Adjusting unique tables.", " Node count is ", nodeCount_,
+        "node_manager: Adjusting unique tables.",
+        " Node count is ",
+        nodeCount_,
         ".\n"
     );
 
@@ -1164,13 +1191,14 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
         [&, this](auto const nk)
         {
             return this->internal_node(
-                nodeIndex, this->make_sons(
-                               nodeIndex,
-                               [&](auto const sk)
-                               {
-                                   return cofactorMatrix[sk][nk];
-                               }
-                           )
+                nodeIndex,
+                this->make_sons(
+                    nodeIndex,
+                    [&](auto const sk)
+                    {
+                        return cofactorMatrix[sk][nk];
+                    }
+                )
             );
         }
     );
@@ -1178,7 +1206,8 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     this->for_each_son(node, id_inc_ref_count<Data, Degree>);
     this->for_each_son(node, id_set_notmarked<Data, Degree>);
     this->for_each_son(
-        nodeIndex, oldSons,
+        nodeIndex,
+        oldSons,
         [this](auto const os)
         {
             this->dec_ref_try_gc(os);
@@ -1265,7 +1294,8 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
             }
         );
         std::sort(
-            std::begin(counts), std::end(counts),
+            std::begin(counts),
+            std::end(counts),
             [](auto const& l, auto const& r)
             {
                 return l.count_ > r.count_;

@@ -15,7 +15,8 @@ domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({})
 domain_iterator::domain_iterator(std::vector<uint_t> domains)
     : domain_iterator(
           std::move(domains),
-          utils::fill_vector(domains.size(), utils::identity), {}
+          utils::fill_vector(domains.size(), utils::identity),
+          {}
       )
 {
 }
@@ -28,7 +29,8 @@ domain_iterator::domain_iterator(
 }
 
 domain_iterator::domain_iterator(
-    std::vector<uint_t> domains, std::vector<index_t> order,
+    std::vector<uint_t> domains,
+    std::vector<index_t> order,
     std::vector<std::pair<index_t, uint_t>> fixed
 )
     : domains_(std::move(domains)),
@@ -37,7 +39,8 @@ domain_iterator::domain_iterator(
           {
               auto is = std::vector<index_t>();
               std::ranges::copy_if(
-                  order, std::back_inserter(is),
+                  order,
+                  std::back_inserter(is),
                   [&fixed](auto const i)
                   {
                       return std::ranges::end(fixed) ==

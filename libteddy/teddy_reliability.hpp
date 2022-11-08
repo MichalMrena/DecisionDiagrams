@@ -23,7 +23,8 @@ struct bss_manager
      *  by their indices by default.
      */
     bss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
         std::vector<index_t> order = default_oder()
     );
 
@@ -36,7 +37,8 @@ struct bss_manager
      *  by their indices by default.
      */
     bss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
         std::size_t overflowNodePoolSize,
         std::vector<index_t> order = default_oder()
     );
@@ -62,7 +64,8 @@ struct mss_manager
      *  by their indices by default.
      */
     mss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
         std::vector<index_t> order = default_oder()
     );
 
@@ -76,7 +79,8 @@ struct mss_manager
      *  by their indices by default.
      */
     mss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
         std::size_t overflowNodePoolSize,
         std::vector<index_t> order = default_oder()
     );
@@ -100,8 +104,10 @@ struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
      *  by their indices by default.
      */
     imss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
-        std::vector<uint_t> domains, std::vector<index_t> order = default_oder()
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
+        std::vector<uint_t> domains,
+        std::vector<index_t> order = default_oder()
     );
 
     /**
@@ -116,8 +122,10 @@ struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
      *  by their indices by default.
      */
     imss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, std::vector<uint_t> domains,
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        std::vector<uint_t> domains,
         std::vector<index_t> order = default_oder()
     );
 };
@@ -144,8 +152,10 @@ struct ifmss_manager
      *  by their indices by default.
      */
     ifmss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
-        std::vector<uint_t> domains, std::vector<index_t> order = default_oder()
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
+        std::vector<uint_t> domains,
+        std::vector<index_t> order = default_oder()
     );
 
     /**
@@ -160,14 +170,17 @@ struct ifmss_manager
      *  by their indices by default.
      */
     ifmss_manager(
-        std::size_t componentCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, std::vector<uint_t> domains,
+        std::size_t componentCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        std::vector<uint_t> domains,
         std::vector<index_t> order = default_oder()
     );
 };
 
 inline bss_manager::bss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
     std::vector<index_t> order
 )
     : bss_manager(
@@ -177,8 +190,10 @@ inline bss_manager::bss_manager(
 }
 
 inline bss_manager::bss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<index_t> order
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<index_t> order
 )
     : reliability_manager<degrees::fixed<2>, domains::fixed<2>>(
           componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
@@ -188,7 +203,8 @@ inline bss_manager::bss_manager(
 
 template<uint_t P>
 mss_manager<P>::mss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
     std::vector<index_t> order
 )
     : mss_manager(
@@ -199,8 +215,10 @@ mss_manager<P>::mss_manager(
 
 template<uint_t P>
 mss_manager<P>::mss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<index_t> order
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<index_t> order
 )
     : reliability_manager<degrees::fixed<P>, domains::fixed<P>>(
           componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
@@ -209,35 +227,33 @@ mss_manager<P>::mss_manager(
 }
 
 inline imss_manager::imss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
-    std::vector<uint_t> domains, std::vector<index_t> order
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
+    std::vector<uint_t> domains,
+    std::vector<index_t> order
 )
     : imss_manager(
-          componentCount, nodePoolSize, nodePoolSize / 2, std::move(domains),
+          componentCount,
+          nodePoolSize,
+          nodePoolSize / 2,
+          std::move(domains),
           std::move(order)
       )
 {
 }
 
 inline imss_manager::imss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<uint_t> domains,
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<uint_t> domains,
     std::vector<index_t> order
 )
     : reliability_manager<degrees::mixed, domains::mixed>(
-          componentCount, nodePoolSize, overflowNodePoolSize,
-          std::move(domains), std::move(order)
-      )
-{
-}
-
-template<uint_t PMax>
-ifmss_manager<PMax>::ifmss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
-    std::vector<uint_t> domains, std::vector<index_t> order
-)
-    : ifmss_manager(
-          componentCount, nodePoolSize, nodePoolSize / 2, std::move(domains),
+          componentCount,
+          nodePoolSize,
+          overflowNodePoolSize,
+          std::move(domains),
           std::move(order)
       )
 {
@@ -245,13 +261,35 @@ ifmss_manager<PMax>::ifmss_manager(
 
 template<uint_t PMax>
 ifmss_manager<PMax>::ifmss_manager(
-    std::size_t const componentCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<uint_t> domains,
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
+    std::vector<uint_t> domains,
+    std::vector<index_t> order
+)
+    : ifmss_manager(
+          componentCount,
+          nodePoolSize,
+          nodePoolSize / 2,
+          std::move(domains),
+          std::move(order)
+      )
+{
+}
+
+template<uint_t PMax>
+ifmss_manager<PMax>::ifmss_manager(
+    std::size_t const componentCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<uint_t> domains,
     std::vector<index_t> order
 )
     : reliability_manager<degrees::fixed<PMax>, domains::mixed>(
-          componentCount, nodePoolSize, overflowNodePoolSize,
-          std::move(domains), std::move(order)
+          componentCount,
+          nodePoolSize,
+          overflowNodePoolSize,
+          std::move(domains),
+          std::move(order)
       )
 {
 }

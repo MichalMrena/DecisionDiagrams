@@ -12,8 +12,10 @@ namespace teddy
  */
 template<class F>
 auto domain_for_each(
-    std::size_t const varcount, std::vector<unsigned int> const& vector,
-    std::vector<unsigned int> const& domains, F f
+    std::size_t const varcount,
+    std::vector<unsigned int> const& vector,
+    std::vector<unsigned int> const& domains,
+    F f
 ) -> void
 {
     auto element = std::vector<unsigned int>(varcount, 0);

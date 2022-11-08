@@ -403,8 +403,13 @@ auto apply_cache<Data, D>::rehash(std::size_t const newCapacity) -> void
     }
 
     debug::out(
-        "apply_cache: Load factor is ", this->load_factor(), ". Capacity is ",
-        this->capacity(), " should be ", newCapacity, "."
+        "apply_cache: Load factor is ",
+        this->load_factor(),
+        ". Capacity is ",
+        this->capacity(),
+        " should be ",
+        newCapacity,
+        "."
     );
 
     auto const oldEntries = std::vector<entry_t>(std::move(entries_));
@@ -650,8 +655,12 @@ auto unique_table<Data, D>::rehash(
     }
 
     debug::out(
-        "  unique_table: Load factor is ", this->load_factor(),
-        ". Capacity is ", this->capacity(), " should be ", newCapacity
+        "  unique_table: Load factor is ",
+        this->load_factor(),
+        ". Capacity is ",
+        this->capacity(),
+        " should be ",
+        newCapacity
     );
 
     auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));

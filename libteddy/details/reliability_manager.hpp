@@ -396,14 +396,18 @@ public:
 
 protected:
     reliability_manager(
-        std::size_t varCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, std::vector<index_t> order
+        std::size_t varCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        std::vector<index_t> order
     )
     requires(domains::is_fixed<Domain>()());
 
     reliability_manager(
-        std::size_t varCount, std::size_t nodePoolSize,
-        std::size_t overflowNodePoolSize, domains::mixed,
+        std::size_t varCount,
+        std::size_t nodePoolSize,
+        std::size_t overflowNodePoolSize,
+        domains::mixed,
         std::vector<index_t> order
     )
     requires(domains::is_mixed<Domain>()());
@@ -597,7 +601,9 @@ auto reliability_manager<Degree, Domain>::dpld(
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf, var, i,
+        sf,
+        var,
+        i,
         [f](auto const l, auto const r)
         {
             return l == f.from && r == f.to;
@@ -611,7 +617,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_1_decrease(
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf, var, i,
+        sf,
+        var,
+        i,
         [j](auto const l, auto const r)
         {
             return l == j && r < j;
@@ -625,7 +633,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf, var, i,
+        sf,
+        var,
+        i,
         [j](auto const l, auto const r)
         {
             return l == j && r > j;
@@ -639,7 +649,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf, var, i,
+        sf,
+        var,
+        i,
         [](auto const l, auto const r)
         {
             return l > r;
@@ -653,7 +665,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf, var, i,
+        sf,
+        var,
+        i,
         [](auto const l, auto const r)
         {
             return l < r;
@@ -667,7 +681,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_3_decrease(
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf, var, i,
+        sf,
+        var,
+        i,
         [j](auto const l, auto const r)
         {
             return l >= j && r < j;
@@ -681,7 +697,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf, var, i,
+        sf,
+        var,
+        i,
         [j](auto const l, auto const r)
         {
             return l < j && r >= j;
@@ -852,7 +870,9 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
         return l.left == r.left && l.right == r.right;
     };
     auto cache = std::unordered_map<
-        cache_pair, node_t*, decltype(cache_pair_hash),
+        cache_pair,
+        node_t*,
+        decltype(cache_pair_hash),
         decltype(cache_pair_equals)>();
 
     auto const go = [this, &cache, change](
@@ -920,8 +940,10 @@ auto reliability_manager<Degree, Domain>::domain_size() const -> std::size_t
 
 template<degree Degree, domain Domain>
 reliability_manager<Degree, Domain>::reliability_manager(
-    std::size_t const varCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, std::vector<index_t> order
+    std::size_t const varCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    std::vector<index_t> order
 )
 requires(domains::is_fixed<Domain>()())
     : diagram_manager<double, Degree, Domain>(
@@ -932,13 +954,18 @@ requires(domains::is_fixed<Domain>()())
 
 template<degree Degree, domain Domain>
 reliability_manager<Degree, Domain>::reliability_manager(
-    std::size_t const varCount, std::size_t const nodePoolSize,
-    std::size_t const overflowNodePoolSize, domains::mixed ds,
+    std::size_t const varCount,
+    std::size_t const nodePoolSize,
+    std::size_t const overflowNodePoolSize,
+    domains::mixed ds,
     std::vector<index_t> order
 )
 requires(domains::is_mixed<Domain>()())
     : diagram_manager<double, Degree, Domain>(
-          varCount, nodePoolSize, overflowNodePoolSize, std::move(ds),
+          varCount,
+          nodePoolSize,
+          overflowNodePoolSize,
+          std::move(ds),
           std::move(order)
       )
 {

@@ -21,7 +21,9 @@ struct minmax_expr
  *  \brief Makes random minmax expression.
  */
 auto make_minmax_expression(
-    std::mt19937_64& indexRng, std::size_t varCount, std::size_t termCount,
+    std::mt19937_64& indexRng,
+    std::size_t varCount,
+    std::size_t termCount,
     std::size_t termSize
 ) -> minmax_expr;
 
@@ -70,7 +72,8 @@ private:
     struct operation_t
     {
         operation_t(
-            operation_type o, std::unique_ptr<expr_node> l,
+            operation_type o,
+            std::unique_ptr<expr_node> l,
             std::unique_ptr<expr_node> r
         );
         operation_type op_;
@@ -96,7 +99,9 @@ public:
     expr_node(expr_node_constant, uint_t c);
 
     expr_node(
-        expr_node_operation, operation_type o, std::unique_ptr<expr_node> l,
+        expr_node_operation,
+        operation_type o,
+        std::unique_ptr<expr_node> l,
         std::unique_ptr<expr_node> r
     );
 

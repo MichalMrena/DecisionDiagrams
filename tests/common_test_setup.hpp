@@ -321,7 +321,8 @@ auto make_manager(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
  */
 template<class Dat, class Deg, class Dom>
 auto make_diagram(
-    minmax_expr const& expr, diagram_manager<Dat, Deg, Dom>& manager,
+    minmax_expr const& expr,
+    diagram_manager<Dat, Deg, Dom>& manager,
     fold_type const foldtype = fold_type::Left
 )
 {
@@ -365,7 +366,8 @@ auto make_diagram(
  *  \brief Makes minmax expression with given settings.
  */
 inline auto make_expression(
-    uint_t const varcount, minmax_expression_settings const& s,
+    uint_t const varcount,
+    minmax_expression_settings const& s,
     std::mt19937_64& rng
 ) -> minmax_expr
 {

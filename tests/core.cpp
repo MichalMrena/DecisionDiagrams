@@ -387,7 +387,8 @@ protected:
         auto const d    = manager.cofactor(dtmp, i2, v2);
 
         auto domainit   = domain_iterator(
-            manager.get_domains(), manager.get_order(),
+            manager.get_domains(),
+            manager.get_order(),
             {std::make_pair(i1, v1), std::make_pair(i2, v2)}
         );
         auto evalit = evaluating_iterator(domainit, expr);
@@ -549,8 +550,10 @@ class test_manager : public rog::CompositeTest
 {
 public:
     test_manager(
-        std::size_t const seed, ManagerSettings manager,
-        ExpressionSettings expr, std::string name
+        std::size_t const seed,
+        ManagerSettings manager,
+        ExpressionSettings expr,
+        std::string name
     )
         : rog::CompositeTest(std::move(name))
     {
@@ -614,8 +617,10 @@ class test_bdd_manager
 public:
     test_bdd_manager(std::size_t const seed)
         : test_manager<bdd_manager_settings, minmax_expression_settings>(
-              seed, bdd_manager_settings {21, 2'000, random_order_tag()},
-              minmax_expression_settings {30, 6}, "bdd_manager"
+              seed,
+              bdd_manager_settings {21, 2'000, random_order_tag()},
+              minmax_expression_settings {30, 6},
+              "bdd_manager"
           )
     {
     }
@@ -630,8 +635,10 @@ class test_mdd_manager
 public:
     test_mdd_manager(std::size_t const seed)
         : test_manager<mdd_manager_settings<3>, minmax_expression_settings>(
-              seed, mdd_manager_settings<3> {15, 5'000, random_order_tag()},
-              minmax_expression_settings {20, 5}, "mdd_manager"
+              seed,
+              mdd_manager_settings<3> {15, 5'000, random_order_tag()},
+              minmax_expression_settings {20, 5},
+              "mdd_manager"
           )
     {
     }
@@ -649,7 +656,8 @@ public:
               seed,
               imdd_manager_settings<3> {
                   18, 5'000, random_order_tag(), random_domains()},
-              minmax_expression_settings {30, 6}, "imdd_manager"
+              minmax_expression_settings {30, 6},
+              "imdd_manager"
           )
     {
     }
@@ -667,7 +675,8 @@ public:
               seed,
               ifmdd_manager_settings<3> {
                   18, 5'000, random_order_tag(), random_domains()},
-              minmax_expression_settings {30, 6}, "ifmdd_manager"
+              minmax_expression_settings {30, 6},
+              "ifmdd_manager"
           )
     {
     }

@@ -20,7 +20,8 @@ struct var_change
  *  \brief Calculates probability of system state \p j .
  */
 auto probability(
-    truth_table const& table, std::vector<std::vector<double>> const& ps,
+    truth_table const& table,
+    std::vector<std::vector<double>> const& ps,
     unsigned int j
 ) -> double;
 
@@ -31,7 +32,8 @@ auto probability(
  *  \param j system state
  */
 auto availability(
-    truth_table const& table, std::vector<std::vector<double>> const& ps,
+    truth_table const& table,
+    std::vector<std::vector<double>> const& ps,
     unsigned int j
 ) -> double;
 
@@ -42,7 +44,8 @@ auto availability(
  *  \param j system state
  */
 auto unavailability(
-    truth_table const& table, std::vector<std::vector<double>> const& ps,
+    truth_table const& table,
+    std::vector<std::vector<double>> const& ps,
     unsigned int j
 ) -> double;
 

@@ -185,11 +185,13 @@ auto evaluate_test(
 
                               // Structural importances.
                               std::ranges::equal(
-                                  expected.SIs_, actual.SIs_,
+                                  expected.SIs_,
+                                  actual.SIs_,
                                   [cmp](auto const& lhs, auto const& rhs)
                                   {
                                       return rs::equal(
-                                          lhs, rhs,
+                                          lhs,
+                                          rhs,
                                           [cmp](auto const& l, auto const& r)
                                           {
                                               return rs::equal(l, r, cmp);
@@ -233,11 +235,13 @@ auto print_test_evaluation(
               << result_char(rs::equal(expected.Us_, actual.Us_, cmp)) << '\n';
     std::cout << "SIs              "
               << result_char(rs::equal(
-                     expected.SIs_, actual.SIs_,
+                     expected.SIs_,
+                     actual.SIs_,
                      [cmp](auto const& lhs, auto const& rhs)
                      {
                          return rs::equal(
-                             lhs, rhs,
+                             lhs,
+                             rhs,
                              [cmp](auto const& l, auto const& r)
                              {
                                  return rs::equal(l, r, cmp);
@@ -267,7 +271,8 @@ auto print_test_evaluation(
 
 template<uint_t P>
 auto generate_serialparallel(
-    mss_manager<P>& manager, std::mt19937_64& rngtype,
+    mss_manager<P>& manager,
+    std::mt19937_64& rngtype,
     std::mt19937_64& rngbranch
 )
 {
