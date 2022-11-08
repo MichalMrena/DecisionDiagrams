@@ -627,7 +627,7 @@ auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
         sf, var, i,
         [j](auto const l, auto const r)
         {
-            return l > j && r == j;
+            return l == j && r > j;
         }
     );
 }
@@ -641,7 +641,7 @@ auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
         sf, var, i,
         [](auto const l, auto const r)
         {
-            return l < r;
+            return l > r;
         }
     );
 }
@@ -655,7 +655,7 @@ auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
         sf, var, i,
         [](auto const l, auto const r)
         {
-            return l > r;
+            return l < r;
         }
     );
 }

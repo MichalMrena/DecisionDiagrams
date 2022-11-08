@@ -89,7 +89,7 @@ inline static auto constexpr dpld_i_1_increase = [](auto const j)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 2.
  */
-inline static auto constexpr dpld_i_2_decrease = [](auto const)
+inline static auto constexpr dpld_i_2_decrease = []()
 {
     return [](auto const l, auto const r)
     {
@@ -100,7 +100,7 @@ inline static auto constexpr dpld_i_2_decrease = [](auto const)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 2.
  */
-inline static auto constexpr dpld_i_2_increase = [](auto const)
+inline static auto constexpr dpld_i_2_increase = []()
 {
     return [](auto const l, auto const r)
     {
