@@ -74,7 +74,7 @@ public:
     }
 
 protected:
-    auto test () -> void override
+    auto test() -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -122,7 +122,7 @@ public:
     }
 
 protected:
-    auto test () -> void override
+    auto test() -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -170,7 +170,7 @@ public:
     }
 
 protected:
-    auto test () -> void override
+    auto test() -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -212,20 +212,20 @@ protected:
     auto test() -> void override
     {
         using namespace std::string_literals;
-        auto expr     = make_expression(this->settings(), this->rng());
-        auto manager  = make_manager(this->settings(), this->rng());
-        auto diagram  = make_diagram(expr, manager);
-        auto ps       = make_probabilities(manager, this->rng());
-        auto domains  = manager.get_domains();
-        auto table    = truth_table(make_vector(expr, domains), domains);
+        auto expr         = make_expression(this->settings(), this->rng());
+        auto manager      = make_manager(this->settings(), this->rng());
+        auto diagram      = make_diagram(expr, manager);
+        auto ps           = make_probabilities(manager, this->rng());
+        auto domains      = manager.get_domains();
+        auto table        = truth_table(make_vector(expr, domains), domains);
 
         auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
         {
             auto result = true;
             domain_for_each(
                 tabledpld,
-                [&manager, &result, &diagramdpld]
-                (auto const v, auto const& elem)
+                [&manager, &result,
+                 &diagramdpld](auto const v, auto const& elem)
                 {
                     if (v != U)
                     {
@@ -246,54 +246,39 @@ protected:
         };
 
         auto const varindex = std::uniform_int_distribution<uint_t>(
-            0u,
-            static_cast<uint_t>(manager.get_var_count() - 1)
+            0u, static_cast<uint_t>(manager.get_var_count() - 1)
         )(this->rng());
         auto const vardomain = manager.get_domains()[varindex];
-        auto const varfrom = std::uniform_int_distribution<uint_t>(
-            0,
-            vardomain - 2
-        )(this->rng());
+        auto const varfrom =
+            std::uniform_int_distribution<uint_t>(0, vardomain - 2)(this->rng()
+            );
         auto const varto = std::uniform_int_distribution<uint_t>(
-            varfrom + 1,
-            manager.get_domains()[varindex] - 1
+            varfrom + 1, manager.get_domains()[varindex] - 1
         )(this->rng());
 
-        auto const varchange = var_change
-        {
-            .index = varindex,
-            .from = varfrom,
-            .to = varto
-        };
+        auto const varchange =
+            var_change {.index = varindex, .from = varfrom, .to = varto};
 
-        auto const varchanger = var_change
-        {
-            .index = varindex,
-            .from = varto,
-            .to = varfrom
-        };
+        auto const varchanger =
+            var_change {.index = varindex, .from = varto, .to = varfrom};
 
         // Basic DPLD
         {
             auto const ffrom = std::uniform_int_distribution<uint_t>(
-                0,
-                table.get_max_val() - 1
+                0, table.get_max_val() - 1
             )(this->rng());
             auto const fto = std::uniform_int_distribution<uint_t>(
-                ffrom + 1,
-                table.get_max_val()
+                ffrom + 1, table.get_max_val()
             )(this->rng());
 
             this->info(
-                "Basic dpld f(" + s(ffrom) + " -> " + s(fto) + ") / " +
-                "x(" + s(varchange.from) + " -> " + s(varchange.to) + ")"
+                "Basic dpld f(" + s(ffrom) + " -> " + s(fto) + ") / " + "x(" +
+                s(varchange.from) + " -> " + s(varchange.to) + ")"
             );
 
-            auto tabledpld = dpld(table, varchange, dpld_basic(ffrom, fto));
+            auto tabledpld   = dpld(table, varchange, dpld_basic(ffrom, fto));
             auto diagramdpld = manager.dpld(
-                {varchange.from, varchange.to},
-                {ffrom, fto},
-                diagram,
+                {varchange.from, varchange.to}, {ffrom, fto}, diagram,
                 varchange.index
             );
             this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
@@ -306,8 +291,7 @@ protected:
         // Integrated DPLD type I decrease
         {
             auto const j = std::uniform_int_distribution<uint_t>(
-                1u,
-                table.get_max_val()
+                1u, table.get_max_val()
             )(this->rng());
 
             this->info(
@@ -315,12 +299,9 @@ protected:
                 ") / x(" + s(varchanger.from) + " -> " + s(varchanger.to) + ")"
             );
 
-            auto tabledpld = dpld(table, varchanger, dpld_i_1_decrease(j));
+            auto tabledpld   = dpld(table, varchanger, dpld_i_1_decrease(j));
             auto diagramdpld = manager.idpld_type_1_decrease(
-                {varchanger.from, varchanger.to},
-                j,
-                diagram,
-                varchanger.index
+                {varchanger.from, varchanger.to}, j, diagram, varchanger.index
             );
             this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
             this->assert_true(
@@ -332,8 +313,7 @@ protected:
         // Integrated DPLD type I increase
         {
             auto fvaldist = std::uniform_int_distribution<uint_t>(
-                0u,
-                table.get_max_val() - 1
+                0u, table.get_max_val() - 1
             );
             auto const j = fvaldist(this->rng());
 
@@ -342,12 +322,9 @@ protected:
                 ") / x(" + s(varchange.from) + " -> " + s(varchange.to) + ")"
             );
 
-            auto tabledpld = dpld(table, varchange, dpld_i_1_increase(j));
+            auto tabledpld   = dpld(table, varchange, dpld_i_1_increase(j));
             auto diagramdpld = manager.idpld_type_1_increase(
-                {varchange.from, varchange.to},
-                j,
-                diagram,
-                varchange.index
+                {varchange.from, varchange.to}, j, diagram, varchange.index
             );
             this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
             this->assert_true(
@@ -359,15 +336,13 @@ protected:
         // Integrated DPLD type II decrease
         {
             this->info(
-                "idpld_type_2_decrease f( < ) / x(" +
-                s(varchanger.from) + " -> " + s(varchanger.to) + ")"
+                "idpld_type_2_decrease f( < ) / x(" + s(varchanger.from) +
+                " -> " + s(varchanger.to) + ")"
             );
 
-            auto tabledpld = dpld(table, varchanger, dpld_i_2_decrease());
+            auto tabledpld   = dpld(table, varchanger, dpld_i_2_decrease());
             auto diagramdpld = manager.idpld_type_2_decrease(
-                {varchanger.from, varchanger.to},
-                diagram,
-                varchanger.index
+                {varchanger.from, varchanger.to}, diagram, varchanger.index
             );
             this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
             this->assert_true(
@@ -379,15 +354,13 @@ protected:
         // Integrated DPLD type II increase
         {
             this->info(
-                "idpld_type_2_increase f( > ) / x(" +
-                s(varchange.from) + " -> " + s(varchange.to) + ")"
+                "idpld_type_2_increase f( > ) / x(" + s(varchange.from) +
+                " -> " + s(varchange.to) + ")"
             );
 
-            auto tabledpld = dpld(table, varchange, dpld_i_2_increase());
+            auto tabledpld   = dpld(table, varchange, dpld_i_2_increase());
             auto diagramdpld = manager.idpld_type_2_increase(
-                {varchange.from, varchange.to},
-                diagram,
-                varchange.index
+                {varchange.from, varchange.to}, diagram, varchange.index
             );
             this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
             this->assert_true(
@@ -399,8 +372,7 @@ protected:
         // Integrated DPLD type III decrease
         {
             auto const j = std::uniform_int_distribution<uint_t>(
-                1u,
-                table.get_max_val()
+                1u, table.get_max_val()
             )(this->rng());
 
             this->info(
@@ -408,12 +380,9 @@ protected:
                 ") / x(" + s(varchanger.from) + " -> " + s(varchanger.to) + ")"
             );
 
-            auto tabledpld = dpld(table, varchanger, dpld_i_3_decrease(j));
+            auto tabledpld   = dpld(table, varchanger, dpld_i_3_decrease(j));
             auto diagramdpld = manager.idpld_type_3_decrease(
-                {varchanger.from, varchanger.to},
-                j,
-                diagram,
-                varchanger.index
+                {varchanger.from, varchanger.to}, j, diagram, varchanger.index
             );
             this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
             this->assert_true(
@@ -424,10 +393,8 @@ protected:
 
         // Integrated DPLD type III increase
         {
-            auto fvaldist = std::uniform_int_distribution<uint_t>(
-                1u,
-                table.get_max_val()
-            );
+            auto fvaldist =
+                std::uniform_int_distribution<uint_t>(1u, table.get_max_val());
             auto const j = fvaldist(this->rng());
 
             this->info(
@@ -435,12 +402,9 @@ protected:
                 ") / x(" + s(varchange.from) + " -> " + s(varchange.to) + ")"
             );
 
-            auto tabledpld = dpld(table, varchange, dpld_i_3_increase(j));
+            auto tabledpld   = dpld(table, varchange, dpld_i_3_increase(j));
             auto diagramdpld = manager.idpld_type_3_increase(
-                {varchange.from, varchange.to},
-                j,
-                diagram,
-                varchange.index
+                {varchange.from, varchange.to}, j, diagram, varchange.index
             );
             this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
             this->assert_true(
@@ -483,8 +447,8 @@ public:
             settings_t {seeder(), manager, expr}
         ));
 
-        this->add_test(std::make_unique<test_dpbd<settings_t>>(
-            settings_t {seeder(), manager, expr}
+        this->add_test(std::make_unique<test_dpbd<settings_t>>(settings_t {
+            seeder(), manager, expr}
         ));
     }
 };
@@ -511,18 +475,14 @@ public:
  */
 template<unsigned int M>
 class test_mss_manager : public test_reliability_manager<
-                             mss_manager_settings<M>,
-                             expression_tree_settings
-                         >
+                             mss_manager_settings<M>, expression_tree_settings>
 {
 public:
     test_mss_manager(std::size_t const seed)
         : test_reliability_manager<
               mss_manager_settings<M>, expression_tree_settings>(
-              seed,
-              mss_manager_settings<M> {15, 5'000, random_order_tag()},
-              expression_tree_settings {},
-              "mss_manager"
+              seed, mss_manager_settings<M> {15, 5'000, random_order_tag()},
+              expression_tree_settings {}, "mss_manager"
           )
     {
     }
@@ -532,19 +492,18 @@ public:
  *  \brief Tests imss_manager.
  */
 template<unsigned int M>
-class test_imss_manager : public test_reliability_manager<
-                             imss_manager_settings<M>,
-                             expression_tree_settings
-                          >
+class test_imss_manager
+    : public test_reliability_manager<
+          imss_manager_settings<M>, expression_tree_settings>
 {
 public:
     test_imss_manager(std::size_t const seed)
         : test_reliability_manager<
               imss_manager_settings<M>, expression_tree_settings>(
               seed,
-              imss_manager_settings<M> {15, 5'000, random_order_tag(), random_domains()},
-              expression_tree_settings {},
-              "imss_manager"
+              imss_manager_settings<M> {
+                  15, 5'000, random_order_tag(), random_domains()},
+              expression_tree_settings {}, "imss_manager"
           )
     {
     }
@@ -554,19 +513,18 @@ public:
  *  \brief Tests imss_manager.
  */
 template<unsigned int M>
-class test_ifmss_manager : public test_reliability_manager<
-                             ifmss_manager_settings<M>,
-                             expression_tree_settings
-                           >
+class test_ifmss_manager
+    : public test_reliability_manager<
+          ifmss_manager_settings<M>, expression_tree_settings>
 {
 public:
     test_ifmss_manager(std::size_t const seed)
         : test_reliability_manager<
               ifmss_manager_settings<M>, expression_tree_settings>(
               seed,
-              ifmss_manager_settings<M> {15, 5'000, random_order_tag(), random_domains()},
-              expression_tree_settings {},
-              "ifmss_manager"
+              ifmss_manager_settings<M> {
+                  15, 5'000, random_order_tag(), random_domains()},
+              expression_tree_settings {}, "ifmss_manager"
           )
     {
     }
@@ -578,7 +536,7 @@ auto run_test_one(std::size_t const seed)
 {
     auto const M = 3;
 
-    auto bssmt = teddy::test_bss_manager(seed);
+    auto bssmt   = teddy::test_bss_manager(seed);
     bssmt.run();
     rog::console_print_results(bssmt);
 

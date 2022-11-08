@@ -40,7 +40,7 @@ auto evaluate_expression(minmax_expr const& expr, std::vector<uint_t> const& vs)
         for (auto const var : term)
         {
             auto const val = vs[var];
-            termMinVal = val < termMinVal ? val : termMinVal;
+            termMinVal     = val < termMinVal ? val : termMinVal;
         }
         totalMaxVal = termMinVal > totalMaxVal ? termMinVal : totalMaxVal;
     }

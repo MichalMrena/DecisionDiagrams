@@ -106,9 +106,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram))
-        );
+        this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto domainit = make_domain_iterator(manager);
         auto evalit   = evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
@@ -187,9 +185,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram))
-        );
+        this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto expected = expected_counts(manager, expr);
         auto actual   = std::vector<std::size_t>(expected.size(), 0);
 
@@ -223,9 +219,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram))
-        );
+        this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto expected = expected_counts(manager, expr);
         auto actual   = std::vector<std::size_t>(expected.size(), 0);
         for (auto k = 0u; k < expected.size(); ++k)
@@ -265,9 +259,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram))
-        );
+        this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto const zero = manager.constant(0);
         auto const one  = manager.constant(1);
         auto const sup =
@@ -373,9 +365,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram))
-        );
+        this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto const maxi = static_cast<index_t>(manager.get_var_count() - 1);
         auto indexDist  = std::uniform_int_distribution<index_t>(0u, maxi);
         auto const i1   = indexDist(this->rng());
@@ -435,7 +425,7 @@ protected:
         this->assert_equals(actual, expected);
 
         auto domainit = make_domain_iterator(manager);
-        auto evalit = evaluating_iterator(domainit, expr);
+        auto evalit   = evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
 };
@@ -466,7 +456,7 @@ protected:
         this->assert_equals(actual, expected);
 
         auto domainit = make_domain_iterator(manager);
-        auto evalit = evaluating_iterator(domainit, expr);
+        auto evalit   = evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
 };
@@ -489,9 +479,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram))
-        );
+        this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto domainit = make_domain_iterator(manager);
         auto evalit   = evaluating_iterator(domainit, expr);
         auto evalend  = evaluating_iterator_sentinel();
@@ -520,9 +508,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram))
-        );
+        this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto vector  = manager.to_vector(diagram);
         auto vectord = manager.from_vector(vector);
         this->assert_true(
@@ -778,28 +764,28 @@ auto run_test_many(std::size_t const seed)
     }
 
 #ifdef LIBTEDDY_TESTS_USE_OMP
-    #pragma omp parallel for
+#pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         bddmts[k].run();
     }
     print_results(bddmts);
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         mddmts[k].run();
     }
     print_results(mddmts);
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         imddts[k].run();
     }
     print_results(imddts);
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (auto k = 0u; k < numtest; ++k)
     {
         ifmddts[k].run();

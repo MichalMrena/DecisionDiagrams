@@ -583,11 +583,12 @@ auto reliability_manager<Degree, Domain>::get_unavailability(uint_t const j)
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::state_frequency
-    (diagram_t sf, uint_t j) -> double
+auto reliability_manager<Degree, Domain>::state_frequency(
+    diagram_t sf, uint_t j
+) -> double
 {
-    return static_cast<double>(this->satisfy_count(j, sf))
-         / static_cast<double>(this->domain_size());
+    return static_cast<double>(this->satisfy_count(j, sf)) /
+           static_cast<double>(this->domain_size());
 }
 
 template<degree Degree, domain Domain>
@@ -910,8 +911,7 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::domain_size
-    () const -> std::size_t
+auto reliability_manager<Degree, Domain>::domain_size() const -> std::size_t
 {
     auto const from = level_t(0);
     auto const to   = static_cast<level_t>(this->get_var_count());

@@ -12,15 +12,13 @@ namespace teddy
  */
 template<class F>
 auto domain_for_each(
-    std::size_t const varcount,
-    std::vector<unsigned int> const& vector,
-    std::vector<unsigned int> const& domains,
-    F f
+    std::size_t const varcount, std::vector<unsigned int> const& vector,
+    std::vector<unsigned int> const& domains, F f
 ) -> void
 {
-    auto element        = std::vector<unsigned int>(varcount, 0);
-    auto wasLast        = false;
-    auto k              = 0u;
+    auto element = std::vector<unsigned int>(varcount, 0);
+    auto wasLast = false;
+    auto k       = 0u;
     do
     {
         // Invoke f.
@@ -52,10 +50,7 @@ template<class F>
 auto domain_for_each(truth_table const& table, F f) -> void
 {
     domain_for_each(
-        table.get_var_count(),
-        table.get_vector(),
-        table.get_domains(),
-        f
+        table.get_var_count(), table.get_vector(), table.get_domains(), f
     );
 }
 

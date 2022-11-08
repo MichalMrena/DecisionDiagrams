@@ -32,10 +32,8 @@ auto satisfy_count(truth_table const& table, unsigned int j) -> std::size_t;
 auto satisfy_all(truth_table const& table, unsigned int j)
     -> std::vector<std::vector<unsigned int>>;
 auto domain_size(truth_table const& table) -> std::size_t;
-auto evaluate(
-    truth_table const& table,
-    std::vector<unsigned int> const& vars
-) -> unsigned int;
+auto evaluate(truth_table const& table, std::vector<unsigned int> const& vars)
+    -> unsigned int;
 } // namespace teddy
 
 #endif

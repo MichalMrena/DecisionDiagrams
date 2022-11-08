@@ -137,22 +137,24 @@ auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
 
     domain_for_each(
         table,
-        [&, k = 0u, tmpelem = std::vector<unsigned int>()]
-        (auto const ffrom, auto const& elem) mutable
-    {
-        if (elem[var.index] != var.from)
+        [&, k = 0u, tmpelem = std::vector<unsigned int>()](
+            auto const ffrom, auto const& elem
+        ) mutable
         {
-            dpbdvector[k] = U;
+            if (elem[var.index] != var.from)
+            {
+                dpbdvector[k] = U;
+            }
+            else
+            {
+                tmpelem            = elem;
+                tmpelem[var.index] = var.to;
+                auto const fto     = evaluate(table, tmpelem);
+                dpbdvector[k]      = d(ffrom, fto) ? 1 : 0;
+            }
+            ++k;
         }
-        else
-        {
-            tmpelem            = elem;
-            tmpelem[var.index] = var.to;
-            auto const fto     = evaluate(table, tmpelem);
-            dpbdvector[k]      = d(ffrom, fto) ? 1 : 0;
-        }
-        ++k;
-    });
+    );
 
     return truth_table(std::move(dpbdvector), table.get_domains());
 }

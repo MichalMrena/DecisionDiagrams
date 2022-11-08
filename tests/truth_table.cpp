@@ -13,10 +13,14 @@ truth_table::truth_table(
     std::vector<unsigned int> vector, std::vector<unsigned int> domains
 )
     : vector_(std::move(vector)), domains_(std::move(domains)),
-      offset_(this->get_var_count()),
-      maxValue_(std::ranges::max(vector_ | std::ranges::views::filter(
-        [](auto v){ return v != U; }))
-      )
+      offset_(this->get_var_count()), maxValue_(std::ranges::max(
+                                          vector_ | std::ranges::views::filter(
+                                                        [](auto v)
+                                                        {
+                                                            return v != U;
+                                                        }
+                                                    )
+                                      ))
 {
     assert(
         vector_.size() ==
@@ -94,10 +98,8 @@ auto domain_size(truth_table const& table) -> std::size_t
     return size(table.get_vector());
 }
 
-auto evaluate(
-    truth_table const& table,
-    std::vector<unsigned int> const& vars
-) -> unsigned int
+auto evaluate(truth_table const& table, std::vector<unsigned int> const& vars)
+    -> unsigned int
 {
     return table.get_vector()[to_index(table, vars)];
 }
