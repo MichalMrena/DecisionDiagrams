@@ -199,6 +199,9 @@ protected:
     }
 };
 
+/**
+ *  \brief Tests calculation of all types of DPLDs.
+ */
 template<class Settings>
 class test_dpbd : public test_base<Settings>
 {
@@ -418,6 +421,42 @@ protected:
     }
 };
 
+template<class Settings>
+class test_structural_importance : public test_base<Settings>
+{
+public:
+    test_structural_importance(Settings settings)
+        : test_base<Settings>("structural-imporatnce", std::move(settings))
+    {
+    }
+
+protected:
+    auto test() -> void override
+    {
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram  = make_diagram(expr, manager);
+        auto domains  = manager.get_domains();
+        auto table    = truth_table(make_vector(expr, domains), domains);
+        auto const m  = std::ranges::max(manager.get_domains());
+
+        for (auto j = 1u; j < m; ++j)
+        {
+            for (auto i = 0u; i < manager.get_var_count(); ++i)
+            {
+                for (auto s = 1u; s < manager.get_domains()[i]; ++s)
+                {
+                    auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
+                    auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
+                    auto const expected = structural_importance(td, i);
+                    auto const actual = manager.structural_importance(dd);
+                    this->assert_equals(expected, actual, 0.00000001);
+                }
+            }
+        }
+    }
+};
+
 /**
  *  \brief Composite test for reliability manager.
  */
@@ -453,6 +492,9 @@ public:
         ));
 
         this->add_test(std::make_unique<test_dpbd<settings_t>>(settings_t {
+            seeder(), manager, expr}));
+
+        this->add_test(std::make_unique<test_structural_importance<settings_t>>(settings_t {
             seeder(), manager, expr}));
     }
 };

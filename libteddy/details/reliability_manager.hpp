@@ -359,7 +359,7 @@ public:
      *  \param dpld Direct Partial Boolean Derivative of any type.
      *  \return Structural importance of given componentn.
      */
-    auto structural_importance(diagram_t& dpld) -> double;
+    auto structural_importance(diagram_t dpld) -> double;
 
     /**
      *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
@@ -708,7 +708,7 @@ auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::structural_importance(diagram_t& dpld)
+auto reliability_manager<Degree, Domain>::structural_importance(diagram_t dpld)
     -> double
 {
     auto const from       = level_t(0);

@@ -53,8 +53,17 @@ auto unavailability(
  *  \brief Calculates state frequency of system state \p j .
  *  \param table truth table of structure function
  *  \param j system state
+ *  \return system state frequency
  */
 auto state_frequency(truth_table const& table, unsigned int j) -> double;
+
+/**
+ *  \brief Calculcates structural importance using \p dpld .
+ *  \param dpld derivative to use for the calculation.
+ *  \param i index of the variable
+ *  \return structural importance
+ */
+auto structural_importance(truth_table const& dpld, unsigned int i) -> double;
 
 /**
  *  \brief Returns lambda that can be used in basic @c dpld .

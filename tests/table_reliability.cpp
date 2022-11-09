@@ -1,6 +1,8 @@
 #include "table_reliability.hpp"
 #include "truth_table_utils.hpp"
 
+#include <numeric>
+
 namespace teddy
 {
 auto probability(
@@ -64,5 +66,14 @@ auto state_frequency(truth_table const& table, unsigned int j) -> double
 {
     return static_cast<double>(satisfy_count(table, j)) /
            static_cast<double>(domain_size(table));
+}
+
+auto structural_importance(truth_table const& dpld, unsigned int i) -> double
+{
+    auto const& ds = dpld.get_domains();
+    auto const domainsize = std::reduce(begin(ds), end(ds), 1ull, std::multiplies<>());
+    auto const nominator = satisfy_count(dpld, 1);
+    auto const denominator = domainsize / ds[i];
+    return static_cast<double>(nominator) / static_cast<double>(denominator);
 }
 } // namespace teddy
