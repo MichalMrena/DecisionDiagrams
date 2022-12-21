@@ -431,6 +431,9 @@ private:
     auto apply_dpld(diagram_t, diagram_t, F) -> diagram_t;
 
     auto domain_size() const -> std::size_t;
+
+    template<component_probabilities Ps>
+    auto calculate_ntp (std::vector<uint_t> const& selected, Ps const& ps, diagram_t d) -> double;
 };
 
 template<degree Degree, domain Domain>
@@ -483,8 +486,7 @@ auto reliability_manager<Degree, Domain>::probability(
     uint_t const j, Ps const& ps, diagram_t& f
 ) -> double
 {
-    this->calculate_probabilities(ps, f);
-    return this->get_probability(j);
+    return this->calculate_ntp({j}, ps, f);
 }
 
 template<degree Degree, domain Domain>
@@ -511,8 +513,15 @@ auto reliability_manager<Degree, Domain>::availability(
     uint_t const j, Ps const& ps, diagram_t& f
 ) -> double
 {
-    this->calculate_probabilities(ps, f);
-    return this->get_availability(j);
+    auto js = std::vector<uint_t>();
+    this->nodes_.for_each_terminal_node([j, &js](auto const n)
+    {
+        if (n->get_value() >= j)
+        {
+            js.emplace_back(n->get_value());
+        }
+    });
+    return this->calculate_ntp(js, ps, f);
 }
 
 template<degree Degree, domain Domain>
@@ -557,8 +566,15 @@ auto reliability_manager<Degree, Domain>::unavailability(
     uint_t const j, Ps const& ps, diagram_t& f
 ) -> double
 {
-    this->calculate_probabilities(ps, f);
-    return this->get_unavailability(j);
+    auto js = std::vector<uint_t>();
+    this->nodes_.for_each_terminal_node([j, &js](auto const n)
+    {
+        if (n->get_value() < j)
+        {
+            js.emplace_back(n->get_value());
+        }
+    });
+    return this->calculate_ntp(js, ps, f);
 }
 
 template<degree Degree, domain Domain>
@@ -936,6 +952,47 @@ auto reliability_manager<Degree, Domain>::domain_size() const -> std::size_t
     auto const from = level_t(0);
     auto const to   = static_cast<level_t>(this->get_var_count());
     return this->nodes_.domain_product(from, to);
+}
+
+template<degree Degree, domain Domain>
+template<component_probabilities Ps>
+auto reliability_manager<Degree, Domain>::calculate_ntp
+    (std::vector<uint_t> const& selected, Ps const& ps, diagram_t d) -> double
+{
+    this->nodes_.for_each_terminal_node([](auto const n)
+    {
+        n->data() = 0.0;
+    });
+
+    for (auto const s : selected)
+    {
+        auto const n = this->nodes_.get_terminal_node(s);
+        if (n)
+        {
+            n->data() = 1.0;
+        }
+    }
+
+    this->nodes_.traverse_post(
+        d.get_root(),
+        [this, &ps](auto const n) mutable
+        {
+            if (not n->is_terminal())
+            {
+                n->data()    = 0.0;
+                auto const i = n->get_index();
+                this->nodes_.for_each_son(
+                    n,
+                    [=, k = 0u, this, &ps](auto const son) mutable
+                    {
+                        n->data() += son->data() * ps[i][k];
+                        ++k;
+                    }
+                );
+            }
+        }
+    );
+    return d.get_root()->data();
 }
 
 template<degree Degree, domain Domain>
