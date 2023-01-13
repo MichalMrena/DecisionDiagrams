@@ -7,6 +7,7 @@
 #include <libteddy/details/types.hpp>
 #include <optional>
 #include <ranges>
+#include <utility>
 #include <vector>
 
 namespace teddy::utils
@@ -29,6 +30,14 @@ auto constexpr constant = [](auto const c)
     return [c](auto)
     {
         return c;
+    };
+};
+
+auto constexpr fix = [](auto f)
+{
+    return [f](auto&&... args)
+    {
+        return f(f, std::forward<decltype(args)>(args)...);
     };
 };
 
