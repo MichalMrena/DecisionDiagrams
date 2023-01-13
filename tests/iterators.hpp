@@ -20,7 +20,7 @@ class domain_iterator
 {
 public:
     using difference_type   = std::ptrdiff_t;
-    using value_type        = std::vector<uint_t>;
+    using value_type        = std::vector<int32>;
     using pointer           = value_type*;
     using reference         = value_type&;
     using iterator_category = std::input_iterator_tag;
@@ -37,7 +37,7 @@ public:
      *  least significant (changes most often).
      *  @p domains of individual variables
      */
-    domain_iterator(std::vector<uint_t> domains);
+    domain_iterator(std::vector<int32> domains);
 
     /**
      *  \brief Initializes using explicitly provided order.
@@ -48,7 +48,7 @@ public:
      *  @p domains of individual variables
      *  @p order   order in which variables are incremented
      */
-    domain_iterator(std::vector<uint_t> domains, std::vector<index_t> order);
+    domain_iterator(std::vector<int32> domains, std::vector<int32> order);
 
     /**
      *  \brief Initializes using explicitly provided order and fixed values.
@@ -62,12 +62,12 @@ public:
      *  @p fixed   defines variables with fixed value
      */
     domain_iterator(
-        std::vector<uint_t> domains,
-        std::vector<index_t> order,
-        std::vector<std::pair<index_t, uint_t>> fixed
+        std::vector<int32> domains,
+        std::vector<int32> order,
+        std::vector<std::pair<int32, int32>> fixed
     );
 
-    auto operator*() const -> std::vector<uint_t> const&;
+    auto operator*() const -> std::vector<int32> const&;
 
     auto operator++() -> domain_iterator&;
 
@@ -82,9 +82,9 @@ public:
     auto operator!=(domain_iterator_sentinel) const -> bool;
 
 protected:
-    std::vector<uint_t> domains_;
-    std::vector<index_t> indices_;
-    std::vector<uint_t> varVals_;
+    std::vector<int32> domains_;
+    std::vector<int32> indices_;
+    std::vector<int32> varVals_;
 };
 
 /**
@@ -102,7 +102,7 @@ class evaluating_iterator
 {
 public:
     using difference_type   = std::ptrdiff_t;
-    using value_type        = uint_t;
+    using value_type        = int32;
     using pointer           = value_type*;
     using reference         = value_type&;
     using iterator_category = std::input_iterator_tag;
@@ -112,7 +112,7 @@ public:
 
     evaluating_iterator(domain_iterator iterator, Expression const& expr);
 
-    auto operator*() const -> uint_t;
+    auto operator*() const -> int32;
 
     auto operator++() -> evaluating_iterator&;
 
@@ -122,7 +122,7 @@ public:
 
     auto operator!=(evaluating_iterator_sentinel const s) const -> bool;
 
-    auto var_vals() const -> std::vector<uint_t> const&;
+    auto var_vals() const -> std::vector<int32> const&;
 
 private:
     domain_iterator iterator_;

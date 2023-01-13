@@ -32,18 +32,18 @@ auto expected_counts(
     diagram_manager<Dat, Deg, Dom>& manager, minmax_expr const& expr
 )
 {
-    auto counts   = std::vector<std::size_t>();
+    auto counts   = std::vector<int64>();
     auto domainit = domain_iterator(manager.get_domains());
     auto evalit   = evaluating_iterator(domainit, expr);
     auto evalend  = evaluating_iterator_sentinel();
     while (evalit != evalend)
     {
         auto const v = *evalit;
-        if (v >= counts.size())
+        if (v >= ssize(counts))
         {
-            counts.resize(v + 1, 0);
+            counts.resize(as_usize(v + 1), 0);
         }
-        ++counts[v];
+        ++counts[as_uindex(v)];
         ++evalit;
     }
     return counts;
@@ -187,16 +187,16 @@ protected:
         auto diagram = make_diagram(expr, manager);
         this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto expected = expected_counts(manager, expr);
-        auto actual   = std::vector<std::size_t>(expected.size(), 0);
+        auto actual   = std::vector<int64>(expected.size(), 0);
 
-        for (auto v = 0u; v < actual.size(); ++v)
+        for (auto v = 0; v < ssize(actual); ++v)
         {
-            actual[v] = manager.satisfy_count(v, diagram);
+            actual[as_uindex(v)] = manager.satisfy_count(v, diagram);
         }
 
-        for (auto k = 0u; k < actual.size(); ++k)
+        for (auto k = 0; k < ssize(actual); ++k)
         {
-            this->assert_equals(actual[k], expected[k]);
+            this->assert_equals(actual[as_uindex(k)], expected[as_uindex(k)]);
         }
     }
 };
@@ -221,21 +221,21 @@ protected:
         auto diagram = make_diagram(expr, manager);
         this->info("Node count " + std::to_string(manager.node_count(diagram)));
         auto expected = expected_counts(manager, expr);
-        auto actual   = std::vector<std::size_t>(expected.size(), 0);
-        for (auto k = 0u; k < expected.size(); ++k)
+        auto actual   = std::vector<int64>(expected.size(), 0);
+        for (auto k = 0; k < ssize(expected); ++k)
         {
-            using out_var_vals = std::vector<uint_t>;
+            using out_var_vals = std::vector<int32>;
             auto outf          = [&actual, k](auto const&)
             {
-                ++actual[k];
+                ++actual[as_uindex(k)];
             };
             auto out = forwarding_iterator<decltype(outf)>(outf);
             manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
         }
 
-        for (auto k = 0u; k < actual.size(); ++k)
+        for (auto k = 0; k < ssize(actual); ++k)
         {
-            this->assert_equals(actual[k], expected[k]);
+            this->assert_equals(actual[as_uindex(k)], expected[as_uindex(k)]);
         }
     }
 };
@@ -366,8 +366,8 @@ protected:
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
         this->info("Node count " + std::to_string(manager.node_count(diagram)));
-        auto const maxi = static_cast<index_t>(manager.get_var_count() - 1);
-        auto indexDist  = std::uniform_int_distribution<index_t>(0u, maxi);
+        auto const maxi = static_cast<int32>(manager.get_var_count() - 1);
+        auto indexDist  = std::uniform_int_distribution<int32>(0u, maxi);
         auto const i1   = indexDist(this->rng());
         auto const i2   = [this, &indexDist, i1]()
         {
@@ -381,8 +381,8 @@ protected:
                 }
             }
         }();
-        auto const v1   = uint_t {0};
-        auto const v2   = uint_t {1};
+        auto const v1   = int32 {0};
+        auto const v2   = int32 {1};
         auto const dtmp = manager.cofactor(diagram, i1, v1);
         auto const d    = manager.cofactor(dtmp, i2, v2);
 
@@ -753,9 +753,9 @@ auto run_test_many(std::size_t const seed)
     };
 
 #ifdef LIBTEDDY_TESTS_USE_OMP
-    auto const numtest = static_cast<teddy::uint_t>(omp_get_num_procs());
+    auto const numtest = omp_get_num_procs();
 #else
-    auto const numtest = 10u;
+    auto const numtest = 10;
 #endif
 
     auto bddmts  = std::vector<teddy::test_bdd_manager>();
@@ -764,7 +764,7 @@ auto run_test_many(std::size_t const seed)
     auto ifmddts = std::vector<teddy::test_ifmdd_manager>();
     auto seeder  = std::mt19937_64(seed);
 
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
         bddmts.emplace_back(teddy::test_bdd_manager(seeder()));
         mddmts.emplace_back(teddy::test_mdd_manager(seeder()));
@@ -774,54 +774,54 @@ auto run_test_many(std::size_t const seed)
 
 #ifdef LIBTEDDY_TESTS_USE_OMP
 #pragma omp parallel for
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        bddmts[k].run();
+        bddmts[teddy::as_uindex(k)].run();
     }
     print_results(bddmts);
 
 #pragma omp parallel for
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        mddmts[k].run();
+        mddmts[teddy::as_uindex(k)].run();
     }
     print_results(mddmts);
 
 #pragma omp parallel for
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        imddts[k].run();
+        imddts[teddy::as_uindex(k)].run();
     }
     print_results(imddts);
 
 #pragma omp parallel for
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        ifmddts[k].run();
+        ifmddts[teddy::as_uindex(k)].run();
     }
     print_results(ifmddts);
 #else
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        bddmts[k].run();
+        bddmts[teddy::as_uindex(k)].run();
     }
     print_results(bddmts);
 
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        mddmts[k].run();
+        mddmts[teddy::as_uindex(k)].run();
     }
     print_results(mddmts);
 
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        imddts[k].run();
+        imddts[teddy::as_uindex(k)].run();
     }
     print_results(imddts);
 
-    for (auto k = 0u; k < numtest; ++k)
+    for (auto k = 0; k < numtest; ++k)
     {
-        ifmddts[k].run();
+        ifmddts[teddy::as_uindex(k)].run();
     }
     print_results(ifmddts);
 #endif

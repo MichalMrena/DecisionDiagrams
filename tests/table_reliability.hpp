@@ -4,6 +4,7 @@
 #include "truth_table.hpp"
 #include "truth_table_utils.hpp"
 
+#include <libteddy/details/types.hpp>
 #include <limits>
 #include <vector>
 
@@ -11,9 +12,9 @@ namespace teddy
 {
 struct var_change
 {
-    unsigned int index;
-    unsigned int from;
-    unsigned int to;
+    int32 index;
+    int32 from;
+    int32 to;
 };
 
 /**
@@ -22,7 +23,7 @@ struct var_change
 auto probability(
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
-    unsigned int j
+    int32 j
 ) -> double;
 
 /**
@@ -34,7 +35,7 @@ auto probability(
 auto availability(
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
-    unsigned int j
+    int32 j
 ) -> double;
 
 /**
@@ -46,7 +47,7 @@ auto availability(
 auto unavailability(
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
-    unsigned int j
+    int32 j
 ) -> double;
 
 /**
@@ -55,7 +56,7 @@ auto unavailability(
  *  \param j system state
  *  \return system state frequency
  */
-auto state_frequency(truth_table const& table, unsigned int j) -> double;
+auto state_frequency(truth_table const& table, int32 j) -> double;
 
 /**
  *  \brief Calculcates structural importance using \p dpld .
@@ -63,7 +64,7 @@ auto state_frequency(truth_table const& table, unsigned int j) -> double;
  *  \param i index of the variable
  *  \return structural importance
  */
-auto structural_importance(truth_table const& dpld, unsigned int i) -> double;
+auto structural_importance(truth_table const& dpld, int32 i) -> double;
 
 /**
  *  \brief Returns lambda that can be used in basic @c dpld .
@@ -145,11 +146,11 @@ inline static auto constexpr dpld_i_3_increase = [](auto const j)
 template<class F>
 auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
 {
-    auto dpbdvector = std::vector<unsigned int>(table.get_vector().size());
+    auto dpbdvector = std::vector<int32>(table.get_vector().size());
 
     domain_for_each(
         table,
-        [&, k = 0u, tmpelem = std::vector<unsigned int>()](
+        [&, k = 0u, tmpelem = std::vector<int32>()](
             auto const ffrom, auto const& elem
         ) mutable
         {

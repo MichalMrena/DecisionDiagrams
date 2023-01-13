@@ -12,32 +12,32 @@ domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({})
 {
 }
 
-domain_iterator::domain_iterator(std::vector<uint_t> domains)
+domain_iterator::domain_iterator(std::vector<int32> domains)
     : domain_iterator(
           std::move(domains),
-          utils::fill_vector(domains.size(), utils::identity),
+          utils::fill_vector(ssize(domains), utils::identity),
           {}
       )
 {
 }
 
 domain_iterator::domain_iterator(
-    std::vector<uint_t> domains, std::vector<index_t> order
+    std::vector<int32> domains, std::vector<int32> order
 )
     : domain_iterator(std::move(domains), std::move(order), {})
 {
 }
 
 domain_iterator::domain_iterator(
-    std::vector<uint_t> domains,
-    std::vector<index_t> order,
-    std::vector<std::pair<index_t, uint_t>> fixed
+    std::vector<int32> domains,
+    std::vector<int32> order,
+    std::vector<std::pair<int32, int32>> fixed
 )
     : domains_(std::move(domains)),
       indices_(
           [&order, &fixed]()
           {
-              auto is = std::vector<index_t>();
+              auto is = std::vector<int32>();
               std::ranges::copy_if(
                   order,
                   std::back_inserter(is),
@@ -60,10 +60,10 @@ domain_iterator::domain_iterator(
       varVals_(
           [this, &fixed, &domains]()
           {
-              auto vs = std::vector<uint_t>(domains_.size());
+              auto vs = std::vector<int32>(domains_.size());
               for (auto const& [i, v] : fixed)
               {
-                  varVals_[i] = v;
+                  varVals_[as_uindex(i)] = v;
               }
               return vs;
           }()
@@ -71,7 +71,7 @@ domain_iterator::domain_iterator(
 {
 }
 
-auto domain_iterator::operator*() const -> std::vector<uint_t> const&
+auto domain_iterator::operator*() const -> std::vector<int32> const&
 {
     return varVals_;
 }
@@ -82,11 +82,11 @@ auto domain_iterator::operator++() -> domain_iterator&
 
     for (auto const i : indices_)
     {
-        ++varVals_[i];
-        overflow = varVals_[i] == domains_[i];
+        ++varVals_[as_uindex(i)];
+        overflow = varVals_[as_uindex(i)] == domains_[as_uindex(i)];
         if (overflow)
         {
-            varVals_[i] = 0;
+            varVals_[as_uindex(i)] = 0;
         }
 
         if (not overflow)
@@ -151,7 +151,7 @@ evaluating_iterator<Expression>::evaluating_iterator(
 }
 
 template<class Expression>
-auto evaluating_iterator<Expression>::operator*() const -> uint_t
+auto evaluating_iterator<Expression>::operator*() const -> int32
 {
     return evaluate_expression(*expr_, *iterator_);
 }
@@ -189,7 +189,7 @@ auto evaluating_iterator<Expression>::operator!=(
 
 template<class Expression>
 auto evaluating_iterator<Expression>::var_vals() const
-    -> std::vector<uint_t> const&
+    -> std::vector<int32> const&
 {
     return *iterator_;
 }

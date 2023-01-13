@@ -33,28 +33,28 @@ protected:
         auto expected = std::vector<double>(m);
         auto actual   = std::vector<double>(m);
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             expected[j] = probability(table, ps, j);
         }
 
         manager.calculate_probabilities(ps, diagram);
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             actual[j] = manager.get_probability(j);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(actual[j], expected[j], 0.00000001);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             actual[j] = manager.probability(j, ps, diagram);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(actual[j], expected[j], 0.00000001);
         }
@@ -86,23 +86,23 @@ protected:
         auto expected = std::vector<double>(m);
         auto actual   = std::vector<double>(m);
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             expected[j] = availability(table, ps, j);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             actual[j] = manager.availability(j, ps, diagram);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(expected[j], actual[j], 0.00000001);
         }
 
         manager.calculate_probabilities(ps, diagram);
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             actual[j] = manager.get_availability(j);
         }
@@ -134,23 +134,23 @@ protected:
         auto expected = std::vector<double>(m);
         auto actual   = std::vector<double>(m);
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             expected[j] = unavailability(table, ps, j);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             actual[j] = manager.unavailability(j, ps, diagram);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(expected[j], actual[j], 0.00000001);
         }
 
         manager.calculate_probabilities(ps, diagram);
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             actual[j] = manager.get_unavailability(j);
         }
@@ -182,17 +182,17 @@ protected:
         auto expected = std::vector<double>(m);
         auto actual   = std::vector<double>(m);
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             expected[j] = state_frequency(table, j);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             actual[j] = manager.state_frequency(diagram, j);
         }
 
-        for (auto j = 0u; j < m; ++j)
+        for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(expected[j], actual[j], 0.00000001);
         }
@@ -249,14 +249,14 @@ protected:
             return std::to_string(x);
         };
 
-        auto const varindex = std::uniform_int_distribution<uint_t>(
-            0u, static_cast<uint_t>(manager.get_var_count() - 1)
+        auto const varindex = std::uniform_int_distribution<int32>(
+            0, static_cast<int32>(manager.get_var_count() - 1)
         )(this->rng());
         auto const vardomain = manager.get_domains()[varindex];
         auto const varfrom =
-            std::uniform_int_distribution<uint_t>(0, vardomain - 2)(this->rng()
+            std::uniform_int_distribution<int32>(0, vardomain - 2)(this->rng()
             );
-        auto const varto = std::uniform_int_distribution<uint_t>(
+        auto const varto = std::uniform_int_distribution<int32>(
             varfrom + 1, manager.get_domains()[varindex] - 1
         )(this->rng());
 
@@ -268,10 +268,10 @@ protected:
 
         // Basic DPLD
         {
-            auto const ffrom = std::uniform_int_distribution<uint_t>(
+            auto const ffrom = std::uniform_int_distribution<int32>(
                 0, table.get_max_val() - 1
             )(this->rng());
-            auto const fto = std::uniform_int_distribution<uint_t>(
+            auto const fto = std::uniform_int_distribution<int32>(
                 ffrom + 1, table.get_max_val()
             )(this->rng());
 
@@ -296,7 +296,7 @@ protected:
 
         // Integrated DPLD type I decrease
         {
-            auto const j = std::uniform_int_distribution<uint_t>(
+            auto const j = std::uniform_int_distribution<int32>(
                 1u, table.get_max_val()
             )(this->rng());
 
@@ -318,8 +318,8 @@ protected:
 
         // Integrated DPLD type I increase
         {
-            auto fvaldist = std::uniform_int_distribution<uint_t>(
-                0u, table.get_max_val() - 1
+            auto fvaldist = std::uniform_int_distribution<int32>(
+                0, table.get_max_val() - 1
             );
             auto const j = fvaldist(this->rng());
 
@@ -377,7 +377,7 @@ protected:
 
         // Integrated DPLD type III decrease
         {
-            auto const j = std::uniform_int_distribution<uint_t>(
+            auto const j = std::uniform_int_distribution<int32>(
                 1u, table.get_max_val()
             )(this->rng());
 
@@ -400,7 +400,7 @@ protected:
         // Integrated DPLD type III increase
         {
             auto fvaldist =
-                std::uniform_int_distribution<uint_t>(1u, table.get_max_val());
+                std::uniform_int_distribution<int32>(1u, table.get_max_val());
             auto const j = fvaldist(this->rng());
 
             this->info(
@@ -440,11 +440,11 @@ protected:
         auto table    = truth_table(make_vector(expr, domains), domains);
         auto const m  = std::ranges::max(manager.get_domains());
 
-        for (auto j = 1u; j < m; ++j)
+        for (auto j = 1; j < m; ++j)
         {
-            for (auto i = 0u; i < manager.get_var_count(); ++i)
+            for (auto i = 0; i < manager.get_var_count(); ++i)
             {
-                for (auto s = 1u; s < manager.get_domains()[i]; ++s)
+                for (auto s = 1; s < manager.get_domains()[i]; ++s)
                 {
                     auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
                     auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
@@ -596,19 +596,19 @@ auto run_test_one(std::size_t const seed)
 
     auto bssmt   = teddy::test_bss_manager(seed);
     bssmt.run();
-    rog::console_print_results(bssmt);
+    rog::console_print_results(bssmt, rog::ConsoleOutputType::NoLeaf);
 
     auto mssmt = teddy::test_mss_manager<M>(seed);
     mssmt.run();
-    rog::console_print_results(mssmt);
+    rog::console_print_results(mssmt, rog::ConsoleOutputType::NoLeaf);
 
     auto imssmt = teddy::test_imss_manager<M>(seed);
     imssmt.run();
-    rog::console_print_results(imssmt);
+    rog::console_print_results(imssmt, rog::ConsoleOutputType::NoLeaf);
 
     auto ifmssmt = teddy::test_ifmss_manager<M>(seed);
     ifmssmt.run();
-    rog::console_print_results(ifmssmt);
+    rog::console_print_results(ifmssmt, rog::ConsoleOutputType::NoLeaf);
 }
 
 auto main(int const argc, char** const argv) -> int

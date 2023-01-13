@@ -6,7 +6,7 @@
 
 namespace teddy
 {
-template<uint_t M>
+template<int32 M>
 struct plus_mod_t
 {
     template<class T>
@@ -16,7 +16,7 @@ struct plus_mod_t
     }
 };
 
-template<uint_t M>
+template<int32 M>
 struct multiplies_mod_t
 {
     template<class T>
@@ -152,11 +152,11 @@ struct pi_conj_t
     }
 };
 
-template<class BinOp, uint_t AbsorbingVal = Undefined>
+template<class BinOp, int32 AbsorbingVal = Undefined>
 struct bin_op_base
 {
-    [[nodiscard]] constexpr auto operator()(uint_t const lhs, uint_t const rhs)
-        const noexcept -> uint_t
+    [[nodiscard]] constexpr auto operator()(int32 const lhs, int32 const rhs)
+        const noexcept -> int32
     {
         if constexpr (AbsorbingVal != Undefined)
         {
@@ -171,7 +171,7 @@ struct bin_op_base
             return Nondetermined;
         }
 
-        return static_cast<uint_t>(BinOp()(lhs, rhs));
+        return static_cast<int32>(BinOp()(lhs, rhs));
     }
 };
 
@@ -187,7 +187,7 @@ auto constexpr apply_op_wrap = [](auto const& op)
         {
             return Nondetermined;
         }
-        return static_cast<uint_t>(op(l, r));
+        return static_cast<int32>(op(l, r));
     };
 };
 
@@ -258,12 +258,12 @@ struct MAX : bin_op_base<max_t>
 {
 };
 
-template<uint_t P>
+template<int32 P>
 struct PLUS : bin_op_base<plus_mod_t<P>>
 {
 };
 
-template<uint_t P>
+template<int32 P>
 struct MULTIPLIES : bin_op_base<multiplies_mod_t<P>, 0>
 {
 };
@@ -271,69 +271,69 @@ struct MULTIPLIES : bin_op_base<multiplies_mod_t<P>, 0>
 
 constexpr auto op_id(ops::AND)
 {
-    return uint_t {0};
+    return int32 {0};
 }
 constexpr auto op_id(ops::OR)
 {
-    return uint_t {1};
+    return int32 {1};
 }
 constexpr auto op_id(ops::XOR)
 {
-    return uint_t {2};
+    return int32 {2};
 }
 constexpr auto op_id(ops::PI_CONJ)
 {
-    return uint_t {3};
+    return int32 {3};
 }
 constexpr auto op_id(ops::NAND)
 {
-    return uint_t {4};
+    return int32 {4};
 }
 constexpr auto op_id(ops::NOR)
 {
-    return uint_t {5};
+    return int32 {5};
 }
 constexpr auto op_id(ops::EQUAL_TO)
 {
-    return uint_t {6};
+    return int32 {6};
 }
 constexpr auto op_id(ops::NOT_EQUAL_TO)
 {
-    return uint_t {7};
+    return int32 {7};
 }
 constexpr auto op_id(ops::LESS)
 {
-    return uint_t {8};
+    return int32 {8};
 }
 constexpr auto op_id(ops::LESS_EQUAL)
 {
-    return uint_t {9};
+    return int32 {9};
 }
 constexpr auto op_id(ops::GREATER)
 {
-    return uint_t {10};
+    return int32 {10};
 }
 constexpr auto op_id(ops::GREATER_EQUAL)
 {
-    return uint_t {11};
+    return int32 {11};
 }
 constexpr auto op_id(ops::MIN)
 {
-    return uint_t {12};
+    return int32 {12};
 }
 constexpr auto op_id(ops::MAX)
 {
-    return uint_t {13};
+    return int32 {13};
 }
-template<uint_t P>
+template<int32 P>
 constexpr auto op_id(ops::PLUS<P>)
 {
-    return uint_t {14};
+    return int32 {14};
 }
-template<uint_t P>
+template<int32 P>
 constexpr auto op_id(ops::MULTIPLIES<P>)
 {
-    return uint_t {15};
+    return int32 {15};
 }
 
 constexpr auto op_is_commutative(ops::AND)
@@ -392,12 +392,12 @@ constexpr auto op_is_commutative(ops::MAX)
 {
     return true;
 }
-template<uint_t P>
+template<int32 P>
 constexpr auto op_is_commutative(ops::PLUS<P>)
 {
     return true;
 }
-template<uint_t P>
+template<int32 P>
 constexpr auto op_is_commutative(ops::MULTIPLIES<P>)
 {
     return true;
@@ -407,7 +407,7 @@ template<class O>
 concept bin_op = requires(O o) {
                      {
                          op_id(o)
-                     } -> std::convertible_to<uint_t>;
+                     } -> std::convertible_to<int32>;
                      {
                          op_is_commutative(o)
                      } -> std::same_as<bool>;

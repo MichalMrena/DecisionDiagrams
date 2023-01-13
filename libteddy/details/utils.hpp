@@ -12,7 +12,7 @@
 namespace teddy::utils
 {
 template<class F>
-concept i_gen           = requires(F f, uint_t k) { std::invoke(f, k); };
+concept i_gen           = requires(F f, int32 k) { std::invoke(f, k); };
 
 auto constexpr identity = [](auto const a)
 {
@@ -33,12 +33,12 @@ auto constexpr constant = [](auto const c)
 };
 
 template<i_gen Gen>
-auto fill_vector(std::size_t const n, Gen&& f)
+auto fill_vector(int64 const n, Gen&& f)
 {
-    using T = decltype(std::invoke(f, uint_t {}));
+    using T = decltype(std::invoke(f, int32 {}));
     auto xs = std::vector<T>();
-    xs.reserve(n);
-    for (auto i = uint_t {0}; i < n; ++i)
+    xs.reserve(as_usize(n));
+    for (auto i = int32 {0}; i < n; ++i)
     {
         xs.emplace_back(std::invoke(f, i));
     }
@@ -52,7 +52,7 @@ auto fmap(I it, S last, F f)
     auto ys = std::vector<U>();
     if constexpr (std::random_access_iterator<I>)
     {
-        ys.reserve(static_cast<std::size_t>(std::distance(it, last)));
+        ys.reserve(as_usize(std::distance(it, last)));
     }
     while (it != last)
     {

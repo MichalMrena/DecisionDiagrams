@@ -20,16 +20,16 @@ public:
     using sons_t = typename node_t::sons_t;
 
 public:
-    node_pool(std::size_t mainPoolSize, std::size_t overflowPoolSize);
+    node_pool(int64 mainPoolSize, int64 overflowPoolSize);
     node_pool(node_pool const&) = delete;
     node_pool(node_pool&&);
     ~node_pool();
 
     auto operator=(node_pool) -> node_pool&;
 
-    auto available_node_count() const -> std::size_t;
+    auto available_node_count() const -> int64;
 
-    auto main_pool_size() const -> std::size_t;
+    auto main_pool_size() const -> int64;
 
     template<class... Args>
     [[nodiscard]] auto create(Args&&...) -> node_t*;
@@ -44,27 +44,27 @@ private:
 
     auto swap(node_pool&) -> void;
 
-    static auto allocate_pool(std::size_t) -> node_t*;
+    static auto allocate_pool(int64) -> node_t*;
     static auto deallocate_pool(node_t*) -> void;
 
 private:
     node_t* mainPool_;
     std::vector<node_t*> overflowPools_;
     node_t* freeNodeList_;
-    std::size_t currentPoolIndex_;
-    std::size_t nextPoolNodeIndex_;
-    std::size_t mainPoolSize_;
-    std::size_t overflowPoolSize_;
-    std::size_t availableNodes_;
+    int64 currentPoolIndex_;
+    int64 nextPoolNodeIndex_;
+    int64 mainPoolSize_;
+    int64 overflowPoolSize_;
+    int64 availableNodes_;
 };
 
 template<class Data, degree D>
 node_pool<Data, D>::node_pool(
-    std::size_t const mainPoolSize, std::size_t const overflowPoolSize
+    int64 const mainPoolSize, int64 const overflowPoolSize
 )
     : mainPool_(allocate_pool(mainPoolSize)), overflowPools_({}),
       freeNodeList_(nullptr),
-      currentPoolIndex_(std::numeric_limits<std::size_t>::max()),
+      currentPoolIndex_(std::numeric_limits<int64>::max()),
       nextPoolNodeIndex_(0), mainPoolSize_(mainPoolSize),
       overflowPoolSize_(overflowPoolSize), availableNodes_(mainPoolSize)
 {
@@ -92,17 +92,17 @@ node_pool<Data, D>::~node_pool()
     if (this->current_pool() != mainPool_)
     {
         // Destroy main pool.
-        for (auto i = 0ull; i < mainPoolSize_; ++i)
+        for (auto i = int64(0); i < mainPoolSize_; ++i)
         {
             std::destroy_at(mainPool_ + i);
         }
         deallocate_pool(mainPool_);
 
         // Destroy other fully used pools.
-        for (auto i = 0ull; i < currentPoolIndex_; ++i)
+        for (auto i = int64(0); i < currentPoolIndex_; ++i)
         {
-            auto const pool = overflowPools_[i];
-            for (auto k = 0ull; k < overflowPoolSize_; ++k)
+            auto const pool = overflowPools_[as_uindex(i)];
+            for (auto k = int64(0); k < overflowPoolSize_; ++k)
             {
                 std::destroy_at(pool + k);
             }
@@ -112,7 +112,7 @@ node_pool<Data, D>::~node_pool()
 
     // Destroy current partially used pool (main or overflow).
     auto const pool = this->current_pool();
-    for (auto k = 0ull; k < nextPoolNodeIndex_; ++k)
+    for (auto k = int64(0); k < nextPoolNodeIndex_; ++k)
     {
         std::destroy_at(pool + k);
     }
@@ -127,13 +127,13 @@ auto node_pool<Data, D>::operator=(node_pool other) -> node_pool&
 }
 
 template<class Data, degree D>
-auto node_pool<Data, D>::available_node_count() const -> std::size_t
+auto node_pool<Data, D>::available_node_count() const -> int64
 {
     return availableNodes_;
 }
 
 template<class Data, degree D>
-auto node_pool<Data, D>::main_pool_size() const -> std::size_t
+auto node_pool<Data, D>::main_pool_size() const -> int64
 {
     return mainPoolSize_;
 }
@@ -179,7 +179,7 @@ auto node_pool<Data, D>::grow() -> void
     );
 
     overflowPools_.emplace_back(allocate_pool(overflowPoolSize_));
-    currentPoolIndex_  = overflowPools_.size() - 1ull;
+    currentPoolIndex_  = ssize(overflowPools_) - 1;
     nextPoolNodeIndex_ = 0ull;
     availableNodes_ += overflowPoolSize_;
 }
@@ -188,7 +188,7 @@ template<class Data, degree D>
 auto node_pool<Data, D>::current_pool() const -> node_t*
 {
     return overflowPools_.empty() ? mainPool_
-                                  : overflowPools_[currentPoolIndex_];
+                                  : overflowPools_[as_uindex(currentPoolIndex_)];
 }
 
 template<class Data, degree D>
@@ -196,7 +196,7 @@ auto node_pool<Data, D>::current_pool_end() const -> node_t*
 {
     return overflowPools_.empty()
                ? mainPool_ + mainPoolSize_
-               : overflowPools_[currentPoolIndex_] + overflowPoolSize_;
+               : overflowPools_[as_uindex(currentPoolIndex_)] + overflowPoolSize_;
 }
 
 template<class Data, degree D>
@@ -214,9 +214,9 @@ auto node_pool<Data, D>::swap(node_pool& other) -> void
 }
 
 template<class Data, degree D>
-auto node_pool<Data, D>::allocate_pool(std::size_t const size) -> node_t*
+auto node_pool<Data, D>::allocate_pool(int64 const size) -> node_t*
 {
-    return static_cast<node_t*>(::operator new(size * sizeof(node_t)));
+    return static_cast<node_t*>(::operator new(as_usize(size) * sizeof(node_t)));
 }
 
 template<class Data, degree D>

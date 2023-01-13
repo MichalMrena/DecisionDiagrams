@@ -10,38 +10,38 @@ namespace teddy
 
 auto make_minmax_expression(
     std::mt19937_64& indexRng,
-    std::size_t const varCount,
-    std::size_t const termCount,
-    std::size_t const termSize
+    int32 const varCount,
+    int32 const termCount,
+    int32 const termSize
 ) -> minmax_expr
 {
     assert(varCount > 0);
-    auto const indexFrom = index_t(0);
-    auto const indexTo   = static_cast<index_t>(varCount - 1u);
-    auto indexDst = std::uniform_int_distribution<index_t>(indexFrom, indexTo);
-    auto terms    = std::vector<std::vector<uint_t>>(termCount);
+    auto const indexFrom = 0;
+    auto const indexTo   = varCount - 1;
+    auto indexDst = std::uniform_int_distribution<int32>(indexFrom, indexTo);
+    auto terms    = std::vector<std::vector<int32>>(as_usize(termCount));
 
-    for (auto t = 0u; t < termCount; ++t)
+    for (auto t = 0; t < termCount; ++t)
     {
-        for (auto k = 0u; k < termSize; ++k)
+        for (auto k = 0; k < termSize; ++k)
         {
-            terms[t].emplace_back(indexDst(indexRng));
+            terms[as_uindex(t)].emplace_back(indexDst(indexRng));
         }
     }
 
     return minmax_expr {std::move(terms)};
 }
 
-auto evaluate_expression(minmax_expr const& expr, std::vector<uint_t> const& vs)
-    -> uint_t
+auto evaluate_expression(minmax_expr const& expr, std::vector<int32> const& vs)
+    -> int32
 {
-    auto totalMaxVal = std::numeric_limits<uint_t>::min();
+    auto totalMaxVal = std::numeric_limits<int32>::min();
     for (auto const& term : expr.terms_)
     {
-        auto termMinVal = std::numeric_limits<uint_t>::max();
+        auto termMinVal = std::numeric_limits<int32>::max();
         for (auto const var : term)
         {
-            auto const val = vs[var];
+            auto const val = vs[as_uindex(var)];
             termMinVal     = val < termMinVal ? val : termMinVal;
         }
         totalMaxVal = termMinVal > totalMaxVal ? termMinVal : totalMaxVal;
@@ -58,20 +58,20 @@ expr_node::operation_t::operation_t(
 {
 }
 
-expr_node::variable_t::variable_t(index_t const i) : i_(i)
+expr_node::variable_t::variable_t(int32 const i) : i_(i)
 {
 }
 
-expr_node::constant_t::constant_t(uint_t const c) : c_(c)
+expr_node::constant_t::constant_t(int32 const c) : c_(c)
 {
 }
 
-expr_node::expr_node(expr_node_variable, index_t const i)
+expr_node::expr_node(expr_node_variable, int32 const i)
     : data_(std::in_place_type<variable_t>, i)
 {
 }
 
-expr_node::expr_node(expr_node_constant, uint_t const c)
+expr_node::expr_node(expr_node_constant, int32 const c)
     : data_(std::in_place_type<constant_t>, c)
 {
 }
@@ -101,17 +101,17 @@ auto expr_node::is_operation() const -> bool
     return std::holds_alternative<operation_t>(data_);
 }
 
-auto expr_node::get_index() const -> index_t
+auto expr_node::get_index() const -> int32
 {
     return std::get<variable_t>(data_).i_;
 }
 
-auto expr_node::get_value() const -> uint_t
+auto expr_node::get_value() const -> int32
 {
     return std::get<constant_t>(data_).c_;
 }
 
-auto expr_node::evaluate(uint_t const l, uint_t const r) const -> uint_t
+auto expr_node::evaluate(int32 const l, int32 const r) const -> int32
 {
     switch (std::get<operation_t>(data_).op_)
     {
@@ -138,7 +138,7 @@ auto expr_node::get_right() const -> expr_node const&
 }
 
 auto make_expression_tree(
-    std::size_t varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
+    int32 varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>
 {
     auto go = [&, i = 0u](auto& self, auto const n) mutable
@@ -149,10 +149,10 @@ auto make_expression_tree(
         }
         else
         {
-            auto denomdist     = std::uniform_int_distribution<uint_t>(2, 10);
+            auto denomdist     = std::uniform_int_distribution<int32>(2, 10);
             auto typedist      = std::uniform_real_distribution(0.0, 1.0);
             auto const denom   = denomdist(rngbranch);
-            auto const lhssize = std::max(1ul, n / denom);
+            auto const lhssize = std::max(1, n / denom);
             auto const rhssize = n - lhssize;
             auto const p       = typedist(rngtype);
             auto const op = p < 0.5 ? operation_type::Min : operation_type::Max;
@@ -167,14 +167,14 @@ auto make_expression_tree(
     return go(go, varcount);
 }
 
-auto evaluate_expression(expr_node const& expr, std::vector<uint_t> const& vs)
-    -> uint_t
+auto evaluate_expression(expr_node const& expr, std::vector<int32> const& vs)
+    -> int32
 {
     auto const go = [&vs](auto self, auto const& node)
     {
         if (node.is_variable())
         {
-            return vs[node.get_index()];
+            return vs[as_uindex(node.get_index())];
         }
         else if (node.is_constant())
         {

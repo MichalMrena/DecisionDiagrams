@@ -32,7 +32,7 @@ struct default_order_tag
  */
 struct given_order_tag
 {
-    std::vector<index_t> order_;
+    std::vector<int32> order_;
 };
 
 /**
@@ -47,7 +47,7 @@ struct random_domains
  */
 struct given_domains
 {
-    std::vector<index_t> domains_;
+    std::vector<int32> domains_;
 };
 
 /**
@@ -55,15 +55,15 @@ struct given_domains
  */
 struct manager_settings
 {
-    uint_t varcount_;
-    uint_t nodecount_;
+    int32 varcount_;
+    int32 nodecount_;
     std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
 };
 
 /**
  *  \brief Settings common for managers of nonhomogeneous functions / systems.
  */
-template<uint_t M>
+template<int32 M>
 struct nonhomogeneous_manager_settings : manager_settings
 {
     std::variant<random_domains, given_domains> domains_;
@@ -79,7 +79,7 @@ struct bdd_manager_settings : manager_settings
 /**
  *  \brief Describes how to initialize a mdd_manager.
  */
-template<uint_t M>
+template<int32 M>
 struct mdd_manager_settings : manager_settings
 {
 };
@@ -87,7 +87,7 @@ struct mdd_manager_settings : manager_settings
 /**
  *  \brief Describes how to initialize imdd_manager.
  */
-template<uint_t M>
+template<int32 M>
 struct imdd_manager_settings : nonhomogeneous_manager_settings<M>
 {
 };
@@ -95,7 +95,7 @@ struct imdd_manager_settings : nonhomogeneous_manager_settings<M>
 /**
  *  \brief Describes how to initialize a ifmdd_manager.
  */
-template<uint_t M>
+template<int32 M>
 struct ifmdd_manager_settings : nonhomogeneous_manager_settings<M>
 {
 };
@@ -110,7 +110,7 @@ struct bss_manager_settings : manager_settings
 /**
  *  \brief Describes how to initialize a mss_manager.
  */
-template<uint_t M>
+template<int32 M>
 struct mss_manager_settings : manager_settings
 {
 };
@@ -118,7 +118,7 @@ struct mss_manager_settings : manager_settings
 /**
  *  \brief Describes how to initialize imss_manager.
  */
-template<uint_t M>
+template<int32 M>
 struct imss_manager_settings : nonhomogeneous_manager_settings<M>
 {
 };
@@ -126,7 +126,7 @@ struct imss_manager_settings : nonhomogeneous_manager_settings<M>
 /**
  *  \brief Describes how to initialize a ifmss_manager.
  */
-template<uint_t M>
+template<int32 M>
 struct ifmss_manager_settings : nonhomogeneous_manager_settings<M>
 {
 };
@@ -136,8 +136,8 @@ struct ifmss_manager_settings : nonhomogeneous_manager_settings<M>
  */
 struct minmax_expression_settings
 {
-    uint_t termcount_;
-    uint_t termsize_;
+    int32 termcount_;
+    int32 termsize_;
 };
 
 /**
@@ -169,7 +169,7 @@ struct match : Ts...
 };
 
 inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
-    -> std::vector<index_t>
+    -> std::vector<int32>
 {
     return std::visit(
         match {
@@ -195,16 +195,16 @@ inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes domains for a manager.
  */
-template<uint_t M>
+template<int32 M>
 auto make_domains(
     nonhomogeneous_manager_settings<M> const& s, std::mt19937_64& rng
-) -> std::vector<index_t>
+) -> std::vector<int32>
 {
     return std::visit(
         match {
             [&](random_domains)
             {
-                auto dist = std::uniform_int_distribution<uint_t>(2u, M);
+                auto dist = std::uniform_int_distribution<int32>(2u, M);
                 return utils::fill_vector(
                     s.varcount_,
                     [&rng, &dist](auto)
@@ -233,7 +233,7 @@ inline auto make_manager(bdd_manager_settings const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes MDD manager.
  */
-template<uint_t M>
+template<int32 M>
 auto make_manager(mdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> mdd_manager<M>
 {
@@ -243,7 +243,7 @@ auto make_manager(mdd_manager_settings<M> const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes iMDD manager.
  */
-template<uint_t M>
+template<int32 M>
 auto make_manager(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> imdd_manager
 {
@@ -255,7 +255,7 @@ auto make_manager(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes ifMDD manager.
  */
-template<uint_t M>
+template<int32 M>
 auto make_manager(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> ifmdd_manager<M>
 {
@@ -276,7 +276,7 @@ inline auto make_manager(bss_manager_settings const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes mss_manager.
  */
-template<uint_t M>
+template<int32 M>
 auto make_manager(mss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> mss_manager<M>
 {
@@ -286,7 +286,7 @@ auto make_manager(mss_manager_settings<M> const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes imss_manager.
  */
-template<uint_t M>
+template<int32 M>
 auto make_manager(imss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> imss_manager
 {
@@ -298,7 +298,7 @@ auto make_manager(imss_manager_settings<M> const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes ifmss_manager.
  */
-template<uint_t M>
+template<int32 M>
 auto make_manager(ifmss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> ifmss_manager<M>
 {
@@ -366,7 +366,7 @@ auto make_diagram(
  *  \brief Makes minmax expression with given settings.
  */
 inline auto make_expression(
-    uint_t const varcount,
+    int32 const varcount,
     minmax_expression_settings const& s,
     std::mt19937_64& rng
 ) -> minmax_expr
@@ -378,7 +378,7 @@ inline auto make_expression(
  *  \brief Makes expression tree with given settings.
  */
 inline auto make_expression(
-    uint_t const varcount, expression_tree_settings const&, std::mt19937_64& rng
+    int32 const varcount, expression_tree_settings const&, std::mt19937_64& rng
 ) -> std::unique_ptr<expr_node>
 {
     return make_expression_tree(varcount, rng, rng);
@@ -423,11 +423,11 @@ auto make_probabilities(
 
 inline auto make_vector(
     std::unique_ptr<expr_node> const& root,
-    std::vector<unsigned int> const& domains
-) -> std::vector<unsigned int>
+    std::vector<int32> const& domains
+) -> std::vector<int32>
 {
     auto k      = 0ul;
-    auto vector = std::vector<unsigned int>(
+    auto vector = std::vector<int32>(
         std::reduce(begin(domains), end(domains), 1ul, std::multiplies<>())
     );
     auto domainit = domain_iterator(domains);

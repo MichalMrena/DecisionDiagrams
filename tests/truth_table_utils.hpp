@@ -12,19 +12,19 @@ namespace teddy
  */
 template<class F>
 auto domain_for_each(
-    std::size_t const varcount,
-    std::vector<unsigned int> const& vector,
-    std::vector<unsigned int> const& domains,
+    int32 const varcount,
+    std::vector<int32> const& vector,
+    std::vector<int32> const& domains,
     F f
 ) -> void
 {
-    auto element = std::vector<unsigned int>(varcount, 0);
+    auto element = std::vector<int32>(varcount, 0);
     auto wasLast = false;
-    auto k       = 0u;
+    auto k       = 0;
     do
     {
         // Invoke f.
-        std::invoke(f, vector[k], element);
+        std::invoke(f, vector[as_uindex(k)], element);
 
         // Move to the next element of the domain.
         auto overflow = true;
@@ -32,11 +32,11 @@ auto domain_for_each(
         while (i > 0 && overflow)
         {
             --i;
-            ++element[i];
-            overflow = element[i] == domains[i];
+            ++element[as_uindex(i)];
+            overflow = element[as_uindex(i)] == domains[as_uindex(i)];
             if (overflow)
             {
-                element[i] = 0;
+                element[as_uindex(i)] = 0;
             }
         }
 
@@ -60,14 +60,14 @@ auto domain_for_each(truth_table const& table, F f) -> void
  *  \brief Maps values of variables to index in the vector.
  */
 inline auto to_index(
-    truth_table const& table, std::vector<unsigned int> const& vars
-) -> unsigned int
+    truth_table const& table, std::vector<int32> const& vars
+) -> int32
 {
-    assert(vars.size() == table.get_var_count());
-    auto index = 0u;
-    for (auto i = 0u; i < table.get_var_count(); ++i)
+    assert(ssize(vars) == table.get_var_count());
+    auto index = 0;
+    for (auto i = 0; i < table.get_var_count(); ++i)
     {
-        index += vars[i] * table.get_offsets()[i];
+        index += vars[as_uindex(i)] * table.get_offsets()[as_uindex(i)];
     }
     return index;
 }

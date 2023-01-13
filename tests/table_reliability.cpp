@@ -8,7 +8,7 @@ namespace teddy
 auto probability(
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
-    unsigned int j
+    int32 j
 ) -> double
 {
     auto totalprob = 0.0;
@@ -35,7 +35,7 @@ auto probability(
 auto availability(
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
-    unsigned int j
+    int32 j
 ) -> double
 {
     auto a = 0.0;
@@ -50,7 +50,7 @@ auto availability(
 auto unavailability(
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
-    unsigned int j
+    int32 j
 ) -> double
 {
     auto u = 0.0;
@@ -62,13 +62,13 @@ auto unavailability(
     return u;
 }
 
-auto state_frequency(truth_table const& table, unsigned int j) -> double
+auto state_frequency(truth_table const& table, int32 j) -> double
 {
     return static_cast<double>(satisfy_count(table, j)) /
            static_cast<double>(domain_size(table));
 }
 
-auto structural_importance(truth_table const& dpld, unsigned int i) -> double
+auto structural_importance(truth_table const& dpld, int32 i) -> double
 {
     auto const& ds = dpld.get_domains();
     auto const domainsize = std::reduce(begin(ds), end(ds), 1ull, std::multiplies<>());

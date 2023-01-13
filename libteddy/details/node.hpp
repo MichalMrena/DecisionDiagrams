@@ -37,7 +37,7 @@ struct mixed
 {
 };
 
-template<uint_t N>
+template<int32 N>
 struct fixed
 {
     static_assert(N > 1);
@@ -52,7 +52,7 @@ struct is_fixed : public std::false_type
 {
 };
 
-template<uint_t N>
+template<int32 N>
 struct is_fixed<fixed<N>> : public std::true_type
 {
 };
@@ -68,18 +68,18 @@ template<class Data, degree D>
 class node
 {
 public:
-    template<uint_t N>
-    static auto container(uint_t, degrees::fixed<N>) -> std::array<node*, N>;
+    // TODO rename to make_container
+    template<int32 N>
+    static auto container(int32, degrees::fixed<N>) -> std::array<node*, as_usize(N)>;
 
-    static auto container(uint_t, degrees::mixed) -> std::unique_ptr<node*[]>;
-
-public:
-    using sons_t = decltype(container(uint_t {}, D()));
-    using bits_t = unsigned int;
+    static auto container(int32, degrees::mixed) -> std::unique_ptr<node*[]>;
 
 public:
-    explicit node(uint_t);
-    node(index_t, sons_t&&);
+    using sons_t = decltype(container(int32 {}, D()));
+
+public:
+    explicit node(int32);
+    node(int32, sons_t&&);
     node(node const&) = delete;
     node(node&&)      = delete;
     // ~node () = default; // TODO zatial nefunguje v clangu
@@ -106,15 +106,15 @@ public:
     auto toggle_marked() -> void;
     auto set_marked() -> void;
     auto set_notmarked() -> void;
-    auto get_ref_count() const -> uint_t;
+    auto get_ref_count() const -> int32;
     auto inc_ref_count() -> void;
     auto dec_ref_count() -> void;
-    auto get_index() const -> index_t;
-    auto set_index(index_t) -> void;
+    auto get_index() const -> int32;
+    auto set_index(int32) -> void;
     auto get_sons() const -> sons_t const&;
-    auto get_son(uint_t) const -> node*;
+    auto get_son(int32) const -> node*;
     auto set_sons(sons_t) -> void;
-    auto get_value() const -> uint_t;
+    auto get_value() const -> int32;
 
 private:
     // TODO: c++20, constructors not necessary
@@ -122,16 +122,16 @@ private:
     struct internal
     {
         sons_t sons;
-        index_t index;
-        internal(sons_t ss, index_t i) : sons {std::move(ss)}, index {i}
+        int32 index;
+        internal(sons_t ss, int32 i) : sons {std::move(ss)}, index {i}
         {
         }
     };
 
     struct terminal
     {
-        uint_t value;
-        terminal(uint_t const v) : value {v}
+        int32 value;
+        terminal(int32 const v) : value {v}
         {
         }
     };
@@ -145,9 +145,9 @@ private:
     auto is_or_was_internal() const -> bool;
 
 private:
-    inline static constexpr auto MarkM   = 1u << (8 * sizeof(bits_t) - 1);
-    inline static constexpr auto UsedM   = 1u << (8 * sizeof(bits_t) - 2);
-    inline static constexpr auto LeafM   = 1u << (8 * sizeof(bits_t) - 3);
+    inline static constexpr auto MarkM   = 1u << (8 * sizeof(uint32) - 1);
+    inline static constexpr auto UsedM   = 1u << (8 * sizeof(uint32) - 2);
+    inline static constexpr auto LeafM   = 1u << (8 * sizeof(uint32) - 3);
     inline static constexpr auto RefsM   = ~(MarkM | UsedM | LeafM);
     inline static constexpr auto RefsMax = ~RefsM;
 
@@ -155,33 +155,33 @@ private:
     alignas(internal) std::byte union_[sizeof(internal)];
     [[no_unique_address]] opt_member<Data> data_;
     node* next_;
-    bits_t bits_;
+    uint32 bits_;
 };
 
 template<class Data, degree D>
-template<uint_t N>
-auto node<Data, D>::container(uint_t, degrees::fixed<N>) -> std::array<node*, N>
+template<int32 N>
+auto node<Data, D>::container(int32, degrees::fixed<N>) -> std::array<node*, as_usize(N)>
 {
-    return std::array<node*, N>();
+    return std::array<node*, as_usize(N)>();
 }
 
 template<class Data, degree D>
-auto node<Data, D>::container(uint_t const domain, degrees::mixed)
+auto node<Data, D>::container(int32 const domain, degrees::mixed)
     -> std::unique_ptr<node*[]>
 {
     // Not supported yet.
     // return std::make_unique_for_overwrite<node*[]>(domain);
-    return std::make_unique<node*[]>(domain);
+    return std::make_unique<node*[]>(as_usize(domain));
 }
 
 template<class Data, degree D>
-node<Data, D>::node(uint_t const i) : next_ {nullptr}, bits_ {LeafM | UsedM}
+node<Data, D>::node(int32 const i) : next_ {nullptr}, bits_ {LeafM | UsedM}
 {
     std::construct_at(this->union_terminal(), i);
 }
 
 template<class Data, degree D>
-node<Data, D>::node(index_t const i, sons_t&& sons)
+node<Data, D>::node(int32 const i, sons_t&& sons)
     : next_ {nullptr}, bits_ {UsedM}
 {
     std::construct_at(this->union_internal(), std::move(sons), i);
@@ -243,9 +243,9 @@ auto node<Data, D>::get_sons() const -> sons_t const&
 }
 
 template<class Data, degree D>
-auto node<Data, D>::get_son(uint_t const k) const -> node*
+auto node<Data, D>::get_son(int32 const k) const -> node*
 {
-    return (this->union_internal()->sons)[k];
+    return (this->union_internal()->sons)[as_uindex(k)];
 }
 
 template<class Data, degree D>
@@ -256,7 +256,7 @@ auto node<Data, D>::set_sons(sons_t ss) -> void
 }
 
 template<class Data, degree D>
-auto node<Data, D>::get_value() const -> uint_t
+auto node<Data, D>::get_value() const -> int32
 {
     return this->union_terminal()->value;
 }
@@ -310,9 +310,9 @@ auto node<Data, D>::set_notmarked() -> void
 }
 
 template<class Data, degree D>
-auto node<Data, D>::get_ref_count() const -> uint_t
+auto node<Data, D>::get_ref_count() const -> int32
 {
-    return static_cast<uint_t>(bits_ & RefsM);
+    return static_cast<int32>(bits_ & RefsM);
 }
 
 template<class Data, degree D>
@@ -330,13 +330,13 @@ auto node<Data, D>::dec_ref_count() -> void
 }
 
 template<class Data, degree D>
-auto node<Data, D>::get_index() const -> index_t
+auto node<Data, D>::get_index() const -> int32
 {
     return this->union_internal()->index;
 }
 
 template<class Data, degree D>
-auto node<Data, D>::set_index(index_t const i) -> void
+auto node<Data, D>::set_index(int32 const i) -> void
 {
     this->union_internal()->index = i;
 }

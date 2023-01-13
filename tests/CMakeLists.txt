@@ -90,16 +90,16 @@ PRIVATE
     rog::librog
 )
 
-target_compile_options(
-        libteddy-test-reliability
-    PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-        -Wconversion
-        -Wsign-conversion
-        -Wshadow
-)
+# target_compile_options(
+#         libteddy-test-reliability
+#     PRIVATE
+#         -Wall
+#         -Wextra
+#         -Wpedantic
+#         -Wconversion
+#         -Wsign-conversion
+#         -Wshadow
+# )
 
 target_compile_features(
         libteddy-test-reliability

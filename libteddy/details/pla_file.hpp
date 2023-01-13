@@ -6,6 +6,7 @@
 #include <cctype>
 #include <cstdint>
 #include <fstream>
+#include <libteddy/details/debug.hpp>
 #include <libteddy/details/types.hpp>
 #include <libteddy/details/utils.hpp>
 #include <optional>
@@ -22,14 +23,14 @@ namespace teddy
 class cube_t
 {
 public:
-    inline static constexpr auto Undefined = std::uint8_t(0b11);
+    inline static constexpr auto DontCare = std::uint8_t(0b11);
 
 public:
-    cube_t(std::size_t);
+    cube_t(int32 size);
 
-    auto size() const -> std::size_t;
-    auto get(std::size_t) const -> unsigned int;
-    auto set(std::size_t, uint_t) -> void;
+    auto size() const -> int32;
+    auto get(int32 i) const -> int32;
+    auto set(int32 i, int32 val) -> void;
 
 private:
     struct byte
@@ -41,7 +42,7 @@ private:
     };
 
 private:
-    std::size_t size_;
+    int32 size_;
     std::vector<byte> values_;
 };
 
@@ -74,13 +75,13 @@ public:
      *  \brief Returns number of variables in the file.
      *  \return Number of variables.
      */
-    auto variable_count() const -> std::size_t;
+    auto variable_count() const -> int32;
 
     /**
      *  \brief Returns number of functions in the file.
      *  \return Number of functions.
      */
-    auto function_count() const -> std::size_t;
+    auto function_count() const -> int32;
 
     /**
      *  \brief Returns number of lines in the file
@@ -89,7 +90,7 @@ public:
      *
      *  \return Number of lines.
      */
-    auto line_count() const -> std::size_t;
+    auto line_count() const -> int64;
 
     /**
      *  \brief Returns reference to a vector holding lines.
@@ -144,50 +145,55 @@ private:
 
 // cube_t definitions:
 
-inline cube_t::cube_t(std::size_t const size)
-    : size_(size), values_(size / 4 + 1, byte {0, 0, 0, 0})
+inline cube_t::cube_t(int32 const size)
+    : size_(size),
+      values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0})
 {
 }
 
-inline auto cube_t::size() const -> std::size_t
+inline auto cube_t::size() const -> int32
 {
     return size_;
 }
 
-inline auto cube_t::get(std::size_t const i) const -> unsigned int
+inline auto cube_t::get(int32 const i) const -> int32
 {
-    assert(i < size_);
+    auto const byteIndex = i / 4;
+    debug::assert_in_range(byteIndex, ssize(values_));
+    auto const uByteIndex = as_uindex(byteIndex);
     switch (i % 4)
     {
     case 0:
-        return values_[i / 4].b0;
+        return values_[uByteIndex].b0;
     case 1:
-        return values_[i / 4].b1;
+        return values_[uByteIndex].b1;
     case 2:
-        return values_[i / 4].b2;
+        return values_[uByteIndex].b2;
     case 3:
-        return values_[i / 4].b3;
+        return values_[uByteIndex].b3;
     }
-    return static_cast<uint_t>(-1);
+    return -1;
 }
 
-inline auto cube_t::set(std::size_t const i, uint_t const val) -> void
+inline auto cube_t::set(int32 const i, int32 const val) -> void
 {
-    assert(i < size_);
-    assert(val < 4);
+    auto const byteIndex = i / 4;
+    debug::assert_in_range(byteIndex, ssize(values_));
+    debug::assert_true(val == 0 || val == 1 || val == DontCare);
+    auto const uByteIndex = as_uindex(byteIndex);
     switch (i % 4)
     {
     case 0:
-        values_[i / 4].b0 = val & 0b11;
+        values_[uByteIndex].b0 = val & 0b11;
         break;
     case 1:
-        values_[i / 4].b1 = val & 0b11;
+        values_[uByteIndex].b1 = val & 0b11;
         break;
     case 2:
-        values_[i / 4].b2 = val & 0b11;
+        values_[uByteIndex].b2 = val & 0b11;
         break;
     case 3:
-        values_[i / 4].b3 = val & 0b11;
+        values_[uByteIndex].b3 = val & 0b11;
         break;
     }
 }
@@ -288,18 +294,18 @@ inline auto pla_file::load_file(std::string const& path)
         return std::nullopt;
     }
 
-    auto const varCount  = utils::parse<std::size_t>(varCountIt->second);
-    auto const fCount    = utils::parse<std::size_t>(fCountIt->second);
-    auto const lineCount = utils::parse<std::size_t>(lineCountIt->second);
+    auto const varCount  = utils::parse<int32>(varCountIt->second);
+    auto const fCount    = utils::parse<int32>(fCountIt->second);
+    auto const lineCount = utils::parse<int64>(lineCountIt->second);
 
-    if (not varCount or not fCount or not lineCount)
+    if (not varCount || not fCount || not lineCount)
     {
         return std::nullopt;
     }
 
     // Read data.
     auto lines = std::vector<pla_file::pla_line>();
-    lines.reserve(*lineCount);
+    lines.reserve(as_usize(*lineCount));
     do
     {
         auto const first =
@@ -328,16 +334,16 @@ inline auto pla_file::load_file(std::string const& path)
         auto const vars    = std::string(first, varsLast);
         auto const fs      = std::string(fsFirst, fsLast);
 
-        if (vars.size() != *varCount or fs.size() != *fCount)
+        if (ssize(vars) != *varCount || ssize(fs) != *fCount)
         {
             return std::nullopt;
         }
 
         // Parse variables into cube.
         auto variables = cube_t(*varCount);
-        for (auto i = 0ul; i < *varCount; ++i)
+        for (auto i = 0; i < *varCount; ++i)
         {
-            switch (vars[i])
+            switch (vars[as_uindex(i)])
             {
             case '0':
                 variables.set(i, 0u);
@@ -347,7 +353,7 @@ inline auto pla_file::load_file(std::string const& path)
                 break;
             case '~':
             case '-':
-                variables.set(i, cube_t::Undefined);
+                variables.set(i, cube_t::DontCare);
                 break;
             default:
                 return std::nullopt;
@@ -356,9 +362,9 @@ inline auto pla_file::load_file(std::string const& path)
 
         // Parse functions into cube.
         auto functions = cube_t(*fCount);
-        for (auto i = 0u; i < *fCount; ++i)
+        for (auto i = 0; i < *fCount; ++i)
         {
-            switch (fs[i])
+            switch (fs[as_uindex(i)])
             {
             case '0':
                 functions.set(i, 0u);
@@ -368,7 +374,7 @@ inline auto pla_file::load_file(std::string const& path)
                 break;
             case '-':
             case '~':
-                functions.set(i, cube_t::Undefined);
+                functions.set(i, cube_t::DontCare);
                 break;
             default:
                 return std::nullopt;
@@ -403,19 +409,19 @@ inline pla_file::pla_file(
 {
 }
 
-inline auto pla_file::variable_count() const -> std::size_t
+inline auto pla_file::variable_count() const -> int32
 {
-    return static_cast<index_t>(lines_.front().cube.size());
+    return lines_.front().cube.size();
 }
 
-inline auto pla_file::function_count() const -> std::size_t
+inline auto pla_file::function_count() const -> int32
 {
-    return static_cast<index_t>(lines_.front().fVals.size());
+    return lines_.front().fVals.size();
 }
 
-inline auto pla_file::line_count() const -> std::size_t
+inline auto pla_file::line_count() const -> int64
 {
-    return static_cast<index_t>(lines_.size());
+    return static_cast<int64>(lines_.size());
 }
 
 inline auto pla_file::get_lines() const& -> std::vector<pla_line> const&

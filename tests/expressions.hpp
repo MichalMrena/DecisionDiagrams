@@ -14,7 +14,7 @@ namespace teddy
  */
 struct minmax_expr
 {
-    std::vector<std::vector<uint_t>> terms_;
+    std::vector<std::vector<int32>> terms_;
 };
 
 /**
@@ -22,16 +22,16 @@ struct minmax_expr
  */
 auto make_minmax_expression(
     std::mt19937_64& indexRng,
-    std::size_t varCount,
-    std::size_t termCount,
-    std::size_t termSize
+    int32 varCount,
+    int32 termCount,
+    int32 termSize
 ) -> minmax_expr;
 
 /**
  *  \brief Evaluates \p expr using values of variables in \p vs .
  */
-auto evaluate_expression(minmax_expr const& expr, std::vector<uint_t> const& vs)
-    -> uint_t;
+auto evaluate_expression(minmax_expr const& expr, std::vector<int32> const& vs)
+    -> int32;
 
 /**
  *  \brief Tags expression node representing variable.
@@ -83,20 +83,20 @@ private:
 
     struct variable_t
     {
-        variable_t(index_t i);
-        index_t i_;
+        variable_t(int32 i);
+        int32 i_;
     };
 
     struct constant_t
     {
-        constant_t(uint_t c);
-        uint_t c_;
+        constant_t(int32 c);
+        int32 c_;
     };
 
 public:
-    expr_node(expr_node_variable, index_t i);
+    expr_node(expr_node_variable, int32 i);
 
-    expr_node(expr_node_constant, uint_t c);
+    expr_node(expr_node_constant, int32 c);
 
     expr_node(
         expr_node_operation,
@@ -111,11 +111,11 @@ public:
 
     auto is_operation() const -> bool;
 
-    auto get_index() const -> index_t;
+    auto get_index() const -> int32;
 
-    auto get_value() const -> uint_t;
+    auto get_value() const -> int32;
 
-    auto evaluate(uint_t l, uint_t r) const -> uint_t;
+    auto evaluate(int32 l, int32 r) const -> int32;
 
     auto get_left() const -> expr_node const&;
 
@@ -129,14 +129,14 @@ private:
  *  \brief Makes random minmax expression tree.
  */
 auto make_expression_tree(
-    std::size_t varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
+    int32 varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>;
 
 /**
  *  \brief Evaluates \p expr using values of variables in \p vs .
  */
-auto evaluate_expression(expr_node const& expr, std::vector<uint_t> const& vs)
-    -> uint_t;
+auto evaluate_expression(expr_node const& expr, std::vector<int32> const& vs)
+    -> int32;
 } // namespace teddy
 
 #endif
