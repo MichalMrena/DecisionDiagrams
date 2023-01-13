@@ -1,19 +1,12 @@
 #ifndef LIBTEDDY_DETAILS_DIAGRAM_HPP
 #define LIBTEDDY_DETAILS_DIAGRAM_HPP
 
-#include <cassert>
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_manager.hpp>
 #include <utility>
 
 namespace teddy
 {
-template<class Data, degree Deg, domain Dom>
-class diagram_manager;
-
-template<degree Deg, domain Dom>
-class reliability_manager;
-
 /**
  *  \class diagram
  *  \brief Cheap wrapper for the internal diagram node type.
@@ -26,13 +19,6 @@ template<class Data, degree D>
 class diagram
 {
 public:
-    template<class Da, degree De, domain Do>
-    friend class diagram_manager;
-
-    template<degree De, domain Do>
-    friend class reliability_manager;
-
-private:
     using node_t = node<Data, D>;
 
 public:
@@ -45,6 +31,14 @@ public:
      *  of empty diagrams and assign them later.
      */
     diagram();
+
+    /**
+     *  \brief Wraps internal node representation.
+     *  You should probably don't use this one unless you know what you are
+     *  doing.
+     *  \param root root node of the diagram
+     */
+    diagram(node_t* root);
 
     /**
      *  \brief Cheap copy constructor.
@@ -84,9 +78,13 @@ public:
      */
     auto equals(diagram other) const -> bool;
 
-public:
-    explicit diagram(node_t*);
-    auto get_root() const -> node_t*;
+    /**
+     *  \brief Returns pointer to internal node type.
+     *  You should probably don't use this one unless you know what you are
+     *  doing.
+     *  \return Pointer to node root node of the diagram.
+     */
+    auto unsafe_get_root() const -> node_t*;
 
 private:
     node_t* root_ {nullptr};
@@ -140,7 +138,7 @@ diagram<Data, D>::diagram(node_t* const r)
 
 template<class Data, degree D>
 diagram<Data, D>::diagram(diagram const& d)
-    : root_(id_inc_ref_count(d.get_root()))
+    : root_(id_inc_ref_count(d.unsafe_get_root()))
 {
 }
 
@@ -160,13 +158,6 @@ diagram<Data, D>::~diagram()
 }
 
 template<class Data, degree D>
-auto diagram<Data, D>::get_root() const -> node_t*
-{
-    assert(root_);
-    return root_;
-}
-
-template<class Data, degree D>
 auto diagram<Data, D>::operator=(diagram d) -> diagram&
 {
     d.swap(*this);
@@ -182,7 +173,13 @@ auto diagram<Data, D>::swap(diagram& d) -> void
 template<class Data, degree D>
 auto diagram<Data, D>::equals(diagram d) const -> bool
 {
-    return root_ == d.get_root();
+    return root_ == d.unsafe_get_root();
+}
+
+template<class Data, degree D>
+auto diagram<Data, D>::unsafe_get_root() const -> node_t*
+{
+    return root_;
 }
 } // namespace teddy
 

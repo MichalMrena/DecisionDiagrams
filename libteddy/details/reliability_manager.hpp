@@ -442,7 +442,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
     Ps const& ps, diagram_t& sf
 ) -> void
 {
-    auto const root = sf.get_root();
+    auto const root = sf.unsafe_get_root();
 
     this->nodes_.traverse_pre(
         root,
@@ -773,7 +773,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
     int32 varFrom, int32 i, diagram_t dpld
 ) -> diagram_t
 {
-    auto const root      = dpld.get_root();
+    auto const root      = dpld.unsafe_get_root();
     auto const rootLevel = this->nodes_.get_level(root);
     auto const varLevel  = this->nodes_.get_level(i);
 
@@ -942,7 +942,7 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
         return u;
     };
 
-    auto const newRoot = go(go, lhs.get_root(), rhs.get_root());
+auto const newRoot = go(go, lhs.unsafe_get_root(), rhs.unsafe_get_root());
     return diagram_t(newRoot);
 }
 
@@ -974,7 +974,7 @@ auto reliability_manager<Degree, Domain>::calculate_ntp
     }
 
     this->nodes_.traverse_post(
-        d.get_root(),
+        d.unsafe_get_root(),
         [this, &ps](auto const n) mutable
         {
             if (not n->is_terminal())
@@ -992,7 +992,7 @@ auto reliability_manager<Degree, Domain>::calculate_ntp
             }
         }
     );
-    return d.get_root()->data();
+    return d.unsafe_get_root()->data();
 }
 
 template<degree Degree, domain Domain>

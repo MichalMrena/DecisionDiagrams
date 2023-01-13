@@ -1013,8 +1013,8 @@ auto diagram_manager<Data, Degree, Domain>::to_vector_g(diagram_t d, O out)
 {
     if (this->get_var_count() == 0)
     {
-        assert(d.get_root()->is_terminal());
-        *out++ = d.get_root()->get_value();
+        assert(d.unsafe_get_root()->is_terminal());
+        *out++ = d.unsafe_get_root()->get_value();
         return;
     }
 
@@ -1145,7 +1145,7 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
                     return exprNode.evaluate(l, r);
                 }
             );
-            return this->apply_local(lhs.get_root(), rhs.get_root(), op);
+            return this->apply_local(lhs.unsafe_get_root(), rhs.unsafe_get_root(), op);
         }
     };
     return go(go, root);
@@ -1156,7 +1156,7 @@ template<bin_op Op>
 auto diagram_manager<Data, Degree, Domain>::apply(diagram_t d1, diagram_t d2)
     -> diagram_t
 {
-    return this->apply_global(d1.get_root(), d2.get_root(), Op());
+    return this->apply_global(d1.unsafe_get_root(), d2.unsafe_get_root(), Op());
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1232,7 +1232,7 @@ auto diagram_manager<Data, Degree, Domain>::evaluate(
     diagram_t d, Vars const& vs
 ) const -> int32
 {
-    auto n = d.get_root();
+    auto n = d.unsafe_get_root();
 
     while (not n->is_terminal())
     {
@@ -1294,7 +1294,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
 
     // Actual satisfy count algorithm.
     nodes_.traverse_post(
-        d.get_root(),
+        d.unsafe_get_root(),
         [this, val, &data](auto const n) mutable
         {
             if (n->is_terminal())
@@ -1319,8 +1319,8 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
         }
     );
 
-    auto const rootAlpha = static_cast<int64>(data(d.get_root()));
-    auto const rootLevel = nodes_.get_level(d.get_root());
+    auto const rootAlpha = static_cast<int64>(data(d.unsafe_get_root()));
+    auto const rootLevel = nodes_.get_level(d.unsafe_get_root());
     return rootAlpha * nodes_.domain_product(0, rootLevel);
 }
 
@@ -1406,7 +1406,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
         }
     };
 
-    go(go, int32 {0}, d.get_root());
+    go(go, int32 {0}, d.unsafe_get_root());
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1414,12 +1414,12 @@ auto diagram_manager<Data, Degree, Domain>::cofactor(
     diagram_t d, int32 const i, int32 const v
 ) -> diagram_t
 {
-    if (d.get_root()->is_terminal())
+    if (d.unsafe_get_root()->is_terminal())
     {
         return d;
     }
 
-    auto const root = d.get_root();
+    auto const root = d.unsafe_get_root();
     if (root->get_index() == i)
     {
         return diagram_t(root->get_son(v));
@@ -1469,7 +1469,7 @@ template<uint_to_bool F>
 auto diagram_manager<Data, Degree, Domain>::transform(diagram_t d, F f)
     -> diagram_t
 {
-    auto const r = this->transform_terminal(d.get_root(), f);
+    auto const r = this->transform_terminal(d.unsafe_get_root(), f);
     nodes_.run_deferred();
     return diagram_t(r);
 }
@@ -1492,7 +1492,7 @@ auto diagram_manager<Data, Degree, Domain>::dependency_set_g(diagram_t d, O out)
 {
     auto memo = std::vector<bool>(this->get_var_count(), false);
     nodes_.traverse_pre(
-        d.get_root(),
+        d.unsafe_get_root(),
         [&memo, out](auto const n) mutable
         {
             if (n->is_internal())
@@ -1512,7 +1512,7 @@ template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::reduce(diagram_t d) -> diagram_t
 {
     auto const newRoot =
-        this->transform_terminal(d.get_root(), utils::identity);
+        this->transform_terminal(d.unsafe_get_root(), utils::identity);
     return diagram_t(newRoot);
 }
 
@@ -1526,7 +1526,7 @@ template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::node_count(diagram_t d) const
     -> int64
 {
-    return nodes_.get_node_count(d.get_root());
+    return nodes_.get_node_count(d.unsafe_get_root());
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1541,7 +1541,7 @@ auto diagram_manager<Data, Degree, Domain>::to_dot_graph(
     std::ostream& ost, diagram_t d
 ) const -> void
 {
-    nodes_.to_dot_graph(ost, d.get_root());
+    nodes_.to_dot_graph(ost, d.unsafe_get_root());
 }
 
 template<class Data, degree Degree, domain Domain>
