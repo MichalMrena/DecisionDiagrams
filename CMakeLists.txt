@@ -31,6 +31,10 @@ add_subdirectory(
     tests
 )
 
+add_subdirectory(
+    src
+)
+
 install(
     DIRECTORY
         libteddy
