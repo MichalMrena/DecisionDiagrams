@@ -24,7 +24,8 @@ using teddy::as_usize;
 enum class Op
 {
     And,
-    Or
+    Or,
+    Undefined
 };
 
 inline static auto Ops = {Op::And, Op::Or};
@@ -45,16 +46,6 @@ struct LeafNode
 {
     int32 index_;
 };
-
-auto equals(LeafNode const&, LeafNode const&)
-{
-    return true;
-}
-
-auto hash(LeafNode const&)
-{
-    return std::size_t{1};
-}
 
 // Forward declarations:
 
@@ -80,7 +71,7 @@ struct BinOpNode
             return std::max(l, r);
 
         default:
-            return int32 {};
+            std::terminate(); return int32{};
         }
     }
 };
@@ -117,32 +108,6 @@ struct NAryOpNode
         }
     }
 };
-
-auto equals(NAryOpNode const& l, NAryOpNode const& r)
-{
-    return l.op_ == r.op_ && std::ranges::equal(l.args_, r.args_);
-}
-
-auto equals(NAryOpNode const&, LeafNode const&)
-{
-    return false;
-}
-
-auto equals(LeafNode const&, NAryOpNode const&)
-{
-    return false;
-}
-
-auto hash(NAryOpNode const& o)
-{
-    auto result = std::size_t{0};
-    for (auto const* son : o.args_)
-    {
-        auto const hash = std::hash<MultiwayNode const*>()(son);
-        result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
-    }
-    return result;
-}
 
 // BinaryNode:
 
@@ -271,7 +236,25 @@ struct MultiwayNode
     }
 };
 
-auto equals(MultiwayNode const& l, MultiwayNode const& r)
+using MwNodeHash = decltype([](MultiwayNode const& node)
+{
+    if (node.is_variable())
+    {
+        return std::size_t{1};
+    }
+    else
+    {
+        auto result = std::size_t{0};
+        for (auto const* son : node.get_args())
+        {
+            auto const hash = std::hash<MultiwayNode const*>()(son);
+            result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
+        }
+        return result;
+    }
+});
+
+using MwNodeEquals = decltype([](MultiwayNode const& l, MultiwayNode const& r)
 {
     if (l.is_variable() && r.is_variable())
     {
@@ -284,21 +267,10 @@ auto equals(MultiwayNode const& l, MultiwayNode const& r)
     }
     else
     {
-        return equals(l.as_opnode(), r.as_opnode());
+        return l.get_operation() == r.get_operation()
+            && std::ranges::equal(l.get_args(), r.get_args());
     }
-}
-
-auto hash(MultiwayNode const& node)
-{
-    if (node.is_variable())
-    {
-        return hash(node.as_leafnode());
-    }
-    else
-    {
-        return hash(node.as_opnode());
-    }
-}
+});
 
 // F :: MultiwayNode const& -> Int -> Int -> ()
 template<class F>
@@ -367,12 +339,12 @@ auto dump_dot (auto const& root) -> std::string
     return out;
 }
 
-// AstGenerator:
+// BinAstGenerator:
 
-class AstGenerator
+class BinAstGenerator
 {
 public:
-    AstGenerator(int32 leafcount, int32 nextvar) :
+    BinAstGenerator(int32 leafcount, int32 nextvar) :
         leafcount_ (leafcount),
         nextvar_   (nextvar),
         lhssizes_  (teddy::utils::fill_vector(
@@ -384,7 +356,7 @@ public:
     {
         this->reset_lhsgen();
         this->reset_rhsgen();
-        this->mk_tree();
+        this->make_tree();
     }
 
     auto get () const -> BinaryNode const&
@@ -395,7 +367,7 @@ public:
     auto advance () -> void
     {
         this->advance_state();
-        this->mk_tree();
+        this->make_tree();
     }
 
     auto is_done () const -> bool
@@ -455,7 +427,7 @@ private:
         }
     }
 
-    auto mk_tree () -> void
+    auto make_tree () -> void
     {
         if (1 == leafcount_)
         {
@@ -477,7 +449,7 @@ private:
     {
         if (leafcount_ > 1)
         {
-            lhsgen_ = std::make_unique<AstGenerator>(
+            lhsgen_ = std::make_unique<BinAstGenerator>(
                 *lhssizesit_,
                 nextvar_
             );
@@ -488,7 +460,7 @@ private:
     {
         if (leafcount_ > 1)
         {
-            rhsgen_ = std::make_unique<AstGenerator>(
+            rhsgen_ = std::make_unique<BinAstGenerator>(
                 leafcount_ - *lhssizesit_,
                 *lhssizesit_ + nextvar_
             );
@@ -508,10 +480,169 @@ private:
     decltype(Ops)::iterator opsit_;
     std::vector<int32>::iterator lhssizesit_;
 
-    std::unique_ptr<AstGenerator> lhsgen_;
-    std::unique_ptr<AstGenerator> rhsgen_;
+    std::unique_ptr<BinAstGenerator> lhsgen_;
+    std::unique_ptr<BinAstGenerator> rhsgen_;
 
     std::unique_ptr<BinaryNode> node_;
+};
+
+// SonVarCountsGenerator:
+
+class SonVarCountsGenerator
+{
+public:
+    SonVarCountsGenerator(int32 const parentVarCount) :
+        counts_({}) // TODO
+    {
+    }
+
+    auto get () const -> std::vector<int32> const&
+    {
+        return counts_;
+    }
+
+    auto advance () -> void
+    {
+        // TODO
+    }
+
+    auto is_done () const -> bool
+    {
+        return empty(counts_);
+    }
+
+private:
+    std::vector<int32> counts_;
+};
+
+// MwAstGenerator:
+
+class MwAstGenerator
+{
+public:
+    MwAstGenerator(
+        int32 const varCount,
+        std::unordered_map<
+            MultiwayNode,
+            MultiwayNode*,
+            MwNodeHash,
+        MwNodeEquals>& uniqueTable
+    ) :
+        sonVarCountsGenerator_ (varCount),
+        uniqueTable_           (&uniqueTable)
+    {
+    }
+
+    auto get () const -> MultiwayNode*
+    {
+        return currentTree_;
+    }
+
+    auto advance () -> void
+    {
+        this->advance_state();
+        this->make_tree();
+    }
+
+    auto reset () -> void
+    {
+        // TODO this->reset_son_var_count_generator(this->get_var_count());
+        this->reset_son_generators();
+    }
+
+    auto is_done () const -> bool
+    {
+        return sonVarCountsGenerator_.is_done();
+    }
+
+private:
+
+    auto advance_state () -> void
+    {
+        auto overflow = false;
+        for (auto& sonGenerator : sonGenerators_)
+        {
+            sonGenerator->advance();
+            if (sonGenerator->is_done())
+            {
+                overflow = true;
+                sonGenerator->reset();
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (overflow)
+        {
+            sonVarCountsGenerator_.advance();
+            this->reset_son_generators();
+        }
+    }
+
+    auto make_tree () -> void
+    {
+        auto key = MultiwayNode{};
+
+        if (this->get_var_count() == 1)
+        {
+            key.data_ = LeafNode{0};
+        }
+        else
+        {
+            auto sons = std::vector<MultiwayNode*>();
+            sons.reserve(size(sonGenerators_));
+            for (auto const& sonGenUPtr : sonGenerators_)
+            {
+                sons.push_back(sonGenUPtr->get());
+            }
+
+            key.data_ = NAryOpNode{
+                Op::Undefined,
+                std::move(sons)
+            };
+        }
+
+        auto it  = uniqueTable_->find(key);
+        if (it == end(*uniqueTable_))
+        {
+            auto* newNode = new MultiwayNode{key};
+            uniqueTable_->try_emplace(key, newNode);
+            currentTree_ = newNode;
+        }
+        else
+        {
+            currentTree_ = it->second;
+        }
+    }
+
+    auto reset_son_generators () -> void
+    {
+        sonGenerators_.clear();
+        auto const& sonVarCounts = sonVarCountsGenerator_.get();
+        for (auto const sonVarCount : sonVarCounts)
+        {
+            sonGenerators_.emplace_back(
+                std::make_unique<MwAstGenerator>(sonVarCount, *uniqueTable_)
+            );
+        }
+    }
+
+    auto get_var_count () const -> int32
+    {
+        return static_cast<int32>(ssize(sonGenerators_));
+    }
+
+private:
+    SonVarCountsGenerator sonVarCountsGenerator_;
+    std::vector<std::unique_ptr<MwAstGenerator>> sonGenerators_;
+    std::unordered_map<
+        MultiwayNode,
+        MultiwayNode*,
+        MwNodeHash,
+    MwNodeEquals>* uniqueTable_;
+    MultiwayNode* currentTree_;
 };
 
 template<int64 M, int64 N>
@@ -556,10 +687,10 @@ auto make_truth_vector (
 
 // F :: diagram -> ()
 template<int64 M, int64 N, class F>
-auto for_each_unique_expr_bintree (teddy::mdd_manager<M>& manager, F f)
+auto for_each_bin_ast (teddy::mdd_manager<M>& manager, F f)
 {
     auto memo = std::unordered_set<void*>();
-    auto gen  = AstGenerator(N, 0);
+    auto gen  = BinAstGenerator(N, 0);
     auto i    = 1;
     while (not gen.is_done())
     {
@@ -581,22 +712,13 @@ auto for_each_unique_expr_bintree (teddy::mdd_manager<M>& manager, F f)
     }
 }
 
-// TODO move to teddy utils and use for gos
-auto constexpr fix = [](auto f)
-{
-    return [f](auto&&... args)
-    {
-        return f(f, std::forward<decltype(args)>(args)...);
-    };
-};
-
-auto to_multiway_tree (
+auto bin_to_mw_ast (
     BinaryNode const& binRoot,
     auto& unique,
     auto* leaf
 ) -> MultiwayNode*
 {
-    auto transform = fix([&](
+    auto transform = teddy::utils::fix([&](
         auto self,
         BinaryNode const& binNode
     ) -> MultiwayNode*
@@ -617,7 +739,10 @@ auto to_multiway_tree (
         }
     });
 
-    auto reduce = fix([](auto self, MultiwayNode* node) -> MultiwayNode*
+    auto reduce = teddy::utils::fix([](
+        auto self,
+        MultiwayNode* node
+    ) -> MultiwayNode*
     {
         if (node->is_operation())
         {
@@ -652,7 +777,7 @@ auto to_multiway_tree (
         return node;
     });
 
-    auto uniquize = fix([&unique](
+    auto uniquize = teddy::utils::fix([&unique](
         auto self,
         MultiwayNode* node
     ) -> MultiwayNode*
@@ -695,32 +820,22 @@ auto to_multiway_tree (
 
 // F :: MultiwayNode const& -> ()
 template<class F>
-auto for_each_unique_expr_mwaytree (int32 const varCount, F f)
+auto for_each_mw_ast (int32 const varCount, F f)
 {
-    using mwhash_t = decltype([](MultiwayNode const& n)
-    {
-        return hash(n);
-    });
-
-    using mwequals_t = decltype([](MultiwayNode const& l, MultiwayNode const& r)
-    {
-        return equals(l, r);
-    });
-
     auto unique = std::unordered_map<
         MultiwayNode,
         MultiwayNode*,
-        mwhash_t,
-        mwequals_t
+        MwNodeHash,
+        MwNodeEquals
     >();
 
     auto leaf = new MultiwayNode{LeafNode{0}};
     auto memo = std::unordered_set<MultiwayNode*>();
-    auto gen  = AstGenerator(varCount, 0);
+    auto gen  = BinAstGenerator(varCount, 0);
     while (not gen.is_done())
     {
         auto& binRoot = gen.get();
-        auto* mwRoot = to_multiway_tree(binRoot, unique, leaf);
+        auto* mwRoot = bin_to_mw_ast(binRoot, unique, leaf);
         if (not memo.contains(mwRoot))
         {
             std::invoke(f, *mwRoot);
@@ -740,8 +855,8 @@ auto count_trees (int32 const n) -> int64
 {
     // https://oeis.org/A248748
 
-    auto gen   = AstGenerator(n, 0);
-    auto count = 0u;
+    auto gen   = BinAstGenerator(n, 0);
+    auto count = int64{0};
 
     while (not gen.is_done())
     {
@@ -750,18 +865,6 @@ auto count_trees (int32 const n) -> int64
     }
 
     return count;
-}
-
-template<int64 N>
-auto count_unique_trees () -> int64
-{
-    auto m = teddy::mdd_manager<3>(N, 10'000);
-    auto c = int64{0};
-    for_each_unique_expr_bintree<3, N>(m, [&c](auto const&)
-    {
-        ++c;
-    });
-    return c;
 }
 
 template<int64 M>
@@ -788,11 +891,11 @@ auto compare_series_parallel () -> void
 {
     auto m = teddy::mdd_manager<M>(N, 1'000'000);
 
-    auto singlebetter = 0ull;
-    auto seriesbetter = 0ull;
-    auto equalsize    = 0ull;
+    auto singlebetter = int64{0};
+    auto seriesbetter = int64{0};
+    auto equalsize    = int64{0};
 
-    for_each_unique_expr_bintree<M, N>(m, [&](auto const& single)
+    for_each_bin_ast<M, N>(m, [&](auto const& single)
     {
         auto const series      = create_series<M>(m, single);
         auto const singlecount = m.node_count(single);
@@ -828,7 +931,7 @@ auto compare_series_parallel () -> void
 auto count_mw(int32 const varCount)
 {
     auto count = int64{0};
-    for_each_unique_expr_mwaytree(varCount, [&count](auto const&)
+    for_each_mw_ast(varCount, [&count](auto const&)
     {
         ++count;
     });
@@ -837,12 +940,6 @@ auto count_mw(int32 const varCount)
 
 auto main () -> int
 {
-    // std::cout << "vars"   << "\t"
-    //           << "single" << "\t"
-    //           << "series" << "\t"
-    //           << "equal"  << "\t"
-    //           << "%equal"  << "\n";
-
     // CMP(4);
     // CMP(5);
     // CMP(6);
@@ -856,20 +953,10 @@ auto main () -> int
     // CMP(14);
     // CMP(15);
 
-    // for_each_unique_expr_mwaytree<4>([](MultiwayNode const& node)
-    // {
-    //     std::cout << dump_dot(node) << "---\n";
-    // });
-
-    count_mw(2);
-    count_mw(3);
-    count_mw(4);
-    count_mw(5);
-    count_mw(6);
-    count_mw(7);
-    count_mw(8);
-    // count_mw<9>();
-    // count_mw<10>();
+    for (auto i = 2; i < 11; ++i)
+    {
+        count_mw(i);
+    }
 
     std::cout << "=== end of main ===" << '\n';
 }
