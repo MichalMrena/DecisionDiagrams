@@ -21,6 +21,13 @@ using teddy::int32;
 using teddy::int64;
 using teddy::as_usize;
 
+auto unreachable()
+{
+    std::terminate();
+}
+
+// Op:
+
 enum class Op
 {
     And,
@@ -36,7 +43,7 @@ auto get_neutral_element(Op const o)
     {
         case Op::And: return std::numeric_limits<int32>::max();
         case Op::Or:  return std::numeric_limits<int32>::min();
-        default:      std::terminate(); return int32{};
+        default:      unreachable(); return int32{};
     }
 }
 
@@ -71,7 +78,7 @@ struct BinOpNode
             return std::max(l, r);
 
         default:
-            std::terminate(); return int32{};
+            unreachable(); return int32{};
         }
     }
 };
@@ -104,7 +111,7 @@ struct NAryOpNode
                 );
 
             default:
-                default: std::terminate(); return int32{};
+                default: unreachable(); return int32{};
         }
     }
 };
@@ -492,7 +499,7 @@ class SonVarCountsGenerator
 {
 public:
     SonVarCountsGenerator(int32 const parentVarCount) :
-        counts_({}) // TODO
+        counts_({parentVarCount - 1, 1})
     {
     }
 
@@ -503,12 +510,51 @@ public:
 
     auto advance () -> void
     {
-        // TODO
+        if (this->is_all_ones())
+        {
+            counts_.clear();
+        }
+        else
+        {
+            auto const decPos = this->find_first_non_one();
+            --(*decPos);
+            auto const oneCount = static_cast<int32>(
+                std::distance(decPos, end(counts_))
+            );
+            auto const newNum = std::min(*decPos, oneCount);
+            // set the next one to avoid insert, it must be one anyway
+            counts_.insert(decPos + 1, newNum);
+            auto const removedOnesCount = std::max(0, oneCount - newNum);
+            counts_.resize(size(counts_) - as_usize(removedOnesCount));
+
+            // first non one from the left
+            // decrement it by one
+            // merge ones into new next num up to decremented num
+        }
     }
 
     auto is_done () const -> bool
     {
         return empty(counts_);
+    }
+
+private:
+    auto find_first_non_one () const -> std::vector<int32>::iterator
+    {
+        for (auto i = ssize(counts_) - 1; i >= 0; --i)
+        {
+            if (counts_[i] != 1)
+            {
+                return begin(counts_) + i;
+            }
+        }
+        unreachable();
+        return end(counts_);
+    }
+
+    auto is_all_ones () const -> bool
+    {
+        return counts_[0] == 1;
     }
 
 private:
