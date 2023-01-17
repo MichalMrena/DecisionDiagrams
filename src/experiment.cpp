@@ -1,6 +1,7 @@
 #include <libteddy/teddy.hpp>
 #include <algorithm>
 #include <bitset>
+#include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <exception>
@@ -500,22 +501,30 @@ class SonVarCountsGenerator
 public:
     SonVarCountsGenerator(int32 const parentVarCount) :
         counts_({}),
-        maxSize_(parentVarCount)
+        maxSize_(parentVarCount),
+        isDone_(parentVarCount == 1)
     {
-        counts_.reserve(as_usize(maxSize_));
-        this->reset();
+        auto const parentIsLeaf = parentVarCount == 1;
+        if (parentIsLeaf)
+        {
+            counts_.reserve(as_usize(maxSize_));
+            this->reset();
+        }
     }
 
     auto get () const -> std::vector<int32> const&
     {
+        assert(not this->is_done());
         return counts_;
     }
 
     auto advance () -> void
     {
+        assert(not this->is_done());
+
         if (this->is_all_ones())
         {
-            counts_.clear();
+            isDone_ = true;
         }
         else
         {
@@ -553,19 +562,13 @@ public:
 
     auto is_done () const -> bool
     {
-        return empty(counts_);
+        return isDone_;
     }
 
     auto reset () -> void
     {
-        if (maxSize_ == 1)
-        {
-            counts_ = {1};
-        }
-        else
-        {
-            counts_ = {maxSize_ - 1, 1};
-        }
+        assert(maxSize_ > 1);
+        counts_ = {maxSize_ - 1, 1};
     }
 
 private:
@@ -590,6 +593,7 @@ private:
 private:
     std::vector<int32> counts_;
     int32 maxSize_;
+    bool isDone_;
 };
 
 // MwAstGenerator:
@@ -607,22 +611,23 @@ public:
         >& uniqueTable
     ) :
         sonVarCountsGenerator_(varCount),
-        uniqueTable_(&uniqueTable)
+        uniqueTable_(&uniqueTable),
+        isDone_(false)
     {
-        if (varCount > 1)
-        {
-            this->reset_son_generators();
-        }
+        this->reset_son_generators();
         this->make_tree();
     }
 
     auto get () const -> MultiwayNode*
     {
+        assert(not this->is_done());
         return currentTree_;
     }
 
     auto advance () -> void
     {
+        assert(not this->is_done());
+
         this->advance_state();
         if (not this->is_done())
         {
@@ -632,7 +637,7 @@ public:
 
     auto is_done () const -> bool
     {
-        return sonVarCountsGenerator_.is_done();
+        return isDone_;
     }
 
     auto reset () -> void
@@ -660,10 +665,18 @@ private:
             }
         }
 
-        if (overflow || this->get_var_count() == 1)
+        if (this->is_leaf_generator())
+        {
+            isDone_ = true;
+        }
+        else if (overflow)
         {
             sonVarCountsGenerator_.advance();
-            if (not sonVarCountsGenerator_.is_done())
+            if (sonVarCountsGenerator_.is_done())
+            {
+                isDone_ = true;
+            }
+            else
             {
                 this->reset_son_generators();
             }
@@ -674,7 +687,7 @@ private:
     {
         auto key = MultiwayNode{};
 
-        if (this->get_var_count() == 1)
+        if (this->is_leaf_generator())
         {
             key.data_ = LeafNode{0};
         }
@@ -718,9 +731,9 @@ private:
         }
     }
 
-    auto get_var_count () const -> int32
+    auto is_leaf_generator () const -> bool
     {
-        return static_cast<int32>(ssize(sonGenerators_));
+        return empty(sonGenerators_);
     }
 
 private:
@@ -732,6 +745,7 @@ private:
         MwNodeHash,
     MwNodeEquals>* uniqueTable_;
     MultiwayNode* currentTree_;
+    bool isDone_;
 };
 
 template<int64 M, int64 N>
@@ -1047,7 +1061,7 @@ auto main () -> int
     //     count_mw(i);
     // }
 
-    // auto gen = SonVarCountsGenerator(1);
+    // auto gen = SonVarCountsGenerator(4);
 
     // while (not gen.is_done())
     // {
@@ -1067,7 +1081,7 @@ auto main () -> int
         MwNodeHash,
         MwNodeEquals
     >();
-    auto gen = MwAstGenerator(3, uniqueTable);
+    auto gen = MwAstGenerator(4, uniqueTable);
 
     auto count = 0;
     while (not gen.is_done())
