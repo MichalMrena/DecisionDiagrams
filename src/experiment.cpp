@@ -603,11 +603,17 @@ public:
             MultiwayNode,
             MultiwayNode*,
             MwNodeHash,
-        MwNodeEquals>& uniqueTable
+            MwNodeEquals
+        >& uniqueTable
     ) :
         sonVarCountsGenerator_(varCount),
         uniqueTable_(&uniqueTable)
     {
+        if (varCount > 1)
+        {
+            this->reset_son_generators();
+        }
+        this->make_tree();
     }
 
     auto get () const -> MultiwayNode*
@@ -618,7 +624,10 @@ public:
     auto advance () -> void
     {
         this->advance_state();
-        this->make_tree();
+        if (not this->is_done())
+        {
+            this->make_tree();
+        }
     }
 
     auto is_done () const -> bool
@@ -640,22 +649,24 @@ private:
         for (auto& sonGenerator : sonGenerators_)
         {
             sonGenerator->advance();
-            if (sonGenerator->is_done())
+            overflow = sonGenerator->is_done();
+            if (overflow)
             {
-                overflow = true;
                 sonGenerator->reset();
             }
             else
             {
-                overflow = false;
                 break;
             }
         }
 
-        if (overflow)
+        if (overflow || this->get_var_count() == 1)
         {
             sonVarCountsGenerator_.advance();
-            this->reset_son_generators();
+            if (not sonVarCountsGenerator_.is_done())
+            {
+                this->reset_son_generators();
+            }
         }
     }
 
@@ -1048,6 +1059,23 @@ auto main () -> int
 
     //     gen.advance();
     // }
+
+
+    auto uniqueTable = std::unordered_map<
+        MultiwayNode,
+        MultiwayNode*,
+        MwNodeHash,
+        MwNodeEquals
+    >();
+    auto gen = MwAstGenerator(3, uniqueTable);
+
+    auto count = 0;
+    while (not gen.is_done())
+    {
+        ++count;
+        std::cout << count << std::endl;
+        gen.advance();
+    }
 
     std::cout << "=== end of main ===" << '\n';
 }
