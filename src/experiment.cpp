@@ -499,8 +499,11 @@ class SonVarCountsGenerator
 {
 public:
     SonVarCountsGenerator(int32 const parentVarCount) :
-        counts_({parentVarCount - 1, 1})
+        counts_({}),
+        maxSize_(parentVarCount)
     {
+        counts_.reserve(as_usize(maxSize_));
+        this->reset();
     }
 
     auto get () const -> std::vector<int32> const&
@@ -521,15 +524,30 @@ public:
             auto const oneCount = static_cast<int32>(
                 std::distance(decPos, end(counts_))
             );
-            auto const newNum = std::min(*decPos, oneCount);
-            // set the next one to avoid insert, it must be one anyway
-            counts_.insert(decPos + 1, newNum);
-            auto const removedOnesCount = std::max(0, oneCount - newNum);
-            counts_.resize(size(counts_) - as_usize(removedOnesCount));
 
-            // first non one from the left
-            // decrement it by one
-            // merge ones into new next num up to decremented num
+            // so that we can set any element w/o need of push_backs
+            counts_.resize(as_usize(maxSize_));
+
+            auto const nextNum = std::min(*decPos, oneCount);
+            auto const nextNumRepeats = oneCount / nextNum;
+            auto const tailNum = oneCount % nextNum;
+
+            for (auto i = 0; i < nextNumRepeats; ++i)
+            {
+                *(decPos + i + 1) = nextNum;
+            }
+            if (tailNum != 0)
+            {
+                *(decPos + nextNumRepeats + 1) = tailNum;
+            }
+
+            // set the corrent size
+            auto const newEnd = next(
+                decPos,
+                nextNumRepeats + (tailNum != 0 ? 1 : 0) + 1
+            );
+
+            counts_.resize(as_usize(std::distance(begin(counts_), newEnd)));
         }
     }
 
@@ -538,12 +556,24 @@ public:
         return empty(counts_);
     }
 
+    auto reset () -> void
+    {
+        if (maxSize_ == 1)
+        {
+            counts_ = {1};
+        }
+        else
+        {
+            counts_ = {maxSize_ - 1, 1};
+        }
+    }
+
 private:
-    auto find_first_non_one () const -> std::vector<int32>::iterator
+    auto find_first_non_one () -> std::vector<int32>::iterator
     {
         for (auto i = ssize(counts_) - 1; i >= 0; --i)
         {
-            if (counts_[i] != 1)
+            if (counts_[as_usize(i)] != 1)
             {
                 return begin(counts_) + i;
             }
@@ -559,6 +589,7 @@ private:
 
 private:
     std::vector<int32> counts_;
+    int32 maxSize_;
 };
 
 // MwAstGenerator:
@@ -574,8 +605,8 @@ public:
             MwNodeHash,
         MwNodeEquals>& uniqueTable
     ) :
-        sonVarCountsGenerator_ (varCount),
-        uniqueTable_           (&uniqueTable)
+        sonVarCountsGenerator_(varCount),
+        uniqueTable_(&uniqueTable)
     {
     }
 
@@ -590,15 +621,15 @@ public:
         this->make_tree();
     }
 
-    auto reset () -> void
-    {
-        // TODO this->reset_son_var_count_generator(this->get_var_count());
-        this->reset_son_generators();
-    }
-
     auto is_done () const -> bool
     {
         return sonVarCountsGenerator_.is_done();
+    }
+
+    auto reset () -> void
+    {
+        sonVarCountsGenerator_.reset();
+        this->reset_son_generators();
     }
 
 private:
@@ -616,6 +647,7 @@ private:
             }
             else
             {
+                overflow = false;
                 break;
             }
         }
@@ -999,10 +1031,23 @@ auto main () -> int
     // CMP(14);
     // CMP(15);
 
-    for (auto i = 2; i < 11; ++i)
-    {
-        count_mw(i);
-    }
+    // for (auto i = 2; i < 11; ++i)
+    // {
+    //     count_mw(i);
+    // }
+
+    // auto gen = SonVarCountsGenerator(1);
+
+    // while (not gen.is_done())
+    // {
+    //     std::ranges::for_each(gen.get(), [](auto const x)
+    //     {
+    //         std::cout << x << ' ';
+    //     });
+    //     std::cout << '\n';
+
+    //     gen.advance();
+    // }
 
     std::cout << "=== end of main ===" << '\n';
 }
