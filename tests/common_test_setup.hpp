@@ -168,6 +168,8 @@ struct match : Ts...
     using Ts::operator()...;
 };
 
+template<class... Ts> match(Ts...) -> match<Ts...>;
+
 inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
     -> std::vector<int32>
 {

@@ -58,7 +58,7 @@ domain_iterator::domain_iterator(
           }()
       ),
       varVals_(
-          [this, &fixed, &domains]()
+          [this, &fixed]()
           {
               auto vs = std::vector<int32>(domains_.size());
               for (auto const& [i, v] : fixed)
