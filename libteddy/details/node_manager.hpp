@@ -300,7 +300,7 @@ requires(domains::is_mixed<Domain>()())
           std::move(order),
           [&]() -> decltype(auto)
           {
-              assert(domains.ds_.size() == varCount);
+              assert(ssize(domains.ds_) == varCount);
               return std::move(domains);
           }()
       )
@@ -323,7 +323,7 @@ node_manager<Data, Degree, Domain>::node_manager(
       gcRatio_(0.05), nextTableAdjustment_(230), autoReorderEnabled_(false),
       gcReorderDeferred_(false)
 {
-    assert(levelToIndex_.size() == this->get_var_count());
+    assert(ssize(levelToIndex_) == this->get_var_count());
     assert(check_distinct(levelToIndex_));
     if constexpr (domains::is_mixed<Domain>()() && degrees::is_fixed<Degree>()())
     {
@@ -480,7 +480,7 @@ template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::get_index(int32 const l) const
     -> int32
 {
-    assert(l < levelToIndex_.size());
+    assert(l < ssize(levelToIndex_));
     return levelToIndex_[as_uindex(l)];
 }
 
@@ -1128,14 +1128,14 @@ auto node_manager<Data, Degree, Domain>::check_distinct(
         return true;
     }
     auto const me = *std::max_element(std::begin(is), std::end(is));
-    auto in       = std::vector<bool>(me + 1, false);
+    auto in       = std::vector<bool>(as_usize(me + 1), false);
     for (auto const i : is)
     {
-        if (in[i])
+        if (in[as_uindex(i)])
         {
             return false;
         }
-        in[i] = true;
+        in[as_uindex(i)] = true;
     }
     return true;
 }
