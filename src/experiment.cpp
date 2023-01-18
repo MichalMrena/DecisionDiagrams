@@ -9,6 +9,7 @@
 #include <limits>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -45,6 +46,17 @@ auto get_neutral_element(Op const o)
         case Op::And: return std::numeric_limits<int32>::max();
         case Op::Or:  return std::numeric_limits<int32>::min();
         default:      unreachable(); return int32{};
+    }
+}
+
+auto to_string (Op const o)
+{
+    switch (o)
+    {
+        case Op::And:           return "and";
+        case Op::Or:            return "or";
+        case Op::Undefined:     return "op";
+        default: unreachable(); return "";
     }
 }
 
@@ -323,7 +335,7 @@ auto dump_dot (auto const& root) -> std::string
     {
         auto const label = node.is_variable()
             ? "x"
-            : (node.get_operation() ==Op::And ? "and" : "or");
+            : to_string(node.get_operation());
         out += "    " + s(nodeId) + " [label=\"" + label + "\"];\n";
     });
     out += "\n";
@@ -499,15 +511,16 @@ private:
 class SonVarCountsGenerator
 {
 public:
-    SonVarCountsGenerator(int32 const parentVarCount) :
+    SonVarCountsGenerator(int32 const ownerVarCount) :
         counts_({}),
-        maxSize_(parentVarCount),
-        isDone_(parentVarCount == 1)
+        varCount_(ownerVarCount),
+        isDone_(this->owner_is_leaf())
     {
-        auto const parentIsLeaf = parentVarCount == 1;
-        if (parentIsLeaf)
+        if (not this->owner_is_leaf())
         {
-            counts_.reserve(as_usize(maxSize_));
+            // in the worst case, each son of the owner will be leaf
+            // i.e. we will have ${varCount_} ones int the vector
+            counts_.reserve(as_usize(varCount_));
             this->reset();
         }
     }
@@ -535,7 +548,7 @@ public:
             );
 
             // so that we can set any element w/o need of push_backs
-            counts_.resize(as_usize(maxSize_));
+            counts_.resize(as_usize(varCount_));
 
             auto const nextNum = std::min(*decPos, oneCount);
             auto const nextNumRepeats = oneCount / nextNum;
@@ -567,8 +580,12 @@ public:
 
     auto reset () -> void
     {
-        assert(maxSize_ > 1);
-        counts_ = {maxSize_ - 1, 1};
+        // do nothing if this one belongs to a leaf generator
+        if (not this->owner_is_leaf())
+        {
+            counts_ = {varCount_ - 1, 1};
+            isDone_ = false;
+        }
     }
 
 private:
@@ -590,9 +607,14 @@ private:
         return counts_[0] == 1;
     }
 
+    auto owner_is_leaf () const -> bool
+    {
+        return varCount_ == 1;
+    }
+
 private:
     std::vector<int32> counts_;
-    int32 maxSize_;
+    int32 varCount_;
     bool isDone_;
 };
 
@@ -612,9 +634,13 @@ public:
     ) :
         sonVarCountsGenerator_(varCount),
         uniqueTable_(&uniqueTable),
-        isDone_(false)
+        isDone_(false),
+        isLeaf_(varCount == 1)
     {
-        this->reset_son_generators();
+        if (not isLeaf_)
+        {
+            this->reset_son_generators();
+        }
         this->make_tree();
     }
 
@@ -644,6 +670,8 @@ public:
     {
         sonVarCountsGenerator_.reset();
         this->reset_son_generators();
+        this->make_tree();
+        isDone_ = false;
     }
 
 private:
@@ -665,7 +693,7 @@ private:
             }
         }
 
-        if (this->is_leaf_generator())
+        if (isLeaf_)
         {
             isDone_ = true;
         }
@@ -687,7 +715,7 @@ private:
     {
         auto key = MultiwayNode{};
 
-        if (this->is_leaf_generator())
+        if (isLeaf_)
         {
             key.data_ = LeafNode{0};
         }
@@ -699,6 +727,7 @@ private:
             {
                 sons.push_back(sonGenUPtr->get());
             }
+            std::ranges::sort(sons);
 
             key.data_ = NAryOpNode{
                 Op::Undefined,
@@ -721,22 +750,20 @@ private:
 
     auto reset_son_generators () -> void
     {
-        sonGenerators_.clear();
-        auto const& sonVarCounts = sonVarCountsGenerator_.get();
-        for (auto const sonVarCount : sonVarCounts)
+        if (not isLeaf_)
         {
-            sonGenerators_.emplace_back(
-                std::make_unique<MwAstGenerator>(sonVarCount, *uniqueTable_)
-            );
+            sonGenerators_.clear();
+            auto const& sonVarCounts = sonVarCountsGenerator_.get();
+            for (auto const sonVarCount : sonVarCounts)
+            {
+                sonGenerators_.emplace_back(
+                    std::make_unique<MwAstGenerator>(sonVarCount, *uniqueTable_)
+                );
+            }
         }
     }
 
-    auto is_leaf_generator () const -> bool
-    {
-        return empty(sonGenerators_);
-    }
-
-private:
+public:
     SonVarCountsGenerator sonVarCountsGenerator_;
     std::vector<std::unique_ptr<MwAstGenerator>> sonGenerators_;
     std::unordered_map<
@@ -746,6 +773,7 @@ private:
     MwNodeEquals>* uniqueTable_;
     MultiwayNode* currentTree_;
     bool isDone_;
+    bool isLeaf_;
 };
 
 template<int64 M, int64 N>
@@ -954,7 +982,7 @@ auto for_each_mw_ast (int32 const varCount, F f)
     delete leaf;
 }
 
-auto count_trees (int32 const n) -> int64
+auto count_binary_trees (int32 const n) -> int64
 {
     // https://oeis.org/A248748
 
@@ -967,6 +995,16 @@ auto count_trees (int32 const n) -> int64
         ++count;
     }
 
+    return count;
+}
+
+auto count_multiway_trees (int32 const varCount) -> int64
+{
+    auto count = int64{0};
+    for_each_mw_ast(varCount, [&count](auto const&)
+    {
+        ++count;
+    });
     return count;
 }
 
@@ -1028,39 +1066,8 @@ auto compare_series_parallel () -> void
               << relativeequal << '\n';
 }
 
-#define CMP(n) std::cout << n << "\t"; \
-               compare_series_parallel<5, n>();
-
-auto count_mw(int32 const varCount)
-{
-    auto count = int64{0};
-    for_each_mw_ast(varCount, [&count](auto const&)
-    {
-        ++count;
-    });
-    std::cout << varCount << " \t" << count << '\n';
-}
-
 auto main () -> int
 {
-    // CMP(4);
-    // CMP(5);
-    // CMP(6);
-    // CMP(7);
-    // CMP(8);
-    // CMP(9);
-    // CMP(10);
-    // CMP(11);
-    // CMP(12);
-    // CMP(13);
-    // CMP(14);
-    // CMP(15);
-
-    // for (auto i = 2; i < 11; ++i)
-    // {
-    //     count_mw(i);
-    // }
-
     // auto gen = SonVarCountsGenerator(4);
 
     // while (not gen.is_done())
@@ -1074,21 +1081,53 @@ auto main () -> int
     //     gen.advance();
     // }
 
+    auto const expected = std::vector {
+        -1,
+        1, 1, 2, 5, 12, 33, 90, 261, 766, 2'312, 7'068,
+        21'965, 68'954, 21'8751, 699'534, 2'253'676, 7'305'788,
+        23'816'743, 78'023'602, 256'738'751
+    };
 
-    auto uniqueTable = std::unordered_map<
-        MultiwayNode,
-        MultiwayNode*,
-        MwNodeHash,
-        MwNodeEquals
-    >();
-    auto gen = MwAstGenerator(4, uniqueTable);
+    std::cout << "n"         << "\t\t"
+              << "unique"    << "\t\t"
+              << "correct"   << "\t\t"
+              << "total"     << "\t\t"
+              << "time[ms]"  << std::endl;
 
-    auto count = 0;
-    while (not gen.is_done())
+    for (auto varCount = 1; varCount < ssize(expected); ++varCount)
     {
-        ++count;
-        std::cout << count << std::endl;
-        gen.advance();
+        namespace ch = std::chrono;
+        auto const start = ch::high_resolution_clock::now();
+        auto uniqueTable = std::unordered_map<
+            MultiwayNode,
+            MultiwayNode*,
+            MwNodeHash,
+            MwNodeEquals
+        >();
+        auto gen = MwAstGenerator(varCount, uniqueTable);
+
+        auto memo = std::unordered_set<void*>();
+
+        auto totalCount = 0;
+        auto uniqueCount = 0;
+        while (not gen.is_done())
+        {
+            auto* const root = gen.get();
+            if (not memo.contains(root))
+            {
+                ++uniqueCount;
+                memo.emplace(root);
+            }
+            ++totalCount;
+            gen.advance();
+        }
+        auto const end = ch::high_resolution_clock::now();
+        auto const duration = ch::duration_cast<ch::milliseconds>(end - start);
+        std::cout << varCount    << "\t\t"
+                  << uniqueCount << "\t\t"
+                  << expected[as_uindex(varCount)] << "\t\t"
+                  << totalCount  << "\t\t"
+                  << duration    << std::endl;
     }
 
     std::cout << "=== end of main ===" << '\n';
