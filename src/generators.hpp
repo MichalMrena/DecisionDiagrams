@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 #include "trees.hpp"
@@ -83,6 +84,13 @@ private:
     bool isDone_;
 };
 
+using MwUniqueTableType =
+    std::unordered_map<
+        MultiwayNode,
+        MultiwayNode*,
+        MwNodeHash,
+    MwNodeEquals>;
+
 /**
  *  @brief Generates all unique multiway ASTs with given number of variables.
  *  Does not put any operation into internal nodes. This has to be done later,
@@ -92,13 +100,14 @@ class MwAstGenerator
 {
 public:
     MwAstGenerator(
-        int32 const varCount,
-        std::unordered_map<
-            MultiwayNode,
-            MultiwayNode*,
-            MwNodeHash,
-            MwNodeEquals
-        >& uniqueTable
+        int32 varCount,
+        MwUniqueTableType& uniqueTable
+    );
+
+    MwAstGenerator(
+        int32 varCount,
+        int32 repetitionCount,
+        MwUniqueTableType& uniqueTable
     );
 
     auto get () const -> MultiwayNode*;
@@ -119,14 +128,37 @@ private:
 public:
     SonVarCountsGenerator sonVarCountsGenerator_;
     std::vector<std::unique_ptr<MwAstGenerator>> sonGenerators_;
-    std::unordered_map<
-        MultiwayNode,
-        MultiwayNode*,
-        MwNodeHash,
-    MwNodeEquals>* uniqueTable_;
+    MwUniqueTableType* uniqueTable_;
     MultiwayNode* currentTree_;
     bool isDone_;
     bool isLeaf_;
+};
+
+/**
+ *  @brief Generates all combinations with repretions from the the base set.
+ */
+class CombinationGenerator
+{
+public:
+    CombinationGenerator(std::vector<MultiwayNode*> const& base, int32 k);
+
+    auto get () const -> std::vector<MultiwayNode*> const&;
+
+    auto advance () -> void;
+
+    auto is_done () const -> bool;
+
+private:
+    auto advance_state () -> void;
+
+    auto fill_current () -> void;
+
+private:
+    std::vector<MultiwayNode*> const* base_;
+    std::vector<MultiwayNode*> current_;
+    std::vector<int32> counter_;
+    std::vector<int32> counterBase_;
+    bool isDone_;
 };
 
 #endif

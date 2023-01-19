@@ -11,6 +11,7 @@
 using teddy::int32;
 using teddy::int64;
 using teddy::as_usize;
+using teddy::as_uindex;
 
 /**
  *  @brief Marks unreachable part of control flow that is a logic error.

@@ -350,17 +350,126 @@ auto MwAstGenerator::make_tree () -> void
     }
 }
 
+namespace
+{
+struct Group
+{
+    int32 elem_;
+    int32 count_;
+};
+
+auto group (std::vector<int32> const& xs) -> std::vector<Group>
+{
+    auto groups = std::vector<Group>();
+    auto it = begin(xs);
+    auto const last = end(xs);
+    while (it != last)
+    {
+        Group& group = groups.emplace_back(Group{*it, 0});
+        while (it != last && *it == group.elem_)
+        {
+            ++it;
+            ++group.count_;
+        }
+    }
+    return groups;
+}
+}
+
 auto MwAstGenerator::reset_son_generators () -> void
 {
     if (not isLeaf_)
     {
         sonGenerators_.clear();
-        auto const& sonVarCounts = sonVarCountsGenerator_.get();
-        for (auto const sonVarCount : sonVarCounts)
+        auto const countGroups = group(sonVarCountsGenerator_.get());
+        for (auto const [varCount, treeCount] : countGroups)
         {
-            sonGenerators_.emplace_back(
-                std::make_unique<MwAstGenerator>(sonVarCount, *uniqueTable_)
-            );
+            if (treeCount == 1)
+            {
+                sonGenerators_.emplace_back(
+                    std::make_unique<MwAstGenerator>(
+                        varCount,
+                        *uniqueTable_
+                    )
+                );
+            }
+            else
+            {
+                sonGenerators_.emplace_back(
+                    std::make_unique<MwAstGenerator>(
+                        varCount,
+                        treeCount,
+                        *uniqueTable_
+                    )
+                );
+            }
         }
+    }
+}
+
+CombinationGenerator::CombinationGenerator(
+    std::vector<MultiwayNode*> const& base,
+    int32 const k
+) :
+    base_(&base),
+    current_(as_usize(k)),
+    counter_(as_usize(k)),
+    counterBase_(as_usize(k)),
+    isDone_(empty(base) || k == 0)
+{
+    this->fill_current();
+}
+
+auto CombinationGenerator::get () const -> std::vector<MultiwayNode*> const&
+{
+    return current_;
+}
+
+auto CombinationGenerator::advance () -> void
+{
+    this->advance_state();
+    this->fill_current();
+}
+
+auto CombinationGenerator::is_done () const -> bool
+{
+    return isDone_;
+}
+
+auto CombinationGenerator::advance_state () -> void
+{
+    auto const n = static_cast<int32>(ssize(*base_));
+    auto const k = static_cast<int32>(ssize(counter_));
+
+    auto overflow = false;
+    for (auto i = 0; i < k; ++i)
+    {
+        auto& c = counter_[as_uindex(i)];
+        ++c;
+        overflow = c == n;
+        if (overflow)
+        {
+            auto& base = counterBase_[as_uindex(i)];
+            ++base;
+            c = base;
+            for (auto j = i - 1; j >= 0; --j)
+            {
+                counterBase_[as_uindex(j)] = base;
+                counter_[as_uindex(j)] = counterBase_[as_uindex(j)];
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+    isDone_ = overflow;
+}
+
+auto CombinationGenerator::fill_current () -> void
+{
+    for (auto i = 0u; i < size(counter_); ++i)
+    {
+        current_[i] = (*base_)[as_uindex(counter_[i])];
     }
 }
