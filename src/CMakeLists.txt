@@ -1,6 +1,8 @@
 add_executable(
     experiment
-    experiment.cpp
+        experiment.cpp
+        trees.cpp
+        generators.cpp
 )
 
 target_link_libraries(
