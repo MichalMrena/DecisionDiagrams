@@ -322,34 +322,23 @@ auto main () -> int
               << "unique nodes" << "\t\t"
               << "time[ms]"  << std::endl;
 
-    auto uniqueTable = std::unordered_map<
-        MultiwayNode,
-        MultiwayNode*,
-        MwNodeHash,
-        MwNodeEquals
-    >();
-    auto root = std::vector<MultiwayNode*>();
+    auto uniqueTable = MwUniqueTableType();
+    auto cache = MwCacheType();
+    auto rootStorage = std::vector<MultiwayNode*>();
     for (auto varCount = 1; varCount < ssize(expected); ++varCount)
     {
-        namespace ch = std::chrono;
+        namespace ch     = std::chrono;
         auto const start = ch::high_resolution_clock::now();
-        auto gen = SimpleMwAstGenerator(varCount, uniqueTable);
-
-        auto memo = std::unordered_set<void*>();
-
-        auto totalCount = 0;
+        auto gen         = SimpleMwAstGenerator(varCount, uniqueTable, cache);
+        auto totalCount  = 0;
         auto uniqueCount = 0;
         while (not gen.is_done())
         {
-            gen.get(root);
-            if (not memo.contains(root.back()))
-            {
-                ++uniqueCount;
-                memo.emplace(root.back());
-            }
+            gen.get(rootStorage);
+            ++uniqueCount;
             ++totalCount;
             gen.advance();
-            root.clear();
+            rootStorage.clear();
         }
         auto const end = ch::high_resolution_clock::now();
         auto const duration = ch::duration_cast<ch::milliseconds>(end - start);
@@ -358,24 +347,13 @@ auto main () -> int
                   << expected[as_uindex(varCount)] << "\t\t"
                   << totalCount  << "\t\t"
                   << size(uniqueTable) << "\t\t"
-                  << duration    << std::endl;
+                  << duration.count()  << std::endl;
 
     }
     for (auto const& [key, nodeptr] : uniqueTable)
     {
         delete nodeptr;
     }
-
-    // auto const base = std::vector<MultiwayNode*>(15);
-    // auto gen = CombinationGenerator(base, 3);
-
-    // auto i = 0;
-    // while (not gen.is_done())
-    // {
-    //     ++i;
-    //     gen.advance();
-    // }
-    // std::cout << i << "\n";
 
     std::cout << "=== end of main ===" << '\n';
 }

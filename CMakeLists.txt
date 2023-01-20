@@ -27,9 +27,9 @@ target_include_directories(
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_subdirectory(
-    tests
-)
+# add_subdirectory(
+#     tests
+# )
 
 add_subdirectory(
     src

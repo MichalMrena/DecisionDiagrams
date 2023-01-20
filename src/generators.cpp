@@ -304,11 +304,12 @@ auto CombinationGenerator::fill_current () -> void
 
 SimpleMwAstGenerator::SimpleMwAstGenerator(
     int32 const varCount,
-    MwUniqueTableType& uniqueTable
+    MwUniqueTableType& uniqueTable,
+    MwCacheType& cache
 ) :
     uniqueTable_(&uniqueTable),
+    cache_(&cache),
     sonVarCountsGenerator_(varCount),
-    // sonGenerators_({}),
     currentTree_(nullptr),
     isDone_(varCount < 1),
     isLeaf_(varCount == 1)
@@ -373,6 +374,22 @@ auto group (std::vector<int32> const& xs) -> std::vector<Group>
     }
     return groups;
 }
+
+auto make_all_trees (
+    int32 const varCount,
+    MwUniqueTableType& uniqueTable,
+    MwCacheType& cache
+) -> std::vector<MultiwayNode*>
+{
+    auto trees = std::vector<MultiwayNode*>();
+    auto gen = SimpleMwAstGenerator(varCount, uniqueTable, cache);
+    while (not gen.is_done())
+    {
+        gen.get(trees);
+        gen.advance();
+    }
+    return trees;
+}
 }
 
 auto SimpleMwAstGenerator::reset_son_generators () -> void
@@ -400,9 +417,11 @@ auto SimpleMwAstGenerator::reset_son_generators () -> void
                 for (auto i = 0; i < treeCount; ++i)
                 {
                     sonGenerators_.emplace_back(
+                        // std::make_unique<CachedMwAstGenerator>(
                         std::make_unique<SimpleMwAstGenerator>(
                             varCount,
-                            *uniqueTable_
+                            *uniqueTable_,
+                            *cache_
                         )
                     );
                 }
@@ -413,7 +432,8 @@ auto SimpleMwAstGenerator::reset_son_generators () -> void
                     std::make_unique<CombinatorialMwAstGenerator>(
                         varCount,
                         treeCount,
-                        *uniqueTable_
+                        *uniqueTable_,
+                        *cache_
                     )
                 );
             }
@@ -496,9 +516,10 @@ auto SimpleMwAstGenerator::advance_state () -> void
 CombinatorialMwAstGenerator::CombinatorialMwAstGenerator(
     int32 const varCount,
     int32 const repetitionCount,
-    MwUniqueTableType& uniqueTable
+    MwUniqueTableType& uniqueTable,
+    MwCacheType& cache
 ) :
-    combination_(make_all_trees(varCount, uniqueTable), repetitionCount)
+    combination_(make_all_trees(varCount, uniqueTable, cache), repetitionCount)
 {
 }
 
@@ -524,17 +545,42 @@ auto CombinatorialMwAstGenerator::reset () -> void
     combination_.reset();
 }
 
-auto CombinatorialMwAstGenerator::make_all_trees (
-    int32 const varCount,
-    MwUniqueTableType& uniqueTable
-) -> std::vector<MultiwayNode*>
+CachedMwAstGenerator::CachedMwAstGenerator(
+    int32 varCount,
+    MwUniqueTableType& uniqueTable,
+    MwCacheType& cache
+)
 {
-    auto trees = std::vector<MultiwayNode*>();
-    auto gen = SimpleMwAstGenerator(varCount, uniqueTable);
-    while (not gen.is_done())
+    auto it = cache.find(varCount);
+    if (it == end(cache))
     {
-        gen.get(trees);
-        gen.advance();
+        auto [newIt, isIn] = cache.emplace(
+            varCount,
+            make_all_trees(varCount, uniqueTable, cache)
+        );
+        it = newIt;
     }
-    return trees;
+
+    cached_ = &(it->second);
+    current_ = begin(*cached_);
+}
+
+auto CachedMwAstGenerator::get (std::vector<MultiwayNode*>& out) const -> void
+{
+    out.push_back(*current_);
+}
+
+auto CachedMwAstGenerator::is_done () const -> bool
+{
+    return current_ == end(*cached_);
+}
+
+auto CachedMwAstGenerator::advance () -> void
+{
+    ++current_;
+}
+
+auto CachedMwAstGenerator::reset () -> void
+{
+    current_ = begin(*cached_);
 }

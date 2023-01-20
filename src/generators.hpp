@@ -50,7 +50,6 @@ private:
     std::unique_ptr<BinaryNode> node_;
 };
 
-
 /**
  *  @brief Generates all unqiue variants of son sizes of a root node (owner)
  *  of a tree with given number of variables.
@@ -120,10 +119,10 @@ using MwUniqueTableType =
         MwNodeHash,
     MwNodeEquals>;
 
+using MwCacheType = std::unordered_map<int32, std::vector<MultiwayNode*>>;
+
 /**
- *  @brief Generates all unique multiway ASTs with given number of variables.
- *  Does not put any operation into internal nodes. This has to be done later,
- *  by altering AND and OR between levels of the tree.
+ *  @brief Interface for multiway AST generators.
  */
 class MwAstGenerator
 {
@@ -139,12 +138,18 @@ public:
     virtual auto reset () -> void = 0;
 };
 
+/**
+ *  @brief Generates all multiway ASTs with given number of variables.
+ *  Does not put any operation into internal nodes. This has to be done later,
+ *  by altering AND and OR between levels of the tree.
+ */
 class SimpleMwAstGenerator : public MwAstGenerator
 {
 public:
     SimpleMwAstGenerator(
         int32 varCount,
-        MwUniqueTableType& uniqueTable
+        MwUniqueTableType& uniqueTable,
+        MwCacheType& cache
     );
 
     auto get (std::vector<MultiwayNode*>& out) const -> void override;
@@ -164,6 +169,7 @@ private:
 
 private:
     MwUniqueTableType* uniqueTable_;
+    MwCacheType* cache_;
     SonVarCountsGenerator sonVarCountsGenerator_;
     std::vector<std::unique_ptr<MwAstGenerator>> sonGenerators_;
     MultiwayNode* currentTree_;
@@ -171,13 +177,18 @@ private:
     bool isLeaf_;
 };
 
+/**
+ *  @brief Uses simple generator to generate unique series of multiway ASTs
+ *  using @c SimpleMwAstGenerator .
+ */
 class CombinatorialMwAstGenerator : public MwAstGenerator
 {
 public:
     CombinatorialMwAstGenerator(
         int32 varCount,
         int32 repetitionCount,
-        MwUniqueTableType& uniqueTable
+        MwUniqueTableType& uniqueTable,
+        MwCacheType& cache
     );
 
     auto get (std::vector<MultiwayNode*>& out) const -> void override;
@@ -189,13 +200,32 @@ public:
     auto reset () -> void override;
 
 private:
-    static auto make_all_trees (
+    CombinationGenerator combination_;
+};
+
+/**
+ *  @brief Cached version of @c SimpleMwAstGenerator .
+ */
+class CachedMwAstGenerator : public MwAstGenerator
+{
+public:
+    CachedMwAstGenerator(
         int32 varCount,
-        MwUniqueTableType& uniqueTable
-    ) -> std::vector<MultiwayNode*>;
+        MwUniqueTableType& uniqueTable,
+        MwCacheType& cache
+    );
+
+    auto get (std::vector<MultiwayNode*>& out) const -> void override;
+
+    auto is_done () const -> bool override;
+
+    auto advance () -> void override;
+
+    auto reset () -> void override;
 
 private:
-    CombinationGenerator combination_;
+    std::vector<MultiwayNode*> const* cached_;
+    std::vector<MultiwayNode*>::const_iterator current_;
 };
 
 #endif
