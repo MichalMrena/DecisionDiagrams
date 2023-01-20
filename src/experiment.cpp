@@ -315,11 +315,11 @@ auto main () -> int
         23'816'743, 78'023'602, 256'738'751
     };
 
-    std::cout << "n"         << "\t\t"
-              << "unique"    << "\t\t"
-              << "correct"   << "\t\t"
-              << "total"     << "\t\t"
-              << "unique nodes" << "\t\t"
+    std::cout << "n"         << "\t"
+              << "unique"    << "\t"
+              << "correct"   << "\t"
+              << "total"     << "\t"
+              << "unique nodes" << "\t"
               << "time[ms]"  << std::endl;
 
     auto uniqueTable = MwUniqueTableType();
@@ -342,11 +342,11 @@ auto main () -> int
         }
         auto const end = ch::high_resolution_clock::now();
         auto const duration = ch::duration_cast<ch::milliseconds>(end - start);
-        std::cout << varCount    << "\t\t"
-                  << uniqueCount << "\t\t"
-                  << expected[as_uindex(varCount)] << "\t\t"
-                  << totalCount  << "\t\t"
-                  << size(uniqueTable) << "\t\t"
+        std::cout << varCount    << "\t"
+                  << uniqueCount << "\t"
+                  << expected[as_uindex(varCount)] << "\t"
+                  << totalCount  << "\t"
+                  << size(uniqueTable) << "\t"
                   << duration.count()  << std::endl;
 
     }

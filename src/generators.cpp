@@ -378,15 +378,28 @@ auto group (std::vector<int32> const& xs) -> std::vector<Group>
 auto make_all_trees (
     int32 const varCount,
     MwUniqueTableType& uniqueTable,
-    MwCacheType& cache
+    MwCacheType& cache,
+    bool const useCache
 ) -> std::vector<MultiwayNode*>
 {
     auto trees = std::vector<MultiwayNode*>();
-    auto gen = SimpleMwAstGenerator(varCount, uniqueTable, cache);
-    while (not gen.is_done())
+    if (useCache)
     {
-        gen.get(trees);
-        gen.advance();
+        auto gen = CachedMwAstGenerator(varCount, uniqueTable, cache);
+        while (not gen.is_done())
+        {
+            gen.get(trees);
+            gen.advance();
+        }
+    }
+    else
+    {
+        auto gen = SimpleMwAstGenerator(varCount, uniqueTable, cache);
+        while (not gen.is_done())
+        {
+            gen.get(trees);
+            gen.advance();
+        }
     }
     return trees;
 }
@@ -519,7 +532,10 @@ CombinatorialMwAstGenerator::CombinatorialMwAstGenerator(
     MwUniqueTableType& uniqueTable,
     MwCacheType& cache
 ) :
-    combination_(make_all_trees(varCount, uniqueTable, cache), repetitionCount)
+    combination_(
+        make_all_trees(varCount, uniqueTable, cache, true),
+        repetitionCount
+    )
 {
 }
 
@@ -556,7 +572,7 @@ CachedMwAstGenerator::CachedMwAstGenerator(
     {
         auto [newIt, isIn] = cache.emplace(
             varCount,
-            make_all_trees(varCount, uniqueTable, cache)
+            make_all_trees(varCount, uniqueTable, cache, false)
         );
         it = newIt;
     }
