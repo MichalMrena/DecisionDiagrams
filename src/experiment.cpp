@@ -308,85 +308,74 @@ auto compare_series_parallel () -> void
 
 auto main () -> int
 {
-    // auto gen = SonVarCountsGenerator(4);
+    auto const expected = std::vector {
+        -1,
+        1, 1, 2, 5, 12, 33, 90, 261, 766, 2'312, 7'068,
+        21'965, 68'954, 218'751, 699'534, 2'253'676, 7'305'788,
+        23'816'743, 78'023'602, 256'738'751
+    };
 
+    std::cout << "n"         << "\t\t"
+              << "unique"    << "\t\t"
+              << "correct"   << "\t\t"
+              << "total"     << "\t\t"
+              << "unique nodes" << "\t\t"
+              << "time[ms]"  << std::endl;
+
+    auto uniqueTable = std::unordered_map<
+        MultiwayNode,
+        MultiwayNode*,
+        MwNodeHash,
+        MwNodeEquals
+    >();
+    auto root = std::vector<MultiwayNode*>();
+    for (auto varCount = 1; varCount < ssize(expected); ++varCount)
+    {
+        namespace ch = std::chrono;
+        auto const start = ch::high_resolution_clock::now();
+        auto gen = SimpleMwAstGenerator(varCount, uniqueTable);
+
+        auto memo = std::unordered_set<void*>();
+
+        auto totalCount = 0;
+        auto uniqueCount = 0;
+        while (not gen.is_done())
+        {
+            gen.get(root);
+            if (not memo.contains(root.back()))
+            {
+                ++uniqueCount;
+                memo.emplace(root.back());
+            }
+            ++totalCount;
+            gen.advance();
+            root.clear();
+        }
+        auto const end = ch::high_resolution_clock::now();
+        auto const duration = ch::duration_cast<ch::milliseconds>(end - start);
+        std::cout << varCount    << "\t\t"
+                  << uniqueCount << "\t\t"
+                  << expected[as_uindex(varCount)] << "\t\t"
+                  << totalCount  << "\t\t"
+                  << size(uniqueTable) << "\t\t"
+                  << duration    << std::endl;
+
+    }
+    for (auto const& [key, nodeptr] : uniqueTable)
+    {
+        delete nodeptr;
+    }
+
+    // auto const base = std::vector<MultiwayNode*>(15);
+    // auto gen = CombinationGenerator(base, 3);
+
+    // auto i = 0;
     // while (not gen.is_done())
     // {
-    //     std::ranges::for_each(gen.get(), [](auto const x)
-    //     {
-    //         std::cout << x << ' ';
-    //     });
-    //     std::cout << '\n';
-
+    //     ++i;
     //     gen.advance();
     // }
-
-    // auto const expected = std::vector {
-    //     -1,
-    //     1, 1, 2, 5, 12, 33, 90, 261, 766, 2'312, 7'068,
-    //     21'965, 68'954, 21'8751, 699'534, 2'253'676, 7'305'788,
-    //   //  23'816'743, 78'023'602, 256'738'751
-    // };
-
-    // std::cout << "n"         << "\t\t"
-    //           << "unique"    << "\t\t"
-    //           << "correct"   << "\t\t"
-    //           << "total"     << "\t\t"
-    //           << "unique nodes" << "\t\t"
-    //           << "time[ms]"  << std::endl;
-
-    // auto uniqueTable = std::unordered_map<
-    //     MultiwayNode,
-    //     MultiwayNode*,
-    //     MwNodeHash,
-    //     MwNodeEquals
-    // >();
-    // for (auto varCount = 1; varCount < ssize(expected); ++varCount)
-    // {
-    //     namespace ch = std::chrono;
-    //     auto const start = ch::high_resolution_clock::now();
-    //     auto gen = MwAstGenerator(varCount, uniqueTable);
-
-    //     auto memo = std::unordered_set<void*>();
-
-    //     auto totalCount = 0;
-    //     auto uniqueCount = 0;
-    //     while (not gen.is_done())
-    //     {
-    //         auto* const root = gen.get();
-    //         if (not memo.contains(root))
-    //         {
-    //             ++uniqueCount;
-    //             memo.emplace(root);
-    //         }
-    //         ++totalCount;
-    //         gen.advance();
-    //     }
-    //     auto const end = ch::high_resolution_clock::now();
-    //     auto const duration = ch::duration_cast<ch::milliseconds>(end - start);
-    //     std::cout << varCount    << "\t\t"
-    //               << uniqueCount << "\t\t"
-    //               << expected[as_uindex(varCount)] << "\t\t"
-    //               << totalCount  << "\t\t"
-    //               << size(uniqueTable) << "\t\t"
-    //               << duration    << std::endl;
-
-    // }
-    // for (auto const& [key, nodeptr] : uniqueTable)
-    // {
-    //     delete nodeptr;
-    // }
-
-    auto const base = std::vector<MultiwayNode*>(15);
-    auto gen = CombinationGenerator(base, 3);
-
-    auto i = 0;
-    while (not gen.is_done())
-    {
-        ++i;
-        gen.advance();
-    }
-    std::cout << i << "\n";
+    // std::cout << i << "\n";
 
     std::cout << "=== end of main ===" << '\n';
 }

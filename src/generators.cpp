@@ -227,18 +227,90 @@ auto SonVarCountsGenerator::owner_is_leaf () const -> bool
     return varCount_ == 1;
 }
 
-MwAstGenerator::MwAstGenerator(
-    int32 const varCount,
-    std::unordered_map<
-        MultiwayNode,
-        MultiwayNode*,
-        MwNodeHash,
-        MwNodeEquals
-    >& uniqueTable
+CombinationGenerator::CombinationGenerator(
+    std::vector<MultiwayNode*> base,
+    int32 const k
 ) :
-    sonVarCountsGenerator_(varCount),
+    base_(std::move(base)),
+    current_(as_usize(k)),
+    counter_(as_usize(k)),
+    counterBase_(as_usize(k)),
+    isDone_(empty(base) || k == 0)
+{
+    this->fill_current();
+}
+
+auto CombinationGenerator::get () const -> std::vector<MultiwayNode*> const&
+{
+    return current_;
+}
+
+auto CombinationGenerator::advance () -> void
+{
+    this->advance_state();
+    this->fill_current();
+}
+
+auto CombinationGenerator::is_done () const -> bool
+{
+    return isDone_;
+}
+
+auto CombinationGenerator::reset () -> void
+{
+    isDone_ = empty(base_);
+    std::ranges::fill(counter_, 0);
+    std::ranges::fill(counterBase_, 0);
+    this->fill_current();
+}
+
+auto CombinationGenerator::advance_state () -> void
+{
+    auto const n = static_cast<int32>(ssize(base_));
+    auto const k = static_cast<int32>(ssize(counter_));
+
+    auto overflow = false;
+    for (auto i = 0; i < k; ++i)
+    {
+        auto& c = counter_[as_uindex(i)];
+        ++c;
+        overflow = c == n;
+        if (overflow)
+        {
+            auto& base = counterBase_[as_uindex(i)];
+            ++base;
+            c = base;
+            for (auto j = i - 1; j >= 0; --j)
+            {
+                counterBase_[as_uindex(j)] = base;
+                counter_[as_uindex(j)] = counterBase_[as_uindex(j)];
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+    isDone_ = overflow;
+}
+
+auto CombinationGenerator::fill_current () -> void
+{
+    for (auto i = 0u; i < size(counter_); ++i)
+    {
+        current_[i] = base_[as_uindex(counter_[i])];
+    }
+}
+
+SimpleMwAstGenerator::SimpleMwAstGenerator(
+    int32 const varCount,
+    MwUniqueTableType& uniqueTable
+) :
     uniqueTable_(&uniqueTable),
-    isDone_(false),
+    sonVarCountsGenerator_(varCount),
+    // sonGenerators_({}),
+    currentTree_(nullptr),
+    isDone_(varCount < 1),
     isLeaf_(varCount == 1)
 {
     if (not isLeaf_)
@@ -248,16 +320,15 @@ MwAstGenerator::MwAstGenerator(
     this->make_tree();
 }
 
-auto MwAstGenerator::get () const -> MultiwayNode*
+auto SimpleMwAstGenerator::get (std::vector<MultiwayNode*>& out) const -> void
 {
     assert(not this->is_done());
-    return currentTree_;
+    out.push_back(currentTree_);
 }
 
-auto MwAstGenerator::advance () -> void
+auto SimpleMwAstGenerator::advance () -> void
 {
     assert(not this->is_done());
-
     this->advance_state();
     if (not this->is_done())
     {
@@ -265,12 +336,12 @@ auto MwAstGenerator::advance () -> void
     }
 }
 
-auto MwAstGenerator::is_done () const -> bool
+auto SimpleMwAstGenerator::is_done () const -> bool
 {
     return isDone_;
 }
 
-auto MwAstGenerator::reset () -> void
+auto SimpleMwAstGenerator::reset () -> void
 {
     sonVarCountsGenerator_.reset();
     this->reset_son_generators();
@@ -278,7 +349,116 @@ auto MwAstGenerator::reset () -> void
     isDone_ = false;
 }
 
-auto MwAstGenerator::advance_state () -> void
+namespace
+{
+struct Group
+{
+    int32 elem_;
+    int32 count_;
+};
+
+auto group (std::vector<int32> const& xs) -> std::vector<Group>
+{
+    auto groups = std::vector<Group>();
+    auto it = begin(xs);
+    auto const last = end(xs);
+    while (it != last)
+    {
+        Group& group = groups.emplace_back(Group{*it, 0});
+        while (it != last && *it == group.elem_)
+        {
+            ++it;
+            ++group.count_;
+        }
+    }
+    return groups;
+}
+}
+
+auto SimpleMwAstGenerator::reset_son_generators () -> void
+{
+    if (not isLeaf_)
+    {
+        // sonGenerators_.clear();
+        // auto const& sonVarCounts = sonVarCountsGenerator_.get();
+        // for (auto const sonVarCount : sonVarCounts)
+        // {
+        //     sonGenerators_.emplace_back(
+        //         std::make_unique<SimpleMwAstGenerator>(
+        //             sonVarCount,
+        //             *uniqueTable_
+        //         )
+        //     );
+        // }
+
+        sonGenerators_.clear();
+        auto const countGroups = group(sonVarCountsGenerator_.get());
+        for (auto const [varCount, treeCount] : countGroups)
+        {
+            if (treeCount == 1 || varCount < 3)
+            {
+                for (auto i = 0; i < treeCount; ++i)
+                {
+                    sonGenerators_.emplace_back(
+                        std::make_unique<SimpleMwAstGenerator>(
+                            varCount,
+                            *uniqueTable_
+                        )
+                    );
+                }
+            }
+            else
+            {
+                sonGenerators_.emplace_back(
+                    std::make_unique<CombinatorialMwAstGenerator>(
+                        varCount,
+                        treeCount,
+                        *uniqueTable_
+                    )
+                );
+            }
+        }
+    }
+}
+
+auto SimpleMwAstGenerator::make_tree () -> void
+{
+    auto key = MultiwayNode{};
+
+    if (isLeaf_)
+    {
+        key.data_ = LeafNode{0};
+    }
+    else
+    {
+        auto sons = std::vector<MultiwayNode*>();
+        sons.reserve(size(sonGenerators_));
+        for (auto const& sonGenUPtr : sonGenerators_)
+        {
+            sonGenUPtr->get(sons);
+        }
+        std::ranges::sort(sons);
+
+        key.data_ = NAryOpNode{
+            Operation::Undefined,
+            std::move(sons)
+        };
+    }
+
+    auto it  = uniqueTable_->find(key);
+    if (it == end(*uniqueTable_))
+    {
+        auto* newNode = new MultiwayNode{key};
+        uniqueTable_->try_emplace(key, newNode);
+        currentTree_ = newNode;
+    }
+    else
+    {
+        currentTree_ = it->second;
+    }
+}
+
+auto SimpleMwAstGenerator::advance_state () -> void
 {
     auto overflow = false;
     for (auto& sonGenerator : sonGenerators_)
@@ -313,163 +493,48 @@ auto MwAstGenerator::advance_state () -> void
     }
 }
 
-auto MwAstGenerator::make_tree () -> void
-{
-    auto key = MultiwayNode{};
-
-    if (isLeaf_)
-    {
-        key.data_ = LeafNode{0};
-    }
-    else
-    {
-        auto sons = std::vector<MultiwayNode*>();
-        sons.reserve(size(sonGenerators_));
-        for (auto const& sonGenUPtr : sonGenerators_)
-        {
-            sons.push_back(sonGenUPtr->get());
-        }
-        std::ranges::sort(sons);
-
-        key.data_ = NAryOpNode{
-            Operation::Undefined,
-            std::move(sons)
-        };
-    }
-
-    auto it  = uniqueTable_->find(key);
-    if (it == end(*uniqueTable_))
-    {
-        auto* newNode = new MultiwayNode{key};
-        uniqueTable_->try_emplace(key, newNode);
-        currentTree_ = newNode;
-    }
-    else
-    {
-        currentTree_ = it->second;
-    }
-}
-
-namespace
-{
-struct Group
-{
-    int32 elem_;
-    int32 count_;
-};
-
-auto group (std::vector<int32> const& xs) -> std::vector<Group>
-{
-    auto groups = std::vector<Group>();
-    auto it = begin(xs);
-    auto const last = end(xs);
-    while (it != last)
-    {
-        Group& group = groups.emplace_back(Group{*it, 0});
-        while (it != last && *it == group.elem_)
-        {
-            ++it;
-            ++group.count_;
-        }
-    }
-    return groups;
-}
-}
-
-auto MwAstGenerator::reset_son_generators () -> void
-{
-    if (not isLeaf_)
-    {
-        sonGenerators_.clear();
-        auto const countGroups = group(sonVarCountsGenerator_.get());
-        for (auto const [varCount, treeCount] : countGroups)
-        {
-            if (treeCount == 1)
-            {
-                sonGenerators_.emplace_back(
-                    std::make_unique<MwAstGenerator>(
-                        varCount,
-                        *uniqueTable_
-                    )
-                );
-            }
-            else
-            {
-                sonGenerators_.emplace_back(
-                    std::make_unique<MwAstGenerator>(
-                        varCount,
-                        treeCount,
-                        *uniqueTable_
-                    )
-                );
-            }
-        }
-    }
-}
-
-CombinationGenerator::CombinationGenerator(
-    std::vector<MultiwayNode*> const& base,
-    int32 const k
+CombinatorialMwAstGenerator::CombinatorialMwAstGenerator(
+    int32 const varCount,
+    int32 const repetitionCount,
+    MwUniqueTableType& uniqueTable
 ) :
-    base_(&base),
-    current_(as_usize(k)),
-    counter_(as_usize(k)),
-    counterBase_(as_usize(k)),
-    isDone_(empty(base) || k == 0)
+    combination_(make_all_trees(varCount, uniqueTable), repetitionCount)
 {
-    this->fill_current();
 }
 
-auto CombinationGenerator::get () const -> std::vector<MultiwayNode*> const&
+auto CombinatorialMwAstGenerator::get
+    (std::vector<MultiwayNode*>& out) const -> void
 {
-    return current_;
+    auto const& current = combination_.get();
+    out.insert(end(out), begin(current), end(current));
 }
 
-auto CombinationGenerator::advance () -> void
+auto CombinatorialMwAstGenerator::is_done() const -> bool
 {
-    this->advance_state();
-    this->fill_current();
+    return combination_.is_done();
 }
 
-auto CombinationGenerator::is_done () const -> bool
+auto CombinatorialMwAstGenerator::advance() -> void
 {
-    return isDone_;
+    combination_.advance();
 }
 
-auto CombinationGenerator::advance_state () -> void
+auto CombinatorialMwAstGenerator::reset () -> void
 {
-    auto const n = static_cast<int32>(ssize(*base_));
-    auto const k = static_cast<int32>(ssize(counter_));
+    combination_.reset();
+}
 
-    auto overflow = false;
-    for (auto i = 0; i < k; ++i)
+auto CombinatorialMwAstGenerator::make_all_trees (
+    int32 const varCount,
+    MwUniqueTableType& uniqueTable
+) -> std::vector<MultiwayNode*>
+{
+    auto trees = std::vector<MultiwayNode*>();
+    auto gen = SimpleMwAstGenerator(varCount, uniqueTable);
+    while (not gen.is_done())
     {
-        auto& c = counter_[as_uindex(i)];
-        ++c;
-        overflow = c == n;
-        if (overflow)
-        {
-            auto& base = counterBase_[as_uindex(i)];
-            ++base;
-            c = base;
-            for (auto j = i - 1; j >= 0; --j)
-            {
-                counterBase_[as_uindex(j)] = base;
-                counter_[as_uindex(j)] = counterBase_[as_uindex(j)];
-            }
-        }
-        else
-        {
-            break;
-        }
+        gen.get(trees);
+        gen.advance();
     }
-    isDone_ = overflow;
-}
-
-auto CombinationGenerator::fill_current () -> void
-{
-    for (auto i = 0u; i < size(counter_); ++i)
-    {
-        current_[i] = (*base_)[as_uindex(counter_[i])];
-    }
+    return trees;
 }

@@ -84,6 +84,35 @@ private:
     bool isDone_;
 };
 
+/**
+ *  @brief Generates all combinations with repretions from the the base set.
+ */
+class CombinationGenerator
+{
+public:
+    CombinationGenerator(std::vector<MultiwayNode*> base, int32 k);
+
+    auto get () const -> std::vector<MultiwayNode*> const&;
+
+    auto advance () -> void;
+
+    auto is_done () const -> bool;
+
+    auto reset () -> void;
+
+private:
+    auto advance_state () -> void;
+
+    auto fill_current () -> void;
+
+private:
+    std::vector<MultiwayNode*> base_;
+    std::vector<MultiwayNode*> current_;
+    std::vector<int32> counter_;
+    std::vector<int32> counterBase_;
+    bool isDone_;
+};
+
 using MwUniqueTableType =
     std::unordered_map<
         MultiwayNode,
@@ -99,66 +128,74 @@ using MwUniqueTableType =
 class MwAstGenerator
 {
 public:
-    MwAstGenerator(
+    virtual ~MwAstGenerator() = default;
+
+    virtual auto get (std::vector<MultiwayNode*>& out) const -> void = 0;
+
+    virtual auto advance () -> void = 0;
+
+    virtual auto is_done () const -> bool = 0;
+
+    virtual auto reset () -> void = 0;
+};
+
+class SimpleMwAstGenerator : public MwAstGenerator
+{
+public:
+    SimpleMwAstGenerator(
         int32 varCount,
         MwUniqueTableType& uniqueTable
     );
 
-    MwAstGenerator(
-        int32 varCount,
-        int32 repetitionCount,
-        MwUniqueTableType& uniqueTable
-    );
+    auto get (std::vector<MultiwayNode*>& out) const -> void override;
 
-    auto get () const -> MultiwayNode*;
+    auto advance () -> void override;
 
-    auto advance () -> void;
+    auto is_done () const -> bool override;
 
-    auto is_done () const -> bool;
-
-    auto reset () -> void;
+    auto reset () -> void override;
 
 private:
-    auto advance_state () -> void;
+    auto reset_son_generators () -> void;
 
     auto make_tree () -> void;
 
-    auto reset_son_generators () -> void;
+    auto advance_state () -> void;
 
-public:
+private:
+    MwUniqueTableType* uniqueTable_;
     SonVarCountsGenerator sonVarCountsGenerator_;
     std::vector<std::unique_ptr<MwAstGenerator>> sonGenerators_;
-    MwUniqueTableType* uniqueTable_;
     MultiwayNode* currentTree_;
     bool isDone_;
     bool isLeaf_;
 };
 
-/**
- *  @brief Generates all combinations with repretions from the the base set.
- */
-class CombinationGenerator
+class CombinatorialMwAstGenerator : public MwAstGenerator
 {
 public:
-    CombinationGenerator(std::vector<MultiwayNode*> const& base, int32 k);
+    CombinatorialMwAstGenerator(
+        int32 varCount,
+        int32 repetitionCount,
+        MwUniqueTableType& uniqueTable
+    );
 
-    auto get () const -> std::vector<MultiwayNode*> const&;
+    auto get (std::vector<MultiwayNode*>& out) const -> void override;
 
-    auto advance () -> void;
+    auto is_done () const -> bool override;
 
-    auto is_done () const -> bool;
+    auto advance () -> void override;
+
+    auto reset () -> void override;
 
 private:
-    auto advance_state () -> void;
-
-    auto fill_current () -> void;
+    static auto make_all_trees (
+        int32 varCount,
+        MwUniqueTableType& uniqueTable
+    ) -> std::vector<MultiwayNode*>;
 
 private:
-    std::vector<MultiwayNode*> const* base_;
-    std::vector<MultiwayNode*> current_;
-    std::vector<int32> counter_;
-    std::vector<int32> counterBase_;
-    bool isDone_;
+    CombinationGenerator combination_;
 };
 
 #endif
