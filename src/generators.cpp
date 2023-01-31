@@ -180,7 +180,7 @@ auto SonVarCountsGenerator::advance () -> void
         }
 
         // set the corrent size
-        auto const newEnd = next(
+        auto const newEnd = std::next(
             decPos,
             nextNumRepeats + (tailNum != 0 ? 1 : 0) + 1
         );
@@ -204,7 +204,8 @@ auto SonVarCountsGenerator::reset () -> void
     }
 }
 
-auto SonVarCountsGenerator::find_first_non_one () -> std::vector<int32>::iterator
+auto SonVarCountsGenerator::find_first_non_one
+    () -> std::vector<int32>::iterator
 {
     for (auto i = ssize(counts_) - 1; i >= 0; --i)
     {
@@ -350,14 +351,6 @@ auto SimpleMwAstGenerator::reset () -> void
     isDone_ = false;
 }
 
-namespace
-{
-struct Group
-{
-    int32 elem_;
-    int32 count_;
-};
-
 auto group (std::vector<int32> const& xs) -> std::vector<Group>
 {
     auto groups = std::vector<Group>();
@@ -375,6 +368,8 @@ auto group (std::vector<int32> const& xs) -> std::vector<Group>
     return groups;
 }
 
+namespace
+{
 auto make_all_trees (
     int32 const varCount,
     MwUniqueTableType& uniqueTable,
@@ -430,8 +425,8 @@ auto SimpleMwAstGenerator::reset_son_generators () -> void
                 for (auto i = 0; i < treeCount; ++i)
                 {
                     sonGenerators_.emplace_back(
-                        // std::make_unique<CachedMwAstGenerator>(
-                        std::make_unique<SimpleMwAstGenerator>(
+                        std::make_unique<CachedMwAstGenerator>(
+                        // std::make_unique<SimpleMwAstGenerator>(
                             varCount,
                             *uniqueTable_,
                             *cache_

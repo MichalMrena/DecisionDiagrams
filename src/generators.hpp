@@ -228,4 +228,18 @@ private:
     std::vector<MultiwayNode*>::const_iterator current_;
 };
 
+/**
+ * @brief Result of @c group .
+ */
+struct Group
+{
+    int32 elem_;
+    int32 count_;
+};
+
+/**
+ *  @brief Groups ordered @p xs by value.
+ */
+auto group (std::vector<int32> const& xs) -> std::vector<Group>;
+
 #endif
