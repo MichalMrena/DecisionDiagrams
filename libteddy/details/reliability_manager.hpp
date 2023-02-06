@@ -110,7 +110,7 @@ public:
      *  \return System availability.
      */
     template<component_probabilities Ps, class Foo = void>
-    requires(is_bss<Domain>)
+    requires(is_bss<Degree>)
     auto availability(Ps const& ps, diagram_t& sf) -> second_t<Foo, double>;
 
     /**
@@ -499,7 +499,7 @@ auto reliability_manager<Degree, Domain>::get_probability(int32 const j) const
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
-requires(is_bss<Domain>)
+requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::availability(
     Ps const& ps, diagram_t& f
 ) -> second_t<Foo, double>
@@ -983,9 +983,10 @@ auto reliability_manager<Degree, Domain>::calculate_ntp
                 auto const i = n->get_index();
                 this->nodes_.for_each_son(
                     n,
-                    [=, k = 0, this, &ps](auto const son) mutable
+                    [=, k = 0, &ps](auto const son) mutable
                     {
-                        n->data() += son->data() * ps[i][k];
+                        auto const p = ps[as_uindex(i)][as_uindex(k)];
+                        n->data() += son->data() * p;
                         ++k;
                     }
                 );

@@ -370,7 +370,7 @@ template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::get_terminal_node(int32 const v) const
     -> node_t*
 {
-    return v < terminals_.size() ? terminals_[v] : nullptr;
+    return v < ssize(terminals_) ? terminals_[as_uindex(v)] : nullptr;
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1032,7 +1032,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
         }
     };
 
-    auto const levelCount = 1 + this->get_var_count();
+    auto const levelCount = as_usize(1 + this->get_var_count());
     auto labels           = std::vector<std::string>();
     auto rankGroups       = std::vector<std::vector<std::string>>(levelCount);
     auto arcs             = std::vector<std::string>();
@@ -1057,7 +1057,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
             }
 
             // Add to same level.
-            rankGroups[level].emplace_back(get_id_str(n) + ";");
+            rankGroups[as_uindex(level)].emplace_back(get_id_str(n) + ";");
 
             // Add arcs.
             this->for_each_son(
