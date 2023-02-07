@@ -38,7 +38,7 @@ auto make_truth_vector (
         }
         else
         {
-            return vs[n.get_index()];
+            return vs[as_uindex(n.get_index())];
         }
     };
 

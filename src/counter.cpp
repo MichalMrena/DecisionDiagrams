@@ -9,7 +9,7 @@ using teddy::as_usize;
 
 template<class Int>
 tree_count_memo<Int>::tree_count_memo(int32 const n) :
-    memo_(n + 1, -1)
+    memo_(as_usize(n + 1), -1)
 {
     memo_[1] = 1;
     memo_[2] = 1;
