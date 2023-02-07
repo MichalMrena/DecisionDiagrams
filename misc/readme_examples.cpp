@@ -1,5 +1,6 @@
 #include <libteddy/teddy.hpp>
 #include <libteddy/teddy_reliability.hpp>
+#include <iostream>
 
 auto example_basic_usage () -> void
 {

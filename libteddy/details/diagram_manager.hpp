@@ -705,7 +705,7 @@ private:
         {
             auto const hash1 = std::hash<node_t*>()(p.first);
             auto const hash2 = std::hash<node_t*>()(p.second);
-            auto result      = 0ul;
+            auto result      = std::size_t(0);
             result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
             result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
             return result;
@@ -1000,7 +1000,7 @@ auto diagram_manager<Data, Degree, Domain>::to_vector(diagram_t d) const
 {
     auto vs = std::vector<int32>();
     vs.reserve(
-        as_usize(nodes_.domain_product(0u, this->get_var_count()))
+        as_usize(nodes_.domain_product(0, this->get_var_count()))
     );
     this->to_vector_g(d, std::back_inserter(vs));
     return vs;
@@ -1053,7 +1053,7 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
     {
         auto vs = std::vector<diagram_t>();
         vs.reserve(cube.size());
-        for (auto i = 0u; i < cube.size(); ++i)
+        for (auto i = 0; i < cube.size(); ++i)
         {
             if (cube.get(i) == 1)
             {
@@ -1090,16 +1090,16 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
     // Create a diagram for each function.
     auto functionDiagrams = std::vector<diagram_t>();
     functionDiagrams.reserve(functionCount);
-    for (auto fi = 0u; fi < functionCount; ++fi)
+    for (auto fi = 0; fi < functionCount; ++fi)
     {
         // First create a diagram for each product.
         auto products = std::vector<diagram_t>();
         // products.reserve(lineCount);
-        for (auto li = 0u; li < lineCount; ++li)
+        for (auto li = 0; li < lineCount; ++li)
         {
             // We are doing SOP so we are only interested
             // in functions with value 1.
-            if (plaLines[li].fVals.get(fi) == 1)
+            if (plaLines[as_usize(li)].fVals.get(fi) == 1)
             {
                 products.emplace_back(product(plaLines[li].cube));
             }
@@ -1204,13 +1204,13 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
     auto const numOfSteps =
         static_cast<int64>(std::ceil(std::log2(count)));
 
-    for (auto step = 0u; step < numOfSteps; ++step)
+    for (auto step = 0; step < numOfSteps; ++step)
     {
         auto const justMoveLast = currentCount & 1;
         currentCount            = (currentCount / 2) + justMoveLast;
         auto const pairCount    = currentCount - justMoveLast;
 
-        for (auto i = 0u; i < pairCount; ++i)
+        for (auto i = 0; i < pairCount; ++i)
         {
             *(first + i) =
                 this->apply<Op>(*(first + 2 * i), *(first + 2 * i + 1));
@@ -1623,7 +1623,7 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
                 i,
                 nodes_.make_sons(
                     i,
-                    [&self, f, n](auto const k)
+                    [&self, n](auto const k)
                     {
                         return self(self, n->get_son(k));
                     }
@@ -1648,7 +1648,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_local(
         cache_pair_hash_t,
         cache_pair_equal_t>();
 
-    auto cacheHandle = local_cache_handle(cache);
+    auto cacheHandle = local_cache_handle<decltype(cache)>(cache);
 
     return this->apply_detail(lhs, rhs, op, cacheHandle);
 }

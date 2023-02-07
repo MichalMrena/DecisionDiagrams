@@ -561,49 +561,49 @@ public:
         using settings_t = test_settings<ManagerSettings, ExpressionSettings>;
 
         this->add_test(std::make_unique<test_evaluate<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
-        this->add_test(std::make_unique<test_fold<settings_t>>(test_settings {
-            seeder(), manager, expr}));
+        this->add_test(std::make_unique<test_fold<settings_t>>(
+            settings_t {seeder(), manager, expr}));
 
-        this->add_test(std::make_unique<test_gc<settings_t>>(test_settings {
-            seeder(), manager, expr}));
+        this->add_test(std::make_unique<test_gc<settings_t>>(
+            settings_t {seeder(), manager, expr}));
 
         this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_satisfy_all<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_operators<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_cofactor<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_one_var_sift<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_auto_var_sift<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_from_vector<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_to_vector<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
 
         this->add_test(std::make_unique<test_from_expression<settings_t>>(
-            test_settings {seeder(), manager, expr}
+            settings_t {seeder(), manager, expr}
         ));
     }
 };
@@ -654,8 +654,7 @@ public:
     test_imdd_manager(std::size_t const seed)
         : test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
               seed,
-              imdd_manager_settings<3> {
-                  18, 5'000, random_order_tag(), random_domains()},
+              imdd_manager_settings<3> {{{18, 5'000, random_order_tag()}, random_domains()}},
               minmax_expression_settings {30, 6},
               "imdd_manager"
           )
@@ -673,8 +672,7 @@ public:
     test_ifmdd_manager(std::size_t const seed)
         : test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
               seed,
-              ifmdd_manager_settings<3> {
-                  18, 5'000, random_order_tag(), random_domains()},
+              ifmdd_manager_settings<3> {{{18, 5'000, random_order_tag()}, random_domains()}},
               minmax_expression_settings {30, 6},
               "ifmdd_manager"
           )

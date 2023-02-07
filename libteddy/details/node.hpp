@@ -149,7 +149,7 @@ private:
     inline static constexpr auto UsedM   = 1u << (8 * sizeof(uint32) - 2);
     inline static constexpr auto LeafM   = 1u << (8 * sizeof(uint32) - 3);
     inline static constexpr auto RefsM   = ~(MarkM | UsedM | LeafM);
-    inline static constexpr auto RefsMax = ~RefsM;
+    inline static constexpr auto RefsMax = static_cast<int64>(~RefsM);
 
 private:
     alignas(internal) std::byte union_[sizeof(internal)];

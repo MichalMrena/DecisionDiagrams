@@ -6,7 +6,7 @@ cmake_minimum_required(
 project(
         TeDDy
     VERSION
-        3.0
+        4.0
     DESCRIPTION
         "C++ library for creating and manipulating decision diagrams"
     LANGUAGES
@@ -40,6 +40,12 @@ target_include_directories(
 add_subdirectory(
     src
 )
+
+add_subdirectory(
+    misc
+)
+
+include(GNUInstallDirs)
 
 install(
     DIRECTORY

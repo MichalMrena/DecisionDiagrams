@@ -110,7 +110,7 @@ public:
      *  \return System availability.
      */
     template<component_probabilities Ps, class Foo = void>
-    requires(is_bss<Domain>)
+    requires(is_bss<Degree>)
     auto availability(Ps const& ps, diagram_t& sf) -> second_t<Foo, double>;
 
     /**
@@ -466,7 +466,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
             if (node->is_internal())
             {
                 auto const nodeIndex = node->get_index();
-                auto k               = 0u;
+                auto k               = 0;
                 this->nodes_.for_each_son(
                     node,
                     [node, nodeIndex, &ps, &k](auto const son)
@@ -499,7 +499,7 @@ auto reliability_manager<Degree, Domain>::get_probability(int32 const j) const
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
-requires(is_bss<Domain>)
+requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::availability(
     Ps const& ps, diagram_t& f
 ) -> second_t<Foo, double>
@@ -753,10 +753,10 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
     auto const varCount = this->get_var_count();
     auto dpldes         = std::vector<diagram_t>();
 
-    for (auto i = 0u; i < varCount; ++i)
+    for (auto i = 0; i < varCount; ++i)
     {
         auto const varDomain = this->nodes_.get_domain(i);
-        for (auto varFrom = 0u; varFrom < varDomain - 1; ++varFrom)
+        for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom)
         {
             auto const varChange = value_change {varFrom, varFrom + 1};
             auto const dpld = this->idpld_type_3_increase(varChange, j, sf, i);
@@ -876,7 +876,7 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
     {
         auto const hash1 = std::hash<node_t*>()(p.left);
         auto const hash2 = std::hash<node_t*>()(p.right);
-        auto result      = 0ul;
+        auto result      = 0l;
         result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
         result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
         return result;
@@ -983,9 +983,10 @@ auto reliability_manager<Degree, Domain>::calculate_ntp
                 auto const i = n->get_index();
                 this->nodes_.for_each_son(
                     n,
-                    [=, k = 0u, this, &ps](auto const son) mutable
+                    [=, k = 0, &ps](auto const son) mutable
                     {
-                        n->data() += son->data() * ps[i][k];
+                        auto const p = ps[as_uindex(i)][as_uindex(k)];
+                        n->data() += son->data() * p;
                         ++k;
                     }
                 );
