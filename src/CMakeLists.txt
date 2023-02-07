@@ -1,14 +1,22 @@
+find_package(
+    GMP
+    REQUIRED
+)
+
 add_executable(
     experiment
+        counter.cpp
         experiment.cpp
-        trees.cpp
         generators.cpp
+        trees.cpp
 )
 
 target_link_libraries(
         experiment
     PRIVATE
         libteddy
+        ${GMP_C_LIBRARIES}
+        ${GMP_CXX_LIBRARIES}
 )
 
 target_compile_options(

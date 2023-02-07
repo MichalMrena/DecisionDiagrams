@@ -13,6 +13,7 @@
 #include <string>
 #include <unordered_set>
 
+#include "counter.hpp"
 #include "iterators.hpp"
 #include "trees.hpp"
 #include "generators.hpp"
@@ -307,78 +308,6 @@ auto compare_series_parallel () -> void
               << relativeequal << '\n';
 }
 
-auto factorial (int64 n) -> int64
-{
-    auto result = int64(1);
-    while (n > 1)
-    {
-        result *= n;
-        --n;
-    }
-    return result;
-}
-
-auto n_over_k (int64 const n, int64 const k) -> int64
-{
-    return
-        k == 0
-            ? 1 :
-        k == 1 || k == n
-            ? n :
-        n > 20
-            ? n_over_k(n - 1, k - 1) + n_over_k(n - 1, k) :
-        factorial(n) / (factorial(n - k) * factorial(k));
-}
-
-auto combin_r (int64 const n, int64 const k) -> int64
-{
-    return n_over_k(n + k - 1, k);
-}
-
-auto mw_tree_count (std::vector<int64>& memo, int32 const n) -> int64
-{
-    if (memo[as_uindex(n)] != -1)
-    {
-        return memo[as_uindex(n)];
-    }
-    memo[as_uindex(n)] = 0;
-
-    auto partitionGen = SonVarCountsGenerator(n);
-    while (not partitionGen.is_done())
-    {
-        auto const groups = group(partitionGen.get());
-        auto counts = std::vector<int64>();
-        counts.reserve(as_usize(n));
-        for (auto const [elem, count] : groups)
-        {
-            if (count == 1)
-            {
-                counts.push_back(mw_tree_count(memo, elem));
-            }
-            else if (elem < 3)
-            {
-                counts.push_back(teddy::utils::int_pow(
-                    mw_tree_count(memo, elem),
-                    count
-                ));
-            }
-            else
-            {
-                counts.push_back(combin_r(mw_tree_count(memo, elem), count));
-            }
-        }
-        memo[as_uindex(n)] += std::reduce(
-            begin(counts),
-            end(counts),
-            int64(1),
-            std::multiplies<>()
-        );
-        partitionGen.advance();
-    }
-
-    return memo[as_uindex(n)];
-}
-
 auto main () -> int
 {
     // auto const expected = std::vector {
@@ -428,13 +357,21 @@ auto main () -> int
     //     delete nodeptr;
     // }
 
-    auto constexpr N = 39;
-    auto memo = std::vector<int64>(N + 1, -1);
-    memo[1] = 1;
-    memo[2] = 1;
+    // auto i = 0;
+    // for (auto const count : mw_tree_counts<Integer>(100))
+    // {
+    //     if (count > 0)
+    //     {
+    //         std::cout << i << "\t" << count << "\n";
+    //     }
+    //     ++i;
+    // }
+
+    auto constexpr N = 100;
+    auto memo = tree_count_memo<Integer>(N);
     for (auto i = 1; i <= N; ++i)
     {
-        std::cout << i << "\t" << mw_tree_count(memo, i) << "\n";
+        std::cout << i << "\t" << mw_tree_count<Integer>(memo, i) << "\n";
     }
 
     std::cout << "=== end of main ===" << '\n';
