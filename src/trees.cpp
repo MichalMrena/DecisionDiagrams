@@ -139,6 +139,16 @@ auto MultiwayNode::get_args() const -> std::vector<MultiwayNode*> const&
     return std::get<NAryOpNode>(data_).args_;
 }
 
+auto MultiwayNode::as_opnode() -> NAryOpNode&
+{
+    return std::get<NAryOpNode>(data_);
+}
+
+auto MultiwayNode::as_leafnode() -> LeafNode&
+{
+    return std::get<LeafNode>(data_);
+}
+
 auto MultiwayNode::as_opnode() const -> NAryOpNode const&
 {
     return std::get<NAryOpNode>(data_);

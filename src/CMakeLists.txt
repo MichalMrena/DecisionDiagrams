@@ -5,7 +5,7 @@ find_package(
 
 add_executable(
     experiment
-        counter.cpp
+        counters.cpp
         experiment.cpp
         generators.cpp
         trees.cpp

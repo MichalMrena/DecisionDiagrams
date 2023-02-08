@@ -1,6 +1,7 @@
 #ifndef TEDDY_SRC_GENERATORS_HPP
 #define TEDDY_SRC_GENERATORS_HPP
 
+#include <array>
 #include <memory>
 #include <unordered_map>
 #include <variant>
@@ -84,12 +85,44 @@ private:
 };
 
 /**
- *  @brief Generates all combinations with repretions from the the base set.
+ *  @brief Generates all combinations from a base set.
  */
 class CombinationGenerator
 {
 public:
-    CombinationGenerator(std::vector<MultiwayNode*> base, int32 k);
+    CombinationGenerator(std::vector<int32> base, int32 k);
+
+    auto get () const -> std::vector<int32> const&;
+
+    auto get_base () const -> std::vector<int32> const&;
+
+    auto get_mask () const -> std::vector<int32> const&;
+
+    auto advance () -> void;
+
+    auto is_done () const -> bool;
+
+    auto reset () -> void;
+
+private:
+    auto advance_state () -> void;
+
+    auto fill_current () -> void;
+
+private:
+    std::vector<int32> base_;
+    std::vector<int32> mask_;
+    std::vector<int32> current_;
+    bool isDone_;
+};
+
+/**
+ *  @brief Generates all combinations with repretions from a base set.
+ */
+class CombinationRGenerator
+{
+public:
+    CombinationRGenerator(std::vector<MultiwayNode*> base, int32 k);
 
     auto get () const -> std::vector<MultiwayNode*> const&;
 
@@ -152,6 +185,8 @@ public:
         MwCacheType& cache
     );
 
+    auto get () const -> MultiwayNode*;
+
     auto get (std::vector<MultiwayNode*>& out) const -> void override;
 
     auto advance () -> void override;
@@ -200,7 +235,7 @@ public:
     auto reset () -> void override;
 
 private:
-    CombinationGenerator combination_;
+    CombinationRGenerator combination_;
 };
 
 /**
@@ -241,5 +276,74 @@ struct Group
  *  @brief Groups ordered @p xs by value.
  */
 auto group (std::vector<int32> const& xs) -> std::vector<Group>;
+
+/**
+ *  @brief Generates all series-parallel system using a topology given as tree.
+ */
+class SeriesParallelTreeGenerator
+{
+public:
+    SeriesParallelTreeGenerator(MultiwayNode* root);
+
+    auto get () const -> MultiwayNode const&;
+
+    auto is_done () const -> bool;
+
+    auto advance () -> void;
+
+private:
+    auto advance_state () -> void;
+
+    auto fill_leaf_groups () -> void;
+
+    auto init_combinations () -> void;
+
+    auto reset_tail_combinations (int64 headCount) -> void;
+
+    auto assign_indices () -> void;
+
+    auto place_ops () -> void;
+
+    static auto has_leaf_son (MultiwayNode const& node) -> bool;
+
+    static auto leaf_count (MultiwayNode const& node) -> int32;
+
+    static auto next_op (Operation current) -> Operation;
+
+    static auto subtract (
+        std::vector<int32>& lhs,
+        std::vector<int32> const& rhs
+    ) -> void;
+
+private:
+    MultiwayNode* root_;
+    std::array<Operation, 2> operations_;
+    std::array<Operation, 2>::iterator operationsIt_;
+    std::vector<std::vector<MultiwayNode*>> leafGroups_;
+    std::vector<CombinationGenerator> combinations_;
+};
+
+/**
+ *  @brief Generates all series-parallel system with given number of variables.
+ */
+class SeriesParallelGenerator
+{
+public:
+    SeriesParallelGenerator(int32 varCount);
+
+    ~SeriesParallelGenerator();
+
+    auto get () const -> MultiwayNode const&;
+
+    auto is_done () const -> bool;
+
+    auto advance () -> void;
+
+private:
+    MwUniqueTableType uniqueTable_;
+    MwCacheType cache_;
+    SimpleMwAstGenerator treeGenerator_;
+    SeriesParallelTreeGenerator fromTreeGenerator_;
+};
 
 #endif

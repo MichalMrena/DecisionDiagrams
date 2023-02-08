@@ -13,7 +13,7 @@
 #include <string>
 #include <unordered_set>
 
-#include "counter.hpp"
+#include "counters.hpp"
 #include "iterators.hpp"
 #include "trees.hpp"
 #include "generators.hpp"
@@ -310,6 +310,9 @@ auto compare_series_parallel () -> void
 
 auto main () -> int
 {
+    //
+    // Brute-force counting of mwtrees
+    //
     // auto const expected = std::vector {
     //     -1,
     //     1, 1, 2, 5, 12, 33, 90, 261, 766, 2'312, 7'068,
@@ -334,12 +337,18 @@ auto main () -> int
     //     auto gen         = SimpleMwAstGenerator(varCount, uniqueTable, cache);
     //     auto totalCount  = 0;
     //     auto uniqueCount = 0;
+    //         auto q = 0;
     //     while (not gen.is_done())
     //     {
     //         gen.get(rootStorage);
     //         ++uniqueCount;
     //         ++totalCount;
     //         gen.advance();
+    //             ++q;
+    //             if (8 == varCount && 37 == q)
+    //             {
+    //                 std::cout << dump_dot(*rootStorage.front()) << "\n";
+    //             }
     //         rootStorage.clear();
     //     }
     //     auto const end = ch::high_resolution_clock::now();
@@ -357,21 +366,28 @@ auto main () -> int
     //     delete nodeptr;
     // }
 
-    // auto i = 0;
-    // for (auto const count : mw_tree_counts<Integer>(100))
+    //
+    // Analytical counting of mwtrees.
+    //
+    // auto constexpr N = 100;
+    // auto memo = tree_count_memo<Integer>(N);
+    // for (auto i = 1; i <= N; ++i)
     // {
-    //     if (count > 0)
-    //     {
-    //         std::cout << i << "\t" << count << "\n";
-    //     }
-    //     ++i;
+    //     std::cout << i << "\t" << mw_tree_count<Integer>(memo, i) << "\n";
     // }
 
-    auto constexpr N = 100;
-    auto memo = tree_count_memo<Integer>(N);
-    for (auto i = 1; i <= N; ++i)
+    //
+    // Combination generator test
+    //
+    auto gen = CombinationGenerator({7}, 1);
+    while (not gen.is_done())
     {
-        std::cout << i << "\t" << mw_tree_count<Integer>(memo, i) << "\n";
+        for (auto const x : gen.get())
+        {
+            std::cout << x << " ";
+        }
+        std::cout << "\n";
+        gen.advance();
     }
 
     std::cout << "=== end of main ===" << '\n';

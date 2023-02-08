@@ -157,6 +157,10 @@ struct MultiwayNode
 
     auto get_args() const -> std::vector<MultiwayNode*> const&;
 
+    auto as_opnode() -> NAryOpNode&;
+
+    auto as_leafnode() -> LeafNode&;
+
     auto as_opnode() const -> NAryOpNode const&;
 
     auto as_leafnode() const -> LeafNode const&;
