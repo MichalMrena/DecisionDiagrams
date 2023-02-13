@@ -287,6 +287,8 @@ public:
 
     auto get () const -> MultiwayNode const&;
 
+    auto get_combinations () const -> std::vector<CombinationGenerator> const&;
+
     auto is_done () const -> bool;
 
     auto advance () -> void;
@@ -296,29 +298,27 @@ private:
 
     auto fill_leaf_groups () -> void;
 
-    auto init_combinations () -> void;
-
     auto reset_tail_combinations (int64 headCount) -> void;
-
-    auto assign_indices () -> void;
 
     auto place_ops () -> void;
 
-    static auto has_leaf_son (MultiwayNode const& node) -> bool;
-
-    static auto leaf_count (MultiwayNode const& node) -> int32;
-
     static auto next_op (Operation current) -> Operation;
 
-    static auto subtract (
+    static auto set_diff (
         std::vector<int32>& lhs,
         std::vector<int32> const& rhs
     ) -> void;
 
 private:
+    inline static constexpr auto Operations = std::array<Operation, 2>
+    {
+        Operation::And,
+        Operation::Or
+    };
+
+private:
     MultiwayNode* root_;
-    std::array<Operation, 2> operations_;
-    std::array<Operation, 2>::iterator operationsIt_;
+    std::array<Operation, 2>::const_iterator operationsIt_;
     std::vector<std::vector<MultiwayNode*>> leafGroups_;
     std::vector<CombinationGenerator> combinations_;
 };
@@ -334,6 +334,8 @@ public:
     ~SeriesParallelGenerator();
 
     auto get () const -> MultiwayNode const&;
+
+    auto get_tree_gen () const -> SeriesParallelTreeGenerator const&;
 
     auto is_done () const -> bool;
 

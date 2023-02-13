@@ -337,18 +337,12 @@ auto main () -> int
     //     auto gen         = SimpleMwAstGenerator(varCount, uniqueTable, cache);
     //     auto totalCount  = 0;
     //     auto uniqueCount = 0;
-    //         auto q = 0;
     //     while (not gen.is_done())
     //     {
     //         gen.get(rootStorage);
     //         ++uniqueCount;
     //         ++totalCount;
     //         gen.advance();
-    //             ++q;
-    //             if (8 == varCount && 37 == q)
-    //             {
-    //                 std::cout << dump_dot(*rootStorage.front()) << "\n";
-    //             }
     //         rootStorage.clear();
     //     }
     //     auto const end = ch::high_resolution_clock::now();
@@ -367,7 +361,7 @@ auto main () -> int
     // }
 
     //
-    // Analytical counting of mwtrees.
+    // Semi-analytical counting of mwtrees.
     //
     // auto constexpr N = 100;
     // auto memo = tree_count_memo<Integer>(N);
@@ -379,15 +373,51 @@ auto main () -> int
     //
     // Combination generator test
     //
-    auto gen = CombinationGenerator({7}, 1);
+    // auto gen = CombinationGenerator({7}, 1);
+    // while (not gen.is_done())
+    // {
+    //     for (auto const x : gen.get())
+    //     {
+    //         std::cout << x << " ";
+    //     }
+    //     std::cout << "\n";
+    //     gen.advance();
+    // }
+
+    //
+    // Series-parallel tree test
+    //
+    // for (auto n = 2; n < 10; ++n)
+    // {
+    //     auto spCount = 0;
+    //     auto gen = SeriesParallelGenerator(n);
+    //     while (not gen.is_done())
+    //     {
+    //         gen.advance();
+    //         ++spCount;
+    //     }
+    //     std::cout << n << "\t"
+    //               << spCount << "\t\t"
+    //               << sp_system_count<int64>(n) << "\n";
+    // }
+
+    //
+    // Semi-analytical counting of series-parallel systems
+    //
+    // for (auto n = 2; n < 20; ++n)
+    // {
+    //     std::cout << n << "\t" << sp_system_count<Integer>(n) << "\n";
+    // }
+
+    auto spCount = 0;
+    auto gen = SeriesParallelGenerator(4);
     while (not gen.is_done())
     {
-        for (auto const x : gen.get())
-        {
-            std::cout << x << " ";
-        }
-        std::cout << "\n";
+        auto const& root = gen.get();
+        std::cout << "# " << spCount << "\n";
+        std::cout << dump_dot(root, gen) << "\n";
         gen.advance();
+        ++spCount;
     }
 
     std::cout << "=== end of main ===" << '\n';

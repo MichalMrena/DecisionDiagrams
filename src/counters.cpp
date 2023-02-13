@@ -53,7 +53,7 @@ auto n_over_k (Int const n, Int const k) -> Int
     return
         k == 0 ?
             1 :
-        k == 1 || k == n ?
+        k == 1 ?
             n :
         k > n / 2 ?
             n_over_k<Int>(n, n - k) :
@@ -123,17 +123,52 @@ auto mw_tree_counts (int32 const n) -> std::vector<Int>
     return memo.get_memo();
 }
 
+template<class Int>
+auto sp_system_count (int32 componentCount) -> Int
+{
+    MwUniqueTableType uniqueTable_;
+    MwCacheType cache_;
+    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable_, cache_);
+    auto count = Int{0};
+    while (not gen.is_done())
+    {
+        auto binoms = std::vector<std::pair<int32, int32>>();
+        auto leftCount = componentCount;
+        auto const& root = *gen.get();
+        for_each_dfs(root, [&](MultiwayNode const& node, auto, auto)
+        {
+            if (has_leaf_son(node))
+            {
+                auto sonCount = 0;
+                for (auto* son : node.get_args())
+                {
+                    sonCount += static_cast<int32>(son->is_variable());
+                }
+                binoms.emplace_back(leftCount, sonCount);
+                leftCount -= sonCount;
+            }
+        });
+
+        auto product = Int{1};
+        for (auto const& [n, k] : binoms)
+        {
+            product *= n_over_k<Int>(n, k);
+        }
+        count += product;
+
+        gen.advance();
+    }
+    return 2 * count;
+}
+
 template class tree_count_memo<int64>;
 template class tree_count_memo<Integer>;
 
-template auto mw_tree_count (
-    tree_count_memo<int64>& treeMemo,
-    int32 const n
-) -> int64;
-template auto mw_tree_count (
-    tree_count_memo<Integer>& treeMemo,
-    int32 const n
-) -> Integer;
+template auto mw_tree_count (tree_count_memo<int64>&, int32) -> int64;
+template auto mw_tree_count (tree_count_memo<Integer>&, int32) -> Integer;
 
-template auto mw_tree_counts (int32 n) -> std::vector<int64>;
-template auto mw_tree_counts (int32 n) -> std::vector<Integer>;
+template auto mw_tree_counts (int32) -> std::vector<int64>;
+template auto mw_tree_counts (int32) -> std::vector<Integer>;
+
+template auto sp_system_count(int32 n) -> int64;
+template auto sp_system_count(int32 n) -> Integer;

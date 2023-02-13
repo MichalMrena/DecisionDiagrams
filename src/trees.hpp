@@ -167,6 +167,16 @@ struct MultiwayNode
 };
 
 /**
+ *  @brief Checks if @p node is internal node with at least one son.
+ */
+auto has_leaf_son (MultiwayNode const& node) -> bool;
+
+/**
+ *  @brief Returns the number of leaves in the tree.
+ */
+auto leaf_count (MultiwayNode const& root) -> int64;
+
+/**
  *  @brief Function object type for hash of a multiway node.
  */
 struct MwNodeHash
@@ -254,8 +264,18 @@ auto for_each_dfs(MultiwayNode const& root, F f)
 auto dump_dot (BinaryNode const& root) -> std::string;
 
 /**
- *  @brief Dumps multiway AST into dot format.
+ *  @brief Dumps multiway AST into dot format. Ignores indices and ops.
  */
 auto dump_dot (MultiwayNode const& root) -> std::string;
+
+class SeriesParallelGenerator;
+
+/**
+ *  @brief Dumps multiway AST into dot format. Considers ops and indices.
+ */
+auto dump_dot (
+    MultiwayNode const& root,
+    SeriesParallelGenerator const& gen
+) -> std::string;
 
 #endif

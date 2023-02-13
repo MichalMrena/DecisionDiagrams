@@ -1,5 +1,5 @@
 #include "trees.hpp"
-
+#include "generators.hpp"
 #include <numeric>
 
 auto get_neutral_element(Operation const o) -> int32
@@ -159,32 +159,58 @@ auto MultiwayNode::as_leafnode() const -> LeafNode const&
     return std::get<LeafNode>(data_);
 }
 
+auto has_leaf_son (MultiwayNode const& node) -> bool
+{
+    if (node.is_operation())
+    {
+        for (auto* son : node.as_opnode().args_)
+        {
+            if (son->is_variable())
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+auto leaf_count (MultiwayNode const& root) -> int64
+{
+    auto const go = teddy::utils::fix([](auto self, MultiwayNode const& node)
+    {
+        if (node.is_variable())
+        {
+            return 1;
+        }
+        else
+        {
+            auto sum = 0;
+            for (auto* son : node.as_opnode().args_)
+            {
+                sum += self(self, *son);
+            }
+            return sum;
+        }
+    });
+    return go(root);
+}
+
 // dump_dot_impl :: BinaryNode | MultiwayNode -> std::string
 auto dump_dot_impl (auto const& root) -> std::string
 {
     auto out = std::string();
-    out += "digraph BinTree {\n";
+    out += "digraph Tree {\n";
 
     auto s = [](auto const x){ return std::to_string(x); };
 
-    for_each_dfs(root, [&](
-        auto const& node,
-        int const,
-        int const nodeId
-    )
+    for_each_dfs(root, [&](auto const& node, int const, int const nodeId)
     {
-        auto const label = node.is_variable()
-            ? "x"
-            : to_string(node.get_operation());
+        auto const label = node.is_variable() ? "x" : "op";
         out += "    " + s(nodeId) + " [label=\"" + label + "\"];\n";
     });
     out += "\n";
 
-    for_each_dfs(root, [&out, s](
-        auto const&,
-        int const parentId,
-        int const nodeId
-    )
+    for_each_dfs(root, [&out, s](auto&&, int const parentId, int const nodeId)
     {
         if (parentId != -1)
         {
@@ -207,4 +233,64 @@ auto dump_dot (BinaryNode const& root) -> std::string
 auto dump_dot (MultiwayNode const& root) -> std::string
 {
     return dump_dot_impl(root);
+}
+
+auto dump_dot (
+    MultiwayNode const& root,
+    SeriesParallelGenerator const& gen
+) -> std::string
+{
+    auto out = std::string();
+    out += "digraph BinTree {\n";
+
+    auto s = [](auto const x){ return std::to_string(x); };
+    auto indexIts = std::vector<std::vector<int32>::const_iterator>(
+        as_usize(leaf_count(root))
+    );
+
+    auto const combinations = gen.get_tree_gen().get_combinations();
+    auto leafCombinIt = begin(combinations);
+    for_each_dfs(root, [&](MultiwayNode const& node, auto, int32 const nodeId)
+    {
+        if (has_leaf_son(node))
+        {
+            indexIts[as_uindex(nodeId)] = begin(leafCombinIt->get());
+            ++leafCombinIt;
+        }
+    });
+
+    for_each_dfs(root, [&](
+        MultiwayNode const& node,
+        int32 const parentId,
+        int32 const nodeId
+    )
+    {
+        if (node.is_variable())
+        {
+            auto& indexIt = indexIts[as_uindex(parentId)];
+            auto const index = *indexIt;
+            auto const label = "x" + s(index);
+            ++indexIt;
+            out += "    " + s(nodeId) + " [label=\"" + label + "\"];\n";
+        }
+        else
+        {
+            auto const label = to_string(node.get_operation());
+            out += "    " + s(nodeId) + " [label=\"" + label + "\"];\n";
+        }
+    });
+
+    for_each_dfs(root, [&out, s](auto&&, int const parentId, int const nodeId)
+    {
+        if (parentId != -1)
+        {
+            out += "    "
+                + s(parentId)
+                + " -> "
+                + s(nodeId) + ";\n";
+        }
+    });
+    out += "}\n";
+
+    return out;
 }

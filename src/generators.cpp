@@ -1,6 +1,6 @@
 #include "generators.hpp"
 
-#include <queue>
+#include "trees.hpp"
 
 BinAstGenerator::BinAstGenerator(int32 leafcount, int32 nextvar) :
     leafcount_ (leafcount),
@@ -670,12 +670,11 @@ auto CachedMwAstGenerator::reset () -> void
 
 SeriesParallelTreeGenerator::SeriesParallelTreeGenerator (MultiwayNode* root) :
     root_ (root),
-    operations_({Operation::And, Operation::Or}),
-    operationsIt_(begin(operations_))
+    operationsIt_(begin(Operations))
 {
     this->place_ops();
     this->fill_leaf_groups();
-    this->assign_indices();
+    this->reset_tail_combinations(0);
 }
 
 auto SeriesParallelTreeGenerator::get () const -> MultiwayNode const&
@@ -683,18 +682,20 @@ auto SeriesParallelTreeGenerator::get () const -> MultiwayNode const&
     return *root_;
 }
 
+auto SeriesParallelTreeGenerator::get_combinations
+    () const -> std::vector<CombinationGenerator> const&
+{
+    return combinations_;
+}
+
 auto SeriesParallelTreeGenerator::is_done () const -> bool
 {
-    return operationsIt_ == end(operations_);
+    return operationsIt_ == end(Operations);
 }
 
 auto SeriesParallelTreeGenerator::advance () -> void
 {
     this->advance_state();
-    if (not this->is_done())
-    {
-        this->assign_indices();
-    }
 }
 
 auto SeriesParallelTreeGenerator::advance_state () -> void
@@ -711,7 +712,7 @@ auto SeriesParallelTreeGenerator::advance_state () -> void
         else
         {
             this->reset_tail_combinations(
-                ssize(combinations_) - std::distance(it, endIt)
+                ssize(combinations_) - std::distance(rbegin(combinations_), it)
             );
             break;
         }
@@ -720,9 +721,10 @@ auto SeriesParallelTreeGenerator::advance_state () -> void
     if (it == endIt)
     {
         ++operationsIt_;
-        if (operationsIt_ != end(operations_))
+        if (operationsIt_ != end(Operations))
         {
             this->place_ops();
+            this->reset_tail_combinations(0);
         }
     }
 }
@@ -735,28 +737,15 @@ auto SeriesParallelTreeGenerator::fill_leaf_groups () -> void
         return;
     }
 
-    // TODO stacil by DFS ale level order sa bude lepsie debugovat
-    auto queue = std::queue<MultiwayNode*>();
-    queue.push(root_);
-    while (not queue.empty())
+    for_each_dfs(*root_, [this](MultiwayNode const& node, auto, auto)
     {
-        auto* node = queue.front();
-        queue.pop();
-        for (auto* son : node->as_opnode().args_)
+        if (node.is_variable() || not has_leaf_son(node))
         {
-            if (not son->is_variable())
-            {
-                queue.push(son);
-            }
-        }
-
-        if (not has_leaf_son(*node))
-        {
-            continue;
+            return;
         }
 
         auto group = std::vector<MultiwayNode*>();
-        for (auto* son : node->as_opnode().args_)
+        for (auto* son : node.get_args())
         {
             if (son->is_variable())
             {
@@ -764,21 +753,7 @@ auto SeriesParallelTreeGenerator::fill_leaf_groups () -> void
             }
         }
         leafGroups_.emplace_back(std::move(group));
-    }
-}
-
-auto SeriesParallelTreeGenerator::init_combinations () -> void
-{
-    auto base = teddy::utils::fill_vector(
-        leaf_count(*root_),
-        teddy::utils::identity
-    );
-
-    for (auto const& group : leafGroups_)
-    {
-        combinations_.emplace_back(base, static_cast<int32>(ssize(group)));
-        subtract(base, combinations_.back().get());
-    }
+    });
 }
 
 auto SeriesParallelTreeGenerator::reset_tail_combinations
@@ -791,34 +766,17 @@ auto SeriesParallelTreeGenerator::reset_tail_combinations
 
     for (auto i = 0; i < headCount; ++i)
     {
-        subtract(base, combinations_[as_uindex(i)].get());
+        set_diff(base, combinations_[as_uindex(i)].get());
     }
 
-    for (auto i = headCount; i < ssize(combinations_); ++i)
+    combinations_.erase(begin(combinations_) + headCount, end(combinations_));
+    for (auto i = headCount; i < ssize(leafGroups_); ++i)
     {
-        combinations_[as_uindex(i)] = CombinationGenerator(
+        combinations_.emplace_back(
             base,
             static_cast<int32>(ssize(leafGroups_[as_uindex(i)]))
         );
-        subtract(base, combinations_[as_uindex(i)].get());
-    }
-}
-
-auto SeriesParallelTreeGenerator::assign_indices () -> void
-{
-    auto combinationIt = begin(combinations_);
-    auto combinationEnd = end(combinations_);
-    auto leafGroupIt = begin(leafGroups_);
-    while (combinationIt != combinationEnd)
-    {
-        auto indexIt = begin(combinationIt->get());
-        for (auto* leaf : *leafGroupIt)
-        {
-            leaf->as_leafnode().index_ = *indexIt;
-            ++indexIt;
-        }
-        ++combinationIt;
-        ++leafGroupIt;
+        set_diff(base, combinations_[as_uindex(i)].get());
     }
 }
 
@@ -842,44 +800,6 @@ auto SeriesParallelTreeGenerator::place_ops () -> void
     place(*root_, *operationsIt_);
 }
 
-auto SeriesParallelTreeGenerator::has_leaf_son
-    (MultiwayNode const& node) -> bool
-{
-    if (node.is_operation())
-    {
-        for (auto* son : node.as_opnode().args_)
-        {
-            if (son->is_variable())
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-auto SeriesParallelTreeGenerator::leaf_count
-    (MultiwayNode const& root) -> int32
-{
-    auto const go = teddy::utils::fix([](auto self, MultiwayNode const& node)
-    {
-        if (node.is_variable())
-        {
-            return 1;
-        }
-        else
-        {
-            auto sum = 0;
-            for (auto* son : node.as_opnode().args_)
-            {
-                sum += self(self, *son);
-            }
-            return sum;
-        }
-    });
-    return go(root);
-}
-
 auto SeriesParallelTreeGenerator::next_op (Operation const op) -> Operation
 {
     switch (op)
@@ -896,15 +816,18 @@ auto SeriesParallelTreeGenerator::next_op (Operation const op) -> Operation
     }
 }
 
-auto SeriesParallelTreeGenerator::subtract (
+auto SeriesParallelTreeGenerator::set_diff (
     std::vector<int32>& lhs,
     std::vector<int32> const& rhs
 ) -> void
 {
-    std::ranges::remove_if(lhs, [&rhs](auto const x)
-    {
-        return std::ranges::find(rhs, x) != std::ranges::end(rhs);
-    });
+    lhs.erase(
+        std::remove_if(begin(lhs), end(lhs), [&rhs](auto const x)
+        {
+            return std::ranges::find(rhs, x) != std::ranges::end(rhs);
+        }),
+        end(lhs)
+    );
 }
 
 SeriesParallelGenerator::SeriesParallelGenerator (int32 const varCount) :
@@ -926,6 +849,12 @@ SeriesParallelGenerator::~SeriesParallelGenerator()
 auto SeriesParallelGenerator::get () const -> MultiwayNode const&
 {
     return fromTreeGenerator_.get();
+}
+
+auto SeriesParallelGenerator::get_tree_gen
+    () const -> SeriesParallelTreeGenerator const&
+{
+    return fromTreeGenerator_;
 }
 
 auto SeriesParallelGenerator::is_done () const -> bool
