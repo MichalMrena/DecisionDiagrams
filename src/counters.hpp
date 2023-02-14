@@ -46,4 +46,10 @@ auto mw_tree_counts (int32 n) -> std::vector<Int>;
 template<class Int>
 auto sp_system_count (int32 n) -> Int;
 
+/**
+ *  @brief Calculates the number of series-parallel systems with n components.
+ */
+template<class Int>
+auto sp_system_count_2 (int32 n) -> Int;
+
 #endif

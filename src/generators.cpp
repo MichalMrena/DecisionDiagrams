@@ -429,23 +429,6 @@ auto SimpleMwAstGenerator::reset () -> void
     isDone_ = false;
 }
 
-auto group (std::vector<int32> const& xs) -> std::vector<Group>
-{
-    auto groups = std::vector<Group>();
-    auto it = begin(xs);
-    auto const last = end(xs);
-    while (it != last)
-    {
-        Group& group = groups.emplace_back(Group{*it, 0});
-        while (it != last && *it == group.elem_)
-        {
-            ++it;
-            ++group.count_;
-        }
-    }
-    return groups;
-}
-
 namespace
 {
 auto make_all_trees (

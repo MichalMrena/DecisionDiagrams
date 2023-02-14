@@ -1,6 +1,7 @@
 #include "counters.hpp"
 #include "generators.hpp"
 #include <numeric>
+#include <tuple>
 
 #define otherwise
 
@@ -161,6 +162,89 @@ auto sp_system_count (int32 componentCount) -> Int
     return 2 * count;
 }
 
+template<class Int>
+auto sp_system_count_2 (int32 componentCount) -> Int
+{
+    auto const has_has_leaf_son = [](MultiwayNode const& node)
+    {
+        if (node.is_operation())
+        {
+            for (auto* son : node.get_args())
+            {
+                if (has_leaf_son(*son))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    auto const leaf_son_count = [](MultiwayNode const& node)
+    {
+        auto count = 0;
+        for (auto* son : node.get_args())
+        {
+            if (son->is_variable())
+            {
+                ++count;
+            }
+        }
+        return count;
+    };
+
+    MwUniqueTableType uniqueTable_;
+    MwCacheType cache_;
+    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable_, cache_);
+    auto spCount = Int{0};
+    while (not gen.is_done())
+    {
+        auto binoms = std::vector<std::tuple<int32, int32>>();
+        auto leftCount = componentCount;
+        auto const& root = *gen.get();
+        for_each_dfs(root, [&](MultiwayNode const& node, auto, auto)
+        {
+            if (not has_has_leaf_son(node))
+            {
+                return;
+            }
+
+            auto sons = std::vector<MultiwayNode*>();
+            for (auto* son : node.get_args())
+            {
+                if (has_leaf_son(*son))
+                {
+                    sons.push_back(son);
+                }
+            }
+
+            std::ranges::sort(sons);
+            auto const groups = group(sons);
+            for (auto const& [son, count] : groups)
+            {
+                auto const n = leftCount;
+                auto const k = count * leaf_son_count(*son);
+                binoms.emplace_back(n, k);
+            }
+        });
+        if (has_leaf_son(root))
+        {
+            auto const k = leaf_son_count(root);
+            binoms.emplace_back(leftCount, k);
+        }
+
+        auto product = Int{1};
+        for (auto const& [n, k] : binoms)
+        {
+            product *= n_over_k<Int>(n, k);
+        }
+        spCount += product;
+
+        gen.advance();
+    }
+    return 2 * spCount;
+}
+
 template class tree_count_memo<int64>;
 template class tree_count_memo<Integer>;
 
@@ -172,3 +256,6 @@ template auto mw_tree_counts (int32) -> std::vector<Integer>;
 
 template auto sp_system_count(int32 n) -> int64;
 template auto sp_system_count(int32 n) -> Integer;
+
+template auto sp_system_count_2(int32 n) -> int64;
+template auto sp_system_count_2(int32 n) -> Integer;

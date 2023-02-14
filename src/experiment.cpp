@@ -464,58 +464,61 @@ auto main () -> int
     //
     // Series-parallel tree test
     //
-    using diagram_t = teddy::mdd_manager<3>::diagram_t;
-    using node_t = std::remove_pointer_t<
-        decltype(diagram_t().unsafe_get_root())
-    >;
-    using pair_t = std::pair<node_t*, int32>;
-    using pair_hash_t = decltype([](pair_t const& p)
-    {
-        return std::hash<node_t*>()(p.first);
-    });
-    using pair_eq_t = decltype([](pair_t const& l, pair_t const& r)
-    {
-        return l.first == r.first;
-    });
+    // using diagram_t = teddy::mdd_manager<3>::diagram_t;
+    // using node_t = std::remove_pointer_t<
+    //     decltype(diagram_t().unsafe_get_root())
+    // >;
+    // using pair_t = std::pair<node_t*, int32>;
+    // using pair_hash_t = decltype([](pair_t const& p)
+    // {
+    //     return std::hash<node_t*>()(p.first);
+    // });
+    // using pair_eq_t = decltype([](pair_t const& l, pair_t const& r)
+    // {
+    //     return l.first == r.first;
+    // });
 
-    auto manager = teddy::mdd_manager<3>(10, 1'000'000);
-    for (auto n = 2; n < 10; ++n)
-    {
-        if (n != 4)
-        {
-            continue;
-        }
+    // auto manager = teddy::mdd_manager<3>(10, 1'000'000);
+    // for (auto n = 2; n < 10; ++n)
+    // {
+    //     // if (n != 4)
+    //     // {
+    //     //     continue;
+    //     // }
 
-        auto id = 0;
-        auto gen = SeriesParallelGenerator(n);
-        auto memo = std::unordered_set<
-            pair_t,
-            pair_hash_t,
-            pair_eq_t
-        >();
-        while (not gen.is_done())
-        {
-            auto const& root = gen.get();
-            auto diagram = make_diagram(manager, root, gen);
-            auto pair = std::make_pair(diagram.unsafe_get_root(), id);
+    //     auto id = 0;
+    //     auto gen = SeriesParallelGenerator(n);
+    //     auto memo = std::unordered_set<
+    //         pair_t,
+    //         pair_hash_t,
+    //         pair_eq_t
+    //     >();
+    //     while (not gen.is_done())
+    //     {
+    //         auto const& root = gen.get();
+    //         auto diagram = make_diagram(manager, root, gen);
+    //         auto pair = std::make_pair(diagram.unsafe_get_root(), id);
 
-            std::cout << "# " << id;
-            auto memoized = memo.find(pair);
-            if (memoized != end(memo))
-            {
-                std::cout << "\t" << "duplicate with " << memoized->second;
-            }
-            std::cout << "\n";
-            std::cout << dump_dot(root, gen) << "\n";
-            memo.emplace(diagram.unsafe_get_root(), id);
-            gen.advance();
-            ++id;
-        }
-        std::cout << n << "\t"
-                  << id << "\t\t"
-                  << sp_system_count<int64>(n) << "\t\t"
-                  << ssize(memo) << "\n";
-    }
+    //         // std::cout << "# " << id;
+    //         auto memoized = memo.find(pair);
+    //         if (memoized != end(memo))
+    //         {
+    //             // std::cout << "\t" << "duplicate with " << memoized->second;
+    //         }
+    //         // std::cout << "\n";
+    //         // std::cout << dump_dot(root, gen) << "\n";
+    //         memo.emplace(diagram.unsafe_get_root(), id);
+    //         gen.advance();
+    //         ++id;
+    //     }
+    //     std::cout << n << "\t"
+    //               << id << "\t\t"
+    //               << sp_system_count<int64>(n) << "\t\t"
+    //               << sp_system_count_2<int64>(n) << "\t\t"
+    //               << ssize(memo) << "\n";
+    // }
+
+    std::cout << sp_system_count_2<int64>(3) << "\n";
 
     //
     // Semi-analytical counting of series-parallel systems

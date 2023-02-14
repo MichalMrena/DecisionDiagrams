@@ -266,16 +266,33 @@ private:
 /**
  * @brief Result of @c group .
  */
+template<class T>
 struct Group
 {
-    int32 elem_;
-    int32 count_;
+    T elem_;
+    int64 count_;
 };
 
 /**
  *  @brief Groups ordered @p xs by value.
  */
-auto group (std::vector<int32> const& xs) -> std::vector<Group>;
+template<class T>
+auto group (std::vector<T> const& xs) -> std::vector<Group<T>>
+{
+    auto groups = std::vector<Group<T>>();
+    auto it = begin(xs);
+    auto const last = end(xs);
+    while (it != last)
+    {
+        auto& group = groups.emplace_back(Group<T>{*it, 0});
+        while (it != last && *it == group.elem_)
+        {
+            ++it;
+            ++group.count_;
+        }
+    }
+    return groups;
+}
 
 /**
  *  @brief Generates all series-parallel system using a topology given as tree.
