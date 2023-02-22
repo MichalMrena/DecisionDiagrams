@@ -1,6 +1,12 @@
 #include "trees.hpp"
 #include "generators.hpp"
 #include <numeric>
+#include <libteddy/details/types.hpp>
+
+using teddy::int32;
+using teddy::int64;
+using teddy::as_uindex;
+using teddy::as_usize;
 
 auto get_neutral_element(Operation const o) -> int32
 {
@@ -172,6 +178,19 @@ auto has_leaf_son (MultiwayNode const& node) -> bool
         }
     }
     return false;
+}
+
+auto leaf_son_count (MultiwayNode const& node) -> int64
+{
+    auto count = int64{0};
+    for (auto* son : node.get_args())
+    {
+        if (son->is_variable())
+        {
+            ++count;
+        }
+    }
+    return count;
 }
 
 auto leaf_count (MultiwayNode const& root) -> int64

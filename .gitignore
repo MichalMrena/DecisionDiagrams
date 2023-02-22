@@ -1,8 +1,10 @@
 build
 .vscode
+.cache
 doxygen/doc
 data
 *.png
 *.log
 *.out
 *.pdf
+compile_commands.json

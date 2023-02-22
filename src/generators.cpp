@@ -1,6 +1,8 @@
 #include "generators.hpp"
-
 #include "trees.hpp"
+
+using teddy::as_uindex;
+using teddy::as_usize;
 
 BinAstGenerator::BinAstGenerator(int32 leafcount, int32 nextvar) :
     leafcount_ (leafcount),
@@ -473,7 +475,8 @@ auto SimpleMwAstGenerator::reset_son_generators () -> void
     if (not isLeaf_)
     {
         sonGenerators_.clear();
-        auto const countGroups = group(sonVarCountsGenerator_.get());
+        auto const counts = sonVarCountsGenerator_.get();
+        auto const countGroups = group(counts);
         for (auto const [varCount, treeCount] : countGroups)
         {
             if (treeCount == 1 || varCount < 3)

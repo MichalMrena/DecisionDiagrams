@@ -1,6 +1,7 @@
 #ifndef TEDDY_SRC_COUNTER_HPP
 #define TEDDY_SRC_COUNTER_HPP
 
+#include "src/trees.hpp"
 #include <gmpxx.h>
 #include <libteddy/teddy.hpp>
 #include <map>
@@ -51,5 +52,29 @@ auto sp_system_count (int32 n) -> Int;
  */
 template<class Int>
 auto sp_system_count_2 (int32 n) -> Int;
+
+/**
+ *  @brief Calculates the number of series-parallel systems with n components.
+ */
+template<class Int>
+auto sp_system_count_3 (int32 n) -> Int;
+
+/**
+ *  @brief Calculates the number of series-parallel systems with n components.
+ */
+template<class Int>
+auto sp_system_count_4 (int32 n) -> Int;
+
+/**
+ *  @brief Calculates the number of series-parallel systems with given topology.
+ */
+template<class Int>
+auto sp_system_count_3 (MultiwayNode const& root) -> Int;
+
+/**
+ *  @brief Calculates the number of series-parallel systems with given topology.
+ */
+template<class Int>
+auto sp_system_count_4 (MultiwayNode const& root) -> Int;
 
 #endif

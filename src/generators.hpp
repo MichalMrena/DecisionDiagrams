@@ -7,7 +7,9 @@
 #include <variant>
 #include <vector>
 
+#include "libteddy/details/utils.hpp"
 #include "trees.hpp"
+#include "utils.hpp"
 
 /**
  *  @brief Generates all unique binary ASTs with given number of variables
@@ -262,37 +264,6 @@ private:
     std::vector<MultiwayNode*> const* cached_;
     std::vector<MultiwayNode*>::const_iterator current_;
 };
-
-/**
- * @brief Result of @c group .
- */
-template<class T>
-struct Group
-{
-    T elem_;
-    int64 count_;
-};
-
-/**
- *  @brief Groups ordered @p xs by value.
- */
-template<class T>
-auto group (std::vector<T> const& xs) -> std::vector<Group<T>>
-{
-    auto groups = std::vector<Group<T>>();
-    auto it = begin(xs);
-    auto const last = end(xs);
-    while (it != last)
-    {
-        auto& group = groups.emplace_back(Group<T>{*it, 0});
-        while (it != last && *it == group.elem_)
-        {
-            ++it;
-            ++group.count_;
-        }
-    }
-    return groups;
-}
 
 /**
  *  @brief Generates all series-parallel system using a topology given as tree.

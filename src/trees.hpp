@@ -10,13 +10,11 @@
 
 using teddy::int32;
 using teddy::int64;
-using teddy::as_usize;
-using teddy::as_uindex;
 
 /**
  *  @brief Marks unreachable part of control flow that is a logic error.
  */
-inline auto unreachable()
+inline auto unreachable() -> void
 {
     std::terminate();
 }
@@ -170,6 +168,11 @@ struct MultiwayNode
  *  @brief Checks if @p node is internal node with at least one son.
  */
 auto has_leaf_son (MultiwayNode const& node) -> bool;
+
+/**
+ *  @brief Returns the number of sons of @p node that are leaves.
+ */
+auto leaf_son_count (MultiwayNode const& node) -> int64;
 
 /**
  *  @brief Returns the number of leaves in the tree.
