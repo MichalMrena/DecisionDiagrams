@@ -488,67 +488,67 @@ auto main () -> int
     //
     // Series-parallel tree test
     //
-    // using diagram_t = teddy::mdd_manager<3>::diagram_t;
-    // using node_t = std::remove_pointer_t<
-    //     decltype(diagram_t().unsafe_get_root())
-    // >;
-    // using pair_t = std::pair<node_t*, int32>;
-    // using pair_hash_t = decltype([](pair_t const& p)
-    // {
-    //     return std::hash<node_t*>()(p.first);
-    // });
-    // using pair_eq_t = decltype([](pair_t const& l, pair_t const& r)
-    // {
-    //     return l.first == r.first;
-    // });
+    using diagram_t = teddy::mdd_manager<3>::diagram_t;
+    using node_t = std::remove_pointer_t<
+        decltype(diagram_t().unsafe_get_root())
+    >;
+    using pair_t = std::pair<node_t*, int32>;
+    using pair_hash_t = decltype([](pair_t const& p)
+    {
+        return std::hash<node_t*>()(p.first);
+    });
+    using pair_eq_t = decltype([](pair_t const& l, pair_t const& r)
+    {
+        return l.first == r.first;
+    });
 
-    // auto manager = teddy::mdd_manager<3>(10, 1'000'000);
-    // std::cout << "n"                    << "\t"
-    //           << "gen"                  << "\t"
-    //           << "naive"                << "\t"
-    //           << "div"                  << "\t"
-    //           << "combin"               << "\t"
-    //           << "gen-unique-(correct)" << "\n";
-    // for (auto n = 2; n < 10; ++n)
-    // {
-    //     // if (n != 5)
-    //     // {
-    //     //     continue;
-    //     // }
+    auto manager = teddy::mdd_manager<3>(10, 1'000'000);
+    std::cout << "n"                    << "\t"
+              << "gen"                  << "\t"
+              << "naive"                << "\t"
+              << "div"                  << "\t"
+              << "combin"               << "\t"
+              << "gen-unique-(correct)" << "\n";
+    for (auto n = 2; n < 9; ++n)
+    {
+        // if (n != 5)
+        // {
+        //     continue;
+        // }
 
-    //     auto id = 0;
-    //     auto gen = SeriesParallelGenerator(n);
-    //     auto memo = std::unordered_set<
-    //         pair_t,
-    //         pair_hash_t,
-    //         pair_eq_t
-    //     >();
-    //     while (not gen.is_done())
-    //     {
-    //         auto const& root = gen.get();
-    //         auto diagram = make_diagram(manager, root, gen);
+        auto id = 0;
+        auto gen = SeriesParallelGenerator(n);
+        auto memo = std::unordered_set<
+            pair_t,
+            pair_hash_t,
+            pair_eq_t
+        >();
+        while (not gen.is_done())
+        {
+            auto const& root = gen.get();
+            auto diagram = make_diagram(manager, root, gen);
 
-    //         // auto pair = std::make_pair(diagram.unsafe_get_root(), id);
-    //         // std::cout << "# " << id;
-    //         // auto memoized = memo.find(pair);
-    //         // if (memoized != end(memo))
-    //         // {
-    //         //     std::cout << "\t" << "duplicate with " << memoized->second;
-    //         // }
-    //         // std::cout << "\n";
-    //         // std::cout << dump_dot(root, gen) << "\n";
+            // auto pair = std::make_pair(diagram.unsafe_get_root(), id);
+            // std::cout << "# " << id;
+            // auto memoized = memo.find(pair);
+            // if (memoized != end(memo))
+            // {
+            //     std::cout << "\t" << "duplicate with " << memoized->second;
+            // }
+            // std::cout << "\n";
+            // std::cout << dump_dot(root, gen) << "\n";
 
-    //         memo.emplace(diagram.unsafe_get_root(), id);
-    //         gen.advance();
-    //         ++id;
-    //     }
-    //     std::cout << n << "\t"
-    //               << id << "\t"
-    //               << sp_system_count_2<int64>(n) << "\t"
-    //               << sp_system_count_3<int64>(n) << "\t"
-    //               << sp_system_count_4<int64>(n) << "\t"
-    //               << ssize(memo) << "\n";
-    // }
+            memo.emplace(diagram.unsafe_get_root(), id);
+            gen.advance();
+            ++id;
+        }
+        std::cout << n << "\t"
+                  << id << "\t"
+                  << sp_system_count_2<int64>(n) << "\t"
+                  << sp_system_count_3<int64>(n) << "\t"
+                  << sp_system_count_4<int64>(n) << "\t"
+                  << ssize(memo) << "\n";
+    }
 
     // auto leaf = MultiwayNode{LeafNode{}};
     // auto node1 = MultiwayNode{
@@ -572,7 +572,7 @@ auto main () -> int
     // std::cout << sp_system_count_3<int64>(node2) << "\n";
     // std::cout << sp_system_count_4<int64>(node2) << "\n";
 
-    print_count_per_tree(4);
+    // print_count_per_tree(4);
 
     //
     // Semi-analytical counting of series-parallel systems

@@ -282,6 +282,13 @@ auto sp_system_count_4 (MultiwayNode const& root) -> Int
                 leavesLeft -= k;
                 product *= n_over_k<Int>(n, k) * self(self, *son, k);
             }
+            else if (son->is_variable())
+            {
+                auto const n = leavesLeft;
+                auto const k = count;
+                product *= n_over_k<Int>(n, k);
+                leavesLeft -= k;
+            }
             else
             {
                 for (auto i = 0; i < count; ++i)
