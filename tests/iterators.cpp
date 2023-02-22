@@ -14,7 +14,7 @@ domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({})
 
 domain_iterator::domain_iterator(std::vector<int32> domains)
     : domain_iterator(
-          std::move(domains),
+          domains,
           utils::fill_vector(ssize(domains), utils::identity),
           {}
       )
