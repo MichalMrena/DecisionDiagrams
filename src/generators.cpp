@@ -654,8 +654,9 @@ auto CachedMwAstGenerator::reset () -> void
     current_ = begin(*cached_);
 }
 
-SeriesParallelTreeGenerator::SeriesParallelTreeGenerator (MultiwayNode* root) :
-    root_ (root),
+SeriesParallelTreeGenerator::SeriesParallelTreeGenerator
+    (MultiwayNode& root) :
+    root_ (&root),
     operationsIt_(begin(Operations))
 {
     this->place_ops();
@@ -820,7 +821,7 @@ SeriesParallelGenerator::SeriesParallelGenerator (int32 const varCount) :
     uniqueTable_({}),
     cache_({}),
     treeGenerator_(varCount, uniqueTable_, cache_),
-    fromTreeGenerator_(treeGenerator_.get())
+    fromTreeGenerator_(*treeGenerator_.get())
 {
 }
 
@@ -857,7 +858,7 @@ auto SeriesParallelGenerator::advance () -> void
         if (not treeGenerator_.is_done())
         {
             fromTreeGenerator_ = SeriesParallelTreeGenerator(
-                treeGenerator_.get()
+                *treeGenerator_.get()
             );
         }
     }

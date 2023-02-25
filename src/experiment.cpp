@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdint>
 #include <exception>
+#include <iomanip>
 #include <iostream>
 #include <functional>
 #include <map>
@@ -317,14 +318,14 @@ auto compare_series_parallel () -> void
 auto make_diagram (
     teddy::mdd_manager<3>& manager,
     MultiwayNode const& root,
-    SeriesParallelGenerator const& gen
+    SeriesParallelTreeGenerator const& gen
 )
 {
     using diagram_t = teddy::mdd_manager<3>::diagram_t;
 
     auto indexIts = std::vector<std::vector<int32>::const_iterator>();
 
-    auto const combinations = gen.get_tree_gen().get_combinations();
+    auto const combinations = gen.get_combinations();
     auto leafCombinIt = begin(combinations);
     for_each_dfs(root, [&](MultiwayNode const& node, auto, auto)
     {
@@ -337,8 +338,7 @@ auto make_diagram (
 
     auto indexItsIt = begin(indexIts);
 
-    auto dfs = teddy::utils::fix([&]
-        (auto self, MultiwayNode const& node) -> diagram_t
+    auto dfs = [&](auto self, MultiwayNode const& node) -> diagram_t
     {
         auto ds = std::vector<diagram_t>();
         if (has_leaf_son(node))
@@ -385,124 +385,75 @@ auto make_diagram (
             unreachable();
             return diagram_t();
         }
-    });
-    return dfs(root);
+    };
+    return dfs(dfs, root);
+}
+
+auto unique_sp_count (
+    MultiwayNode& root,
+    teddy::mdd_manager<3>& manager,
+    std::unordered_set<void*>& globalMemo
+) -> int64
+{
+    auto memo = std::unordered_set<void*>();
+    auto gen = SeriesParallelTreeGenerator(root);
+    while (not gen.is_done())
+    {
+        auto diagram = make_diagram(manager, root, gen);
+        memo.emplace(diagram.unsafe_get_root());
+        globalMemo.emplace(diagram.unsafe_get_root());
+        gen.advance();
+    }
+    return ssize(memo);
 }
 
 auto print_count_per_tree (int32 n)
 {
+    auto uniqueTable = MwUniqueTableType();
+    auto manager = teddy::mdd_manager<3>(10, 1'000'000);
+    auto cache = MwCacheType();
+    auto memo = std::unordered_set<void*>();
+    auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
     auto id = 0;
-    auto gen = SeriesParallelGenerator(n);
-    std::cout << "id" << "\t" << "div" << "\t" << "combin" << "\n";
+    auto sumDiv = int64(0);
+    auto sumCombin = int64(0);
+    auto sumCorrect = int64(0);
+
+    std::cout << std::setw(7)  << "tree#"
+              << std::setw(5)  << "div"
+              << std::setw(8)  << "combin"
+              << std::setw(19) << "unique(per-tree)"   << "\n";
     while (not gen.is_done())
     {
-        if (id >= 44 && id <= 55)
-        {
-            auto const& root = gen.get();
-            std::cout << id                             << "\t"
-                      << sp_system_count_3<int64>(root) << "\t"
-                      << sp_system_count_4<int64>(root) << "\n";
-            std::cout << dump_dot(root) << "\n" << "---" << "\n";
-        }
+        auto* root = gen.get();
+        auto countDiv = sp_system_count_3<int64>(*root);
+        auto countCombin = sp_system_count_4<int64>(*root);
+        auto countCorrect = unique_sp_count(*root, manager, memo);
+        sumDiv += countDiv;
+        sumCombin += countCombin;
+        sumCorrect += countCorrect;
+        std::cout << std::setw(7)  << id
+                  << std::setw(5)  << countDiv
+                  << std::setw(8)  << countCombin
+                  << std::setw(19) << countCorrect << "\n";
         gen.advance();
+
+        if (id == 5)
+        {
+            std::cout << dump_dot(*root) << "\n";
+        }
+
         ++id;
     }
+    std::cout << std::setw(7)  << "sum"
+              << std::setw(5)  << sumDiv
+              << std::setw(8)  << sumCombin
+              << std::setw(19) << sumCorrect << "\n";
+    std::cout << "unique total = " << ssize(memo) << "\n";
 }
 
 auto main () -> int
 {
-    //
-    // Brute-force counting of mwtrees
-    //
-    // auto const expected = std::vector {
-    //     -1,
-    //     1, 1, 2, 5, 12, 33, 90, 261, 766, 2'312, 7'068,
-    //     21'965, 68'954, 218'751, 699'534, 2'253'676, 7'305'788,
-    //     23'816'743, 78'023'602, 256'738'751
-    // };
-
-    // std::cout << "n"         << "\t"
-    //           << "unique"    << "\t"
-    //           << "correct"   << "\t"
-    //           << "total"     << "\t"
-    //           << "unique nodes" << "\t"
-    //           << "time[ms]"  << std::endl;
-
-    // auto uniqueTable = MwUniqueTableType();
-    // auto cache = MwCacheType();
-    // auto rootStorage = std::vector<MultiwayNode*>();
-    // for (auto varCount = 1; varCount < ssize(expected); ++varCount)
-    // {
-    //     namespace ch     = std::chrono;
-    //     auto const start = ch::high_resolution_clock::now();
-    //     auto gen         = SimpleMwAstGenerator(varCount, uniqueTable, cache);
-    //     auto totalCount  = 0;
-    //     auto uniqueCount = 0;
-    //     while (not gen.is_done())
-    //     {
-    //         gen.get(rootStorage);
-    //         ++uniqueCount;
-    //         ++totalCount;
-    //         gen.advance();
-    //         rootStorage.clear();
-    //     }
-    //     auto const end = ch::high_resolution_clock::now();
-    //     auto const duration = ch::duration_cast<ch::milliseconds>(end - start);
-    //     std::cout << varCount    << "\t"
-    //               << uniqueCount << "\t"
-    //               << expected[as_uindex(varCount)] << "\t"
-    //               << totalCount  << "\t"
-    //               << size(uniqueTable) << "\t"
-    //               << duration.count()  << std::endl;
-
-    // }
-    // for (auto const& [key, nodeptr] : uniqueTable)
-    // {
-    //     delete nodeptr;
-    // }
-
-    //
-    // Semi-analytical counting of mwtrees.
-    //
-    // auto constexpr N = 100;
-    // auto memo = tree_count_memo<Integer>(N);
-    // for (auto i = 1; i <= N; ++i)
-    // {
-    //     std::cout << i << "\t" << mw_tree_count<Integer>(memo, i) << "\n";
-    // }
-
-    //
-    // Combination generator test
-    //
-    // auto gen = CombinationGenerator({7}, 1);
-    // while (not gen.is_done())
-    // {
-    //     for (auto const x : gen.get())
-    //     {
-    //         std::cout << x << " ";
-    //     }
-    //     std::cout << "\n";
-    //     gen.advance();
-    // }
-
-    //
-    // Series-parallel tree test
-    //
-    using diagram_t = teddy::mdd_manager<3>::diagram_t;
-    using node_t = std::remove_pointer_t<
-        decltype(diagram_t().unsafe_get_root())
-    >;
-    using pair_t = std::pair<node_t*, int32>;
-    using pair_hash_t = decltype([](pair_t const& p)
-    {
-        return std::hash<node_t*>()(p.first);
-    });
-    using pair_eq_t = decltype([](pair_t const& l, pair_t const& r)
-    {
-        return l.first == r.first;
-    });
-
-    auto manager = teddy::mdd_manager<3>(10, 1'000'000);
     std::cout << "n"                    << "\t"
               << "gen"                  << "\t"
               << "naive"                << "\t"
@@ -511,78 +462,50 @@ auto main () -> int
               << "gen-unique-(correct)" << "\n";
     for (auto n = 2; n < 9; ++n)
     {
-        // if (n != 5)
-        // {
-        //     continue;
-        // }
+        if (n != 5)
+        {
+            continue;
+        }
 
+        auto uniqueTable = MwUniqueTableType();
+        auto manager = teddy::mdd_manager<3>(10, 1'000'000);
+        auto cache = MwCacheType();
+        auto memo = std::unordered_set<void*>();
+        auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
         auto id = 0;
-        auto gen = SeriesParallelGenerator(n);
-        auto memo = std::unordered_set<
-            pair_t,
-            pair_hash_t,
-            pair_eq_t
-        >();
         while (not gen.is_done())
         {
             auto const& root = gen.get();
-            auto diagram = make_diagram(manager, root, gen);
-
-            // auto pair = std::make_pair(diagram.unsafe_get_root(), id);
-            // std::cout << "# " << id;
-            // auto memoized = memo.find(pair);
-            // if (memoized != end(memo))
-            // {
-            //     std::cout << "\t" << "duplicate with " << memoized->second;
-            // }
-            // std::cout << "\n";
-            // std::cout << dump_dot(root, gen) << "\n";
-
-            memo.emplace(diagram.unsafe_get_root(), id);
+            auto spGen = SeriesParallelTreeGenerator(*root);
+            while (not spGen.is_done())
+            {
+                auto const diagram = make_diagram(manager, *root, spGen);
+                memo.emplace(diagram.unsafe_get_root());
+                spGen.advance();
+                ++id;
+            }
             gen.advance();
-            ++id;
         }
         std::cout << n << "\t"
                   << id << "\t"
                   << sp_system_count_2<int64>(n) << "\t"
                   << sp_system_count_3<int64>(n) << "\t"
                   << sp_system_count_4<int64>(n) << "\t"
-                  << ssize(memo) << "\n";
+                  << ssize(memo)                 << "\n";
+
+        for (auto const& [key, nodeptr] : uniqueTable)
+        {
+            delete nodeptr;
+        }
     }
 
-    // auto leaf = MultiwayNode{LeafNode{}};
-    // auto node1 = MultiwayNode{
-    //     NAryOpNode{
-    //         Operation::Undefined,
-    //         {&leaf, &leaf}
-    //     }
-    // };
-    // auto node2 = MultiwayNode{
-    //     NAryOpNode{
-    //         Operation::Undefined,
-    //         {&node1, &node1}
-    //     }
-    // };
-    // auto root = MultiwayNode{
-    //     NAryOpNode{
-    //         Operation::Undefined,
-    //         {&node2, &node2, &node2}
-    //     }
-    // };
-    // std::cout << sp_system_count_3<int64>(node2) << "\n";
-    // std::cout << sp_system_count_4<int64>(node2) << "\n";
+    std::cout << "~~~~~~~~~~~~" << "\n";
+    print_count_per_tree(5);
+    std::cout << "~~~~~~~~~~~~" << "\n";
 
-    // print_count_per_tree(4);
 
-    //
-    // Semi-analytical counting of series-parallel systems
-    //
-    // for (auto n = 2; n < 20; ++n)
-    // {
-    //     std::cout << n << "\t" << sp_system_count<Integer>(n) << "\n";
-    // }
 
-    // vplyv unikatnosti vrcholov
+    // TODO vplyv unikatnosti vrcholov
 
     std::cout << "=== end of main ===" << '\n';
 }

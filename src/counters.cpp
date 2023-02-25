@@ -216,6 +216,10 @@ auto sp_system_count_2 (int32 componentCount) -> Int
 
         gen.advance();
     }
+    for (auto const& [key, nodeptr] : uniqueTable)
+    {
+        delete nodeptr;
+    }
     return spCount;
 }
 
@@ -241,7 +245,6 @@ auto sp_system_count_3 (MultiwayNode const& root) -> Int
             auto groups = group(sons);
             for (auto const [sonptr, count] : groups)
             {
-                // TODO, delit to tu?
                 for (auto i = 0; i < count; ++i)
                 {
                     nominator *= self(self, *sonptr);
@@ -251,7 +254,7 @@ auto sp_system_count_3 (MultiwayNode const& root) -> Int
             return nominator / denominator;
         }
     });
-    return go(root);
+    return 2 * go(root);
 }
 
 template<class Int>
@@ -303,7 +306,7 @@ auto sp_system_count_4 (MultiwayNode const& root) -> Int
         }
         return product;
     });
-    return go(root, componentCount);
+    return 2 * go(root, componentCount);
 }
 
 template<class Int>
@@ -318,7 +321,11 @@ auto sp_system_count_3 (int32 componentCount) -> Int
         spCount += sp_system_count_3<Int>(*gen.get());
         gen.advance();
     }
-    return 2 * spCount;
+    for (auto const& [key, nodeptr] : uniqueTable)
+    {
+        delete nodeptr;
+    }
+    return spCount;
 }
 
 template<class Int>
@@ -333,7 +340,11 @@ auto sp_system_count_4 (int32 componentCount) -> Int
         spCount += sp_system_count_4<Int>(*gen.get());
         gen.advance();
     }
-    return 2 * spCount;
+    for (auto const& [key, nodeptr] : uniqueTable)
+    {
+        delete nodeptr;
+    }
+    return spCount;
 }
 
 template class tree_count_memo<int64>;

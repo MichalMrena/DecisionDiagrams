@@ -271,7 +271,7 @@ private:
 class SeriesParallelTreeGenerator
 {
 public:
-    SeriesParallelTreeGenerator(MultiwayNode* root);
+    SeriesParallelTreeGenerator(MultiwayNode& root);
 
     auto get () const -> MultiwayNode const&;
 
