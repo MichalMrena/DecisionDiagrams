@@ -1,8 +1,10 @@
 #ifndef LIBTEDDY_DETAILS_DIAGRAM_HPP
 #define LIBTEDDY_DETAILS_DIAGRAM_HPP
 
+#include <cstddef>
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_manager.hpp>
+#include <functional>
 #include <utility>
 
 namespace teddy
@@ -182,5 +184,33 @@ auto diagram<Data, D>::unsafe_get_root() const -> node_t*
     return root_;
 }
 } // namespace teddy
+
+namespace std
+{
+template<class Data, teddy::degree D>
+struct hash<teddy::diagram<Data, D>>
+{
+    [[nodiscard]]
+    auto operator()(
+        teddy::diagram<Data, D> const& d
+    ) const noexcept -> std::size_t
+    {
+        return std::hash<decltype(d.unsafe_get_root())>()(d.unsafe_get_root());
+    }
+};
+
+template<class Data, teddy::degree D>
+struct equal_to<teddy::diagram<Data, D>>
+{
+    [[nodiscard]]
+    auto operator()(
+        teddy::diagram<Data, D> const& l,
+        teddy::diagram<Data, D> const& r
+    ) const noexcept -> std::size_t
+    {
+        return l.equals(r);
+    }
+};
+} // namespace std
 
 #endif
