@@ -12,14 +12,6 @@ using teddy::int32;
 using teddy::int64;
 
 /**
- *  @brief Marks unreachable part of control flow that is a logic error.
- */
-inline auto unreachable() -> void
-{
-    std::terminate();
-}
-
-/**
  *  @brief Type of an operation in an internal node.
  */
 enum class Operation

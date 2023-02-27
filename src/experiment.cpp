@@ -18,6 +18,7 @@
 
 #include "counters.hpp"
 #include "iterators.hpp"
+#include "libteddy/details/operators.hpp"
 #include "libteddy/details/types.hpp"
 #include "trees.hpp"
 #include "generators.hpp"
@@ -389,6 +390,42 @@ auto make_diagram (
     return dfs(dfs, root);
 }
 
+auto make_diagram (
+    teddy::mdd_manager<3>& manager,
+    MultiwayNode const& root
+)
+{
+    using diagram_t = teddy::mdd_manager<3>::diagram_t;
+
+    auto const mk_node = [&manager]
+        (auto& self, MultiwayNode const& node) -> diagram_t
+    {
+        if (node.is_variable())
+        {
+            return manager.variable(node.get_index());
+        }
+        else
+        {
+            auto args = std::vector<diagram_t>();
+            for (auto* son : node.get_args())
+            {
+                args.push_back(self(self, *son));
+            }
+            switch (node.get_operation())
+            {
+            case Operation::And:
+                return manager.left_fold<teddy::ops::AND>(args);
+            case Operation::Or:
+                return manager.left_fold<teddy::ops::OR>(args);
+            case Operation::Undefined:
+                unreachable();
+                return nullptr;
+            }
+        }
+    };
+    return mk_node(mk_node, root);
+}
+
 auto unique_sp_count (
     MultiwayNode& root,
     teddy::mdd_manager<3>& manager,
@@ -396,10 +433,11 @@ auto unique_sp_count (
 ) -> int64
 {
     auto memo = std::unordered_set<void*>();
-    auto gen = SeriesParallelTreeGenerator(root);
+    auto gen = SeriesParallelTreeGenerator2(root);
     while (not gen.is_done())
     {
-        auto diagram = make_diagram(manager, root, gen);
+        // auto diagram = make_diagram(manager, root, gen);
+        auto diagram = make_diagram(manager, gen.get());
         memo.emplace(diagram.unsafe_get_root());
         globalMemo.emplace(diagram.unsafe_get_root());
         gen.advance();
@@ -437,12 +475,6 @@ auto print_count_per_tree (int32 n)
                   << std::setw(8)  << countCombin
                   << std::setw(19) << countCorrect << "\n";
         gen.advance();
-
-        if (id == 5)
-        {
-            std::cout << dump_dot(*root) << "\n";
-        }
-
         ++id;
     }
     std::cout << std::setw(7)  << "sum"
@@ -460,12 +492,12 @@ auto main () -> int
               << "div"                  << "\t"
               << "combin"               << "\t"
               << "gen-unique-(correct)" << "\n";
-    for (auto n = 2; n < 9; ++n)
+    for (auto n = 2; n < 10; ++n)
     {
-        if (n != 5)
-        {
-            continue;
-        }
+        // if (n != 5)
+        // {
+        //     continue;
+        // }
 
         auto uniqueTable = MwUniqueTableType();
         auto manager = teddy::mdd_manager<3>(10, 1'000'000);
@@ -476,10 +508,12 @@ auto main () -> int
         while (not gen.is_done())
         {
             auto const& root = gen.get();
-            auto spGen = SeriesParallelTreeGenerator(*root);
+            // auto spGen = SeriesParallelTreeGenerator(*root);
+            auto spGen = SeriesParallelTreeGenerator2(*root);
             while (not spGen.is_done())
             {
-                auto const diagram = make_diagram(manager, *root, spGen);
+                // auto const diagram = make_diagram(manager, *root, spGen);
+                auto const diagram = make_diagram(manager, spGen.get());
                 memo.emplace(diagram.unsafe_get_root());
                 spGen.advance();
                 ++id;
@@ -499,9 +533,9 @@ auto main () -> int
         }
     }
 
-    std::cout << "~~~~~~~~~~~~" << "\n";
-    print_count_per_tree(5);
-    std::cout << "~~~~~~~~~~~~" << "\n";
+    // std::cout << "~~~~~~~~~~~~" << "\n";
+    // print_count_per_tree(5);
+    // std::cout << "~~~~~~~~~~~~" << "\n";
 
 
 

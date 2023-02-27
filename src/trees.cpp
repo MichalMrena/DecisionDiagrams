@@ -1,5 +1,6 @@
 #include "trees.hpp"
 #include "generators.hpp"
+#include "utils.hpp"
 #include <numeric>
 #include <libteddy/details/types.hpp>
 
