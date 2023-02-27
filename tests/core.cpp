@@ -565,10 +565,12 @@ public:
         ));
 
         this->add_test(std::make_unique<test_fold<settings_t>>(
-            settings_t {seeder(), manager, expr}));
+            settings_t {seeder(), manager, expr}
+        ));
 
         this->add_test(std::make_unique<test_gc<settings_t>>(
-            settings_t {seeder(), manager, expr}));
+            settings_t {seeder(), manager, expr}
+        ));
 
         this->add_test(std::make_unique<test_satisfy_count<settings_t>>(
             settings_t {seeder(), manager, expr}
