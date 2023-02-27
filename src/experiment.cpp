@@ -417,7 +417,7 @@ auto make_diagram (
                 return manager.left_fold<teddy::ops::AND>(args);
             case Operation::Or:
                 return manager.left_fold<teddy::ops::OR>(args);
-            case Operation::Undefined:
+            default:
                 unreachable();
                 return nullptr;
             }
@@ -486,21 +486,14 @@ auto print_count_per_tree (int32 n)
 
 auto main () -> int
 {
-    std::cout << "n"                    << "\t"
-              << "gen"                  << "\t"
-              << "naive"                << "\t"
-              << "div"                  << "\t"
-              << "combin"               << "\t"
-              << "gen-unique-(correct)" << "\n";
-    for (auto n = 2; n < 10; ++n)
+    std::cout << "n"          << "\t"
+              << "gen"        << "\t"
+              << "gen-unique" << "\t"
+              << "div"        << "\n";
+    for (auto n = 2; n < 9; ++n)
     {
-        // if (n != 5)
-        // {
-        //     continue;
-        // }
-
         auto uniqueTable = MwUniqueTableType();
-        auto manager = teddy::mdd_manager<3>(10, 1'000'000);
+        auto manager = teddy::mdd_manager<3>(10, 10'000'000);
         auto cache = MwCacheType();
         auto memo = std::unordered_set<void*>();
         auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
@@ -508,11 +501,9 @@ auto main () -> int
         while (not gen.is_done())
         {
             auto const& root = gen.get();
-            // auto spGen = SeriesParallelTreeGenerator(*root);
             auto spGen = SeriesParallelTreeGenerator2(*root);
             while (not spGen.is_done())
             {
-                // auto const diagram = make_diagram(manager, *root, spGen);
                 auto const diagram = make_diagram(manager, spGen.get());
                 memo.emplace(diagram.unsafe_get_root());
                 spGen.advance();
@@ -520,12 +511,10 @@ auto main () -> int
             }
             gen.advance();
         }
-        std::cout << n << "\t"
-                  << id << "\t"
-                  << sp_system_count_2<int64>(n) << "\t"
-                  << sp_system_count_3<int64>(n) << "\t"
-                  << sp_system_count_4<int64>(n) << "\t"
-                  << ssize(memo)                 << "\n";
+        std::cout << n                           << "\t"
+                  << id                          << "\t"
+                  << ssize(memo)                 << "\t\t"
+                  << sp_system_count_3<int64>(n) << "\n";
 
         for (auto const& [key, nodeptr] : uniqueTable)
         {
