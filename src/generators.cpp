@@ -660,8 +660,8 @@ SeriesParallelTreeGenerator::SeriesParallelTreeGenerator
     operationsIt_(begin(Operations))
 {
     this->place_ops();
-    this->fill_leaf_groups();
     this->reset_tail_combinations(0);
+    this->fill_indices();
 }
 
 auto SeriesParallelTreeGenerator::get () const -> MultiwayNode const&
@@ -716,7 +716,7 @@ auto SeriesParallelTreeGenerator::advance_state () -> void
     }
 }
 
-auto SeriesParallelTreeGenerator::fill_leaf_groups () -> void
+auto SeriesParallelTreeGenerator::fill_indices () -> void
 {
     if (root_->is_variable())
     {

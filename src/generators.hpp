@@ -284,7 +284,7 @@ public:
 private:
     auto advance_state () -> void;
 
-    auto fill_leaf_groups () -> void;
+    auto fill_indices () -> void;
 
     auto reset_tail_combinations (int64 headCount) -> void;
 
@@ -307,7 +307,7 @@ private:
 private:
     MultiwayNode* root_;
     std::array<Operation, 2>::const_iterator operationsIt_;
-    std::vector<std::vector<MultiwayNode*>> leafGroups_;
+    std::vector<int32> indices_;
     std::vector<CombinationGenerator> combinations_;
 };
 

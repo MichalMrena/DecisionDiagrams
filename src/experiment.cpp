@@ -490,12 +490,13 @@ auto main () -> int
               << "gen"        << "\t"
               << "gen-unique" << "\t"
               << "div"        << "\n";
-    for (auto n = 2; n < 9; ++n)
+    for (auto n = 2; n < 10; ++n)
     {
+        using diagram_t = teddy::mdd_manager<3>::diagram_t;
         auto uniqueTable = MwUniqueTableType();
-        auto manager = teddy::mdd_manager<3>(10, 10'000'000);
+        auto manager = teddy::mdd_manager<3>(10, 1'000'000);
         auto cache = MwCacheType();
-        auto memo = std::unordered_set<void*>();
+        auto memo = std::unordered_set<diagram_t>();
         auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
         auto id = 0;
         while (not gen.is_done())
@@ -505,7 +506,7 @@ auto main () -> int
             while (not spGen.is_done())
             {
                 auto const diagram = make_diagram(manager, spGen.get());
-                memo.emplace(diagram.unsafe_get_root());
+                memo.emplace(std::move(diagram));
                 spGen.advance();
                 ++id;
             }
