@@ -1,5 +1,7 @@
 #include "generators.hpp"
+#include "libteddy/details/types.hpp"
 #include "trees.hpp"
+#include <iterator>
 
 using teddy::as_uindex;
 using teddy::as_usize;
@@ -535,7 +537,7 @@ auto SimpleMwAstGenerator::make_tree () -> void
     if (it == end(*uniqueTable_))
     {
         auto* newNode = new MultiwayNode{key};
-        uniqueTable_->try_emplace(key, newNode);
+        uniqueTable_->try_emplace(std::move(key), newNode);
         currentTree_ = newNode;
     }
     else
@@ -657,9 +659,14 @@ auto CachedMwAstGenerator::reset () -> void
 SeriesParallelTreeGenerator::SeriesParallelTreeGenerator
     (MultiwayNode& root) :
     root_ (&root),
-    operationsIt_(begin(Operations))
+    // root_ (copy_tree(root)),
+    operations_({Operation::And, Operation::Or}),
+    leafGroupSizes_(count_leaf_groups(root)),
+    indices_(as_usize(leaf_count(root))),
+    combinations_({}),
+    isDone_(false),
+    operationsSwapped_(false)
 {
-    this->place_ops();
     this->reset_tail_combinations(0);
     this->fill_indices();
 }
@@ -669,20 +676,36 @@ auto SeriesParallelTreeGenerator::get () const -> MultiwayNode const&
     return *root_;
 }
 
-auto SeriesParallelTreeGenerator::get_combinations
-    () const -> std::vector<CombinationGenerator> const&
+auto SeriesParallelTreeGenerator::get_indices
+    () const -> std::vector<int32> const&
 {
-    return combinations_;
+    return indices_;
+}
+
+auto SeriesParallelTreeGenerator::get_leaf_group_sizes
+    () const -> std::vector<int64> const&
+{
+    return leafGroupSizes_;
+}
+
+auto SeriesParallelTreeGenerator::get_op_at_level
+    (int64 const level) const -> Operation
+{
+    return operations_[as_uindex(level & 1)];
 }
 
 auto SeriesParallelTreeGenerator::is_done () const -> bool
 {
-    return operationsIt_ == end(Operations);
+    return isDone_;
 }
 
 auto SeriesParallelTreeGenerator::advance () -> void
 {
     this->advance_state();
+    if (not this->is_done())
+    {
+        this->fill_indices();
+    }
 }
 
 auto SeriesParallelTreeGenerator::advance_state () -> void
@@ -707,40 +730,27 @@ auto SeriesParallelTreeGenerator::advance_state () -> void
 
     if (it == endIt)
     {
-        ++operationsIt_;
-        if (operationsIt_ != end(Operations))
+        std::swap(operations_[0], operations_[1]);
+        isDone_ = operationsSwapped_;
+        if (not isDone_)
         {
-            this->place_ops();
             this->reset_tail_combinations(0);
         }
+        operationsSwapped_ = true;
     }
 }
 
 auto SeriesParallelTreeGenerator::fill_indices () -> void
 {
-    if (root_->is_variable())
+    auto iOut = begin(indices_);
+    for (auto const& gen : combinations_)
     {
-        leafGroups_.emplace_back(std::vector({root_}));
-        return;
+        for (auto const i : gen.get())
+        {
+            *iOut = i;
+            ++iOut;
+        }
     }
-
-    for_each_dfs(*root_, [this](MultiwayNode const& node, auto, auto)
-    {
-        if (node.is_variable() || not has_leaf_son(node))
-        {
-            return;
-        }
-
-        auto group = std::vector<MultiwayNode*>();
-        for (auto* son : node.get_args())
-        {
-            if (son->is_variable())
-            {
-                group.push_back(son);
-            }
-        }
-        leafGroups_.emplace_back(std::move(group));
-    });
 }
 
 auto SeriesParallelTreeGenerator::reset_tail_combinations
@@ -757,275 +767,41 @@ auto SeriesParallelTreeGenerator::reset_tail_combinations
     }
 
     combinations_.erase(begin(combinations_) + headCount, end(combinations_));
-    for (auto i = headCount; i < ssize(leafGroups_); ++i)
+    for (auto i = headCount; i < ssize(leafGroupSizes_); ++i)
     {
-        combinations_.emplace_back(
+        auto& gen = combinations_.emplace_back(
             base,
-            static_cast<int32>(ssize(leafGroups_[as_uindex(i)]))
+            leafGroupSizes_[as_uindex(i)]
         );
-        set_diff(base, combinations_[as_uindex(i)].get());
+        set_diff(base, gen.get());
     }
 }
 
-auto SeriesParallelTreeGenerator::place_ops () -> void
+auto SeriesParallelTreeGenerator::count_leaf_groups
+    (MultiwayNode const& root) -> std::vector<int64>
 {
-    auto const place = teddy::utils::fix([](
-        auto self,
-        MultiwayNode& node,
-        Operation const op
-    ) -> void
-    {
-        if (node.is_operation())
-        {
-            node.as_opnode().op_ = op;
-            for (auto* son : node.as_opnode().args_)
-            {
-                self(self, *son, next_op(op));
-            }
-        }
-    });
-    place(*root_, *operationsIt_);
-}
-
-auto SeriesParallelTreeGenerator::next_op (Operation const op) -> Operation
-{
-    switch (op)
-    {
-    case Operation::And:
-        return Operation::Or;
-
-    case Operation::Or:
-        return Operation::And;
-
-    default:
-        unreachable();
-        return Operation::Undefined;
-    }
-}
-
-auto SeriesParallelTreeGenerator::set_diff (
-    std::vector<int32>& lhs,
-    std::vector<int32> const& rhs
-) -> void
-{
-    lhs.erase(
-        std::remove_if(begin(lhs), end(lhs), [&rhs](auto const x)
-        {
-            return std::ranges::find(rhs, x) != std::ranges::end(rhs);
-        }),
-        end(lhs)
-    );
-}
-
-SeriesParallelTreeGenerator2::SeriesParallelTreeGenerator2
-    (MultiwayNode const& root) :
-    root_(copy_tree(root)),
-    operationsIt_(begin(Operations))
-{
-    this->fill_leaf_groups();
-    this->reset_tail_combinations(0);
-    this->place_ops();
-    this->place_indices();
-}
-
-SeriesParallelTreeGenerator2::~SeriesParallelTreeGenerator2()
-{
-    auto const rm = [](auto self, MultiwayNode* node) -> void
-    {
-        if (node->is_operation())
-        {
-            for (auto* son : node->get_args())
-            {
-                self(self, son);
-            }
-        }
-        delete node;
-    };
-    rm(rm, root_);
-}
-
-auto SeriesParallelTreeGenerator2::get () const -> MultiwayNode const&
-{
-    return *root_;
-}
-
-auto SeriesParallelTreeGenerator2::get_copy () const -> MultiwayNode*
-{
-    return copy_tree(*root_);
-}
-
-auto SeriesParallelTreeGenerator2::is_done () const -> bool
-{
-    return operationsIt_ == end(Operations);
-}
-
-auto SeriesParallelTreeGenerator2::advance () -> void
-{
-    this->advance_state();
-    if (not this->is_done())
-    {
-        this->place_indices();
-    }
-}
-
-auto SeriesParallelTreeGenerator2::advance_state () -> void
-{
-    auto it = rbegin(combinations_);
-    auto endIt = rend(combinations_);
-    while (it != endIt)
-    {
-        it->advance();
-        if (it->is_done())
-        {
-            ++it;
-        }
-        else
-        {
-            this->reset_tail_combinations(
-                ssize(combinations_) - std::distance(rbegin(combinations_), it)
-            );
-            break;
-        }
-    }
-
-    if (it == endIt)
-    {
-        ++operationsIt_;
-        if (operationsIt_ != end(Operations))
-        {
-            this->place_ops();
-            this->reset_tail_combinations(0);
-        }
-    }
-}
-
-auto SeriesParallelTreeGenerator2::fill_leaf_groups () -> void
-{
-    if (root_->is_variable())
-    {
-        leafGroups_.emplace_back(std::vector({root_}));
-        return;
-    }
-
-    for_each_dfs(*root_, [this](MultiwayNode const& node, auto, auto)
-    {
-        if (node.is_variable() || not has_leaf_son(node))
-        {
-            return;
-        }
-
-        auto group = std::vector<MultiwayNode*>();
-        for (auto* son : node.get_args())
-        {
-            if (son->is_variable())
-            {
-                group.push_back(son);
-            }
-        }
-        leafGroups_.emplace_back(std::move(group));
-    });
-}
-
-auto SeriesParallelTreeGenerator2::reset_tail_combinations
-    (int64 const headCount) -> void
-{
-    auto base = teddy::utils::fill_vector(
-        leaf_count(*root_),
-        teddy::utils::identity
-    );
-
-    for (auto i = 0; i < headCount; ++i)
-    {
-        set_diff(base, combinations_[as_uindex(i)].get());
-    }
-
-    combinations_.erase(begin(combinations_) + headCount, end(combinations_));
-    for (auto i = headCount; i < ssize(leafGroups_); ++i)
-    {
-        combinations_.emplace_back(
-            base,
-            static_cast<int32>(ssize(leafGroups_[as_uindex(i)]))
-        );
-        set_diff(base, combinations_[as_uindex(i)].get());
-    }
-}
-
-auto SeriesParallelTreeGenerator2::place_ops () -> void
-{
-    auto const place = teddy::utils::fix([](
-        auto self,
-        MultiwayNode& node,
-        Operation const op
-    ) -> void
-    {
-        if (node.is_operation())
-        {
-            node.as_opnode().op_ = op;
-            for (auto* son : node.as_opnode().args_)
-            {
-                self(self, *son, next_op(op));
-            }
-        }
-    });
-    place(*root_, *operationsIt_);
-}
-
-auto SeriesParallelTreeGenerator2::place_indices () -> void
-{
-    auto leafGroupIt = begin(leafGroups_);
-    auto combinationGenIt = begin(combinations_);
-    for (auto i = 0; i < ssize(leafGroups_); ++i)
-    {
-        auto indexIt = begin(combinationGenIt->get());
-        for (auto* leaf : *leafGroupIt)
-        {
-            leaf->as_leafnode().index_ = *indexIt;
-            ++indexIt;
-        }
-        ++leafGroupIt;
-        ++combinationGenIt;
-    }
-}
-
-auto SeriesParallelTreeGenerator2::copy_tree
-    (MultiwayNode const& root) -> MultiwayNode*
-{
-    auto const copy = [](auto self, MultiwayNode const& node)
+    auto counts = std::vector<int64>();
+    auto prevGroupId = int64{-1};
+    for_each_dfs(root, [&counts, &prevGroupId](
+        MultiwayNode const& node,
+        int64 const parentId,
+        auto
+    )
     {
         if (node.is_variable())
         {
-            return new MultiwayNode{LeafNode{node.get_index()}};
-        }
-        else
-        {
-            auto args = std::vector<MultiwayNode*>();
-            for (auto* son : node.get_args())
+            if (parentId != prevGroupId)
             {
-                args.push_back(self(self, *son));
+                counts.push_back(0);
+                prevGroupId = parentId;
             }
-            return new MultiwayNode{NAryOpNode{Operation::Undefined, std::move(args)}};
+            ++counts.back();
         }
-    };
-    return copy(copy, root);
+    });
+    return counts;
 }
 
-auto SeriesParallelTreeGenerator2::next_op (Operation const op) -> Operation
-{
-    switch (op)
-    {
-    case Operation::And:
-        return Operation::Or;
-
-    case Operation::Or:
-        return Operation::And;
-
-    default:
-        unreachable();
-        return Operation::Undefined;
-    }
-}
-
-auto SeriesParallelTreeGenerator2::set_diff (
+auto SeriesParallelTreeGenerator::set_diff (
     std::vector<int32>& lhs,
     std::vector<int32> const& rhs
 ) -> void

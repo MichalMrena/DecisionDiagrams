@@ -275,7 +275,11 @@ public:
 
     auto get () const -> MultiwayNode const&;
 
-    auto get_combinations () const -> std::vector<CombinationGenerator> const&;
+    auto get_indices () const -> std::vector<int32> const&;
+
+    auto get_leaf_group_sizes () const -> std::vector<int64> const&;
+
+    auto get_op_at_level (int64 level) const -> Operation;
 
     auto is_done () const -> bool;
 
@@ -288,9 +292,8 @@ private:
 
     auto reset_tail_combinations (int64 headCount) -> void;
 
-    auto place_ops () -> void;
-
-    static auto next_op (Operation current) -> Operation;
+    static auto count_leaf_groups
+        (MultiwayNode const& root) -> std::vector<int64>;
 
     static auto set_diff (
         std::vector<int32>& lhs,
@@ -306,61 +309,12 @@ private:
 
 private:
     MultiwayNode* root_;
-    std::array<Operation, 2>::const_iterator operationsIt_;
+    std::array<Operation, 2> operations_;
+    std::vector<int64> leafGroupSizes_;
     std::vector<int32> indices_;
     std::vector<CombinationGenerator> combinations_;
-};
-
-/**
- *  @brief Generates all series-parallel system using a topology given as tree.
- */
-class SeriesParallelTreeGenerator2
-{
-public:
-    SeriesParallelTreeGenerator2(MultiwayNode const& root);
-
-    ~SeriesParallelTreeGenerator2();
-
-    auto get () const -> MultiwayNode const&;
-
-    auto get_copy () const -> MultiwayNode*;
-
-    auto is_done () const -> bool;
-
-    auto advance () -> void;
-
-private:
-    auto advance_state () -> void;
-
-    auto fill_leaf_groups () -> void;
-
-    auto reset_tail_combinations (int64 headCount) -> void;
-
-    auto place_ops () -> void;
-
-    auto place_indices () -> void;
-
-    static auto copy_tree (MultiwayNode const& root) -> MultiwayNode*;
-
-    static auto next_op (Operation current) -> Operation;
-
-    static auto set_diff (
-        std::vector<int32>& lhs,
-        std::vector<int32> const& rhs
-    ) -> void;
-
-private:
-    inline static constexpr auto Operations = std::array<Operation, 2>
-    {
-        Operation::And,
-        Operation::Or
-    };
-
-private:
-    MultiwayNode* root_;
-    std::array<Operation, 2>::const_iterator operationsIt_;
-    std::vector<std::vector<MultiwayNode*>> leafGroups_;
-    std::vector<CombinationGenerator> combinations_;
+    bool isDone_;
+    bool operationsSwapped_;
 };
 
 /**

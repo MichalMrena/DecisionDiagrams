@@ -15,6 +15,7 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "counters.hpp"
 #include "iterators.hpp"
@@ -318,130 +319,84 @@ auto compare_series_parallel () -> void
 
 auto make_diagram (
     teddy::mdd_manager<3>& manager,
-    MultiwayNode const& root,
     SeriesParallelTreeGenerator const& gen
 )
 {
     using diagram_t = teddy::mdd_manager<3>::diagram_t;
 
-    auto indexIts = std::vector<std::vector<int32>::const_iterator>();
+    auto indexIt = begin(gen.get_indices());
 
-    auto const combinations = gen.get_combinations();
-    auto leafCombinIt = begin(combinations);
-    for_each_dfs(root, [&](MultiwayNode const& node, auto, auto)
-    {
-        if (has_leaf_son(node))
-        {
-            indexIts.push_back(begin(leafCombinIt->get()));
-            ++leafCombinIt;
-        }
-    });
-
-    auto indexItsIt = begin(indexIts);
-
-    auto dfs = [&](auto self, MultiwayNode const& node) -> diagram_t
-    {
-        auto ds = std::vector<diagram_t>();
-        if (has_leaf_son(node))
-        {
-            auto& indexIt = *indexItsIt;
-            ++indexItsIt;
-
-            for (auto* son : node.get_args())
-            {
-                if (son->is_variable())
-                {
-                    auto const index = *indexIt;
-                    ++indexIt;
-                    ds.emplace_back(manager.variable(index));
-                }
-                else
-                {
-                    ds.emplace_back(self(self, *son));
-                }
-            }
-        }
-        else if (not node.is_variable())
-        {
-            for (auto* son : node.get_args())
-            {
-                ds.emplace_back(self(self, *son));
-            }
-        }
-        else
-        {
-            unreachable();
-            return diagram_t();
-        }
-
-        switch (node.get_operation())
-        {
-        case Operation::And:
-            return manager.left_fold<teddy::ops::AND>(ds);
-
-        case Operation::Or:
-            return manager.left_fold<teddy::ops::OR>(ds);
-
-        default:
-            unreachable();
-            return diagram_t();
-        }
-    };
-    return dfs(dfs, root);
-}
-
-auto make_diagram (
-    teddy::mdd_manager<3>& manager,
-    MultiwayNode const& root
-)
-{
-    using diagram_t = teddy::mdd_manager<3>::diagram_t;
-
-    auto const mk_node = [&manager]
-        (auto& self, MultiwayNode const& node) -> diagram_t
+    auto const mk_diagram = [&indexIt, &manager, &gen]
+        (auto self, MultiwayNode const& node, int64 const level)
     {
         if (node.is_variable())
         {
-            return manager.variable(node.get_index());
+            return manager.variable(*indexIt++);
         }
         else
         {
-            auto args = std::vector<diagram_t>();
-            for (auto* son : node.get_args())
+            auto sonDiagrams = std::vector<diagram_t>();
+            for (auto const* son : node.get_args())
             {
-                args.push_back(self(self, *son));
+                sonDiagrams.emplace_back(self(self, *son, level + 1));
             }
-            switch (node.get_operation())
+
+            switch (gen.get_op_at_level(level))
             {
             case Operation::And:
-                return manager.left_fold<teddy::ops::AND>(args);
+                return manager.left_fold<teddy::ops::MIN>(sonDiagrams);
+
             case Operation::Or:
-                return manager.left_fold<teddy::ops::OR>(args);
+                return manager.left_fold<teddy::ops::MAX>(sonDiagrams);
+
             default:
                 unreachable();
-                return nullptr;
+                return diagram_t();
             }
         }
     };
-    return mk_node(mk_node, root);
+
+    return mk_diagram(mk_diagram, gen.get(), 0);
 }
 
 auto unique_sp_count (
     MultiwayNode& root,
     teddy::mdd_manager<3>& manager,
-    std::unordered_set<void*>& globalMemo
+    std::unordered_set<teddy::mdd_manager<3>::diagram_t>& globalMemo
 ) -> int64
 {
-    auto memo = std::unordered_set<void*>();
-    auto gen = SeriesParallelTreeGenerator2(root);
+    auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
+    auto gen = SeriesParallelTreeGenerator(root);
     while (not gen.is_done())
     {
-        // auto diagram = make_diagram(manager, root, gen);
-        auto diagram = make_diagram(manager, gen.get());
-        memo.emplace(diagram.unsafe_get_root());
-        globalMemo.emplace(diagram.unsafe_get_root());
+        auto diagram = make_diagram(manager, gen);
+        memo.emplace(diagram);
+        globalMemo.emplace(diagram);
         gen.advance();
     }
+    return ssize(memo);
+}
+
+auto unique_sp_count (int32 const n) -> int64
+{
+    auto uniqueTable = MwUniqueTableType();
+    auto manager = teddy::mdd_manager<3>(10, 1'000'000);
+    auto cache = MwCacheType();
+    auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
+    auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
+    auto c = int64();
+
+    while (not gen.is_done())
+    {
+        c += unique_sp_count(*gen.get(), manager, memo);
+        gen.advance();
+    }
+
+    for (auto const& [key, val] : uniqueTable)
+    {
+        delete val;
+    }
+
     return ssize(memo);
 }
 
@@ -450,81 +405,62 @@ auto print_count_per_tree (int32 n)
     auto uniqueTable = MwUniqueTableType();
     auto manager = teddy::mdd_manager<3>(10, 1'000'000);
     auto cache = MwCacheType();
-    auto memo = std::unordered_set<void*>();
+    auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
     auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
     auto id = 0;
     auto sumDiv = int64(0);
     auto sumCombin = int64(0);
     auto sumCorrect = int64(0);
 
-    std::cout << std::setw(7)  << "tree#"
-              << std::setw(5)  << "div"
-              << std::setw(8)  << "combin"
-              << std::setw(19) << "unique(per-tree)"   << "\n";
+    std::cout << "tree#"  << "\t"
+              << "div"    << "\t"
+              << "combin" << "\t"
+              << "ugen1"  << "\n";
     while (not gen.is_done())
     {
         auto* root = gen.get();
         auto countDiv = sp_system_count_3<int64>(*root);
         auto countCombin = sp_system_count_4<int64>(*root);
         auto countCorrect = unique_sp_count(*root, manager, memo);
+        auto auxSpGen = SeriesParallelTreeGenerator(*root);
         sumDiv += countDiv;
         sumCombin += countCombin;
         sumCorrect += countCorrect;
-        std::cout << std::setw(7)  << id
-                  << std::setw(5)  << countDiv
-                  << std::setw(8)  << countCombin
-                  << std::setw(19) << countCorrect << "\n";
+        std::cout << id           << "\t"
+                  << countDiv     << "\t"
+                  << countCombin  << "\t"
+                  << countCorrect << "\t~\t";
         gen.advance();
         ++id;
+        for (auto const s : auxSpGen.get_leaf_group_sizes())
+        {
+            std::cout << s << " ";
+        }
+        std::cout << "\n";
     }
-    std::cout << std::setw(7)  << "sum"
-              << std::setw(5)  << sumDiv
-              << std::setw(8)  << sumCombin
-              << std::setw(19) << sumCorrect << "\n";
+    std::cout << "sum"      << "\t"
+              << sumDiv     << "\t"
+              << sumCombin  << "\t"
+              << sumCorrect << "\n";
     std::cout << "unique total = " << ssize(memo) << "\n";
 }
 
 auto main () -> int
 {
-    std::cout << "n"          << "\t"
-              << "gen"        << "\t"
-              << "gen-unique" << "\t"
-              << "div"        << "\n";
-    for (auto n = 2; n < 10; ++n)
+    std::cout << "gen"    << "\t"
+              << "ugen"   << "\t"
+              << "div"    << "\t"
+              << "combin" << "\n";
+    for (auto n = 2; n < 9; ++n)
     {
-        using diagram_t = teddy::mdd_manager<3>::diagram_t;
-        auto uniqueTable = MwUniqueTableType();
-        auto manager = teddy::mdd_manager<3>(10, 1'000'000);
-        auto cache = MwCacheType();
-        auto memo = std::unordered_set<diagram_t>();
-        auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
-        auto id = 0;
-        while (not gen.is_done())
-        {
-            auto const& root = gen.get();
-            auto spGen = SeriesParallelTreeGenerator2(*root);
-            while (not spGen.is_done())
-            {
-                auto const diagram = make_diagram(manager, spGen.get());
-                memo.emplace(std::move(diagram));
-                spGen.advance();
-                ++id;
-            }
-            gen.advance();
-        }
         std::cout << n                           << "\t"
-                  << id                          << "\t"
-                  << ssize(memo)                 << "\t\t"
-                  << sp_system_count_3<int64>(n) << "\n";
-
-        for (auto const& [key, nodeptr] : uniqueTable)
-        {
-            delete nodeptr;
-        }
+                  << unique_sp_count(n)          << "\t"
+                  << sp_system_count_3<int64>(n) << "\t"
+                  << sp_system_count_4<int64>(n) << "\n";
     }
 
     // std::cout << "~~~~~~~~~~~~" << "\n";
-    // print_count_per_tree(5);
+    // print_count_per_tree(6);
     // std::cout << "~~~~~~~~~~~~" << "\n";
 
 

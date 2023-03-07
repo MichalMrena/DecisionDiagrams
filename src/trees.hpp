@@ -172,6 +172,11 @@ auto leaf_son_count (MultiwayNode const& node) -> int64;
 auto leaf_count (MultiwayNode const& root) -> int64;
 
 /**
+ *  @brief Creates deep copy of the tree with @p root .
+ */
+auto copy_tree (MultiwayNode const& root) -> MultiwayNode*;
+
+/**
  *  @brief Function object type for hash of a multiway node.
  */
 struct MwNodeHash
@@ -236,7 +241,7 @@ auto for_each_dfs(MultiwayNode const& root, F f)
     auto go = [&nextId, f](
         auto self,
         MultiwayNode const& node,
-        int const parentId
+        int64 const parentId
     ) -> void
     {
         auto const thisId = nextId;
