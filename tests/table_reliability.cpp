@@ -76,4 +76,14 @@ auto structural_importance(truth_table const& dpld, int32 i) -> double
     auto const denominator = domainsize / ds[i];
     return static_cast<double>(nominator) / static_cast<double>(denominator);
 }
+
+auto birnbaum_importance(
+    truth_table const& dpld,
+    std::vector<std::vector<double>> const& ps
+) -> double
+{
+    return probability(dpld, ps, 1);
+}
+
+
 } // namespace teddy

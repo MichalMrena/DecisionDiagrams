@@ -457,6 +457,43 @@ protected:
     }
 };
 
+template<class Settings>
+class test_birnbaum_importance : public test_base<Settings>
+{
+public:
+    test_birnbaum_importance(Settings settings)
+        : test_base<Settings>("birnbaum-imporatnce", std::move(settings))
+    {
+    }
+
+protected:
+    auto test() -> void override
+    {
+        auto expr     = make_expression(this->settings(), this->rng());
+        auto manager  = make_manager(this->settings(), this->rng());
+        auto diagram  = make_diagram(expr, manager);
+        auto ps       = make_probabilities(manager, this->rng());
+        auto domains  = manager.get_domains();
+        auto table    = truth_table(make_vector(expr, domains), domains);
+        auto const m  = std::ranges::max(manager.get_domains());
+
+        for (auto j = 1; j < m; ++j)
+        {
+            for (auto i = 0; i < manager.get_var_count(); ++i)
+            {
+                for (auto s = 1; s < manager.get_domains()[i]; ++s)
+                {
+                    auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
+                    auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
+                    auto const expected = birnbaum_importance(td, ps);
+                    auto const actual = manager.structural_importance(dd);
+                    this->assert_equals(expected, actual, 0.00000001);
+                }
+            }
+        }
+    }
+};
+
 /**
  *  \brief Composite test for reliability manager.
  */
@@ -492,10 +529,14 @@ public:
         ));
 
         this->add_test(std::make_unique<test_dpbd<settings_t>>(settings_t {
-            seeder(), manager, expr}));
+            seeder(), manager, expr})
+        );
 
         this->add_test(std::make_unique<test_structural_importance<settings_t>>(settings_t {
-            seeder(), manager, expr}));
+        seeder(), manager, expr}));
+
+        this->add_test(std::make_unique<test_birnbaum_importance<settings_t>>(settings_t {
+        seeder(), manager, expr}));
     }
 };
 
@@ -596,7 +637,7 @@ auto run_test_one(std::size_t const seed)
 
     auto bssmt   = teddy::test_bss_manager(seed);
     bssmt.run();
-    rog::console_print_results(bssmt, rog::ConsoleOutputType::NoLeaf);
+    rog::console_print_results(bssmt, rog::ConsoleOutputType::Full);
 
     auto mssmt = teddy::test_mss_manager<M>(seed);
     mssmt.run();

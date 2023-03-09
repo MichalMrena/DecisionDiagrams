@@ -362,6 +362,20 @@ public:
     auto structural_importance(diagram_t dpld) -> double;
 
     /**
+     *  \brief Calculates Birnbaum importance (BI) of a component.
+     *
+     *  TODO
+     *  Different types of DPLDs can be used for BI calculation.
+     *  It is up to the user to pick the one that suits his needs.
+     *
+     *  \param dpld Direct Partial Boolean Derivative of any type.
+     *  \param ps Component state probabilities.
+     *  \return Birnbaum importance of given componentn.
+     */
+    template<component_probabilities Ps>
+    auto birnbaum_importance(diagram_t dpld, Ps const& ps) -> double;
+
+    /**
      *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
      *  respect to the system state \p j .
      *

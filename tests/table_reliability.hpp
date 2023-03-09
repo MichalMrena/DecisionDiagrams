@@ -67,6 +67,17 @@ auto state_frequency(truth_table const& table, int32 j) -> double;
 auto structural_importance(truth_table const& dpld, int32 i) -> double;
 
 /**
+ *  \brief Calculcates birnbaum importance using \p dpld .
+ *  \param dpld derivative to use for the calculation.
+ *  \param ps component state probabilities
+ *  \return birnbaum importance
+ */
+auto birnbaum_importance(
+    truth_table const& dpld,
+    std::vector<std::vector<double>> const& ps
+) -> double;
+
+/**
  *  \brief Returns lambda that can be used in basic @c dpld .
  */
 inline static auto constexpr dpld_basic = [](auto const ffrom, auto const fto)
