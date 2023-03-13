@@ -45,36 +45,24 @@ auto mw_tree_counts (int32 n) -> std::vector<Int>;
  *  @brief Calculates the number of series-parallel systems with n components.
  */
 template<class Int>
-auto sp_system_count (int32 n) -> Int;
+auto sp_system_count_div (int32 n) -> Int;
 
 /**
  *  @brief Calculates the number of series-parallel systems with n components.
  */
 template<class Int>
-auto sp_system_count_2 (int32 n) -> Int;
-
-/**
- *  @brief Calculates the number of series-parallel systems with n components.
- */
-template<class Int>
-auto sp_system_count_3 (int32 n) -> Int;
-
-/**
- *  @brief Calculates the number of series-parallel systems with n components.
- */
-template<class Int>
-auto sp_system_count_4 (int32 n) -> Int;
+auto sp_system_count_binom (int32 n) -> Int;
 
 /**
  *  @brief Calculates the number of series-parallel systems with given topology.
  */
 template<class Int>
-auto sp_system_count_3 (MultiwayNode const& root) -> Int;
+auto sp_system_count_div (MultiwayNode const& root) -> Int;
 
 /**
  *  @brief Calculates the number of series-parallel systems with given topology.
  */
 template<class Int>
-auto sp_system_count_4 (MultiwayNode const& root) -> Int;
+auto sp_system_count_binom (MultiwayNode const& root) -> Int;
 
 #endif

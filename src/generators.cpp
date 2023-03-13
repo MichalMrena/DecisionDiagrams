@@ -1,6 +1,7 @@
 #include "generators.hpp"
 #include "libteddy/details/types.hpp"
 #include "trees.hpp"
+#include <functional>
 #include <iterator>
 
 using teddy::as_uindex;
@@ -525,7 +526,8 @@ auto SimpleMwAstGenerator::make_tree () -> void
         {
             sonGenUPtr->get(sons);
         }
-        std::ranges::sort(sons);
+        // std::ranges::sort(sons, std::less<>());
+        std::ranges::sort(sons, std::greater<>());
 
         key.data_ = NAryOpNode{
             Operation::Undefined,

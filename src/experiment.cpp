@@ -384,11 +384,10 @@ auto unique_sp_count (int32 const n) -> int64
     auto cache = MwCacheType();
     auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
     auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
-    auto c = int64();
 
     while (not gen.is_done())
     {
-        c += unique_sp_count(*gen.get(), manager, memo);
+        unique_sp_count(*gen.get(), manager, memo);
         gen.advance();
     }
 
@@ -413,35 +412,38 @@ auto print_count_per_tree (int32 n)
     auto sumCorrect = int64(0);
 
     std::cout << "tree#"  << "\t"
+              << "ugen"   << "\t"
               << "div"    << "\t"
-              << "combin" << "\t"
-              << "ugen1"  << "\n";
+              << "combin" << "\n";
     while (not gen.is_done())
     {
+
         auto* root = gen.get();
-        auto countDiv = sp_system_count_3<int64>(*root);
-        auto countCombin = sp_system_count_4<int64>(*root);
+        if (id == 80)
+        {
+            std::cout << dump_dot(*root) << "\n";
+        }
+        auto countDiv = sp_system_count_div<int64>(*root);
+        auto countCombin = sp_system_count_binom<int64>(*root);
         auto countCorrect = unique_sp_count(*root, manager, memo);
-        auto auxSpGen = SeriesParallelTreeGenerator(*root);
         sumDiv += countDiv;
         sumCombin += countCombin;
         sumCorrect += countCorrect;
+        if (countDiv != countCombin)
+        {
+            std::cout << "!!";
+        }
         std::cout << id           << "\t"
+                  << countCorrect << "\t"
                   << countDiv     << "\t"
-                  << countCombin  << "\t"
-                  << countCorrect << "\t~\t";
+                  << countCombin  << "\n";
         gen.advance();
         ++id;
-        for (auto const s : auxSpGen.get_leaf_group_sizes())
-        {
-            std::cout << s << " ";
-        }
-        std::cout << "\n";
     }
     std::cout << "sum"      << "\t"
+              << sumCorrect << "\t"
               << sumDiv     << "\t"
-              << sumCombin  << "\t"
-              << sumCorrect << "\n";
+              << sumCombin  << "\n";
     std::cout << "unique total = " << ssize(memo) << "\n";
 }
 
@@ -451,18 +453,17 @@ auto main () -> int
               << "ugen"   << "\t"
               << "div"    << "\t"
               << "combin" << "\n";
-    for (auto n = 2; n < 9; ++n)
+    for (auto n = 2; n < 11; ++n)
     {
-        std::cout << n                           << "\t"
-                  << unique_sp_count(n)          << "\t"
-                  << sp_system_count_3<int64>(n) << "\t"
-                  << sp_system_count_4<int64>(n) << "\n";
+        std::cout << n                               << "\t"
+                  << unique_sp_count(n)              << "\t"
+                  << sp_system_count_div<int64>(n)   << "\t"
+                  << sp_system_count_binom<int64>(n) << "\n";
     }
 
     // std::cout << "~~~~~~~~~~~~" << "\n";
-    // print_count_per_tree(6);
+    // print_count_per_tree(7);
     // std::cout << "~~~~~~~~~~~~" << "\n";
-
 
 
     // TODO vplyv unikatnosti vrcholov

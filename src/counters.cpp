@@ -94,137 +94,7 @@ auto mw_tree_counts (int32 const n) -> std::vector<Int>
 }
 
 template<class Int>
-auto sp_system_count (int32 componentCount) -> Int
-{
-    MwUniqueTableType uniqueTable_;
-    MwCacheType cache_;
-    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable_, cache_);
-    auto count = Int{0};
-    while (not gen.is_done())
-    {
-        auto binoms = std::vector<std::pair<int32, int32>>();
-        auto leftCount = componentCount;
-        auto const& root = *gen.get();
-        for_each_dfs(root, [&](MultiwayNode const& node, auto, auto)
-        {
-            if (has_leaf_son(node))
-            {
-                auto sonCount = 0;
-                for (auto* son : node.get_args())
-                {
-                    sonCount += static_cast<int32>(son->is_variable());
-                }
-                binoms.emplace_back(leftCount, sonCount);
-                leftCount -= sonCount;
-            }
-        });
-
-        auto product = Int{1};
-        for (auto const& [n, k] : binoms)
-        {
-            product *= n_over_k<Int>(n, k);
-        }
-        count += product;
-
-        gen.advance();
-    }
-    return 2 * count;
-}
-
-template<class Int>
-auto sp_system_count_2 (int32 componentCount) -> Int
-{
-    auto const has_has_leaf_son = [](MultiwayNode const& node)
-    {
-        if (node.is_operation())
-        {
-            for (auto* son : node.get_args())
-            {
-                if (has_leaf_son(*son))
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    };
-
-    auto const leaf_son_count = [](MultiwayNode const& node)
-    {
-        auto count = 0;
-        for (auto* son : node.get_args())
-        {
-            if (son->is_variable())
-            {
-                ++count;
-            }
-        }
-        return count;
-    };
-
-    auto uniqueTable = MwUniqueTableType();
-    auto cache = MwCacheType();
-    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable, cache);
-    auto spCount = Int{0};
-    while (not gen.is_done())
-    {
-        // auto binoms = std::vector<std::tuple<int32, int32>>();
-        auto leftCount = componentCount;
-        auto const& root = *gen.get();
-            // std::cout << dump_dot(root) << "\n";
-        auto product = Int{1};
-        for_each_dfs(root, [&](MultiwayNode const& node, auto, auto)
-        {
-            if (not has_has_leaf_son(node))
-            {
-                return;
-            }
-
-            auto sons = std::vector<MultiwayNode*>();
-            for (auto* son : node.get_args())
-            {
-                if (has_leaf_son(*son))
-                {
-                    sons.push_back(son);
-                }
-            }
-
-            std::ranges::sort(sons);
-            auto const groups = group(sons);
-            for (auto const [sonptr, count] : groups)
-            {
-                auto localProduct = Int{1};
-                for (auto i = 0; i < count; ++i)
-                {
-                    auto const n = leftCount;
-                    auto const k = leaf_son_count(*sonptr);
-                    localProduct *= n_over_k<Int>(n, k);
-                    leftCount -= k;
-                }
-                localProduct /= factorial(count);
-                product *= localProduct;
-            }
-        });
-        if (has_leaf_son(root))
-        {
-            auto const n = leftCount;
-            auto const k = leaf_son_count(root);
-            product *= n_over_k<Int>(n, k);
-        }
-
-        spCount += 2 * product;
-
-        gen.advance();
-    }
-    for (auto const& [key, nodeptr] : uniqueTable)
-    {
-        delete nodeptr;
-    }
-    return spCount;
-}
-
-template<class Int>
-auto sp_system_count_3 (MultiwayNode const& root) -> Int
+auto sp_system_count_div (MultiwayNode const& root) -> Int
 {
     auto leftCount = leaf_count(root);
     auto const go = teddy::utils::fix([&]
@@ -258,59 +128,62 @@ auto sp_system_count_3 (MultiwayNode const& root) -> Int
 }
 
 template<class Int>
-auto sp_system_count_4 (MultiwayNode const& root) -> Int
+auto sp_system_count_binom (MultiwayNode const& root) -> Int
 {
     auto const componentCount = leaf_count(root);
-    auto const go = teddy::utils::fix([&]
-        (auto self, MultiwayNode const& node, int64 leavesLeft) -> Int
+    auto const go = [&](
+        auto self,
+        MultiwayNode const& node,
+        int64 const leavesLeft,
+        bool const breakSymetry
+    ) -> Int
     {
+        auto product = Int{1};
+        auto const n = leavesLeft;
+        auto const k = leaf_count(node);
+
+        product *= n_over_k<Int>(
+            n - static_cast<int32>(breakSymetry),
+            k - static_cast<int32>(breakSymetry)
+        );
+
         if (node.is_variable())
         {
-            return 1;
+            return product;
         }
 
-        auto const sonGroups = group_by(node.get_args(),
-            [](MultiwayNode* const n)
-        {
-            return leaf_count(*n);
-        });
+        auto k1 = k;
 
-        auto product = Int{1};
+        auto const sonGroups = group(node.get_args());
         for (auto const [son, count] : sonGroups)
         {
             if (count == 1)
             {
-                auto const n = leavesLeft;
-                auto const k = leaf_count(*son);
-                leavesLeft -= k;
-                product *= n_over_k<Int>(n, k) * self(self, *son, k);
-            }
-            else if (son->is_variable())
-            {
-                auto const n = leavesLeft;
-                auto const k = count;
-                product *= n_over_k<Int>(n, k);
-                leavesLeft -= k;
+                product *= self(self, *son, k1, false);
+                k1 -= leaf_count(*son);
             }
             else
             {
+                product *= n_over_k<Int>(k1, count * leaf_count(*son));
+
                 for (auto i = 0; i < count; ++i)
                 {
-                    auto const n = leavesLeft - 1;
-                    auto const k = leaf_count(*son) - 1;
-                    leavesLeft -= k + 1;
-                    product *= n_over_k<Int>(n, k)
-                             * self(self, *son, k + 1);
+                    product *= self(self,
+                        *son,
+                        (count - i) * leaf_count(*son),
+                        true
+                    );
                 }
+                k1 -= count * leaf_count(*son);
             }
         }
         return product;
-    });
-    return 2 * go(root, componentCount);
+    };
+    return 2 * go(go, root, componentCount, false);
 }
 
 template<class Int>
-auto sp_system_count_3 (int32 componentCount) -> Int
+auto sp_system_count_div (int32 componentCount) -> Int
 {
     auto uniqueTable = MwUniqueTableType();
     auto cache = MwCacheType();
@@ -318,7 +191,7 @@ auto sp_system_count_3 (int32 componentCount) -> Int
     auto spCount = Int{0};
     while (not gen.is_done())
     {
-        spCount += sp_system_count_3<Int>(*gen.get());
+        spCount += sp_system_count_div<Int>(*gen.get());
         gen.advance();
     }
     for (auto const& [key, nodeptr] : uniqueTable)
@@ -329,7 +202,7 @@ auto sp_system_count_3 (int32 componentCount) -> Int
 }
 
 template<class Int>
-auto sp_system_count_4 (int32 componentCount) -> Int
+auto sp_system_count_binom (int32 componentCount) -> Int
 {
     auto uniqueTable = MwUniqueTableType();
     auto cache = MwCacheType();
@@ -337,7 +210,7 @@ auto sp_system_count_4 (int32 componentCount) -> Int
     auto spCount = Int{0};
     while (not gen.is_done())
     {
-        spCount += sp_system_count_4<Int>(*gen.get());
+        spCount += sp_system_count_binom<Int>(*gen.get());
         gen.advance();
     }
     for (auto const& [key, nodeptr] : uniqueTable)
@@ -356,20 +229,14 @@ template auto mw_tree_count (tree_count_memo<Integer>&, int32) -> Integer;
 template auto mw_tree_counts (int32) -> std::vector<int64>;
 template auto mw_tree_counts (int32) -> std::vector<Integer>;
 
-template auto sp_system_count(int32 n) -> int64;
-template auto sp_system_count(int32 n) -> Integer;
+template auto sp_system_count_div(int32 n) -> int64;
+template auto sp_system_count_div(int32 n) -> Integer;
 
-template auto sp_system_count_2(int32 n) -> int64;
-template auto sp_system_count_2(int32 n) -> Integer;
+template auto sp_system_count_binom(int32 n) -> int64;
+template auto sp_system_count_binom(int32 n) -> Integer;
 
-template auto sp_system_count_3(int32 n) -> int64;
-template auto sp_system_count_3(int32 n) -> Integer;
+template auto sp_system_count_div(MultiwayNode const&) -> int64;
+template auto sp_system_count_div(MultiwayNode const&) -> Integer;
 
-template auto sp_system_count_4(int32 n) -> int64;
-template auto sp_system_count_4(int32 n) -> Integer;
-
-template auto sp_system_count_3(MultiwayNode const&) -> int64;
-template auto sp_system_count_3(MultiwayNode const&) -> Integer;
-
-template auto sp_system_count_4(MultiwayNode const&) -> int64;
-template auto sp_system_count_4(MultiwayNode const&) -> Integer;
+template auto sp_system_count_binom(MultiwayNode const&) -> int64;
+template auto sp_system_count_binom(MultiwayNode const&) -> Integer;
