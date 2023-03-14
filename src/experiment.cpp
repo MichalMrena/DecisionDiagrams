@@ -419,10 +419,6 @@ auto print_count_per_tree (int32 n)
     {
 
         auto* root = gen.get();
-        if (id == 80)
-        {
-            std::cout << dump_dot(*root) << "\n";
-        }
         auto countDiv = sp_system_count_div<int64>(*root);
         auto countCombin = sp_system_count_binom<int64>(*root);
         auto countCorrect = unique_sp_count(*root, manager, memo);
@@ -449,22 +445,15 @@ auto print_count_per_tree (int32 n)
 
 auto main () -> int
 {
-    std::cout << "gen"    << "\t"
-              << "ugen"   << "\t"
+    std::cout << "n"      << "\t"
               << "div"    << "\t"
               << "combin" << "\n";
-    for (auto n = 2; n < 11; ++n)
+    for (auto n = 2; n < 10; ++n)
     {
-        std::cout << n                               << "\t"
-                  << unique_sp_count(n)              << "\t"
-                  << sp_system_count_div<int64>(n)   << "\t"
-                  << sp_system_count_binom<int64>(n) << "\n";
+        std::cout << n                                 << "\t"
+                  << sp_system_count_div<Integer>(n)   << "\t"
+                  << sp_system_count_binom<Integer>(n) << "\n";
     }
-
-    // std::cout << "~~~~~~~~~~~~" << "\n";
-    // print_count_per_tree(7);
-    // std::cout << "~~~~~~~~~~~~" << "\n";
-
 
     // TODO vplyv unikatnosti vrcholov
 

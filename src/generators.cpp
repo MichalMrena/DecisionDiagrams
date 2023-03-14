@@ -660,8 +660,7 @@ auto CachedMwAstGenerator::reset () -> void
 
 SeriesParallelTreeGenerator::SeriesParallelTreeGenerator
     (MultiwayNode& root) :
-    root_ (&root),
-    // root_ (copy_tree(root)),
+    root_(&root),
     operations_({Operation::And, Operation::Or}),
     leafGroupSizes_(count_leaf_groups(root)),
     indices_(as_usize(leaf_count(root))),
