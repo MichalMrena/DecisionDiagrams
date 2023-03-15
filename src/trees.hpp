@@ -133,6 +133,7 @@ auto for_each_dfs (BinaryNode const& root, F f) -> void
  */
 struct MultiwayNode
 {
+    int64 id_;
     std::variant<std::monostate, LeafNode, NAryOpNode> data_;
 
     auto is_variable() const -> bool;

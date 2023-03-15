@@ -219,7 +219,7 @@ auto copy_tree (MultiwayNode const& root) -> MultiwayNode*
     {
         if (node.is_variable())
         {
-            return new MultiwayNode{LeafNode{node.get_index()}};
+            return new MultiwayNode{node.id_, LeafNode{node.get_index()}};
         }
         else
         {
@@ -229,6 +229,7 @@ auto copy_tree (MultiwayNode const& root) -> MultiwayNode*
                 args.push_back(self(self, *son));
             }
             return new MultiwayNode{
+                node.id_,
                 NAryOpNode{
                     Operation::Undefined,
                     std::move(args)

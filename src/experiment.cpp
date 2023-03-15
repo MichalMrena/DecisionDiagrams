@@ -110,9 +110,11 @@ auto bin_to_mw_ast (
             auto mappedSons = std::vector<MultiwayNode*>();
             mappedSons.push_back(self(self, binNode.get_left()));
             mappedSons.push_back(self(self, binNode.get_right()));
-            return new MultiwayNode{NAryOpNode{
-                binNode.get_operation(),
-                std::move(mappedSons)
+            return new MultiwayNode{
+                0,
+                NAryOpNode{
+                    binNode.get_operation(),
+                    std::move(mappedSons)
             }};
         }
         else
@@ -173,9 +175,11 @@ auto bin_to_mw_ast (
             }
             std::ranges::sort(mappedSons);
 
-            auto newNodeKey = MultiwayNode{NAryOpNode{
-                node->get_operation(),
-                std::move(mappedSons)
+            auto newNodeKey = MultiwayNode{
+                0,
+                NAryOpNode{
+                    node->get_operation(),
+                    std::move(mappedSons)
             }};
             delete node;
 
@@ -211,7 +215,7 @@ auto for_each_mw_ast (int32 const varCount, F f)
         MwNodeEquals
     >();
 
-    auto leaf = new MultiwayNode{LeafNode{0}};
+    auto leaf = new MultiwayNode{0, LeafNode{0}};
     auto memo = std::unordered_set<MultiwayNode*>();
     auto gen  = BinAstGenerator(varCount, 0);
     while (not gen.is_done())
@@ -399,63 +403,102 @@ auto unique_sp_count (int32 const n) -> int64
     return ssize(memo);
 }
 
+template<class Int = int64>
 auto print_count_per_tree (int32 n)
 {
     auto uniqueTable = MwUniqueTableType();
     auto manager = teddy::mdd_manager<3>(10, 1'000'000);
     auto cache = MwCacheType();
-    auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
+    // auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
+    auto id = int64{0};
     auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
-    auto id = 0;
-    auto sumDiv = int64(0);
-    auto sumCombin = int64(0);
-    auto sumCorrect = int64(0);
+    auto sumGen = Int{0};
+    auto sumDiv = Int{0};
+    auto sumCombin = Int{0};
 
-    std::cout << "tree#"  << "\t"
-              << "ugen"   << "\t"
+    std::cout << "#"      << "\t"
+              << "gen"    << "\t"
               << "div"    << "\t"
               << "combin" << "\n";
     while (not gen.is_done())
     {
-
         auto* root = gen.get();
-        auto countDiv = sp_system_count_div<int64>(*root);
-        auto countCombin = sp_system_count_binom<int64>(*root);
-        auto countCorrect = unique_sp_count(*root, manager, memo);
+
+        // if (id == 9)
+        // {
+        //     std::cout << dump_dot(*root) << "\n";
+        // }
+
+        auto indexGen = SeriesParallelTreeGenerator(*root);
+        auto countGen = Int{0};
+        while (not indexGen.is_done())
+        {
+            ++countGen;
+            indexGen.advance();
+        }
+
+        auto countDiv = sp_system_count_div<Int>(*root);
+        auto countCombin = sp_system_count_binom<Int>(*root);
+        sumGen += countGen;
         sumDiv += countDiv;
         sumCombin += countCombin;
-        sumCorrect += countCorrect;
-        if (countDiv != countCombin)
+        if (countGen != countDiv)
         {
-            std::cout << "!!";
+            std::cout << "! ";
         }
         std::cout << id           << "\t"
-                  << countCorrect << "\t"
+                  << countGen     << "\t"
                   << countDiv     << "\t"
                   << countCombin  << "\n";
         gen.advance();
         ++id;
     }
     std::cout << "sum"      << "\t"
-              << sumCorrect << "\t"
+              << sumGen     << "\t"
               << sumDiv     << "\t"
               << sumCombin  << "\n";
-    std::cout << "unique total = " << ssize(memo) << "\n";
+    // std::cout << "unique total = " << ssize(memo) << "\n";
 }
 
 auto main () -> int
 {
-    std::cout << "n"      << "\t"
+    std::cout << "#"      << "\t"
+              << "gen"    << "\t"
               << "div"    << "\t"
               << "combin" << "\n";
     for (auto n = 2; n < 10; ++n)
     {
+        auto gen = SeriesParallelGenerator(n);
+        auto count = int64{0};
+        while (not gen.is_done())
+        {
+            ++count;
+            gen.advance();
+        }
+
         std::cout << n                                 << "\t"
+                  << count                             << "\t"
                   << sp_system_count_div<Integer>(n)   << "\t"
                   << sp_system_count_binom<Integer>(n) << "\n";
     }
 
+    // std::cout << "~~~" << "\n";
+    // print_count_per_tree(5);
+
+    // TODO sort nodes by ID
     // TODO vplyv unikatnosti vrcholov
+
+    // auto const base = {1, 2, 3, 4, 5, 6};
+    // auto gen = CombinationGenerator(base, 1, 1);
+    // while (not gen.is_done())
+    // {
+    //     for (auto const x : gen.get())
+    //     {
+    //         std::cout << x << " ";
+    //     }
+    //     gen.advance();
+    //     std::cout << "\n";
+    // }
 
     std::cout << "=== end of main ===" << '\n';
 }

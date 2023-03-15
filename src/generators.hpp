@@ -92,7 +92,11 @@ private:
 class CombinationGenerator
 {
 public:
-    CombinationGenerator(std::vector<int32> base, int32 k);
+    CombinationGenerator(
+        std::vector<int32> base,
+        int32 k,
+        int32 fixedCount = 0
+    );
 
     auto get () const -> std::vector<int32> const&;
 
@@ -115,6 +119,7 @@ private:
     std::vector<int32> base_;
     std::vector<int32> mask_;
     std::vector<int32> current_;
+    int32 fixedCount_;
     bool isDone_;
 };
 
@@ -210,6 +215,7 @@ private:
     SonVarCountsGenerator sonVarCountsGenerator_;
     std::vector<std::unique_ptr<MwAstGenerator>> sonGenerators_;
     MultiwayNode* currentTree_;
+    int64 nextId_;
     bool isDone_;
     bool isLeaf_;
 };
@@ -266,6 +272,20 @@ private:
 };
 
 /**
+ *  @brief Describes leaf group.
+*/
+struct GroupDescription
+{
+    int64 size_;
+    bool fixed_;
+    GroupDescription(int64 const size, bool const fixed) :
+        size_(size),
+        fixed_(fixed)
+    {
+    }
+};
+
+/**
  *  @brief Generates all series-parallel system using a topology given as tree.
  */
 class SeriesParallelTreeGenerator
@@ -276,8 +296,6 @@ public:
     auto get () const -> MultiwayNode const&;
 
     auto get_indices () const -> std::vector<int32> const&;
-
-    auto get_leaf_group_sizes () const -> std::vector<int64> const&;
 
     auto get_op_at_level (int64 level) const -> Operation;
 
@@ -292,8 +310,8 @@ private:
 
     auto reset_tail_combinations (int64 headCount) -> void;
 
-    static auto count_leaf_groups
-        (MultiwayNode const& root) -> std::vector<int64>;
+    static auto make_leaf_groups
+        (MultiwayNode const& root) -> std::vector<GroupDescription>;
 
     static auto set_diff (
         std::vector<int32>& lhs,
@@ -310,7 +328,7 @@ private:
 private:
     MultiwayNode* root_;
     std::array<Operation, 2> operations_;
-    std::vector<int64> leafGroupSizes_;
+    std::vector<GroupDescription> leafGroups_;
     std::vector<int32> indices_;
     std::vector<CombinationGenerator> combinations_;
     bool isDone_;
@@ -341,5 +359,47 @@ private:
     SimpleMwAstGenerator treeGenerator_;
     SeriesParallelTreeGenerator fromTreeGenerator_;
 };
+
+/**
+ * @brief Interface for SP index generators.
+ */
+class ISPIndexGenerator
+{
+public:
+    virtual auto advance () -> void;
+    virtual auto is_done () const -> bool;
+};
+
+/**
+ *  @brief Generator for group of isomorphic trees.
+ */
+class GroupISPGenerator : public ISPIndexGenerator
+{
+public:
+    GroupISPGenerator(
+        std::vector<std::unique_ptr<ISPIndexGenerator>> gens
+    );
+    auto advance () -> void override;
+    auto is_done () const -> bool override;
+
+private:
+    std::vector<std::unique_ptr<ISPIndexGenerator>> gens_;
+};
+
+/**
+ *  @brief Generator for simple leaf group.
+ */
+class SimpleISPGenerator : public ISPIndexGenerator
+{
+public:
+    SimpleISPGenerator(std::vector<int32> base, int32 k, int32 fixedCount);
+    auto advance () -> void override;
+    auto is_done () const -> bool override;
+};
+
+auto make_ispgen (
+    MultiwayNode const& node,
+    std::vector<int32> base
+) -> std::unique_ptr<ISPIndexGenerator>;
 
 #endif
