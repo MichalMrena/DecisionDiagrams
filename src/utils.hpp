@@ -109,4 +109,16 @@ auto combin_r (Int const n, Int const k) -> Int
     return n_over_k<Int>(n + k - 1, k);
 }
 
+template<class T>
+auto set_diff (std::vector<T>& lhs, std::vector<T> const& rhs) -> void
+{
+    lhs.erase(
+        std::remove_if(begin(lhs), end(lhs), [&rhs](auto const x)
+        {
+            return std::ranges::find(rhs, x) != std::ranges::end(rhs);
+        }),
+        end(lhs)
+    );
+}
+
 #endif

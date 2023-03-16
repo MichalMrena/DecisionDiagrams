@@ -1,9 +1,11 @@
 #include "generators.hpp"
 #include "libteddy/details/types.hpp"
+#include "libteddy/details/utils.hpp"
 #include "src/utils.hpp"
 #include "trees.hpp"
 #include <functional>
 #include <iterator>
+#include <memory>
 #include <vector>
 
 using teddy::as_uindex;
@@ -264,6 +266,16 @@ auto CombinationGenerator::get_base () const -> std::vector<int32> const&
 auto CombinationGenerator::get_mask () const -> std::vector<int32> const&
 {
     return mask_;
+}
+
+auto CombinationGenerator::get_k () const -> int32
+{
+    return static_cast<int32>(std::ssize(current_));
+}
+
+auto CombinationGenerator::get_fixed_count () const -> int32
+{
+    return fixedCount_;
 }
 
 auto CombinationGenerator::advance () -> void
@@ -831,20 +843,6 @@ auto SeriesParallelTreeGenerator::make_leaf_groups
     return groups;
 }
 
-auto SeriesParallelTreeGenerator::set_diff (
-    std::vector<int32>& lhs,
-    std::vector<int32> const& rhs
-) -> void
-{
-    lhs.erase(
-        std::remove_if(begin(lhs), end(lhs), [&rhs](auto const x)
-        {
-            return std::ranges::find(rhs, x) != std::ranges::end(rhs);
-        }),
-        end(lhs)
-    );
-}
-
 SeriesParallelGenerator::SeriesParallelGenerator (int32 const varCount) :
     uniqueTable_({}),
     cache_({}),
@@ -892,22 +890,196 @@ auto SeriesParallelGenerator::advance () -> void
     }
 }
 
-auto make_ispgen (
-    MultiwayNode const& node,
-    std::vector<int32> base
-) -> std::unique_ptr<ISPIndexGenerator>
+SPGenerator::SPGenerator(
+    std::vector<CombinationGenerator> perGroupGens,
+    std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
+) :
+    groupCombinGens_(std::move(perGroupGens)),
+    groupGens_(std::move(groupGens))
 {
-    assert(node.is_operation());
-    auto const groups = group(node.get_args());
-    for (auto const [son, count] : groups)
-    {
-        if (son->is_variable())
-        {
+}
 
+auto SPGenerator::get () const -> std::vector<int32> const&
+{
+    unreachable();
+    return {};
+}
+
+auto SPGenerator::advance () -> void
+{
+    auto groupGenOverflow = false;
+    for (auto& groupGen : groupGens_)
+    {
+        groupGen->advance();
+        groupGenOverflow = groupGen->is_done();
+        if (groupGenOverflow)
+        {
+            groupGen->reset();
         }
         else
         {
-            
+            break;
         }
     }
+
+    if (not groupGenOverflow)
+    {
+        return;
+    }
+
+    auto groupCombinIt = begin(groupCombinGens_);
+    auto groupCombinEnd = end(groupCombinGens_);
+    while (groupCombinIt != groupCombinEnd)
+    {
+        groupCombinIt->advance();
+        if (groupCombinIt->is_done())
+        {
+            ++groupCombinIt;
+        }
+        else
+        {
+            auto base = base_;
+            auto headIt = begin(groupCombinGens_);
+            while (headIt != groupCombinEnd)
+            {
+                set_diff(base, headIt->get());
+                ++headIt;
+            }
+
+            auto tailIt = headIt;
+            while (tailIt != groupCombinEnd)
+            {
+                *tailIt = CombinationGenerator(
+                    base,
+                    tailIt->get_k()
+                );
+                set_diff(base, tailIt->get());
+                ++tailIt;
+            }
+            // reset tail
+            break;
+        }
+    }
+}
+
+auto SPGenerator::is_done () const -> bool
+{
+    unreachable();
+    return true;
+}
+
+GroupSPGenerator::GroupSPGenerator(
+    std::vector<int32> base,
+    std::vector<std::unique_ptr<ISPIndexGenerator>> sonGens
+) :
+    base_(std::move(base)),
+    sonGens_(std::move(sonGens))
+{
+}
+
+auto GroupSPGenerator::get () const -> std::vector<int32> const&
+{
+    unreachable();
+    return {};
+}
+
+auto GroupSPGenerator::advance () -> void
+{
+    unreachable();
+}
+
+auto GroupSPGenerator::is_done () const -> bool
+{
+    unreachable();
+    return true;
+}
+
+SimpleSPGenerator::SimpleSPGenerator(
+    std::vector<int32> base,
+    int32 const k,
+    bool const fix
+) :
+    combination_(std::move(base), k, static_cast<int32>(fix))
+{
+}
+
+auto SimpleSPGenerator::get () const -> std::vector<int32> const&
+{
+    return combination_.get();
+}
+
+auto SimpleSPGenerator::advance () -> void
+{
+    combination_.advance();
+}
+
+auto SimpleSPGenerator::is_done () const -> bool
+{
+    return combination_.is_done();
+}
+
+namespace
+{
+auto mk_ispgen (
+    MultiwayNode const& node,
+    std::vector<int32> base,
+    bool const fix
+) -> std::unique_ptr<ISPIndexGenerator>
+{
+    auto perGroupGens = std::vector<CombinationGenerator>();
+    auto groupGens = std::vector<std::unique_ptr<ISPIndexGenerator>>();
+
+    auto const groups = group(node.get_args());
+
+    for (auto const [son, count] : groups)
+    {
+        auto const k = static_cast<int32>(leaf_count(*son));
+        perGroupGens.emplace_back(base, k);
+        set_diff(base, perGroupGens.back().get());
+    }
+
+    auto groupGenIt = begin(perGroupGens);
+    for (auto const [son, count] : groups)
+    {
+        auto groupBase = groupGenIt->get();
+        if (son->is_variable())
+        {
+            groupGens.emplace_back(std::make_unique<SimpleSPGenerator>(
+                groupBase,
+                count,
+                fix || count > 1
+            ));
+        }
+        else
+        {
+            auto sonGens = std::vector<std::unique_ptr<ISPIndexGenerator>>();
+            for (auto i = 0; i < count; ++i)
+            {
+                sonGens.emplace_back(
+                    mk_ispgen(*son, groupBase, fix || count > 1)
+                );
+                set_diff(groupBase, sonGens.back()->get());
+            }
+            groupGens.emplace_back(std::make_unique<GroupSPGenerator>(
+                groupBase,
+                std::move(sonGens)
+            ));
+        }
+        ++groupGenIt;
+    }
+
+    return std::make_unique<SPGenerator>(
+        std::move(perGroupGens),
+        std::move(groupGens)
+    );
+}
+}
+
+auto make_ispgen (
+    MultiwayNode const& root
+) -> std::unique_ptr<ISPIndexGenerator>
+{
+    auto const n = leaf_count(root);
+    auto base = teddy::utils::fill_vector(n, teddy::utils::identity);
+    return mk_ispgen(root, std::move(base), false);
 }

@@ -104,6 +104,10 @@ public:
 
     auto get_mask () const -> std::vector<int32> const&;
 
+    auto get_k () const -> int32;
+
+    auto get_fixed_count () const -> int32;
+
     auto advance () -> void;
 
     auto is_done () const -> bool;
@@ -313,11 +317,6 @@ private:
     static auto make_leaf_groups
         (MultiwayNode const& root) -> std::vector<GroupDescription>;
 
-    static auto set_diff (
-        std::vector<int32>& lhs,
-        std::vector<int32> const& rhs
-    ) -> void;
-
 private:
     inline static constexpr auto Operations = std::array<Operation, 2>
     {
@@ -366,40 +365,82 @@ private:
 class ISPIndexGenerator
 {
 public:
-    virtual auto advance () -> void;
-    virtual auto is_done () const -> bool;
+    virtual ~ISPIndexGenerator () = default;
+    virtual auto get () const -> std::vector<int32> const& = 0;
+    virtual auto advance () -> void = 0;
+    virtual auto is_done () const -> bool = 0;
+    virtual auto reset () -> void = 0;
 };
 
 /**
- *  @brief Generator for group of isomorphic trees.
+ *  @brief TODO
  */
-class GroupISPGenerator : public ISPIndexGenerator
+class SPGenerator : public ISPIndexGenerator
 {
 public:
-    GroupISPGenerator(
-        std::vector<std::unique_ptr<ISPIndexGenerator>> gens
+    SPGenerator(
+        std::vector<CombinationGenerator> perGroupGens,
+        std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
     );
+    auto get () const -> std::vector<int32> const& override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
+    auto reset () -> void override;
 
 private:
-    std::vector<std::unique_ptr<ISPIndexGenerator>> gens_;
+    std::vector<int32> base_;
+    std::vector<CombinationGenerator> groupCombinGens_;
+    std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens_;
+    // GroupSPGenerator | SimpleSPGenerator
+};
+
+
+/**
+ *  @brief TODO
+ */
+class GroupSPGenerator : public ISPIndexGenerator
+{
+public:
+    GroupSPGenerator(
+        std::vector<int32> base,
+        std::vector<std::unique_ptr<ISPIndexGenerator>> sonGens
+    );
+    auto get () const -> std::vector<int32> const& override;
+    auto advance () -> void override;
+    auto is_done () const -> bool override;
+    auto reset () -> void override;
+
+private:
+    std::vector<int32> base_;
+    std::vector<std::unique_ptr<ISPIndexGenerator>> sonGens_;
+    // SimpleSPGenerator | SPGenerator
 };
 
 /**
- *  @brief Generator for simple leaf group.
+ *  @brief TODO
  */
-class SimpleISPGenerator : public ISPIndexGenerator
+class SimpleSPGenerator : public ISPIndexGenerator
 {
 public:
-    SimpleISPGenerator(std::vector<int32> base, int32 k, int32 fixedCount);
+    SimpleSPGenerator(
+        std::vector<int32> base,
+        int32 k,
+        bool fix
+    );
+    auto get () const -> std::vector<int32> const& override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
+    auto reset () -> void override;
+
+private:
+    CombinationGenerator combination_;
 };
 
+/**
+ *  @brief TODO
+ */
 auto make_ispgen (
-    MultiwayNode const& node,
-    std::vector<int32> base
+    MultiwayNode const& node
 ) -> std::unique_ptr<ISPIndexGenerator>;
 
 #endif
