@@ -301,6 +301,16 @@ auto CombinationGenerator::reset () -> void
     this->fill_current();
 }
 
+auto CombinationGenerator::reset (std::vector<int32> base) -> void
+{
+    base_ = std::move(base);
+    auto const n = size(base_);
+    auto const k = size(current_);
+    mask_.resize(k, 1);
+    mask_.resize(n, 0);
+    this->fill_current();
+}
+
 auto CombinationGenerator::advance_state () -> void
 {
     isDone_ = not std::prev_permutation(begin(mask_) + fixedCount_, end(mask_));
@@ -891,22 +901,23 @@ auto SeriesParallelGenerator::advance () -> void
 }
 
 SPGenerator::SPGenerator(
-    std::vector<CombinationGenerator> perGroupGens,
+    std::vector<CombinationGenerator> groupCombinGens,
     std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
 ) :
-    groupCombinGens_(std::move(perGroupGens)),
-    groupGens_(std::move(groupGens))
+    groupCombinGens_(std::move(groupCombinGens)),
+    groupGens_(std::move(groupGens)),
+    isDone_(false)
 {
 }
 
-auto SPGenerator::get () const -> std::vector<int32> const&
+auto SPGenerator::get (std::vector<int32>& out) const -> void
 {
-    unreachable();
-    return {};
+    out.insert(end(out), begin(base_), end(base_));
 }
 
 auto SPGenerator::advance () -> void
 {
+    // Advance group generators
     auto groupGenOverflow = false;
     for (auto& groupGen : groupGens_)
     {
@@ -927,64 +938,67 @@ auto SPGenerator::advance () -> void
         return;
     }
 
-    auto groupCombinIt = begin(groupCombinGens_);
-    auto groupCombinEnd = end(groupCombinGens_);
-    while (groupCombinIt != groupCombinEnd)
+    // Advance group combination gens
+    auto groupCombinGenOverflow = false;
+    for (auto i = 0; i < ssize(groupCombinGens_); ++i)
     {
-        groupCombinIt->advance();
-        if (groupCombinIt->is_done())
-        {
-            ++groupCombinIt;
-        }
-        else
+        auto& groupCombinGen = groupCombinGens_[as_uindex(i)];
+        groupCombinGen.advance();
+        groupCombinGenOverflow = groupCombinGen.is_done();
+        if (not groupCombinGenOverflow)
         {
             auto base = base_;
-            auto headIt = begin(groupCombinGens_);
-            while (headIt != groupCombinEnd)
+            for (auto j = 0; j <= i; ++j)
             {
-                set_diff(base, headIt->get());
-                ++headIt;
+                set_diff(base, groupCombinGens_[as_uindex(j)].get());
             }
 
-            auto tailIt = headIt;
-            while (tailIt != groupCombinEnd)
+            for (auto j = i + 1; ssize(groupCombinGens_); ++j)
             {
-                *tailIt = CombinationGenerator(
-                    base,
-                    tailIt->get_k()
-                );
-                set_diff(base, tailIt->get());
-                ++tailIt;
+                auto& groupCombin = groupCombinGens_[as_uindex(j)];
+                groupCombin.reset(base);
+                set_diff(base, groupCombin.get());
             }
-            // reset tail
             break;
+        }
+    }
+
+    isDone_ = groupCombinGenOverflow;
+
+    if (not this->is_done())
+    {
+        // Reset group generators with new bases
+        for (auto i = 0; i < ssize(groupGens_); ++i)
+        {
+            groupGens_[as_uindex(i)]->reset(
+                groupCombinGens_[as_uindex(i)].get()
+            );
         }
     }
 }
 
 auto SPGenerator::is_done () const -> bool
 {
-    unreachable();
-    return true;
+    return isDone_;
 }
 
 GroupSPGenerator::GroupSPGenerator(
     std::vector<int32> base,
-    std::vector<std::unique_ptr<ISPIndexGenerator>> sonGens
+    std::vector<SPGenerator> sonGens
 ) :
     base_(std::move(base)),
     sonGens_(std::move(sonGens))
 {
 }
 
-auto GroupSPGenerator::get () const -> std::vector<int32> const&
+auto GroupSPGenerator::get (std::vector<int32>& out) const -> void
 {
-    unreachable();
-    return {};
+    out.insert(end(out), begin(base_), end(base_));
 }
 
 auto GroupSPGenerator::advance () -> void
 {
+    // TODO, respect fixes here
     unreachable();
 }
 
@@ -1003,9 +1017,9 @@ SimpleSPGenerator::SimpleSPGenerator(
 {
 }
 
-auto SimpleSPGenerator::get () const -> std::vector<int32> const&
+auto SimpleSPGenerator::get (std::vector<int32>& out) const -> void
 {
-    return combination_.get();
+    out.insert(end(out), begin(combination_.get()), end(combination_.get()));
 }
 
 auto SimpleSPGenerator::advance () -> void
@@ -1018,15 +1032,25 @@ auto SimpleSPGenerator::is_done () const -> bool
     return combination_.is_done();
 }
 
+auto SimpleSPGenerator::reset () -> void
+{
+    combination_.reset();
+}
+
+auto SimpleSPGenerator::reset (std::vector<int32> base) -> void
+{
+    combination_.reset(std::move(base));
+}
+
 namespace
 {
-auto mk_ispgen (
+auto mk_spgen (
     MultiwayNode const& node,
     std::vector<int32> base,
     bool const fix
-) -> std::unique_ptr<ISPIndexGenerator>
+) -> SPGenerator
 {
-    auto perGroupGens = std::vector<CombinationGenerator>();
+    auto groupCombinGens = std::vector<CombinationGenerator>();
     auto groupGens = std::vector<std::unique_ptr<ISPIndexGenerator>>();
 
     auto const groups = group(node.get_args());
@@ -1034,52 +1058,56 @@ auto mk_ispgen (
     for (auto const [son, count] : groups)
     {
         auto const k = static_cast<int32>(leaf_count(*son));
-        perGroupGens.emplace_back(base, k);
-        set_diff(base, perGroupGens.back().get());
+        groupCombinGens.emplace_back(base, k);
+        set_diff(base, groupCombinGens.back().get());
     }
 
-    auto groupGenIt = begin(perGroupGens);
-    for (auto const [son, count] : groups)
+    for (auto i = 0; i < ssize(groups); ++i)
     {
-        auto groupBase = groupGenIt->get();
+        auto const [son, count] = groups[as_uindex(i)];
+        auto groupBase = groupCombinGens[as_uindex(i)].get();
         if (son->is_variable())
         {
-            groupGens.emplace_back(std::make_unique<SimpleSPGenerator>(
+            auto simpleGen = std::make_unique<SimpleSPGenerator>(
                 groupBase,
                 count,
                 fix || count > 1
-            ));
+            );
+            groupGens.emplace_back(std::move(simpleGen));
+            set_diff(groupBase, simpleGen->get());
         }
         else
         {
-            auto sonGens = std::vector<std::unique_ptr<ISPIndexGenerator>>();
-            for (auto i = 0; i < count; ++i)
+            auto perGroupGens = std::vector<SPGenerator>();
+
+            for (auto j = 0; j < count; ++j)
             {
-                sonGens.emplace_back(
-                    mk_ispgen(*son, groupBase, fix || count > 1)
+                perGroupGens.emplace_back(
+                    mk_spgen(*son, groupBase, fix || count > 1)
                 );
-                set_diff(groupBase, sonGens.back()->get());
+                auto groupIs = std::vector<int32>();
+                perGroupGens.back().get(groupIs);
+                set_diff(groupBase, groupIs);
             }
-            groupGens.emplace_back(std::make_unique<GroupSPGenerator>(
-                groupBase,
-                std::move(sonGens)
-            ));
+
+            groupGens.emplace_back(
+                std::make_unique<GroupSPGenerator>(
+                    groupBase,
+                    std::move(perGroupGens)
+                )
+            );
         }
-        ++groupGenIt;
     }
 
-    return std::make_unique<SPGenerator>(
-        std::move(perGroupGens),
-        std::move(groupGens)
-    );
+    return SPGenerator(std::move(groupCombinGens), std::move(groupGens));
 }
 }
 
-auto make_ispgen (
+auto make_spgen (
     MultiwayNode const& root
-) -> std::unique_ptr<ISPIndexGenerator>
+) -> SPGenerator
 {
     auto const n = leaf_count(root);
     auto base = teddy::utils::fill_vector(n, teddy::utils::identity);
-    return mk_ispgen(root, std::move(base), false);
+    return mk_spgen(root, std::move(base), false);
 }

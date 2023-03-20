@@ -114,6 +114,8 @@ public:
 
     auto reset () -> void;
 
+    auto reset (std::vector<int32> base) -> void;
+
 private:
     auto advance_state () -> void;
 
@@ -366,10 +368,11 @@ class ISPIndexGenerator
 {
 public:
     virtual ~ISPIndexGenerator () = default;
-    virtual auto get () const -> std::vector<int32> const& = 0;
+    virtual auto get (std::vector<int32>& out) const -> void = 0;
     virtual auto advance () -> void = 0;
     virtual auto is_done () const -> bool = 0;
     virtual auto reset () -> void = 0;
+    virtual auto reset (std::vector<int32> base) -> void = 0;
 };
 
 /**
@@ -382,15 +385,17 @@ public:
         std::vector<CombinationGenerator> perGroupGens,
         std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
     );
-    auto get () const -> std::vector<int32> const& override;
+    auto get (std::vector<int32>& out) const -> void override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
     auto reset () -> void override;
+    auto reset (std::vector<int32> base) -> void override;
 
 private:
     std::vector<int32> base_;
     std::vector<CombinationGenerator> groupCombinGens_;
     std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens_;
+    bool isDone_;
     // GroupSPGenerator | SimpleSPGenerator
 };
 
@@ -403,17 +408,17 @@ class GroupSPGenerator : public ISPIndexGenerator
 public:
     GroupSPGenerator(
         std::vector<int32> base,
-        std::vector<std::unique_ptr<ISPIndexGenerator>> sonGens
+        std::vector<SPGenerator> sonGens
     );
-    auto get () const -> std::vector<int32> const& override;
+    auto get (std::vector<int32>& out) const -> void override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
     auto reset () -> void override;
+    auto reset (std::vector<int32> base) -> void override;
 
 private:
     std::vector<int32> base_;
-    std::vector<std::unique_ptr<ISPIndexGenerator>> sonGens_;
-    // SimpleSPGenerator | SPGenerator
+    std::vector<SPGenerator> sonGens_;
 };
 
 /**
@@ -427,10 +432,12 @@ public:
         int32 k,
         bool fix
     );
-    auto get () const -> std::vector<int32> const& override;
+    auto get () const -> std::vector<int32> const&;
+    auto get (std::vector<int32>& out) const -> void override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
     auto reset () -> void override;
+    auto reset (std::vector<int32> base) -> void override;
 
 private:
     CombinationGenerator combination_;
@@ -439,8 +446,6 @@ private:
 /**
  *  @brief TODO
  */
-auto make_ispgen (
-    MultiwayNode const& node
-) -> std::unique_ptr<ISPIndexGenerator>;
+auto make_spgen (MultiwayNode const& node) -> SPGenerator;
 
 #endif
