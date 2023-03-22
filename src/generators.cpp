@@ -3,6 +3,7 @@
 #include "libteddy/details/utils.hpp"
 #include "src/utils.hpp"
 #include "trees.hpp"
+#include <algorithm>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -278,6 +279,14 @@ auto CombinationGenerator::get_fixed_count () const -> int32
     return fixedCount_;
 }
 
+auto CombinationGenerator::get_nonfixed () const -> std::span<int32 const>
+{
+    return std::span<int32 const>(
+        current_.data() + fixedCount_,
+        as_usize(std::ssize(current_) - fixedCount_)
+    );
+}
+
 auto CombinationGenerator::advance () -> void
 {
     this->advance_state();
@@ -304,6 +313,17 @@ auto CombinationGenerator::reset () -> void
 auto CombinationGenerator::reset (std::vector<int32> base) -> void
 {
     base_ = std::move(base);
+    auto const n = size(base_);
+    auto const k = size(current_);
+    mask_.resize(k, 1);
+    mask_.resize(n, 0);
+    this->fill_current();
+}
+
+auto CombinationGenerator::reset_nonfixed (std::vector<int32> base) -> void
+{
+    // TODO verify
+    std::copy(begin(base), end(base), begin(base_) + fixedCount_);
     auto const n = size(base_);
     auto const k = size(current_);
     mask_.resize(k, 1);
@@ -915,6 +935,13 @@ auto SPGenerator::get (std::vector<int32>& out) const -> void
     out.insert(end(out), begin(base_), end(base_));
 }
 
+auto SPGenerator::get () const -> std::vector<int32>
+{
+    auto result = std::vector<int32>();
+    this->get(result);
+    return result;
+}
+
 auto SPGenerator::advance () -> void
 {
     // Advance group generators
@@ -940,25 +967,14 @@ auto SPGenerator::advance () -> void
 
     // Advance group combination gens
     auto groupCombinGenOverflow = false;
-    for (auto i = 0; i < ssize(groupCombinGens_); ++i)
+    for (auto i = ssize(groupCombinGens_) - 1; i >= 0 ; --i)
     {
         auto& groupCombinGen = groupCombinGens_[as_uindex(i)];
         groupCombinGen.advance();
         groupCombinGenOverflow = groupCombinGen.is_done();
         if (not groupCombinGenOverflow)
         {
-            auto base = base_;
-            for (auto j = 0; j <= i; ++j)
-            {
-                set_diff(base, groupCombinGens_[as_uindex(j)].get());
-            }
-
-            for (auto j = i + 1; ssize(groupCombinGens_); ++j)
-            {
-                auto& groupCombin = groupCombinGens_[as_uindex(j)];
-                groupCombin.reset(base);
-                set_diff(base, groupCombin.get());
-            }
+            this->reset_tail_combinations(i);
             break;
         }
     }
@@ -967,13 +983,7 @@ auto SPGenerator::advance () -> void
 
     if (not this->is_done())
     {
-        // Reset group generators with new bases
-        for (auto i = 0; i < ssize(groupGens_); ++i)
-        {
-            groupGens_[as_uindex(i)]->reset(
-                groupCombinGens_[as_uindex(i)].get()
-            );
-        }
+        this->set_group_generators();
     }
 }
 
@@ -982,12 +992,59 @@ auto SPGenerator::is_done () const -> bool
     return isDone_;
 }
 
+auto SPGenerator::reset () -> void
+{
+    this->reset_tail_combinations(0);
+    this->set_group_generators();
+}
+
+auto SPGenerator::reset (std::vector<int32> base) -> void
+{
+    base_ = std::move(base);
+    this->reset_tail_combinations(0);
+    this->set_group_generators();
+}
+
+auto SPGenerator::reset_nonfixed (std::vector<int32> base) -> void
+{
+    // TODO
+    unreachable();
+}
+
+auto SPGenerator::reset_tail_combinations (int64 headCount) -> void
+{
+    auto base = base_;
+    for (auto i = 0; i <= headCount; ++i)
+    {
+        auto& groupCombin = groupCombinGens_[as_uindex(i)];
+        set_diff(base, groupCombin.get());
+    }
+
+    for (auto i = headCount + 1; ssize(groupCombinGens_); ++i)
+    {
+        auto& groupCombin = groupCombinGens_[as_uindex(i)];
+        groupCombin.reset(base);
+        set_diff(base, groupCombin.get());
+    }
+}
+
+auto SPGenerator::set_group_generators () -> void
+{
+    for (auto i = 0; i < ssize(groupGens_); ++i)
+    {
+        groupGens_[as_uindex(i)]->reset(
+            groupCombinGens_[as_uindex(i)].get()
+        );
+    }
+}
+
 GroupSPGenerator::GroupSPGenerator(
     std::vector<int32> base,
     std::vector<SPGenerator> sonGens
 ) :
     base_(std::move(base)),
-    sonGens_(std::move(sonGens))
+    sonGens_(std::move(sonGens)),
+    isDone_(false)
 {
 }
 
@@ -998,14 +1055,55 @@ auto GroupSPGenerator::get (std::vector<int32>& out) const -> void
 
 auto GroupSPGenerator::advance () -> void
 {
-    // TODO, respect fixes here
-    unreachable();
+    for (auto i = ssize(sonGens_) - 1; i >= 0; --i)
+    {
+        auto& gen = sonGens_[as_uindex(i)];
+        gen.advance();
+        if (not gen.is_done())
+        {
+            break;
+        }
+    }
+
+    isDone_ = i == ssize(sonGens_);
+
+    if (not isDone_)
+    {
+        auto base = base_;
+        auto used = std::vector<int32>();
+        for (auto j = 0; j <= i; ++j)
+        {
+            sonGens_[as_uindex(j)].get(used);
+        }
+        set_diff(base, used);
+
+        for (auto j = i + 1; j < ssize(sonGens_); ++j)
+        {
+            auto& gen = sonGens_[as_uindex(j)];
+            gen.reset_nonfixed(base);
+            set_diff(base, gen.get());
+        }
+    }
 }
 
 auto GroupSPGenerator::is_done () const -> bool
 {
-    unreachable();
-    return true;
+    return isDone_;
+}
+
+auto GroupSPGenerator::reset () -> void
+{
+    
+}
+
+auto GroupSPGenerator::reset (std::vector<int32> base) -> void
+{
+
+}
+
+auto GroupSPGenerator::reset_nonfixed (std::vector<int32> base) -> void
+{
+
 }
 
 SimpleSPGenerator::SimpleSPGenerator(
@@ -1015,6 +1113,11 @@ SimpleSPGenerator::SimpleSPGenerator(
 ) :
     combination_(std::move(base), k, static_cast<int32>(fix))
 {
+}
+
+auto SimpleSPGenerator::get () const -> std::vector<int32> const&
+{
+    return combination_.get();
 }
 
 auto SimpleSPGenerator::get (std::vector<int32>& out) const -> void
@@ -1040,6 +1143,11 @@ auto SimpleSPGenerator::reset () -> void
 auto SimpleSPGenerator::reset (std::vector<int32> base) -> void
 {
     combination_.reset(std::move(base));
+}
+
+auto SimpleSPGenerator::reset_nonfixed (std::vector<int32> base) -> void
+{
+    combination_.reset_nonfixed(std::move(base));
 }
 
 namespace

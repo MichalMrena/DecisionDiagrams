@@ -3,6 +3,7 @@
 
 #include <array>
 #include <memory>
+#include <span>
 #include <unordered_map>
 #include <variant>
 #include <vector>
@@ -108,6 +109,8 @@ public:
 
     auto get_fixed_count () const -> int32;
 
+    auto get_nonfixed () const -> std::span<int32 const>;
+
     auto advance () -> void;
 
     auto is_done () const -> bool;
@@ -115,6 +118,8 @@ public:
     auto reset () -> void;
 
     auto reset (std::vector<int32> base) -> void;
+
+    auto reset_nonfixed (std::vector<int32> base) -> void;
 
 private:
     auto advance_state () -> void;
@@ -373,6 +378,7 @@ public:
     virtual auto is_done () const -> bool = 0;
     virtual auto reset () -> void = 0;
     virtual auto reset (std::vector<int32> base) -> void = 0;
+    virtual auto reset_nonfixed (std::vector<int32> base) -> void = 0;
 };
 
 /**
@@ -385,11 +391,17 @@ public:
         std::vector<CombinationGenerator> perGroupGens,
         std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
     );
+    auto get () const -> std::vector<int32>;
     auto get (std::vector<int32>& out) const -> void override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
     auto reset () -> void override;
     auto reset (std::vector<int32> base) -> void override;
+    auto reset_nonfixed (std::vector<int32> base) -> void override;
+
+private:
+    auto reset_tail_combinations (int64 headCount) -> void;
+    auto set_group_generators () -> void;
 
 private:
     std::vector<int32> base_;
@@ -415,10 +427,12 @@ public:
     auto is_done () const -> bool override;
     auto reset () -> void override;
     auto reset (std::vector<int32> base) -> void override;
+    auto reset_nonfixed (std::vector<int32> base) -> void override;
 
 private:
     std::vector<int32> base_;
     std::vector<SPGenerator> sonGens_;
+    bool isDone_;
 };
 
 /**
@@ -433,11 +447,13 @@ public:
         bool fix
     );
     auto get () const -> std::vector<int32> const&;
+    auto get_nonfixed () const -> std::span<int32>;
     auto get (std::vector<int32>& out) const -> void override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
     auto reset () -> void override;
     auto reset (std::vector<int32> base) -> void override;
+    auto reset_nonfixed (std::vector<int32> base) -> void override;
 
 private:
     CombinationGenerator combination_;

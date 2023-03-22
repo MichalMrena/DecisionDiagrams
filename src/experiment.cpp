@@ -462,25 +462,25 @@ auto print_count_per_tree (int32 n)
 
 auto main () -> int
 {
-    std::cout << "#"      << "\t"
-              << "gen"    << "\t"
-              << "div"    << "\t"
-              << "combin" << "\n";
-    for (auto n = 2; n < 10; ++n)
-    {
-        auto gen = SeriesParallelGenerator(n);
-        auto count = int64{0};
-        while (not gen.is_done())
-        {
-            ++count;
-            gen.advance();
-        }
+    // std::cout << "#"      << "\t"
+    //           << "gen"    << "\t"
+    //           << "div"    << "\t"
+    //           << "combin" << "\n";
+    // for (auto n = 2; n < 10; ++n)
+    // {
+    //     auto gen = SeriesParallelGenerator(n);
+    //     auto count = int64{0};
+    //     while (not gen.is_done())
+    //     {
+    //         ++count;
+    //         gen.advance();
+    //     }
 
-        std::cout << n                                 << "\t"
-                  << count                             << "\t"
-                  << sp_system_count_div<Integer>(n)   << "\t"
-                  << sp_system_count_binom<Integer>(n) << "\n";
-    }
+    //     std::cout << n                                 << "\t"
+    //               << count                             << "\t"
+    //               << sp_system_count_div<Integer>(n)   << "\t"
+    //               << sp_system_count_binom<Integer>(n) << "\n";
+    // }
 
     // std::cout << "~~~" << "\n";
     // print_count_per_tree(5);
@@ -488,17 +488,17 @@ auto main () -> int
     // TODO sort nodes by ID
     // TODO vplyv unikatnosti vrcholov
 
-    // auto const base = {1, 2, 3, 4, 5, 6};
-    // auto gen = CombinationGenerator(base, 1, 1);
-    // while (not gen.is_done())
-    // {
-    //     for (auto const x : gen.get())
-    //     {
-    //         std::cout << x << " ";
-    //     }
-    //     gen.advance();
-    //     std::cout << "\n";
-    // }
+    auto const base = {1};
+    auto gen = CombinationGenerator(base, 1, 1);
+    while (not gen.is_done())
+    {
+        for (auto const x : gen.get())
+        {
+            std::cout << x << " ";
+        }
+        gen.advance();
+        std::cout << "\n";
+    }
 
     std::cout << "=== end of main ===" << '\n';
 }
