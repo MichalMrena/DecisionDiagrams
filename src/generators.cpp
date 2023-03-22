@@ -1055,17 +1055,20 @@ auto GroupSPGenerator::get (std::vector<int32>& out) const -> void
 
 auto GroupSPGenerator::advance () -> void
 {
-    for (auto i = ssize(sonGens_) - 1; i >= 0; --i)
+    auto genOverflow = false;
+    auto i = ssize(sonGens_) - 1;
+    for (; i >= 0; --i)
     {
         auto& gen = sonGens_[as_uindex(i)];
         gen.advance();
-        if (not gen.is_done())
+        genOverflow = gen.is_done();
+        if (not genOverflow)
         {
             break;
         }
     }
 
-    isDone_ = i == ssize(sonGens_);
+    isDone_ = genOverflow;
 
     if (not isDone_)
     {
@@ -1080,7 +1083,7 @@ auto GroupSPGenerator::advance () -> void
         for (auto j = i + 1; j < ssize(sonGens_); ++j)
         {
             auto& gen = sonGens_[as_uindex(j)];
-            gen.reset_nonfixed(base);
+            gen.reset(base);
             set_diff(base, gen.get());
         }
     }
