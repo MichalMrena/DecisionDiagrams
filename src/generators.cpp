@@ -309,6 +309,7 @@ auto CombinationGenerator::reset () -> void
     mask_.resize(k, 1);
     mask_.resize(n, 0);
     this->fill_current();
+    isDone_ = false;
 }
 
 auto CombinationGenerator::reset (std::vector<int32> base) -> void
@@ -319,6 +320,7 @@ auto CombinationGenerator::reset (std::vector<int32> base) -> void
     mask_.resize(k, 1);
     mask_.resize(n, 0);
     this->fill_current();
+    isDone_ = false;
 }
 
 auto CombinationGenerator::reset_nonfixed (std::vector<int32> base) -> void
@@ -330,6 +332,7 @@ auto CombinationGenerator::reset_nonfixed (std::vector<int32> base) -> void
     mask_.resize(k, 1);
     mask_.resize(n, 0);
     this->fill_current();
+    isDone_ = false;
 }
 
 auto CombinationGenerator::advance_state () -> void
@@ -1017,15 +1020,17 @@ auto SPGenerator::is_done () const -> bool
 
 auto SPGenerator::reset () -> void
 {
-    this->reset_tail_combinations(0);
+    this->reset_tail_combinations(-1);
     this->set_group_generators();
+    isDone_ = false;
 }
 
 auto SPGenerator::reset (std::vector<int32> base) -> void
 {
     base_ = std::move(base);
-    this->reset_tail_combinations(0);
+    this->reset_tail_combinations(-1);
     this->set_group_generators();
+    isDone_ = false;
 }
 
 auto SPGenerator::reset_nonfixed (std::vector<int32>) -> void
@@ -1107,12 +1112,14 @@ auto GroupSPGenerator::is_done () const -> bool
 auto GroupSPGenerator::reset () -> void
 {
     this->reset_tail_generators(0);
+    isDone_ = false;
 }
 
 auto GroupSPGenerator::reset (std::vector<int32> base) -> void
 {
     base_ = std::move(base);
-    this->reset_tail_generators(0);
+    this->reset_tail_generators(-1);
+    isDone_ = false;
 }
 
 auto GroupSPGenerator::reset_nonfixed (std::vector<int32>) -> void

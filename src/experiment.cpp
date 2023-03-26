@@ -423,7 +423,7 @@ auto print_count_per_tree (int32 n)
     while (not gen.is_done())
     {
         auto* root = gen.get();
-        std::cout << dump_dot(*root) << "\n";
+        // std::cout << dump_dot(*root) << "\n";
         auto indexGen = make_spgen(*root);
         auto countGen = Int{0};
         while (not indexGen.is_done())
