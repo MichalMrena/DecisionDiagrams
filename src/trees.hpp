@@ -214,8 +214,7 @@ struct MwNodeEquals
         {
             return true;
         }
-        else if ((l.is_variable() && r.is_operation())
-             || (r.is_operation() && l.is_variable()))
+        else if (l.is_variable() || r.is_variable())
         {
             return false;
         }

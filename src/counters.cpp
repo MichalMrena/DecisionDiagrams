@@ -187,7 +187,8 @@ auto sp_system_count_div (int32 componentCount) -> Int
 {
     auto uniqueTable = MwUniqueTableType();
     auto cache = MwCacheType();
-    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable, cache);
+    auto idSrc = IDSource();
+    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable, cache, idSrc);
     auto spCount = Int{0};
     while (not gen.is_done())
     {
@@ -206,7 +207,8 @@ auto sp_system_count_binom (int32 componentCount) -> Int
 {
     auto uniqueTable = MwUniqueTableType();
     auto cache = MwCacheType();
-    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable, cache);
+    auto idSrc = IDSource();
+    auto gen = SimpleMwAstGenerator(componentCount, uniqueTable, cache, idSrc);
     auto spCount = Int{0};
     while (not gen.is_done())
     {

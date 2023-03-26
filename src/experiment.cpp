@@ -386,8 +386,9 @@ auto unique_sp_count (int32 const n) -> int64
     auto uniqueTable = MwUniqueTableType();
     auto manager = teddy::mdd_manager<3>(10, 1'000'000);
     auto cache = MwCacheType();
+    auto idSrc = IDSource();
     auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
-    auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
+    auto gen = SimpleMwAstGenerator(n, uniqueTable, cache, idSrc);
 
     while (not gen.is_done())
     {
@@ -407,11 +408,10 @@ template<class Int = int64>
 auto print_count_per_tree (int32 n)
 {
     auto uniqueTable = MwUniqueTableType();
-    auto manager = teddy::mdd_manager<3>(10, 1'000'000);
     auto cache = MwCacheType();
-    // auto memo = std::unordered_set<teddy::mdd_manager<3>::diagram_t>();
+    auto idSrc = IDSource();
     auto id = int64{0};
-    auto gen = SimpleMwAstGenerator(n, uniqueTable, cache);
+    auto gen = SimpleMwAstGenerator(n, uniqueTable, cache, idSrc);
     auto sumGen = Int{0};
     auto sumDiv = Int{0};
     auto sumCombin = Int{0};
@@ -423,13 +423,8 @@ auto print_count_per_tree (int32 n)
     while (not gen.is_done())
     {
         auto* root = gen.get();
-
-        // if (id == 9)
-        // {
-        //     std::cout << dump_dot(*root) << "\n";
-        // }
-
-        auto indexGen = SeriesParallelTreeGenerator(*root);
+        std::cout << dump_dot(*root) << "\n";
+        auto indexGen = make_spgen(*root);
         auto countGen = Int{0};
         while (not indexGen.is_done())
         {
@@ -439,6 +434,7 @@ auto print_count_per_tree (int32 n)
 
         auto countDiv = sp_system_count_div<Int>(*root);
         auto countCombin = sp_system_count_binom<Int>(*root);
+        countGen *= 2;
         sumGen += countGen;
         sumDiv += countDiv;
         sumCombin += countCombin;
@@ -458,6 +454,11 @@ auto print_count_per_tree (int32 n)
               << sumDiv     << "\t"
               << sumCombin  << "\n";
     // std::cout << "unique total = " << ssize(memo) << "\n";
+
+    for (auto const& [key, val] : uniqueTable)
+    {
+        delete val;
+    }
 }
 
 auto main () -> int
@@ -483,22 +484,22 @@ auto main () -> int
     // }
 
     // std::cout << "~~~" << "\n";
-    // print_count_per_tree(5);
+    print_count_per_tree(4);
 
     // TODO sort nodes by ID
     // TODO vplyv unikatnosti vrcholov
 
-    auto const base = {1};
-    auto gen = CombinationGenerator(base, 1, 1);
-    while (not gen.is_done())
-    {
-        for (auto const x : gen.get())
-        {
-            std::cout << x << " ";
-        }
-        gen.advance();
-        std::cout << "\n";
-    }
+    // auto const base = {1};
+    // auto gen = CombinationGenerator(base, 1, 1);
+    // while (not gen.is_done())
+    // {
+    //     for (auto const x : gen.get())
+    //     {
+    //         std::cout << x << " ";
+    //     }
+    //     gen.advance();
+    //     std::cout << "\n";
+    // }
 
     std::cout << "=== end of main ===" << '\n';
 }

@@ -39,7 +39,7 @@ struct Group
 template<class T, class F>
 auto group_by (std::vector<T> const& xs, F f) -> std::vector<Group<T>>
 {
-    using U = decltype(f(T()));
+    using U = decltype(std::invoke(f, *begin(xs)));
 
     auto pairs = std::vector<std::tuple<T const*, U>>();
     for (auto const& x : xs)

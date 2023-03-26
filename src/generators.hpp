@@ -8,6 +8,7 @@
 #include <variant>
 #include <vector>
 
+#include "libteddy/details/types.hpp"
 #include "libteddy/details/utils.hpp"
 #include "trees.hpp"
 #include "utils.hpp"
@@ -190,6 +191,19 @@ public:
 };
 
 /**
+ *  @brief Sequence
+ */
+class IDSource
+{
+public:
+    auto get_current () const -> int64;
+    auto advance () -> void;
+
+private:
+    int64 id_{0};
+};
+
+/**
  *  @brief Generates all multiway ASTs with given number of variables.
  *  Does not put any operation into internal nodes. This has to be done later,
  *  by altering AND and OR between levels of the tree.
@@ -200,7 +214,8 @@ public:
     SimpleMwAstGenerator(
         int32 varCount,
         MwUniqueTableType& uniqueTable,
-        MwCacheType& cache
+        MwCacheType& cache,
+        IDSource& idSrc
     );
 
     auto get () const -> MultiwayNode*;
@@ -226,7 +241,7 @@ private:
     SonVarCountsGenerator sonVarCountsGenerator_;
     std::vector<std::unique_ptr<MwAstGenerator>> sonGenerators_;
     MultiwayNode* currentTree_;
-    int64 nextId_;
+    IDSource* idSrc_;
     bool isDone_;
     bool isLeaf_;
 };
@@ -242,7 +257,8 @@ public:
         int32 varCount,
         int32 repetitionCount,
         MwUniqueTableType& uniqueTable,
-        MwCacheType& cache
+        MwCacheType& cache,
+        IDSource& idSrc
     );
 
     auto get (std::vector<MultiwayNode*>& out) const -> void override;
@@ -266,7 +282,8 @@ public:
     CachedMwAstGenerator(
         int32 varCount,
         MwUniqueTableType& uniqueTable,
-        MwCacheType& cache
+        MwCacheType& cache,
+        IDSource& idSrc
     );
 
     auto get (std::vector<MultiwayNode*>& out) const -> void override;
@@ -362,6 +379,7 @@ public:
 private:
     MwUniqueTableType uniqueTable_;
     MwCacheType cache_;
+    IDSource idSrc_;
     SimpleMwAstGenerator treeGenerator_;
     SeriesParallelTreeGenerator fromTreeGenerator_;
 };
@@ -388,6 +406,7 @@ class SPGenerator : public ISPIndexGenerator
 {
 public:
     SPGenerator(
+        std::vector<int32> base,
         std::vector<CombinationGenerator> perGroupGens,
         std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
     );
@@ -428,6 +447,9 @@ public:
     auto reset () -> void override;
     auto reset (std::vector<int32> base) -> void override;
     auto reset_nonfixed (std::vector<int32> base) -> void override;
+
+private:
+    auto reset_tail_generators (int64 headCount) -> void;
 
 private:
     std::vector<int32> base_;

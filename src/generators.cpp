@@ -4,6 +4,7 @@
 #include "src/utils.hpp"
 #include "trees.hpp"
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -427,16 +428,27 @@ auto CombinationRGenerator::fill_current () -> void
     }
 }
 
+auto IDSource::get_current () const -> int64
+{
+    return id_;
+}
+
+auto IDSource::advance () -> void
+{
+    ++id_;
+}
+
 SimpleMwAstGenerator::SimpleMwAstGenerator(
     int32 const varCount,
     MwUniqueTableType& uniqueTable,
-    MwCacheType& cache
+    MwCacheType& cache,
+    IDSource& idSrc
 ) :
     uniqueTable_(&uniqueTable),
     cache_(&cache),
     sonVarCountsGenerator_(varCount),
     currentTree_(nullptr),
-    nextId_(0),
+    idSrc_(&idSrc),
     isDone_(varCount < 1),
     isLeaf_(varCount == 1)
 {
@@ -487,6 +499,7 @@ auto make_all_trees (
     int32 const varCount,
     MwUniqueTableType& uniqueTable,
     MwCacheType& cache,
+    IDSource& idSrc,
     bool const useCache
 ) -> std::vector<MultiwayNode*>
 {
@@ -500,7 +513,7 @@ auto make_all_trees (
 
     if (useCache)
     {
-        auto gen = CachedMwAstGenerator(varCount, uniqueTable, cache);
+        auto gen = CachedMwAstGenerator(varCount, uniqueTable, cache, idSrc);
         while (not gen.is_done())
         {
             gen.get(trees);
@@ -509,7 +522,7 @@ auto make_all_trees (
     }
     else
     {
-        auto gen = SimpleMwAstGenerator(varCount, uniqueTable, cache);
+        auto gen = SimpleMwAstGenerator(varCount, uniqueTable, cache, idSrc);
         while (not gen.is_done())
         {
             gen.get(trees);
@@ -537,7 +550,8 @@ auto SimpleMwAstGenerator::reset_son_generators () -> void
                         std::make_unique<CachedMwAstGenerator>(
                             varCount,
                             *uniqueTable_,
-                            *cache_
+                            *cache_,
+                            *idSrc_
                         )
                     );
                 }
@@ -549,7 +563,8 @@ auto SimpleMwAstGenerator::reset_son_generators () -> void
                         varCount,
                         treeCount,
                         *uniqueTable_,
-                        *cache_
+                        *cache_,
+                        *idSrc_
                     )
                 );
             }
@@ -588,8 +603,8 @@ auto SimpleMwAstGenerator::make_tree () -> void
     if (it == end(*uniqueTable_))
     {
         auto* newNode = new MultiwayNode{key};
-        newNode->id_ = nextId_;
-        ++nextId_;
+        newNode->id_ = idSrc_->get_current();
+        idSrc_->advance();
         uniqueTable_->try_emplace(std::move(key), newNode);
         currentTree_ = newNode;
     }
@@ -638,10 +653,11 @@ CombinatorialMwAstGenerator::CombinatorialMwAstGenerator(
     int32 const varCount,
     int32 const repetitionCount,
     MwUniqueTableType& uniqueTable,
-    MwCacheType& cache
+    MwCacheType& cache,
+    IDSource& idSrc
 ) :
     combination_(
-        make_all_trees(varCount, uniqueTable, cache, true),
+        make_all_trees(varCount, uniqueTable, cache, idSrc, true),
         repetitionCount
     )
 {
@@ -672,7 +688,8 @@ auto CombinatorialMwAstGenerator::reset () -> void
 CachedMwAstGenerator::CachedMwAstGenerator(
     int32 varCount,
     MwUniqueTableType& uniqueTable,
-    MwCacheType& cache
+    MwCacheType& cache,
+    IDSource& idSrc
 )
 {
     auto it = cache.find(varCount);
@@ -680,7 +697,7 @@ CachedMwAstGenerator::CachedMwAstGenerator(
     {
         auto [newIt, isIn] = cache.emplace(
             varCount,
-            make_all_trees(varCount, uniqueTable, cache, false)
+            make_all_trees(varCount, uniqueTable, cache, idSrc, false)
         );
         it = newIt;
     }
@@ -876,7 +893,8 @@ auto SeriesParallelTreeGenerator::make_leaf_groups
 SeriesParallelGenerator::SeriesParallelGenerator (int32 const varCount) :
     uniqueTable_({}),
     cache_({}),
-    treeGenerator_(varCount, uniqueTable_, cache_),
+    idSrc_({}),
+    treeGenerator_(varCount, uniqueTable_, cache_, idSrc_),
     fromTreeGenerator_(*treeGenerator_.get())
 {
 }
@@ -921,9 +939,11 @@ auto SeriesParallelGenerator::advance () -> void
 }
 
 SPGenerator::SPGenerator(
+    std::vector<int32> base,
     std::vector<CombinationGenerator> groupCombinGens,
     std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
 ) :
+    base_(std::move(base)),
     groupCombinGens_(std::move(groupCombinGens)),
     groupGens_(std::move(groupGens)),
     isDone_(false)
@@ -932,7 +952,10 @@ SPGenerator::SPGenerator(
 
 auto SPGenerator::get (std::vector<int32>& out) const -> void
 {
-    out.insert(end(out), begin(base_), end(base_));
+    for (auto const& groupGen : groupGens_)
+    {
+        groupGen.get()->get(out);
+    }
 }
 
 auto SPGenerator::get () const -> std::vector<int32>
@@ -1005,7 +1028,7 @@ auto SPGenerator::reset (std::vector<int32> base) -> void
     this->set_group_generators();
 }
 
-auto SPGenerator::reset_nonfixed (std::vector<int32> base) -> void
+auto SPGenerator::reset_nonfixed (std::vector<int32>) -> void
 {
     // TODO
     unreachable();
@@ -1020,7 +1043,7 @@ auto SPGenerator::reset_tail_combinations (int64 headCount) -> void
         set_diff(base, groupCombin.get());
     }
 
-    for (auto i = headCount + 1; ssize(groupCombinGens_); ++i)
+    for (auto i = headCount + 1; i < ssize(groupCombinGens_); ++i)
     {
         auto& groupCombin = groupCombinGens_[as_uindex(i)];
         groupCombin.reset(base);
@@ -1072,20 +1095,7 @@ auto GroupSPGenerator::advance () -> void
 
     if (not isDone_)
     {
-        auto base = base_;
-        auto used = std::vector<int32>();
-        for (auto j = 0; j <= i; ++j)
-        {
-            sonGens_[as_uindex(j)].get(used);
-        }
-        set_diff(base, used);
-
-        for (auto j = i + 1; j < ssize(sonGens_); ++j)
-        {
-            auto& gen = sonGens_[as_uindex(j)];
-            gen.reset(base);
-            set_diff(base, gen.get());
-        }
+        this->reset_tail_generators(i);
     }
 }
 
@@ -1096,17 +1106,37 @@ auto GroupSPGenerator::is_done () const -> bool
 
 auto GroupSPGenerator::reset () -> void
 {
-    
+    this->reset_tail_generators(0);
 }
 
 auto GroupSPGenerator::reset (std::vector<int32> base) -> void
 {
-
+    base_ = std::move(base);
+    this->reset_tail_generators(0);
 }
 
-auto GroupSPGenerator::reset_nonfixed (std::vector<int32> base) -> void
+auto GroupSPGenerator::reset_nonfixed (std::vector<int32>) -> void
 {
+    unreachable();
+}
 
+auto GroupSPGenerator::reset_tail_generators (int64 headCount) -> void
+{
+    auto base = base_;
+    auto used = std::vector<int32>();
+    for (auto j = 0; j <= headCount; ++j)
+    {
+        sonGens_[as_uindex(j)].get(used);
+    }
+    set_diff(base, used);
+
+    for (auto j = headCount + 1; j < ssize(sonGens_); ++j)
+    {
+        auto& gen = sonGens_[as_uindex(j)];
+        gen.reset(base);
+        set_diff(base, gen.get());
+    }
+    assert(base.empty()); // !!!
 }
 
 SimpleSPGenerator::SimpleSPGenerator(
@@ -1161,14 +1191,15 @@ auto mk_spgen (
     bool const fix
 ) -> SPGenerator
 {
+    auto baseCopy = base;
     auto groupCombinGens = std::vector<CombinationGenerator>();
     auto groupGens = std::vector<std::unique_ptr<ISPIndexGenerator>>();
 
-    auto const groups = group(node.get_args());
+    auto const groups = group_by(node.get_args(), &MultiwayNode::id_);
 
     for (auto const [son, count] : groups)
     {
-        auto const k = static_cast<int32>(leaf_count(*son));
+        auto const k = count * static_cast<int32>(leaf_count(*son));
         groupCombinGens.emplace_back(base, k);
         set_diff(base, groupCombinGens.back().get());
     }
@@ -1177,15 +1208,15 @@ auto mk_spgen (
     {
         auto const [son, count] = groups[as_uindex(i)];
         auto groupBase = groupCombinGens[as_uindex(i)].get();
+        auto groupBaseCopy = groupBase;
         if (son->is_variable())
         {
             auto simpleGen = std::make_unique<SimpleSPGenerator>(
-                groupBase,
+                std::move(groupBase),
                 count,
                 fix || count > 1
             );
             groupGens.emplace_back(std::move(simpleGen));
-            set_diff(groupBase, simpleGen->get());
         }
         else
         {
@@ -1196,21 +1227,23 @@ auto mk_spgen (
                 perGroupGens.emplace_back(
                     mk_spgen(*son, groupBase, fix || count > 1)
                 );
-                auto groupIs = std::vector<int32>();
-                perGroupGens.back().get(groupIs);
-                set_diff(groupBase, groupIs);
+                set_diff(groupBase, perGroupGens.back().get());
             }
 
             groupGens.emplace_back(
                 std::make_unique<GroupSPGenerator>(
-                    groupBase,
+                    std::move(groupBaseCopy),
                     std::move(perGroupGens)
                 )
             );
         }
     }
 
-    return SPGenerator(std::move(groupCombinGens), std::move(groupGens));
+    return SPGenerator(
+        std::move(baseCopy),
+        std::move(groupCombinGens),
+        std::move(groupGens)
+    );
 }
 }
 
