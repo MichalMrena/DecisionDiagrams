@@ -972,8 +972,9 @@ auto SPGenerator::advance () -> void
 {
     // Advance group generators
     auto groupGenOverflow = false;
-    for (auto& groupGen : groupGens_)
+    for (auto i = ssize(groupGens_) - 1; i >= 0; --i)
     {
+        auto& groupGen = groupGens_[as_uindex(i)];
         groupGen->advance();
         groupGenOverflow = groupGen->is_done();
         if (groupGenOverflow)
@@ -1090,7 +1091,11 @@ auto GroupSPGenerator::advance () -> void
         auto& gen = sonGens_[as_uindex(i)];
         gen.advance();
         genOverflow = gen.is_done();
-        if (not genOverflow)
+        if (genOverflow)
+        {
+            gen.reset();
+        }
+        else
         {
             break;
         }
@@ -1195,7 +1200,7 @@ namespace
 auto mk_spgen (
     MultiwayNode const& node,
     std::vector<int32> base,
-    bool const fix
+    bool fix
 ) -> SPGenerator
 {
     auto baseCopy = base;
@@ -1207,7 +1212,8 @@ auto mk_spgen (
     for (auto const [son, count] : groups)
     {
         auto const k = count * static_cast<int32>(leaf_count(*son));
-        groupCombinGens.emplace_back(base, k);
+        groupCombinGens.emplace_back(base, k, fix);
+        fix = false;
         set_diff(base, groupCombinGens.back().get());
     }
 
@@ -1220,8 +1226,7 @@ auto mk_spgen (
         {
             auto simpleGen = std::make_unique<SimpleSPGenerator>(
                 std::move(groupBase),
-                count,
-                fix || count > 1
+                count
             );
             groupGens.emplace_back(std::move(simpleGen));
         }
@@ -1232,7 +1237,7 @@ auto mk_spgen (
             for (auto j = 0; j < count; ++j)
             {
                 perGroupGens.emplace_back(
-                    mk_spgen(*son, groupBase, fix || count > 1)
+                    mk_spgen(*son, groupBase, count > 1)
                 );
                 set_diff(groupBase, perGroupGens.back().get());
             }

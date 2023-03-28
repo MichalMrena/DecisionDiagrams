@@ -466,7 +466,7 @@ public:
     SimpleSPGenerator(
         std::vector<int32> base,
         int32 k,
-        bool fix
+        bool fix = false // TODO maybe remove later
     );
     auto get () const -> std::vector<int32> const&;
     auto get_nonfixed () const -> std::span<int32>;
