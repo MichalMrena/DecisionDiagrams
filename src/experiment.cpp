@@ -423,10 +423,10 @@ auto print_count_per_tree (int32 n)
     while (not gen.is_done())
     {
         auto* root = gen.get();
-        if (id == 80)
-        {
-            std::cout << dump_dot(*root);
-        }
+        // if (id == 0)
+        // {
+        //     std::cout << dump_dot(*root);
+        // }
         auto indexGen = make_spgen(*root);
         auto countGen = Int{0};
         while (not indexGen.is_done())
@@ -466,25 +466,35 @@ auto print_count_per_tree (int32 n)
 
 auto main () -> int
 {
-    // std::cout << "#"      << "\t"
-    //           << "gen"    << "\t"
-    //           << "div"    << "\t"
-    //           << "combin" << "\n";
-    // for (auto n = 2; n < 10; ++n)
-    // {
-    //     auto gen = SeriesParallelGenerator(n);
-    //     auto count = int64{0};
-    //     while (not gen.is_done())
-    //     {
-    //         ++count;
-    //         gen.advance();
-    //     }
+    std::cout << "#"      << "\t"
+              << "gen"    << "\t"
+              << "div"    << "\t"
+              << "combin" << "\n";
+    for (auto n = 2; n < 13; ++n)
+    {
+        auto genCount = int64{0};
+        auto uniqueTable = MwUniqueTableType();
+        auto cache = MwCacheType();
+        auto idSrc = IDSource();
+        auto treeGen = SimpleMwAstGenerator(n, uniqueTable, cache, idSrc);
+        while (not treeGen.is_done())
+        {
+            auto const root = treeGen.get();
+            auto indexGen = make_spgen(*root);
+            while (not indexGen.is_done())
+            {
+                ++genCount;
+                indexGen.advance();
+            }
+            treeGen.advance();
+        }
+        genCount *= 2;
 
-    //     std::cout << n                                 << "\t"
-    //               << count                             << "\t"
-    //               << sp_system_count_div<Integer>(n)   << "\t"
-    //               << sp_system_count_binom<Integer>(n) << "\n";
-    // }
+        std::cout << n                                 << "\t"
+                  << genCount                          << "\t"
+                  << sp_system_count_div<Integer>(n)   << "\t"
+                  << sp_system_count_binom<Integer>(n) << "\n";
+    }
 
     // std::cout << "~~~" << "\n";
     // print_count_per_tree(2);
@@ -492,7 +502,9 @@ auto main () -> int
     // print_count_per_tree(4);
     // print_count_per_tree(5);
     // print_count_per_tree(6);
-    print_count_per_tree(7);
+    // print_count_per_tree(7);
+    // print_count_per_tree(8);
+    // print_count_per_tree(9);
 
     // TODO sort nodes by ID
     // TODO vplyv unikatnosti vrcholov

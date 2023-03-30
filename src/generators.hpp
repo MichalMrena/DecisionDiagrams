@@ -401,6 +401,7 @@ class SPGenerator : public ISPIndexGenerator
 public:
     SPGenerator(
         std::vector<int32> base,
+        std::vector<CombinationGenerator> sonBaseGens,
         std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
     );
     auto get (std::vector<int32>& out) const -> void override;
@@ -410,11 +411,13 @@ public:
     auto reset (std::vector<int32> base) -> void override;
 
 private:
-    auto reset_tail (int64 headCount) -> void;
+    auto reset_bases_tail (int64 headCount) -> void;
+    auto reset_son_generators () -> void;
 
 private:
     std::vector<int32> base_;
-    std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens_;
+    std::vector<CombinationGenerator> sonBaseGens_;
+    std::vector<std::unique_ptr<ISPIndexGenerator>> sonGens_;
     // GroupSPGenerator | SimpleSPGenerator | SPGenerator
     bool isDone_;
 };
@@ -438,7 +441,7 @@ public:
 
 private:
     auto reset_bases_tail (int64 headCount) -> void;
-    auto set_son_generators () -> void;
+    auto reset_son_generators () -> void;
 
 private:
     std::vector<int32> base_;

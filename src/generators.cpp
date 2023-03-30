@@ -925,17 +925,19 @@ auto ISPIndexGenerator::get () const -> std::vector<int32>
 
 SPGenerator::SPGenerator(
     std::vector<int32> base,
+    std::vector<CombinationGenerator> sonBaseGens,
     std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
 ) :
     base_(std::move(base)),
-    groupGens_(std::move(groupGens)),
+    sonBaseGens_(std::move(sonBaseGens)),
+    sonGens_(std::move(groupGens)),
     isDone_(false)
 {
 }
 
 auto SPGenerator::get (std::vector<int32>& out) const -> void
 {
-    for (auto const& groupGen : groupGens_)
+    for (auto const& groupGen : sonGens_)
     {
         groupGen.get()->get(out);
     }
@@ -943,19 +945,48 @@ auto SPGenerator::get (std::vector<int32>& out) const -> void
 
 auto SPGenerator::advance () -> void
 {
-    auto genOverflow = false;
-    for (auto i = ssize(groupGens_) - 1; i >= 0; --i)
+    // Advance son generators
+    auto sonGenOverflow = false;
+    for (auto i = ssize(sonGens_) - 1; i >= 0; --i)
     {
-        auto& groupGen = groupGens_[as_uindex(i)];
-        groupGen->advance();
-        genOverflow = groupGen->is_done();
-        if (not genOverflow)
+        auto& sonGen = sonGens_[as_uindex(i)];
+        sonGen->advance();
+        sonGenOverflow = sonGen->is_done();
+        if (sonGenOverflow)
         {
-            this->reset_tail(i);
+            sonGen->reset();
+        }
+        else
+        {
             break;
         }
     }
-    isDone_ = genOverflow;
+
+    if (not sonGenOverflow)
+    {
+        return;
+    }
+
+    // Advance son base combination generators
+    auto sonBaseGenOverflow = false;
+    for (auto i = ssize(sonBaseGens_) - 1; i >= 0 ; --i)
+    {
+        auto& sonBaseGen = sonBaseGens_[as_uindex(i)];
+        sonBaseGen.advance();
+        sonBaseGenOverflow = sonBaseGen.is_done();
+        if (not sonBaseGenOverflow)
+        {
+            this->reset_bases_tail(i);
+            break;
+        }
+    }
+
+    isDone_ = sonBaseGenOverflow;
+
+    if (not this->is_done())
+    {
+        this->reset_son_generators();
+    }
 }
 
 auto SPGenerator::is_done () const -> bool
@@ -965,31 +996,41 @@ auto SPGenerator::is_done () const -> bool
 
 auto SPGenerator::reset () -> void
 {
-    this->reset_tail(-1);
+    this->reset_bases_tail(-1);
     isDone_ = false;
 }
 
 auto SPGenerator::reset (std::vector<int32> base) -> void
 {
     base_ = std::move(base);
-    this->reset_tail(-1);
+    this->reset_bases_tail(-1);
     isDone_ = false;
 }
 
-auto SPGenerator::reset_tail (int64 headCount) -> void
+auto SPGenerator::reset_bases_tail (int64 headCount) -> void
 {
     auto base = base_;
     for (auto i = 0; i <= headCount; ++i)
     {
-        auto const& groupGen = groupGens_[as_uindex(i)];
-        set_diff(base, groupGen->get());
+        auto const& sonBaseGen = sonBaseGens_[as_uindex(i)];
+        set_diff(base, sonBaseGen.get());
     }
 
-    for (auto i = headCount + 1; i < ssize(groupGens_); ++i)
+    for (auto i = headCount + 1; i < ssize(sonBaseGens_); ++i)
     {
-        auto& groupGen = groupGens_[as_uindex(i)];
-        groupGen->reset(base);
-        set_diff(base, groupGen->get());
+        auto& sonBaseGen = sonBaseGens_[as_uindex(i)];
+        sonBaseGen.reset(base);
+        set_diff(base, sonBaseGen.get());
+    }
+}
+
+auto SPGenerator::reset_son_generators () -> void
+{
+    for (auto i = 0; i < ssize(sonBaseGens_); ++i)
+    {
+        auto const& baseGen = sonBaseGens_[as_uindex(i)];
+        auto& groupGen = sonGens_[as_uindex(i)];
+        groupGen->reset(baseGen.get());
     }
 }
 
@@ -1055,7 +1096,7 @@ auto GroupSPGenerator::advance () -> void
 
     if (not this->is_done())
     {
-        this->set_son_generators();
+        this->reset_son_generators();
     }
 }
 
@@ -1066,14 +1107,16 @@ auto GroupSPGenerator::is_done () const -> bool
 
 auto GroupSPGenerator::reset () -> void
 {
-    unreachable();
+    this->reset_bases_tail(-1);
+    this->reset_son_generators();
+    isDone_ = false;
 }
 
 auto GroupSPGenerator::reset (std::vector<int32> base) -> void
 {
     base_ = std::move(base);
     this->reset_bases_tail(-1);
-    this->set_son_generators();
+    this->reset_son_generators();
     isDone_ = false;
 }
 
@@ -1093,7 +1136,7 @@ auto GroupSPGenerator::reset_bases_tail (int64 headCount) -> void
     }
 }
 
-auto GroupSPGenerator::set_son_generators () -> void
+auto GroupSPGenerator::reset_son_generators () -> void
 {
     for (auto i = 0; i < ssize(sonBaseGens_); ++i)
     {
@@ -1145,35 +1188,48 @@ auto mk_spgen (
 {
     auto baseCopy = base;
     auto const groups = group_by(node.get_args(), &MultiwayNode::id_);
+    auto sonBaseGens = std::vector<CombinationGenerator>();
     auto sonGens = std::vector<std::unique_ptr<ISPIndexGenerator>>();
 
     for (auto i = 0; i < ssize(groups); ++i)
     {
         auto const [son, count] = groups[as_uindex(i)];
+        auto const k = count * leaf_count(*son);
+        sonBaseGens.emplace_back(base, k, 0);
+        set_diff(base, sonBaseGens.back().get());
+    }
+
+    assert(base.empty());
+
+    for (auto i = 0; i < ssize(groups); ++i)
+    {
+        auto sonBase = sonBaseGens[as_uindex(i)].get();
+        auto const [son, count] = groups[as_uindex(i)];
+
         if (son->is_variable())
         {
             sonGens.emplace_back(std::make_unique<SimpleSPGenerator>(
-                base,
+                sonBase,
                 count
             ));
         }
         else if (count == 1)
         {
             sonGens.emplace_back(
-                std::make_unique<SPGenerator>(mk_spgen(*son, base))
+                std::make_unique<SPGenerator>(mk_spgen(*son, sonBase))
             );
         }
         else
         {
-            auto groupGenBaseCopy = base;
+            auto groupGenBaseCopy = sonBase;
             auto groupSonBaseGens = std::vector<CombinationGenerator>();
             auto groupSonGens = std::vector<SPGenerator>();
             auto const k = leaf_count(*son);
 
             for (auto j = 0; j < count; ++j)
             {
-                groupSonBaseGens.emplace_back(base, k, 1);
-                set_diff(base, groupSonBaseGens.back().get());
+                groupSonBaseGens.emplace_back(sonBase, k, 1);
+                set_diff(sonBase, groupSonBaseGens.back().get());
             }
 
             for (auto j = 0; j < count; ++j)
@@ -1191,10 +1247,13 @@ auto mk_spgen (
                 )
             );
         }
-        set_diff(base, sonGens.back()->get());
     }
 
-    return SPGenerator(std::move(baseCopy), std::move(sonGens));
+    return SPGenerator(
+        std::move(baseCopy),
+        std::move(sonBaseGens),
+        std::move(sonGens)
+    );
 }
 }
 
