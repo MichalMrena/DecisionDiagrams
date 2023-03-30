@@ -423,9 +423,9 @@ auto print_count_per_tree (int32 n)
     while (not gen.is_done())
     {
         auto* root = gen.get();
-        if (id == 22)
+        if (id == 80)
         {
-            std::cout << dump_dot(*root) << "\n";
+            std::cout << dump_dot(*root);
         }
         auto indexGen = make_spgen(*root);
         auto countGen = Int{0};
@@ -491,7 +491,8 @@ auto main () -> int
     // print_count_per_tree(3);
     // print_count_per_tree(4);
     // print_count_per_tree(5);
-    print_count_per_tree(6);
+    // print_count_per_tree(6);
+    print_count_per_tree(7);
 
     // TODO sort nodes by ID
     // TODO vplyv unikatnosti vrcholov

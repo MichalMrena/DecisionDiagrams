@@ -110,8 +110,6 @@ public:
 
     auto get_fixed_count () const -> int32;
 
-    auto get_nonfixed () const -> std::span<int32 const>;
-
     auto advance () -> void;
 
     auto is_done () const -> bool;
@@ -120,11 +118,7 @@ public:
 
     auto reset (std::vector<int32> base) -> void;
 
-    auto reset_nonfixed (std::vector<int32> base) -> void;
-
 private:
-    auto advance_state () -> void;
-
     auto fill_current () -> void;
 
 private:
@@ -391,12 +385,12 @@ class ISPIndexGenerator
 {
 public:
     virtual ~ISPIndexGenerator () = default;
+    auto get () const -> std::vector<int32>;
     virtual auto get (std::vector<int32>& out) const -> void = 0;
     virtual auto advance () -> void = 0;
     virtual auto is_done () const -> bool = 0;
     virtual auto reset () -> void = 0;
     virtual auto reset (std::vector<int32> base) -> void = 0;
-    virtual auto reset_nonfixed (std::vector<int32> base) -> void = 0;
 };
 
 /**
@@ -407,29 +401,23 @@ class SPGenerator : public ISPIndexGenerator
 public:
     SPGenerator(
         std::vector<int32> base,
-        std::vector<CombinationGenerator> perGroupGens,
         std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens
     );
-    auto get () const -> std::vector<int32>;
     auto get (std::vector<int32>& out) const -> void override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
     auto reset () -> void override;
     auto reset (std::vector<int32> base) -> void override;
-    auto reset_nonfixed (std::vector<int32> base) -> void override;
 
 private:
-    auto reset_tail_combinations (int64 headCount) -> void;
-    auto set_group_generators () -> void;
+    auto reset_tail (int64 headCount) -> void;
 
 private:
     std::vector<int32> base_;
-    std::vector<CombinationGenerator> groupCombinGens_;
     std::vector<std::unique_ptr<ISPIndexGenerator>> groupGens_;
+    // GroupSPGenerator | SimpleSPGenerator | SPGenerator
     bool isDone_;
-    // GroupSPGenerator | SimpleSPGenerator
 };
-
 
 /**
  *  @brief TODO
@@ -439,6 +427,7 @@ class GroupSPGenerator : public ISPIndexGenerator
 public:
     GroupSPGenerator(
         std::vector<int32> base,
+        std::vector<CombinationGenerator> combinGens,
         std::vector<SPGenerator> sonGens
     );
     auto get (std::vector<int32>& out) const -> void override;
@@ -446,13 +435,14 @@ public:
     auto is_done () const -> bool override;
     auto reset () -> void override;
     auto reset (std::vector<int32> base) -> void override;
-    auto reset_nonfixed (std::vector<int32> base) -> void override;
 
 private:
-    auto reset_tail_generators (int64 headCount) -> void;
+    auto reset_bases_tail (int64 headCount) -> void;
+    auto set_son_generators () -> void;
 
 private:
     std::vector<int32> base_;
+    std::vector<CombinationGenerator> sonBaseGens_;
     std::vector<SPGenerator> sonGens_;
     bool isDone_;
 };
@@ -465,17 +455,13 @@ class SimpleSPGenerator : public ISPIndexGenerator
 public:
     SimpleSPGenerator(
         std::vector<int32> base,
-        int32 k,
-        bool fix = false // TODO maybe remove later
+        int32 k
     );
-    auto get () const -> std::vector<int32> const&;
-    auto get_nonfixed () const -> std::span<int32>;
     auto get (std::vector<int32>& out) const -> void override;
     auto advance () -> void override;
     auto is_done () const -> bool override;
     auto reset () -> void override;
     auto reset (std::vector<int32> base) -> void override;
-    auto reset_nonfixed (std::vector<int32> base) -> void override;
 
 private:
     CombinationGenerator combination_;
