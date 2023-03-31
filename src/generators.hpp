@@ -391,6 +391,7 @@ public:
     virtual auto is_done () const -> bool = 0;
     virtual auto reset () -> void = 0;
     virtual auto reset (std::vector<int32> base) -> void = 0;
+    // virtual auto make_diagram () -> diagram_t;
 };
 
 /**

@@ -363,6 +363,14 @@ auto make_diagram (
     return mk_diagram(mk_diagram, gen.get(), 0);
 }
 
+auto make_diagram (
+    teddy::mdd_manager<3>& manager,
+    SPGenerator const& gen
+)
+{
+
+}
+
 auto unique_sp_count (
     MultiwayNode& root,
     teddy::mdd_manager<3>& manager,
