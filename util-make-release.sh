@@ -1,3 +1,16 @@
+#!/bin/bash
 
+VERSION=$(<version)
 
-# TODO script that packs source into zip with proper name given as parameter
+if [[ -z $VERSION ]]; then
+   echo "Error: missing version file!"
+   exit 1
+fi
+
+DIRNAME="teddy-$VERSION"
+
+mkdir -p $DIRNAME
+cp -r libteddy/ $DIRNAME
+zip -r "$DIRNAME.zip" $DIRNAME
+tar -czvf "$DIRNAME.tar.gz" $DIRNAME
+rm -r $DIRNAME

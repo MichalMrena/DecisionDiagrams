@@ -1,10 +1,5 @@
-build
-.vscode
 .cache
-doxygen/doc
-data
-*.png
-*.log
-*.out
-*.pdf
+.vscode
+build
 compile_commands.json
+doc/html
