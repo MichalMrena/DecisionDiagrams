@@ -1,6 +1,7 @@
 #ifndef LIBTEDDY_TESTS_TRUTH_TABLE_UTILS_HPP
 #define LIBTEDDY_TESTS_TRUTH_TABLE_UTILS_HPP
 
+#include "libteddy/details/types.hpp"
 #include "truth_table.hpp"
 #include <cassert>
 #include <functional>
@@ -18,7 +19,7 @@ auto domain_for_each(
     F f
 ) -> void
 {
-    auto element = std::vector<int32>(varcount, 0);
+    auto element = std::vector<int32>(as_usize(varcount), 0);
     auto wasLast = false;
     auto k       = 0;
     do

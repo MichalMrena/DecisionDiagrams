@@ -1,6 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 #define LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 
+#include "libteddy/details/types.hpp"
 #include <array>
 #include <libteddy/details/diagram_manager.hpp>
 #include <type_traits>
@@ -485,7 +486,8 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
                     node,
                     [node, nodeIndex, &ps, &k](auto const son)
                     {
-                        son->data() += node->data() * ps[nodeIndex][k];
+                        son->data() += node->data()
+                                     * ps[as_uindex(nodeIndex)][as_uindex(k)];
                         ++k;
                     }
                 );
@@ -890,7 +892,7 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
     {
         auto const hash1 = std::hash<node_t*>()(p.left);
         auto const hash2 = std::hash<node_t*>()(p.right);
-        auto result      = 0l;
+        auto result      = size_t{0};
         result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
         result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
         return result;

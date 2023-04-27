@@ -1,4 +1,5 @@
 #include "truth_table.hpp"
+#include "libteddy/details/types.hpp"
 #include "truth_table_utils.hpp"
 
 #include <algorithm>
@@ -13,14 +14,14 @@ truth_table::truth_table(
     std::vector<int32> vector, std::vector<int32> domains
 )
     : vector_(std::move(vector)), domains_(std::move(domains)),
-      offset_(this->get_var_count()), maxValue_(std::ranges::max(
-                                          vector_ | std::ranges::views::filter(
-                                                        [](auto v)
-                                                        {
-                                                            return v != U;
-                                                        }
-                                                    )
-                                      ))
+      offset_(as_usize(this->get_var_count())),
+      maxValue_(std::ranges::max(vector_ | std::ranges::views::filter(
+                                                   [](auto v)
+                                                   {
+                                                       return v != U;
+                                                   }
+                                               )
+                                 ))
 {
     assert(
         vector_.size() ==
@@ -29,14 +30,15 @@ truth_table::truth_table(
 
     assert(this->get_var_count() > 0);
 
-    offset_[this->get_var_count() - 1] = 1;
+    offset_[as_uindex(this->get_var_count() - 1)] = 1;
     if (this->get_var_count() > 1)
     {
         auto i = this->get_var_count() - 1;
         while (i > 0)
         {
             --i;
-            offset_[i] = domains_[i + 1] * offset_[i + 1];
+            offset_[as_uindex(i)] = domains_[as_uindex(i + 1)]
+                                  * offset_[as_uindex(i + 1)];
         }
     }
 }
@@ -101,6 +103,6 @@ auto domain_size(truth_table const& table) -> int64
 auto evaluate(truth_table const& table, std::vector<int32> const& vars)
     -> int32
 {
-    return table.get_vector()[to_index(table, vars)];
+    return table.get_vector()[as_uindex(to_index(table, vars))];
 }
 } // namespace teddy

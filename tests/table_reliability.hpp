@@ -165,14 +165,14 @@ auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
             auto const ffrom, auto const& elem
         ) mutable
         {
-            if (elem[var.index] != var.from)
+            if (elem[as_uindex(var.index)] != var.from)
             {
                 dpbdvector[k] = U;
             }
             else
             {
                 tmpelem            = elem;
-                tmpelem[var.index] = var.to;
+                tmpelem[as_uindex(var.index)] = var.to;
                 auto const fto     = evaluate(table, tmpelem);
                 dpbdvector[k]      = d(ffrom, fto) ? 1 : 0;
             }

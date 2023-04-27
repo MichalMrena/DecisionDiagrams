@@ -3,6 +3,7 @@
 #include <libteddy/teddy.hpp>
 
 #include "common_test_setup.hpp"
+#include "libteddy/details/types.hpp"
 #include "table_reliability.hpp"
 
 namespace teddy
@@ -30,33 +31,41 @@ protected:
         auto domains  = manager.get_domains();
         auto table    = truth_table(make_vector(expr, domains), domains);
         auto const m  = std::ranges::max(manager.get_domains());
-        auto expected = std::vector<double>(m);
-        auto actual   = std::vector<double>(m);
+        auto expected = std::vector<double>(as_uindex(m));
+        auto actual   = std::vector<double>(as_uindex(m));
 
         for (auto j = 0; j < m; ++j)
         {
-            expected[j] = probability(table, ps, j);
+            expected[as_uindex(j)] = probability(table, ps, j);
         }
 
         manager.calculate_probabilities(ps, diagram);
         for (auto j = 0; j < m; ++j)
         {
-            actual[j] = manager.get_probability(j);
+            actual[as_uindex(j)] = manager.get_probability(j);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            this->assert_equals(actual[j], expected[j], 0.00000001);
+            this->assert_equals(
+                actual[as_uindex(j)],
+                expected[as_uindex(j)],
+                0.00000001
+            );
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            actual[j] = manager.probability(j, ps, diagram);
+            actual[as_uindex(j)] = manager.probability(j, ps, diagram);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            this->assert_equals(actual[j], expected[j], 0.00000001);
+            this->assert_equals(
+                actual[as_uindex(j)],
+                expected[as_uindex(j)],
+                0.00000001
+            );
         }
     }
 };
@@ -83,28 +92,32 @@ protected:
         auto domains  = manager.get_domains();
         auto table    = truth_table(make_vector(expr, domains), domains);
         auto const m  = std::ranges::max(manager.get_domains());
-        auto expected = std::vector<double>(m);
-        auto actual   = std::vector<double>(m);
+        auto expected = std::vector<double>(as_uindex(m));
+        auto actual   = std::vector<double>(as_uindex(m));
 
         for (auto j = 0; j < m; ++j)
         {
-            expected[j] = availability(table, ps, j);
+            expected[as_uindex(j)] = availability(table, ps, j);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            actual[j] = manager.availability(j, ps, diagram);
+            actual[as_uindex(j)] = manager.availability(j, ps, diagram);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            this->assert_equals(expected[j], actual[j], 0.00000001);
+            this->assert_equals(
+                expected[as_uindex(j)],
+                actual[as_uindex(j)],
+                0.00000001
+            );
         }
 
         manager.calculate_probabilities(ps, diagram);
         for (auto j = 0; j < m; ++j)
         {
-            actual[j] = manager.get_availability(j);
+            actual[as_uindex(j)] = manager.get_availability(j);
         }
     }
 };
@@ -131,28 +144,32 @@ protected:
         auto domains  = manager.get_domains();
         auto table    = truth_table(make_vector(expr, domains), domains);
         auto const m  = std::ranges::max(manager.get_domains());
-        auto expected = std::vector<double>(m);
-        auto actual   = std::vector<double>(m);
+        auto expected = std::vector<double>(as_uindex(m));
+        auto actual   = std::vector<double>(as_uindex(m));
 
         for (auto j = 0; j < m; ++j)
         {
-            expected[j] = unavailability(table, ps, j);
+            expected[as_uindex(j)] = unavailability(table, ps, j);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            actual[j] = manager.unavailability(j, ps, diagram);
+            actual[as_uindex(j)] = manager.unavailability(j, ps, diagram);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            this->assert_equals(expected[j], actual[j], 0.00000001);
+            this->assert_equals(
+                expected[as_uindex(j)],
+                actual[as_uindex(j)],
+                0.00000001
+            );
         }
 
         manager.calculate_probabilities(ps, diagram);
         for (auto j = 0; j < m; ++j)
         {
-            actual[j] = manager.get_unavailability(j);
+            actual[as_uindex(j)] = manager.get_unavailability(j);
         }
     }
 };
@@ -179,22 +196,26 @@ protected:
         auto domains  = manager.get_domains();
         auto table    = truth_table(make_vector(expr, domains), domains);
         auto const m  = std::ranges::max(manager.get_domains());
-        auto expected = std::vector<double>(m);
-        auto actual   = std::vector<double>(m);
+        auto expected = std::vector<double>(as_uindex(m));
+        auto actual   = std::vector<double>(as_uindex(m));
 
         for (auto j = 0; j < m; ++j)
         {
-            expected[j] = state_frequency(table, j);
+            expected[as_uindex(j)] = state_frequency(table, j);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            actual[j] = manager.state_frequency(diagram, j);
+            actual[as_uindex(j)] = manager.state_frequency(diagram, j);
         }
 
         for (auto j = 0; j < m; ++j)
         {
-            this->assert_equals(expected[j], actual[j], 0.00000001);
+            this->assert_equals(
+                expected[as_uindex(j)],
+                actual[as_uindex(j)],
+                0.00000001
+            );
         }
     }
 };
@@ -252,12 +273,12 @@ protected:
         auto const varindex = std::uniform_int_distribution<int32>(
             0, static_cast<int32>(manager.get_var_count() - 1)
         )(this->rng());
-        auto const vardomain = manager.get_domains()[varindex];
+        auto const vardomain = manager.get_domains()[as_uindex(varindex)];
         auto const varfrom =
             std::uniform_int_distribution<int32>(0, vardomain - 2)(this->rng()
             );
         auto const varto = std::uniform_int_distribution<int32>(
-            varfrom + 1, manager.get_domains()[varindex] - 1
+            varfrom + 1, manager.get_domains()[as_uindex(varindex)] - 1
         )(this->rng());
 
         auto const varchange =
@@ -444,7 +465,7 @@ protected:
         {
             for (auto i = 0; i < manager.get_var_count(); ++i)
             {
-                for (auto s = 1; s < manager.get_domains()[i]; ++s)
+                for (auto s = 1; s < manager.get_domains()[as_uindex(i)]; ++s)
                 {
                     auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
                     auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
@@ -481,7 +502,7 @@ protected:
         {
             for (auto i = 0; i < manager.get_var_count(); ++i)
             {
-                for (auto s = 1; s < manager.get_domains()[i]; ++s)
+                for (auto s = 1; s < manager.get_domains()[as_uindex(i)]; ++s)
                 {
                     auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
                     auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
@@ -597,8 +618,8 @@ public:
               imss_manager_settings<M>,
               expression_tree_settings>(
               seed,
-              imss_manager_settings<M> {
-                  15, 5'000, random_order_tag(), random_domains()},
+              imss_manager_settings<M> {{
+                  {15, 5'000, random_order_tag()}, random_domains()}},
               expression_tree_settings {},
               "imss_manager"
           )
@@ -620,8 +641,8 @@ public:
               ifmss_manager_settings<M>,
               expression_tree_settings>(
               seed,
-              ifmss_manager_settings<M> {
-                  15, 5'000, random_order_tag(), random_domains()},
+              ifmss_manager_settings<M> {{
+                  {15, 5'000, random_order_tag()}, random_domains()}},
               expression_tree_settings {},
               "ifmss_manager"
           )

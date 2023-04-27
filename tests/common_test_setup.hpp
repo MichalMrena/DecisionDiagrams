@@ -3,6 +3,7 @@
 
 #include "expressions.hpp"
 #include "iterators.hpp"
+#include "libteddy/details/types.hpp"
 #include <functional>
 #include <libteddy/teddy.hpp>
 #include <libteddy/teddy_reliability.hpp>
@@ -404,20 +405,26 @@ auto make_probabilities(
 ) -> std::vector<std::vector<double>>
 {
     auto const domains = manager.get_domains();
-    auto ps = std::vector<std::vector<double>>(manager.get_var_count());
-    for (auto i = 0u; i < ps.size(); ++i)
+    auto ps = std::vector<std::vector<double>>(
+        as_usize(manager.get_var_count())
+    );
+    for (auto i = 0; i < ssize(ps); ++i)
     {
         auto dist = std::uniform_real_distribution<double>(.0, 1.0);
-        ps[i].resize(domains[i]);
-        for (auto j = 0u; j < domains[i]; ++j)
+        ps[as_uindex(i)].resize(as_usize(domains[as_uindex(i)]));
+        for (auto j = 0; j < domains[as_uindex(i)]; ++j)
         {
-            ps[i][j] = dist(rng);
+            ps[as_uindex(i)][as_uindex(j)] = dist(rng);
         }
-        auto const sum =
-            std::reduce(begin(ps[i]), end(ps[i]), 0.0, std::plus<>());
-        for (auto j = 0u; j < domains[i]; ++j)
+        auto const sum = std::reduce(
+            begin(ps[as_uindex(i)]),
+            end(ps[as_uindex(i)]),
+            0.0,
+            std::plus<>()
+        );
+        for (auto j = 0; j < domains[as_uindex(i)]; ++j)
         {
-            ps[i][j] /= sum;
+            ps[as_uindex(i)][as_uindex(j)] /= sum;
         }
     }
     return ps;
