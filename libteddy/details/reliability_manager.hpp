@@ -66,7 +66,7 @@ public:
      *  \param sf Structure function.
      */
     template<component_probabilities Ps>
-    auto calculate_probabilities(Ps const& ps, diagram_t& sf) -> void;
+    auto calculate_probabilities(Ps const& ps, diagram_t sf) -> void;
 
     /**
      *  \brief Calculates and returns probability of a system state \p j .
@@ -82,7 +82,7 @@ public:
      *  state \p j given probabilities \p ps .
      */
     template<component_probabilities Ps>
-    auto probability(int32 j, Ps const& ps, diagram_t& sf) -> double;
+    auto probability(int32 j, Ps const& ps, diagram_t sf) -> double;
 
     /**
      *  \brief Returns probability of given system state.
@@ -112,7 +112,7 @@ public:
      */
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
-    auto availability(Ps const& ps, diagram_t& sf) -> second_t<Foo, double>;
+    auto availability(Ps const& ps, diagram_t sf) -> second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
@@ -128,7 +128,7 @@ public:
      *  \return System availability with respect to the system state \p j .
      */
     template<component_probabilities Ps>
-    auto availability(int32 j, Ps const& ps, diagram_t& sf) -> double;
+    auto availability(int32 j, Ps const& ps, diagram_t sf) -> double;
 
     /**
      *  \brief Returns availability of a BSS.
@@ -175,7 +175,7 @@ public:
      */
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
-    auto unavailability(Ps const& ps, diagram_t& sf) -> second_t<Foo, double>;
+    auto unavailability(Ps const& ps, diagram_t sf) -> second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
@@ -191,7 +191,7 @@ public:
      *  \return System availability with respect to the system state \p j .
      */
     template<component_probabilities Ps>
-    auto unavailability(int32 j, Ps const& ps, diagram_t& sf) -> double;
+    auto unavailability(int32 j, Ps const& ps, diagram_t sf) -> double;
 
     /**
      *  \brief Returns system unavailability of a BSS.
@@ -349,32 +349,30 @@ public:
     ) -> diagram_t;
 
     /**
-     *  \brief Calculates Structural Importace (SI) of a component.
+     *  \brief Calculates Structural Importace (SI) of a component
      *
-     *  Structural Importance specifies relative number of system
-     *  states in which degradation of a component states causes
-     *  degradation of a system state.
-     *  Different types of DPLDs can be used for SI calculation.
+     *  Different types of DPLDs can be used for the calculation.
      *  It is up to the user to pick the one that suits his needs.
      *
-     *  \param dpld Direct Partial Boolean Derivative of any type.
-     *  \return Structural importance of given componentn.
+     *  \param dpld Direct Partial Boolean Derivative of any type
+     *  \return Structural importance of given component
      */
     auto structural_importance(diagram_t dpld) -> double;
 
     /**
      *  \brief Calculates Birnbaum importance (BI) of a component.
      *
-     *  TODO
-     *  Different types of DPLDs can be used for BI calculation.
+     *  Different types of DPLDs can be used for the calculation.
      *  It is up to the user to pick the one that suits his needs.
      *
-     *  \param dpld Direct Partial Boolean Derivative of any type.
-     *  \param ps Component state probabilities.
-     *  \return Birnbaum importance of given componentn.
+     *  \param ps Component state probabilities
+     *  \param var Component state change
+     *  \param dpld Direct Partial Boolean Derivative of any type
+     *  \param i Index of the component
+     *  \return Birnbaum importance of given component
      */
     template<component_probabilities Ps>
-    auto birnbaum_importance(diagram_t dpld, Ps const& ps) -> double;
+    auto birnbaum_importance(Ps const& ps, value_change var, diagram_t dpld, int32 i) -> double;
 
     /**
      *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
@@ -454,7 +452,7 @@ private:
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_probabilities(
-    Ps const& ps, diagram_t& sf
+    Ps const& ps, diagram_t sf
 ) -> void
 {
     auto const root = sf.unsafe_get_root();
@@ -499,10 +497,11 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::probability(
-    int32 const j, Ps const& ps, diagram_t& f
+    int32 const j, Ps const& ps, diagram_t f
 ) -> double
 {
-    return this->calculate_ntp({j}, ps, f);
+    // return this->calculate_ntp({j}, ps, f);
+    return this->calculate_ntp(std::vector<int32>({j}), ps, f);
 }
 
 template<degree Degree, domain Domain>
@@ -517,7 +516,7 @@ template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::availability(
-    Ps const& ps, diagram_t& f
+    Ps const& ps, diagram_t f
 ) -> second_t<Foo, double>
 {
     return this->availability(1, ps, f);
@@ -526,7 +525,7 @@ auto reliability_manager<Degree, Domain>::availability(
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::availability(
-    int32 const j, Ps const& ps, diagram_t& f
+    int32 const j, Ps const& ps, diagram_t f
 ) -> double
 {
     auto js = std::vector<int32>();
@@ -570,7 +569,7 @@ template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::unavailability(
-    Ps const& ps, diagram_t& f
+    Ps const& ps, diagram_t f
 ) -> second_t<Foo, double>
 {
     return this->unavailability(1, ps, f);
@@ -579,7 +578,7 @@ auto reliability_manager<Degree, Domain>::unavailability(
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::unavailability(
-    int32 const j, Ps const& ps, diagram_t& f
+    int32 const j, Ps const& ps, diagram_t f
 ) -> double
 {
     auto js = std::vector<int32>();
@@ -748,6 +747,17 @@ auto reliability_manager<Degree, Domain>::structural_importance(diagram_t dpld)
     auto const domainSize = this->nodes_.domain_product(from, to);
     return static_cast<double>(this->satisfy_count(1, dpld)) /
            static_cast<double>(domainSize);
+}
+
+template<degree Degree, domain Domain>
+template<component_probabilities Ps>
+auto reliability_manager<Degree, Domain>::birnbaum_importance
+    (Ps const& ps, value_change const var, diagram_t dpld, int32 const i) -> double
+{
+    auto const dplde = this->to_dpld_e(var.from, i, dpld);
+    // this->calculate_probabilities(ps, dplde);
+    // return this->get_probability(1);
+    return this->probability(1, ps, dplde);
 }
 
 template<degree Degree, domain Domain>

@@ -32,7 +32,7 @@ public:
      *  the library user it might be useful to create e.g. vector
      *  of empty diagrams and assign them later.
      */
-    diagram();
+    diagram() = default;
 
     /**
      *  \brief Wraps internal node representation.
@@ -128,11 +128,6 @@ auto equals(diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
 }
 
 template<class Data, degree D>
-diagram<Data, D>::diagram() : root_(nullptr)
-{
-}
-
-template<class Data, degree D>
 diagram<Data, D>::diagram(node_t* const r)
     : root_(id_set_notmarked(id_inc_ref_count(r)))
 {
@@ -140,7 +135,7 @@ diagram<Data, D>::diagram(node_t* const r)
 
 template<class Data, degree D>
 diagram<Data, D>::diagram(diagram const& d)
-    : root_(id_inc_ref_count(d.unsafe_get_root()))
+    : root_(id_inc_ref_count(d.root_))
 {
 }
 
@@ -206,7 +201,7 @@ struct equal_to<teddy::diagram<Data, D>>
     auto operator()(
         teddy::diagram<Data, D> const& l,
         teddy::diagram<Data, D> const& r
-    ) const noexcept -> std::size_t
+    ) const noexcept -> bool
     {
         return l.equals(r);
     }

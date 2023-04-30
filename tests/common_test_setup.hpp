@@ -5,6 +5,7 @@
 #include "iterators.hpp"
 #include "libteddy/details/types.hpp"
 #include <functional>
+#include <librog/rog.hpp>
 #include <libteddy/teddy.hpp>
 #include <libteddy/teddy_reliability.hpp>
 #include <numeric>
@@ -466,7 +467,8 @@ class test_base : public rog::LeafTest
 {
 public:
     test_base(std::string name, Settings settings)
-        : rog::LeafTest(std::move(name)), settings_(std::move(settings)),
+        : rog::LeafTest(std::move(name), rog::AssertPolicy::RunAll),
+          settings_(std::move(settings)),
           rng_(settings_.seed_)
     {
     }

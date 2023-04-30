@@ -125,7 +125,7 @@ public:
      *  \param i Index of the variable.
      *  \return Diagram of a function of single variable.
      */
-    auto operator()(int32) -> diagram_t;
+    auto operator()(int32 i) -> diagram_t;
 
     /**
      *  \brief Creates vector of diagrams representing functions
@@ -424,7 +424,7 @@ public:
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
-    auto satisfy_count(diagram_t& d) -> second_t<Foo, int64>;
+    auto satisfy_count(diagram_t d) -> second_t<Foo, int64>;
 
     /**
      *  \brief Calculates number of variable assignments for which
@@ -437,7 +437,7 @@ public:
      *  \return Number of different variable assignments for which the
      *  the function represented by \p d evaluates to \p val .
      */
-    auto satisfy_count(int32 val, diagram_t& d) -> int64;
+    auto satisfy_count(int32 val, diagram_t d) -> int64;
 
     /**
      *  \brief Enumerates all elements of the satisfying set.
@@ -1247,7 +1247,7 @@ auto diagram_manager<Data, Degree, Domain>::evaluate(
 template<class Data, degree Degree, domain Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_count(diagram_t& d)
+auto diagram_manager<Data, Degree, Domain>::satisfy_count(diagram_t d)
     -> second_t<Foo, int64>
 {
     return this->satisfy_count(1, d);
@@ -1255,7 +1255,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(diagram_t& d)
 
 template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::satisfy_count(
-    int32 const val, diagram_t& d
+    int32 const val, diagram_t d
 ) -> int64
 {
     if constexpr (domains::is_fixed<Domain>()())

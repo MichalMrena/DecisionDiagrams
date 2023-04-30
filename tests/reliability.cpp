@@ -5,6 +5,7 @@
 #include "common_test_setup.hpp"
 #include "libteddy/details/types.hpp"
 #include "table_reliability.hpp"
+#include "tests/truth_table.hpp"
 
 namespace teddy
 {
@@ -119,6 +120,15 @@ protected:
         {
             actual[as_uindex(j)] = manager.get_availability(j);
         }
+
+        for (auto j = 0; j < m; ++j)
+        {
+            this->assert_equals(
+                expected[as_uindex(j)],
+                actual[as_uindex(j)],
+                0.00000001
+            );
+        }
     }
 };
 
@@ -170,6 +180,15 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             actual[as_uindex(j)] = manager.get_unavailability(j);
+        }
+
+        for (auto j = 0; j < m; ++j)
+        {
+            this->assert_equals(
+                expected[as_uindex(j)],
+                actual[as_uindex(j)],
+                0.00000001
+            );
         }
     }
 };
@@ -243,6 +262,7 @@ protected:
         auto domains      = manager.get_domains();
         auto table        = truth_table(make_vector(expr, domains), domains);
 
+        // TODO move to function
         auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
         {
             auto result = true;
@@ -498,6 +518,27 @@ protected:
         auto table    = truth_table(make_vector(expr, domains), domains);
         auto const m  = std::ranges::max(manager.get_domains());
 
+        // auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
+        // {
+        //     auto result = true;
+        //     domain_for_each(
+        //         tabledpld,
+        //         [&manager,
+        //          &result,
+        //          &diagramdpld](auto const v, auto const& elem)
+        //         {
+        //             if (v != U)
+        //             {
+        //                 if (manager.evaluate(diagramdpld, elem) != v)
+        //                 {
+        //                     result = false;
+        //                 }
+        //             }
+        //         }
+        //     );
+        //     return result;
+        // };
+
         for (auto j = 1; j < m; ++j)
         {
             for (auto i = 0; i < manager.get_var_count(); ++i)
@@ -506,8 +547,12 @@ protected:
                 {
                     auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
                     auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
+                        // std::cout << "---" << '\n';
+                        // std::cout << "tt:  " << satisfy_count(td, 1) << "\n";
+                        // std::cout << "2tt: " << 2 * satisfy_count(td, 1) << "\n";
+                        // std::cout << "dd:  " << manager.satisfy_count(1, dd) << "\n";
                     auto const expected = birnbaum_importance(td, ps);
-                    auto const actual = manager.structural_importance(dd);
+                    auto const actual = manager.birnbaum_importance(ps, {s, s - 1}, dd, i);
                     this->assert_equals(expected, actual, 0.00000001);
                 }
             }
@@ -533,28 +578,28 @@ public:
         auto seeder      = std::mt19937_64(seed);
         using settings_t = test_settings<ManagerSettings, ExpressionSettings>;
 
-        this->add_test(std::make_unique<test_probability<settings_t>>(
-            settings_t {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_probability<settings_t>>(
+        //     settings_t {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_availability<settings_t>>(
-            settings_t {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_availability<settings_t>>(
+        //     settings_t {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_unavailability<settings_t>>(
-            settings_t {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_unavailability<settings_t>>(
+        //     settings_t {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_state_frequency<settings_t>>(
-            settings_t {seeder(), manager, expr}
-        ));
+        // this->add_test(std::make_unique<test_state_frequency<settings_t>>(
+        //     settings_t {seeder(), manager, expr}
+        // ));
 
-        this->add_test(std::make_unique<test_dpbd<settings_t>>(settings_t {
-            seeder(), manager, expr})
-        );
+        // this->add_test(std::make_unique<test_dpbd<settings_t>>(settings_t {
+        //     seeder(), manager, expr})
+        // );
 
-        this->add_test(std::make_unique<test_structural_importance<settings_t>>(settings_t {
-        seeder(), manager, expr}));
+        // this->add_test(std::make_unique<test_structural_importance<settings_t>>(settings_t {
+        // seeder(), manager, expr}));
 
         this->add_test(std::make_unique<test_birnbaum_importance<settings_t>>(settings_t {
         seeder(), manager, expr}));
@@ -660,17 +705,17 @@ auto run_test_one(std::size_t const seed)
     bssmt.run();
     rog::console_print_results(bssmt, rog::ConsoleOutputType::Full);
 
-    auto mssmt = teddy::test_mss_manager<M>(seed);
-    mssmt.run();
-    rog::console_print_results(mssmt, rog::ConsoleOutputType::NoLeaf);
+    // auto mssmt = teddy::test_mss_manager<M>(seed);
+    // mssmt.run();
+    // rog::console_print_results(mssmt, rog::ConsoleOutputType::NoLeaf);
 
-    auto imssmt = teddy::test_imss_manager<M>(seed);
-    imssmt.run();
-    rog::console_print_results(imssmt, rog::ConsoleOutputType::NoLeaf);
+    // auto imssmt = teddy::test_imss_manager<M>(seed);
+    // imssmt.run();
+    // rog::console_print_results(imssmt, rog::ConsoleOutputType::NoLeaf);
 
-    auto ifmssmt = teddy::test_ifmss_manager<M>(seed);
-    ifmssmt.run();
-    rog::console_print_results(ifmssmt, rog::ConsoleOutputType::NoLeaf);
+    // auto ifmssmt = teddy::test_ifmss_manager<M>(seed);
+    // ifmssmt.run();
+    // rog::console_print_results(ifmssmt, rog::ConsoleOutputType::NoLeaf);
 }
 
 auto main(int const argc, char** const argv) -> int

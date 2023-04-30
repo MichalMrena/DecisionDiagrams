@@ -154,10 +154,17 @@ inline static auto constexpr dpld_i_3_increase = [](auto const j)
     };
 };
 
+/**
+ *  \brief Calculates DPLD
+ *  \param table function to derivate
+ *  \param var change in the value of the variable
+ *  \param d function that check whether change satisfies the derivative
+ *  \return new truth table representing DPLD
+ */
 template<class F>
 auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
 {
-    auto dpbdvector = std::vector<int32>(table.get_vector().size());
+    auto dpldVector = std::vector<int32>(table.get_vector().size());
 
     domain_for_each(
         table,
@@ -167,20 +174,20 @@ auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
         {
             if (elem[as_uindex(var.index)] != var.from)
             {
-                dpbdvector[k] = U;
+                dpldVector[k] = U;
             }
             else
             {
                 tmpelem            = elem;
                 tmpelem[as_uindex(var.index)] = var.to;
                 auto const fto     = evaluate(table, tmpelem);
-                dpbdvector[k]      = d(ffrom, fto) ? 1 : 0;
+                dpldVector[k]      = d(ffrom, fto) ? 1 : 0;
             }
             ++k;
         }
     );
 
-    return truth_table(std::move(dpbdvector), table.get_domains());
+    return truth_table(std::move(dpldVector), table.get_domains());
 }
 } // namespace teddy
 

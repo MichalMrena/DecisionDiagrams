@@ -1,4 +1,5 @@
 #include "table_reliability.hpp"
+#include "libteddy/details/types.hpp"
 #include "truth_table_utils.hpp"
 
 #include <numeric>
@@ -71,9 +72,14 @@ auto state_frequency(truth_table const& table, int32 j) -> double
 auto structural_importance(truth_table const& dpld, int32 i) -> double
 {
     auto const& ds = dpld.get_domains();
-    auto const domainsize = std::reduce(begin(ds), end(ds), 1ull, std::multiplies<>());
+    auto const domainsize = std::reduce(
+        begin(ds),
+        end(ds),
+        int64{1},
+        std::multiplies<>()
+    );
     auto const nominator = satisfy_count(dpld, 1);
-    auto const denominator = domainsize / ds[i];
+    auto const denominator = domainsize / ds[as_uindex(i)];
     return static_cast<double>(nominator) / static_cast<double>(denominator);
 }
 
