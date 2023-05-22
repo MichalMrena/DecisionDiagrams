@@ -13,11 +13,16 @@ mkdir -p build/debug
 
 # Generate release Makefile
 cd build/release
-cmake -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_BUILD_TYPE=Release ../..
+cmake -DCMAKE_CXX_COMPILER=$COMPILER \
+      -DCMAKE_BUILD_TYPE=Release \
+      ../..
 
 # Generate debug Makefile
 cd ../debug
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_CXX_COMPILER=$COMPILER -DCMAKE_BUILD_TYPE=Debug ../..
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
+      -DCMAKE_CXX_COMPILER=$COMPILER \
+      -DCMAKE_BUILD_TYPE=Debug \
+      ../..
 
 # Move compile commnads out of the build directory
 mv compile_commands.json ../..
