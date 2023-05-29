@@ -3,7 +3,6 @@
 
 #include "expressions.hpp"
 #include "iterators.hpp"
-#include "libteddy/details/types.hpp"
 #include <functional>
 #include <librog/rog.hpp>
 #include <libteddy/teddy.hpp>
@@ -40,14 +39,14 @@ struct given_order_tag
 /**
  *  \brief Specifies that domains should be randomly generated.
  */
-struct random_domains
+struct random_domains_tag
 {
 };
 
 /**
  *  \brief Explicitly gives the domains.
  */
-struct given_domains
+struct given_domains_tag
 {
     std::vector<int32> domains_;
 };
@@ -68,7 +67,7 @@ struct manager_settings
 template<int32 M>
 struct nonhomogeneous_manager_settings : manager_settings
 {
-    std::variant<random_domains, given_domains> domains_;
+    std::variant<random_domains_tag, given_domains_tag> domains_;
 };
 
 /**
@@ -206,7 +205,7 @@ auto make_domains(
 {
     return std::visit(
         match {
-            [&](random_domains)
+            [&](random_domains_tag)
             {
                 auto dist = std::uniform_int_distribution<int32>(2u, M);
                 return utils::fill_vector(
@@ -217,7 +216,7 @@ auto make_domains(
                     }
                 );
             },
-            [](given_domains const& ds)
+            [](given_domains_tag const& ds)
             {
                 return ds.domains_;
             }},
@@ -382,7 +381,9 @@ inline auto make_expression(
  *  \brief Makes expression tree with given settings.
  */
 inline auto make_expression(
-    int32 const varcount, expression_tree_settings const&, std::mt19937_64& rng
+    int32 const varcount,
+    expression_tree_settings const&,
+    std::mt19937_64& rng
 ) -> std::unique_ptr<expr_node>
 {
     return make_expression_tree(varcount, rng, rng);
@@ -402,7 +403,8 @@ auto make_expression(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
  */
 template<class Dat, class Deg, class Dom>
 auto make_probabilities(
-    diagram_manager<Dat, Deg, Dom> const& manager, std::mt19937_64& rng
+    diagram_manager<Dat, Deg, Dom> const& manager,
+    std::mt19937_64& rng
 ) -> std::vector<std::vector<double>>
 {
     auto const domains = manager.get_domains();

@@ -656,7 +656,7 @@ public:
     test_imdd_manager(std::size_t const seed)
         : test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
               seed,
-              imdd_manager_settings<3> {{{18, 5'000, random_order_tag()}, random_domains()}},
+              imdd_manager_settings<3> {{{18, 5'000, random_order_tag()}, random_domains_tag()}},
               minmax_expression_settings {30, 6},
               "imdd_manager"
           )
@@ -674,7 +674,7 @@ public:
     test_ifmdd_manager(std::size_t const seed)
         : test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
               seed,
-              ifmdd_manager_settings<3> {{{18, 5'000, random_order_tag()}, random_domains()}},
+              ifmdd_manager_settings<3> {{{18, 5'000, random_order_tag()}, random_domains_tag()}},
               minmax_expression_settings {30, 6},
               "ifmdd_manager"
           )

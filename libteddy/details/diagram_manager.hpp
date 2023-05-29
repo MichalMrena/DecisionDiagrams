@@ -15,6 +15,8 @@
 
 namespace teddy
 {
+// TODO move to standalone header
+
 template<class Vars>
 concept in_var_values = requires(Vars vs, int32 i) {
                             {
