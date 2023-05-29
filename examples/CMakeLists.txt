@@ -5,7 +5,7 @@ add_executable(
 
 target_link_libraries(
     libteddy-example-1
-    PRIVATE libteddy
+    PRIVATE teddy
 )
 
 target_compile_options(

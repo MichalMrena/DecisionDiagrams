@@ -619,7 +619,7 @@ public:
               bss_manager_settings,
               expression_tree_settings>(
               seed,
-              bss_manager_settings {21, 2'000, random_order_tag()},
+              bss_manager_settings {21, 2'000'000, random_order_tag()},
               expression_tree_settings {},
               "bss_manager"
           )
@@ -630,7 +630,7 @@ public:
 /**
  *  \brief Tests mss_manager.
  */
-template<unsigned int M>
+template<int M>
 class test_mss_manager : public test_reliability_manager<
                              mss_manager_settings<M>,
                              expression_tree_settings>
@@ -652,7 +652,7 @@ public:
 /**
  *  \brief Tests imss_manager.
  */
-template<unsigned int M>
+template<int M>
 class test_imss_manager : public test_reliability_manager<
                               imss_manager_settings<M>,
                               expression_tree_settings>
@@ -675,7 +675,7 @@ public:
 /**
  *  \brief Tests imss_manager.
  */
-template<unsigned int M>
+template<int M>
 class test_ifmss_manager : public test_reliability_manager<
                                ifmss_manager_settings<M>,
                                expression_tree_settings>
@@ -699,7 +699,7 @@ public:
 
 auto run_test_one(std::size_t const seed)
 {
-    auto const M = 3;
+    // auto const M = 3;
 
     auto bssmt   = teddy::test_bss_manager(seed);
     bssmt.run();

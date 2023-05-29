@@ -16,7 +16,7 @@ if(librog_FOUND)
 
     target_link_libraries(
         libteddy-test-core
-        PRIVATE libteddy
+        PRIVATE teddy
     )
 
     target_compile_options(
@@ -80,7 +80,7 @@ if(librog_FOUND)
 
     target_link_libraries(
         libteddy-test-reliability
-        PRIVATE libteddy
+        PRIVATE teddy
     )
 
     target_link_libraries(

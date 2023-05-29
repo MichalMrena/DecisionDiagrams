@@ -349,6 +349,15 @@ public:
     ) -> diagram_t;
 
     /**
+     * \brief Transforms \p dpld into Extended DPLD
+     * \param varFrom Value from whitch the variable changes
+     * \param i Index of the variable
+     * \param varFrom Derivative
+     * \return Diagram representing Extended DPLD
+     */
+    auto to_dpld_e(int32 varFrom, int32 i, diagram_t dpld) -> diagram_t;
+
+    /**
      *  \brief Calculates Structural Importace (SI) of a component
      *
      *  Different types of DPLDs can be used for the calculation.
@@ -427,9 +436,6 @@ protected:
 
 private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
-
-private:
-    auto to_dpld_e(int32 varFrom, int32 i, diagram_t dpld) -> diagram_t;
 
     // TODO this will be merged with apply_dpld in the future
     template<f_val_change F>
@@ -739,6 +745,86 @@ auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
 }
 
 template<degree Degree, domain Domain>
+auto reliability_manager<Degree, Domain>::to_dpld_e(
+    int32 varFrom, int32 i, diagram_t dpld
+) -> diagram_t
+{
+    auto const root      = dpld.unsafe_get_root();
+    auto const rootLevel = this->nodes_.get_level(root);
+    auto const varLevel  = this->nodes_.get_level(i);
+
+    if (varLevel < rootLevel)
+    {
+        auto sons = this->nodes_.make_sons(
+            i,
+            [this, varFrom, root](int32 const k)
+            {
+                return k == varFrom ? root
+                                    : this->nodes_.terminal_node(Undefined);
+            }
+        );
+        auto const newRoot = this->nodes_.internal_node(i, std::move(sons));
+        return diagram_t(newRoot);
+    }
+
+    auto memo     = std::unordered_map<node_t*, node_t*>();
+    auto const go = [=, this, &memo](auto const& self, node_t* const n)
+    {
+        if (n->is_terminal())
+        {
+            return n;
+        }
+
+        auto const memoIt = memo.find(n);
+        if (memoIt != end(memo))
+        {
+            return memoIt->second;
+        }
+
+        auto const nodeLevel = this->nodes_.get_level(n);
+        auto const nodeIndex = n->get_index();
+        auto sons            = this->nodes_.make_sons(
+            nodeIndex,
+            [=, this, &self](int32 const k)
+            {
+                auto const son      = n->get_son(k);
+                auto const sonLevel = this->nodes_.get_level(son);
+                if (varLevel > nodeLevel && varLevel < sonLevel)
+                {
+                    // A new node goes in between the current node
+                    // and its k th son.
+                    // Transformation does not need to continue.
+                    auto newNodeSons = this->nodes_.make_sons(
+                        i,
+                        [this, varFrom, son](int32 const l)
+                        {
+                            return l == varFrom
+                                        ? son
+                                        : this->nodes_.terminal_node(
+                                            Undefined
+                                        );
+                        }
+                    );
+                    return this->nodes_.internal_node(
+                        i, std::move(newNodeSons)
+                    );
+                }
+                else
+                {
+                    // A new node will be inserted somewhere deeper.
+                    return self(self, son);
+                }
+            }
+        );
+        auto const transformedNode =
+            this->nodes_.internal_node(nodeIndex, std::move(sons));
+        memo.emplace(n, transformedNode);
+        return transformedNode;
+    };
+    return diagram_t(go(go, root));
+}
+
+template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::structural_importance(diagram_t dpld)
     -> double
 {
@@ -792,88 +878,6 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
 
     auto const conj = this->template tree_fold<ops::PI_CONJ>(dpldes);
     this->template satisfy_all_g<Vars, Out>(1, conj, out);
-}
-
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::to_dpld_e(
-    int32 varFrom, int32 i, diagram_t dpld
-) -> diagram_t
-{
-    auto const root      = dpld.unsafe_get_root();
-    auto const rootLevel = this->nodes_.get_level(root);
-    auto const varLevel  = this->nodes_.get_level(i);
-
-    if (varLevel < rootLevel)
-    {
-        auto sons = this->nodes_.make_sons(
-            i,
-            [this, varFrom, root](auto const k)
-            {
-                return k == varFrom ? root
-                                    : this->nodes_.terminal_node(Undefined);
-            }
-        );
-        auto const newRoot = this->nodes_.internal_node(i, std::move(sons));
-        return diagram_t(newRoot);
-    }
-    else
-    {
-        auto memo     = std::unordered_map<node_t*, node_t*>();
-        auto const go = [=, this, &memo](auto const& self, auto const n)
-        {
-            if (n->is_terminal())
-            {
-                return n;
-            }
-
-            auto const memoIt = memo.find(n);
-            if (memoIt != std::end(memo))
-            {
-                return memoIt->second;
-            }
-
-            auto const nodeLevel = this->nodes_.get_level(n);
-            auto const nodeIndex = n->get_index();
-            auto sons            = this->nodes_.make_sons(
-                nodeIndex,
-                [=, this, &self](auto const k)
-                {
-                    auto const son      = n->get_son(k);
-                    auto const sonLevel = this->nodes_.get_level(son);
-                    if (varLevel > nodeLevel && varLevel < sonLevel)
-                    {
-                        // A new node goes in between the current node
-                        // and its k th son.
-                        // Transformation does not need to continue.
-                        auto newNodeSons = this->nodes_.make_sons(
-                            i,
-                            [this, varFrom, son](auto const l)
-                            {
-                                return l == varFrom
-                                                      ? son
-                                                      : this->nodes_.terminal_node(
-                                                 Undefined
-                                             );
-                            }
-                        );
-                        return this->nodes_.internal_node(
-                            i, std::move(newNodeSons)
-                        );
-                    }
-                    else
-                    {
-                        // A new node will be inserted somewhere deeper.
-                        return self(self, son);
-                    }
-                }
-            );
-            auto const transformedNode =
-                this->nodes_.internal_node(nodeIndex, std::move(sons));
-            memo.emplace(n, transformedNode);
-            return transformedNode;
-        };
-        return diagram_t(go(go, root));
-    }
 }
 
 template<degree Degree, domain Domain>
