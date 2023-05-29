@@ -1,3 +1,4 @@
+#include <format>
 #include <iostream>
 #include <librog/rog.hpp>
 #include <libteddy/teddy.hpp>
@@ -243,10 +244,10 @@ protected:
  *  \brief Tests calculation of all types of DPLDs.
  */
 template<class Settings>
-class test_dpbd : public test_base<Settings>
+class test_dpld : public test_base<Settings>
 {
 public:
-    test_dpbd(Settings settings)
+    test_dpld(Settings settings)
         : test_base<Settings>("dpld", std::move(settings))
     {
     }
@@ -291,12 +292,12 @@ protected:
         };
 
         auto const varindex = std::uniform_int_distribution<int32>(
-            0, static_cast<int32>(manager.get_var_count() - 1)
+            0, manager.get_var_count() - 1
         )(this->rng());
         auto const vardomain = manager.get_domains()[as_uindex(varindex)];
-        auto const varfrom =
-            std::uniform_int_distribution<int32>(0, vardomain - 2)(this->rng()
-            );
+        auto const varfrom = std::uniform_int_distribution<int32>(
+            0, vardomain - 2
+        )(this->rng());
         auto const varto = std::uniform_int_distribution<int32>(
             varfrom + 1, manager.get_domains()[as_uindex(varindex)] - 1
         )(this->rng());
@@ -304,7 +305,7 @@ protected:
         auto const varchange =
             var_change {.index = varindex, .from = varfrom, .to = varto};
 
-        auto const varchanger =
+        auto const varchangeR =
             var_change {.index = varindex, .from = varto, .to = varfrom};
 
         // Basic DPLD
@@ -316,10 +317,10 @@ protected:
                 ffrom + 1, table.get_max_val()
             )(this->rng());
 
-            this->info(
-                "Basic dpld f(" + s(ffrom) + " -> " + s(fto) + ") / " + "x(" +
-                s(varchange.from) + " -> " + s(varchange.to) + ")"
-            );
+            this->info(std::format(
+                "Basic dpld f({} -> {}) / x({} -> {})",
+                ffrom, fto, varchange.from, varchange.to
+            ));
 
             auto tabledpld   = dpld(table, varchange, dpld_basic(ffrom, fto));
             auto diagramdpld = manager.dpld(
@@ -328,7 +329,9 @@ protected:
                 diagram,
                 varchange.index
             );
-            this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
+            this->info(
+                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+            );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
                 "Diagram and table produced the same derivative"
@@ -338,19 +341,26 @@ protected:
         // Integrated DPLD type I decrease
         {
             auto const j = std::uniform_int_distribution<int32>(
-                1u, table.get_max_val()
+                1, table.get_max_val()
             )(this->rng());
 
             this->info(
                 "idpld_type_1_decrease f(" + s(j) + " -> " + "<" + s(j) +
-                ") / x(" + s(varchanger.from) + " -> " + s(varchanger.to) + ")"
+                ") / x(" + s(varchangeR.from) + " -> " + s(varchangeR.to) + ")"
             );
 
-            auto tabledpld   = dpld(table, varchanger, dpld_i_1_decrease(j));
+            this->info(std::format(
+                "idpld_type_1_decrease f({} -> <{}) / x({} -> {})",
+                j, j, varchangeR.from, varchangeR.to
+            ));
+
+            auto tabledpld   = dpld(table, varchangeR, dpld_i_1_decrease(j));
             auto diagramdpld = manager.idpld_type_1_decrease(
-                {varchanger.from, varchanger.to}, j, diagram, varchanger.index
+                {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
-            this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
+            this->info(
+                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+            );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
                 "Diagram and table produced the same derivative"
@@ -364,16 +374,18 @@ protected:
             );
             auto const j = fvaldist(this->rng());
 
-            this->info(
-                "idpld_type_1_increase f(" + s(j) + " -> " + ">" + s(j) +
-                ") / x(" + s(varchange.from) + " -> " + s(varchange.to) + ")"
-            );
+            this->info(std::format(
+                "idpld_type_1_increase f({} -> >{}) / x({} -> {})",
+                j, j, varchange.from, varchange.to
+            ));
 
             auto tabledpld   = dpld(table, varchange, dpld_i_1_increase(j));
             auto diagramdpld = manager.idpld_type_1_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
-            this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
+            this->info(
+                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+            );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
                 "Diagram and table produced the same derivative"
@@ -382,16 +394,18 @@ protected:
 
         // Integrated DPLD type II decrease
         {
-            this->info(
-                "idpld_type_2_decrease f( < ) / x(" + s(varchanger.from) +
-                " -> " + s(varchanger.to) + ")"
-            );
+            this->info(std::format(
+                "idpld_type_2_decrease f( < ) / x({} -> {})",
+                varchangeR.from, varchangeR.to
+            ));
 
-            auto tabledpld   = dpld(table, varchanger, dpld_i_2_decrease());
+            auto tabledpld   = dpld(table, varchangeR, dpld_i_2_decrease());
             auto diagramdpld = manager.idpld_type_2_decrease(
-                {varchanger.from, varchanger.to}, diagram, varchanger.index
+                {varchangeR.from, varchangeR.to}, diagram, varchangeR.index
             );
-            this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
+            this->info(
+                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+            );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
                 "Diagram and table produced the same derivative"
@@ -400,16 +414,18 @@ protected:
 
         // Integrated DPLD type II increase
         {
-            this->info(
-                "idpld_type_2_increase f( > ) / x(" + s(varchange.from) +
-                " -> " + s(varchange.to) + ")"
-            );
+            this->info(std::format(
+                "idpld_type_2_increase f( > ) / x({} -> {})",
+                varchange.from, varchange.to
+            ));
 
             auto tabledpld   = dpld(table, varchange, dpld_i_2_increase());
             auto diagramdpld = manager.idpld_type_2_increase(
                 {varchange.from, varchange.to}, diagram, varchange.index
             );
-            this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
+            this->info(
+                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+            );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
                 "Diagram and table produced the same derivative"
@@ -422,16 +438,18 @@ protected:
                 1u, table.get_max_val()
             )(this->rng());
 
-            this->info(
-                "idpld_type_3_decrease f(>=" + s(j) + " -> " + "<" + s(j) +
-                ") / x(" + s(varchanger.from) + " -> " + s(varchanger.to) + ")"
-            );
+            this->info(std::format(
+                "idpld_type_3_decrease f(>={} -> <{}) / x({} -> {})",
+                j, j, varchangeR.from, varchangeR.to
+            ));
 
-            auto tabledpld   = dpld(table, varchanger, dpld_i_3_decrease(j));
+            auto tabledpld   = dpld(table, varchangeR, dpld_i_3_decrease(j));
             auto diagramdpld = manager.idpld_type_3_decrease(
-                {varchanger.from, varchanger.to}, j, diagram, varchanger.index
+                {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
-            this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
+            this->info(
+                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+            );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
                 "Diagram and table produced the same derivative"
@@ -444,16 +462,18 @@ protected:
                 std::uniform_int_distribution<int32>(1u, table.get_max_val());
             auto const j = fvaldist(this->rng());
 
-            this->info(
-                "idpld_type_3_increase f(<" + s(j) + " -> " + ">=" + s(j) +
-                ") / x(" + s(varchange.from) + " -> " + s(varchange.to) + ")"
-            );
+            this->info(std::format(
+                "idpld_type_3_increase f(<{} -> >={}) / x({} -> {})",
+                j, j, varchange.from, varchange.to
+            ));
 
             auto tabledpld   = dpld(table, varchange, dpld_i_3_increase(j));
             auto diagramdpld = manager.idpld_type_3_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
-            this->info("One count = " + s(satisfy_count(tabledpld, 1u)));
+            this->info(
+                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+            );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
                 "Diagram and table produced the same derivative"
@@ -594,15 +614,15 @@ public:
         //     settings_t {seeder(), manager, expr}
         // ));
 
-        // this->add_test(std::make_unique<test_dpbd<settings_t>>(settings_t {
-        //     seeder(), manager, expr})
-        // );
+        this->add_test(std::make_unique<test_dpld<settings_t>>(settings_t {
+            seeder(), manager, expr})
+        );
 
         // this->add_test(std::make_unique<test_structural_importance<settings_t>>(settings_t {
         // seeder(), manager, expr}));
 
-        this->add_test(std::make_unique<test_birnbaum_importance<settings_t>>(settings_t {
-        seeder(), manager, expr}));
+        // this->add_test(std::make_unique<test_birnbaum_importance<settings_t>>(settings_t {
+        // seeder(), manager, expr}));
     }
 };
 
@@ -664,7 +684,7 @@ public:
               expression_tree_settings>(
               seed,
               imss_manager_settings<M> {{
-                  {15, 5'000, random_order_tag()}, random_domains()}},
+                  {15, 5'000, random_order_tag()}, random_domains_tag()}},
               expression_tree_settings {},
               "imss_manager"
           )
@@ -687,7 +707,7 @@ public:
               expression_tree_settings>(
               seed,
               ifmss_manager_settings<M> {{
-                  {15, 5'000, random_order_tag()}, random_domains()}},
+                  {15, 5'000, random_order_tag()}, random_domains_tag()}},
               expression_tree_settings {},
               "ifmss_manager"
           )
