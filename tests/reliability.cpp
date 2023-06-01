@@ -1,4 +1,4 @@
-#include <format>
+#include <fmt/core.h>
 #include <iostream>
 #include <librog/rog.hpp>
 #include <libteddy/teddy.hpp>
@@ -317,7 +317,7 @@ protected:
                 ffrom + 1, table.get_max_val()
             )(this->rng());
 
-            this->info(std::format(
+            this->info(fmt::format(
                 "Basic dpld f({} -> {}) / x({} -> {})",
                 ffrom, fto, varchange.from, varchange.to
             ));
@@ -330,7 +330,7 @@ protected:
                 varchange.index
             );
             this->info(
-                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -349,7 +349,7 @@ protected:
                 ") / x(" + s(varchangeR.from) + " -> " + s(varchangeR.to) + ")"
             );
 
-            this->info(std::format(
+            this->info(fmt::format(
                 "idpld_type_1_decrease f({} -> <{}) / x({} -> {})",
                 j, j, varchangeR.from, varchangeR.to
             ));
@@ -359,7 +359,7 @@ protected:
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
             this->info(
-                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -374,7 +374,7 @@ protected:
             );
             auto const j = fvaldist(this->rng());
 
-            this->info(std::format(
+            this->info(fmt::format(
                 "idpld_type_1_increase f({} -> >{}) / x({} -> {})",
                 j, j, varchange.from, varchange.to
             ));
@@ -384,7 +384,7 @@ protected:
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
             this->info(
-                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -394,7 +394,7 @@ protected:
 
         // Integrated DPLD type II decrease
         {
-            this->info(std::format(
+            this->info(fmt::format(
                 "idpld_type_2_decrease f( < ) / x({} -> {})",
                 varchangeR.from, varchangeR.to
             ));
@@ -404,7 +404,7 @@ protected:
                 {varchangeR.from, varchangeR.to}, diagram, varchangeR.index
             );
             this->info(
-                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -414,7 +414,7 @@ protected:
 
         // Integrated DPLD type II increase
         {
-            this->info(std::format(
+            this->info(fmt::format(
                 "idpld_type_2_increase f( > ) / x({} -> {})",
                 varchange.from, varchange.to
             ));
@@ -424,7 +424,7 @@ protected:
                 {varchange.from, varchange.to}, diagram, varchange.index
             );
             this->info(
-                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -438,7 +438,7 @@ protected:
                 1u, table.get_max_val()
             )(this->rng());
 
-            this->info(std::format(
+            this->info(fmt::format(
                 "idpld_type_3_decrease f(>={} -> <{}) / x({} -> {})",
                 j, j, varchangeR.from, varchangeR.to
             ));
@@ -448,7 +448,7 @@ protected:
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
             this->info(
-                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -462,7 +462,7 @@ protected:
                 std::uniform_int_distribution<int32>(1u, table.get_max_val());
             auto const j = fvaldist(this->rng());
 
-            this->info(std::format(
+            this->info(fmt::format(
                 "idpld_type_3_increase f(<{} -> >={}) / x({} -> {})",
                 j, j, varchange.from, varchange.to
             ));
@@ -472,7 +472,7 @@ protected:
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
             this->info(
-                std::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
