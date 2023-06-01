@@ -21,9 +21,9 @@ auto probability(
             if (val == j)
             {
                 auto localprob = 1.0;
-                for (auto i = 0u; i < table.get_var_count(); ++i)
+                for (auto i = 0; i < table.get_var_count(); ++i)
                 {
-                    localprob *= ps[i][elem[i]];
+                    localprob *= ps[as_uindex(i)][as_uindex(elem[as_uindex(i)])];
                 }
                 totalprob += localprob;
             }

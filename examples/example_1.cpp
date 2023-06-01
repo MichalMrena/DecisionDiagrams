@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <random>
+#include <string_view>
 
 // TODO description and ASCII RBD
 

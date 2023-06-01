@@ -7,6 +7,7 @@
 #include <libteddy/details/types.hpp>
 #include <optional>
 #include <ranges>
+#include <string_view>
 #include <utility>
 #include <vector>
 

@@ -11,8 +11,10 @@
 #include <libteddy/details/node_pool.hpp>
 #include <libteddy/details/operators.hpp>
 #include <libteddy/details/utils.hpp>
+#include <ostream>
 #include <queue>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 
