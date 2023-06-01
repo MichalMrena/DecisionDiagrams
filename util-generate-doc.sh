@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROJECT_NUMBER=$(<version)
+PROJECT_NUMBER=$(<teddy-version)
 
 if [[ -z $PROJECT_NUMBER ]]; then
    echo "Error: missing version file!"

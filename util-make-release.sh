@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION=$(<version)
+VERSION=$(<teddy-version)
 
 if [[ -z $VERSION ]]; then
    echo "Error: missing version file!"
