@@ -37,6 +37,22 @@ target_compile_options(
         -Wshadow
 )
 
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+    target_compile_options(
+        libteddy-test-core
+        PRIVATE
+            -fsanitize=address
+            -fsanitize=undefined
+    )
+
+    target_link_options(
+        libteddy-test-core
+        PRIVATE
+            -fsanitize=address
+            -fsanitize=undefined
+    )
+endif()
+
 target_compile_features(
     libteddy-test-core
     PRIVATE cxx_std_20
