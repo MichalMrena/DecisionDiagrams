@@ -3,6 +3,7 @@
 // #define NDEBUG
 
 #include <algorithm>
+#include <fmt/format.h>
 #include <iomanip>
 #include <iostream>
 #include <librog/rog.hpp>
@@ -73,8 +74,7 @@ protected:
             if (expectedval != diagramval)
             {
                 this->fail(
-                    "Expected " + std::to_string(expectedval) + " got " +
-                    std::to_string(diagramval)
+                    fmt::format("Exptected {} got {}", expectedval, diagramval)
                 );
                 break;
             }
@@ -106,7 +106,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info("Node count " + std::to_string(manager.node_count(diagram)));
+        this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto domainit = make_domain_iterator(manager);
         auto evalit   = evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
@@ -132,9 +132,7 @@ protected:
         auto manager  = make_manager(this->settings(), this->rng());
         auto diagram1 = make_diagram(expr, manager, fold_type::Left);
         auto diagram2 = make_diagram(expr, manager, fold_type::Tree);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram1))
-        );
+        this->info(fmt::format("Node count {}", manager.node_count(diagram1)));
         this->assert_true(diagram1.equals(diagram2), "Diagrams are equal");
     }
 };
@@ -157,9 +155,7 @@ protected:
         auto manager  = make_manager(this->settings(), this->rng());
         auto diagram1 = make_diagram(expr, manager, fold_type::Left);
         auto diagram2 = make_diagram(expr, manager, fold_type::Tree);
-        this->info(
-            "Node count " + std::to_string(manager.node_count(diagram1))
-        );
+        this->info(fmt::format("Node count {}", manager.node_count(diagram1)));
         manager.force_gc();
         auto const expected = manager.node_count(diagram1);
         auto const actual   = manager.node_count();
@@ -185,7 +181,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info("Node count " + std::to_string(manager.node_count(diagram)));
+        this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto expected = expected_counts(manager, expr);
         auto actual   = std::vector<int64>(expected.size(), 0);
 
@@ -219,7 +215,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info("Node count " + std::to_string(manager.node_count(diagram)));
+        this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto expected = expected_counts(manager, expr);
         auto actual   = std::vector<int64>(expected.size(), 0);
         for (auto k = 0; k < ssize(expected); ++k)
@@ -259,7 +255,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info("Node count " + std::to_string(manager.node_count(diagram)));
+        this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto const zero = manager.constant(0);
         auto const one  = manager.constant(1);
         auto const sup =
@@ -365,7 +361,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info("Node count " + std::to_string(manager.node_count(diagram)));
+        this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto const maxi = static_cast<int32>(manager.get_var_count() - 1);
         auto indexDist  = std::uniform_int_distribution<int32>(0u, maxi);
         auto const i1   = indexDist(this->rng());
@@ -415,14 +411,14 @@ protected:
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
         this->info(
-            "Nodes before " + std::to_string(manager.node_count(diagram))
+            fmt::format("Node count before {}", manager.node_count(diagram))
         );
         manager.force_gc();
         manager.force_reorder();
         manager.force_gc();
         auto const actual   = manager.node_count();
         auto const expected = manager.node_count(diagram);
-        this->info("Nodes after " + std::to_string(actual));
+        this->info(fmt::format("Node count after {}", actual));
         this->assert_equals(actual, expected);
 
         auto domainit = make_domain_iterator(manager);
@@ -480,7 +476,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info("Node count " + std::to_string(manager.node_count(diagram)));
+        this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto domainit = make_domain_iterator(manager);
         auto evalit   = evaluating_iterator(domainit, expr);
         auto evalend  = evaluating_iterator_sentinel();
@@ -509,7 +505,7 @@ protected:
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
-        this->info("Node count " + std::to_string(manager.node_count(diagram)));
+        this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto vector  = manager.to_vector(diagram);
         auto vectord = manager.from_vector(vector);
         this->assert_true(
