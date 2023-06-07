@@ -4,22 +4,28 @@ cmake_minimum_required(
     VERSION 3.19
 )
 
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/teddy-version")
-    message(FATAL_ERROR "Missing project version file!")
+set(
+    LIBTEDDY_VERSION_FILE "teddy-version"
+)
+
+if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${LIBTEDDY_VERSION_FILE}")
+    message(
+        FATAL_ERROR "Missing project version file '${LIBTEDDY_VERSION_FILE}'!"
+    )
 endif()
 
 file(
-    READ "teddy-version" TEDDY_VERSION
+    READ ${LIBTEDDY_VERSION_FILE} LIBTEDDY_VERSION
 )
 
 project(
     TeDDy
-    VERSION     ${TEDDY_VERSION}
+    VERSION     ${LIBTEDDY_VERSION}
     DESCRIPTION "C++ library for creating and manipulating decision diagrams"
     LANGUAGES   CXX
 )
 
-# Library target
+# TeDDy library target
 add_library(
     teddy INTERFACE
 )
@@ -42,35 +48,7 @@ set_target_properties(
         CXX_EXTENSIONS        NO
 )
 
-# Use libc++ if requested and compiling with clang
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_CXX)
-    message("Using libc++ and libc++abi")
-    set(
-        CMAKE_CXX_FLAGS
-            "${CMAKE_CXX_FLAGS} -stdlib=libc++"
-    )
-    set(
-        CMAKE_EXE_LINKER_FLAGS
-            "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi"
-    )
-endif()
-
-# Build tests and examples if requested
-
-if(LIBTEDDY_BUILD_TESTS)
-    add_subdirectory(
-        tests
-    )
-endif()
-
-if(LIBTEDDY_BUILD_EXAMPLES)
-    add_subdirectory(
-        examples
-    )
-endif()
-
-# Install config
+# TeDDy library install
 
 include(
     GNUInstallDirs
@@ -119,3 +97,79 @@ install(
     DIRECTORY   libteddy
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+# Internal subprojects
+
+## Common compile and link options for subprojects
+string(
+    JOIN ";" LIBTEDDY_COMPILE_OPTIONS
+        "-Wall"
+        "-Wextra"
+        "-Wpedantic"
+        "-Wconversion"
+        "-Wsign-conversion"
+        "-Wshadow"
+)
+
+string(
+    JOIN ";" LIBTEDDY_LINK_OPTIONS
+        ""
+)
+
+## Use libc++ if requested and compiling with clang
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_LIBCXX)
+    message(
+        "=== Using libc++ and libc++abi"
+    )
+
+    string(
+        JOIN ";" LIBTEDDY_COMPILE_OPTIONS
+            "-stdlib=libc++"
+    )
+
+    string(
+        JOIN ";" LIBTEDDY_LINK_OPTIONS
+            "-stdlib=libc++"
+            "-lc++abi"
+    )
+endif()
+
+## Enable sanitizers for Debug build
+if(CMAKE_BUILD_TYPE STREQUAL Debug AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    message(
+        "=== Asan a Ubsan enabled for Debug build"
+    )
+
+    string(
+        JOIN ";" LIBTEDDY_COMPILE_OPTIONS
+            ${LIBTEDDY_COMPILE_OPTIONS}
+            "-fsanitize=address"
+            "-fsanitize=undefined"
+    )
+
+    string(
+        JOIN ";" LIBTEDDY_LINK_OPTIONS
+            ${LIBTEDDY_LINK_OPTIONS}
+            "-fsanitize=address"
+            "-fsanitize=undefined"
+    )
+endif()
+
+## Build tests and examples if requested
+
+if(LIBTEDDY_BUILD_TESTS)
+    # NOTE: will be moved to libteddy-utils in the future
+    add_subdirectory(
+        libtsl
+    )
+
+    add_subdirectory(
+        tests
+    )
+endif()
+
+if(LIBTEDDY_BUILD_EXAMPLES)
+    add_subdirectory(
+        examples
+    )
+endif()
