@@ -1,12 +1,12 @@
 #ifndef LIBTEDDY_COMMON_TEST_SETUP_HPP
 #define LIBTEDDY_COMMON_TEST_SETUP_HPP
 
-#include "expressions.hpp"
-#include "iterators.hpp"
 #include <functional>
 #include <librog/rog.hpp>
 #include <libteddy/teddy.hpp>
 #include <libteddy/teddy_reliability.hpp>
+#include <libtsl/expressions.hpp>
+#include <libtsl/iterators.hpp>
 #include <numeric>
 #include <random>
 #include <variant>

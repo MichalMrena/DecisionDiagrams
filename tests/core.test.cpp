@@ -8,6 +8,8 @@
 #include <iostream>
 #include <librog/rog.hpp>
 #include <libteddy/teddy.hpp>
+#include <libtsl/expressions.hpp>
+#include <libtsl/iterators.hpp>
 #include <memory>
 #include <random>
 #include <ranges>
@@ -20,8 +22,6 @@
 #endif
 
 #include "common_test_setup.hpp"
-#include "expressions.hpp"
-#include "iterators.hpp"
 
 namespace teddy
 {
@@ -70,7 +70,7 @@ protected:
         {
             auto const expectedval = *evalit;
             auto const diagramval =
-                manager.evaluate(diagram, evalit.var_vals());
+                manager.evaluate(diagram, evalit.get_var_vals());
             if (expectedval != diagramval)
             {
                 this->fail(

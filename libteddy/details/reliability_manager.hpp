@@ -609,17 +609,17 @@ template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::get_unavailability(int32 const j)
     -> double
 {
-    auto U = .0;
+    auto result = .0;
     this->nodes_.for_each_terminal_node(
-        [j, &U](auto const node)
+        [j, &result](auto const node)
         {
             if (node->get_value() < j)
             {
-                U += node->data();
+                result += node->data();
             }
         }
     );
-    return U;
+    return result;
 }
 
 template<degree Degree, domain Domain>

@@ -2,11 +2,10 @@
 #include <iostream>
 #include <librog/rog.hpp>
 #include <libteddy/teddy.hpp>
+#include <libtsl/table_reliability.hpp>
+#include <libtsl/truth_table.hpp>
 
 #include "common_test_setup.hpp"
-#include "libteddy/details/types.hpp"
-#include "table_reliability.hpp"
-#include "tests/truth_table.hpp"
 
 namespace teddy
 {

@@ -138,7 +138,7 @@ auto domain_iterator::operator!=(domain_iterator_sentinel) const -> bool
 
 template<class Expression>
 evaluating_iterator<Expression>::evaluating_iterator()
-    : iterator_(), expr_(nullptr)
+    : domainIterator_(), expr_(nullptr)
 {
 }
 
@@ -146,20 +146,20 @@ template<class Expression>
 evaluating_iterator<Expression>::evaluating_iterator(
     domain_iterator iterator, Expression const& expr
 )
-    : iterator_(std::move(iterator)), expr_(&expr)
+    : domainIterator_(std::move(iterator)), expr_(&expr)
 {
 }
 
 template<class Expression>
 auto evaluating_iterator<Expression>::operator*() const -> int32
 {
-    return evaluate_expression(*expr_, *iterator_);
+    return evaluate_expression(*expr_, *domainIterator_);
 }
 
 template<class Expression>
 auto evaluating_iterator<Expression>::operator++() -> evaluating_iterator&
 {
-    ++iterator_;
+    ++domainIterator_;
     return *this;
 }
 
@@ -176,7 +176,7 @@ auto evaluating_iterator<Expression>::operator==(
     evaluating_iterator_sentinel const
 ) const -> bool
 {
-    return iterator_ == domain_iterator_sentinel();
+    return domainIterator_ == domain_iterator_sentinel();
 }
 
 template<class Expression>
@@ -184,14 +184,14 @@ auto evaluating_iterator<Expression>::operator!=(
     evaluating_iterator_sentinel const
 ) const -> bool
 {
-    return iterator_ != domain_iterator_sentinel();
+    return domainIterator_ != domain_iterator_sentinel();
 }
 
 template<class Expression>
-auto evaluating_iterator<Expression>::var_vals() const
+auto evaluating_iterator<Expression>::get_var_vals() const
     -> std::vector<int32> const&
 {
-    return *iterator_;
+    return *domainIterator_;
 }
 
 template class evaluating_iterator<minmax_expr>;
