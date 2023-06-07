@@ -11,10 +11,45 @@ find_package(
     OpenMP
 )
 
-# libteddy-test-core
+# Compile and link options
+string(
+    JOIN ";" TEDDY_COMPILE_OPTIONS
+        "-Wall"
+        "-Wextra"
+        "-Wpedantic"
+        "-Wconversion"
+        "-Wsign-conversion"
+        "-Wshadow"
+)
+
+string(
+    JOIN ";" TEDDY_LINK_OPTIONS
+        ""
+)
+
+## Enable sanitizers for Debug build
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+    string(
+        JOIN ";" TEDDY_COMPILE_OPTIONS
+            ${TEDDY_COMPILE_OPTIONS}
+            "-fsanitize=address"
+            "-fsanitize=undefined"
+    )
+
+    string(
+        JOIN ";" TEDDY_LINK_OPTIONS
+            ${TEDDY_LINK_OPTIONS}
+            "-fsanitize=address"
+            "-fsanitize=undefined"
+    )
+endif()
+
+# Targets
+
+## libteddy-test-core
 add_executable(
     libteddy-test-core
-        core.cpp
+        core.test.cpp
         iterators.cpp
         expressions.cpp
 )
@@ -28,41 +63,12 @@ target_link_libraries(
 
 target_compile_options(
     libteddy-test-core
-    PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-        -Wconversion
-        -Wsign-conversion
-        -Wshadow
+    PRIVATE ${TEDDY_COMPILE_OPTIONS}
 )
-
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-    target_compile_options(
-        libteddy-test-core
-        PRIVATE
-            -fsanitize=address
-            -fsanitize=undefined
-    )
-
-    target_link_options(
-        libteddy-test-core
-        PRIVATE
-            -fsanitize=address
-            -fsanitize=undefined
-    )
-endif()
 
 target_compile_features(
     libteddy-test-core
     PRIVATE cxx_std_20
-)
-
-set_target_properties(
-    libteddy-test-core
-    PROPERTIES
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS        NO
 )
 
 if(OpenMP_CXX_FOUND)
@@ -77,11 +83,10 @@ if(OpenMP_CXX_FOUND)
     )
 endif()
 
-
-# libteddy-test-reliability
+## libteddy-test-reliability
 add_executable(
     libteddy-test-reliability
-        reliability.cpp
+        reliability.test.cpp
         truth_table.cpp
         table_reliability.cpp
         expressions.cpp
@@ -97,13 +102,7 @@ target_link_libraries(
 
 target_compile_options(
     libteddy-test-reliability
-    PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-        -Wconversion
-        -Wsign-conversion
-        -Wshadow
+    PRIVATE ${TEDDY_COMPILE_OPTIONS}
 )
 
 target_compile_features(
@@ -111,7 +110,9 @@ target_compile_features(
     PRIVATE cxx_std_20
 )
 
+# Required standard and no compiler extensions for both targets
 set_target_properties(
+    libteddy-test-core
     libteddy-test-reliability
     PROPERTIES
         CXX_STANDARD_REQUIRED YES

@@ -1,6 +1,4 @@
-#
 # Project
-#
 
 cmake_minimum_required(
     VERSION 3.19
@@ -21,10 +19,7 @@ project(
     LANGUAGES   CXX
 )
 
-#
 # Library target
-#
-
 add_library(
     teddy INTERFACE
 )
@@ -47,23 +42,21 @@ set_target_properties(
         CXX_EXTENSIONS        NO
 )
 
-#
-# Use libc++ if clang is used
-#
-# if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#     set(
-#         CMAKE_CXX_FLAGS
-#             "${CMAKE_CXX_FLAGS} -stdlib=libc++"
-#     )
-#     set(
-#         CMAKE_EXE_LINKER_FLAGS
-#             "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi"
-#     )
-# endif()
+# Use libc++ if requested and compiling with clang
 
-#
-# Tests and examples
-#
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_CXX)
+    message("Using libc++ and libc++abi")
+    set(
+        CMAKE_CXX_FLAGS
+            "${CMAKE_CXX_FLAGS} -stdlib=libc++"
+    )
+    set(
+        CMAKE_EXE_LINKER_FLAGS
+            "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi"
+    )
+endif()
+
+# Build tests and examples if requested
 
 if(LIBTEDDY_BUILD_TESTS)
     add_subdirectory(
@@ -77,9 +70,7 @@ if(LIBTEDDY_BUILD_EXAMPLES)
     )
 endif()
 
-#
 # Install config
-#
 
 include(
     GNUInstallDirs
