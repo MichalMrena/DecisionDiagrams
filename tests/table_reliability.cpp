@@ -1,5 +1,4 @@
 #include "table_reliability.hpp"
-#include "libteddy/details/types.hpp"
 #include "truth_table_utils.hpp"
 
 #include <numeric>
@@ -90,6 +89,5 @@ auto birnbaum_importance(
 {
     return probability(dpld, ps, 1);
 }
-
 
 } // namespace teddy
