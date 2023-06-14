@@ -1,4 +1,6 @@
 .cache
+.clang-tidy-report
+.cppcheck-report
 .vscode
 build
 compile_commands.json
