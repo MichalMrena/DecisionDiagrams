@@ -7,7 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <librog/rog.hpp>
-#include <libteddy/teddy.hpp>
+#include <libteddy/core.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
 #include <memory>
@@ -21,7 +21,7 @@
 #include <thread>
 #endif
 
-#include "common_test_setup.hpp"
+#include "setup.hpp"
 
 namespace teddy::tests
 {

@@ -10,7 +10,7 @@
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_pool.hpp>
 #include <libteddy/details/operators.hpp>
-#include <libteddy/details/utils.hpp>
+#include <libteddy/details/tools.hpp>
 #include <ostream>
 #include <queue>
 #include <span>

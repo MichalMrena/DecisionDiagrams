@@ -3,8 +3,8 @@
 
 #include <functional>
 #include <librog/rog.hpp>
-#include <libteddy/teddy.hpp>
-#include <libteddy/teddy_reliability.hpp>
+#include <libteddy/core.hpp>
+#include <libteddy/reliability.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
 #include <numeric>

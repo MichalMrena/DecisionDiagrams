@@ -1,11 +1,11 @@
 #include <fmt/core.h>
 #include <iostream>
 #include <librog/rog.hpp>
-#include <libteddy/teddy_reliability.hpp>
-#include <libtsl/table_reliability.hpp>
+#include <libteddy/reliability.hpp>
 #include <libtsl/truth_table.hpp>
+#include <libtsl/truth_table_reliability.hpp>
 
-#include "common_test_setup.hpp"
+#include "setup.hpp"
 
 namespace teddy::tests
 {

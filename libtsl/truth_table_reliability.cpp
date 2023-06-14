@@ -1,6 +1,4 @@
-#include "table_reliability.hpp"
-#include "truth_table_utils.hpp"
-
+#include <libtsl/truth_table_reliability.hpp>
 #include <numeric>
 
 namespace teddy::tsl

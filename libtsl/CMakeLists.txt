@@ -2,13 +2,13 @@ add_library(
     tsl
         expressions.cpp
         iterators.cpp
-        table_reliability.cpp
         truth_table.cpp
+        truth_table_reliability.cpp
 )
 
 target_include_directories(
     tsl PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 

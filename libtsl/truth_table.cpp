@@ -1,7 +1,4 @@
-#include "truth_table.hpp"
-#include "libteddy/details/types.hpp"
-#include "truth_table_utils.hpp"
-
+#include <libtsl/truth_table.hpp>
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -13,7 +10,7 @@ namespace teddy::tsl
 truth_table::truth_table(
     std::vector<int32> vector, std::vector<int32> domains
 )
-    : vector_(std::move(vector)), domains_(std::move(domains)),
+    : vector_(std::move(vector)), domain_(std::move(domains)),
       offset_(as_usize(this->get_var_count())),
       maxValue_(std::ranges::max(vector_ | std::ranges::views::filter(
                                                    [](auto v)
@@ -25,7 +22,7 @@ truth_table::truth_table(
 {
     assert(
         vector_.size() ==
-        std::reduce(begin(domains_), end(domains_), 1ull, std::multiplies<>())
+        std::reduce(begin(domain_), end(domain_), 1ull, std::multiplies<>())
     );
 
     assert(this->get_var_count() > 0);
@@ -37,7 +34,7 @@ truth_table::truth_table(
         while (i > 0)
         {
             --i;
-            offset_[as_uindex(i)] = domains_[as_uindex(i + 1)]
+            offset_[as_uindex(i)] = domain_[as_uindex(i + 1)]
                                   * offset_[as_uindex(i + 1)];
         }
     }
@@ -45,7 +42,7 @@ truth_table::truth_table(
 
 auto truth_table::get_var_count() const -> int32
 {
-    return static_cast<int32>(ssize(domains_));
+    return static_cast<int32>(ssize(domain_));
 }
 
 auto truth_table::get_vector() const -> std::vector<int32> const&
@@ -55,7 +52,7 @@ auto truth_table::get_vector() const -> std::vector<int32> const&
 
 auto truth_table::get_domains() const -> std::vector<int32> const&
 {
-    return domains_;
+    return domain_;
 }
 
 auto truth_table::get_offsets() const -> std::vector<int32> const&
@@ -104,5 +101,21 @@ auto evaluate(truth_table const& table, std::vector<int32> const& vars)
     -> int32
 {
     return table.get_vector()[as_uindex(to_index(table, vars))];
+}
+
+/**
+ *  \brief Maps values of variables to index in the vector.
+ */
+auto to_index(
+    truth_table const& table, std::vector<int32> const& vars
+) -> int32
+{
+    assert(ssize(vars) == table.get_var_count());
+    auto index = 0;
+    for (auto i = 0; i < table.get_var_count(); ++i)
+    {
+        index += vars[as_uindex(i)] * table.get_offsets()[as_uindex(i)];
+    }
+    return index;
 }
 } // namespace teddy

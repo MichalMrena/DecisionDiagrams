@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+// TODO constraints.hpp
+
 namespace teddy::utils
 {
 template<class F>
@@ -31,14 +33,6 @@ auto constexpr constant = [](auto const c)
     return [c](auto)
     {
         return c;
-    };
-};
-
-auto constexpr fix = [](auto f)
-{
-    return [f](auto&&... args)
-    {
-        return f(f, std::forward<decltype(args)>(args)...);
     };
 };
 

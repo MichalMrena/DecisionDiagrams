@@ -14,6 +14,7 @@ using uint64 = std::uint64_t;
 inline constexpr auto Undefined     = (std::numeric_limits<int32>::max)();
 inline constexpr auto Nondetermined = (std::numeric_limits<int32>::max)() - 1;
 
+// TODO move to tools
 [[nodiscard]]
 inline auto constexpr as_uindex(int32 const i)
 {

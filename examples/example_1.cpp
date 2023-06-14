@@ -1,4 +1,4 @@
-#include <libteddy/teddy_reliability.hpp>
+#include <libteddy/reliability.hpp>
 #include <algorithm>
 #include <iostream>
 #include <random>
