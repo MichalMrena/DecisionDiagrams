@@ -6,7 +6,7 @@
 #include <cassert>
 #include <functional>
 
-namespace teddy
+namespace teddy::tsl
 {
 /**
  *  \brief Invokes \p f with each element of the domain.

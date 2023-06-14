@@ -12,7 +12,7 @@
 #include <variant>
 #include <vector>
 
-namespace teddy
+namespace teddy::tests
 {
 /**
  *  \brief Specifies that order should be randomly generated.
@@ -324,7 +324,7 @@ auto make_manager(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
  */
 template<class Dat, class Deg, class Dom>
 auto make_diagram(
-    minmax_expr const& expr,
+    tsl::minmax_expr const& expr,
     diagram_manager<Dat, Deg, Dom>& manager,
     fold_type const foldtype = fold_type::Left
 )
@@ -358,7 +358,7 @@ auto make_diagram(
  */
 template<class Dat, class Deg, class Dom>
 auto make_diagram(
-    std::unique_ptr<expr_node> const& expr,
+    std::unique_ptr<tsl::expr_node> const& expr,
     diagram_manager<Dat, Deg, Dom>& manager
 )
 {
@@ -372,9 +372,9 @@ inline auto make_expression(
     int32 const varcount,
     minmax_expression_settings const& s,
     std::mt19937_64& rng
-) -> minmax_expr
+) -> tsl::minmax_expr
 {
-    return make_minmax_expression(rng, varcount, s.termcount_, s.termsize_);
+    return tsl::make_minmax_expression(rng, varcount, s.termcount_, s.termsize_);
 }
 
 /**
@@ -384,9 +384,9 @@ inline auto make_expression(
     int32 const varcount,
     expression_tree_settings const&,
     std::mt19937_64& rng
-) -> std::unique_ptr<expr_node>
+) -> std::unique_ptr<tsl::expr_node>
 {
-    return make_expression_tree(varcount, rng, rng);
+    return tsl::make_expression_tree(varcount, rng, rng);
 }
 
 /**
@@ -434,7 +434,7 @@ auto make_probabilities(
 }
 
 inline auto make_vector(
-    std::unique_ptr<expr_node> const& root,
+    std::unique_ptr<tsl::expr_node> const& root,
     std::vector<int32> const& domains
 ) -> std::vector<int32>
 {
@@ -442,9 +442,9 @@ inline auto make_vector(
     auto vector = std::vector<int32>(
         std::reduce(begin(domains), end(domains), 1ul, std::multiplies<>())
     );
-    auto domainit = domain_iterator(domains);
-    auto evalit   = evaluating_iterator(domainit, *root);
-    auto evalend  = evaluating_iterator_sentinel();
+    auto domainit = tsl::domain_iterator(domains);
+    auto evalit   = tsl::evaluating_iterator(domainit, *root);
+    auto evalend  = tsl::evaluating_iterator_sentinel();
     while (evalit != evalend)
     {
         vector[k] = *evalit;
@@ -457,7 +457,7 @@ inline auto make_vector(
 template<class Dat, class Deg, class Dom>
 auto make_domain_iterator(diagram_manager<Dat, Deg, Dom> const& m)
 {
-    return domain_iterator(m.get_domains(), m.get_order());
+    return tsl::domain_iterator(m.get_domains(), m.get_order());
 }
 
 /**

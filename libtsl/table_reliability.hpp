@@ -8,7 +8,7 @@
 #include <limits>
 #include <vector>
 
-namespace teddy
+namespace teddy::tsl
 {
 struct var_change
 {

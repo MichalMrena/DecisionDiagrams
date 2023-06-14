@@ -4,7 +4,7 @@
 #include "expressions.hpp"
 #include <vector>
 
-namespace teddy
+namespace teddy::tsl
 {
 /**
  *  \brief Sentinel for domain iterator.

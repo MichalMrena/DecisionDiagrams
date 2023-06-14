@@ -1,13 +1,13 @@
 #include <fmt/core.h>
 #include <iostream>
 #include <librog/rog.hpp>
-#include <libteddy/teddy.hpp>
+#include <libteddy/teddy_reliability.hpp>
 #include <libtsl/table_reliability.hpp>
 #include <libtsl/truth_table.hpp>
 
 #include "common_test_setup.hpp"
 
-namespace teddy
+namespace teddy::tests
 {
 
 /**
@@ -260,7 +260,7 @@ protected:
         auto diagram      = make_diagram(expr, manager);
         auto ps           = make_probabilities(manager, this->rng());
         auto domains      = manager.get_domains();
-        auto table        = truth_table(make_vector(expr, domains), domains);
+        auto table        = tsl::truth_table(make_vector(expr, domains), domains);
 
         // TODO move to function
         auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
@@ -272,7 +272,7 @@ protected:
                  &result,
                  &diagramdpld](auto const v, auto const& elem)
                 {
-                    if (v != U)
+                    if (v != tsl::U)
                     {
                         if (manager.evaluate(diagramdpld, elem) != v)
                         {
@@ -302,10 +302,10 @@ protected:
         )(this->rng());
 
         auto const varchange =
-            var_change {.index = varindex, .from = varfrom, .to = varto};
+            tsl::var_change {.index = varindex, .from = varfrom, .to = varto};
 
         auto const varchangeR =
-            var_change {.index = varindex, .from = varto, .to = varfrom};
+            tsl::var_change {.index = varindex, .from = varto, .to = varfrom};
 
         // Basic DPLD
         {
@@ -321,7 +321,7 @@ protected:
                 ffrom, fto, varchange.from, varchange.to
             ));
 
-            auto tabledpld   = dpld(table, varchange, dpld_basic(ffrom, fto));
+            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_basic(ffrom, fto));
             auto diagramdpld = manager.dpld(
                 {varchange.from, varchange.to},
                 {ffrom, fto},
@@ -329,7 +329,7 @@ protected:
                 varchange.index
             );
             this->info(
-                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -353,12 +353,12 @@ protected:
                 j, j, varchangeR.from, varchangeR.to
             ));
 
-            auto tabledpld   = dpld(table, varchangeR, dpld_i_1_decrease(j));
+            auto tabledpld   = tsl::dpld(table, varchangeR, tsl::dpld_i_1_decrease(j));
             auto diagramdpld = manager.idpld_type_1_decrease(
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
             this->info(
-                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -378,12 +378,12 @@ protected:
                 j, j, varchange.from, varchange.to
             ));
 
-            auto tabledpld   = dpld(table, varchange, dpld_i_1_increase(j));
+            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
             auto diagramdpld = manager.idpld_type_1_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
             this->info(
-                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -398,12 +398,12 @@ protected:
                 varchangeR.from, varchangeR.to
             ));
 
-            auto tabledpld   = dpld(table, varchangeR, dpld_i_2_decrease());
+            auto tabledpld   = tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
             auto diagramdpld = manager.idpld_type_2_decrease(
                 {varchangeR.from, varchangeR.to}, diagram, varchangeR.index
             );
             this->info(
-                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -418,12 +418,12 @@ protected:
                 varchange.from, varchange.to
             ));
 
-            auto tabledpld   = dpld(table, varchange, dpld_i_2_increase());
+            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
             auto diagramdpld = manager.idpld_type_2_increase(
                 {varchange.from, varchange.to}, diagram, varchange.index
             );
             this->info(
-                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -442,12 +442,12 @@ protected:
                 j, j, varchangeR.from, varchangeR.to
             ));
 
-            auto tabledpld   = dpld(table, varchangeR, dpld_i_3_decrease(j));
+            auto tabledpld   = tsl::dpld(table, varchangeR, tsl::dpld_i_3_decrease(j));
             auto diagramdpld = manager.idpld_type_3_decrease(
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
             this->info(
-                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -466,12 +466,12 @@ protected:
                 j, j, varchange.from, varchange.to
             ));
 
-            auto tabledpld   = dpld(table, varchange, dpld_i_3_increase(j));
+            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
             auto diagramdpld = manager.idpld_type_3_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
             this->info(
-                fmt::format("One count = {}", satisfy_count(tabledpld, 1u))
+                fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
             );
             this->assert_true(
                 comparedpbds(tabledpld, diagramdpld),
@@ -506,7 +506,7 @@ protected:
             {
                 for (auto s = 1; s < manager.get_domains()[as_uindex(i)]; ++s)
                 {
-                    auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
+                    auto const td = tsl::dpld(table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j));
                     auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
                     auto const expected = structural_importance(td, i);
                     auto const actual = manager.structural_importance(dd);
@@ -564,7 +564,7 @@ protected:
             {
                 for (auto s = 1; s < manager.get_domains()[as_uindex(i)]; ++s)
                 {
-                    auto const td = dpld(table, {i, s, s - 1}, dpld_i_3_decrease(j));
+                    auto const td = tsl::dpld(table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j));
                     auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
                         // std::cout << "---" << '\n';
                         // std::cout << "tt:  " << satisfy_count(td, 1) << "\n";
@@ -718,23 +718,23 @@ public:
 
 auto run_test_one(std::size_t const seed)
 {
-    // auto const M = 3;
+    auto const M = 3;
 
-    auto bssmt   = teddy::test_bss_manager(seed);
+    auto bssmt   = teddy::tests::test_bss_manager(seed);
     bssmt.run();
     rog::console_print_results(bssmt, rog::ConsoleOutputType::Full);
 
-    // auto mssmt = teddy::test_mss_manager<M>(seed);
-    // mssmt.run();
-    // rog::console_print_results(mssmt, rog::ConsoleOutputType::NoLeaf);
+    auto mssmt = teddy::tests::test_mss_manager<M>(seed);
+    mssmt.run();
+    rog::console_print_results(mssmt, rog::ConsoleOutputType::NoLeaf);
 
-    // auto imssmt = teddy::test_imss_manager<M>(seed);
-    // imssmt.run();
-    // rog::console_print_results(imssmt, rog::ConsoleOutputType::NoLeaf);
+    auto imssmt = teddy::tests::test_imss_manager<M>(seed);
+    imssmt.run();
+    rog::console_print_results(imssmt, rog::ConsoleOutputType::NoLeaf);
 
-    // auto ifmssmt = teddy::test_ifmss_manager<M>(seed);
-    // ifmssmt.run();
-    // rog::console_print_results(ifmssmt, rog::ConsoleOutputType::NoLeaf);
+    auto ifmssmt = teddy::tests::test_ifmss_manager<M>(seed);
+    ifmssmt.run();
+    rog::console_print_results(ifmssmt, rog::ConsoleOutputType::NoLeaf);
 }
 
 auto main(int const argc, char** const argv) -> int

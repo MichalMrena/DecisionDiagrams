@@ -4,7 +4,7 @@
 #include <cassert>
 #include <limits>
 
-namespace teddy
+namespace teddy::tsl
 {
 // minmax_expr:
 

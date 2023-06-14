@@ -23,20 +23,20 @@
 
 #include "common_test_setup.hpp"
 
-namespace teddy
+namespace teddy::tests
 {
 /**
  *  \brief Calculates frequency table for each possible value of @p expr .
  */
 template<class Dat, class Deg, class Dom>
 auto expected_counts(
-    diagram_manager<Dat, Deg, Dom>& manager, minmax_expr const& expr
+    diagram_manager<Dat, Deg, Dom>& manager, tsl::minmax_expr const& expr
 )
 {
     auto counts   = std::vector<int64>();
-    auto domainit = domain_iterator(manager.get_domains());
-    auto evalit   = evaluating_iterator(domainit, expr);
-    auto evalend  = evaluating_iterator_sentinel();
+    auto domainit = tsl::domain_iterator(manager.get_domains());
+    auto evalit   = tsl::evaluating_iterator(domainit, expr);
+    auto evalend  = tsl::evaluating_iterator_sentinel();
     while (evalit != evalend)
     {
         auto const v = *evalit;
@@ -65,7 +65,7 @@ public:
 protected:
     auto compare_eval(auto evalit, auto& manager, auto& diagram) -> void
     {
-        auto evalend = evaluating_iterator_sentinel();
+        auto evalend = tsl::evaluating_iterator_sentinel();
         while (evalit != evalend)
         {
             auto const expectedval = *evalit;
@@ -108,7 +108,7 @@ protected:
         auto diagram = make_diagram(expr, manager);
         this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto domainit = make_domain_iterator(manager);
-        auto evalit   = evaluating_iterator(domainit, expr);
+        auto evalit   = tsl::evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
 };
@@ -225,7 +225,7 @@ protected:
             {
                 ++actual[as_uindex(k)];
             };
-            auto out = forwarding_iterator<decltype(outf)>(outf);
+            auto out = tsl::forwarding_iterator<decltype(outf)>(outf);
             manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
         }
 
@@ -382,12 +382,12 @@ protected:
         auto const dtmp = manager.cofactor(diagram, i1, v1);
         auto const d    = manager.cofactor(dtmp, i2, v2);
 
-        auto domainit   = domain_iterator(
+        auto domainit   = tsl::domain_iterator(
             manager.get_domains(),
             manager.get_order(),
             {std::make_pair(i1, v1), std::make_pair(i2, v2)}
         );
-        auto evalit = evaluating_iterator(domainit, expr);
+        auto evalit = tsl::evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
 };
@@ -422,7 +422,7 @@ protected:
         this->assert_equals(actual, expected);
 
         auto domainit = make_domain_iterator(manager);
-        auto evalit   = evaluating_iterator(domainit, expr);
+        auto evalit   = tsl::evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
 };
@@ -453,7 +453,7 @@ protected:
         this->assert_equals(actual, expected);
 
         auto domainit = make_domain_iterator(manager);
-        auto evalit   = evaluating_iterator(domainit, expr);
+        auto evalit   = tsl::evaluating_iterator(domainit, expr);
         this->compare_eval(evalit, manager, diagram);
     }
 };
@@ -478,8 +478,8 @@ protected:
         auto diagram = make_diagram(expr, manager);
         this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto domainit = make_domain_iterator(manager);
-        auto evalit   = evaluating_iterator(domainit, expr);
-        auto evalend  = evaluating_iterator_sentinel();
+        auto evalit   = tsl::evaluating_iterator(domainit, expr);
+        auto evalend  = tsl::evaluating_iterator_sentinel();
         auto vectord  = manager.from_vector(evalit, evalend);
         this->assert_true(
             diagram.equals(vectord), "From-vector created the same diagram"
@@ -531,12 +531,12 @@ protected:
     auto test() -> void override
     {
         auto manager  = make_manager(this->settings(), this->rng());
-        auto exprtree = make_expression_tree(
+        auto exprtree = tsl::make_expression_tree(
             manager.get_var_count(), this->rng(), this->rng()
         );
         auto diagram  = manager.from_expression_tree(*exprtree);
-        auto domainit = domain_iterator(manager.get_domains());
-        auto evalit   = evaluating_iterator(domainit, *exprtree);
+        auto domainit = tsl::domain_iterator(manager.get_domains());
+        auto evalit   = teddy::tsl::evaluating_iterator(domainit, *exprtree);
         this->compare_eval(evalit, manager, diagram);
     }
 };
@@ -681,19 +681,19 @@ public:
 
 auto run_test_one(std::size_t const seed)
 {
-    auto bddmt = teddy::test_bdd_manager(seed);
+    auto bddmt = teddy::tests::test_bdd_manager(seed);
     bddmt.run();
     rog::console_print_results(bddmt);
 
-    auto mddmt = teddy::test_mdd_manager(seed);
+    auto mddmt = teddy::tests::test_mdd_manager(seed);
     mddmt.run();
     rog::console_print_results(mddmt);
 
-    auto imddmt = teddy::test_imdd_manager(seed);
+    auto imddmt = teddy::tests::test_imdd_manager(seed);
     imddmt.run();
     rog::console_print_results(imddmt);
 
-    auto ifmddmt = teddy::test_ifmdd_manager(seed);
+    auto ifmddmt = teddy::tests::test_ifmdd_manager(seed);
     ifmddmt.run();
     rog::console_print_results(ifmddmt);
 }
@@ -754,18 +754,18 @@ auto run_test_many(std::size_t const seed)
     auto const numtest = 10;
 #endif
 
-    auto bddmts  = std::vector<teddy::test_bdd_manager>();
-    auto mddmts  = std::vector<teddy::test_mdd_manager>();
-    auto imddts  = std::vector<teddy::test_imdd_manager>();
-    auto ifmddts = std::vector<teddy::test_ifmdd_manager>();
+    auto bddmts  = std::vector<teddy::tests::test_bdd_manager>();
+    auto mddmts  = std::vector<teddy::tests::test_mdd_manager>();
+    auto imddts  = std::vector<teddy::tests::test_imdd_manager>();
+    auto ifmddts = std::vector<teddy::tests::test_ifmdd_manager>();
     auto seeder  = std::mt19937_64(seed);
 
     for (auto k = 0; k < numtest; ++k)
     {
-        bddmts.emplace_back(teddy::test_bdd_manager(seeder()));
-        mddmts.emplace_back(teddy::test_mdd_manager(seeder()));
-        imddts.emplace_back(teddy::test_imdd_manager(seeder()));
-        ifmddts.emplace_back(teddy::test_ifmdd_manager(seeder()));
+        bddmts.emplace_back(teddy::tests::test_bdd_manager(seeder()));
+        mddmts.emplace_back(teddy::tests::test_mdd_manager(seeder()));
+        imddts.emplace_back(teddy::tests::test_imdd_manager(seeder()));
+        ifmddts.emplace_back(teddy::tests::test_ifmdd_manager(seeder()));
     }
 
 #ifdef LIBTEDDY_TESTS_USE_OMP

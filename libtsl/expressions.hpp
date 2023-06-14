@@ -7,7 +7,7 @@
 #include <variant>
 #include <vector>
 
-namespace teddy
+namespace teddy::tsl
 {
 /**
  *  \brief Strong type for vector of terms.

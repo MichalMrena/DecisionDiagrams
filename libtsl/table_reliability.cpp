@@ -3,7 +3,7 @@
 
 #include <numeric>
 
-namespace teddy
+namespace teddy::tsl
 {
 auto probability(
     truth_table const& table,

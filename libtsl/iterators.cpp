@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <libteddy/details/utils.hpp>
 
-namespace teddy
+namespace teddy::tsl
 {
 // domain_iterator:
 

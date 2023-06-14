@@ -8,7 +8,7 @@
 #include <numeric>
 #include <ranges>
 
-namespace teddy
+namespace teddy::tsl
 {
 truth_table::truth_table(
     std::vector<int32> vector, std::vector<int32> domains
