@@ -1,10 +1,11 @@
 #ifndef LIBTEDDY_DETAILS_DIAGRAM_HPP
 #define LIBTEDDY_DETAILS_DIAGRAM_HPP
 
-#include <cstddef>
-#include <functional>
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_manager.hpp>
+
+#include <cstddef>
+#include <functional>
 #include <utility>
 
 namespace teddy
@@ -65,20 +66,20 @@ public:
      *  \param other Diagram to be assigned into this one.
      *  \return Reference to this diagram.
      */
-    auto operator=(diagram other) -> diagram&;
+    auto operator= (diagram other) -> diagram&;
 
     /**
      *  \brief Swaps pointers in this and other diagram.
      *  \param other Diagram to be swapped with this one.
      */
-    auto swap(diagram& other) -> void;
+    auto swap (diagram& other) -> void;
 
     /**
      *  \brief Compares node pointers in this and other diagram.
      *  \param other Diagram to be compared with this one.
      *  \return true iif diagrams represent the same function.
      */
-    auto equals(diagram other) const -> bool;
+    auto equals (diagram other) const -> bool;
 
     /**
      *  \brief Returns pointer to internal node type.
@@ -86,7 +87,7 @@ public:
      *  doing.
      *  \return Pointer to node root node of the diagram.
      */
-    auto unsafe_get_root() const -> node_t*;
+    auto unsafe_get_root () const -> node_t*;
 
 private:
     node_t* root_ {nullptr};
@@ -98,7 +99,7 @@ private:
  *  \param rhs Second diagram.
  */
 template<class Data, degree D>
-auto swap(diagram<Data, D>& lhs, diagram<Data, D>& rhs) -> void
+auto swap (diagram<Data, D>& lhs, diagram<Data, D>& rhs) -> void
 {
     lhs.swap(rhs);
 }
@@ -110,7 +111,7 @@ auto swap(diagram<Data, D>& lhs, diagram<Data, D>& rhs) -> void
  *  \return true iif diagrams represent the same function.
  */
 template<class Data, degree D>
-auto operator==(diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
+auto operator== (diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
 {
     return lhs.equals(rhs);
 }
@@ -122,14 +123,14 @@ auto operator==(diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
  *  \return true iif diagrams represent the same function.
  */
 template<class Data, degree D>
-auto equals(diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
+auto equals (diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
 {
     return lhs.equals(rhs);
 }
 
 template<class Data, degree D>
-diagram<Data, D>::diagram(node_t* const r)
-    : root_(id_set_notmarked(id_inc_ref_count(r)))
+diagram<Data, D>::diagram(node_t* const r) :
+    root_(id_set_notmarked(id_inc_ref_count(r)))
 {
 }
 
@@ -139,8 +140,8 @@ diagram<Data, D>::diagram(diagram const& d) : root_(id_inc_ref_count(d.root_))
 }
 
 template<class Data, degree D>
-diagram<Data, D>::diagram(diagram&& d) noexcept
-    : root_(std::exchange(d.root_, nullptr))
+diagram<Data, D>::diagram(diagram&& d) noexcept :
+    root_(std::exchange(d.root_, nullptr))
 {
 }
 
@@ -154,7 +155,7 @@ diagram<Data, D>::~diagram()
 }
 
 template<class Data, degree D>
-auto diagram<Data, D>::operator=(diagram d) -> diagram&
+auto diagram<Data, D>::operator= (diagram d) -> diagram&
 {
     d.swap(*this);
     return *this;
@@ -184,7 +185,7 @@ namespace std
 template<class Data, teddy::degree D>
 struct hash<teddy::diagram<Data, D>>
 {
-    [[nodiscard]] auto operator()(teddy::diagram<Data, D> const& d
+    [[nodiscard]] auto operator() (teddy::diagram<Data, D> const& d
     ) const noexcept -> std::size_t
     {
         return std::hash<decltype(d.unsafe_get_root())>()(d.unsafe_get_root());
@@ -194,7 +195,7 @@ struct hash<teddy::diagram<Data, D>>
 template<class Data, teddy::degree D>
 struct equal_to<teddy::diagram<Data, D>>
 {
-    [[nodiscard]] auto operator()(
+    [[nodiscard]] auto operator() (
         teddy::diagram<Data, D> const& l, teddy::diagram<Data, D> const& r
     ) const noexcept -> bool
     {

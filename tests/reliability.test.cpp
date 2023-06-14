@@ -1,11 +1,13 @@
-#include <fmt/core.h>
-#include <iostream>
-#include <librog/rog.hpp>
 #include <libteddy/reliability.hpp>
+
 #include <libtsl/truth_table.hpp>
 #include <libtsl/truth_table_reliability.hpp>
 
+#include <iostream>
+
 #include "setup.hpp"
+#include <fmt/core.h>
+#include <librog/rog.hpp>
 
 namespace teddy::tests
 {
@@ -17,13 +19,13 @@ template<class Settings>
 class test_probability : public test_base<Settings>
 {
 public:
-    test_probability(Settings settings)
-        : test_base<Settings>("probability", std::move(settings))
+    test_probability(Settings settings) :
+        test_base<Settings>("probability", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -74,13 +76,13 @@ template<class Settings>
 class test_availability : public test_base<Settings>
 {
 public:
-    test_availability(Settings settings)
-        : test_base<Settings>("availability", std::move(settings))
+    test_availability(Settings settings) :
+        test_base<Settings>("availability", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -131,13 +133,13 @@ template<class Settings>
 class test_unavailability : public test_base<Settings>
 {
 public:
-    test_unavailability(Settings settings)
-        : test_base<Settings>("unavailability", std::move(settings))
+    test_unavailability(Settings settings) :
+        test_base<Settings>("unavailability", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -188,13 +190,13 @@ template<class Settings>
 class test_state_frequency : public test_base<Settings>
 {
 public:
-    test_state_frequency(Settings settings)
-        : test_base<Settings>("state-frequency", std::move(settings))
+    test_state_frequency(Settings settings) :
+        test_base<Settings>("state-frequency", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -232,13 +234,13 @@ template<class Settings>
 class test_dpld : public test_base<Settings>
 {
 public:
-    test_dpld(Settings settings)
-        : test_base<Settings>("dpld", std::move(settings))
+    test_dpld(Settings settings) :
+        test_base<Settings>("dpld", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         using namespace std::string_literals;
         auto expr    = make_expression(this->settings(), this->rng());
@@ -249,14 +251,14 @@ protected:
         auto table   = tsl::truth_table(make_vector(expr, domains), domains);
 
         // TODO move to function
-        auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
+        auto comparedpbds = [&manager] (auto const& tabledpld, auto diagramdpld)
         {
             auto result = true;
             domain_for_each(
                 tabledpld,
                 [&manager,
                  &result,
-                 &diagramdpld](auto const v, auto const& elem)
+                 &diagramdpld] (auto const v, auto const& elem)
                 {
                     if (v != tsl::U)
                     {
@@ -271,7 +273,7 @@ protected:
             return result;
         };
 
-        auto s = [](auto const x)
+        auto s = [] (auto const x)
         {
             return std::to_string(x);
         };
@@ -280,17 +282,18 @@ protected:
             0, manager.get_var_count() - 1
         )(this->rng());
         auto const vardomain = manager.get_domains()[as_uindex(varindex)];
-        auto const varfrom =
-            std::uniform_int_distribution<int32>(0, vardomain - 2)(this->rng());
+        auto const varfrom
+            = std::uniform_int_distribution<int32>(0, vardomain - 2)(this->rng()
+            );
         auto const varto = std::uniform_int_distribution<int32>(
             varfrom + 1, manager.get_domains()[as_uindex(varindex)] - 1
         )(this->rng());
 
-        auto const varchange =
-            tsl::var_change {.index = varindex, .from = varfrom, .to = varto};
+        auto const varchange
+            = tsl::var_change {.index = varindex, .from = varfrom, .to = varto};
 
-        auto const varchangeR =
-            tsl::var_change {.index = varindex, .from = varto, .to = varfrom};
+        auto const varchangeR
+            = tsl::var_change {.index = varindex, .from = varto, .to = varfrom};
 
         // Basic DPLD
         {
@@ -309,8 +312,8 @@ protected:
                 varchange.to
             ));
 
-            auto tabledpld =
-                tsl::dpld(table, varchange, tsl::dpld_basic(ffrom, fto));
+            auto tabledpld
+                = tsl::dpld(table, varchange, tsl::dpld_basic(ffrom, fto));
             auto diagramdpld = manager.dpld(
                 {varchange.from, varchange.to},
                 {ffrom, fto},
@@ -333,8 +336,9 @@ protected:
             )(this->rng());
 
             this->info(
-                "idpld_type_1_decrease f(" + s(j) + " -> " + "<" + s(j) +
-                ") / x(" + s(varchangeR.from) + " -> " + s(varchangeR.to) + ")"
+                "idpld_type_1_decrease f(" + s(j) + " -> " + "<" + s(j)
+                + ") / x(" + s(varchangeR.from) + " -> " + s(varchangeR.to)
+                + ")"
             );
 
             this->info(fmt::format(
@@ -345,8 +349,8 @@ protected:
                 varchangeR.to
             ));
 
-            auto tabledpld =
-                tsl::dpld(table, varchangeR, tsl::dpld_i_1_decrease(j));
+            auto tabledpld
+                = tsl::dpld(table, varchangeR, tsl::dpld_i_1_decrease(j));
             auto diagramdpld = manager.idpld_type_1_decrease(
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
@@ -374,8 +378,8 @@ protected:
                 varchange.to
             ));
 
-            auto tabledpld =
-                tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
+            auto tabledpld
+                = tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
             auto diagramdpld = manager.idpld_type_1_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
@@ -396,8 +400,8 @@ protected:
                 varchangeR.to
             ));
 
-            auto tabledpld =
-                tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
+            auto tabledpld
+                = tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
             auto diagramdpld = manager.idpld_type_2_decrease(
                 {varchangeR.from, varchangeR.to}, diagram, varchangeR.index
             );
@@ -418,8 +422,8 @@ protected:
                 varchange.to
             ));
 
-            auto tabledpld =
-                tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
+            auto tabledpld
+                = tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
             auto diagramdpld = manager.idpld_type_2_increase(
                 {varchange.from, varchange.to}, diagram, varchange.index
             );
@@ -446,8 +450,8 @@ protected:
                 varchangeR.to
             ));
 
-            auto tabledpld =
-                tsl::dpld(table, varchangeR, tsl::dpld_i_3_decrease(j));
+            auto tabledpld
+                = tsl::dpld(table, varchangeR, tsl::dpld_i_3_decrease(j));
             auto diagramdpld = manager.idpld_type_3_decrease(
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
@@ -462,8 +466,8 @@ protected:
 
         // Integrated DPLD type III increase
         {
-            auto fvaldist =
-                std::uniform_int_distribution<int32>(1u, table.get_max_val());
+            auto fvaldist
+                = std::uniform_int_distribution<int32>(1u, table.get_max_val());
             auto const j = fvaldist(this->rng());
 
             this->info(fmt::format(
@@ -474,8 +478,8 @@ protected:
                 varchange.to
             ));
 
-            auto tabledpld =
-                tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
+            auto tabledpld
+                = tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
             auto diagramdpld = manager.idpld_type_3_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
@@ -494,13 +498,13 @@ template<class Settings>
 class test_structural_importance : public test_base<Settings>
 {
 public:
-    test_structural_importance(Settings settings)
-        : test_base<Settings>("structural-imporatnce", std::move(settings))
+    test_structural_importance(Settings settings) :
+        test_base<Settings>("structural-imporatnce", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -534,13 +538,13 @@ template<class Settings>
 class test_birnbaum_importance : public test_base<Settings>
 {
 public:
-    test_birnbaum_importance(Settings settings)
-        : test_base<Settings>("birnbaum-imporatnce", std::move(settings))
+    test_birnbaum_importance(Settings settings) :
+        test_base<Settings>("birnbaum-imporatnce", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -590,8 +594,8 @@ protected:
                     // std::cout << "dd:  " << manager.satisfy_count(1, dd) <<
                     // "\n";
                     auto const expected = birnbaum_importance(td, ps);
-                    auto const actual =
-                        manager.birnbaum_importance(ps, {s, s - 1}, dd, i);
+                    auto const actual
+                        = manager.birnbaum_importance(ps, {s, s - 1}, dd, i);
                     this->assert_equals(expected, actual, 0.00000001);
                 }
             }
@@ -611,8 +615,8 @@ public:
         ManagerSettings manager,
         ExpressionSettings expr,
         std::string name
-    )
-        : rog::CompositeTest(std::move(name))
+    ) :
+        rog::CompositeTest(std::move(name))
     {
         auto seeder      = std::mt19937_64(seed);
         using settings_t = test_settings<ManagerSettings, ExpressionSettings>;
@@ -647,20 +651,21 @@ public:
 /**
  *  \brief Tests bss_manager.
  */
-class test_bss_manager : public test_reliability_manager<
-                             bss_manager_settings,
-                             expression_tree_settings>
+class test_bss_manager :
+    public test_reliability_manager<
+        bss_manager_settings,
+        expression_tree_settings>
 {
 public:
-    test_bss_manager(std::size_t const seed)
-        : test_reliability_manager<
-              bss_manager_settings,
-              expression_tree_settings>(
-              seed,
-              bss_manager_settings {21, 2'000'000, random_order_tag()},
-              expression_tree_settings {},
-              "bss_manager"
-          )
+    test_bss_manager(std::size_t const seed) :
+        test_reliability_manager<
+            bss_manager_settings,
+            expression_tree_settings>(
+            seed,
+            bss_manager_settings {21, 2'000'000, random_order_tag()},
+            expression_tree_settings {},
+            "bss_manager"
+        )
     {
     }
 };
@@ -669,20 +674,21 @@ public:
  *  \brief Tests mss_manager.
  */
 template<int M>
-class test_mss_manager : public test_reliability_manager<
-                             mss_manager_settings<M>,
-                             expression_tree_settings>
+class test_mss_manager :
+    public test_reliability_manager<
+        mss_manager_settings<M>,
+        expression_tree_settings>
 {
 public:
-    test_mss_manager(std::size_t const seed)
-        : test_reliability_manager<
-              mss_manager_settings<M>,
-              expression_tree_settings>(
-              seed,
-              mss_manager_settings<M> {15, 5'000, random_order_tag()},
-              expression_tree_settings {},
-              "mss_manager"
-          )
+    test_mss_manager(std::size_t const seed) :
+        test_reliability_manager<
+            mss_manager_settings<M>,
+            expression_tree_settings>(
+            seed,
+            mss_manager_settings<M> {15, 5'000, random_order_tag()},
+            expression_tree_settings {},
+            "mss_manager"
+        )
     {
     }
 };
@@ -691,22 +697,23 @@ public:
  *  \brief Tests imss_manager.
  */
 template<int M>
-class test_imss_manager : public test_reliability_manager<
-                              imss_manager_settings<M>,
-                              expression_tree_settings>
+class test_imss_manager :
+    public test_reliability_manager<
+        imss_manager_settings<M>,
+        expression_tree_settings>
 {
 public:
-    test_imss_manager(std::size_t const seed)
-        : test_reliability_manager<
-              imss_manager_settings<M>,
-              expression_tree_settings>(
-              seed,
-              imss_manager_settings<M> {
-                  {{15, 5'000, random_order_tag()}, random_domains_tag()}
+    test_imss_manager(std::size_t const seed) :
+        test_reliability_manager<
+            imss_manager_settings<M>,
+            expression_tree_settings>(
+            seed,
+            imss_manager_settings<M> {
+                {{15, 5'000, random_order_tag()}, random_domains_tag()}
     },
-              expression_tree_settings {},
-              "imss_manager"
-          )
+            expression_tree_settings {},
+            "imss_manager"
+        )
     {
     }
 };
@@ -715,29 +722,30 @@ public:
  *  \brief Tests imss_manager.
  */
 template<int M>
-class test_ifmss_manager : public test_reliability_manager<
-                               ifmss_manager_settings<M>,
-                               expression_tree_settings>
+class test_ifmss_manager :
+    public test_reliability_manager<
+        ifmss_manager_settings<M>,
+        expression_tree_settings>
 {
 public:
-    test_ifmss_manager(std::size_t const seed)
-        : test_reliability_manager<
-              ifmss_manager_settings<M>,
-              expression_tree_settings>(
-              seed,
-              ifmss_manager_settings<M> {
-                  {{15, 5'000, random_order_tag()}, random_domains_tag()}
+    test_ifmss_manager(std::size_t const seed) :
+        test_reliability_manager<
+            ifmss_manager_settings<M>,
+            expression_tree_settings>(
+            seed,
+            ifmss_manager_settings<M> {
+                {{15, 5'000, random_order_tag()}, random_domains_tag()}
     },
-              expression_tree_settings {},
-              "ifmss_manager"
-          )
+            expression_tree_settings {},
+            "ifmss_manager"
+        )
     {
     }
 };
 
 } // namespace teddy::tests
 
-auto run_test_one(std::size_t const seed)
+auto run_test_one (std::size_t const seed)
 {
     auto const M = 3;
 
@@ -758,7 +766,7 @@ auto run_test_one(std::size_t const seed)
     rog::console_print_results(ifmssmt, rog::ConsoleOutputType::NoLeaf);
 }
 
-auto main(int const argc, char** const argv) -> int
+auto main (int const argc, char** const argv) -> int
 {
     auto seed = 144ull;
 

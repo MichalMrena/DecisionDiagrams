@@ -1,13 +1,15 @@
 #ifndef LIBTEDDY_DETAILS_NODE_HPP
 #define LIBTEDDY_DETAILS_NODE_HPP
 
+#include <libteddy/details/types.hpp>
+
 #include <array>
 #include <cassert>
 #include <cstddef>
-#include <libteddy/details/types.hpp>
 #include <memory>
-#include <type_traits>
 #include <utility>
+
+#include <type_traits>
 
 namespace teddy
 {
@@ -41,7 +43,8 @@ template<int32 N>
 struct fixed
 {
     static_assert(N > 1);
-    auto constexpr operator()()
+
+    auto constexpr operator() ()
     {
         return N;
     }
@@ -91,31 +94,31 @@ public:
     //         dependent on the template makes it SFINE.
     template<class Foo = void>
     requires(not std::is_void_v<Data>)
-    auto data() -> second_t<Foo, Data>&;
+    auto data () -> second_t<Foo, Data>&;
 
     template<class Foo = void>
     requires(not std::is_void_v<Data>)
-    auto data() const -> second_t<Foo, Data> const&;
+    auto data () const -> second_t<Foo, Data> const&;
 
-    auto get_next() const -> node*;
-    auto set_next(node*) -> void;
-    auto is_internal() const -> bool;
-    auto is_terminal() const -> bool;
-    auto is_used() const -> bool;
-    auto set_unused() -> void;
-    auto is_marked() const -> bool;
-    auto toggle_marked() -> void;
-    auto set_marked() -> void;
-    auto set_notmarked() -> void;
-    auto get_ref_count() const -> int32;
-    auto inc_ref_count() -> void;
-    auto dec_ref_count() -> void;
-    auto get_index() const -> int32;
+    auto get_next () const -> node*;
+    auto set_next (node*) -> void;
+    auto is_internal () const -> bool;
+    auto is_terminal () const -> bool;
+    auto is_used () const -> bool;
+    auto set_unused () -> void;
+    auto is_marked () const -> bool;
+    auto toggle_marked () -> void;
+    auto set_marked () -> void;
+    auto set_notmarked () -> void;
+    auto get_ref_count () const -> int32;
+    auto inc_ref_count () -> void;
+    auto dec_ref_count () -> void;
+    auto get_index () const -> int32;
     auto set_index(int32) -> void;
-    auto get_sons() const -> sons_t const&;
+    auto get_sons () const -> sons_t const&;
     auto get_son(int32) const -> node*;
     auto set_sons(sons_t) -> void;
-    auto get_value() const -> int32;
+    auto get_value () const -> int32;
 
 private:
     // TODO: c++20, constructors not necessary
@@ -124,6 +127,7 @@ private:
     {
         sons_t sons;
         int32 index;
+
         internal(sons_t ss, int32 i) : sons {std::move(ss)}, index {i}
         {
         }
@@ -132,18 +136,19 @@ private:
     struct terminal
     {
         int32 value;
+
         terminal(int32 const v) : value {v}
         {
         }
     };
 
 private:
-    auto union_internal() -> internal*;
-    auto union_internal() const -> internal const*;
-    auto union_terminal() -> terminal*;
-    auto union_terminal() const -> terminal const*;
-    auto union_internal_unsafe() -> internal*;
-    auto is_or_was_internal() const -> bool;
+    auto union_internal () -> internal*;
+    auto union_internal () const -> internal const*;
+    auto union_terminal () -> terminal*;
+    auto union_terminal () const -> terminal const*;
+    auto union_internal_unsafe () -> internal*;
+    auto is_or_was_internal () const -> bool;
 
 private:
     inline static constexpr auto MarkM   = 1u << (8 * sizeof(uint32) - 1);
@@ -183,8 +188,9 @@ node<Data, D>::node(int32 const i) : next_ {nullptr}, bits_ {LeafM | UsedM}
 }
 
 template<class Data, degree D>
-node<Data, D>::node(int32 const i, sons_t&& sons)
-    : next_ {nullptr}, bits_ {UsedM}
+node<Data, D>::node(int32 const i, sons_t&& sons) :
+    next_ {nullptr},
+    bits_ {UsedM}
 {
     std::construct_at(this->union_internal(), std::move(sons), i);
 }

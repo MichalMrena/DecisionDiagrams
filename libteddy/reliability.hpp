@@ -12,8 +12,8 @@ using default_oder = std::vector<int32>;
  *  \brief Manager for creation of Binary Decision Diagrams and analysis
  *  of Binary State System.
  */
-struct bss_manager
-    : public reliability_manager<degrees::fixed<2>, domains::fixed<2>>
+struct bss_manager :
+    public reliability_manager<degrees::fixed<2>, domains::fixed<2>>
 {
     /**
      *  \brief Initializes BSS manager.
@@ -52,8 +52,8 @@ struct bss_manager
  *  \tparam P number of component and system states.
  */
 template<int32 P>
-struct mss_manager
-    : public reliability_manager<degrees::fixed<P>, domains::fixed<P>>
+struct mss_manager :
+    public reliability_manager<degrees::fixed<P>, domains::fixed<P>>
 {
     /**
      *  \brief Initializes MSS manager.
@@ -138,8 +138,8 @@ struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
  *  \tparam PMax maximal number of system and component states.
  */
 template<int32 PMax>
-struct ifmss_manager
-    : public reliability_manager<degrees::fixed<PMax>, domains::mixed>
+struct ifmss_manager :
+    public reliability_manager<degrees::fixed<PMax>, domains::mixed>
 {
     /**
      *  \brief Initializes ifMSS manager.
@@ -182,10 +182,10 @@ inline bss_manager::bss_manager(
     int32 const componentCount,
     int64 const nodePoolSize,
     std::vector<int32> order
-)
-    : bss_manager(
-          componentCount, nodePoolSize, nodePoolSize / 2, std::move(order)
-      )
+) :
+    bss_manager(
+        componentCount, nodePoolSize, nodePoolSize / 2, std::move(order)
+    )
 {
 }
 
@@ -194,10 +194,10 @@ inline bss_manager::bss_manager(
     int64 const nodePoolSize,
     int64 const overflowNodePoolSize,
     std::vector<int32> order
-)
-    : reliability_manager<degrees::fixed<2>, domains::fixed<2>>(
-          componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
-      )
+) :
+    reliability_manager<degrees::fixed<2>, domains::fixed<2>>(
+        componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
+    )
 {
 }
 
@@ -206,10 +206,10 @@ mss_manager<P>::mss_manager(
     int32 const componentCount,
     int64 const nodePoolSize,
     std::vector<int32> order
-)
-    : mss_manager(
-          componentCount, nodePoolSize, nodePoolSize / 2, std::move(order)
-      )
+) :
+    mss_manager(
+        componentCount, nodePoolSize, nodePoolSize / 2, std::move(order)
+    )
 {
 }
 
@@ -219,10 +219,10 @@ mss_manager<P>::mss_manager(
     int64 const nodePoolSize,
     int64 const overflowNodePoolSize,
     std::vector<int32> order
-)
-    : reliability_manager<degrees::fixed<P>, domains::fixed<P>>(
-          componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
-      )
+) :
+    reliability_manager<degrees::fixed<P>, domains::fixed<P>>(
+        componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
+    )
 {
 }
 
@@ -231,14 +231,14 @@ inline imss_manager::imss_manager(
     int64 const nodePoolSize,
     std::vector<int32> domains,
     std::vector<int32> order
-)
-    : imss_manager(
-          componentCount,
-          nodePoolSize,
-          nodePoolSize / 2,
-          std::move(domains),
-          std::move(order)
-      )
+) :
+    imss_manager(
+        componentCount,
+        nodePoolSize,
+        nodePoolSize / 2,
+        std::move(domains),
+        std::move(order)
+    )
 {
 }
 
@@ -248,14 +248,14 @@ inline imss_manager::imss_manager(
     int64 const overflowNodePoolSize,
     std::vector<int32> domains,
     std::vector<int32> order
-)
-    : reliability_manager<degrees::mixed, domains::mixed>(
-          componentCount,
-          nodePoolSize,
-          overflowNodePoolSize,
-          std::move(domains),
-          std::move(order)
-      )
+) :
+    reliability_manager<degrees::mixed, domains::mixed>(
+        componentCount,
+        nodePoolSize,
+        overflowNodePoolSize,
+        std::move(domains),
+        std::move(order)
+    )
 {
 }
 
@@ -265,14 +265,14 @@ ifmss_manager<PMax>::ifmss_manager(
     int64 const nodePoolSize,
     std::vector<int32> domains,
     std::vector<int32> order
-)
-    : ifmss_manager(
-          componentCount,
-          nodePoolSize,
-          nodePoolSize / 2,
-          std::move(domains),
-          std::move(order)
-      )
+) :
+    ifmss_manager(
+        componentCount,
+        nodePoolSize,
+        nodePoolSize / 2,
+        std::move(domains),
+        std::move(order)
+    )
 {
 }
 
@@ -283,14 +283,14 @@ ifmss_manager<PMax>::ifmss_manager(
     int64 const overflowNodePoolSize,
     std::vector<int32> domains,
     std::vector<int32> order
-)
-    : reliability_manager<degrees::fixed<PMax>, domains::mixed>(
-          componentCount,
-          nodePoolSize,
-          overflowNodePoolSize,
-          std::move(domains),
-          std::move(order)
-      )
+) :
+    reliability_manager<degrees::fixed<PMax>, domains::mixed>(
+        componentCount,
+        nodePoolSize,
+        overflowNodePoolSize,
+        std::move(domains),
+        std::move(order)
+    )
 {
 }
 } // namespace teddy

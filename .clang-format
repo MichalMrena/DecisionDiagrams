@@ -69,7 +69,7 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
 PackConstructorInitializers: CurrentLine
-QualifierOrder: ['inline', 'static', 'type', 'constexpr', 'const', 'volatile']
+# QualifierOrder: ['inline', 'static', 'type', 'constexpr', 'const', 'volatile']
 BasedOnStyle:    ''
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 AllowAllConstructorInitializersOnNextLine: true
@@ -113,9 +113,9 @@ PointerAlignment: Left
 PPIndentWidth: -1
 ReferenceAlignment: Pointer
 ReflowComments:  true
-RemoveSemicolon: true
+# RemoveSemicolon: true
 RequiresClausePosition: OwnLine
-RequiresExpressionIndentation: OuterScope
+# RequiresExpressionIndentation: OuterScope
 SeparateDefinitionBlocks: Always
 ShortNamespaceLines: 1
 SortIncludes: CaseInsensitive

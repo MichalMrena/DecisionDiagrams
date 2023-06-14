@@ -2,23 +2,26 @@
 #undef LIBTEDDY_VERBOSE
 // #define NDEBUG
 
-#include <algorithm>
-#include <fmt/format.h>
-#include <iomanip>
-#include <iostream>
-#include <librog/rog.hpp>
 #include <libteddy/core.hpp>
+
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
+
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <random>
 #include <ranges>
 #include <vector>
 
+#include <fmt/format.h>
+#include <librog/rog.hpp>
+
 #ifdef LIBTEDDY_TESTS_USE_OMP
-#include <mutex>
-#include <omp.h>
-#include <thread>
+#    include <mutex>
+#    include <omp.h>
+#    include <thread>
 #endif
 
 #include "setup.hpp"
@@ -29,7 +32,7 @@ namespace teddy::tests
  *  \brief Calculates frequency table for each possible value of @p expr .
  */
 template<class Dat, class Deg, class Dom>
-auto expected_counts(
+auto expected_counts (
     diagram_manager<Dat, Deg, Dom>& manager, tsl::minmax_expr const& expr
 )
 {
@@ -57,20 +60,20 @@ template<class Settings>
 class evaluating_test : public test_base<Settings>
 {
 public:
-    evaluating_test(std::string name, Settings settings)
-        : test_base<Settings>(std::move(name), std::move(settings))
+    evaluating_test(std::string name, Settings settings) :
+        test_base<Settings>(std::move(name), std::move(settings))
     {
     }
 
 protected:
-    auto compare_eval(auto evalit, auto& manager, auto& diagram) -> void
+    auto compare_eval (auto evalit, auto& manager, auto& diagram) -> void
     {
         auto evalend = tsl::evaluating_iterator_sentinel();
         while (evalit != evalend)
         {
             auto const expectedval = *evalit;
-            auto const diagramval =
-                manager.evaluate(diagram, evalit.get_var_vals());
+            auto const diagramval
+                = manager.evaluate(diagram, evalit.get_var_vals());
             if (expectedval != diagramval)
             {
                 this->fail(
@@ -95,13 +98,13 @@ template<class Settings>
 class test_evaluate : public evaluating_test<Settings>
 {
 public:
-    test_evaluate(Settings settings)
-        : evaluating_test<Settings>("evaluate", std::move(settings))
+    test_evaluate(Settings settings) :
+        evaluating_test<Settings>("evaluate", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -120,13 +123,13 @@ template<class Settings>
 class test_fold : public test_base<Settings>
 {
 public:
-    test_fold(Settings settings)
-        : test_base<Settings>("fold", std::move(settings))
+    test_fold(Settings settings) :
+        test_base<Settings>("fold", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -149,7 +152,7 @@ public:
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
@@ -170,13 +173,13 @@ template<class Settings>
 class test_satisfy_count : public test_base<Settings>
 {
 public:
-    test_satisfy_count(Settings settings)
-        : test_base<Settings>("satisfy-count", std::move(settings))
+    test_satisfy_count(Settings settings) :
+        test_base<Settings>("satisfy-count", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -204,13 +207,13 @@ template<class Settings>
 class test_satisfy_all : public test_base<Settings>
 {
 public:
-    test_satisfy_all(Settings settings)
-        : test_base<Settings>("satisfy-all", std::move(settings))
+    test_satisfy_all(Settings settings) :
+        test_base<Settings>("satisfy-all", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -221,7 +224,7 @@ protected:
         for (auto k = 0; k < ssize(expected); ++k)
         {
             using out_var_vals = std::vector<int32>;
-            auto outf          = [&actual, k](auto const&)
+            auto outf          = [&actual, k] (auto const&)
             {
                 ++actual[as_uindex(k)];
             };
@@ -243,13 +246,13 @@ template<class Settings>
 class test_operators : public test_base<Settings>
 {
 public:
-    test_operators(Settings settings)
-        : test_base<Settings>("operators", std::move(settings))
+    test_operators(Settings settings) :
+        test_base<Settings>("operators", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         using namespace teddy::ops;
         auto expr    = make_expression(this->settings(), this->rng());
@@ -258,8 +261,8 @@ protected:
         this->info(fmt::format("Node count {}", manager.node_count(diagram)));
         auto const zero = manager.constant(0);
         auto const one  = manager.constant(1);
-        auto const sup =
-            manager.constant(std::ranges::max(manager.get_domains()));
+        auto const sup
+            = manager.constant(std::ranges::max(manager.get_domains()));
         auto const bd = manager.transform(diagram, utils::not_zero);
 
         this->assert_true(
@@ -350,13 +353,13 @@ template<class Settings>
 class test_cofactor : public evaluating_test<Settings>
 {
 public:
-    test_cofactor(Settings settings)
-        : evaluating_test<Settings>("cofactor", std::move(settings))
+    test_cofactor(Settings settings) :
+        evaluating_test<Settings>("cofactor", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -365,7 +368,7 @@ protected:
         auto const maxi = static_cast<int32>(manager.get_var_count() - 1);
         auto indexDist  = std::uniform_int_distribution<int32>(0u, maxi);
         auto const i1   = indexDist(this->rng());
-        auto const i2   = [this, &indexDist, i1]()
+        auto const i2   = [this, &indexDist, i1] ()
         {
             for (;;)
             {
@@ -399,13 +402,13 @@ template<class Settings>
 class test_one_var_sift : public evaluating_test<Settings>
 {
 public:
-    test_one_var_sift(Settings settings)
-        : evaluating_test<Settings>("one-var-sift", std::move(settings))
+    test_one_var_sift(Settings settings) :
+        evaluating_test<Settings>("one-var-sift", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -434,13 +437,13 @@ template<class Settings>
 class test_auto_var_sift : public evaluating_test<Settings>
 {
 public:
-    test_auto_var_sift(Settings settings)
-        : evaluating_test<Settings>("auto-var-sift", std::move(settings))
+    test_auto_var_sift(Settings settings) :
+        evaluating_test<Settings>("auto-var-sift", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -465,13 +468,13 @@ template<class Settings>
 class test_from_vector : public test_base<Settings>
 {
 public:
-    test_from_vector(Settings settings)
-        : test_base<Settings>("from-vector", std::move(settings))
+    test_from_vector(Settings settings) :
+        test_base<Settings>("from-vector", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -494,13 +497,13 @@ template<class Settings>
 class test_to_vector : public test_base<Settings>
 {
 public:
-    test_to_vector(Settings settings)
-        : test_base<Settings>("to-vector", std::move(settings))
+    test_to_vector(Settings settings) :
+        test_base<Settings>("to-vector", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto expr    = make_expression(this->settings(), this->rng());
         auto manager = make_manager(this->settings(), this->rng());
@@ -522,13 +525,13 @@ template<class Settings>
 class test_from_expression : public evaluating_test<Settings>
 {
 public:
-    test_from_expression(Settings settings)
-        : evaluating_test<Settings>("from-expression", std::move(settings))
+    test_from_expression(Settings settings) :
+        evaluating_test<Settings>("from-expression", std::move(settings))
     {
     }
 
 protected:
-    auto test() -> void override
+    auto test () -> void override
     {
         auto manager  = make_manager(this->settings(), this->rng());
         auto exprtree = tsl::make_expression_tree(
@@ -550,8 +553,8 @@ public:
         ManagerSettings manager,
         ExpressionSettings expr,
         std::string name
-    )
-        : rog::CompositeTest(std::move(name))
+    ) :
+        rog::CompositeTest(std::move(name))
     {
         auto seeder      = std::mt19937_64(seed);
         using settings_t = test_settings<ManagerSettings, ExpressionSettings>;
@@ -603,17 +606,17 @@ public:
 /**
  *  \brief Tests bdd manager.
  */
-class test_bdd_manager
-    : public test_manager<bdd_manager_settings, minmax_expression_settings>
+class test_bdd_manager :
+    public test_manager<bdd_manager_settings, minmax_expression_settings>
 {
 public:
-    test_bdd_manager(std::size_t const seed)
-        : test_manager<bdd_manager_settings, minmax_expression_settings>(
-              seed,
-              bdd_manager_settings {21, 2'000, random_order_tag()},
-              minmax_expression_settings {30, 6},
-              "bdd_manager"
-          )
+    test_bdd_manager(std::size_t const seed) :
+        test_manager<bdd_manager_settings, minmax_expression_settings>(
+            seed,
+            bdd_manager_settings {21, 2'000, random_order_tag()},
+            minmax_expression_settings {30, 6},
+            "bdd_manager"
+        )
     {
     }
 };
@@ -621,17 +624,17 @@ public:
 /**
  *  \brief Tests mdd manager.
  */
-class test_mdd_manager
-    : public test_manager<mdd_manager_settings<3>, minmax_expression_settings>
+class test_mdd_manager :
+    public test_manager<mdd_manager_settings<3>, minmax_expression_settings>
 {
 public:
-    test_mdd_manager(std::size_t const seed)
-        : test_manager<mdd_manager_settings<3>, minmax_expression_settings>(
-              seed,
-              mdd_manager_settings<3> {15, 5'000, random_order_tag()},
-              minmax_expression_settings {20, 5},
-              "mdd_manager"
-          )
+    test_mdd_manager(std::size_t const seed) :
+        test_manager<mdd_manager_settings<3>, minmax_expression_settings>(
+            seed,
+            mdd_manager_settings<3> {15, 5'000, random_order_tag()},
+            minmax_expression_settings {20, 5},
+            "mdd_manager"
+        )
     {
     }
 };
@@ -639,19 +642,19 @@ public:
 /**
  *  \brief Tests imdd manager.
  */
-class test_imdd_manager
-    : public test_manager<imdd_manager_settings<3>, minmax_expression_settings>
+class test_imdd_manager :
+    public test_manager<imdd_manager_settings<3>, minmax_expression_settings>
 {
 public:
-    test_imdd_manager(std::size_t const seed)
-        : test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
-              seed,
-              imdd_manager_settings<3> {
-                  {{18, 5'000, random_order_tag()}, random_domains_tag()}
+    test_imdd_manager(std::size_t const seed) :
+        test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
+            seed,
+            imdd_manager_settings<3> {
+                {{18, 5'000, random_order_tag()}, random_domains_tag()}
     },
-              minmax_expression_settings {30, 6},
-              "imdd_manager"
-          )
+            minmax_expression_settings {30, 6},
+            "imdd_manager"
+        )
     {
     }
 };
@@ -659,25 +662,25 @@ public:
 /**
  *  \brief Tests ifmdd manager.
  */
-class test_ifmdd_manager
-    : public test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>
+class test_ifmdd_manager :
+    public test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>
 {
 public:
-    test_ifmdd_manager(std::size_t const seed)
-        : test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
-              seed,
-              ifmdd_manager_settings<3> {
-                  {{18, 5'000, random_order_tag()}, random_domains_tag()}
+    test_ifmdd_manager(std::size_t const seed) :
+        test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
+            seed,
+            ifmdd_manager_settings<3> {
+                {{18, 5'000, random_order_tag()}, random_domains_tag()}
     },
-              minmax_expression_settings {30, 6},
-              "ifmdd_manager"
-          )
+            minmax_expression_settings {30, 6},
+            "ifmdd_manager"
+        )
     {
     }
 };
 } // namespace teddy::tests
 
-auto run_test_one(std::size_t const seed)
+auto run_test_one (std::size_t const seed)
 {
     auto bddmt = teddy::tests::test_bdd_manager(seed);
     bddmt.run();
@@ -696,9 +699,9 @@ auto run_test_one(std::size_t const seed)
     rog::console_print_results(ifmddmt);
 }
 
-auto run_test_many(std::size_t const seed)
+auto run_test_many (std::size_t const seed)
 {
-    auto const result_to_str = [](auto const r)
+    auto const result_to_str = [] (auto const r)
     {
         auto const Oks = "o";
         auto const Ers = "!";
@@ -716,16 +719,16 @@ auto run_test_many(std::size_t const seed)
         }
     };
 
-    auto const print_results = [=](auto const& tests)
+    auto const print_results = [=] (auto const& tests)
     {
         auto const numtest = tests.front().subtests().size();
         auto const numrep  = tests.size();
-        auto const numw =
-            1 + std::ranges::max(
-                    tests.front().subtests() |
-                    std::ranges::views::transform(&rog::Test::name) |
-                    std::ranges::views::transform(std::ranges::size)
-                );
+        auto const numw    = 1
+                        + std::ranges::max(
+                              tests.front().subtests()
+                              | std::ranges::views::transform(&rog::Test::name)
+                              | std::ranges::views::transform(std::ranges::size)
+                        );
 
         std::cout << result_to_str(rog::TestResult::Pass) << " - ok; "
                   << result_to_str(rog::TestResult::Fail) << " - not good"
@@ -767,28 +770,28 @@ auto run_test_many(std::size_t const seed)
     }
 
 #ifdef LIBTEDDY_TESTS_USE_OMP
-#pragma omp parallel for
+#    pragma omp parallel for
     for (auto k = 0; k < numtest; ++k)
     {
         bddmts[teddy::as_uindex(k)].run();
     }
     print_results(bddmts);
 
-#pragma omp parallel for
+#    pragma omp parallel for
     for (auto k = 0; k < numtest; ++k)
     {
         mddmts[teddy::as_uindex(k)].run();
     }
     print_results(mddmts);
 
-#pragma omp parallel for
+#    pragma omp parallel for
     for (auto k = 0; k < numtest; ++k)
     {
         imddts[teddy::as_uindex(k)].run();
     }
     print_results(imddts);
 
-#pragma omp parallel for
+#    pragma omp parallel for
     for (auto k = 0; k < numtest; ++k)
     {
         ifmddts[teddy::as_uindex(k)].run();
@@ -821,7 +824,7 @@ auto run_test_many(std::size_t const seed)
 #endif
 }
 
-auto main(int const argc, char** const argv) -> int
+auto main (int const argc, char** const argv) -> int
 {
     auto seed = 144ull;
 

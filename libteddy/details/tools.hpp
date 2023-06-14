@@ -1,15 +1,17 @@
 #ifndef LIBTEDDY_DETAILS_UTILS_HPP
 #define LIBTEDDY_DETAILS_UTILS_HPP
 
+#include <libteddy/details/types.hpp>
+
 #include <charconv>
 #include <concepts>
 #include <functional>
-#include <libteddy/details/types.hpp>
 #include <optional>
 #include <ranges>
-#include <string_view>
 #include <utility>
 #include <vector>
+
+#include <string_view>
 
 // TODO constraints.hpp
 
@@ -18,26 +20,26 @@ namespace teddy::utils
 template<class F>
 concept i_gen           = requires(F f, int32 k) { std::invoke(f, k); };
 
-auto constexpr identity = [](auto const a)
+auto constexpr identity = [] (auto const a)
 {
     return a;
 };
 
-auto constexpr not_zero = [](auto const x)
+auto constexpr not_zero = [] (auto const x)
 {
     return x != 0;
 };
 
-auto constexpr constant = [](auto const c)
+auto constexpr constant = [] (auto const c)
 {
-    return [c](auto)
+    return [c] (auto)
     {
         return c;
     };
 };
 
 template<i_gen Gen>
-auto fill_vector(int64 const n, Gen&& f)
+auto fill_vector (int64 const n, Gen&& f)
 {
     using T = decltype(std::invoke(f, int32 {}));
     auto xs = std::vector<T>();
@@ -50,7 +52,7 @@ auto fill_vector(int64 const n, Gen&& f)
 }
 
 template<std::input_iterator I, std::sentinel_for<I> S, class F>
-auto fmap(I it, S last, F f)
+auto fmap (I it, S last, F f)
 {
     using U = decltype(std::invoke(f, *it));
     auto ys = std::vector<U>();
@@ -67,7 +69,7 @@ auto fmap(I it, S last, F f)
 }
 
 template<std::ranges::input_range Xs, class F>
-auto fmap(Xs&& xs, F f)
+auto fmap (Xs&& xs, F f)
 {
     return fmap(std::ranges::begin(xs), std::ranges::end(xs), f);
 }
@@ -98,13 +100,13 @@ auto constexpr int_pow(Base base, Exponent exponent) -> Base
 }
 
 template<class Num>
-auto parse(std::string_view const in) -> std::optional<Num>
+auto parse (std::string_view const in) -> std::optional<Num>
 {
     auto ret    = Num {};
     auto result = std::from_chars(in.data(), in.data() + in.size(), ret);
     return std::errc {} == result.ec && result.ptr == in.data() + in.size()
-               ? std::optional<Num>(ret)
-               : std::nullopt;
+             ? std::optional<Num>(ret)
+             : std::nullopt;
 }
 } // namespace teddy::utils
 

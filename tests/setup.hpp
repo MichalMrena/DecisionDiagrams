@@ -1,16 +1,19 @@
 #ifndef LIBTEDDY_COMMON_TEST_SETUP_HPP
 #define LIBTEDDY_COMMON_TEST_SETUP_HPP
 
-#include <functional>
-#include <librog/rog.hpp>
 #include <libteddy/core.hpp>
 #include <libteddy/reliability.hpp>
+
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
+
+#include <functional>
 #include <numeric>
 #include <random>
 #include <variant>
 #include <vector>
+
+#include <librog/rog.hpp>
 
 namespace teddy::tests
 {
@@ -172,23 +175,23 @@ struct match : Ts...
 template<class... Ts>
 match(Ts...) -> match<Ts...>;
 
-inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
+inline auto make_order (manager_settings const& s, std::mt19937_64& rng)
     -> std::vector<int32>
 {
     return std::visit(
         match {
-            [&](random_order_tag)
+            [&] (random_order_tag)
             {
                 auto is = utils::fill_vector(s.varcount_, utils::identity);
                 std::ranges::shuffle(is, rng);
                 return is;
             },
-            [&](default_order_tag)
+            [&] (default_order_tag)
             {
                 auto is = utils::fill_vector(s.varcount_, utils::identity);
                 return is;
             },
-            [](given_order_tag const& is)
+            [] (given_order_tag const& is)
             {
                 return is.order_;
             }},
@@ -200,24 +203,24 @@ inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
  *  \brief Makes domains for a manager.
  */
 template<int32 M>
-auto make_domains(
+auto make_domains (
     nonhomogeneous_manager_settings<M> const& s, std::mt19937_64& rng
 ) -> std::vector<int32>
 {
     return std::visit(
         match {
-            [&](random_domains_tag)
+            [&] (random_domains_tag)
             {
                 auto dist = std::uniform_int_distribution<int32>(2u, M);
                 return utils::fill_vector(
                     s.varcount_,
-                    [&rng, &dist](auto)
+                    [&rng, &dist] (auto)
                     {
                         return dist(rng);
                     }
                 );
             },
-            [](given_domains_tag const& ds)
+            [] (given_domains_tag const& ds)
             {
                 return ds.domains_;
             }},
@@ -228,7 +231,7 @@ auto make_domains(
 /**
  *  \brief Makes BDD manager.
  */
-inline auto make_manager(bdd_manager_settings const& s, std::mt19937_64& rng)
+inline auto make_manager (bdd_manager_settings const& s, std::mt19937_64& rng)
     -> bdd_manager
 {
     return bdd_manager(s.varcount_, s.nodecount_, make_order(s, rng));
@@ -238,7 +241,7 @@ inline auto make_manager(bdd_manager_settings const& s, std::mt19937_64& rng)
  *  \brief Makes MDD manager.
  */
 template<int32 M>
-auto make_manager(mdd_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager (mdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> mdd_manager<M>
 {
     return mdd_manager<M>(s.varcount_, s.nodecount_, make_order(s, rng));
@@ -248,7 +251,7 @@ auto make_manager(mdd_manager_settings<M> const& s, std::mt19937_64& rng)
  *  \brief Makes iMDD manager.
  */
 template<int32 M>
-auto make_manager(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager (imdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> imdd_manager
 {
     return imdd_manager(
@@ -260,7 +263,7 @@ auto make_manager(imdd_manager_settings<M> const& s, std::mt19937_64& rng)
  *  \brief Makes ifMDD manager.
  */
 template<int32 M>
-auto make_manager(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager (ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
     -> ifmdd_manager<M>
 {
     return ifmdd_manager<M>(
@@ -271,7 +274,7 @@ auto make_manager(ifmdd_manager_settings<M> const& s, std::mt19937_64& rng)
 /**
  *  \brief Makes bss_manager.
  */
-inline auto make_manager(bss_manager_settings const& s, std::mt19937_64& rng)
+inline auto make_manager (bss_manager_settings const& s, std::mt19937_64& rng)
     -> bss_manager
 {
     return bss_manager(s.varcount_, s.nodecount_, make_order(s, rng));
@@ -281,7 +284,7 @@ inline auto make_manager(bss_manager_settings const& s, std::mt19937_64& rng)
  *  \brief Makes mss_manager.
  */
 template<int32 M>
-auto make_manager(mss_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager (mss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> mss_manager<M>
 {
     return mss_manager<M>(s.varcount_, s.nodecount_, make_order(s, rng));
@@ -291,7 +294,7 @@ auto make_manager(mss_manager_settings<M> const& s, std::mt19937_64& rng)
  *  \brief Makes imss_manager.
  */
 template<int32 M>
-auto make_manager(imss_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager (imss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> imss_manager
 {
     return imss_manager(
@@ -303,7 +306,7 @@ auto make_manager(imss_manager_settings<M> const& s, std::mt19937_64& rng)
  *  \brief Makes ifmss_manager.
  */
 template<int32 M>
-auto make_manager(ifmss_manager_settings<M> const& s, std::mt19937_64& rng)
+auto make_manager (ifmss_manager_settings<M> const& s, std::mt19937_64& rng)
     -> ifmss_manager<M>
 {
     return ifmss_manager<M>(
@@ -315,7 +318,7 @@ auto make_manager(ifmss_manager_settings<M> const& s, std::mt19937_64& rng)
  *  \brief Makes manager for a test.
  */
 template<class Man, class Expr>
-auto make_manager(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
+auto make_manager (test_settings<Man, Expr> const& s, std::mt19937_64& rng)
 {
     return make_manager(s.manager_, rng);
 }
@@ -324,24 +327,24 @@ auto make_manager(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
  *  \brief Makes diagram representing \p expr .
  */
 template<class Dat, class Deg, class Dom>
-auto make_diagram(
+auto make_diagram (
     tsl::minmax_expr const& expr,
     diagram_manager<Dat, Deg, Dom>& manager,
     fold_type const foldtype = fold_type::Left
 )
 {
-    auto const min_fold = [&manager, foldtype](auto& xs)
+    auto const min_fold = [&manager, foldtype] (auto& xs)
     {
         return foldtype == fold_type::Left
-                   ? manager.template left_fold<ops::MIN>(xs)
-                   : manager.template tree_fold<ops::MIN>(xs);
+                 ? manager.template left_fold<ops::MIN>(xs)
+                 : manager.template tree_fold<ops::MIN>(xs);
     };
 
-    auto const max_fold = [&manager, foldtype](auto& xs)
+    auto const max_fold = [&manager, foldtype] (auto& xs)
     {
         return foldtype == fold_type::Left
-                   ? manager.template left_fold<ops::MAX>(xs)
-                   : manager.template tree_fold<ops::MAX>(xs);
+                 ? manager.template left_fold<ops::MAX>(xs)
+                 : manager.template tree_fold<ops::MAX>(xs);
     };
 
     using diagram_t = typename diagram_manager<Dat, Deg, Dom>::diagram_t;
@@ -358,7 +361,7 @@ auto make_diagram(
  *  \brief Makes diagram representing \p expr .
  */
 template<class Dat, class Deg, class Dom>
-auto make_diagram(
+auto make_diagram (
     std::unique_ptr<tsl::expr_node> const& expr,
     diagram_manager<Dat, Deg, Dom>& manager
 )
@@ -369,7 +372,7 @@ auto make_diagram(
 /**
  *  \brief Makes minmax expression with given settings.
  */
-inline auto make_expression(
+inline auto make_expression (
     int32 const varcount,
     minmax_expression_settings const& s,
     std::mt19937_64& rng
@@ -383,7 +386,7 @@ inline auto make_expression(
 /**
  *  \brief Makes expression tree with given settings.
  */
-inline auto make_expression(
+inline auto make_expression (
     int32 const varcount, expression_tree_settings const&, std::mt19937_64& rng
 ) -> std::unique_ptr<tsl::expr_node>
 {
@@ -394,7 +397,7 @@ inline auto make_expression(
  *  \brief Makes expression for a test.
  */
 template<class Man, class Expr>
-auto make_expression(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
+auto make_expression (test_settings<Man, Expr> const& s, std::mt19937_64& rng)
 {
     return make_expression(s.manager_.varcount_, s.expression_, rng);
 }
@@ -403,13 +406,13 @@ auto make_expression(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
  *  \brief Makes random component state probabilities
  */
 template<class Dat, class Deg, class Dom>
-auto make_probabilities(
+auto make_probabilities (
     diagram_manager<Dat, Deg, Dom> const& manager, std::mt19937_64& rng
 ) -> std::vector<std::vector<double>>
 {
     auto const domains = manager.get_domains();
-    auto ps =
-        std::vector<std::vector<double>>(as_usize(manager.get_var_count()));
+    auto ps
+        = std::vector<std::vector<double>>(as_usize(manager.get_var_count()));
     for (auto i = 0; i < ssize(ps); ++i)
     {
         auto dist = std::uniform_real_distribution<double>(.0, 1.0);
@@ -429,7 +432,7 @@ auto make_probabilities(
     return ps;
 }
 
-inline auto make_vector(
+inline auto make_vector (
     std::unique_ptr<tsl::expr_node> const& root,
     std::vector<int32> const& domains
 ) -> std::vector<int32>
@@ -451,7 +454,7 @@ inline auto make_vector(
 }
 
 template<class Dat, class Deg, class Dom>
-auto make_domain_iterator(diagram_manager<Dat, Deg, Dom> const& m)
+auto make_domain_iterator (diagram_manager<Dat, Deg, Dom> const& m)
 {
     return tsl::domain_iterator(m.get_domains(), m.get_order());
 }
@@ -464,19 +467,20 @@ template<class Settings>
 class test_base : public rog::LeafTest
 {
 public:
-    test_base(std::string name, Settings settings)
-        : rog::LeafTest(std::move(name), rog::AssertPolicy::RunAll),
-          settings_(std::move(settings)), rng_(settings_.seed_)
+    test_base(std::string name, Settings settings) :
+        rog::LeafTest(std::move(name), rog::AssertPolicy::RunAll),
+        settings_(std::move(settings)),
+        rng_(settings_.seed_)
     {
     }
 
 protected:
-    auto settings() const -> Settings const&
+    auto settings () const -> Settings const&
     {
         return settings_;
     }
 
-    auto rng() -> std::mt19937_64&
+    auto rng () -> std::mt19937_64&
     {
         return rng_;
     }

@@ -1,19 +1,21 @@
 #ifndef LIBTEDDY_DETAILS_PLA_FILE_HPP
 #define LIBTEDDY_DETAILS_PLA_FILE_HPP
 
+#include <libteddy/details/debug.hpp>
+#include <libteddy/details/tools.hpp>
+#include <libteddy/details/types.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cstdint>
 #include <fstream>
-#include <libteddy/details/debug.hpp>
-#include <libteddy/details/tools.hpp>
-#include <libteddy/details/types.hpp>
 #include <optional>
 #include <string>
+#include <vector>
+
 #include <string_view>
 #include <unordered_map>
-#include <vector>
 
 namespace teddy
 {
@@ -28,9 +30,9 @@ public:
 public:
     cube_t(int32 size);
 
-    auto size() const -> int32;
-    auto get(int32 i) const -> int32;
-    auto set(int32 i, int32 val) -> void;
+    auto size () const -> int32;
+    auto get (int32 i) const -> int32;
+    auto set (int32 i, int32 val) -> void;
 
 private:
     struct byte
@@ -58,7 +60,7 @@ public:
      *  \return Optional holding instance of \c pla_file or
      *  \c std::nullopt if the loading failed.
      */
-    static auto load_file(std::string const& path) -> std::optional<pla_file>;
+    static auto load_file (std::string const& path) -> std::optional<pla_file>;
 
 public:
     /**
@@ -75,13 +77,13 @@ public:
      *  \brief Returns number of variables in the file.
      *  \return Number of variables.
      */
-    auto variable_count() const -> int32;
+    auto variable_count () const -> int32;
 
     /**
      *  \brief Returns number of functions in the file.
      *  \return Number of functions.
      */
-    auto function_count() const -> int32;
+    auto function_count () const -> int32;
 
     /**
      *  \brief Returns number of lines in the file
@@ -90,45 +92,45 @@ public:
      *
      *  \return Number of lines.
      */
-    auto line_count() const -> int64;
+    auto line_count () const -> int64;
 
     /**
      *  \brief Returns reference to a vector holding lines.
      *  \return Reference to a vector.
      */
-    auto get_lines() const& -> std::vector<pla_line> const&;
+    auto get_lines () const& -> std::vector<pla_line> const&;
 
     /**
      *  \brief Returns copy of a vector holding lines.
      *  \return Copy of a vector.
      */
-    auto get_lines() && -> std::vector<pla_line>;
+    auto get_lines () && -> std::vector<pla_line>;
 
     /**
      *  \brief Returns reference to a vector holding
      *  labels of input variables.
      *  \return Reference to a vector.
      */
-    auto get_input_labels() const& -> std::vector<std::string> const&;
+    auto get_input_labels () const& -> std::vector<std::string> const&;
 
     /**
      *  \brief Returns copy of a vector holding
      *  labels of input variables.
      *  \return Copy of a vector.
      */
-    auto get_input_labels() && -> std::vector<std::string>;
+    auto get_input_labels () && -> std::vector<std::string>;
 
     /**
      *  \brief Return reference to a vector holding labels of functions.
      *  \return Reference to a vector.
      */
-    auto get_output_labels() const& -> std::vector<std::string> const&;
+    auto get_output_labels () const& -> std::vector<std::string> const&;
 
     /**
      *  \brief Return copy of a vector holding labels of functions.
      *  \return Copy a vector.
      */
-    auto get_output_labels() && -> std::vector<std::string>;
+    auto get_output_labels () && -> std::vector<std::string>;
 
 private:
     pla_file(
@@ -145,8 +147,9 @@ private:
 
 // cube_t definitions:
 
-inline cube_t::cube_t(int32 const size)
-    : size_(size), values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0})
+inline cube_t::cube_t(int32 const size) :
+    size_(size),
+    values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0})
 {
 }
 
@@ -203,12 +206,12 @@ inline auto pla_file::load_file(std::string const& path)
     -> std::optional<pla_file>
 {
     // Utils:
-    auto constexpr space = [](auto const c)
+    auto constexpr space = [] (auto const c)
     {
         return std::isspace(c);
     };
 
-    auto constexpr words = [space](auto const str)
+    auto constexpr words = [space] (auto const str)
     {
         auto ws        = std::vector<std::string>();
         auto it        = std::begin(str);
@@ -240,8 +243,8 @@ inline auto pla_file::load_file(std::string const& path)
     while (std::getline(ifst, line))
     {
         // Skip leading spaces.
-        auto const first =
-            std::find_if_not(std::begin(line), std::end(line), space);
+        auto const first
+            = std::find_if_not(std::begin(line), std::end(line), space);
         auto const last = std::end(line);
         if (first == last)
         {
@@ -262,10 +265,11 @@ inline auto pla_file::load_file(std::string const& path)
         }
 
         // Split into (key, val) pair on the first space.
-        auto const keyLast = std::find_if(first, last, space);
-        auto const valFirst =
-            keyLast == last ? last : std::find_if_not(keyLast + 1, last, space);
-        auto key = std::string(first, keyLast);
+        auto const keyLast  = std::find_if(first, last, space);
+        auto const valFirst = keyLast == last
+                                ? last
+                                : std::find_if_not(keyLast + 1, last, space);
+        auto key            = std::string(first, keyLast);
         if (valFirst != last)
         {
             auto valLast = last;
@@ -287,8 +291,8 @@ inline auto pla_file::load_file(std::string const& path)
     auto const varCountIt  = options.find(".i");
     auto const fCountIt    = options.find(".o");
     auto const lineCountIt = options.find(".p");
-    if (varCountIt == optionsEnd || fCountIt == optionsEnd ||
-        lineCountIt == optionsEnd)
+    if (varCountIt == optionsEnd || fCountIt == optionsEnd
+        || lineCountIt == optionsEnd)
     {
         return std::nullopt;
     }
@@ -307,8 +311,8 @@ inline auto pla_file::load_file(std::string const& path)
     lines.reserve(as_usize(*lineCount));
     do
     {
-        auto const first =
-            std::find_if_not(std::begin(line), std::end(line), space);
+        auto const first
+            = std::find_if_not(std::begin(line), std::end(line), space);
         auto const last = std::end(line);
         if (first == last)
         {
@@ -390,8 +394,8 @@ inline auto pla_file::load_file(std::string const& path)
     auto inputLabels  = inLbIt != std::end(options) ? words(inLbIt->second)
                                                     : std::vector<std::string>();
     auto outputLabels = ouLbIt != std::end(options)
-                            ? words(ouLbIt->second)
-                            : std::vector<std::string>();
+                          ? words(ouLbIt->second)
+                          : std::vector<std::string>();
 
     return pla_file(
         std::move(lines), std::move(inputLabels), std::move(outputLabels)
@@ -402,9 +406,10 @@ inline pla_file::pla_file(
     std::vector<pla_line> lines,
     std::vector<std::string> inputLabels,
     std::vector<std::string> outputLabels
-)
-    : lines_(std::move(lines)), inputLabels_(std::move(inputLabels)),
-      outputLabels_(std::move(outputLabels))
+) :
+    lines_(std::move(lines)),
+    inputLabels_(std::move(inputLabels)),
+    outputLabels_(std::move(outputLabels))
 {
 }
 
