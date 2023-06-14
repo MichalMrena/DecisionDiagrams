@@ -49,9 +49,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                actual[as_uindex(j)],
-                expected[as_uindex(j)],
-                0.00000001
+                actual[as_uindex(j)], expected[as_uindex(j)], 0.00000001
             );
         }
 
@@ -63,9 +61,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                actual[as_uindex(j)],
-                expected[as_uindex(j)],
-                0.00000001
+                actual[as_uindex(j)], expected[as_uindex(j)], 0.00000001
             );
         }
     }
@@ -109,9 +105,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)],
-                actual[as_uindex(j)],
-                0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
             );
         }
 
@@ -124,9 +118,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)],
-                actual[as_uindex(j)],
-                0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
             );
         }
     }
@@ -170,9 +162,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)],
-                actual[as_uindex(j)],
-                0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
             );
         }
 
@@ -185,9 +175,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)],
-                actual[as_uindex(j)],
-                0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
             );
         }
     }
@@ -231,9 +219,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)],
-                actual[as_uindex(j)],
-                0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
             );
         }
     }
@@ -255,12 +241,12 @@ protected:
     auto test() -> void override
     {
         using namespace std::string_literals;
-        auto expr         = make_expression(this->settings(), this->rng());
-        auto manager      = make_manager(this->settings(), this->rng());
-        auto diagram      = make_diagram(expr, manager);
-        auto ps           = make_probabilities(manager, this->rng());
-        auto domains      = manager.get_domains();
-        auto table        = tsl::truth_table(make_vector(expr, domains), domains);
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
+        auto ps      = make_probabilities(manager, this->rng());
+        auto domains = manager.get_domains();
+        auto table   = tsl::truth_table(make_vector(expr, domains), domains);
 
         // TODO move to function
         auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
@@ -294,9 +280,8 @@ protected:
             0, manager.get_var_count() - 1
         )(this->rng());
         auto const vardomain = manager.get_domains()[as_uindex(varindex)];
-        auto const varfrom = std::uniform_int_distribution<int32>(
-            0, vardomain - 2
-        )(this->rng());
+        auto const varfrom =
+            std::uniform_int_distribution<int32>(0, vardomain - 2)(this->rng());
         auto const varto = std::uniform_int_distribution<int32>(
             varfrom + 1, manager.get_domains()[as_uindex(varindex)] - 1
         )(this->rng());
@@ -318,10 +303,14 @@ protected:
 
             this->info(fmt::format(
                 "Basic dpld f({} -> {}) / x({} -> {})",
-                ffrom, fto, varchange.from, varchange.to
+                ffrom,
+                fto,
+                varchange.from,
+                varchange.to
             ));
 
-            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_basic(ffrom, fto));
+            auto tabledpld =
+                tsl::dpld(table, varchange, tsl::dpld_basic(ffrom, fto));
             auto diagramdpld = manager.dpld(
                 {varchange.from, varchange.to},
                 {ffrom, fto},
@@ -350,10 +339,14 @@ protected:
 
             this->info(fmt::format(
                 "idpld_type_1_decrease f({} -> <{}) / x({} -> {})",
-                j, j, varchangeR.from, varchangeR.to
+                j,
+                j,
+                varchangeR.from,
+                varchangeR.to
             ));
 
-            auto tabledpld   = tsl::dpld(table, varchangeR, tsl::dpld_i_1_decrease(j));
+            auto tabledpld =
+                tsl::dpld(table, varchangeR, tsl::dpld_i_1_decrease(j));
             auto diagramdpld = manager.idpld_type_1_decrease(
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
@@ -375,10 +368,14 @@ protected:
 
             this->info(fmt::format(
                 "idpld_type_1_increase f({} -> >{}) / x({} -> {})",
-                j, j, varchange.from, varchange.to
+                j,
+                j,
+                varchange.from,
+                varchange.to
             ));
 
-            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
+            auto tabledpld =
+                tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
             auto diagramdpld = manager.idpld_type_1_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
@@ -395,10 +392,12 @@ protected:
         {
             this->info(fmt::format(
                 "idpld_type_2_decrease f( < ) / x({} -> {})",
-                varchangeR.from, varchangeR.to
+                varchangeR.from,
+                varchangeR.to
             ));
 
-            auto tabledpld   = tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
+            auto tabledpld =
+                tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
             auto diagramdpld = manager.idpld_type_2_decrease(
                 {varchangeR.from, varchangeR.to}, diagram, varchangeR.index
             );
@@ -415,10 +414,12 @@ protected:
         {
             this->info(fmt::format(
                 "idpld_type_2_increase f( > ) / x({} -> {})",
-                varchange.from, varchange.to
+                varchange.from,
+                varchange.to
             ));
 
-            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
+            auto tabledpld =
+                tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
             auto diagramdpld = manager.idpld_type_2_increase(
                 {varchange.from, varchange.to}, diagram, varchange.index
             );
@@ -439,10 +440,14 @@ protected:
 
             this->info(fmt::format(
                 "idpld_type_3_decrease f(>={} -> <{}) / x({} -> {})",
-                j, j, varchangeR.from, varchangeR.to
+                j,
+                j,
+                varchangeR.from,
+                varchangeR.to
             ));
 
-            auto tabledpld   = tsl::dpld(table, varchangeR, tsl::dpld_i_3_decrease(j));
+            auto tabledpld =
+                tsl::dpld(table, varchangeR, tsl::dpld_i_3_decrease(j));
             auto diagramdpld = manager.idpld_type_3_decrease(
                 {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
             );
@@ -463,10 +468,14 @@ protected:
 
             this->info(fmt::format(
                 "idpld_type_3_increase f(<{} -> >={}) / x({} -> {})",
-                j, j, varchange.from, varchange.to
+                j,
+                j,
+                varchange.from,
+                varchange.to
             ));
 
-            auto tabledpld   = tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
+            auto tabledpld =
+                tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
             auto diagramdpld = manager.idpld_type_3_increase(
                 {varchange.from, varchange.to}, j, diagram, varchange.index
             );
@@ -493,12 +502,12 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr     = make_expression(this->settings(), this->rng());
-        auto manager  = make_manager(this->settings(), this->rng());
-        auto diagram  = make_diagram(expr, manager);
-        auto domains  = manager.get_domains();
-        auto table    = truth_table(make_vector(expr, domains), domains);
-        auto const m  = std::ranges::max(manager.get_domains());
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
+        auto domains = manager.get_domains();
+        auto table   = truth_table(make_vector(expr, domains), domains);
+        auto const m = std::ranges::max(manager.get_domains());
 
         for (auto j = 1; j < m; ++j)
         {
@@ -506,10 +515,14 @@ protected:
             {
                 for (auto s = 1; s < manager.get_domains()[as_uindex(i)]; ++s)
                 {
-                    auto const td = tsl::dpld(table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j));
-                    auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
+                    auto const td = tsl::dpld(
+                        table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j)
+                    );
+                    auto const dd = manager.idpld_type_3_decrease(
+                        {s, s - 1}, j, diagram, i
+                    );
                     auto const expected = structural_importance(td, i);
-                    auto const actual = manager.structural_importance(dd);
+                    auto const actual   = manager.structural_importance(dd);
                     this->assert_equals(expected, actual, 0.00000001);
                 }
             }
@@ -529,15 +542,16 @@ public:
 protected:
     auto test() -> void override
     {
-        auto expr     = make_expression(this->settings(), this->rng());
-        auto manager  = make_manager(this->settings(), this->rng());
-        auto diagram  = make_diagram(expr, manager);
-        auto ps       = make_probabilities(manager, this->rng());
-        auto domains  = manager.get_domains();
-        auto table    = truth_table(make_vector(expr, domains), domains);
-        auto const m  = std::ranges::max(manager.get_domains());
+        auto expr    = make_expression(this->settings(), this->rng());
+        auto manager = make_manager(this->settings(), this->rng());
+        auto diagram = make_diagram(expr, manager);
+        auto ps      = make_probabilities(manager, this->rng());
+        auto domains = manager.get_domains();
+        auto table   = truth_table(make_vector(expr, domains), domains);
+        auto const m = std::ranges::max(manager.get_domains());
 
-        // auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
+        // auto comparedpbds = [&manager](auto const& tabledpld, auto
+        // diagramdpld)
         // {
         //     auto result = true;
         //     domain_for_each(
@@ -564,14 +578,20 @@ protected:
             {
                 for (auto s = 1; s < manager.get_domains()[as_uindex(i)]; ++s)
                 {
-                    auto const td = tsl::dpld(table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j));
-                    auto const dd = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
-                        // std::cout << "---" << '\n';
-                        // std::cout << "tt:  " << satisfy_count(td, 1) << "\n";
-                        // std::cout << "2tt: " << 2 * satisfy_count(td, 1) << "\n";
-                        // std::cout << "dd:  " << manager.satisfy_count(1, dd) << "\n";
+                    auto const td = tsl::dpld(
+                        table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j)
+                    );
+                    auto const dd = manager.idpld_type_3_decrease(
+                        {s, s - 1}, j, diagram, i
+                    );
+                    // std::cout << "---" << '\n';
+                    // std::cout << "tt:  " << satisfy_count(td, 1) << "\n";
+                    // std::cout << "2tt: " << 2 * satisfy_count(td, 1) << "\n";
+                    // std::cout << "dd:  " << manager.satisfy_count(1, dd) <<
+                    // "\n";
                     auto const expected = birnbaum_importance(td, ps);
-                    auto const actual = manager.birnbaum_importance(ps, {s, s - 1}, dd, i);
+                    auto const actual =
+                        manager.birnbaum_importance(ps, {s, s - 1}, dd, i);
                     this->assert_equals(expected, actual, 0.00000001);
                 }
             }
@@ -614,14 +634,13 @@ public:
         // ));
 
         this->add_test(std::make_unique<test_dpld<settings_t>>(settings_t {
-            seeder(), manager, expr})
-        );
+            seeder(), manager, expr}));
 
-        // this->add_test(std::make_unique<test_structural_importance<settings_t>>(settings_t {
-        // seeder(), manager, expr}));
+        // this->add_test(std::make_unique<test_structural_importance<settings_t>>(settings_t
+        // { seeder(), manager, expr}));
 
-        // this->add_test(std::make_unique<test_birnbaum_importance<settings_t>>(settings_t {
-        // seeder(), manager, expr}));
+        // this->add_test(std::make_unique<test_birnbaum_importance<settings_t>>(settings_t
+        // { seeder(), manager, expr}));
     }
 };
 
@@ -682,8 +701,9 @@ public:
               imss_manager_settings<M>,
               expression_tree_settings>(
               seed,
-              imss_manager_settings<M> {{
-                  {15, 5'000, random_order_tag()}, random_domains_tag()}},
+              imss_manager_settings<M> {
+                  {{15, 5'000, random_order_tag()}, random_domains_tag()}
+    },
               expression_tree_settings {},
               "imss_manager"
           )
@@ -705,8 +725,9 @@ public:
               ifmss_manager_settings<M>,
               expression_tree_settings>(
               seed,
-              ifmss_manager_settings<M> {{
-                  {15, 5'000, random_order_tag()}, random_domains_tag()}},
+              ifmss_manager_settings<M> {
+                  {{15, 5'000, random_order_tag()}, random_domains_tag()}
+    },
               expression_tree_settings {},
               "ifmss_manager"
           )
@@ -714,7 +735,7 @@ public:
     }
 };
 
-} // namespace teddy
+} // namespace teddy::tests
 
 auto run_test_one(std::size_t const seed)
 {

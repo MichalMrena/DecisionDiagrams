@@ -187,8 +187,9 @@ auto node_pool<Data, D>::grow() -> void
 template<class Data, degree D>
 auto node_pool<Data, D>::current_pool() const -> node_t*
 {
-    return overflowPools_.empty() ? mainPool_
-                                  : overflowPools_[as_uindex(currentPoolIndex_)];
+    return overflowPools_.empty()
+               ? mainPool_
+               : overflowPools_[as_uindex(currentPoolIndex_)];
 }
 
 template<class Data, degree D>
@@ -196,7 +197,8 @@ auto node_pool<Data, D>::current_pool_end() const -> node_t*
 {
     return overflowPools_.empty()
                ? mainPool_ + mainPoolSize_
-               : overflowPools_[as_uindex(currentPoolIndex_)] + overflowPoolSize_;
+               : overflowPools_[as_uindex(currentPoolIndex_)] +
+                     overflowPoolSize_;
 }
 
 template<class Data, degree D>
@@ -216,7 +218,8 @@ auto node_pool<Data, D>::swap(node_pool& other) -> void
 template<class Data, degree D>
 auto node_pool<Data, D>::allocate_pool(int64 const size) -> node_t*
 {
-    return static_cast<node_t*>(::operator new(as_usize(size) * sizeof(node_t)));
+    return static_cast<node_t*>(::operator new(as_usize(size) * sizeof(node_t))
+    );
 }
 
 template<class Data, degree D>

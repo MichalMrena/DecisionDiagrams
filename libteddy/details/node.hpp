@@ -70,7 +70,8 @@ class node
 public:
     // TODO rename to make_container
     template<int32 N>
-    static auto container(int32, degrees::fixed<N>) -> std::array<node*, as_usize(N)>;
+    static auto container(int32, degrees::fixed<N>)
+        -> std::array<node*, as_usize(N)>;
 
     static auto container(int32, degrees::mixed) -> std::unique_ptr<node*[]>;
 
@@ -160,7 +161,8 @@ private:
 
 template<class Data, degree D>
 template<int32 N>
-auto node<Data, D>::container(int32, degrees::fixed<N>) -> std::array<node*, as_usize(N)>
+auto node<Data, D>::container(int32, degrees::fixed<N>)
+    -> std::array<node*, as_usize(N)>
 {
     return std::array<node*, as_usize(N)>();
 }

@@ -209,9 +209,8 @@ private:
      *  \param domain Number of sons.
      *  \return True if the nodes are equal, false otherwise.
      */
-    static auto node_equals(
-        node_t* node, sons_t const& sons, int32 domain
-    ) -> bool;
+    static auto node_equals(node_t* node, sons_t const& sons, int32 domain)
+        -> bool;
 
 private:
     std::vector<node_t*> buckets_;
@@ -317,8 +316,7 @@ auto apply_cache<Data, D>::put(
 }
 
 template<class Data, degree D>
-auto apply_cache<Data, D>::adjust_capacity(int64 const aproxCapacity)
-    -> void
+auto apply_cache<Data, D>::adjust_capacity(int64 const aproxCapacity) -> void
 {
     this->rehash(table_base::gte_capacity(aproxCapacity));
 }
@@ -384,8 +382,8 @@ auto apply_cache<Data, D>::put_impl(
 ) -> void
 {
     auto const tupleHash = static_cast<int64>(hash(oid, l, r));
-    auto const index = tupleHash % this->capacity();
-    auto& entry      = entries_[as_uindex(index)];
+    auto const index     = tupleHash % this->capacity();
+    auto& entry          = entries_[as_uindex(index)];
     if (not entry.result)
     {
         ++size_;
@@ -517,8 +515,8 @@ unique_table<Data, D>::unique_table(unique_table&& other)
 }
 
 template<class Data, degree D>
-auto unique_table<Data, D>::find(sons_t const& sons, int32 const domain)
-    const -> std::pair<node_t*, hash_t>
+auto unique_table<Data, D>::find(sons_t const& sons, int32 const domain) const
+    -> std::pair<node_t*, hash_t>
 {
     auto const hash  = node_hash(sons, domain);
     auto const index = hash % buckets_.size();
@@ -647,9 +645,8 @@ auto unique_table<Data, D>::end() const -> const_iterator
 }
 
 template<class Data, degree D>
-auto unique_table<Data, D>::rehash(
-    int64 const newCapacity, int32 const domain
-) -> void
+auto unique_table<Data, D>::rehash(int64 const newCapacity, int32 const domain)
+    -> void
 {
     if (ssize(buckets_) >= newCapacity)
     {
@@ -666,7 +663,7 @@ auto unique_table<Data, D>::rehash(
     );
 
     auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));
-    buckets_              = std::vector<node_t*>(as_usize(newCapacity), nullptr);
+    buckets_ = std::vector<node_t*>(as_usize(newCapacity), nullptr);
     for (auto bucket : oldBuckets)
     {
         while (bucket)
@@ -709,9 +706,8 @@ auto unique_table<Data, D>::insert_impl(node_t* const node, hash_t const hash)
 }
 
 template<class Data, degree D>
-auto unique_table<Data, D>::node_hash(
-    sons_t const& sons, int32 const domain
-) -> hash_t
+auto unique_table<Data, D>::node_hash(sons_t const& sons, int32 const domain)
+    -> hash_t
 {
     auto result = hash_t(0);
     for (auto k = 0; k < domain; ++k)

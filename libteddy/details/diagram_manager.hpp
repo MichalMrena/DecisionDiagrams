@@ -820,15 +820,13 @@ inline auto default_or_fwd(int64 const n, std::vector<int32>& is)
 } // namespace detail
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::constant(int32 const v)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::constant(int32 const v) -> diagram_t
 {
     return diagram_t(nodes_.terminal_node(v));
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::variable(int32 const i)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::variable(int32 const i) -> diagram_t
 {
     return diagram_t(nodes_.internal_node(
         i,
@@ -1001,9 +999,7 @@ auto diagram_manager<Data, Degree, Domain>::to_vector(diagram_t d) const
     -> std::vector<int32>
 {
     auto vs = std::vector<int32>();
-    vs.reserve(
-        as_usize(nodes_.domain_product(0, this->get_var_count()))
-    );
+    vs.reserve(as_usize(nodes_.domain_product(0, this->get_var_count())));
     this->to_vector_g(d, std::back_inserter(vs));
     return vs;
 }
@@ -1147,7 +1143,9 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
                     return exprNode.evaluate(l, r);
                 }
             );
-            return this->apply_local(lhs.unsafe_get_root(), rhs.unsafe_get_root(), op);
+            return this->apply_local(
+                lhs.unsafe_get_root(), rhs.unsafe_get_root(), op
+            );
         }
     };
     return go(go, root);
@@ -1201,10 +1199,9 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
 {
     static_assert(std::same_as<std::iter_value_t<I>, diagram_t>);
 
-    auto const count  = std::distance(first, last);
-    auto currentCount = count;
-    auto const numOfSteps =
-        static_cast<int64>(std::ceil(std::log2(count)));
+    auto const count      = std::distance(first, last);
+    auto currentCount     = count;
+    auto const numOfSteps = static_cast<int64>(std::ceil(std::log2(count)));
 
     for (auto step = 0; step < numOfSteps; ++step)
     {

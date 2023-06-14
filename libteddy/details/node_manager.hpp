@@ -376,8 +376,7 @@ auto node_manager<Data, Degree, Domain>::get_terminal_node(int32 const v) const
 }
 
 template<class Data, degree Degree, domain Domain>
-auto node_manager<Data, Degree, Domain>::terminal_node(int32 const v)
-    -> node_t*
+auto node_manager<Data, Degree, Domain>::terminal_node(int32 const v) -> node_t*
 {
     if (is_special(v))
     {
@@ -458,8 +457,7 @@ auto node_manager<Data, Degree, Domain>::internal_node(
 }
 
 template<class Data, degree Degree, domain Domain>
-auto node_manager<Data, Degree, Domain>::get_level(int32 const i) const
-    -> int32
+auto node_manager<Data, Degree, Domain>::get_level(int32 const i) const -> int32
 {
     return indexToLevel_[as_uindex(i)];
 }
@@ -479,8 +477,7 @@ auto node_manager<Data, Degree, Domain>::get_leaf_level() const -> int32
 }
 
 template<class Data, degree Degree, domain Domain>
-auto node_manager<Data, Degree, Domain>::get_index(int32 const l) const
-    -> int32
+auto node_manager<Data, Degree, Domain>::get_index(int32 const l) const -> int32
 {
     assert(l < ssize(levelToIndex_));
     return levelToIndex_[as_uindex(l)];
@@ -898,7 +895,7 @@ auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
         ".\n"
     );
 
-    for (auto i = 0; i < ssize( uniqueTables_); ++i)
+    for (auto i = 0; i < ssize(uniqueTables_); ++i)
     {
         uniqueTables_[as_uindex(i)].adjust_capacity(domains_[i]);
     }
@@ -907,7 +904,7 @@ auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::adjust_caches() -> void
 {
-    auto const newSize = cacheRatio_ * static_cast<double>(nodeCount_);
+    auto const newSize    = cacheRatio_ * static_cast<double>(nodeCount_);
     auto const newIntSize = static_cast<int64>(newSize);
     opCache_.adjust_capacity(newIntSize);
 }
@@ -1186,8 +1183,8 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
         {
             auto const justUseSon =
                 son->is_terminal() || son->get_index() != nextIndex;
-            cofactorMatrix[as_uindex(nk)][as_uindex(sk)]
-                = justUseSon ? son : son->get_son(sk);
+            cofactorMatrix[as_uindex(nk)][as_uindex(sk)] =
+                justUseSon ? son : son->get_son(sk);
         }
     }
 
@@ -1241,7 +1238,9 @@ auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const n) -> void
             }
         );
 
-        uniqueTables_[as_uindex(n->get_index())].erase(n, domains_[n->get_index()]);
+        uniqueTables_[as_uindex(n->get_index())].erase(
+            n, domains_[n->get_index()]
+        );
     }
     else
     {
@@ -1265,13 +1264,15 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
 {
     auto const level     = this->get_level(index);
     auto const nextIndex = this->get_index(1 + level);
-    auto tmpTable        = unique_table_t(std::move(uniqueTables_[as_uindex(index)]));
+    auto tmpTable = unique_table_t(std::move(uniqueTables_[as_uindex(index)]));
     for (auto const n : tmpTable)
     {
         this->swap_node_with_next(n);
     }
     uniqueTables_[as_uindex(index)].adjust_capacity(domains_[index]);
-    uniqueTables_[as_uindex(nextIndex)].merge(std::move(tmpTable), domains_[nextIndex]);
+    uniqueTables_[as_uindex(nextIndex)].merge(
+        std::move(tmpTable), domains_[nextIndex]
+    );
 
     using std::swap;
     swap(levelToIndex_[as_uindex(level)], levelToIndex_[as_uindex(1 + level)]);

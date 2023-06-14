@@ -8,11 +8,11 @@ AlignConsecutiveAssignments: AcrossEmptyLines
 AlignConsecutiveBitFields: None
 AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Right
-AlignOperands:   Align
+AlignOperands: AlignAfterOperator
 AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: true
 AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortEnumsOnASingleLine: true
+AllowShortEnumsOnASingleLine: false
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
@@ -27,6 +27,7 @@ AttributeMacros:
   - __capability
 BinPackArguments: false
 BinPackParameters: false
+BitFieldColonSpacing: Both
 BraceWrapping:
   AfterCaseLabel:  true
   AfterClass:      true
@@ -45,15 +46,14 @@ BraceWrapping:
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
-BreakBeforeBinaryOperators: None
+BreakAfterJavaFieldAnnotations: false
+BreakBeforeBinaryOperators: All
 BreakBeforeConceptDeclarations: true
 BreakBeforeBraces: Allman
 BreakBeforeInheritanceComma: false
-BreakInheritanceList: BeforeColon
 BreakBeforeTernaryOperators: true
-BreakConstructorInitializersBeforeComma: false
-BreakConstructorInitializers: BeforeColon
-BreakAfterJavaFieldAnnotations: false
+BreakInheritanceList: AfterColon
+BreakConstructorInitializers: AfterColon
 BreakStringLiterals: true
 ColumnLimit:     80
 CommentPragmas:  '^ IWYU pragma:'
@@ -63,27 +63,38 @@ ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
 DeriveLineEnding: true
 DerivePointerAlignment: false
+QualifierAlignment: Right
 DisableFormat:   false
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
-PackConstructorInitializers: BinPack
+PackConstructorInitializers: CurrentLine
+QualifierOrder: ['inline', 'static', 'type', 'constexpr', 'const', 'volatile']
 BasedOnStyle:    ''
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 AllowAllConstructorInitializersOnNextLine: true
 FixNamespaceComments: true
-IncludeBlocks:   Preserve
+IncludeBlocks:   Regroup
+IncludeCategories:
+  - Regex:           '^<(libteddy)/'
+    Priority:        1
+  - Regex:           '^<(libtsl)/'
+    Priority:        2
+  - Regex:           '<[[:alnum:].]+>'
+    Priority:        3
+  - Regex:           '.*'
+    Priority:        4
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false
 IndentCaseLabels: false
 IndentCaseBlocks: false
-IndentGotoLabels: true
-IndentPPDirectives: None
+IndentGotoLabels: false
+IndentPPDirectives: AfterHash
 IndentExternBlock: AfterExternBlock
-IndentRequires:  false
-IndentWidth:     4
-IndentWrappedFunctionNames: false
+IndentRequiresClause: false
+IndentWidth: 4
+IndentWrappedFunctionNames: true
 InsertTrailingCommas: None
 KeepEmptyLinesAtTheStartOfBlocks: true
 LambdaBodyIndentation: Signature
@@ -99,12 +110,15 @@ PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 1000000
 PenaltyIndentedWhitespace: 0
 PointerAlignment: Left
-PPIndentWidth:   -1
+PPIndentWidth: -1
 ReferenceAlignment: Pointer
 ReflowComments:  true
+RemoveSemicolon: true
 RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Always
 ShortNamespaceLines: 1
-SortIncludes: CaseSensitive
+SortIncludes: CaseInsensitive
 SpaceAfterLogicalNot: true
 SpaceAfterTemplateKeyword: false
 SpaceBeforeAssignmentOperators: true
@@ -112,23 +126,32 @@ SpaceBeforeCaseColon: false
 SpaceBeforeCpp11BracedList: true
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
-SpaceBeforeParens: ControlStatements
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: true
+  AfterForeachMacros: false
+  AfterFunctionDeclarationName: true
+  AfterFunctionDefinitionName: true
+  AfterIfMacros: true
+  AfterOverloadedOperator: true
+  AfterRequiresInClause: false
+  AfterRequiresInExpression: false
+  BeforeNonEmptyParentheses: false
 SpaceAroundPointerQualifiers: Default
 SpaceBeforeRangeBasedForLoopColon: true
-SpaceInEmptyBlock: false
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: true
 SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 1
 SpacesInAngles:  Never
 SpacesInConditionalStatement: false
-SpacesInContainerLiterals: true
+SpacesInContainerLiterals: false
 SpacesInCStyleCastParentheses: false
 SpacesInLineCommentPrefix:
   Minimum:         1
   Maximum:         -1
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-SpaceBeforeSquareBrackets: false
-BitFieldColonSpacing: Both
 Standard:        c++20
 TabWidth:        8
 UseCRLF:         false

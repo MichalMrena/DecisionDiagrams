@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <fstream>
 #include <libteddy/details/debug.hpp>
-#include <libteddy/details/types.hpp>
 #include <libteddy/details/tools.hpp>
+#include <libteddy/details/types.hpp>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -146,8 +146,7 @@ private:
 // cube_t definitions:
 
 inline cube_t::cube_t(int32 const size)
-    : size_(size),
-      values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0})
+    : size_(size), values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0})
 {
 }
 

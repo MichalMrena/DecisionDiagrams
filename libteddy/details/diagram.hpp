@@ -2,9 +2,9 @@
 #define LIBTEDDY_DETAILS_DIAGRAM_HPP
 
 #include <cstddef>
+#include <functional>
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_manager.hpp>
-#include <functional>
 #include <utility>
 
 namespace teddy
@@ -134,8 +134,7 @@ diagram<Data, D>::diagram(node_t* const r)
 }
 
 template<class Data, degree D>
-diagram<Data, D>::diagram(diagram const& d)
-    : root_(id_inc_ref_count(d.root_))
+diagram<Data, D>::diagram(diagram const& d) : root_(id_inc_ref_count(d.root_))
 {
 }
 
@@ -185,9 +184,7 @@ namespace std
 template<class Data, teddy::degree D>
 struct hash<teddy::diagram<Data, D>>
 {
-    [[nodiscard]]
-    auto operator()(
-        teddy::diagram<Data, D> const& d
+    [[nodiscard]] auto operator()(teddy::diagram<Data, D> const& d
     ) const noexcept -> std::size_t
     {
         return std::hash<decltype(d.unsafe_get_root())>()(d.unsafe_get_root());
@@ -197,10 +194,8 @@ struct hash<teddy::diagram<Data, D>>
 template<class Data, teddy::degree D>
 struct equal_to<teddy::diagram<Data, D>>
 {
-    [[nodiscard]]
-    auto operator()(
-        teddy::diagram<Data, D> const& l,
-        teddy::diagram<Data, D> const& r
+    [[nodiscard]] auto operator()(
+        teddy::diagram<Data, D> const& l, teddy::diagram<Data, D> const& r
     ) const noexcept -> bool
     {
         return l.equals(r);

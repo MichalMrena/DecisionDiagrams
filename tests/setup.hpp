@@ -169,7 +169,8 @@ struct match : Ts...
     using Ts::operator()...;
 };
 
-template<class... Ts> match(Ts...) -> match<Ts...>;
+template<class... Ts>
+match(Ts...) -> match<Ts...>;
 
 inline auto make_order(manager_settings const& s, std::mt19937_64& rng)
     -> std::vector<int32>
@@ -374,16 +375,16 @@ inline auto make_expression(
     std::mt19937_64& rng
 ) -> tsl::minmax_expr
 {
-    return tsl::make_minmax_expression(rng, varcount, s.termcount_, s.termsize_);
+    return tsl::make_minmax_expression(
+        rng, varcount, s.termcount_, s.termsize_
+    );
 }
 
 /**
  *  \brief Makes expression tree with given settings.
  */
 inline auto make_expression(
-    int32 const varcount,
-    expression_tree_settings const&,
-    std::mt19937_64& rng
+    int32 const varcount, expression_tree_settings const&, std::mt19937_64& rng
 ) -> std::unique_ptr<tsl::expr_node>
 {
     return tsl::make_expression_tree(varcount, rng, rng);
@@ -403,14 +404,12 @@ auto make_expression(test_settings<Man, Expr> const& s, std::mt19937_64& rng)
  */
 template<class Dat, class Deg, class Dom>
 auto make_probabilities(
-    diagram_manager<Dat, Deg, Dom> const& manager,
-    std::mt19937_64& rng
+    diagram_manager<Dat, Deg, Dom> const& manager, std::mt19937_64& rng
 ) -> std::vector<std::vector<double>>
 {
     auto const domains = manager.get_domains();
-    auto ps = std::vector<std::vector<double>>(
-        as_usize(manager.get_var_count())
-    );
+    auto ps =
+        std::vector<std::vector<double>>(as_usize(manager.get_var_count()));
     for (auto i = 0; i < ssize(ps); ++i)
     {
         auto dist = std::uniform_real_distribution<double>(.0, 1.0);
@@ -420,10 +419,7 @@ auto make_probabilities(
             ps[as_uindex(i)][as_uindex(j)] = dist(rng);
         }
         auto const sum = std::reduce(
-            begin(ps[as_uindex(i)]),
-            end(ps[as_uindex(i)]),
-            0.0,
-            std::plus<>()
+            begin(ps[as_uindex(i)]), end(ps[as_uindex(i)]), 0.0, std::plus<>()
         );
         for (auto j = 0; j < domains[as_uindex(i)]; ++j)
         {
@@ -470,8 +466,7 @@ class test_base : public rog::LeafTest
 public:
     test_base(std::string name, Settings settings)
         : rog::LeafTest(std::move(name), rog::AssertPolicy::RunAll),
-          settings_(std::move(settings)),
-          rng_(settings_.seed_)
+          settings_(std::move(settings)), rng_(settings_.seed_)
     {
     }
 
@@ -491,6 +486,6 @@ private:
     std::mt19937_64 rng_;
 };
 
-} // namespace teddy
+} // namespace teddy::tests
 
 #endif

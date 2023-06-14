@@ -259,9 +259,8 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 1.
      */
-    auto idpld_type_1_decrease(
-        value_change var, int32 j, diagram_t sf, int32 i
-    ) -> diagram_t;
+    auto idpld_type_1_decrease(value_change var, int32 j, diagram_t sf, int32 i)
+        -> diagram_t;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative of type 1.
@@ -277,9 +276,8 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 1.
      */
-    auto idpld_type_1_increase(
-        value_change var, int32 j, diagram_t sf, int32 i
-    ) -> diagram_t;
+    auto idpld_type_1_increase(value_change var, int32 j, diagram_t sf, int32 i)
+        -> diagram_t;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative of type 2.
@@ -325,9 +323,8 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 3.
      */
-    auto idpld_type_3_decrease(
-        value_change var, int32 j, diagram_t sf, int32 i
-    ) -> diagram_t;
+    auto idpld_type_3_decrease(value_change var, int32 j, diagram_t sf, int32 i)
+        -> diagram_t;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative of type 2.
@@ -343,9 +340,8 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      *  of type 3.
      */
-    auto idpld_type_3_increase(
-        value_change var, int32 j, diagram_t sf, int32 i
-    ) -> diagram_t;
+    auto idpld_type_3_increase(value_change var, int32 j, diagram_t sf, int32 i)
+        -> diagram_t;
 
     /**
      * \brief Transforms \p dpld into Extended DPLD
@@ -380,7 +376,9 @@ public:
      *  \return Birnbaum importance of given component
      */
     template<component_probabilities Ps>
-    auto birnbaum_importance(Ps const& ps, value_change var, diagram_t dpld, int32 i) -> double;
+    auto birnbaum_importance(
+        Ps const& ps, value_change var, diagram_t dpld, int32 i
+    ) -> double;
 
     /**
      *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
@@ -438,8 +436,7 @@ private:
 
     // TODO this will be merged with apply_dpld in the future
     template<f_val_change F>
-    auto dpld_g(diagram_t sf, value_change var, int32 i, F change)
-        -> diagram_t;
+    auto dpld_g(diagram_t sf, value_change var, int32 i, F change) -> diagram_t;
 
     // TODO toto by mohlo preberat aj zmenu premennej
     // potom by to nebralo dva diagramy ale iba jeden - priamo
@@ -451,7 +448,9 @@ private:
     auto domain_size() const -> int64;
 
     template<component_probabilities Ps>
-    auto calculate_ntp (std::vector<int32> const& selected, Ps const& ps, diagram_t d) -> double;
+    auto calculate_ntp(
+        std::vector<int32> const& selected, Ps const& ps, diagram_t d
+    ) -> double;
 };
 
 template<degree Degree, domain Domain>
@@ -489,8 +488,8 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
                     node,
                     [node, nodeIndex, &ps, &k](auto const son)
                     {
-                        son->data() += node->data()
-                                     * ps[as_uindex(nodeIndex)][as_uindex(k)];
+                        son->data() += node->data() *
+                                       ps[as_uindex(nodeIndex)][as_uindex(k)];
                         ++k;
                     }
                 );
@@ -534,13 +533,15 @@ auto reliability_manager<Degree, Domain>::availability(
 ) -> double
 {
     auto js = std::vector<int32>();
-    this->nodes_.for_each_terminal_node([j, &js](auto const n)
-    {
-        if (n->get_value() >= j)
+    this->nodes_.for_each_terminal_node(
+        [j, &js](auto const n)
         {
-            js.emplace_back(n->get_value());
+            if (n->get_value() >= j)
+            {
+                js.emplace_back(n->get_value());
+            }
         }
-    });
+    );
     return this->calculate_ntp(js, ps, f);
 }
 
@@ -587,13 +588,15 @@ auto reliability_manager<Degree, Domain>::unavailability(
 ) -> double
 {
     auto js = std::vector<int32>();
-    this->nodes_.for_each_terminal_node([j, &js](auto const n)
-    {
-        if (n->get_value() < j)
+    this->nodes_.for_each_terminal_node(
+        [j, &js](auto const n)
         {
-            js.emplace_back(n->get_value());
+            if (n->get_value() < j)
+            {
+                js.emplace_back(n->get_value());
+            }
         }
-    });
+    );
     return this->calculate_ntp(js, ps, f);
 }
 
@@ -623,9 +626,8 @@ auto reliability_manager<Degree, Domain>::get_unavailability(int32 const j)
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::state_frequency(
-    diagram_t sf, int32 j
-) -> double
+auto reliability_manager<Degree, Domain>::state_frequency(diagram_t sf, int32 j)
+    -> double
 {
     return static_cast<double>(this->satisfy_count(j, sf)) /
            static_cast<double>(this->domain_size());
@@ -798,10 +800,8 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
                         [this, varFrom, son](int32 const l)
                         {
                             return l == varFrom
-                                        ? son
-                                        : this->nodes_.terminal_node(
-                                            Undefined
-                                        );
+                                                  ? son
+                                                  : this->nodes_.terminal_node(Undefined);
                         }
                     );
                     return this->nodes_.internal_node(
@@ -836,8 +836,9 @@ auto reliability_manager<Degree, Domain>::structural_importance(diagram_t dpld)
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::birnbaum_importance
-    (Ps const& ps, value_change const var, diagram_t dpld, int32 const i) -> double
+auto reliability_manager<Degree, Domain>::birnbaum_importance(
+    Ps const& ps, value_change const var, diagram_t dpld, int32 const i
+) -> double
 {
     auto const dplde = this->to_dpld_e(var.from, i, dpld);
     // this->calculate_probabilities(ps, dplde);
@@ -905,7 +906,7 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
     {
         auto const hash1 = std::hash<node_t*>()(p.left);
         auto const hash2 = std::hash<node_t*>()(p.right);
-        auto result      = size_t{0};
+        auto result      = size_t {0};
         result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
         result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
         return result;
@@ -971,7 +972,7 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
         return u;
     };
 
-auto const newRoot = go(go, lhs.unsafe_get_root(), rhs.unsafe_get_root());
+    auto const newRoot = go(go, lhs.unsafe_get_root(), rhs.unsafe_get_root());
     return diagram_t(newRoot);
 }
 
@@ -985,13 +986,16 @@ auto reliability_manager<Degree, Domain>::domain_size() const -> int64
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::calculate_ntp
-    (std::vector<int32> const& selected, Ps const& ps, diagram_t d) -> double
+auto reliability_manager<Degree, Domain>::calculate_ntp(
+    std::vector<int32> const& selected, Ps const& ps, diagram_t d
+) -> double
 {
-    this->nodes_.for_each_terminal_node([](auto const n)
-    {
-        n->data() = 0.0;
-    });
+    this->nodes_.for_each_terminal_node(
+        [](auto const n)
+        {
+            n->data() = 0.0;
+        }
+    );
 
     for (auto const s : selected)
     {

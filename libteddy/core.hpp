@@ -194,9 +194,7 @@ struct ifmdd_manager
 };
 
 inline bdd_manager::bdd_manager(
-    int32 const varCount,
-    int64 const nodePoolSize,
-    std::vector<int32> order
+    int32 const varCount, int64 const nodePoolSize, std::vector<int32> order
 )
     : bdd_manager(varCount, nodePoolSize, nodePoolSize / 2, std::move(order))
 {
@@ -216,9 +214,7 @@ inline bdd_manager::bdd_manager(
 
 template<int32 P>
 mdd_manager<P>::mdd_manager(
-    int32 const varCount,
-    int64 const nodePoolSize,
-    std::vector<int32> order
+    int32 const varCount, int64 const nodePoolSize, std::vector<int32> order
 )
     : mdd_manager(varCount, nodePoolSize, nodePoolSize / 2, std::move(order))
 {
