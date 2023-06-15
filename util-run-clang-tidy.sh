@@ -1,7 +1,7 @@
 #!/bin/bash
 
 for SRC_FILE in $(find libteddy libtsl tests -type f -name "*.cpp" -or -name "*.hpp"); do
-    echo -n "... Checking $SRC_FILE "
+    echo -n "... Checking ${SRC_FILE} "
     OUTPUT_FILE=".clang-tidy-report/${SRC_FILE}.txt"
     OUTPUT=$(clang-tidy $SRC_FILE --use-color)
     mkdir -p $(dirname ${OUTPUT_FILE})
