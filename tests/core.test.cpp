@@ -13,6 +13,7 @@
 #include <memory>
 #include <random>
 #include <ranges>
+#include <span>
 #include <vector>
 
 #include <fmt/format.h>
@@ -42,12 +43,12 @@ auto expected_counts (
     auto evalend  = tsl::evaluating_iterator_sentinel();
     while (evalit != evalend)
     {
-        auto const v = *evalit;
-        if (v >= ssize(counts))
+        auto const value = *evalit;
+        if (value >= ssize(counts))
         {
-            counts.resize(as_usize(v + 1), 0);
+            counts.resize(as_usize(value + 1), 0);
         }
-        ++counts[as_uindex(v)];
+        ++counts[as_uindex(value)];
         ++evalit;
     }
     return counts;
@@ -188,9 +189,9 @@ protected:
         auto expected = expected_counts(manager, expr);
         auto actual   = std::vector<int64>(expected.size(), 0);
 
-        for (auto v = 0; v < ssize(actual); ++v)
+        for (auto j = 0; j < ssize(actual); ++j)
         {
-            actual[as_uindex(v)] = manager.satisfy_count(v, diagram);
+            actual[as_uindex(j)] = manager.satisfy_count(j, diagram);
         }
 
         for (auto k = 0; k < ssize(actual); ++k)
@@ -263,85 +264,85 @@ protected:
         auto const one  = manager.constant(1);
         auto const sup
             = manager.constant(std::ranges::max(manager.get_domains()));
-        auto const bd = manager.transform(diagram, utils::not_zero);
+        auto const boolValDiagram = manager.transform(diagram, utils::not_zero);
 
         this->assert_true(
-            manager.template apply<AND>(bd, zero).equals(zero), "AND absorbing"
+            manager.template apply<AND>(boolValDiagram, zero).equals(zero), "AND absorbing"
         );
 
         this->assert_true(
-            manager.template apply<AND>(bd, one).equals(bd), "AND neutral"
+            manager.template apply<AND>(boolValDiagram, one).equals(boolValDiagram), "AND neutral"
         );
 
         this->assert_true(
-            manager.template apply<OR>(bd, one).equals(one), "OR absorbing"
+            manager.template apply<OR>(boolValDiagram, one).equals(one), "OR absorbing"
         );
 
         this->assert_true(
-            manager.template apply<OR>(bd, zero).equals(bd), "OR neutral"
+            manager.template apply<OR>(boolValDiagram, zero).equals(boolValDiagram), "OR neutral"
         );
 
         this->assert_true(
-            manager.template apply<XOR>(bd, bd).equals(zero), "XOR annihilate"
+            manager.template apply<XOR>(boolValDiagram, boolValDiagram).equals(zero), "XOR annihilate"
         );
 
         this->assert_true(
-            manager.template apply<MULTIPLIES<2>>(bd, zero).equals(zero),
+            manager.template apply<MULTIPLIES<2>>(boolValDiagram, zero).equals(zero),
             "MULTIPLIES absorbing"
         );
 
         this->assert_true(
-            manager.template apply<MULTIPLIES<4>>(bd, one).equals(bd),
+            manager.template apply<MULTIPLIES<4>>(boolValDiagram, one).equals(boolValDiagram),
             "MULTIPLIES neutral"
         );
 
         this->assert_true(
-            manager.template apply<PLUS<4>>(bd, zero).equals(bd), "PLUS neutral"
+            manager.template apply<PLUS<4>>(boolValDiagram, zero).equals(boolValDiagram), "PLUS neutral"
         );
 
         this->assert_true(
-            manager.template apply<EQUAL_TO>(bd, bd).equals(one),
+            manager.template apply<EQUAL_TO>(boolValDiagram, boolValDiagram).equals(one),
             "EQUAL_TO annihilate"
         );
 
         this->assert_true(
-            manager.template apply<NOT_EQUAL_TO>(bd, bd).equals(zero),
+            manager.template apply<NOT_EQUAL_TO>(boolValDiagram, boolValDiagram).equals(zero),
             "NOT_EQUAL_TO annihilate"
         );
 
         this->assert_true(
-            manager.template apply<LESS>(bd, bd).equals(zero), "LESS annihilate"
+            manager.template apply<LESS>(boolValDiagram, boolValDiagram).equals(zero), "LESS annihilate"
         );
 
         this->assert_true(
-            manager.template apply<GREATER>(bd, bd).equals(zero),
+            manager.template apply<GREATER>(boolValDiagram, boolValDiagram).equals(zero),
             "GREATER annihilate"
         );
 
         this->assert_true(
-            manager.template apply<LESS_EQUAL>(bd, bd).equals(one),
+            manager.template apply<LESS_EQUAL>(boolValDiagram, boolValDiagram).equals(one),
             "LESS_EQUAL annihilate"
         );
 
         this->assert_true(
-            manager.template apply<GREATER_EQUAL>(bd, bd).equals(one),
+            manager.template apply<GREATER_EQUAL>(boolValDiagram, boolValDiagram).equals(one),
             "GREATER_EQUAL annihilate"
         );
 
         this->assert_true(
-            manager.template apply<MIN>(bd, zero).equals(zero), "MIN absorbing"
+            manager.template apply<MIN>(boolValDiagram, zero).equals(zero), "MIN absorbing"
         );
 
         this->assert_true(
-            manager.template apply<MIN>(bd, sup).equals(bd), "MIN neutral"
+            manager.template apply<MIN>(boolValDiagram, sup).equals(boolValDiagram), "MIN neutral"
         );
 
         this->assert_true(
-            manager.template apply<MAX>(bd, sup).equals(sup), "MAX absoring"
+            manager.template apply<MAX>(boolValDiagram, sup).equals(sup), "MAX absoring"
         );
 
         this->assert_true(
-            manager.template apply<MAX>(bd, zero).equals(bd), "MAX neutral"
+            manager.template apply<MAX>(boolValDiagram, zero).equals(boolValDiagram), "MAX neutral"
         );
     }
 };
@@ -365,33 +366,33 @@ protected:
         auto manager = make_manager(this->settings(), this->rng());
         auto diagram = make_diagram(expr, manager);
         this->info(fmt::format("Node count {}", manager.node_count(diagram)));
-        auto const maxi = static_cast<int32>(manager.get_var_count() - 1);
-        auto indexDist  = std::uniform_int_distribution<int32>(0u, maxi);
-        auto const i1   = indexDist(this->rng());
-        auto const i2   = [this, &indexDist, i1] ()
+        auto const maxIndex = manager.get_var_count() - 1;
+        auto indexDist = std::uniform_int_distribution<int32>(0, maxIndex);
+        auto const index1 = indexDist(this->rng());
+        auto const index2 = [this, &indexDist, index1] ()
         {
             for (;;)
             {
                 // I know ... but should be ok...
-                auto const i = indexDist(this->rng());
-                if (i != i1)
+                auto const randomIndex = indexDist(this->rng());
+                if (randomIndex != index1)
                 {
-                    return i;
+                    return randomIndex;
                 }
             }
         }();
-        auto const v1   = int32 {0};
-        auto const v2   = int32 {1};
-        auto const dtmp = manager.cofactor(diagram, i1, v1);
-        auto const d    = manager.cofactor(dtmp, i2, v2);
+        auto const value1 = int32 {0};
+        auto const value2 = int32 {1};
+        auto const intermediateDiagram = manager.cofactor(diagram, index1, value1);
+        auto const cofactoredDiagram = manager.cofactor(intermediateDiagram, index2, value2);
 
-        auto domainit   = tsl::domain_iterator(
+        auto domainIt = tsl::domain_iterator(
             manager.get_domains(),
             manager.get_order(),
-            {std::make_pair(i1, v1), std::make_pair(i2, v2)}
+            {std::make_pair(index1, value1), std::make_pair(index2, value2)}
         );
-        auto evalit = tsl::evaluating_iterator(domainit, expr);
-        this->compare_eval(evalit, manager, diagram);
+        auto evalIt = tsl::evaluating_iterator(domainIt, expr);
+        this->compare_eval(evalIt, manager, diagram);
     }
 };
 
@@ -422,7 +423,7 @@ protected:
         auto const actual   = manager.node_count();
         auto const expected = manager.node_count(diagram);
         this->info(fmt::format("Node count after {}", actual));
-        this->assert_equals(actual, expected);
+        this->assert_equals(expected, actual);
 
         auto domainit = make_domain_iterator(manager);
         auto evalit   = tsl::evaluating_iterator(domainit, expr);
@@ -453,7 +454,7 @@ protected:
         auto const actual   = manager.node_count();
         auto const expected = manager.node_count(diagram);
 
-        this->assert_equals(actual, expected);
+        this->assert_equals(expected, actual);
 
         auto domainit = make_domain_iterator(manager);
         auto evalit   = tsl::evaluating_iterator(domainit, expr);
@@ -609,12 +610,18 @@ public:
 class test_bdd_manager :
     public test_manager<bdd_manager_settings, minmax_expression_settings>
 {
+private:
+    inline static auto constexpr VarCount = 15;
+    inline static auto constexpr NodeCount = 5'000;
+    inline static auto constexpr TermCount = 20;
+    inline static auto constexpr TermSize = 5;
+
 public:
     test_bdd_manager(std::size_t const seed) :
         test_manager<bdd_manager_settings, minmax_expression_settings>(
             seed,
-            bdd_manager_settings {21, 2'000, random_order_tag()},
-            minmax_expression_settings {30, 6},
+            bdd_manager_settings {VarCount, NodeCount, random_order_tag()},
+            minmax_expression_settings {TermCount, TermSize},
             "bdd_manager"
         )
     {
@@ -627,12 +634,18 @@ public:
 class test_mdd_manager :
     public test_manager<mdd_manager_settings<3>, minmax_expression_settings>
 {
+private:
+    inline static auto constexpr VarCount = 15;
+    inline static auto constexpr NodeCount = 5'000;
+    inline static auto constexpr TermCount = 20;
+    inline static auto constexpr TermSize = 5;
+
 public:
     test_mdd_manager(std::size_t const seed) :
         test_manager<mdd_manager_settings<3>, minmax_expression_settings>(
             seed,
-            mdd_manager_settings<3> {15, 5'000, random_order_tag()},
-            minmax_expression_settings {20, 5},
+            mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()},
+            minmax_expression_settings {TermCount, TermSize},
             "mdd_manager"
         )
     {
@@ -645,14 +658,20 @@ public:
 class test_imdd_manager :
     public test_manager<imdd_manager_settings<3>, minmax_expression_settings>
 {
+private:
+    inline static auto constexpr VarCount = 15;
+    inline static auto constexpr NodeCount = 5'000;
+    inline static auto constexpr TermCount = 20;
+    inline static auto constexpr TermSize = 5;
+
 public:
     test_imdd_manager(std::size_t const seed) :
         test_manager<imdd_manager_settings<3>, minmax_expression_settings>(
             seed,
             imdd_manager_settings<3> {
-                {{18, 5'000, random_order_tag()}, random_domains_tag()}
+                {{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}
     },
-            minmax_expression_settings {30, 6},
+            minmax_expression_settings {TermCount, TermSize},
             "imdd_manager"
         )
     {
@@ -665,14 +684,20 @@ public:
 class test_ifmdd_manager :
     public test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>
 {
+private:
+    inline static auto constexpr VarCount = 15;
+    inline static auto constexpr NodeCount = 5'000;
+    inline static auto constexpr TermCount = 20;
+    inline static auto constexpr TermSize = 5;
+
 public:
     test_ifmdd_manager(std::size_t const seed) :
         test_manager<ifmdd_manager_settings<3>, minmax_expression_settings>(
             seed,
             ifmdd_manager_settings<3> {
-                {{18, 5'000, random_order_tag()}, random_domains_tag()}
+                {{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}
     },
-            minmax_expression_settings {30, 6},
+            minmax_expression_settings {TermCount, TermSize},
             "ifmdd_manager"
         )
     {
@@ -701,12 +726,12 @@ auto run_test_one (std::size_t const seed)
 
 auto run_test_many (std::size_t const seed)
 {
-    auto const result_to_str = [] (auto const r)
+    auto const result_to_str = [] (auto const result)
     {
-        auto const Oks = "o";
-        auto const Ers = "!";
+        auto const* const Oks = "o";
+        auto const* const Ers = "!";
 
-        switch (r)
+        switch (result)
         {
         case rog::TestResult::Fail:
             return Ers;
@@ -735,13 +760,13 @@ auto run_test_many (std::size_t const seed)
                   << '\n';
         std::cout << tests.front().name() << '\n';
 
-        for (auto k = 0u; k < numtest; ++k)
+        for (auto k = 0U; k < numtest; ++k)
         {
             std::cout << " > " << std::left << std::setw(static_cast<int>(numw))
                       << tests.front().subtests()[k]->name() << ' ';
-            for (auto l = 0u; l < numrep; ++l)
+            for (auto rep = 0U; rep < numrep; ++rep)
             {
-                std::cout << result_to_str(tests[l].subtests()[k]->result())
+                std::cout << result_to_str(tests[rep].subtests()[k]->result())
                           << " ";
             }
             std::cout << '\n';
@@ -763,10 +788,10 @@ auto run_test_many (std::size_t const seed)
 
     for (auto k = 0; k < numtest; ++k)
     {
-        bddmts.emplace_back(teddy::tests::test_bdd_manager(seeder()));
-        mddmts.emplace_back(teddy::tests::test_mdd_manager(seeder()));
-        imddts.emplace_back(teddy::tests::test_imdd_manager(seeder()));
-        ifmddts.emplace_back(teddy::tests::test_ifmdd_manager(seeder()));
+        bddmts.emplace_back(seeder());
+        mddmts.emplace_back(seeder());
+        imddts.emplace_back(seeder());
+        ifmddts.emplace_back(seeder());
     }
 
 #ifdef LIBTEDDY_TESTS_USE_OMP
@@ -826,7 +851,9 @@ auto run_test_many (std::size_t const seed)
 
 auto main (int const argc, char** const argv) -> int
 {
-    auto seed = 144ull;
+    auto const args = std::span<char*>(argv, static_cast<std::size_t>(argc));
+    auto const defaultSeed = std::size_t {144};
+    auto seed = defaultSeed;
 
     if (argc == 1)
     {
@@ -836,17 +863,17 @@ auto main (int const argc, char** const argv) -> int
 
     if (argc > 2)
     {
-        auto const seedopt = teddy::utils::parse<std::size_t>(argv[2]);
+        auto const seedopt = teddy::utils::parse<std::size_t>(args[2]);
         seed               = seedopt ? *seedopt : seed;
     }
 
     std::cout << "Seed is " << seed << '\n';
 
-    if (argc > 1 && std::string_view(argv[1]) == "one")
+    if (argc > 1 && std::string_view(args[1]) == "one")
     {
         run_test_one(seed);
     }
-    else if (argc > 1 && std::string_view(argv[1]) == "many")
+    else if (argc > 1 && std::string_view(args[1]) == "many")
     {
         run_test_many(seed);
     }

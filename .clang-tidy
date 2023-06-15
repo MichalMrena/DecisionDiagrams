@@ -108,7 +108,7 @@ CheckOptions:
   cppcoreguidelines-avoid-magic-numbers.IgnorePowersOf2IntegerValues: 'false'
   cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues: '1;2;3;4;'
   cppcoreguidelines-no-malloc.Allocations: '::malloc;::calloc'
-  misc-throw-by-value-catch-by-reference.MaxSize: -1
+  misc-throw-by-value-catch-by-reference.MaxSize: 4
   bugprone-narrowing-conversions.IgnoreConversionFromTypes: ''
   readability-function-size.BranchThreshold: '4294967295'
   bugprone-suspicious-missing-comma.RatioThreshold: '0.200000'

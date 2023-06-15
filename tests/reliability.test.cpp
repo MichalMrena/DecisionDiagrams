@@ -12,6 +12,8 @@
 namespace teddy::tests
 {
 
+constexpr auto FloatingTolerance = 0.00000001;
+
 /**
  *  \brief Tests calculation of system state probabilities.
  */
@@ -30,40 +32,40 @@ protected:
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
         auto diagram  = make_diagram(expr, manager);
-        auto ps       = make_probabilities(manager, this->rng());
+        auto probs    = make_probabilities(manager, this->rng());
         auto domains  = manager.get_domains();
         auto table    = truth_table(make_vector(expr, domains), domains);
-        auto const m  = std::ranges::max(manager.get_domains());
-        auto expected = std::vector<double>(as_uindex(m));
-        auto actual   = std::vector<double>(as_uindex(m));
+        auto const maxDomain = std::ranges::max(manager.get_domains());
+        auto expected = std::vector<double>(as_uindex(maxDomain));
+        auto actual   = std::vector<double>(as_uindex(maxDomain));
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
-            expected[as_uindex(j)] = probability(table, ps, j);
+            expected[as_uindex(j)] = probability(table, probs, j);
         }
 
-        manager.calculate_probabilities(ps, diagram);
-        for (auto j = 0; j < m; ++j)
+        manager.calculate_probabilities(probs, diagram);
+        for (auto j = 0; j < maxDomain; ++j)
         {
             actual[as_uindex(j)] = manager.get_probability(j);
         }
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
             this->assert_equals(
-                actual[as_uindex(j)], expected[as_uindex(j)], 0.00000001
+                actual[as_uindex(j)], expected[as_uindex(j)], FloatingTolerance
             );
         }
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
-            actual[as_uindex(j)] = manager.probability(j, ps, diagram);
+            actual[as_uindex(j)] = manager.probability(j, probs, diagram);
         }
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
             this->assert_equals(
-                actual[as_uindex(j)], expected[as_uindex(j)], 0.00000001
+                actual[as_uindex(j)], expected[as_uindex(j)], FloatingTolerance
             );
         }
     }
@@ -87,40 +89,40 @@ protected:
         auto expr     = make_expression(this->settings(), this->rng());
         auto manager  = make_manager(this->settings(), this->rng());
         auto diagram  = make_diagram(expr, manager);
-        auto ps       = make_probabilities(manager, this->rng());
+        auto probs    = make_probabilities(manager, this->rng());
         auto domains  = manager.get_domains();
         auto table    = truth_table(make_vector(expr, domains), domains);
-        auto const m  = std::ranges::max(manager.get_domains());
-        auto expected = std::vector<double>(as_uindex(m));
-        auto actual   = std::vector<double>(as_uindex(m));
+        auto const maxDomain = std::ranges::max(manager.get_domains());
+        auto expected = std::vector<double>(as_uindex(maxDomain));
+        auto actual   = std::vector<double>(as_uindex(maxDomain));
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
-            expected[as_uindex(j)] = availability(table, ps, j);
+            expected[as_uindex(j)] = availability(table, probs, j);
         }
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
-            actual[as_uindex(j)] = manager.availability(j, ps, diagram);
+            actual[as_uindex(j)] = manager.availability(j, probs, diagram);
         }
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], FloatingTolerance
             );
         }
 
-        manager.calculate_probabilities(ps, diagram);
-        for (auto j = 0; j < m; ++j)
+        manager.calculate_probabilities(probs, diagram);
+        for (auto j = 0; j < maxDomain; ++j)
         {
             actual[as_uindex(j)] = manager.get_availability(j);
         }
 
-        for (auto j = 0; j < m; ++j)
+        for (auto j = 0; j < maxDomain; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], FloatingTolerance
             );
         }
     }
@@ -164,7 +166,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], FloatingTolerance
             );
         }
 
@@ -177,7 +179,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], FloatingTolerance
             );
         }
     }
@@ -221,7 +223,7 @@ protected:
         for (auto j = 0; j < m; ++j)
         {
             this->assert_equals(
-                expected[as_uindex(j)], actual[as_uindex(j)], 0.00000001
+                expected[as_uindex(j)], actual[as_uindex(j)], FloatingTolerance
             );
         }
     }
@@ -527,7 +529,7 @@ protected:
                     );
                     auto const expected = structural_importance(td, i);
                     auto const actual   = manager.structural_importance(dd);
-                    this->assert_equals(expected, actual, 0.00000001);
+                    this->assert_equals(expected, actual, FloatingTolerance);
                 }
             }
         }
@@ -596,7 +598,7 @@ protected:
                     auto const expected = birnbaum_importance(td, ps);
                     auto const actual
                         = manager.birnbaum_importance(ps, {s, s - 1}, dd, i);
-                    this->assert_equals(expected, actual, 0.00000001);
+                    this->assert_equals(expected, actual, FloatingTolerance);
                 }
             }
         }
@@ -768,7 +770,9 @@ auto run_test_one (std::size_t const seed)
 
 auto main (int const argc, char** const argv) -> int
 {
-    auto seed = 144ull;
+    auto const args = std::span<char*>(argv, static_cast<std::size_t>(argc));
+    auto constexpr DefaultSeed = std::size_t {144};
+    auto seed = DefaultSeed;
 
     if (argc == 1)
     {
@@ -778,17 +782,18 @@ auto main (int const argc, char** const argv) -> int
 
     if (argc > 2)
     {
-        auto const seedopt = teddy::utils::parse<std::size_t>(argv[2]);
+        auto const seedopt = teddy::utils::parse<std::size_t>(args[2]);
         seed               = seedopt ? *seedopt : seed;
     }
 
     std::cout << "Seed is " << seed << '\n';
 
-    if (argc > 1 && std::string_view(argv[1]) == "one")
+    // TODO nope
+    if (argc > 1 && std::string_view(args[1]) == "one")
     {
         run_test_one(seed);
     }
-    else if (argc > 1 && std::string_view(argv[1]) == "many")
+    else if (argc > 1 && std::string_view(args[1]) == "many")
     {
         // run_test_many(seed);
     }

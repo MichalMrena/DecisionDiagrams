@@ -80,10 +80,14 @@ IncludeCategories:
     Priority:        1
   - Regex:           '^<(libtsl)/'
     Priority:        2
-  - Regex:           '<[[:alnum:].]+>'
+  - Regex:           '^<(boost)/'
     Priority:        3
-  - Regex:           '.*'
+  - Regex:           '^<(fmt)/'
     Priority:        4
+  - Regex:           '<[[:alnum:].]+>'
+    Priority:        5
+  - Regex:           '.*'
+    Priority:        6
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false
