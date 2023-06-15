@@ -8,7 +8,7 @@ namespace teddy::tsl
 {
 // minmax_expr:
 
-auto make_minmax_expression(
+auto make_minmax_expression (
     std::mt19937_64& indexRng,
     int32 const varCount,
     int32 const termCount,
@@ -32,7 +32,7 @@ auto make_minmax_expression(
     return minmax_expr {std::move(terms)};
 }
 
-auto evaluate_expression(minmax_expr const& expr, std::vector<int32> const& vs)
+auto evaluate_expression (minmax_expr const& expr, std::vector<int32> const& vs)
     -> int32
 {
     auto totalMaxVal = std::numeric_limits<int32>::min();
@@ -53,8 +53,10 @@ auto evaluate_expression(minmax_expr const& expr, std::vector<int32> const& vs)
 
 expr_node::operation_t::operation_t(
     operation_type o, std::unique_ptr<expr_node> l, std::unique_ptr<expr_node> r
-)
-    : op_(o), l_(std::move(l)), r_(std::move(r))
+) :
+    op_(o),
+    l_(std::move(l)),
+    r_(std::move(r))
 {
 }
 
@@ -66,13 +68,13 @@ expr_node::constant_t::constant_t(int32 const c) : c_(c)
 {
 }
 
-expr_node::expr_node(expr_node_variable, int32 const i)
-    : data_(std::in_place_type<variable_t>, i)
+expr_node::expr_node(expr_node_variable, int32 const i) :
+    data_(std::in_place_type<variable_t>, i)
 {
 }
 
-expr_node::expr_node(expr_node_constant, int32 const c)
-    : data_(std::in_place_type<constant_t>, c)
+expr_node::expr_node(expr_node_constant, int32 const c) :
+    data_(std::in_place_type<constant_t>, c)
 {
 }
 
@@ -81,8 +83,8 @@ expr_node::expr_node(
     operation_type const o,
     std::unique_ptr<expr_node> l,
     std::unique_ptr<expr_node> r
-)
-    : data_(std::in_place_type<operation_t>, o, std::move(l), std::move(r))
+) :
+    data_(std::in_place_type<operation_t>, o, std::move(l), std::move(r))
 {
 }
 
@@ -137,11 +139,11 @@ auto expr_node::get_right() const -> expr_node const&
     return *std::get<operation_t>(data_).r_;
 }
 
-auto make_expression_tree(
+auto make_expression_tree (
     int32 varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>
 {
-    auto go = [&, i = 0u](auto& self, auto const n) mutable
+    auto go = [&, i = 0u] (auto& self, auto const n) mutable
     {
         if (n == 1)
         {
@@ -167,10 +169,10 @@ auto make_expression_tree(
     return go(go, varcount);
 }
 
-auto evaluate_expression(expr_node const& expr, std::vector<int32> const& vs)
+auto evaluate_expression (expr_node const& expr, std::vector<int32> const& vs)
     -> int32
 {
-    auto const go = [&vs](auto self, auto const& node)
+    auto const go = [&vs] (auto self, auto const& node)
     {
         if (node.is_variable())
         {
@@ -190,4 +192,4 @@ auto evaluate_expression(expr_node const& expr, std::vector<int32> const& vs)
     };
     return go(go, expr);
 }
-} // namespace teddy
+} // namespace teddy::tsl

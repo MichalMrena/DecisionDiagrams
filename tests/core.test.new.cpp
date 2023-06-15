@@ -5,10 +5,10 @@
 #include <libtsl/truth_table.hpp>
 #include <libtsl/truth_table_reliability.hpp>
 
+#include <boost/mpl/vector.hpp>
 #include <boost/test/tools/interface.hpp>
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/mpl/vector.hpp>
 #include <boost/test/unit_test_log.hpp>
 
 #include <fmt/core.h>
@@ -33,21 +33,20 @@ struct fixture_base
 /**
  *  \brief BSS fixture base
  */
-struct bss_fixture : fixture_base<bss_manager_settings, expression_tree_settings>
+struct bss_fixture :
+    fixture_base<bss_manager_settings, expression_tree_settings>
 {
 private:
-    inline static auto constexpr VarCount = 21;
+    inline static auto constexpr VarCount  = 21;
     inline static auto constexpr NodeCount = 2'000'000;
-    inline static auto constexpr Seed = 911;
+    inline static auto constexpr Seed      = 911;
 
 public:
     bss_fixture() :
-        fixture_base<bss_manager_settings, expression_tree_settings>
-        {
+        fixture_base<bss_manager_settings, expression_tree_settings> {
             {bss_manager_settings {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}
-        }
+            {std::mt19937_64(Seed)}}
     {
     }
 };
@@ -55,21 +54,20 @@ public:
 /**
  *  \brief MSS fixture base
  */
-struct mss_fixture : fixture_base<mss_manager_settings<3>, expression_tree_settings>
+struct mss_fixture :
+    fixture_base<mss_manager_settings<3>, expression_tree_settings>
 {
 private:
-    inline static auto constexpr VarCount = 15;
+    inline static auto constexpr VarCount  = 15;
     inline static auto constexpr NodeCount = 2'000'000;
-    inline static auto constexpr Seed = 911;
+    inline static auto constexpr Seed      = 911;
 
 public:
     mss_fixture() :
-        fixture_base<mss_manager_settings<3>, expression_tree_settings>
-        {
+        fixture_base<mss_manager_settings<3>, expression_tree_settings> {
             {mss_manager_settings<3> {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}
-        }
+            {std::mt19937_64(Seed)}}
     {
     }
 };
@@ -77,21 +75,22 @@ public:
 /**
  *  \brief iMSS fixture base
  */
-struct imss_fixture : fixture_base<imss_manager_settings<3>, expression_tree_settings>
+struct imss_fixture :
+    fixture_base<imss_manager_settings<3>, expression_tree_settings>
 {
 private:
-    inline static auto constexpr VarCount = 15;
+    inline static auto constexpr VarCount  = 15;
     inline static auto constexpr NodeCount = 2'000'000;
-    inline static auto constexpr Seed = 911;
+    inline static auto constexpr Seed      = 911;
 
 public:
     imss_fixture() :
-        fixture_base<imss_manager_settings<3>, expression_tree_settings>
-        {
-            {imss_manager_settings<3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}}},
+        fixture_base<imss_manager_settings<3>, expression_tree_settings> {
+            {imss_manager_settings<3> {
+                {{VarCount, NodeCount, random_order_tag()},
+                 random_domains_tag()}}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}
-        }
+            {std::mt19937_64(Seed)}}
     {
     }
 };
@@ -99,47 +98,48 @@ public:
 /**
  *  \brief ifMSS fixture base
  */
-struct ifmss_fixture : fixture_base<ifmss_manager_settings<3>, expression_tree_settings>
+struct ifmss_fixture :
+    fixture_base<ifmss_manager_settings<3>, expression_tree_settings>
 {
 private:
-    inline static auto constexpr VarCount = 15;
+    inline static auto constexpr VarCount  = 15;
     inline static auto constexpr NodeCount = 5'000;
-    inline static auto constexpr Seed = 911;
+    inline static auto constexpr Seed      = 911;
 
 public:
     ifmss_fixture() :
-        fixture_base<ifmss_manager_settings<3>, expression_tree_settings>
-        {
-            {ifmss_manager_settings<3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}}},
+        fixture_base<ifmss_manager_settings<3>, expression_tree_settings> {
+            {ifmss_manager_settings<3> {
+                {{VarCount, NodeCount, random_order_tag()},
+                 random_domains_tag()}}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}
-        }
+            {std::mt19937_64(Seed)}}
     {
     }
 };
 
 constexpr auto FloatingTolerance = 0.00000001;
 
-using Fixtures = boost::mpl::vector<
+using Fixtures                   = boost::mpl::vector<
     teddy::tests::bss_fixture,
     teddy::tests::mss_fixture,
     teddy::tests::imss_fixture,
-    teddy::tests::ifmss_fixture
->;
+    teddy::tests::ifmss_fixture>;
 
 BOOST_AUTO_TEST_SUITE(reliability_test)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 {
-    auto const expr = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram  = make_diagram(expr, manager);
-    auto const probs    = make_probabilities(manager, Fixture::rng_);
-    auto const domains  = manager.get_domains();
-    auto const table    = tsl::truth_table(make_vector(expr, domains), domains);
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram       = make_diagram(expr, manager);
+    auto const probs   = make_probabilities(manager, Fixture::rng_);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
     auto const maxDomain = std::ranges::max(manager.get_domains());
-    auto expected = std::vector<double>(as_uindex(maxDomain));
-    auto actual   = std::vector<double>(as_uindex(maxDomain));
+    auto expected        = std::vector<double>(as_uindex(maxDomain));
+    auto actual          = std::vector<double>(as_uindex(maxDomain));
 
     for (auto j = 0; j < maxDomain; ++j)
     {
@@ -176,15 +176,16 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
 {
-    auto const expr = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram  = make_diagram(expr, manager);
-    auto probs    = make_probabilities(manager, Fixture::rng_);
-    auto domains  = manager.get_domains();
-    auto table    = tsl::truth_table(make_vector(expr, domains), domains);
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram = make_diagram(expr, manager);
+    auto probs   = make_probabilities(manager, Fixture::rng_);
+    auto domains = manager.get_domains();
+    auto table   = tsl::truth_table(make_vector(expr, domains), domains);
     auto const maxDomain = std::ranges::max(manager.get_domains());
-    auto expected = std::vector<double>(as_uindex(maxDomain));
-    auto actual   = std::vector<double>(as_uindex(maxDomain));
+    auto expected        = std::vector<double>(as_uindex(maxDomain));
+    auto actual          = std::vector<double>(as_uindex(maxDomain));
 
     for (auto j = 0; j < maxDomain; ++j)
     {
@@ -221,7 +222,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
 {
-    auto const expr = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram  = make_diagram(expr, manager);
     auto probs    = make_probabilities(manager, Fixture::rng_);
@@ -266,7 +268,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
 {
-    auto const expr = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram  = make_diagram(expr, manager);
     auto domains  = manager.get_domains();
@@ -297,8 +300,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
 {
     using namespace std::string_literals;
-    auto const expr = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
     auto domains = manager.get_domains();
     auto table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -309,9 +313,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
         auto result = true;
         domain_for_each(
             tabledpld,
-            [&manager,
-                &result,
-                &diagramdpld] (auto const v, auto const& elem)
+            [&manager, &result, &diagramdpld] (auto const v, auto const& elem)
             {
                 if (v != tsl::U)
                 {
@@ -331,8 +333,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
     )(Fixture::rng_);
     auto const vardomain = manager.get_domains()[as_uindex(varindex)];
     auto const varfrom
-        = std::uniform_int_distribution<int32>(0, vardomain - 2)(Fixture::rng_
-        );
+        = std::uniform_int_distribution<int32>(0, vardomain - 2)(Fixture::rng_);
     auto const varto = std::uniform_int_distribution<int32>(
         varfrom + 1, manager.get_domains()[as_uindex(varindex)] - 1
     )(Fixture::rng_);
@@ -407,9 +408,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
 
     // Integrated DPLD type I increase
     {
-        auto fvaldist = std::uniform_int_distribution<int32>(
-            0, table.get_max_val() - 1
-        );
+        auto fvaldist
+            = std::uniform_int_distribution<int32>(0, table.get_max_val() - 1);
         auto const j = fvaldist(Fixture::rng_);
 
         BOOST_TEST_MESSAGE(fmt::format(
@@ -420,8 +420,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             varchange.to
         ));
 
-        auto tabledpld
-            = tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
+        auto tabledpld = tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
         auto diagramdpld = manager.idpld_type_1_increase(
             {varchange.from, varchange.to}, j, diagram, varchange.index
         );
@@ -442,8 +441,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             varchangeR.to
         ));
 
-        auto tabledpld
-            = tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
+        auto tabledpld = tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
         auto diagramdpld = manager.idpld_type_2_decrease(
             {varchangeR.from, varchangeR.to}, diagram, varchangeR.index
         );
@@ -464,8 +462,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             varchange.to
         ));
 
-        auto tabledpld
-            = tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
+        auto tabledpld = tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
         auto diagramdpld = manager.idpld_type_2_increase(
             {varchange.from, varchange.to}, diagram, varchange.index
         );
@@ -520,8 +517,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             varchange.to
         ));
 
-        auto tabledpld
-            = tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
+        auto tabledpld = tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
         auto diagramdpld = manager.idpld_type_3_increase(
             {varchange.from, varchange.to}, j, diagram, varchange.index
         );
@@ -535,13 +531,16 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(structural_importances, Fixture, Fixtures, Fixture)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    structural_importances, Fixture, Fixtures, Fixture
+)
 {
-    auto const expr = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram = make_diagram(expr, manager);
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram       = make_diagram(expr, manager);
     auto const domains = manager.get_domains();
-    auto const table  = tsl::truth_table(make_vector(expr, domains), domains);
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
     auto const maxDomain = std::ranges::max(manager.get_domains());
 
     for (auto j = 1; j < maxDomain; ++j)
@@ -553,9 +552,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(structural_importances, Fixture, Fixtures, Fixt
                 auto const td = tsl::dpld(
                     table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j)
                 );
-                auto const dd = manager.idpld_type_3_decrease(
-                    {s, s - 1}, j, diagram, i
-                );
+                auto const dd
+                    = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
                 auto const expected = tsl::structural_importance(td, i);
                 auto const actual   = manager.structural_importance(dd);
                 BOOST_TEST(
@@ -567,14 +565,17 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(structural_importances, Fixture, Fixtures, Fixt
     }
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(birnbaum_importances, Fixture, Fixtures, Fixture)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    birnbaum_importances, Fixture, Fixtures, Fixture
+)
 {
-    auto const expr = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram = make_diagram(expr, manager);
-    auto ps      = make_probabilities(manager, Fixture::rng_);
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram       = make_diagram(expr, manager);
+    auto ps            = make_probabilities(manager, Fixture::rng_);
     auto const domains = manager.get_domains();
-    auto const table  = tsl::truth_table(make_vector(expr, domains), domains);
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
     auto const maxDomain = std::ranges::max(manager.get_domains());
 
     for (auto j = 1; j < maxDomain; ++j)
@@ -586,9 +587,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(birnbaum_importances, Fixture, Fixtures, Fixtur
                 auto const td = tsl::dpld(
                     table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j)
                 );
-                auto const dd = manager.idpld_type_3_decrease(
-                    {s, s - 1}, j, diagram, i
-                );
+                auto const dd
+                    = manager.idpld_type_3_decrease({s, s - 1}, j, diagram, i);
                 auto const expected = tsl::birnbaum_importance(td, ps);
                 auto const actual
                     = manager.birnbaum_importance(ps, {s, s - 1}, dd, i);
@@ -602,4 +602,4 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(birnbaum_importances, Fixture, Fixtures, Fixtur
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-}
+} // namespace teddy::tests

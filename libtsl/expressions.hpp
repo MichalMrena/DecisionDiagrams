@@ -2,6 +2,7 @@
 #define LIBTEDDY_TSL_EXPRESSION_HPP
 
 #include <libtsl/types.hpp>
+
 #include <memory>
 #include <random>
 #include <variant>
@@ -20,17 +21,14 @@ struct minmax_expr
 /**
  *  \brief Makes random minmax expression.
  */
-auto make_minmax_expression(
-    std::mt19937_64& indexRng,
-    int32 varCount,
-    int32 termCount,
-    int32 termSize
+auto make_minmax_expression (
+    std::mt19937_64& indexRng, int32 varCount, int32 termCount, int32 termSize
 ) -> minmax_expr;
 
 /**
  *  \brief Evaluates \p expr using values of variables in \p vs .
  */
-auto evaluate_expression(minmax_expr const& expr, std::vector<int32> const& vs)
+auto evaluate_expression (minmax_expr const& expr, std::vector<int32> const& vs)
     -> int32;
 
 /**
@@ -105,21 +103,21 @@ public:
         std::unique_ptr<expr_node> r
     );
 
-    auto is_variable() const -> bool;
+    auto is_variable () const -> bool;
 
-    auto is_constant() const -> bool;
+    auto is_constant () const -> bool;
 
-    auto is_operation() const -> bool;
+    auto is_operation () const -> bool;
 
-    auto get_index() const -> int32;
+    auto get_index () const -> int32;
 
-    auto get_value() const -> int32;
+    auto get_value () const -> int32;
 
-    auto evaluate(int32 l, int32 r) const -> int32;
+    auto evaluate (int32 l, int32 r) const -> int32;
 
-    auto get_left() const -> expr_node const&;
+    auto get_left () const -> expr_node const&;
 
-    auto get_right() const -> expr_node const&;
+    auto get_right () const -> expr_node const&;
 
 private:
     std::variant<operation_t, variable_t, constant_t> data_;
@@ -128,15 +126,15 @@ private:
 /**
  *  \brief Makes random minmax expression tree.
  */
-auto make_expression_tree(
+auto make_expression_tree (
     int32 varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>;
 
 /**
  *  \brief Evaluates \p expr using values of variables in \p vs .
  */
-auto evaluate_expression(expr_node const& expr, std::vector<int32> const& vs)
+auto evaluate_expression (expr_node const& expr, std::vector<int32> const& vs)
     -> int32;
-} // namespace teddy
+} // namespace teddy::tsl
 
 #endif

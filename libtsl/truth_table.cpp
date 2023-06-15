@@ -1,4 +1,5 @@
 #include <libtsl/truth_table.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -9,20 +10,23 @@ namespace teddy::tsl
 {
 truth_table::truth_table(
     std::vector<int32> vector, std::vector<int32> domains
-)
-    : vector_(std::move(vector)), domain_(std::move(domains)),
-      offset_(as_usize(this->get_var_count())),
-      maxValue_(std::ranges::max(vector_ | std::ranges::views::filter(
-                                                   [](auto v)
-                                                   {
-                                                       return v != U;
-                                                   }
-                                               )
-                                 ))
+) :
+    vector_(std::move(vector)),
+    domain_(std::move(domains)),
+    offset_(as_usize(this->get_var_count())),
+    maxValue_(std::ranges::max(
+        vector_
+        | std::ranges::views::filter(
+            [] (auto v)
+            {
+                return v != U;
+            }
+        )
+    ))
 {
     assert(
-        vector_.size() ==
-        std::reduce(begin(domain_), end(domain_), 1ull, std::multiplies<>())
+        vector_.size()
+        == std::reduce(begin(domain_), end(domain_), 1ull, std::multiplies<>())
     );
 
     assert(this->get_var_count() > 0);
@@ -34,8 +38,8 @@ truth_table::truth_table(
         while (i > 0)
         {
             --i;
-            offset_[as_uindex(i)] = domain_[as_uindex(i + 1)]
-                                  * offset_[as_uindex(i + 1)];
+            offset_[as_uindex(i)]
+                = domain_[as_uindex(i + 1)] * offset_[as_uindex(i + 1)];
         }
     }
 }
@@ -65,7 +69,7 @@ auto truth_table::get_max_val() const -> int32
     return maxValue_;
 }
 
-auto satisfy_count(truth_table const& table, int32 j) -> int64
+auto satisfy_count (truth_table const& table, int32 j) -> int64
 {
     auto result = int64(0);
     for (auto const e : table.get_vector())
@@ -75,13 +79,13 @@ auto satisfy_count(truth_table const& table, int32 j) -> int64
     return result;
 }
 
-auto satisfy_all(truth_table const& table, int32 j)
+auto satisfy_all (truth_table const& table, int32 j)
     -> std::vector<std::vector<int32>>
 {
     auto elems = std::vector<std::vector<int32>>();
     domain_for_each(
         table,
-        [&elems, j](auto const val, auto elem)
+        [&elems, j] (auto const val, auto elem)
         {
             if (val == j)
             {
@@ -92,12 +96,12 @@ auto satisfy_all(truth_table const& table, int32 j)
     return elems;
 }
 
-auto domain_size(truth_table const& table) -> int64
+auto domain_size (truth_table const& table) -> int64
 {
     return ssize(table.get_vector());
 }
 
-auto evaluate(truth_table const& table, std::vector<int32> const& vars)
+auto evaluate (truth_table const& table, std::vector<int32> const& vars)
     -> int32
 {
     return table.get_vector()[as_uindex(to_index(table, vars))];
@@ -106,9 +110,8 @@ auto evaluate(truth_table const& table, std::vector<int32> const& vars)
 /**
  *  \brief Maps values of variables to index in the vector.
  */
-auto to_index(
-    truth_table const& table, std::vector<int32> const& vars
-) -> int32
+auto to_index (truth_table const& table, std::vector<int32> const& vars)
+    -> int32
 {
     assert(ssize(vars) == table.get_var_count());
     auto index = 0;
@@ -118,4 +121,4 @@ auto to_index(
     }
     return index;
 }
-} // namespace teddy
+} // namespace teddy::tsl

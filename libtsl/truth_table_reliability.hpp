@@ -1,8 +1,10 @@
 #ifndef LIBTEDDY_TSL_TRUTH_TABLE_RELIABILITY_HPP
 #define LIBTEDDY_TSL_TRUTH_TABLE_RELIABILITY_HPP
 
-#include <libtsl/truth_table.hpp>
 #include <libteddy/details/types.hpp>
+
+#include <libtsl/truth_table.hpp>
+
 #include <limits>
 #include <vector>
 
@@ -18,7 +20,7 @@ struct var_change
 /**
  *  \brief Calculates probability of system state \p j .
  */
-auto probability(
+auto probability (
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
     int32 j
@@ -30,7 +32,7 @@ auto probability(
  *  \param ps component state probabilities
  *  \param j system state
  */
-auto availability(
+auto availability (
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
     int32 j
@@ -42,7 +44,7 @@ auto availability(
  *  \param ps component state probabilities
  *  \param j system state
  */
-auto unavailability(
+auto unavailability (
     truth_table const& table,
     std::vector<std::vector<double>> const& ps,
     int32 j
@@ -54,7 +56,7 @@ auto unavailability(
  *  \param j system state
  *  \return system state frequency
  */
-auto state_frequency(truth_table const& table, int32 j) -> double;
+auto state_frequency (truth_table const& table, int32 j) -> double;
 
 /**
  *  \brief Calculcates structural importance using \p dpld .
@@ -62,7 +64,7 @@ auto state_frequency(truth_table const& table, int32 j) -> double;
  *  \param i index of the variable
  *  \return structural importance
  */
-auto structural_importance(truth_table const& dpld, int32 i) -> double;
+auto structural_importance (truth_table const& dpld, int32 i) -> double;
 
 /**
  *  \brief Calculcates birnbaum importance using \p dpld .
@@ -70,17 +72,16 @@ auto structural_importance(truth_table const& dpld, int32 i) -> double;
  *  \param ps component state probabilities
  *  \return birnbaum importance
  */
-auto birnbaum_importance(
-    truth_table const& dpld,
-    std::vector<std::vector<double>> const& ps
+auto birnbaum_importance (
+    truth_table const& dpld, std::vector<std::vector<double>> const& ps
 ) -> double;
 
 /**
  *  \brief Returns lambda that can be used in basic @c dpld .
  */
-inline static auto constexpr dpld_basic = [](auto const ffrom, auto const fto)
+inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
 {
-    return [=](auto const l, auto const r)
+    return [=] (auto const l, auto const r)
     {
         return l == ffrom && r == fto;
     };
@@ -89,9 +90,9 @@ inline static auto constexpr dpld_basic = [](auto const ffrom, auto const fto)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 1.
  */
-inline static auto constexpr dpld_i_1_decrease = [](auto const j)
+inline static auto constexpr dpld_i_1_decrease = [] (auto const j)
 {
-    return [j](auto const l, auto const r)
+    return [j] (auto const l, auto const r)
     {
         return l == j && r < j;
     };
@@ -100,9 +101,9 @@ inline static auto constexpr dpld_i_1_decrease = [](auto const j)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 1.
  */
-inline static auto constexpr dpld_i_1_increase = [](auto const j)
+inline static auto constexpr dpld_i_1_increase = [] (auto const j)
 {
-    return [j](auto const l, auto const r)
+    return [j] (auto const l, auto const r)
     {
         return l == j && r > j;
     };
@@ -111,9 +112,9 @@ inline static auto constexpr dpld_i_1_increase = [](auto const j)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 2.
  */
-inline static auto constexpr dpld_i_2_decrease = []()
+inline static auto constexpr dpld_i_2_decrease = [] ()
 {
-    return [](auto const l, auto const r)
+    return [] (auto const l, auto const r)
     {
         return l > r;
     };
@@ -122,9 +123,9 @@ inline static auto constexpr dpld_i_2_decrease = []()
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 2.
  */
-inline static auto constexpr dpld_i_2_increase = []()
+inline static auto constexpr dpld_i_2_increase = [] ()
 {
-    return [](auto const l, auto const r)
+    return [] (auto const l, auto const r)
     {
         return l < r;
     };
@@ -133,9 +134,9 @@ inline static auto constexpr dpld_i_2_increase = []()
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 3.
  */
-inline static auto constexpr dpld_i_3_decrease = [](auto const j)
+inline static auto constexpr dpld_i_3_decrease = [] (auto const j)
 {
-    return [j](auto const l, auto const r)
+    return [j] (auto const l, auto const r)
     {
         return l >= j && r < j;
     };
@@ -144,9 +145,9 @@ inline static auto constexpr dpld_i_3_decrease = [](auto const j)
 /**
  *  \brief Returns lambda that can be used in @c dpld of type 3.
  */
-inline static auto constexpr dpld_i_3_increase = [](auto const j)
+inline static auto constexpr dpld_i_3_increase = [] (auto const j)
 {
-    return [j](auto const l, auto const r)
+    return [j] (auto const l, auto const r)
     {
         return l < j && r >= j;
     };
@@ -160,13 +161,13 @@ inline static auto constexpr dpld_i_3_increase = [](auto const j)
  *  \return new truth table representing DPLD
  */
 template<class F>
-auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
+auto dpld (truth_table const& table, var_change const var, F d) -> truth_table
 {
     auto dpldVector = std::vector<int32>(table.get_vector().size());
 
     domain_for_each(
         table,
-        [&, k = 0u, tmpelem = std::vector<int32>()](
+        [&, k = 0u, tmpelem = std::vector<int32>()] (
             auto const ffrom, auto const& elem
         ) mutable
         {
@@ -176,10 +177,10 @@ auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
             }
             else
             {
-                tmpelem            = elem;
+                tmpelem                       = elem;
                 tmpelem[as_uindex(var.index)] = var.to;
-                auto const fto     = evaluate(table, tmpelem);
-                dpldVector[k]      = d(ffrom, fto) ? 1 : 0;
+                auto const fto                = evaluate(table, tmpelem);
+                dpldVector[k]                 = d(ffrom, fto) ? 1 : 0;
             }
             ++k;
         }
@@ -187,6 +188,6 @@ auto dpld(truth_table const& table, var_change const var, F d) -> truth_table
 
     return truth_table(std::move(dpldVector), table.get_domains());
 }
-} // namespace teddy
+} // namespace teddy::tsl
 
 #endif

@@ -1,8 +1,9 @@
 #ifndef LIBTEDDY_TSL_ITERATORS_HPP
 #define LIBTEDDY_TSL_ITERATORS_HPP
 
-#include "expressions.hpp"
 #include <vector>
+
+#include "expressions.hpp"
 
 namespace teddy::tsl
 {
@@ -67,19 +68,19 @@ public:
         std::vector<std::pair<int32, int32>> fixed
     );
 
-    auto operator*() const -> std::vector<int32> const&;
+    auto operator* () const -> std::vector<int32> const&;
 
-    auto operator++() -> domain_iterator&;
+    auto operator++ () -> domain_iterator&;
 
-    auto operator++(int) -> domain_iterator;
+    auto operator++ (int) -> domain_iterator;
 
-    auto operator==(domain_iterator const& rhs) const -> bool;
+    auto operator== (domain_iterator const& rhs) const -> bool;
 
-    auto operator!=(domain_iterator const& rhs) const -> bool;
+    auto operator!= (domain_iterator const& rhs) const -> bool;
 
-    auto operator==(domain_iterator_sentinel) const -> bool;
+    auto operator== (domain_iterator_sentinel) const -> bool;
 
-    auto operator!=(domain_iterator_sentinel) const -> bool;
+    auto operator!= (domain_iterator_sentinel) const -> bool;
 
 protected:
     std::vector<int32> domains_;
@@ -112,17 +113,17 @@ public:
 
     evaluating_iterator(domain_iterator iterator, Expression const& expr);
 
-    auto operator*() const -> int32;
+    auto operator* () const -> int32;
 
-    auto operator++() -> evaluating_iterator&;
+    auto operator++ () -> evaluating_iterator&;
 
-    auto operator++(int) -> evaluating_iterator;
+    auto operator++ (int) -> evaluating_iterator;
 
-    auto operator==(evaluating_iterator_sentinel const s) const -> bool;
+    auto operator== (evaluating_iterator_sentinel const s) const -> bool;
 
-    auto operator!=(evaluating_iterator_sentinel const s) const -> bool;
+    auto operator!= (evaluating_iterator_sentinel const s) const -> bool;
 
-    auto get_var_vals() const -> std::vector<int32> const&;
+    auto get_var_vals () const -> std::vector<int32> const&;
 
 private:
     domain_iterator domainIterator_;
@@ -130,18 +131,16 @@ private:
 };
 
 template<class Expression>
-auto operator==(
-    evaluating_iterator_sentinel s,
-    evaluating_iterator<Expression> const& it
+auto operator== (
+    evaluating_iterator_sentinel s, evaluating_iterator<Expression> const& it
 ) -> bool
 {
     return it == s;
 }
 
 template<class Expression>
-auto operator!=(
-    evaluating_iterator_sentinel s,
-    evaluating_iterator<Expression> const& it
+auto operator!= (
+    evaluating_iterator_sentinel s, evaluating_iterator<Expression> const& it
 ) -> bool
 {
     return it != s;
@@ -169,28 +168,28 @@ public:
     {
     }
 
-    auto operator++() -> forwarding_iterator&
+    auto operator++ () -> forwarding_iterator&
     {
         return *this;
     }
 
-    auto operator++(int) -> forwarding_iterator&
+    auto operator++ (int) -> forwarding_iterator&
     {
         return *this;
     }
 
-    auto operator*() -> forwarding_iterator&
+    auto operator* () -> forwarding_iterator&
     {
         return *this;
     }
 
-    auto operator=(auto&& arg) -> forwarding_iterator&
+    auto operator= (auto&& arg) -> forwarding_iterator&
     {
         outputFunction_(std::forward<decltype(arg)>(arg));
         return *this;
     }
 
-    auto operator=(auto&& arg) const -> forwarding_iterator const&
+    auto operator= (auto&& arg) const -> forwarding_iterator const&
     {
         outputFunction_(std::forward<decltype(arg)>(arg));
         return *this;
@@ -199,6 +198,6 @@ public:
 private:
     OutputFunction outputFunction_;
 };
-} // namespace teddy
+} // namespace teddy::tsl
 
 #endif

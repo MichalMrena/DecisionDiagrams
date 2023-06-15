@@ -2,6 +2,7 @@
 #define LIBTEDDY_TSL_TRUTH_TABLE_HPP
 
 #include <libtsl/types.hpp>
+
 #include <functional>
 #include <limits>
 #include <vector>
@@ -16,15 +17,13 @@ inline auto constexpr U = std::numeric_limits<int32>::max();
 class truth_table
 {
 public:
-    truth_table(
-        std::vector<int32> vector, std::vector<int32> domains
-    );
+    truth_table(std::vector<int32> vector, std::vector<int32> domains);
 
-    auto get_var_count() const -> int32;
-    auto get_vector() const -> std::vector<int32> const&;
-    auto get_domains() const -> std::vector<int32> const&;
-    auto get_offsets() const -> std::vector<int32> const&;
-    auto get_max_val() const -> int32;
+    auto get_var_count () const -> int32;
+    auto get_vector () const -> std::vector<int32> const&;
+    auto get_domains () const -> std::vector<int32> const&;
+    auto get_offsets () const -> std::vector<int32> const&;
+    auto get_max_val () const -> int32;
 
 private:
     std::vector<int32> vector_;
@@ -36,37 +35,36 @@ private:
 /**
  *  \brief TODO
  */
-auto satisfy_count(truth_table const& table, int32 j) -> int64;
+auto satisfy_count (truth_table const& table, int32 j) -> int64;
 
 /**
  *  \brief TODO
  */
-auto satisfy_all(truth_table const& table, int32 j)
+auto satisfy_all (truth_table const& table, int32 j)
     -> std::vector<std::vector<int32>>;
 
 /**
  *  \brief TODO
  */
-auto domain_size(truth_table const& table) -> int64;
+auto domain_size (truth_table const& table) -> int64;
 
 /**
  *  \brief TODO
  */
-auto evaluate(truth_table const& table, std::vector<int32> const& vars)
+auto evaluate (truth_table const& table, std::vector<int32> const& vars)
     -> int32;
 
 /**
  *  \brief Maps values of variables to index in the vector.
  */
-auto to_index(
-    truth_table const& table, std::vector<int32> const& vars
-) -> int32;
+auto to_index (truth_table const& table, std::vector<int32> const& vars)
+    -> int32;
 
 /**
  *  \brief Invokes \p f with each element of the domain.
  */
 template<class F>
-auto domain_for_each(
+auto domain_for_each (
     int32 const varcount,
     std::vector<int32> const& vector,
     std::vector<int32> const& domains,
@@ -104,13 +102,13 @@ auto domain_for_each(
  *  \brief Invokes \p f with each element of the domain.
  */
 template<class F>
-auto domain_for_each(truth_table const& table, F f) -> void
+auto domain_for_each (truth_table const& table, F f) -> void
 {
     domain_for_each(
         table.get_var_count(), table.get_vector(), table.get_domains(), f
     );
 }
 
-} // namespace teddy
+} // namespace teddy::tsl
 
 #endif

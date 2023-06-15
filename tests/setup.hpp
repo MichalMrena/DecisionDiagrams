@@ -185,13 +185,15 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
         match {
             [&] (random_order_tag)
             {
-                auto indices = utils::fill_vector(settings.varcount_, utils::identity);
+                auto indices
+                    = utils::fill_vector(settings.varcount_, utils::identity);
                 std::ranges::shuffle(indices, rng);
                 return indices;
             },
             [&] (default_order_tag)
             {
-                auto indices = utils::fill_vector(settings.varcount_, utils::identity);
+                auto indices
+                    = utils::fill_vector(settings.varcount_, utils::identity);
                 return indices;
             },
             [] (given_order_tag const& indices)
@@ -234,8 +236,9 @@ auto make_domains (
 /**
  *  \brief Makes BDD manager.
  */
-inline auto make_manager (bdd_manager_settings const& settings, std::mt19937_64& rng)
-    -> bdd_manager
+inline auto make_manager (
+    bdd_manager_settings const& settings, std::mt19937_64& rng
+) -> bdd_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -244,8 +247,9 @@ inline auto make_manager (bdd_manager_settings const& settings, std::mt19937_64&
  *  \brief Makes MDD manager.
  */
 template<int32 M>
-auto make_manager (mdd_manager_settings<M> const& settings, std::mt19937_64& rng)
-    -> mdd_manager<M>
+auto make_manager (
+    mdd_manager_settings<M> const& settings, std::mt19937_64& rng
+) -> mdd_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -254,31 +258,38 @@ auto make_manager (mdd_manager_settings<M> const& settings, std::mt19937_64& rng
  *  \brief Makes iMDD manager.
  */
 template<int32 M>
-auto make_manager (imdd_manager_settings<M> const& settings, std::mt19937_64& rng)
-    -> imdd_manager
+auto make_manager (
+    imdd_manager_settings<M> const& settings, std::mt19937_64& rng
+) -> imdd_manager
 {
     return {
-        settings.varcount_, settings.nodecount_, make_domains(settings, rng), make_order(settings, rng)
-    };
+        settings.varcount_,
+        settings.nodecount_,
+        make_domains(settings, rng),
+        make_order(settings, rng)};
 }
 
 /**
  *  \brief Makes ifMDD manager.
  */
 template<int32 M>
-auto make_manager (ifmdd_manager_settings<M> const& settings, std::mt19937_64& rng)
-    -> ifmdd_manager<M>
+auto make_manager (
+    ifmdd_manager_settings<M> const& settings, std::mt19937_64& rng
+) -> ifmdd_manager<M>
 {
     return {
-        settings.varcount_, settings.nodecount_, make_domains(settings, rng), make_order(settings, rng)
-    };
+        settings.varcount_,
+        settings.nodecount_,
+        make_domains(settings, rng),
+        make_order(settings, rng)};
 }
 
 /**
  *  \brief Makes bss_manager.
  */
-inline auto make_manager (bss_manager_settings const& settings, std::mt19937_64& rng)
-    -> bss_manager
+inline auto make_manager (
+    bss_manager_settings const& settings, std::mt19937_64& rng
+) -> bss_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -287,8 +298,9 @@ inline auto make_manager (bss_manager_settings const& settings, std::mt19937_64&
  *  \brief Makes mss_manager.
  */
 template<int32 M>
-auto make_manager (mss_manager_settings<M> const& settings, std::mt19937_64& rng)
-    -> mss_manager<M>
+auto make_manager (
+    mss_manager_settings<M> const& settings, std::mt19937_64& rng
+) -> mss_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -297,11 +309,15 @@ auto make_manager (mss_manager_settings<M> const& settings, std::mt19937_64& rng
  *  \brief Makes imss_manager.
  */
 template<int32 M>
-auto make_manager (imss_manager_settings<M> const& settings, std::mt19937_64& rng)
-    -> imss_manager
+auto make_manager (
+    imss_manager_settings<M> const& settings, std::mt19937_64& rng
+) -> imss_manager
 {
     return imss_manager(
-        settings.varcount_, settings.nodecount_, make_domains(settings, rng), make_order(settings, rng)
+        settings.varcount_,
+        settings.nodecount_,
+        make_domains(settings, rng),
+        make_order(settings, rng)
     );
 }
 
@@ -309,11 +325,15 @@ auto make_manager (imss_manager_settings<M> const& settings, std::mt19937_64& rn
  *  \brief Makes ifmss_manager.
  */
 template<int32 M>
-auto make_manager (ifmss_manager_settings<M> const& settings, std::mt19937_64& rng)
-    -> ifmss_manager<M>
+auto make_manager (
+    ifmss_manager_settings<M> const& settings, std::mt19937_64& rng
+) -> ifmss_manager<M>
 {
     return ifmss_manager<M>(
-        settings.varcount_, settings.nodecount_, make_domains(settings, rng), make_order(settings, rng)
+        settings.varcount_,
+        settings.nodecount_,
+        make_domains(settings, rng),
+        make_order(settings, rng)
     );
 }
 
@@ -321,7 +341,9 @@ auto make_manager (ifmss_manager_settings<M> const& settings, std::mt19937_64& r
  *  \brief Makes manager for a test.
  */
 template<class Man, class Expr>
-auto make_manager (test_settings<Man, Expr> const& settings, std::mt19937_64& rng)
+auto make_manager (
+    test_settings<Man, Expr> const& settings, std::mt19937_64& rng
+)
 {
     return make_manager(settings.manager_, rng);
 }
@@ -376,8 +398,7 @@ auto make_diagram (
  *  \brief Makes minmax expression with given settings.
  */
 inline auto make_expression (
-    minmax_expression_settings const& settings,
-    std::mt19937_64& rng
+    minmax_expression_settings const& settings, std::mt19937_64& rng
 ) -> tsl::minmax_expr
 {
     return tsl::make_minmax_expression(
@@ -399,9 +420,13 @@ inline auto make_expression (
  *  \brief Makes expression for a test.
  */
 template<class Man, class Expr>
-auto make_expression (test_settings<Man, Expr> const& settings, std::mt19937_64& rng)
+auto make_expression (
+    test_settings<Man, Expr> const& settings, std::mt19937_64& rng
+)
 {
-    return make_expression(settings.manager_.varcount_, settings.expression_, rng);
+    return make_expression(
+        settings.manager_.varcount_, settings.expression_, rng
+    );
 }
 
 /**
@@ -424,7 +449,10 @@ auto make_probabilities (
             probs[as_uindex(i)][as_uindex(j)] = dist(rng);
         }
         auto const sum = std::reduce(
-            begin(probs[as_uindex(i)]), end(probs[as_uindex(i)]), 0.0, std::plus<>()
+            begin(probs[as_uindex(i)]),
+            end(probs[as_uindex(i)]),
+            0.0,
+            std::plus<>()
         );
         for (auto j = 0; j < domains[as_uindex(i)]; ++j)
         {
@@ -440,11 +468,13 @@ inline auto make_vector (
 ) -> std::vector<int32>
 {
     auto vector = std::vector<int32>();
-    vector.reserve(as_usize(std::reduce(begin(domains), end(domains), 1, std::multiplies<>())));
+    vector.reserve(as_usize(
+        std::reduce(begin(domains), end(domains), 1, std::multiplies<>())
+    ));
     auto domainit = tsl::domain_iterator(domains);
     auto evalit   = tsl::evaluating_iterator(domainit, *root);
     auto evalend  = tsl::evaluating_iterator_sentinel();
-    auto output = std::back_inserter(vector);
+    auto output   = std::back_inserter(vector);
     while (evalit != evalend)
     {
         *output++ = *evalit++;
