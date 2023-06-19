@@ -19,11 +19,11 @@ class truth_table
 public:
     truth_table(std::vector<int32> vector, std::vector<int32> domains);
 
-    auto get_var_count () const -> int32;
-    auto get_vector () const -> std::vector<int32> const&;
-    auto get_domains () const -> std::vector<int32> const&;
-    auto get_offsets () const -> std::vector<int32> const&;
-    auto get_max_val () const -> int32;
+    [[nodiscard]] auto get_var_count () const -> int32;
+    [[nodiscard]] auto get_vector () const -> std::vector<int32> const&;
+    [[nodiscard]] auto get_domains () const -> std::vector<int32> const&;
+    [[nodiscard]] auto get_offsets () const -> std::vector<int32> const&;
+    [[nodiscard]] auto get_max_val () const -> int32;
 
 private:
     std::vector<int32> vector_;
@@ -35,12 +35,12 @@ private:
 /**
  *  \brief TODO
  */
-auto satisfy_count (truth_table const& table, int32 j) -> int64;
+auto satisfy_count (truth_table const& table, int32 val) -> int64;
 
 /**
  *  \brief TODO
  */
-auto satisfy_all (truth_table const& table, int32 j)
+auto satisfy_all (truth_table const& table, int32 val)
     -> std::vector<std::vector<int32>>;
 
 /**

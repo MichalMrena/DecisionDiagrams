@@ -17,16 +17,16 @@ truth_table::truth_table(
     maxValue_(std::ranges::max(
         vector_
         | std::ranges::views::filter(
-            [] (auto v)
+            [] (auto val)
             {
-                return v != U;
+                return val != U;
             }
         )
     ))
 {
     assert(
-        vector_.size()
-        == std::reduce(begin(domain_), end(domain_), 1ull, std::multiplies<>())
+        ssize(vector_)
+        == std::reduce(begin(domain_), end(domain_), 1, std::multiplies<>())
     );
 
     assert(this->get_var_count() > 0);
@@ -34,12 +34,12 @@ truth_table::truth_table(
     offset_[as_uindex(this->get_var_count() - 1)] = 1;
     if (this->get_var_count() > 1)
     {
-        auto i = this->get_var_count() - 1;
-        while (i > 0)
+        auto index = this->get_var_count() - 1;
+        while (index > 0)
         {
-            --i;
-            offset_[as_uindex(i)]
-                = domain_[as_uindex(i + 1)] * offset_[as_uindex(i + 1)];
+            --index;
+            offset_[as_uindex(index)]
+                = domain_[as_uindex(index + 1)] * offset_[as_uindex(index + 1)];
         }
     }
 }
@@ -69,25 +69,25 @@ auto truth_table::get_max_val() const -> int32
     return maxValue_;
 }
 
-auto satisfy_count (truth_table const& table, int32 j) -> int64
+auto satisfy_count (truth_table const& table, int32 val) -> int64
 {
-    auto result = int64(0);
-    for (auto const e : table.get_vector())
+    auto result = int64 {0};
+    for (auto const tableVal : table.get_vector())
     {
-        result += static_cast<int32>(e == j);
+        result += static_cast<int32>(tableVal == val);
     }
     return result;
 }
 
-auto satisfy_all (truth_table const& table, int32 j)
+auto satisfy_all (truth_table const& table, int32 const val)
     -> std::vector<std::vector<int32>>
 {
     auto elems = std::vector<std::vector<int32>>();
     domain_for_each(
         table,
-        [&elems, j] (auto const val, auto elem)
+        [&elems, val] (auto const tableVal, auto elem)
         {
-            if (val == j)
+            if (tableVal == val)
             {
                 elems.emplace_back(std::move(elem));
             }

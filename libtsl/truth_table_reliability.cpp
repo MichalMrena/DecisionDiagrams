@@ -6,23 +6,23 @@ namespace teddy::tsl
 {
 auto probability (
     truth_table const& table,
-    std::vector<std::vector<double>> const& ps,
-    int32 j
+    std::vector<std::vector<double>> const& probabilities,
+    int32 systemState
 ) -> double
 {
     auto totalprob = 0.0;
 
     domain_for_each(
         table,
-        [j, &table, &totalprob, &ps] (auto const val, auto const& elem)
+        [systemState, &table, &totalprob, &probabilities] (auto const val, auto const& elem)
         {
-            if (val == j)
+            if (val == systemState)
             {
                 auto localprob = 1.0;
                 for (auto i = 0; i < table.get_var_count(); ++i)
                 {
                     localprob
-                        *= ps[as_uindex(i)][as_uindex(elem[as_uindex(i)])];
+                        *= probabilities[as_uindex(i)][as_uindex(elem[as_uindex(i)])];
                 }
                 totalprob += localprob;
             }
@@ -34,55 +34,55 @@ auto probability (
 
 auto availability (
     truth_table const& table,
-    std::vector<std::vector<double>> const& ps,
-    int32 j
+    std::vector<std::vector<double>> const& probabilities,
+    int32 systemState
 ) -> double
 {
-    auto a = 0.0;
-    while (j <= table.get_max_val())
+    auto result = 0.0;
+    while (systemState <= table.get_max_val())
     {
-        a += probability(table, ps, j);
-        ++j;
+        result += probability(table, probabilities, systemState);
+        ++systemState;
     }
-    return a;
+    return result;
 }
 
 auto unavailability (
     truth_table const& table,
-    std::vector<std::vector<double>> const& ps,
-    int32 j
+    std::vector<std::vector<double>> const& probabilities,
+    int32 systemState
 ) -> double
 {
-    auto u = 0.0;
-    while (j > 0)
+    auto result = 0.0;
+    while (systemState > 0)
     {
-        --j;
-        u += probability(table, ps, j);
+        --systemState;
+        result += probability(table, probabilities, systemState);
     }
-    return u;
+    return result;
 }
 
-auto state_frequency (truth_table const& table, int32 j) -> double
+auto state_frequency (truth_table const& table, int32 systemState) -> double
 {
-    return static_cast<double>(satisfy_count(table, j))
+    return static_cast<double>(satisfy_count(table, systemState))
          / static_cast<double>(domain_size(table));
 }
 
-auto structural_importance (truth_table const& dpld, int32 i) -> double
+auto structural_importance (truth_table const& dpld, int32 componentIndex) -> double
 {
-    auto const& ds = dpld.get_domains();
+    auto const& domains = dpld.get_domains();
     auto const domainsize
-        = std::reduce(begin(ds), end(ds), int64 {1}, std::multiplies<>());
+        = std::reduce(begin(domains), end(domains), int64 {1}, std::multiplies<>());
     auto const nominator   = satisfy_count(dpld, 1);
-    auto const denominator = domainsize / ds[as_uindex(i)];
+    auto const denominator = domainsize / domains[as_uindex(componentIndex)];
     return static_cast<double>(nominator) / static_cast<double>(denominator);
 }
 
 auto birnbaum_importance (
-    truth_table const& dpld, std::vector<std::vector<double>> const& ps
+    truth_table const& dpld, std::vector<std::vector<double>> const& probabilities
 ) -> double
 {
-    return probability(dpld, ps, 1);
+    return probability(dpld, probabilities, 1);
 }
 
 } // namespace teddy::tsl
