@@ -2,6 +2,7 @@
 #define LIBTEDDY_TSL_TYPES_HPP
 
 #include <cstdint>
+#include <limits>
 
 namespace teddy::tsl
 {
@@ -9,6 +10,8 @@ using int32  = std::int32_t;
 using int64  = std::int64_t;
 using uint32 = std::uint32_t;
 using uint64 = std::uint64_t;
+
+inline constexpr auto Undefined = (std::numeric_limits<int32>::max)();
 
 [[nodiscard]] inline auto constexpr as_uindex(int32 const index)
 {

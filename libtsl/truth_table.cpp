@@ -19,7 +19,7 @@ truth_table::truth_table(
         | std::ranges::views::filter(
             [] (auto val)
             {
-                return val != U;
+                return val != Undefined;
             }
         )
     ))

@@ -10,11 +10,13 @@
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/test/unit_test_log.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <fmt/core.h>
 
 #include <cstddef>
 
+#include "libtsl/types.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests
@@ -229,21 +231,21 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
     auto probs    = make_probabilities(manager, Fixture::rng_);
     auto domains  = manager.get_domains();
     auto table    = tsl::truth_table(make_vector(expr, domains), domains);
-    auto const m  = std::ranges::max(manager.get_domains());
-    auto expected = std::vector<double>(as_uindex(m));
-    auto actual   = std::vector<double>(as_uindex(m));
+    auto const maxDomain = std::ranges::max(manager.get_domains());
+    auto expected = std::vector<double>(as_uindex(maxDomain));
+    auto actual   = std::vector<double>(as_uindex(maxDomain));
 
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         expected[as_uindex(j)] = unavailability(table, probs, j);
     }
 
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         actual[as_uindex(j)] = manager.unavailability(j, probs, diagram);
     }
 
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         BOOST_TEST(
             expected[as_uindex(j)] == actual[as_uindex(j)],
@@ -252,12 +254,12 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
     }
 
     manager.calculate_probabilities(probs, diagram);
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         actual[as_uindex(j)] = manager.get_unavailability(j);
     }
 
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         BOOST_TEST(
             actual[as_uindex(j)] == expected[as_uindex(j)],
@@ -274,21 +276,21 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     auto diagram  = make_diagram(expr, manager);
     auto domains  = manager.get_domains();
     auto table    = tsl::truth_table(make_vector(expr, domains), domains);
-    auto const m  = std::ranges::max(manager.get_domains());
-    auto expected = std::vector<double>(as_uindex(m));
-    auto actual   = std::vector<double>(as_uindex(m));
+    auto const maxDomain = std::ranges::max(manager.get_domains());
+    auto expected = std::vector<double>(as_uindex(maxDomain));
+    auto actual   = std::vector<double>(as_uindex(maxDomain));
 
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         expected[as_uindex(j)] = state_frequency(table, j);
     }
 
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         actual[as_uindex(j)] = manager.state_frequency(diagram, j);
     }
 
-    for (auto j = 0; j < m; ++j)
+    for (auto j = 0; j < maxDomain; ++j)
     {
         BOOST_TEST(
             actual[as_uindex(j)] == expected[as_uindex(j)],
@@ -297,9 +299,20 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     }
 }
 
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(DPLD, Fixture, Fixtures, Fixture)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram = make_diagram(expr, manager);
+    auto domains = manager.get_domains();
+    auto table   = tsl::truth_table(make_vector(expr, domains), domains);
+
+    
+}
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
 {
-    using namespace std::string_literals;
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
@@ -308,14 +321,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
     auto table   = tsl::truth_table(make_vector(expr, domains), domains);
 
     // TODO move to function
-    auto comparedpbds = [&manager] (auto const& tabledpld, auto diagramdpld)
+    auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
     {
         auto result = true;
         domain_for_each(
             tabledpld,
             [&manager, &result, &diagramdpld] (auto const v, auto const& elem)
             {
-                if (v != tsl::U)
+                if (v != tsl::Undefined)
                 {
                     if (manager.evaluate(diagramdpld, elem) != v)
                     {
@@ -328,21 +341,21 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
         return result;
     };
 
-    auto const varindex = std::uniform_int_distribution<int32>(
+    auto const varIndex = std::uniform_int_distribution<int32>(
         0, manager.get_var_count() - 1
     )(Fixture::rng_);
-    auto const vardomain = manager.get_domains()[as_uindex(varindex)];
-    auto const varfrom
-        = std::uniform_int_distribution<int32>(0, vardomain - 2)(Fixture::rng_);
-    auto const varto = std::uniform_int_distribution<int32>(
-        varfrom + 1, manager.get_domains()[as_uindex(varindex)] - 1
+    auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
+    auto const varFrom
+        = std::uniform_int_distribution<int32>(0, varDomain - 2)(Fixture::rng_);
+    auto const varTo = std::uniform_int_distribution<int32>(
+        varFrom + 1, manager.get_domains()[as_uindex(varIndex)] - 1
     )(Fixture::rng_);
 
-    auto const varchange
-        = tsl::var_change {.index = varindex, .from = varfrom, .to = varto};
+    auto const varChange
+        = tsl::var_change {.index = varIndex, .from = varFrom, .to = varTo};
 
-    auto const varchangeR
-        = tsl::var_change {.index = varindex, .from = varto, .to = varfrom};
+    auto const varChangeR
+        = tsl::var_change {.index = varIndex, .from = varTo, .to = varFrom};
 
     // Basic DPLD
     {
@@ -357,21 +370,21 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             "Basic dpld f({} -> {}) / x({} -> {})",
             ffrom,
             fto,
-            varchange.from,
-            varchange.to
+            varChange.from,
+            varChange.to
         ));
 
         auto tabledpld
-            = tsl::dpld(table, varchange, tsl::dpld_basic(ffrom, fto));
+            = tsl::dpld(table, varChange, tsl::dpld_basic(ffrom, fto));
         auto diagramdpld = manager.dpld(
-            {varchange.from, varchange.to},
+            {varChange.from, varChange.to},
             {ffrom, fto},
             diagram,
-            varchange.index
+            varChange.index
         );
-        BOOST_TEST_MESSAGE(
-            fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1))
-        );
+        // BOOST_TEST_MESSAGE(
+        //     fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1))
+        // );
         BOOST_REQUIRE_MESSAGE(
             comparedpbds(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
@@ -388,14 +401,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             "idpld_type_1_decrease f({} -> <{}) / x({} -> {})",
             j,
             j,
-            varchangeR.from,
-            varchangeR.to
+            varChangeR.from,
+            varChangeR.to
         ));
 
         auto tabledpld
-            = tsl::dpld(table, varchangeR, tsl::dpld_i_1_decrease(j));
+            = tsl::dpld(table, varChangeR, tsl::dpld_i_1_decrease(j));
         auto diagramdpld = manager.idpld_type_1_decrease(
-            {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
+            {varChangeR.from, varChangeR.to}, j, diagram, varChangeR.index
         );
         BOOST_TEST_MESSAGE(
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
@@ -416,13 +429,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             "idpld_type_1_increase f({} -> >{}) / x({} -> {})",
             j,
             j,
-            varchange.from,
-            varchange.to
+            varChange.from,
+            varChange.to
         ));
 
-        auto tabledpld = tsl::dpld(table, varchange, tsl::dpld_i_1_increase(j));
+        auto tabledpld = tsl::dpld(table, varChange, tsl::dpld_i_1_increase(j));
         auto diagramdpld = manager.idpld_type_1_increase(
-            {varchange.from, varchange.to}, j, diagram, varchange.index
+            {varChange.from, varChange.to}, j, diagram, varChange.index
         );
         BOOST_TEST_MESSAGE(
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
@@ -437,13 +450,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
     {
         BOOST_TEST_MESSAGE(fmt::format(
             "idpld_type_2_decrease f( < ) / x({} -> {})",
-            varchangeR.from,
-            varchangeR.to
+            varChangeR.from,
+            varChangeR.to
         ));
 
-        auto tabledpld = tsl::dpld(table, varchangeR, tsl::dpld_i_2_decrease());
+        auto tabledpld = tsl::dpld(table, varChangeR, tsl::dpld_i_2_decrease());
         auto diagramdpld = manager.idpld_type_2_decrease(
-            {varchangeR.from, varchangeR.to}, diagram, varchangeR.index
+            {varChangeR.from, varChangeR.to}, diagram, varChangeR.index
         );
         BOOST_TEST_MESSAGE(
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
@@ -458,13 +471,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
     {
         BOOST_TEST_MESSAGE(fmt::format(
             "idpld_type_2_increase f( > ) / x({} -> {})",
-            varchange.from,
-            varchange.to
+            varChange.from,
+            varChange.to
         ));
 
-        auto tabledpld = tsl::dpld(table, varchange, tsl::dpld_i_2_increase());
+        auto tabledpld = tsl::dpld(table, varChange, tsl::dpld_i_2_increase());
         auto diagramdpld = manager.idpld_type_2_increase(
-            {varchange.from, varchange.to}, diagram, varchange.index
+            {varChange.from, varChange.to}, diagram, varChange.index
         );
         BOOST_TEST_MESSAGE(
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
@@ -485,14 +498,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             "idpld_type_3_decrease f(>={} -> <{}) / x({} -> {})",
             j,
             j,
-            varchangeR.from,
-            varchangeR.to
+            varChangeR.from,
+            varChangeR.to
         ));
 
         auto tabledpld
-            = tsl::dpld(table, varchangeR, tsl::dpld_i_3_decrease(j));
+            = tsl::dpld(table, varChangeR, tsl::dpld_i_3_decrease(j));
         auto diagramdpld = manager.idpld_type_3_decrease(
-            {varchangeR.from, varchangeR.to}, j, diagram, varchangeR.index
+            {varChangeR.from, varChangeR.to}, j, diagram, varChangeR.index
         );
         BOOST_TEST_MESSAGE(
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
@@ -513,13 +526,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             "idpld_type_3_increase f(<{} -> >={}) / x({} -> {})",
             j,
             j,
-            varchange.from,
-            varchange.to
+            varChange.from,
+            varChange.to
         ));
 
-        auto tabledpld = tsl::dpld(table, varchange, tsl::dpld_i_3_increase(j));
+        auto tabledpld = tsl::dpld(table, varChange, tsl::dpld_i_3_increase(j));
         auto diagramdpld = manager.idpld_type_3_increase(
-            {varchange.from, varchange.to}, j, diagram, varchange.index
+            {varChange.from, varChange.to}, j, diagram, varChange.index
         );
         BOOST_TEST_MESSAGE(
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
@@ -584,7 +597,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
         {
             for (auto s = 1; s < manager.get_domains()[as_uindex(i)]; ++s)
             {
-                auto const td = tsl::dpld(
+                auto const td = tsl::dpld_e(
                     table, {i, s, s - 1}, tsl::dpld_i_3_decrease(j)
                 );
                 auto const dd

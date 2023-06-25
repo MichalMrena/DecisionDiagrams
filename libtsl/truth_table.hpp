@@ -9,8 +9,6 @@
 
 namespace teddy::tsl
 {
-inline auto constexpr U = std::numeric_limits<int32>::max();
-
 /**
  *  \brief TODO
  */

@@ -848,8 +848,11 @@ auto reliability_manager<Degree, Domain>::birnbaum_importance(
 ) -> double
 {
     auto const dplde = this->to_dpld_e(var.from, i, dpld);
+
+    // TODO bug somewhere
     // this->calculate_probabilities(ps, dplde);
     // return this->get_probability(1);
+
     return this->probability(1, ps, dplde);
 }
 

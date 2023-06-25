@@ -1,6 +1,7 @@
 #include <libtsl/truth_table_reliability.hpp>
 
 #include <numeric>
+#include "libtsl/types.hpp"
 
 namespace teddy::tsl
 {
@@ -71,10 +72,10 @@ auto state_frequency (truth_table const& table, int32 systemState) -> double
 auto structural_importance (truth_table const& dpld, int32 componentIndex) -> double
 {
     auto const& domains = dpld.get_domains();
-    auto const domainsize
+    auto const domainSize
         = std::reduce(begin(domains), end(domains), int64 {1}, std::multiplies<>());
-    auto const nominator   = satisfy_count(dpld, 1);
-    auto const denominator = domainsize / domains[as_uindex(componentIndex)];
+    auto const nominator   = satisfy_count(dpld, 1) / domains[as_uindex(componentIndex)];
+    auto const denominator = domainSize / domains[as_uindex(componentIndex)];
     return static_cast<double>(nominator) / static_cast<double>(denominator);
 }
 

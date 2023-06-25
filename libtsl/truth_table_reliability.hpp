@@ -7,6 +7,7 @@
 
 #include <limits>
 #include <vector>
+#include "libtsl/types.hpp"
 
 namespace teddy::tsl
 {
@@ -168,7 +169,46 @@ inline static auto constexpr dpld_i_3_increase = [] (auto const val)
 template<class F>
 auto dpld (truth_table const& table, var_change const var, F change) -> truth_table
 {
-    auto dpldVector = std::vector<int32>(table.get_vector().size());
+    auto result = std::vector<int32>(table.get_vector().size());
+
+    domain_for_each(
+        table,
+        [&, tmpElem = std::vector<int32>()] (
+            auto const fFrom, auto const& elem
+        ) mutable
+        {
+            if (elem[as_uindex(var.index)] == var.from)
+            {
+                auto const varIndex  = as_uindex(var.index);
+                tmpElem              = elem;
+                tmpElem[varIndex]    = var.to;
+                auto const fTo       = evaluate(table, tmpElem);
+                auto const derValue  = change(fFrom, fTo) ? 1 : 0;
+                auto const varDomain = table.get_domains()[varIndex];
+                for (auto varValue = 0; varValue < varDomain; ++varValue)
+                {
+                    tmpElem[varIndex]   = varValue;
+                    auto const derIndex = as_uindex(to_index(table, tmpElem));
+                    result[derIndex]    = derValue;
+                }
+            }
+        }
+    );
+
+    return {std::move(result), table.get_domains()};
+}
+
+/**
+ *  \brief Calculates extened DPLD
+ *  \param table function to derivate
+ *  \param var change in the value of the variable
+ *  \param d function that check whether change satisfies the derivative
+ *  \return new truth table representing DPLD
+ */
+template<class F>
+auto dpld_e (truth_table const& table, var_change const var, F change) -> truth_table
+{
+    auto result = std::vector<int32>(table.get_vector().size());
 
     domain_for_each(
         table,
@@ -178,20 +218,20 @@ auto dpld (truth_table const& table, var_change const var, F change) -> truth_ta
         {
             if (elem[as_uindex(var.index)] != var.from)
             {
-                dpldVector[index] = U;
+                result[index] = Undefined;
             }
             else
             {
                 tmpelem                       = elem;
                 tmpelem[as_uindex(var.index)] = var.to;
                 auto const fto                = evaluate(table, tmpelem);
-                dpldVector[index]             = change(ffrom, fto) ? 1 : 0;
+                result[index]                 = change(ffrom, fto) ? 1 : 0;
             }
             ++index;
         }
     );
 
-    return {std::move(dpldVector), table.get_domains()};
+    return {std::move(result), table.get_domains()};
 }
 } // namespace teddy::tsl
 
