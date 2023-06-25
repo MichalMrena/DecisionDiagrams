@@ -15,12 +15,38 @@
 #include <fmt/core.h>
 
 #include <cstddef>
+#include <vector>
 
 #include "libtsl/types.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests
 {
+namespace details
+{
+    auto compare_dplds (auto& manager, auto const& tableDpld, auto diagramDpld)
+    {
+        auto result = true;
+        domain_for_each(
+            tableDpld,
+            [&manager, &result, &diagramDpld] (auto const val, auto const& elem)
+            {
+                if (manager.evaluate(diagramDpld, elem) != val)
+                {
+                    result = false;
+                }
+            }
+        );
+        return result;
+    };
+
+    using Change = struct
+    {
+        int32 from;
+        int32 to;
+    };
+}
+
 /**
  *  \brief Fixture base
  */
@@ -30,6 +56,7 @@ struct fixture_base
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
     std::mt19937_64 rng_;
+    int32 stateCount_{};
 };
 
 /**
@@ -48,7 +75,8 @@ public:
         fixture_base<bss_manager_settings, expression_tree_settings> {
             {bss_manager_settings {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}}
+            {std::mt19937_64(Seed)},
+            2}
     {
     }
 };
@@ -56,8 +84,9 @@ public:
 /**
  *  \brief MSS fixture base
  */
+template<int32 M>
 struct mss_fixture :
-    fixture_base<mss_manager_settings<3>, expression_tree_settings>
+    fixture_base<mss_manager_settings<M>, expression_tree_settings>
 {
 private:
     inline static auto constexpr VarCount  = 15;
@@ -66,10 +95,11 @@ private:
 
 public:
     mss_fixture() :
-        fixture_base<mss_manager_settings<3>, expression_tree_settings> {
-            {mss_manager_settings<3> {VarCount, NodeCount, random_order_tag()}},
+        fixture_base<mss_manager_settings<M>, expression_tree_settings> {
+            {mss_manager_settings<M> {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}}
+            {std::mt19937_64(Seed)},
+            M}
     {
     }
 };
@@ -77,6 +107,7 @@ public:
 /**
  *  \brief iMSS fixture base
  */
+template<int32 M>
 struct imss_fixture :
     fixture_base<imss_manager_settings<3>, expression_tree_settings>
 {
@@ -87,12 +118,13 @@ private:
 
 public:
     imss_fixture() :
-        fixture_base<imss_manager_settings<3>, expression_tree_settings> {
-            {imss_manager_settings<3> {
+        fixture_base<imss_manager_settings<M>, expression_tree_settings> {
+            {imss_manager_settings<M> {
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}}
+            {std::mt19937_64(Seed)},
+            M}
     {
     }
 };
@@ -100,6 +132,7 @@ public:
 /**
  *  \brief ifMSS fixture base
  */
+template<int32 M>
 struct ifmss_fixture :
     fixture_base<ifmss_manager_settings<3>, expression_tree_settings>
 {
@@ -110,12 +143,13 @@ private:
 
 public:
     ifmss_fixture() :
-        fixture_base<ifmss_manager_settings<3>, expression_tree_settings> {
-            {ifmss_manager_settings<3> {
+        fixture_base<ifmss_manager_settings<M>, expression_tree_settings> {
+            {ifmss_manager_settings<M> {
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)}}
+            {std::mt19937_64(Seed)},
+            M}
     {
     }
 };
@@ -124,9 +158,9 @@ constexpr auto FloatingTolerance = 0.00000001;
 
 using Fixtures                   = boost::mpl::vector<
     teddy::tests::bss_fixture,
-    teddy::tests::mss_fixture,
-    teddy::tests::imss_fixture,
-    teddy::tests::ifmss_fixture>;
+    teddy::tests::mss_fixture<3>,
+    teddy::tests::imss_fixture<3>,
+    teddy::tests::ifmss_fixture<3>>;
 
 BOOST_AUTO_TEST_SUITE(reliability_test)
 
@@ -299,7 +333,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(DPLD, Fixture, Fixtures, Fixture)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
 {
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
@@ -308,8 +342,33 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(DPLD, Fixture, Fixtures, Fixture)
     auto domains = manager.get_domains();
     auto table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-    
+    for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    {
+        auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
+        auto varChanges = std::vector<details::Change>();
+        auto fChanges = std::vector<details::Change>();
+
+        for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom)
+        {
+            for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo)
+            {
+                varChanges.emplace_back(varFrom, varTo);
+            }
+        }
+
+        for (auto fFrom = 0; fFrom < Fixture::stateCount_ - 1; ++fFrom)
+        {
+            for (auto fTo = fFrom; fTo < Fixture::stateCount_; ++fTo)
+            {
+                fChanges.emplace_back(fFrom, fTo);
+            }
+        }
+
+        // TODO also consider opposite changes
+    }
 }
+
+// TODO add test for specific systems computed elsewhere
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
 {
@@ -320,27 +379,54 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
     auto domains = manager.get_domains();
     auto table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-    // TODO move to function
-    auto comparedpbds = [&manager](auto const& tabledpld, auto diagramdpld)
+
+
+
+    for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
     {
-        auto result = true;
-        domain_for_each(
-            tabledpld,
-            [&manager, &result, &diagramdpld] (auto const v, auto const& elem)
+        auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
+        for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom)
+        {
+            for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo)
             {
-                if (v != tsl::Undefined)
+                auto const varChange = tsl::var_change {.index = varIndex, .from = varFrom, .to = varTo};
+                auto const varOppositeChange = tsl::var_change {.index = varIndex, .from = varTo, .to = varFrom};
+                // Basic DPLD
+                for (auto fFrom = 0; fFrom < Fixture::stateCount_ - 1; ++fFrom)
                 {
-                    if (manager.evaluate(diagramdpld, elem) != v)
+                    for (auto fTo = fFrom; fTo < Fixture::stateCount_; ++fTo)
                     {
-                        result = false;
-                        return;
+                        BOOST_TEST_MESSAGE(fmt::format(
+                            "Basic dpld f({} -> {}) / x({} -> {})",
+                            fFrom,
+                            fTo,
+                            varChange.from,
+                            varChange.to
+                        ));
+
+                        auto tableDpld
+                            = tsl::dpld(table, varChange, tsl::dpld_basic(fFrom, fTo));
+                        auto diagramDpld = manager.dpld(
+                            {varChange.from, varChange.to},
+                            {fFrom, fTo},
+                            diagram,
+                            varChange.index
+                        );
+                        BOOST_TEST_MESSAGE(
+                            fmt::format("One count = {}", tsl::satisfy_count(tableDpld, 1))
+                        );
+                        BOOST_REQUIRE_MESSAGE(
+                            compareDpld(tableDpld, diagramDpld),
+                            "Diagram and table produced the same derivative"
+                        );
                     }
                 }
             }
-        );
-        return result;
-    };
+        }
+    }
 
+
+// old:
     auto const varIndex = std::uniform_int_distribution<int32>(
         0, manager.get_var_count() - 1
     )(Fixture::rng_);
@@ -386,7 +472,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
         //     fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1))
         // );
         BOOST_REQUIRE_MESSAGE(
-            comparedpbds(tabledpld, diagramdpld),
+            compareDpld(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
         );
     }
@@ -414,7 +500,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
         );
         BOOST_REQUIRE_MESSAGE(
-            comparedpbds(tabledpld, diagramdpld),
+            compareDpld(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
         );
     }
@@ -441,7 +527,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
         );
         BOOST_REQUIRE_MESSAGE(
-            comparedpbds(tabledpld, diagramdpld),
+            compareDpld(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
         );
     }
@@ -462,7 +548,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
         );
         BOOST_REQUIRE_MESSAGE(
-            comparedpbds(tabledpld, diagramdpld),
+            compareDpld(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
         );
     }
@@ -483,7 +569,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
         );
         BOOST_REQUIRE_MESSAGE(
-            comparedpbds(tabledpld, diagramdpld),
+            compareDpld(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
         );
     }
@@ -511,7 +597,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
         );
         BOOST_REQUIRE_MESSAGE(
-            comparedpbds(tabledpld, diagramdpld),
+            compareDpld(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
         );
     }
@@ -538,7 +624,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(dpld, Fixture, Fixtures, Fixture)
             fmt::format("One count = {}", tsl::satisfy_count(tabledpld, 1u))
         );
         BOOST_REQUIRE_MESSAGE(
-            comparedpbds(tabledpld, diagramdpld),
+            compareDpld(tabledpld, diagramdpld),
             "Diagram and table produced the same derivative"
         );
     }
