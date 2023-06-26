@@ -7,7 +7,6 @@
 
 #include <limits>
 #include <vector>
-#include "libtsl/types.hpp"
 
 namespace teddy::tsl
 {
@@ -70,7 +69,8 @@ auto state_frequency (truth_table const& table, int32 systemState) -> double;
  *  \param index index of the variable
  *  \return structural importance
  */
-auto structural_importance (truth_table const& dpld, int32 componentIndex) -> double;
+auto structural_importance (truth_table const& dpld, int32 componentIndex)
+    -> double;
 
 /**
  *  \brief Calculcates birnbaum importance using \p dpld
@@ -79,7 +79,8 @@ auto structural_importance (truth_table const& dpld, int32 componentIndex) -> do
  *  \return birnbaum importance
  */
 auto birnbaum_importance (
-    truth_table const& dpld, std::vector<std::vector<double>> const& probabilities
+    truth_table const& dpld,
+    std::vector<std::vector<double>> const& probabilities
 ) -> double;
 
 /**
@@ -167,15 +168,16 @@ inline static auto constexpr dpld_i_3_increase = [] (auto const val)
  *  \return new truth table representing DPLD
  */
 template<class F>
-auto dpld (truth_table const& table, var_change const var, F change) -> truth_table
+auto dpld (truth_table const& table, var_change const var, F change)
+    -> truth_table
 {
     auto result = std::vector<int32>(table.get_vector().size());
 
     domain_for_each(
         table,
-        [&, tmpElem = std::vector<int32>()] (
-            auto const fFrom, auto const& elem
-        ) mutable
+        [&,
+         tmpElem
+         = std::vector<int32>()] (auto const fFrom, auto const& elem) mutable
         {
             if (elem[as_uindex(var.index)] == var.from)
             {
@@ -206,7 +208,8 @@ auto dpld (truth_table const& table, var_change const var, F change) -> truth_ta
  *  \return new truth table representing DPLD
  */
 template<class F>
-auto dpld_e (truth_table const& table, var_change const var, F change) -> truth_table
+auto dpld_e (truth_table const& table, var_change const var, F change)
+    -> truth_table
 {
     auto result = std::vector<int32>(table.get_vector().size());
 
