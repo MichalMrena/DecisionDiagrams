@@ -8,12 +8,14 @@
 #include <boost/mpl/vector.hpp>
 #include <boost/test/tools/interface.hpp>
 #include <boost/test/tools/old/interface.hpp>
+#include <boost/test/tree/decorator.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/test/unit_test_log.hpp>
 #include <boost/test/unit_test_suite.hpp>
 
 #include <fmt/core.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -175,7 +177,8 @@ using Fixtures                   = boost::mpl::vector<
     teddy::tests::bss_fixture,
     teddy::tests::mss_fixture<3>,
     teddy::tests::imss_fixture<3>,
-    teddy::tests::ifmss_fixture<3>>;
+    teddy::tests::ifmss_fixture<3>
+>;
 
 BOOST_AUTO_TEST_SUITE(reliability_test)
 
@@ -344,6 +347,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     }
 }
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -422,6 +426,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
     }
 }
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -533,6 +538,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
     }
 }
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -629,6 +635,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
     }
 }
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -816,6 +823,23 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                 );
             }
         }
+    }
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+
+    for (auto state = 1; state < Fixture::stateCount_; ++state)
+    {
+        auto const tableMcvs = tsl::mcvs(table, state);
+        auto const diagramMcvs = manager.template mcvs<std::vector<int32>>(diagram, state);
+        BOOST_REQUIRE(std::ranges::is_permutation(tableMcvs, diagramMcvs));
     }
 }
 

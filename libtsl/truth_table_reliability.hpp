@@ -84,7 +84,24 @@ auto birnbaum_importance (
 ) -> double;
 
 /**
- *  \brief Returns lambda that can be used in basic @c dpld
+ *  \brief Calculates fussel-vesely importance of a component
+ *  \param structureFunction structure function
+ *  \param probabilities component state probabilities
+ *  \param componentIndex component index
+ *  \param componentState component state
+ *  \param systemState system state
+ *  \return fussel-vesely importance
+ */
+auto fussel_vesely_importance(
+truth_table const& structureFunction,
+    std::vector<std::vector<double>> const& probabilities,
+    int32 componentIndex,
+    int32 componetnState,
+    int32 systemState
+) -> double;
+
+/**
+ *  \brief Returns lambda that can be used in basic \c dpld
  */
 inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
 {
@@ -95,7 +112,7 @@ inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
 };
 
 /**
- *  \brief Returns lambda that can be used in @c dpld of type 1
+ *  \brief Returns lambda that can be used in \c dpld of type 1
  */
 inline static auto constexpr dpld_i_1_decrease = [] (auto const val)
 {
@@ -106,7 +123,7 @@ inline static auto constexpr dpld_i_1_decrease = [] (auto const val)
 };
 
 /**
- *  \brief Returns lambda that can be used in @c dpld of type 1
+ *  \brief Returns lambda that can be used in \c dpld of type 1
  */
 inline static auto constexpr dpld_i_1_increase = [] (auto const val)
 {
@@ -117,7 +134,7 @@ inline static auto constexpr dpld_i_1_increase = [] (auto const val)
 };
 
 /**
- *  \brief Returns lambda that can be used in @c dpld of type 2
+ *  \brief Returns lambda that can be used in \c dpld of type 2
  */
 inline static auto constexpr dpld_i_2_decrease = [] ()
 {
@@ -128,7 +145,7 @@ inline static auto constexpr dpld_i_2_decrease = [] ()
 };
 
 /**
- *  \brief Returns lambda that can be used in @c dpld of type 2
+ *  \brief Returns lambda that can be used in \c dpld of type 2
  */
 inline static auto constexpr dpld_i_2_increase = [] ()
 {
@@ -139,7 +156,7 @@ inline static auto constexpr dpld_i_2_increase = [] ()
 };
 
 /**
- *  \brief Returns lambda that can be used in @c dpld of type 3
+ *  \brief Returns lambda that can be used in \c dpld of type 3
  */
 inline static auto constexpr dpld_i_3_decrease = [] (auto const val)
 {
@@ -150,7 +167,7 @@ inline static auto constexpr dpld_i_3_decrease = [] (auto const val)
 };
 
 /**
- *  \brief Returns lambda that can be used in @c dpld of type 3
+ *  \brief Returns lambda that can be used in \c dpld of type 3
  */
 inline static auto constexpr dpld_i_3_increase = [] (auto const val)
 {
@@ -236,6 +253,23 @@ auto dpld_e (truth_table const& table, var_change const var, F change)
 
     return {std::move(result), table.get_domains()};
 }
+
+/**
+ *  \brief Calculates all MCVs for system \p state
+ */
+auto mcvs(truth_table const& table, int32 state) -> std::vector<std::vector<int32>>;
+
+/**
+ *  \brief Calculates probability of the \p vector
+ *  \param vector state vector
+ *  \param probabilities component state probabilities
+ *  \return state vector probability
+ */
+auto vector_probability(
+    std::vector<int32> const& vector,
+    std::vector<std::vector<double>> const& probabilities
+) -> double;
+
 } // namespace teddy::tsl
 
 #endif

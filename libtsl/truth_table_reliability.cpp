@@ -1,6 +1,12 @@
 #include <libtsl/truth_table_reliability.hpp>
 
+#include <algorithm>
+#include <functional>
 #include <numeric>
+#include <ranges>
+#include "libtsl/truth_table.hpp"
+#include "libtsl/types.hpp"
+#include <bits/ranges_algo.h>
 
 namespace teddy::tsl
 {
@@ -89,6 +95,80 @@ auto birnbaum_importance (
 ) -> double
 {
     return probability(dpld, probabilities, 1);
+}
+
+auto fussel_vesely_importance(
+    truth_table const& structureFunction,
+    std::vector<std::vector<double>> const& probabilities,
+    int32 const componentIndex,
+    int32 const componetnState,
+    int32 const systemState
+) -> double
+{
+    auto const allMcvs = mcvs(structureFunction, systemState);
+    auto relevantMcvs = std::ranges::views::filter(allMcvs,
+        [componentIndex, componetnState](std::vector<int32> const& mcv)
+    {
+        return mcv[as_uindex(componentIndex)] == componetnState - 1;
+    });
+
+    auto result = .0;
+
+    domain_for_each(structureFunction,
+        [&](int32 const, std::vector<int32> const& elem)
+    {
+        for (auto const& mcv : relevantMcvs)
+        {
+            if (compare(elem, mcv, std::less_equal<>()))
+            {
+                result += vector_probability(elem, probabilities);
+                continue;
+            }
+        }
+    });
+
+    return result;
+}
+
+auto mcvs(truth_table const& table, int32 state) -> std::vector<std::vector<int32>>
+{
+    auto constexpr PiConj = [](auto const lhs, auto const rhs)
+    {
+        return std::min({lhs, rhs, Undefined});
+    };
+
+    auto dplds = std::vector<truth_table>();
+    for (auto varIndex = 0; varIndex < table.get_var_count(); ++varIndex)
+    {
+        auto const varDomain = table.get_domains()[as_uindex(varIndex)];
+        for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom)
+        {
+            auto const varChange = var_change {varIndex, varFrom, varFrom + 1};
+            dplds.push_back(dpld_e(table, varChange, dpld_i_3_increase(state)));
+        }
+    }
+
+    auto mcvFunction = dplds.front();
+    for (auto i = 1; i < ssize(dplds); ++i)
+    {
+        apply_mutable(mcvFunction, dplds[as_uindex(i)], PiConj);
+    }
+
+    return satisfy_all(mcvFunction, 1);
+}
+
+auto vector_probability(
+    std::vector<int32> const& vector,
+    std::vector<std::vector<double>> const& probabilities
+) -> double
+{
+    auto result = 1.;
+    for (auto index = 0; index < ssize(vector); ++index)
+    {
+        auto const componentState = vector[as_uindex(index)];
+        result *= probabilities[as_uindex(index)][as_uindex(componentState)];
+    }
+    return result;
 }
 
 } // namespace teddy::tsl
