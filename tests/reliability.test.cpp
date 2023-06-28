@@ -2,6 +2,7 @@
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
+#include <libtsl/system_description.hpp>
 #include <libtsl/truth_table.hpp>
 #include <libtsl/truth_table_reliability.hpp>
 
@@ -344,6 +345,45 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
             actual[as_uindex(j)] == expected[as_uindex(j)],
             boost::test_tools::tolerance(FloatingTolerance)
         );
+    }
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    structural_importances, Fixture, Fixtures, Fixture
+)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+
+    for (auto systemState = 1; systemState < Fixture::stateCount_;
+         ++systemState)
+    {
+        for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+        {
+            for (auto varVal = 1; varVal < domains[as_uindex(varIndex)];
+                 ++varVal)
+            {
+                auto const tableDpld = tsl::dpld(
+                    table,
+                    {varIndex, varVal, varVal - 1},
+                    tsl::dpld_i_3_decrease(systemState)
+                );
+                auto const diagramDpld = manager.idpld_type_3_decrease(
+                    {varVal, varVal - 1}, systemState, diagram, varIndex
+                );
+                auto const expected
+                    = tsl::structural_importance(tableDpld, varIndex);
+                auto const actual = manager.structural_importance(diagramDpld);
+                BOOST_TEST(
+                    expected == actual,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
     }
 }
 
@@ -804,46 +844,72 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
         }
     }
 }
-
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(
-    structural_importances, Fixture, Fixtures, Fixture
-)
-{
-    auto const expr
-        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
-    auto const domains = manager.get_domains();
-    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-
-    for (auto systemState = 1; systemState < Fixture::stateCount_;
-         ++systemState)
-    {
-        for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
-        {
-            for (auto varVal = 1; varVal < domains[as_uindex(varIndex)];
-                 ++varVal)
-            {
-                auto const tableDpld = tsl::dpld(
-                    table,
-                    {varIndex, varVal, varVal - 1},
-                    tsl::dpld_i_3_decrease(systemState)
-                );
-                auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {varVal, varVal - 1}, systemState, diagram, varIndex
-                );
-                auto const expected
-                    = tsl::structural_importance(tableDpld, varIndex);
-                auto const actual = manager.structural_importance(diagramDpld);
-                BOOST_TEST(
-                    expected == actual,
-                    boost::test_tools::tolerance(FloatingTolerance)
-                );
-            }
-        }
-    }
-}
 // TODO add test for specific systems computed elsewhere
 
 BOOST_AUTO_TEST_SUITE_END()
+
+const tsl::system_description system1 = tsl::system_description
+{
+    .stateCount_ = 2,
+    .structureFunction_ = {
+        0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1
+    },
+    .domains_ = {
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+    },
+    .componentProbabilities_ = {
+        {.1,.9},
+        {.2,.8},
+        {.3,.7},
+        {.1,.9},
+        {.1,.9},
+    },
+    .stateProbabilites_ = {.01036,.98964},
+    .availabilities_ = {1,.98964},
+    .unavailabilities_ = {0,.01036},
+    .mcvs_ = {
+        {0,1,0,1,0},
+        {0,1,1,0,0},
+        {1,0,0,1,0},
+        {1,0,1,0,0}
+    },
+    .mpvs_ = {
+        {0,0,0,0,1},
+        {0,0,1,1,0},
+        {1,1,0,0,0}
+
+    },
+    .structuralImportances_ = {
+        {{}, {-1, .18750}},
+        {{}, {-1, .18750}},
+        {{}, {-1, .18750}},
+        {{}, {-1, .18750}},
+        {{}, {-1, .56250}}
+    },
+    .birnbaumImportances_ = {
+        {{}, {-1, .02960}},
+        {{}, {-1, .03330}},
+        {{}, {-1, .02520}},
+        {{}, {-1, .01960}},
+        {{}, {-1, .10360}}
+    },
+    .fusselVeselyImportances_ = {
+        {{}, {-1, .35714}},
+        {{}, {-1, .71429}},
+        {{}, {-1, .81081}},
+        {{}, {-1, .27027}},
+        {{}, {-1, .00000}}
+    }
+};
+
+BOOST_AUTO_TEST_SUITE(reliability_test_systems)
+
+// TODO nefunguje
+// BOOST_DATA_TEST_CASE( test_case_arity1_implicit, {1,2,3} )
+// {
+//   BOOST_TEST((sample <= 4 && sample >= 0));
+// }
+
+BOOST_AUTO_TEST_SUITE_END()
+
 } // namespace teddy::tests

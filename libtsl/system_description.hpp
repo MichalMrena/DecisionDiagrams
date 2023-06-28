@@ -17,6 +17,7 @@ namespace teddy::tsl
         std::vector<double> availabilities_;
         std::vector<double> unavailabilities_;
         std::vector<std::vector<int32>> mcvs_;
+        std::vector<std::vector<int32>> mpvs_;
 
         // component index; system state; component state
         std::vector<std::vector<std::vector<double>>> structuralImportances_;

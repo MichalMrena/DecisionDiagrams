@@ -1,4 +1,5 @@
 InlayHints:
+  DeducedTypes: No
+  Designators: No
   Enabled: Yes
   ParameterNames: No
-  DeducedTypes: No
