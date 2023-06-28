@@ -177,7 +177,6 @@ using Fixtures = boost::mpl::vector<
     teddy::tests::imdd_fixture,
     teddy::tests::ifmdd_fixture>;
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(core_test)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture)

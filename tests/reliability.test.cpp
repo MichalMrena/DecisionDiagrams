@@ -180,7 +180,7 @@ using Fixtures                   = boost::mpl::vector<
     teddy::tests::ifmss_fixture<3>
 >;
 
-BOOST_AUTO_TEST_SUITE(reliability_test)
+BOOST_AUTO_TEST_SUITE(reliability_test_faster_stuff)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 {
@@ -347,7 +347,71 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    birnbaum_importances, Fixture, Fixtures, Fixture
+)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const probs   = make_probabilities(manager, Fixture::rng_);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+
+    for (auto systemState = 1; systemState < Fixture::stateCount_;
+         ++systemState)
+    {
+        for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+        {
+            for (auto varVal = 1;
+                 varVal < manager.get_domains()[as_uindex(varIndex)];
+                 ++varVal)
+            {
+                auto const tableDpld = tsl::dpld_e(
+                    table,
+                    {varIndex, varVal, varVal - 1},
+                    tsl::dpld_i_3_decrease(systemState)
+                );
+                auto const diagramDpld = manager.idpld_type_3_decrease(
+                    {varVal, varVal - 1}, systemState, diagram, varIndex
+                );
+                auto const expected
+                    = tsl::birnbaum_importance(tableDpld, probs);
+                auto const actual = manager.birnbaum_importance(
+                    probs, {varVal, varVal - 1}, diagramDpld, varIndex
+                );
+                BOOST_TEST(
+                    expected == actual,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
+    }
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+
+    for (auto state = 1; state < Fixture::stateCount_; ++state)
+    {
+        auto const tableMcvs = tsl::mcvs(table, state);
+        auto const diagramMcvs = manager.template mcvs<std::vector<int32>>(diagram, state);
+        BOOST_REQUIRE(std::ranges::is_permutation(tableMcvs, diagramMcvs));
+    }
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(reliability_test_slower_stuff)
+
+// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -426,7 +490,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -538,7 +601,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -635,7 +697,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -782,67 +843,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
         }
     }
 }
-
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(
-    birnbaum_importances, Fixture, Fixtures, Fixture
-)
-{
-    auto const expr
-        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
-    auto const probs   = make_probabilities(manager, Fixture::rng_);
-    auto const domains = manager.get_domains();
-    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-
-    for (auto systemState = 1; systemState < Fixture::stateCount_;
-         ++systemState)
-    {
-        for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
-        {
-            for (auto varVal = 1;
-                 varVal < manager.get_domains()[as_uindex(varIndex)];
-                 ++varVal)
-            {
-                auto const tableDpld = tsl::dpld_e(
-                    table,
-                    {varIndex, varVal, varVal - 1},
-                    tsl::dpld_i_3_decrease(systemState)
-                );
-                auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {varVal, varVal - 1}, systemState, diagram, varIndex
-                );
-                auto const expected
-                    = tsl::birnbaum_importance(tableDpld, probs);
-                auto const actual = manager.birnbaum_importance(
-                    probs, {varVal, varVal - 1}, diagramDpld, varIndex
-                );
-                BOOST_TEST(
-                    expected == actual,
-                    boost::test_tools::tolerance(FloatingTolerance)
-                );
-            }
-        }
-    }
-}
-
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
-{
-    auto const expr
-        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
-    auto const domains = manager.get_domains();
-    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-
-    for (auto state = 1; state < Fixture::stateCount_; ++state)
-    {
-        auto const tableMcvs = tsl::mcvs(table, state);
-        auto const diagramMcvs = manager.template mcvs<std::vector<int32>>(diagram, state);
-        BOOST_REQUIRE(std::ranges::is_permutation(tableMcvs, diagramMcvs));
-    }
-}
-
 // TODO add test for specific systems computed elsewhere
 
 BOOST_AUTO_TEST_SUITE_END()
