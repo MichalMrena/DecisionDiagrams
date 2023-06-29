@@ -3,6 +3,7 @@
 
 #include <libtsl/types.hpp>
 
+#include <ostream>
 #include <vector>
 
 namespace teddy::tsl
@@ -10,10 +11,11 @@ namespace teddy::tsl
     struct system_description
     {
         int32 stateCount_;
+        int32 componentCount_;
         std::vector<int32> structureFunction_;
         std::vector<int32> domains_;
         std::vector<std::vector<double>> componentProbabilities_;
-        std::vector<double> stateProbabilites_;
+        std::vector<double> stateProbabilities_;
         std::vector<double> availabilities_;
         std::vector<double> unavailabilities_;
         std::vector<std::vector<int32>> mcvs_;
@@ -24,6 +26,12 @@ namespace teddy::tsl
         std::vector<std::vector<std::vector<double>>> birnbaumImportances_;
         std::vector<std::vector<std::vector<double>>> fusselVeselyImportances_;
     };
+
+    inline auto operator<< (std::ostream& ost, system_description const& system) -> std::ostream&
+    {
+        ost << "[system]";
+        return ost;
+    }
 }
 
 #endif

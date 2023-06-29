@@ -7,16 +7,14 @@
 #include <libtsl/truth_table_reliability.hpp>
 
 #include <boost/mpl/vector.hpp>
-#include <boost/test/tools/interface.hpp>
 #include <boost/test/tools/old/interface.hpp>
-#include <boost/test/tree/decorator.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/test/unit_test_log.hpp>
-#include <boost/test/unit_test_suite.hpp>
+#include <boost/test/data/test_case.hpp>
 
 #include <fmt/core.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <vector>
 
@@ -851,6 +849,7 @@ BOOST_AUTO_TEST_SUITE_END()
 const tsl::system_description system1 = tsl::system_description
 {
     .stateCount_ = 2,
+    .componentCount_ = 5,
     .structureFunction_ = {
         0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1
     },
@@ -864,7 +863,7 @@ const tsl::system_description system1 = tsl::system_description
         {.1,.9},
         {.1,.9},
     },
-    .stateProbabilites_ = {.01036,.98964},
+    .stateProbabilities_ = {.01036,.98964},
     .availabilities_ = {1,.98964},
     .unavailabilities_ = {0,.01036},
     .mcvs_ = {
@@ -902,13 +901,29 @@ const tsl::system_description system1 = tsl::system_description
     }
 };
 
+const std::array<tsl::system_description, 1> systems
+{
+    system1
+};
+
 BOOST_AUTO_TEST_SUITE(reliability_test_systems)
 
-// TODO nefunguje
-// BOOST_DATA_TEST_CASE( test_case_arity1_implicit, {1,2,3} )
-// {
-//   BOOST_TEST((sample <= 4 && sample >= 0));
-// }
+BOOST_DATA_TEST_CASE(system_test_table, systems, system)
+{
+    auto const table = tsl::truth_table(
+        system.structureFunction_,
+        system.domains_
+    );
+
+    for (auto state = 0; state < system.stateCount_; ++state)
+    {
+        // TODO tolerance
+        BOOST_REQUIRE_EQUAL(
+            system.stateProbabilities_[tsl::as_uindex(state)],
+            tsl::probability(table, system.componentProbabilities_, state)
+        );
+    }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
