@@ -7,9 +7,11 @@
 #include <libtsl/truth_table_reliability.hpp>
 
 #include <boost/mpl/vector.hpp>
+#include <boost/test/tools/fpc_tolerance.hpp>
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/test/data/test_case.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <fmt/core.h>
 
@@ -848,13 +850,14 @@ BOOST_AUTO_TEST_SUITE_END()
 
 const tsl::system_description system1 = tsl::system_description
 {
+    .systemId_ = 1,
     .stateCount_ = 2,
     .componentCount_ = 5,
     .structureFunction_ = {
         0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1
     },
     .domains_ = {
-        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+        2,2,2,2,2
     },
     .componentProbabilities_ = {
         {.1,.9},
@@ -917,11 +920,34 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
 
     for (auto state = 0; state < system.stateCount_; ++state)
     {
-        // TODO tolerance
-        BOOST_REQUIRE_EQUAL(
-            system.stateProbabilities_[tsl::as_uindex(state)],
-            tsl::probability(table, system.componentProbabilities_, state)
+        BOOST_TEST(
+            system.stateProbabilities_[tsl::as_uindex(state)] ==
+                tsl::probability(table, system.componentProbabilities_, state),
+            boost::test_tools::tolerance(FloatingTolerance)
         );
+    }
+
+    for (auto state = 0; state < system.stateCount_; ++state)
+    {
+        BOOST_TEST(
+            system.availabilities_[tsl::as_uindex(state)] ==
+                tsl::availability(table, system.componentProbabilities_, state),
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
+
+    for (auto state = 0; state < system.stateCount_; ++state)
+    {
+        BOOST_TEST(
+            system.unavailabilities_[tsl::as_uindex(state)] ==
+                tsl::unavailability(table, system.componentProbabilities_, state),
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
+
+    for (auto state = 0; state < system.stateCount_; ++state)
+    {
+        
     }
 }
 
