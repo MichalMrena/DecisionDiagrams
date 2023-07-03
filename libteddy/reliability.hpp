@@ -184,7 +184,10 @@ inline bss_manager::bss_manager(
     std::vector<int32> order
 ) :
     bss_manager(
-        componentCount, nodePoolSize, nodePoolSize / 2, std::move(order)
+        componentCount,
+        nodePoolSize,
+        nodePoolSize / 2,
+        std::move(order)
     )
 {
 }
@@ -196,7 +199,10 @@ inline bss_manager::bss_manager(
     std::vector<int32> order
 ) :
     reliability_manager<degrees::fixed<2>, domains::fixed<2>>(
-        componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
+        componentCount,
+        nodePoolSize,
+        overflowNodePoolSize,
+        std::move(order)
     )
 {
 }
@@ -208,7 +214,10 @@ mss_manager<P>::mss_manager(
     std::vector<int32> order
 ) :
     mss_manager(
-        componentCount, nodePoolSize, nodePoolSize / 2, std::move(order)
+        componentCount,
+        nodePoolSize,
+        nodePoolSize / 2,
+        std::move(order)
     )
 {
 }
@@ -221,7 +230,10 @@ mss_manager<P>::mss_manager(
     std::vector<int32> order
 ) :
     reliability_manager<degrees::fixed<P>, domains::fixed<P>>(
-        componentCount, nodePoolSize, overflowNodePoolSize, std::move(order)
+        componentCount,
+        nodePoolSize,
+        overflowNodePoolSize,
+        std::move(order)
     )
 {
 }

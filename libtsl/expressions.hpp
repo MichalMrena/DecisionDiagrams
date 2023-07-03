@@ -22,7 +22,10 @@ struct minmax_expr
  *  \brief Makes random minmax expression.
  */
 auto make_minmax_expression (
-    std::mt19937_64& indexRng, int32 varCount, int32 termCount, int32 termSize
+    std::mt19937_64& indexRng,
+    int32 varCount,
+    int32 termCount,
+    int32 termSize
 ) -> minmax_expr;
 
 /**
@@ -127,7 +130,9 @@ private:
  *  \brief Makes random minmax expression tree.
  */
 auto make_expression_tree (
-    int32 varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
+    int32 varcount,
+    std::mt19937_64& rngtype,
+    std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>;
 
 /**

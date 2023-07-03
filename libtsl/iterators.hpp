@@ -132,7 +132,8 @@ private:
 
 template<class Expression>
 auto operator== (
-    evaluating_iterator_sentinel s, evaluating_iterator<Expression> const& it
+    evaluating_iterator_sentinel s,
+    evaluating_iterator<Expression> const& it
 ) -> bool
 {
     return it == s;
@@ -140,7 +141,8 @@ auto operator== (
 
 template<class Expression>
 auto operator!= (
-    evaluating_iterator_sentinel s, evaluating_iterator<Expression> const& it
+    evaluating_iterator_sentinel s,
+    evaluating_iterator<Expression> const& it
 ) -> bool
 {
     return it != s;

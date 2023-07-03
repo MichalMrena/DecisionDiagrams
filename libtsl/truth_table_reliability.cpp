@@ -4,6 +4,7 @@
 #include <functional>
 #include <numeric>
 #include <ranges>
+
 #include "libtsl/truth_table.hpp"
 #include "libtsl/types.hpp"
 #include <bits/ranges_algo.h>
@@ -20,9 +21,10 @@ auto probability (
 
     domain_for_each(
         table,
-        [systemState, &table, &totalprob, &probabilities] (
-            auto const val, auto const& elem
-        )
+        [systemState,
+         &table,
+         &totalprob,
+         &probabilities] (auto const val, auto const& elem)
         {
             if (val == systemState)
             {
@@ -81,7 +83,10 @@ auto structural_importance (truth_table const& dpld, int32 componentIndex)
 {
     auto const& domains   = dpld.get_domains();
     auto const domainSize = std::reduce(
-        begin(domains), end(domains), int64 {1}, std::multiplies<>()
+        begin(domains),
+        end(domains),
+        int64 {1},
+        std::multiplies<>()
     );
     auto const nominator
         = satisfy_count(dpld, 1) / domains[as_uindex(componentIndex)];
@@ -97,7 +102,7 @@ auto birnbaum_importance (
     return probability(dpld, probabilities, 1);
 }
 
-auto fussel_vesely_importance(
+auto fussel_vesely_importance (
     truth_table const& structureFunction,
     std::vector<std::vector<double>> const& probabilities,
     int32 const componentIndex,
@@ -105,34 +110,39 @@ auto fussel_vesely_importance(
     int32 const systemState
 ) -> double
 {
-    auto const allMcvs = mcvs(structureFunction, systemState);
-    auto relevantMcvs = std::ranges::views::filter(allMcvs,
-        [componentIndex, componetnState](std::vector<int32> const& mcv)
-    {
-        return mcv[as_uindex(componentIndex)] == componetnState - 1;
-    });
+    auto const allMcvs = calculate_mcvs(structureFunction, systemState);
+    auto relevantMcvs  = std::ranges::views::filter(
+        allMcvs,
+        [componentIndex, componetnState] (std::vector<int32> const& mcv)
+        {
+            return mcv[as_uindex(componentIndex)] == componetnState - 1;
+        }
+    );
 
     auto result = .0;
 
-    domain_for_each(structureFunction,
-        [&](int32 const, std::vector<int32> const& elem)
-    {
-        for (auto const& mcv : relevantMcvs)
+    domain_for_each(
+        structureFunction,
+        [&] (int32 const, std::vector<int32> const& elem)
         {
-            if (compare(elem, mcv, std::less_equal<>()))
+            for (auto const& mcv : relevantMcvs)
             {
-                result += vector_probability(elem, probabilities);
-                continue;
+                if (compare(elem, mcv, std::less_equal<>()))
+                {
+                    result += vector_probability(elem, probabilities);
+                    continue;
+                }
             }
         }
-    });
+    );
 
     return result;
 }
 
-auto mcvs(truth_table const& table, int32 state) -> std::vector<std::vector<int32>>
+auto calculate_mcvs (truth_table const& table, int32 state)
+    -> std::vector<std::vector<int32>>
 {
-    auto constexpr PiConj = [](auto const lhs, auto const rhs)
+    auto constexpr PiConj = [] (auto const lhs, auto const rhs)
     {
         return std::min({lhs, rhs, Undefined});
     };
@@ -157,7 +167,35 @@ auto mcvs(truth_table const& table, int32 state) -> std::vector<std::vector<int3
     return satisfy_all(mcvFunction, 1);
 }
 
-auto vector_probability(
+auto calculate_mpvs (truth_table const& table, int32 state)
+    -> std::vector<std::vector<int32>>
+{
+    auto constexpr PiConj = [] (auto const lhs, auto const rhs)
+    {
+        return std::min({lhs, rhs, Undefined});
+    };
+
+    auto dplds = std::vector<truth_table>();
+    for (auto varIndex = 0; varIndex < table.get_var_count(); ++varIndex)
+    {
+        auto const varDomain = table.get_domains()[as_uindex(varIndex)];
+        for (auto varFrom = 1; varFrom < varDomain; ++varFrom)
+        {
+            auto const varChange = var_change {varIndex, varFrom, varFrom - 1};
+            dplds.push_back(dpld_e(table, varChange, dpld_i_3_decrease(state)));
+        }
+    }
+
+    auto mpvFunction = dplds.front();
+    for (auto i = 1; i < ssize(dplds); ++i)
+    {
+        apply_mutable(mpvFunction, dplds[as_uindex(i)], PiConj);
+    }
+
+    return satisfy_all(mpvFunction, 1);
+}
+
+auto vector_probability (
     std::vector<int32> const& vector,
     std::vector<std::vector<double>> const& probabilities
 ) -> double

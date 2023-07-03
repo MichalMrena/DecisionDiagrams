@@ -25,7 +25,8 @@ inline auto assert_true ([[maybe_unused]] bool const b)
 }
 
 inline auto assert_in_range (
-    [[maybe_unused]] int64 const i, [[maybe_unused]] int64 const size
+    [[maybe_unused]] int64 const i,
+    [[maybe_unused]] int64 const size
 )
 {
     assert((i >= 0 && i < size) && "Invalid index!");

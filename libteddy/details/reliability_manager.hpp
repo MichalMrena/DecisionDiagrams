@@ -262,7 +262,10 @@ public:
      *  of type 1.
      */
     auto idpld_type_1_decrease (
-        value_change var, int32 j, diagram_t sf, int32 i
+        value_change var,
+        int32 j,
+        diagram_t sf,
+        int32 i
     ) -> diagram_t;
 
     /**
@@ -280,7 +283,10 @@ public:
      *  of type 1.
      */
     auto idpld_type_1_increase (
-        value_change var, int32 j, diagram_t sf, int32 i
+        value_change var,
+        int32 j,
+        diagram_t sf,
+        int32 i
     ) -> diagram_t;
 
     /**
@@ -328,7 +334,10 @@ public:
      *  of type 3.
      */
     auto idpld_type_3_decrease (
-        value_change var, int32 j, diagram_t sf, int32 i
+        value_change var,
+        int32 j,
+        diagram_t sf,
+        int32 i
     ) -> diagram_t;
 
     /**
@@ -346,7 +355,10 @@ public:
      *  of type 3.
      */
     auto idpld_type_3_increase (
-        value_change var, int32 j, diagram_t sf, int32 i
+        value_change var,
+        int32 j,
+        diagram_t sf,
+        int32 i
     ) -> diagram_t;
 
     /**
@@ -383,7 +395,10 @@ public:
      */
     template<component_probabilities Ps>
     auto birnbaum_importance (
-        Ps const& ps, value_change var, diagram_t dpld, int32 i
+        Ps const& ps,
+        value_change var,
+        diagram_t dpld,
+        int32 i
     ) -> double;
 
     /**
@@ -456,14 +471,17 @@ private:
 
     template<component_probabilities Ps>
     auto calculate_ntp (
-        std::vector<int32> const& selected, Ps const& ps, diagram_t d
+        std::vector<int32> const& selected,
+        Ps const& ps,
+        diagram_t d
     ) -> double;
 };
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_probabilities(
-    Ps const& ps, diagram_t sf
+    Ps const& ps,
+    diagram_t sf
 ) -> void
 {
     auto const root = sf.unsafe_get_root();
@@ -508,7 +526,9 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::probability(
-    int32 const j, Ps const& ps, diagram_t f
+    int32 const j,
+    Ps const& ps,
+    diagram_t f
 ) -> double
 {
     // return this->calculate_ntp({j}, ps, f);
@@ -527,7 +547,8 @@ template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::availability(
-    Ps const& ps, diagram_t f
+    Ps const& ps,
+    diagram_t f
 ) -> second_t<Foo, double>
 {
     return this->availability(1, ps, f);
@@ -536,7 +557,9 @@ auto reliability_manager<Degree, Domain>::availability(
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::availability(
-    int32 const j, Ps const& ps, diagram_t f
+    int32 const j,
+    Ps const& ps,
+    diagram_t f
 ) -> double
 {
     auto js = std::vector<int32>();
@@ -582,7 +605,8 @@ template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::unavailability(
-    Ps const& ps, diagram_t f
+    Ps const& ps,
+    diagram_t f
 ) -> second_t<Foo, double>
 {
     return this->unavailability(1, ps, f);
@@ -591,7 +615,9 @@ auto reliability_manager<Degree, Domain>::unavailability(
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::unavailability(
-    int32 const j, Ps const& ps, diagram_t f
+    int32 const j,
+    Ps const& ps,
+    diagram_t f
 ) -> double
 {
     auto js = std::vector<int32>();
@@ -642,7 +668,10 @@ auto reliability_manager<Degree, Domain>::state_frequency(diagram_t sf, int32 j)
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::dpld(
-    value_change const var, value_change const f, diagram_t sf, int32 const i
+    value_change const var,
+    value_change const f,
+    diagram_t sf,
+    int32 const i
 ) -> diagram_t
 {
     return this->dpld_g(
@@ -658,7 +687,10 @@ auto reliability_manager<Degree, Domain>::dpld(
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::idpld_type_1_decrease(
-    value_change var, int32 j, diagram_t sf, int32 i
+    value_change var,
+    int32 j,
+    diagram_t sf,
+    int32 i
 ) -> diagram_t
 {
     return this->dpld_g(
@@ -674,7 +706,10 @@ auto reliability_manager<Degree, Domain>::idpld_type_1_decrease(
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
-    value_change var, int32 j, diagram_t sf, int32 i
+    value_change var,
+    int32 j,
+    diagram_t sf,
+    int32 i
 ) -> diagram_t
 {
     return this->dpld_g(
@@ -690,7 +725,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
-    value_change var, diagram_t sf, int32 i
+    value_change var,
+    diagram_t sf,
+    int32 i
 ) -> diagram_t
 {
     return this->dpld_g(
@@ -706,7 +743,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
-    value_change var, diagram_t sf, int32 i
+    value_change var,
+    diagram_t sf,
+    int32 i
 ) -> diagram_t
 {
     return this->dpld_g(
@@ -722,7 +761,10 @@ auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::idpld_type_3_decrease(
-    value_change const var, int32 const j, diagram_t sf, int32 const i
+    value_change const var,
+    int32 const j,
+    diagram_t sf,
+    int32 const i
 ) -> diagram_t
 {
     return this->dpld_g(
@@ -738,7 +780,10 @@ auto reliability_manager<Degree, Domain>::idpld_type_3_decrease(
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
-    value_change const var, int32 const j, diagram_t sf, int32 const i
+    value_change const var,
+    int32 const j,
+    diagram_t sf,
+    int32 const i
 ) -> diagram_t
 {
     return this->dpld_g(
@@ -754,7 +799,9 @@ auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::to_dpld_e(
-    int32 varFrom, int32 i, diagram_t dpld
+    int32 varFrom,
+    int32 i,
+    diagram_t dpld
 ) -> diagram_t
 {
     auto const root      = dpld.unsafe_get_root();
@@ -812,7 +859,8 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
                         }
                     );
                     return this->nodes_.internal_node(
-                        i, std::move(newNodeSons)
+                        i,
+                        std::move(newNodeSons)
                     );
                 }
                 else
@@ -844,7 +892,10 @@ auto reliability_manager<Degree, Domain>::structural_importance(diagram_t dpld)
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::birnbaum_importance(
-    Ps const& ps, value_change const var, diagram_t dpld, int32 const i
+    Ps const& ps,
+    value_change const var,
+    diagram_t dpld,
+    int32 const i
 ) -> double
 {
     auto const dplde = this->to_dpld_e(var.from, i, dpld);
@@ -869,7 +920,9 @@ auto reliability_manager<Degree, Domain>::mcvs(diagram_t sf, int32 const j)
 template<degree Degree, domain Domain>
 template<out_var_values Vars, std::output_iterator<Vars> Out>
 auto reliability_manager<Degree, Domain>::mcvs_g(
-    diagram_t sf, int32 const j, Out out
+    diagram_t sf,
+    int32 const j,
+    Out out
 ) -> void
 {
     auto const varCount = this->get_var_count();
@@ -893,7 +946,10 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
 template<degree Degree, domain Domain>
 template<f_val_change F>
 auto reliability_manager<Degree, Domain>::dpld_g(
-    diagram_t sf, value_change var, int32 i, F change
+    diagram_t sf,
+    value_change var,
+    int32 i,
+    F change
 ) -> diagram_t
 {
     auto const lhs = this->cofactor(sf, i, var.from);
@@ -904,7 +960,9 @@ auto reliability_manager<Degree, Domain>::dpld_g(
 template<degree Degree, domain Domain>
 template<f_val_change F>
 auto reliability_manager<Degree, Domain>::apply_dpld(
-    diagram_t lhs, diagram_t rhs, F change
+    diagram_t lhs,
+    diagram_t rhs,
+    F change
 ) -> diagram_t
 {
     using cache_pair = struct
@@ -932,9 +990,10 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
         decltype(cache_pair_hash),
         decltype(cache_pair_equals)>();
 
-    auto const go = [this, &cache, change] (
-                        auto const& self, auto const l, auto const r
-                    ) -> node_t*
+    auto const go
+        = [this,
+           &cache,
+           change] (auto const& self, auto const l, auto const r) -> node_t*
     {
         auto const cached = cache.find(cache_pair {l, r});
         if (cached != std::end(cache))
@@ -997,7 +1056,9 @@ auto reliability_manager<Degree, Domain>::domain_size() const -> int64
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_ntp(
-    std::vector<int32> const& selected, Ps const& ps, diagram_t d
+    std::vector<int32> const& selected,
+    Ps const& ps,
+    diagram_t d
 ) -> double
 {
     this->nodes_.for_each_terminal_node(
@@ -1049,7 +1110,10 @@ reliability_manager<Degree, Domain>::reliability_manager(
 requires(domains::is_fixed<Domain>()())
     :
     diagram_manager<double, Degree, Domain>(
-        varCount, nodePoolSize, overflowNodePoolSize, std::move(order)
+        varCount,
+        nodePoolSize,
+        overflowNodePoolSize,
+        std::move(order)
     )
 {
 }

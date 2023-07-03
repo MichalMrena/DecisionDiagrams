@@ -60,7 +60,8 @@ private:
 
 template<class Data, degree D>
 node_pool<Data, D>::node_pool(
-    int64 const mainPoolSize, int64 const overflowPoolSize
+    int64 const mainPoolSize,
+    int64 const overflowPoolSize
 ) :
     mainPool_(allocate_pool(mainPoolSize)),
     overflowPools_({}),
@@ -72,7 +73,9 @@ node_pool<Data, D>::node_pool(
     availableNodes_(mainPoolSize)
 {
     debug::out(
-        "node_pool: Allocating initial pool with size ", mainPoolSize_, ".\n"
+        "node_pool: Allocating initial pool with size ",
+        mainPoolSize_,
+        ".\n"
     );
 }
 

@@ -398,7 +398,9 @@ inline auto pla_file::load_file(std::string const& path)
                           : std::vector<std::string>();
 
     return pla_file(
-        std::move(lines), std::move(inputLabels), std::move(outputLabels)
+        std::move(lines),
+        std::move(inputLabels),
+        std::move(outputLabels)
     );
 }
 

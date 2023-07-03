@@ -311,7 +311,9 @@ auto apply_cache<Data, D>::find(node_t* const l, node_t* const r) -> node_t*
 template<class Data, degree D>
 template<bin_op O>
 auto apply_cache<Data, D>::put(
-    node_t* const l, node_t* const r, node_t* const res
+    node_t* const l,
+    node_t* const r,
+    node_t* const res
 ) -> void
 {
     auto const oid = op_id(O());
@@ -366,7 +368,9 @@ auto apply_cache<Data, D>::load_factor() const -> double
 
 template<class Data, degree D>
 auto apply_cache<Data, D>::hash(
-    int32 const oid, node_t* const l, node_t* const r
+    int32 const oid,
+    node_t* const l,
+    node_t* const r
 ) -> hash_t
 {
     auto const hash1 = std::hash<int32>()(oid);
@@ -381,7 +385,10 @@ auto apply_cache<Data, D>::hash(
 
 template<class Data, degree D>
 auto apply_cache<Data, D>::put_impl(
-    int32 const oid, node_t* const l, node_t* const r, node_t* const res
+    int32 const oid,
+    node_t* const l,
+    node_t* const r,
+    node_t* const res
 ) -> void
 {
     auto const tupleHash = static_cast<int64>(hash(oid, l, r));
@@ -433,7 +440,8 @@ auto apply_cache<Data, D>::rehash(int64 const newCapacity) -> void
 
 template<class BucketIt, class Data, degree D>
 unique_table_it<BucketIt, Data, D>::unique_table_it(
-    BucketIt const first, BucketIt const last
+    BucketIt const first,
+    BucketIt const last
 ) :
     bucketIt_(first),
     lastBucketIt_(last),
@@ -727,7 +735,9 @@ auto unique_table<Data, D>::node_hash(sons_t const& sons, int32 const domain)
 
 template<class Data, degree D>
 auto unique_table<Data, D>::node_equals(
-    node_t* const node, sons_t const& sons, int32 const domain
+    node_t* const node,
+    sons_t const& sons,
+    int32 const domain
 ) -> bool
 {
     for (auto k = 0; k < domain; ++k)

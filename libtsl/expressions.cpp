@@ -52,7 +52,9 @@ auto evaluate_expression (minmax_expr const& expr, std::vector<int32> const& vs)
 // expr_node:
 
 expr_node::operation_t::operation_t(
-    operation_type o, std::unique_ptr<expr_node> l, std::unique_ptr<expr_node> r
+    operation_type o,
+    std::unique_ptr<expr_node> l,
+    std::unique_ptr<expr_node> r
 ) :
     op_(o),
     l_(std::move(l)),
@@ -140,7 +142,9 @@ auto expr_node::get_right() const -> expr_node const&
 }
 
 auto make_expression_tree (
-    int32 varcount, std::mt19937_64& rngtype, std::mt19937_64& rngbranch
+    int32 varcount,
+    std::mt19937_64& rngtype,
+    std::mt19937_64& rngbranch
 ) -> std::unique_ptr<expr_node>
 {
     auto go = [&, i = 0u] (auto& self, auto const n) mutable

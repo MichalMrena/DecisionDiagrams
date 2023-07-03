@@ -130,7 +130,8 @@ public:
  */
 template<class Dat, class Deg, class Dom>
 auto expected_counts (
-    diagram_manager<Dat, Deg, Dom>& manager, tsl::minmax_expr const& expr
+    diagram_manager<Dat, Deg, Dom>& manager,
+    tsl::minmax_expr const& expr
 )
 {
     auto counts   = std::vector<int64>();
@@ -463,7 +464,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
     auto evalend  = tsl::evaluating_iterator_sentinel();
     auto vectord  = manager.from_vector(evalit, evalend);
     BOOST_REQUIRE_MESSAGE(
-        diagram.equals(vectord), "From-vector created the same diagram"
+        diagram.equals(vectord),
+        "From-vector created the same diagram"
     );
 }
 
@@ -486,7 +488,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
 {
     auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto exprtree = tsl::make_expression_tree(
-        manager.get_var_count(), Fixture::rng_, Fixture::rng_
+        manager.get_var_count(),
+        Fixture::rng_,
+        Fixture::rng_
     );
     auto diagram  = manager.from_expression_tree(*exprtree);
     auto domainit = tsl::domain_iterator(manager.get_domains());

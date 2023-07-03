@@ -887,7 +887,8 @@ auto diagram_manager<Data, Degree, Domain>::variables(
 template<class Data, degree Degree, domain Domain>
 template<std::input_iterator I, std::sentinel_for<I> S>
 auto diagram_manager<Data, Degree, Domain>::variables(
-    I const first, S const last
+    I const first,
+    S const last
 ) -> std::vector<diagram_t>
 {
     static_assert(std::convertible_to<std::iter_value_t<I>, int32>);
@@ -1047,7 +1048,8 @@ template<class Data, degree Degree, domain Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
 auto diagram_manager<Data, Degree, Domain>::from_pla(
-    pla_file const& file, fold_type const foldType
+    pla_file const& file,
+    fold_type const foldType
 ) -> second_t<Foo, std::vector<diagram_t>>
 {
     auto const product = [this] (auto const& cube)
@@ -1146,9 +1148,8 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
                     return exprNode.evaluate(l, r);
                 }
             );
-            return this->apply_local(
-                lhs.unsafe_get_root(), rhs.unsafe_get_root(), op
-            );
+            return this
+                ->apply_local(lhs.unsafe_get_root(), rhs.unsafe_get_root(), op);
         }
     };
     return go(go, root);
@@ -1231,7 +1232,8 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
 template<class Data, degree Degree, domain Domain>
 template<in_var_values Vars>
 auto diagram_manager<Data, Degree, Domain>::evaluate(
-    diagram_t d, Vars const& vs
+    diagram_t d,
+    Vars const& vs
 ) const -> int32
 {
     auto n = d.unsafe_get_root();
@@ -1257,7 +1259,8 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(diagram_t d)
 
 template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::satisfy_count(
-    int32 const val, diagram_t d
+    int32 const val,
+    diagram_t d
 ) -> int64
 {
     if constexpr (domains::is_fixed<Domain>()())
@@ -1338,7 +1341,8 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all(diagram_t d) const
 template<class Data, degree Degree, domain Domain>
 template<out_var_values Vars>
 auto diagram_manager<Data, Degree, Domain>::satisfy_all(
-    int32 const val, diagram_t d
+    int32 const val,
+    diagram_t d
 ) const -> std::vector<Vars>
 {
     auto vs = std::vector<Vars>();
@@ -1349,7 +1353,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all(
 template<class Data, degree Degree, domain Domain>
 template<out_var_values Vars, std::output_iterator<Vars> O>
 auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
-    int32 const val, diagram_t d, O out
+    int32 const val,
+    diagram_t d,
+    O out
 ) const -> void
 {
     if constexpr (domains::is_fixed<Domain>()())
@@ -1413,7 +1419,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
 
 template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::cofactor(
-    diagram_t d, int32 const i, int32 const v
+    diagram_t d,
+    int32 const i,
+    int32 const v
 ) -> diagram_t
 {
     if (d.unsafe_get_root()->is_terminal())
@@ -1540,7 +1548,8 @@ auto diagram_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& ost
 
 template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::to_dot_graph(
-    std::ostream& ost, diagram_t d
+    std::ostream& ost,
+    diagram_t d
 ) const -> void
 {
     nodes_.to_dot_graph(ost, d.unsafe_get_root());
@@ -1601,7 +1610,8 @@ auto diagram_manager<Data, Degree, Domain>::force_reorder() -> void
 template<class Data, degree Degree, domain Domain>
 template<uint_to_uint F>
 auto diagram_manager<Data, Degree, Domain>::transform_terminal(
-    node_t* const root, F f
+    node_t* const root,
+    F f
 ) -> node_t*
 {
     auto memo     = std::unordered_map<node_t*, node_t*>();
@@ -1641,7 +1651,9 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
 template<class Data, degree Degree, domain Domain>
 template<any_bin_op Op>
 auto diagram_manager<Data, Degree, Domain>::apply_local(
-    node_t* const lhs, node_t* const rhs, Op const op
+    node_t* const lhs,
+    node_t* const rhs,
+    Op const op
 ) -> diagram_t
 {
     auto cache = std::unordered_map<
@@ -1658,7 +1670,9 @@ auto diagram_manager<Data, Degree, Domain>::apply_local(
 template<class Data, degree Degree, domain Domain>
 template<bin_op Op>
 auto diagram_manager<Data, Degree, Domain>::apply_global(
-    node_t* const l, node_t* const r, Op const op
+    node_t* const l,
+    node_t* const r,
+    Op const op
 ) -> diagram_t
 {
     auto cacheHandle = global_cache_handle<Op>(nodes_);
@@ -1668,7 +1682,10 @@ auto diagram_manager<Data, Degree, Domain>::apply_global(
 template<class Data, degree Degree, domain Domain>
 template<any_bin_op Op, cache_handle<node<Data, Degree>> Cache>
 auto diagram_manager<Data, Degree, Domain>::apply_detail(
-    node_t* const lhs, node_t* const rhs, Op const op, Cache& cache
+    node_t* const lhs,
+    node_t* const rhs,
+    Op const op,
+    Cache& cache
 ) -> diagram_t
 {
     auto const go = [&, this] (auto const self, auto const l, auto const r)
@@ -1767,18 +1784,23 @@ diagram_manager<Data, Degree, Domain>::local_cache_handle<
 template<class Data, degree Degree, domain Domain>
 template<class Map>
 auto diagram_manager<Data, Degree, Domain>::local_cache_handle<Map>::put(
-    node_t* const l, node_t* const r, node_t* const u
+    node_t* const l,
+    node_t* const r,
+    node_t* const u
 ) -> void
 {
     map_.emplace(
-        std::piecewise_construct, std::make_tuple(l, r), std::make_tuple(u)
+        std::piecewise_construct,
+        std::make_tuple(l, r),
+        std::make_tuple(u)
     );
 }
 
 template<class Data, degree Degree, domain Domain>
 template<class Map>
 auto diagram_manager<Data, Degree, Domain>::local_cache_handle<Map>::lookup(
-    node_t* const l, node_t* const r
+    node_t* const l,
+    node_t* const r
 ) const -> node_t*
 {
     auto const it = map_.find(std::make_pair(l, r));
@@ -1796,7 +1818,9 @@ diagram_manager<Data, Degree, Domain>::global_cache_handle<
 template<class Data, degree Degree, domain Domain>
 template<class Op>
 auto diagram_manager<Data, Degree, Domain>::global_cache_handle<Op>::put(
-    node_t* const l, node_t* const r, node_t* const u
+    node_t* const l,
+    node_t* const r,
+    node_t* const u
 ) -> void
 {
     nodes_.template cache_put<Op>(l, r, u);
@@ -1805,7 +1829,8 @@ auto diagram_manager<Data, Degree, Domain>::global_cache_handle<Op>::put(
 template<class Data, degree Degree, domain Domain>
 template<class Op>
 auto diagram_manager<Data, Degree, Domain>::global_cache_handle<Op>::lookup(
-    node_t* const l, node_t* const r
+    node_t* const l,
+    node_t* const r
 ) const -> node_t*
 {
     return nodes_.template cache_find<Op>(l, r);

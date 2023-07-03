@@ -196,7 +196,8 @@ template<class Data, teddy::degree D>
 struct equal_to<teddy::diagram<Data, D>>
 {
     [[nodiscard]] auto operator() (
-        teddy::diagram<Data, D> const& l, teddy::diagram<Data, D> const& r
+        teddy::diagram<Data, D> const& l,
+        teddy::diagram<Data, D> const& r
     ) const noexcept -> bool
     {
         return l.equals(r);

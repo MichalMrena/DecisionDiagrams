@@ -436,7 +436,8 @@ auto node_manager<Data, Degree, Domain>::special_node(
 
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::internal_node(
-    int32 const i, sons_t&& sons
+    int32 const i,
+    sons_t&& sons
 ) -> node_t*
 {
     // Each node comming out of here is marked.
@@ -636,7 +637,8 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& ost) const
 
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::to_dot_graph(
-    std::ostream& ost, node_t* const n
+    std::ostream& ost,
+    node_t* const n
 ) const -> void
 {
     this->to_dot_graph_common(
@@ -650,7 +652,8 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph(
 
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::domain_product(
-    int32 const from, int32 const to
+    int32 const from,
+    int32 const to
 ) const -> int64
 {
     if constexpr (domains::is_fixed<Domain>()())
@@ -684,7 +687,8 @@ auto node_manager<Data, Degree, Domain>::make_sons(int32 const i, F&& f)
 template<class Data, degree Degree, domain Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
-    node_t* const node, NodeOp&& f
+    node_t* const node,
+    NodeOp&& f
 ) const -> void
 {
     auto const i = node->get_index();
@@ -697,7 +701,9 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
 template<class Data, degree Degree, domain Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
-    int32 const i, sons_t const& sons, NodeOp&& f
+    int32 const i,
+    sons_t const& sons,
+    NodeOp&& f
 ) const -> void
 {
     for (auto k = 0; k < domains_[i]; ++k)
@@ -738,7 +744,8 @@ auto node_manager<Data, Degree, Domain>::for_each_terminal_node(NodeOp&& f
 template<class Data, degree Degree, domain Domain>
 template<bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_find(
-    node_t* const l, node_t* const r
+    node_t* const l,
+    node_t* const r
 ) -> node_t*
 {
     auto const node = opCache_.template find<O>(l, r);
@@ -752,7 +759,9 @@ auto node_manager<Data, Degree, Domain>::cache_find(
 template<class Data, degree Degree, domain Domain>
 template<bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_put(
-    node_t* const l, node_t* const r, node_t* const res
+    node_t* const l,
+    node_t* const r,
+    node_t* const res
 ) -> void
 {
     opCache_.template put<O>(l, r, res);
@@ -760,7 +769,8 @@ auto node_manager<Data, Degree, Domain>::cache_put(
 
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::is_valid_var_value(
-    int32 const i, int32 const v
+    int32 const i,
+    int32 const v
 ) const -> bool
 {
     return v < domains_[i];
@@ -780,7 +790,8 @@ auto node_manager<Data, Degree, Domain>::run_deferred() -> void
 template<class Data, degree Degree, domain Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_pre(
-    node_t* const node, NodeOp&& nodeOp
+    node_t* const node,
+    NodeOp&& nodeOp
 ) const -> void
 {
     auto const go
@@ -810,7 +821,8 @@ auto node_manager<Data, Degree, Domain>::traverse_pre(
 template<class Data, degree Degree, domain Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_post(
-    node_t* const node, NodeOp&& nodeOp
+    node_t* const node,
+    NodeOp&& nodeOp
 ) const -> void
 {
     auto const go = [this] (auto& self, auto const n, auto& op) -> void
@@ -839,7 +851,8 @@ auto node_manager<Data, Degree, Domain>::traverse_post(
 template<class Data, degree Degree, domain Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_level(
-    node_t* const node, NodeOp&& nodeOp
+    node_t* const node,
+    NodeOp&& nodeOp
 ) const -> void
 {
     auto const cmp = [this] (auto const l, auto const r)
@@ -885,7 +898,8 @@ auto node_manager<Data, Degree, Domain>::dec_ref_count(node_t* const v) -> void
 
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::is_redundant(
-    int32 const i, sons_t const& sons
+    int32 const i,
+    sons_t const& sons
 ) const -> bool
 {
     for (auto j = 1; j < domains_[i]; ++j)
@@ -1007,7 +1021,8 @@ auto node_manager<Data, Degree, Domain>::traverse_no_op(node_t* const node
 template<class Data, degree Degree, domain Domain>
 template<class ForEachNode>
 auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
-    std::ostream& ost, ForEachNode&& for_each_node
+    std::ostream& ost,
+    ForEachNode&& for_each_node
 ) const -> void
 {
     auto const make_label = [] (auto const n)
@@ -1253,7 +1268,8 @@ auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const n) -> void
         );
 
         uniqueTables_[as_uindex(n->get_index())].erase(
-            n, domains_[n->get_index()]
+            n,
+            domains_[n->get_index()]
         );
     }
     else
@@ -1285,7 +1301,8 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
     }
     uniqueTables_[as_uindex(index)].adjust_capacity(domains_[index]);
     uniqueTables_[as_uindex(nextIndex)].merge(
-        std::move(tmpTable), domains_[nextIndex]
+        std::move(tmpTable),
+        domains_[nextIndex]
     );
 
     using std::swap;
@@ -1381,7 +1398,9 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
     };
 
     debug::out(
-        "node_manager: Sifting variables. Node count before ", nodeCount_, ".\n"
+        "node_manager: Sifting variables. Node count before ",
+        nodeCount_,
+        ".\n"
     );
 
     auto const siftOrder = determine_sift_order();
@@ -1391,7 +1410,9 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
     }
 
     debug::out(
-        "node_manager: Done sifting. Node count after ", nodeCount_, ".\n"
+        "node_manager: Done sifting. Node count after ",
+        nodeCount_,
+        ".\n"
     );
 
     gcReorderDeferred_ = false;

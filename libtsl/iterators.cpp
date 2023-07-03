@@ -16,13 +16,16 @@ domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({})
 
 domain_iterator::domain_iterator(std::vector<int32> domains) :
     domain_iterator(
-        domains, utils::fill_vector(ssize(domains), utils::identity), {}
+        domains,
+        utils::fill_vector(ssize(domains), utils::identity),
+        {}
     )
 {
 }
 
 domain_iterator::domain_iterator(
-    std::vector<int32> domains, std::vector<int32> order
+    std::vector<int32> domains,
+    std::vector<int32> order
 ) :
     domain_iterator(std::move(domains), std::move(order), {})
 {
@@ -145,7 +148,8 @@ evaluating_iterator<Expression>::evaluating_iterator() :
 
 template<class Expression>
 evaluating_iterator<Expression>::evaluating_iterator(
-    domain_iterator iterator, Expression const& expr
+    domain_iterator iterator,
+    Expression const& expr
 ) :
     domainIterator_(std::move(iterator)),
     expr_(&expr)

@@ -92,8 +92,8 @@ auto birnbaum_importance (
  *  \param systemState system state
  *  \return fussel-vesely importance
  */
-auto fussel_vesely_importance(
-truth_table const& structureFunction,
+auto fussel_vesely_importance (
+    truth_table const& structureFunction,
     std::vector<std::vector<double>> const& probabilities,
     int32 componentIndex,
     int32 componetnState,
@@ -232,9 +232,10 @@ auto dpld_e (truth_table const& table, var_change const var, F change)
 
     domain_for_each(
         table,
-        [&, index = 0U, tmpelem = std::vector<int32>()] (
-            auto const ffrom, auto const& elem
-        ) mutable
+        [&,
+         index = 0U,
+         tmpelem
+         = std::vector<int32>()] (auto const ffrom, auto const& elem) mutable
         {
             if (elem[as_uindex(var.index)] != var.from)
             {
@@ -257,7 +258,14 @@ auto dpld_e (truth_table const& table, var_change const var, F change)
 /**
  *  \brief Calculates all MCVs for system \p state
  */
-auto mcvs(truth_table const& table, int32 state) -> std::vector<std::vector<int32>>;
+auto calculate_mcvs (truth_table const& table, int32 state)
+    -> std::vector<std::vector<int32>>;
+
+/**
+ *  \brief Calculates all MPVs for system \p state
+ */
+auto calculate_mpvs (truth_table const& table, int32 state)
+    -> std::vector<std::vector<int32>>;
 
 /**
  *  \brief Calculates probability of the \p vector
@@ -265,7 +273,7 @@ auto mcvs(truth_table const& table, int32 state) -> std::vector<std::vector<int3
  *  \param probabilities component state probabilities
  *  \return state vector probability
  */
-auto vector_probability(
+auto vector_probability (
     std::vector<int32> const& vector,
     std::vector<std::vector<double>> const& probabilities
 ) -> double;

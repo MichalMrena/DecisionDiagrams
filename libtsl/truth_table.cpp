@@ -9,7 +9,8 @@
 namespace teddy::tsl
 {
 truth_table::truth_table(
-    std::vector<int32> vector, std::vector<int32> domains
+    std::vector<int32> vector,
+    std::vector<int32> domains
 ) :
     vector_(std::move(vector)),
     domain_(std::move(domains)),

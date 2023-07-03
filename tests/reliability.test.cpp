@@ -7,10 +7,10 @@
 #include <libtsl/truth_table_reliability.hpp>
 
 #include <boost/mpl/vector.hpp>
+#include <boost/test/data/test_case.hpp>
 #include <boost/test/tools/fpc_tolerance.hpp>
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test_suite.hpp>
 
 #include <fmt/core.h>
@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "libteddy/details/types.hpp"
@@ -178,8 +179,7 @@ using Fixtures                   = boost::mpl::vector<
     teddy::tests::bss_fixture,
     teddy::tests::mss_fixture<3>,
     teddy::tests::imss_fixture<3>,
-    teddy::tests::ifmss_fixture<3>
->;
+    teddy::tests::ifmss_fixture<3>>;
 
 BOOST_AUTO_TEST_SUITE(reliability_test_faster_stuff)
 
@@ -349,7 +349,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(
-    structural_importances, Fixture, Fixtures, Fixture
+    structural_importances,
+    Fixture,
+    Fixtures,
+    Fixture
 )
 {
     auto const expr
@@ -373,7 +376,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                     tsl::dpld_i_3_decrease(systemState)
                 );
                 auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {varVal, varVal - 1}, systemState, diagram, varIndex
+                    {varVal, varVal - 1},
+                    systemState,
+                    diagram,
+                    varIndex
                 );
                 auto const expected
                     = tsl::structural_importance(tableDpld, varIndex);
@@ -388,7 +394,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(
-    birnbaum_importances, Fixture, Fixtures, Fixture
+    birnbaum_importances,
+    Fixture,
+    Fixtures,
+    Fixture
 )
 {
     auto const expr
@@ -414,12 +423,18 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                     tsl::dpld_i_3_decrease(systemState)
                 );
                 auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {varVal, varVal - 1}, systemState, diagram, varIndex
+                    {varVal, varVal - 1},
+                    systemState,
+                    diagram,
+                    varIndex
                 );
                 auto const expected
                     = tsl::birnbaum_importance(tableDpld, probs);
                 auto const actual = manager.birnbaum_importance(
-                    probs, {varVal, varVal - 1}, diagramDpld, varIndex
+                    probs,
+                    {varVal, varVal - 1},
+                    diagramDpld,
+                    varIndex
                 );
                 BOOST_TEST(
                     expected == actual,
@@ -441,8 +456,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
 
     for (auto state = 1; state < Fixture::stateCount_; ++state)
     {
-        auto const tableMcvs = tsl::mcvs(table, state);
-        auto const diagramMcvs = manager.template mcvs<std::vector<int32>>(diagram, state);
+        auto const tableMcvs = tsl::calculate_mcvs(table, state);
+        auto const diagramMcvs
+            = manager.template mcvs<std::vector<int32>>(diagram, state);
         BOOST_REQUIRE(std::ranges::is_permutation(tableMcvs, diagramMcvs));
     }
 }
@@ -523,7 +539,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
                     details::compare_dplds(manager, tableDpld, diagramDpld)
                 );
                 BOOST_REQUIRE(details::compare_dplds(
-                    manager, tableDpldExtended, diagramDpldExtended
+                    manager,
+                    tableDpldExtended,
+                    diagramDpldExtended
                 ));
             }
         }
@@ -585,13 +603,20 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
                     varIndex
                 );
                 auto const diagramDpldDecreaseExtended = manager.to_dpld_e(
-                    varChange.from, varIndex, diagramDpldDecrease
+                    varChange.from,
+                    varIndex,
+                    diagramDpldDecrease
                 );
                 auto const diagramDpldIncrease = manager.idpld_type_1_increase(
-                    {varChange.from, varChange.to}, fValue, diagram, varIndex
+                    {varChange.from, varChange.to},
+                    fValue,
+                    diagram,
+                    varIndex
                 );
                 auto const diagramDpldIncreaseExtended = manager.to_dpld_e(
-                    varChange.from, varIndex, diagramDpldIncrease
+                    varChange.from,
+                    varIndex,
+                    diagramDpldIncrease
                 );
                 auto const oneCountDecrease
                     = manager.satisfy_count(1, diagramDpldDecrease);
@@ -621,7 +646,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
                     fmt::format("One count increase = {}", oneCountIncrease)
                 );
                 BOOST_REQUIRE(details::compare_dplds(
-                    manager, tableDpldDecrease, diagramDpldDecrease
+                    manager,
+                    tableDpldDecrease,
+                    diagramDpldDecrease
                 ));
                 BOOST_REQUIRE(details::compare_dplds(
                     manager,
@@ -629,7 +656,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
                     diagramDpldDecreaseExtended
                 ));
                 BOOST_REQUIRE(details::compare_dplds(
-                    manager, tableDpldIncrease, diagramDpldIncrease
+                    manager,
+                    tableDpldIncrease,
+                    diagramDpldIncrease
                 ));
                 BOOST_REQUIRE(details::compare_dplds(
                     manager,
@@ -687,16 +716,24 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
                 tsl::dpld_i_2_increase()
             );
             auto const diagramDpldDecrease = manager.idpld_type_2_decrease(
-                {varChange.from, varChange.to}, diagram, varIndex
+                {varChange.from, varChange.to},
+                diagram,
+                varIndex
             );
             auto const diagramDpldDecreaseExtended = manager.to_dpld_e(
-                varChange.from, varIndex, diagramDpldDecrease
+                varChange.from,
+                varIndex,
+                diagramDpldDecrease
             );
             auto const diagramDpldIncrease = manager.idpld_type_2_increase(
-                {varChange.from, varChange.to}, diagram, varIndex
+                {varChange.from, varChange.to},
+                diagram,
+                varIndex
             );
             auto const diagramDpldIncreaseExtended = manager.to_dpld_e(
-                varChange.from, varIndex, diagramDpldIncrease
+                varChange.from,
+                varIndex,
+                diagramDpldIncrease
             );
             auto const oneCountDecrease
                 = manager.satisfy_count(1, diagramDpldDecrease);
@@ -722,16 +759,24 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
                 fmt::format("One count increase = {}", oneCountIncrease)
             );
             BOOST_REQUIRE(details::compare_dplds(
-                manager, tableDpldDecrease, diagramDpldDecrease
+                manager,
+                tableDpldDecrease,
+                diagramDpldDecrease
             ));
             BOOST_REQUIRE(details::compare_dplds(
-                manager, tableDpldDecreaseExtended, diagramDpldDecreaseExtended
+                manager,
+                tableDpldDecreaseExtended,
+                diagramDpldDecreaseExtended
             ));
             BOOST_REQUIRE(details::compare_dplds(
-                manager, tableDpldIncrease, diagramDpldIncrease
+                manager,
+                tableDpldIncrease,
+                diagramDpldIncrease
             ));
             BOOST_REQUIRE(details::compare_dplds(
-                manager, tableDpldIncreaseExtended, diagramDpldIncreaseExtended
+                manager,
+                tableDpldIncreaseExtended,
+                diagramDpldIncreaseExtended
             ));
         }
     }
@@ -786,16 +831,26 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
                 );
 
                 auto const diagramDpldDecrease = manager.idpld_type_3_decrease(
-                    {varChange.from, varChange.to}, fValue, diagram, varIndex
+                    {varChange.from, varChange.to},
+                    fValue,
+                    diagram,
+                    varIndex
                 );
                 auto const diagramDpldDecreaseExtended = manager.to_dpld_e(
-                    varChange.from, varIndex, diagramDpldDecrease
+                    varChange.from,
+                    varIndex,
+                    diagramDpldDecrease
                 );
                 auto const diagramDpldIncrease = manager.idpld_type_3_increase(
-                    {varChange.from, varChange.to}, fValue, diagram, varIndex
+                    {varChange.from, varChange.to},
+                    fValue,
+                    diagram,
+                    varIndex
                 );
                 auto const diagramDpldIncreaseExtended = manager.to_dpld_e(
-                    varChange.from, varIndex, diagramDpldIncrease
+                    varChange.from,
+                    varIndex,
+                    diagramDpldIncrease
                 );
                 auto const oneCountDecrease
                     = manager.satisfy_count(1, diagramDpldDecrease);
@@ -825,7 +880,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
                     fmt::format("One count increase = {}", oneCountIncrease)
                 );
                 BOOST_REQUIRE(details::compare_dplds(
-                    manager, tableDpldDecrease, diagramDpldDecrease
+                    manager,
+                    tableDpldDecrease,
+                    diagramDpldDecrease
                 ));
                 BOOST_REQUIRE(details::compare_dplds(
                     manager,
@@ -833,7 +890,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
                     diagramDpldDecreaseExtended
                 ));
                 BOOST_REQUIRE(details::compare_dplds(
-                    manager, tableDpldIncrease, diagramDpldIncrease
+                    manager,
+                    tableDpldIncrease,
+                    diagramDpldIncrease
                 ));
                 BOOST_REQUIRE(details::compare_dplds(
                     manager,
@@ -870,84 +929,180 @@ const tsl::system_description system1 = tsl::system_description
     .availabilities_ = {1,.98964},
     .unavailabilities_ = {0,.01036},
     .mcvs_ = {
-        {0,1,0,1,0},
-        {0,1,1,0,0},
-        {1,0,0,1,0},
-        {1,0,1,0,0}
+        /* state 0 */
+        {
+        },
+
+        /* state 1 */
+        {
+            {0,1,0,1,0},
+            {0,1,1,0,0},
+            {1,0,0,1,0},
+            {1,0,1,0,0}
+        }
     },
     .mpvs_ = {
-        {0,0,0,0,1},
-        {0,0,1,1,0},
-        {1,1,0,0,0}
+        /* state 0 */
+        {
+        },
+
+        /* state 1 */
+        {
+            {0,0,0,0,1},
+            {0,0,1,1,0},
+            {1,1,0,0,0}
+        }
 
     },
     .structuralImportances_ = {
-        {{}, {-1, .18750}},
-        {{}, {-1, .18750}},
-        {{}, {-1, .18750}},
-        {{}, {-1, .18750}},
-        {{}, {-1, .56250}}
+        {{}, {-1, .18750}}, /* x0 */
+        {{}, {-1, .18750}}, /* x1 */
+        {{}, {-1, .18750}}, /* x2 */
+        {{}, {-1, .18750}}, /* x3 */
+        {{}, {-1, .56250}}  /* x4 */
     },
     .birnbaumImportances_ = {
-        {{}, {-1, .02960}},
-        {{}, {-1, .03330}},
-        {{}, {-1, .02520}},
-        {{}, {-1, .01960}},
-        {{}, {-1, .10360}}
+        {{}, {-1, .02960}}, /* x0 */
+        {{}, {-1, .03330}}, /* x1 */
+        {{}, {-1, .02520}}, /* x2 */
+        {{}, {-1, .01960}}, /* x3 */
+        {{}, {-1, .10360}}  /* x4 */
     },
     .fusselVeselyImportances_ = {
-        {{}, {-1, .35714}},
-        {{}, {-1, .71429}},
-        {{}, {-1, .81081}},
-        {{}, {-1, .27027}},
-        {{}, {-1, .00000}}
+        {{}, {-1, .35714}}, /* x0 */
+        {{}, {-1, .71429}}, /* x1 */
+        {{}, {-1, .81081}}, /* x2 */
+        {{}, {-1, .27027}}, /* x3 */
+        {{}, {-1, .00000}}  /* x4 */
     }
 };
 
-const std::array<tsl::system_description, 1> systems
-{
-    system1
-};
+const std::array<tsl::system_description, 1> systems {system1};
 
 BOOST_AUTO_TEST_SUITE(reliability_test_systems)
 
 BOOST_DATA_TEST_CASE(system_test_table, systems, system)
 {
-    auto const table = tsl::truth_table(
-        system.structureFunction_,
-        system.domains_
-    );
+    auto const table
+        = tsl::truth_table(system.structureFunction_, system.domains_);
 
+    // System State Probabilities
     for (auto state = 0; state < system.stateCount_; ++state)
     {
         BOOST_TEST(
-            system.stateProbabilities_[tsl::as_uindex(state)] ==
-                tsl::probability(table, system.componentProbabilities_, state),
+            system.stateProbabilities_[tsl::as_uindex(state)]
+                == tsl::probability(
+                    table,
+                    system.componentProbabilities_,
+                    state
+                ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
 
+    // Availabilities
     for (auto state = 0; state < system.stateCount_; ++state)
     {
         BOOST_TEST(
-            system.availabilities_[tsl::as_uindex(state)] ==
-                tsl::availability(table, system.componentProbabilities_, state),
+            system.availabilities_[tsl::as_uindex(state)]
+                == tsl::availability(
+                    table,
+                    system.componentProbabilities_,
+                    state
+                ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
 
+    // Unavailabilities
     for (auto state = 0; state < system.stateCount_; ++state)
     {
         BOOST_TEST(
-            system.unavailabilities_[tsl::as_uindex(state)] ==
-                tsl::unavailability(table, system.componentProbabilities_, state),
+            system.unavailabilities_[tsl::as_uindex(state)]
+                == tsl::unavailability(
+                    table,
+                    system.componentProbabilities_,
+                    state
+                ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
 
-    for (auto state = 0; state < system.stateCount_; ++state)
+    // Minimal Cut Vectors
+    for (auto state = 1; state < system.stateCount_; ++state)
     {
-        
+        auto const cuts = tsl::calculate_mcvs(table, state);
+        BOOST_REQUIRE(
+            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], cuts)
+        );
+    }
+
+    // Minimal Path Vectors
+    for (auto state = 1; state < system.stateCount_; ++state)
+    {
+        auto const cuts = tsl::calculate_mpvs(table, state);
+        BOOST_REQUIRE(
+            std::ranges::is_permutation(system.mpvs_[as_uindex(state)], cuts)
+        );
+    }
+
+    // Structural Importances (Integrated DPLD Type III)
+    for (auto index = 0; index < system.componentCount_; ++index)
+    {
+        for (auto systemState = 1; systemState < system.stateCount_;
+             ++systemState)
+        {
+            auto const domain = system.domains_[as_uindex(index)];
+            for (auto componentState = 1; componentState < domain;
+                 ++componentState)
+            {
+                auto const tableDpld = tsl::dpld(
+                    table,
+                    {index, componentState, componentState - 1},
+                    tsl::dpld_i_3_decrease(systemState)
+                );
+                auto const realSI
+                    = system.structuralImportances_[as_uindex(index
+                    )][as_uindex(systemState)][as_uindex(componentState)];
+                auto const tableSI
+                    = tsl::structural_importance(tableDpld, index);
+
+                BOOST_TEST(
+                    realSI == tableSI,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
+    }
+
+    // Birnbaum Importances (Integrated DPLD Type III)
+    for (auto index = 0; index < system.componentCount_; ++index)
+    {
+        for (auto systemState = 1; systemState < system.stateCount_;
+             ++systemState)
+        {
+            auto const domain = system.domains_[as_uindex(index)];
+            for (auto componentState = 1; componentState < domain;
+                 ++componentState)
+            {
+                auto const tableDpld = tsl::dpld(
+                    table,
+                    {index, componentState, componentState - 1},
+                    tsl::dpld_i_3_decrease(systemState)
+                );
+                auto const realBI  = system.birnbaumImportances_[as_uindex(index
+                )][as_uindex(systemState)][as_uindex(componentState)];
+                auto const tableBI = tsl::birnbaum_importance(
+                    tableDpld,
+                    system.componentProbabilities_
+                );
+
+                BOOST_TEST(
+                    realBI == tableBI,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
     }
 }
 
