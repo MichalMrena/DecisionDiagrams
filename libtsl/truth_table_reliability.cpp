@@ -5,9 +5,8 @@
 #include <numeric>
 #include <ranges>
 
-#include "libtsl/truth_table.hpp"
-#include "libtsl/types.hpp"
-#include <bits/ranges_algo.h>
+#include <fmt/color.h>
+#include <fmt/ranges.h>
 
 namespace teddy::tsl
 {
@@ -102,7 +101,7 @@ auto birnbaum_importance (
     return probability(dpld, probabilities, 1);
 }
 
-auto fussel_vesely_importance (
+auto fussell_vesely_importance (
     truth_table const& structureFunction,
     std::vector<std::vector<double>> const& probabilities,
     int32 const componentIndex,
@@ -129,14 +128,18 @@ auto fussel_vesely_importance (
             {
                 if (compare(elem, mcv, std::less_equal<>()))
                 {
-                    result += vector_probability(elem, probabilities);
-                    continue;
+                    auto const vectorProbability = vector_probability(elem, probabilities);
+                    result += vectorProbability;
+                    // fmt::print("{} -> {}\n", fmt::join(elem, ""), vectorProbability);
+                    break;
                 }
             }
         }
     );
 
-    return result;
+    auto const unavailability = tsl::unavailability(structureFunction, probabilities, systemState);
+
+    return result / unavailability;
 }
 
 auto calculate_mcvs (truth_table const& table, int32 state)

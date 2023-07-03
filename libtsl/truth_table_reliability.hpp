@@ -92,7 +92,7 @@ auto birnbaum_importance (
  *  \param systemState system state
  *  \return fussel-vesely importance
  */
-auto fussel_vesely_importance (
+auto fussell_vesely_importance (
     truth_table const& structureFunction,
     std::vector<std::vector<double>> const& probabilities,
     int32 componentIndex,

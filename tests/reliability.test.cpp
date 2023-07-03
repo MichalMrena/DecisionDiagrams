@@ -14,6 +14,7 @@
 #include <boost/test/unit_test_suite.hpp>
 
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 
 #include <algorithm>
 #include <array>
@@ -21,8 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "libteddy/details/types.hpp"
-#include "libtsl/types.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests
@@ -968,13 +967,15 @@ const tsl::system_description system1 = tsl::system_description
         {{}, {-1, .01960}}, /* x3 */
         {{}, {-1, .10360}}  /* x4 */
     },
-    .fusselVeselyImportances_ = {
+    .fussellVeselyImportances_ = {
         {{}, {-1, .35714}}, /* x0 */
         {{}, {-1, .71429}}, /* x1 */
         {{}, {-1, .81081}}, /* x2 */
         {{}, {-1, .27027}}, /* x3 */
-        {{}, {-1, .00000}}  /* x4 */
-    }
+        {{}, {-1, 1.0000}}  /* x4 */
+    },
+
+    .floatingTolerance_ = 0.00001
 };
 
 const std::array<tsl::system_description, 1> systems {system1};
@@ -985,6 +986,9 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
 {
     auto const table
         = tsl::truth_table(system.structureFunction_, system.domains_);
+    auto constexpr InitNodeCount = 10'000;
+    auto manager = teddy::imss_manager(system.componentCount_, InitNodeCount, system.domains_);
+    auto const diagram = manager.from_vector(system.structureFunction_);
 
     // System State Probabilities
     for (auto state = 0; state < system.stateCount_; ++state)
@@ -996,6 +1000,11 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
                     system.componentProbabilities_,
                     state
                 ),
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+        BOOST_TEST(
+            system.stateProbabilities_[tsl::as_uindex(state)]
+                == manager.probability(state, system.componentProbabilities_, diagram),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
@@ -1012,6 +1021,11 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
                 ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
+        BOOST_TEST(
+            system.availabilities_[tsl::as_uindex(state)]
+                == manager.availability(state, system.componentProbabilities_, diagram),
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
     }
 
     // Unavailabilities
@@ -1026,23 +1040,32 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
                 ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
+        BOOST_TEST(
+            system.unavailabilities_[tsl::as_uindex(state)]
+                == manager.unavailability(state, system.componentProbabilities_, diagram),
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
     }
 
     // Minimal Cut Vectors
     for (auto state = 1; state < system.stateCount_; ++state)
     {
-        auto const cuts = tsl::calculate_mcvs(table, state);
         BOOST_REQUIRE(
-            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], cuts)
+            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], tsl::calculate_mcvs(table, state))
+        );
+        BOOST_REQUIRE(
+            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], manager.mcvs<std::vector<int32>>(diagram, state))
         );
     }
 
     // Minimal Path Vectors
     for (auto state = 1; state < system.stateCount_; ++state)
     {
-        auto const cuts = tsl::calculate_mpvs(table, state);
         BOOST_REQUIRE(
-            std::ranges::is_permutation(system.mpvs_[as_uindex(state)], cuts)
+            std::ranges::is_permutation(system.mpvs_[as_uindex(state)], tsl::calculate_mpvs(table, state))
+        );
+        BOOST_REQUIRE(
+            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], manager.mpvs<std::vector<int32>>(diagram, state))
         );
     }
 
@@ -1061,14 +1084,24 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
                     {index, componentState, componentState - 1},
                     tsl::dpld_i_3_decrease(systemState)
                 );
+                auto const diagramDpld = manager.idpld_type_3_decrease(
+                    {componentState, componentState - 1},
+                    systemState,
+                    diagram, index
+                );
                 auto const realSI
                     = system.structuralImportances_[as_uindex(index
                     )][as_uindex(systemState)][as_uindex(componentState)];
                 auto const tableSI
                     = tsl::structural_importance(tableDpld, index);
+                auto const diagramSI = manager.structural_importance(diagramDpld);
 
                 BOOST_TEST(
                     realSI == tableSI,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+                BOOST_TEST(
+                    realSI == diagramSI,
                     boost::test_tools::tolerance(FloatingTolerance)
                 );
             }
@@ -1076,7 +1109,54 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
     }
 
     // Birnbaum Importances (Integrated DPLD Type III)
+    for (auto varIndex = 0; varIndex < system.componentCount_; ++varIndex)
+    {
+        for (auto systemState = 1; systemState < system.stateCount_;
+             ++systemState)
+        {
+            auto const domain = system.domains_[as_uindex(varIndex)];
+            for (auto componentState = 1; componentState < domain;
+                 ++componentState)
+            {
+                auto const tableDpld = tsl::dpld(
+                    table,
+                    {varIndex, componentState, componentState - 1},
+                    tsl::dpld_i_3_decrease(systemState)
+                );
+                auto const diagramDpld = manager.idpld_type_3_decrease(
+                    {componentState, componentState - 1},
+                    systemState,
+                    diagram,
+                    varIndex
+                );
+                auto const realBI  = system.birnbaumImportances_[as_uindex(varIndex
+                )][as_uindex(systemState)][as_uindex(componentState)];
+                auto const tableBI = tsl::birnbaum_importance(
+                    tableDpld,
+                    system.componentProbabilities_
+                );
+                auto const diagramBI = manager.birnbaum_importance(
+                    system.componentProbabilities_,
+                    {componentState, componentState - 1},
+                    diagramDpld,
+                    varIndex
+                );
+
+                BOOST_TEST(
+                    realBI == tableBI,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+                BOOST_TEST(
+                    realBI == diagramBI,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
+    }
+
+    // Fussell-Vesely Importances
     for (auto index = 0; index < system.componentCount_; ++index)
+    // for (auto index = 0; index < 1; ++index)
     {
         for (auto systemState = 1; systemState < system.stateCount_;
              ++systemState)
@@ -1085,21 +1165,19 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
             for (auto componentState = 1; componentState < domain;
                  ++componentState)
             {
-                auto const tableDpld = tsl::dpld(
-                    table,
-                    {index, componentState, componentState - 1},
-                    tsl::dpld_i_3_decrease(systemState)
-                );
-                auto const realBI  = system.birnbaumImportances_[as_uindex(index
+                auto const realFVI = system.fussellVeselyImportances_[as_uindex(index
                 )][as_uindex(systemState)][as_uindex(componentState)];
-                auto const tableBI = tsl::birnbaum_importance(
-                    tableDpld,
-                    system.componentProbabilities_
+                auto const tableFVI = tsl::fussell_vesely_importance(
+                    table,
+                    system.componentProbabilities_,
+                    index,
+                    componentState,
+                    systemState
                 );
 
                 BOOST_TEST(
-                    realBI == tableBI,
-                    boost::test_tools::tolerance(FloatingTolerance)
+                    realFVI == tableFVI,
+                    boost::test_tools::tolerance(system.floatingTolerance_)
                 );
             }
         }

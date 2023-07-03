@@ -9,6 +9,10 @@
 #include <type_traits>
 #include <unordered_map>
 
+#include <fmt/core.h>
+#include <fmt/ranges.h>
+#include <iostream>
+
 namespace teddy
 {
 template<class Degree>
@@ -235,6 +239,10 @@ public:
      */
     auto state_frequency (diagram_t sf, int32 j) -> double;
 
+    // TODO zjednotit rozhranie s table_reliability, pouzit
+    // var_change (index, from, to)
+    // function_change (from, to)
+
     /**
      *  \brief Calculates Direct Partial Boolean Derivative.
      *
@@ -388,17 +396,13 @@ public:
      *  It is up to the user to pick the one that suits his needs.
      *
      *  \param ps Component state probabilities
-     *  \param var Component state change
      *  \param dpld Direct Partial Boolean Derivative of any type
-     *  \param i Index of the component
      *  \return Birnbaum importance of given component
      */
     template<component_probabilities Ps>
     auto birnbaum_importance (
         Ps const& ps,
-        value_change var,
-        diagram_t dpld,
-        int32 i
+        diagram_t dpld
     ) -> double;
 
     /**
@@ -409,13 +413,29 @@ public:
      *  that for bigger systems, there can be a huge number of MCVs.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning unsigned integers.
+     *  assigning integers e.g std::vector or std::array
      *  \param sf Structure function.
      *  \param j System state.
      *  \returns Vector of Minimal Cut Vectors.
      */
     template<out_var_values Vars>
     auto mcvs (diagram_t sf, int32 j) -> std::vector<Vars>;
+
+    /**
+     *  \brief Finds all Minimal Path Vector (MPVs) of the system with
+     *  respect to the system state \p state
+     *
+     *  This function uses \c satisfy_all function. Please keep in mind
+     *  that for bigger systems, there can be a huge number of MCVs
+     *
+     *  \tparam Vars Container type that defines \c operator[] and allows
+     *  assigning integers e.g std::vector or std::array
+     *  \param structureFunction Structure function
+     *  \param systemState System state
+     *  \returns Vector of Minimal Cut Vectors.
+     */
+    template<out_var_values Vars>
+    auto mpvs (diagram_t const& structureFunction, int32 systemState) -> std::vector<Vars>;
 
     /**
      *  \brief Finds all Minimal Cut Vector of the system with respect
@@ -425,7 +445,7 @@ public:
      *  that for bigger systems, there can be a huge number of MCVs.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning unsigned integers.
+     *  assigning integers e.g std::vector or std::array
      *  \param sf Structure function.
      *  \param j System state.
      *  \param out Output iterator that is used to output instances
@@ -433,6 +453,23 @@ public:
      */
     template<out_var_values Vars, std::output_iterator<Vars> Out>
     auto mcvs_g (diagram_t sf, int32 j, Out out) -> void;
+
+    /**
+     *  \brief Finds all Minimal Path Vector (MPVs) of the system with
+     *  respect to the system state \p state
+     *
+     *  This function uses \c satisfy_all function. Please keep in mind
+     *  that for bigger systems, there can be a huge number of MCVs
+     *
+     *  \tparam Vars Container type that defines \c operator[] and allows
+     *  assigning integers e.g std::vector or std::array
+     *  \param structureFunction Structure function
+     *  \param systemState System state
+     *  \param out Output iterator that is used to output instances
+     *  of \p Vars .
+     */
+    template<out_var_values Vars, std::output_iterator<Vars> Out>
+    auto mpvs_g (diagram_t const& structureFunction, int32 systemState, Out out) -> void;
 
 protected:
     reliability_manager(
@@ -893,18 +930,10 @@ template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::birnbaum_importance(
     Ps const& ps,
-    value_change const var,
-    diagram_t dpld,
-    int32 const i
+    diagram_t dpld
 ) -> double
 {
-    auto const dplde = this->to_dpld_e(var.from, i, dpld);
-
-    // TODO bug somewhere
-    // this->calculate_probabilities(ps, dplde);
-    // return this->get_probability(1);
-
-    return this->probability(1, ps, dplde);
+    return this->probability(1, ps, dpld);
 }
 
 template<degree Degree, domain Domain>
@@ -914,6 +943,16 @@ auto reliability_manager<Degree, Domain>::mcvs(diagram_t sf, int32 const j)
 {
     auto cuts = std::vector<Vars>();
     this->mcvs_g<Vars>(sf, j, std::back_inserter(cuts));
+    return cuts;
+}
+
+template<degree Degree, domain Domain>
+template<out_var_values Vars>
+auto reliability_manager<Degree, Domain>::mpvs
+    (diagram_t const& structureFunction, int32 systemState) -> std::vector<Vars>
+{
+    auto cuts = std::vector<Vars>();
+    this->mcvs_g<Vars>(structureFunction, systemState, std::back_inserter(cuts));
     return cuts;
 }
 
@@ -936,6 +975,32 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
             auto const varChange = value_change {varFrom, varFrom + 1};
             auto const dpld = this->idpld_type_3_increase(varChange, j, sf, i);
             dpldes.emplace_back(this->to_dpld_e(varFrom, i, dpld));
+        }
+    }
+
+    auto const conj = this->template tree_fold<ops::PI_CONJ>(dpldes);
+    this->template satisfy_all_g<Vars, Out>(1, conj, out);
+}
+
+template<degree Degree, domain Domain>
+template<out_var_values Vars, std::output_iterator<Vars> Out>
+auto reliability_manager<Degree, Domain>::mpvs_g(
+    diagram_t const& structureFucntion,
+    int32 const systemState,
+    Out out
+) -> void
+{
+    auto const varCount = this->get_var_count();
+    auto dpldes         = std::vector<diagram_t>();
+
+    for (auto varIndex = 0; varIndex < varCount; ++varIndex)
+    {
+        auto const varDomain = this->nodes_.get_domain(varIndex);
+        for (auto varFrom = 1; varFrom < varDomain; ++varFrom)
+        {
+            auto const varChange = value_change {varFrom, varFrom - 1};
+            auto const dpld = this->idpld_type_3_decrease(varChange, systemState, structureFucntion, varIndex);
+            dpldes.emplace_back(this->to_dpld_e(varFrom, varIndex, dpld));
         }
     }
 

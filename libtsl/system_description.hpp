@@ -27,7 +27,9 @@ struct system_description
     // component index; system state; component state
     std::vector<std::vector<std::vector<double>>> structuralImportances_;
     std::vector<std::vector<std::vector<double>>> birnbaumImportances_;
-    std::vector<std::vector<std::vector<double>>> fusselVeselyImportances_;
+    std::vector<std::vector<std::vector<double>>> fussellVeselyImportances_;
+
+    double floatingTolerance_;
 };
 
 inline auto operator<< (std::ostream& ost, system_description const& system)
