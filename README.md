@@ -1,39 +1,44 @@
 # 🧸 TeDDy
 
-TeDDy is a C++ library for the creation and manipulation of decision diagrams. It is being developed as a project at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), the [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).  
+TeDDy is a C++ library for the creation and manipulation of decision diagrams. It is being developed at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), the [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).  
 This text assumes that the reader is familiar with decision diagrams to some extent. Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDDs) and their generalization Multi-Valued Decision Diagrams (MDDs).
 
 ---
 ## Contents
 
-  * [How to install](#how-to-install)
-    + [Compiling](#compiling)
+  * [How to use](#how-to-use)
   * [Library API](#library-api)
   * [Basic usage](#basic-usage)
   * [Memory management](#memory-management)
-    + [Node pool](#node-pool)
-    + [Cache](#cache)
   * [Other](#other)
-    + [Assertions](#assertions)
-    + [Variable ordering](#variable-ordering)
   * [Reliability analysis](#reliability-analysis)
-    + [Basic usage](#basic-usage-1)
-    + [Example](#example)
   * [Publications](#publications)
-      - [List of publications:](#list-of-publications-)
 
 ---
 
-## How to install
-The library is header-only so it is easy to incorporate it into your project. All you need to do is to place the contents of the [include](./include/) directory in your project files and include a header file in your code as is shown in the examples below.  
-If you would like to use the library in multiple projects and you are a Linux user you can use the following commands to install TeDDy:
-```bash
+## How to use
+TeDDY is a header-only library. There are two principal ways to use in your project.
+
+### Copy the files
+The simplest way is to download the library (using `git clone`, [one of the releases](https://github.com/MichalMrena/DecisionDiagrams/releases), or [download as zip](https://github.com/MichalMrena/DecisionDiagrams/archive/refs/heads/master.zip)) and place the [libteddy](./libteddy/) folder somewhere where your compiler can see it.
+
+### Using cmake
+If you are familiar with cmake, we recommend one of the following ways.
+#### Global install
+You can install the library using standard procedure.
+```sh
 git clone git@github.com:MichalMrena/DecisionDiagrams.git
 cd DecisionDiagrams
+mkdir build
+cd build
+cmake ..
 sudo make install
 ```
-This installs library files to `/usr/local` which should be visible to your compiler. You can specify different path by setting the `PREFIX` variable: `make PREFIX=<path> install`. The installation script writes path to all installed files into the `install_manifest.txt` file.  
+This installs library files the default location which should be visible to your compiler. You can specify different path by passing the `-DCMAKE_INSTALL_PREFIX=<your path>` to cmake. Cmake writes paths to all installed files into the `install_manifest.txt` file.  
 To uninstall the library go to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.
+
+#### Subdirectory
+
 
 ### Compiling
 TeDDy uses features from `C++20` so you need to set your compiler for this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. It was tested with `g++ 10.1.0`, `clang++ 13.0.1` and `MSVC 19.31.31107`.  

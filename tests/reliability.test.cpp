@@ -431,9 +431,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                     = tsl::birnbaum_importance(tableDpld, probs);
                 auto const actual = manager.birnbaum_importance(
                     probs,
-                    {varVal, varVal - 1},
-                    diagramDpld,
-                    varIndex
+                    diagramDpld
                 );
                 BOOST_TEST(
                     expected == actual,
@@ -1137,9 +1135,7 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
                 );
                 auto const diagramBI = manager.birnbaum_importance(
                     system.componentProbabilities_,
-                    {componentState, componentState - 1},
-                    diagramDpld,
-                    varIndex
+                    diagramDpld
                 );
 
                 BOOST_TEST(
@@ -1156,7 +1152,6 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
 
     // Fussell-Vesely Importances
     for (auto index = 0; index < system.componentCount_; ++index)
-    // for (auto index = 0; index < 1; ++index)
     {
         for (auto systemState = 1; systemState < system.stateCount_;
              ++systemState)
