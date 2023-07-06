@@ -5,6 +5,7 @@
 
 #include <concepts>
 
+// TODO details namespace
 namespace teddy
 {
 template<int32 M>

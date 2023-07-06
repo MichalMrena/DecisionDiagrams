@@ -19,6 +19,7 @@ auto out ([[maybe_unused]] Ts... s)
 #endif
 }
 
+// TODO asi pred, stacia asserty
 inline auto assert_true ([[maybe_unused]] bool const b)
 {
     assert(b);

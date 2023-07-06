@@ -7,7 +7,7 @@ This text assumes that the reader is familiar with decision diagrams to some ext
 # Contents
   * [How to install](#how-to-install)
   * [How to use](#how-to-use)
-  * [Publications](#publications)
+  * [Publications and citation](#publications-and-citation)
 
 ---
 

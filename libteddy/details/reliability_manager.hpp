@@ -512,6 +512,8 @@ private:
         Ps const& ps,
         diagram_t d
     ) -> double;
+
+    auto to_mnf(diagram_t dpld) -> diagram_t;
 };
 
 template<degree Degree, domain Domain>
@@ -568,8 +570,7 @@ auto reliability_manager<Degree, Domain>::probability(
     diagram_t f
 ) -> double
 {
-    // return this->calculate_ntp({j}, ps, f);
-    return this->calculate_ntp(std::vector<int32>({j}), ps, f);
+    return this->calculate_ntp({j}, ps, f);
 }
 
 template<degree Degree, domain Domain>
@@ -985,7 +986,7 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
 template<degree Degree, domain Domain>
 template<out_var_values Vars, std::output_iterator<Vars> Out>
 auto reliability_manager<Degree, Domain>::mpvs_g(
-    diagram_t const& structureFucntion,
+    diagram_t const& structureFunction,
     int32 const systemState,
     Out out
 ) -> void
@@ -999,7 +1000,7 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
         for (auto varFrom = 1; varFrom < varDomain; ++varFrom)
         {
             auto const varChange = value_change {varFrom, varFrom - 1};
-            auto const dpld = this->idpld_type_3_decrease(varChange, systemState, structureFucntion, varIndex);
+            auto const dpld = this->idpld_type_3_decrease(varChange, systemState, structureFunction, varIndex);
             dpldes.emplace_back(this->to_dpld_e(varFrom, varIndex, dpld));
         }
     }
