@@ -1,5 +1,5 @@
-#ifndef LIBTEDDY_TEDDY_RELIABILITY_HPP
-#define LIBTEDDY_TEDDY_RELIABILITY_HPP
+#ifndef LIBTEDDY_RELIABILITY_HPP
+#define LIBTEDDY_RELIABILITY_HPP
 
 #include <libteddy/details/reliability_manager.hpp>
 
@@ -9,18 +9,17 @@ using default_oder = std::vector<int32>;
 
 /**
  *  \class bss_manager
- *  \brief Manager for creation of Binary Decision Diagrams and analysis
- *  of Binary State System.
+ *  \brief Manager for BDDs and analysis of Binary State System
  */
 struct bss_manager :
     public reliability_manager<degrees::fixed<2>, domains::fixed<2>>
 {
     /**
-     *  \brief Initializes BSS manager.
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
+     *  \brief Initializes BSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     bss_manager(
         int32 componentCount,
@@ -29,12 +28,12 @@ struct bss_manager :
     );
 
     /**
-     *  \brief Initializes BSS manager.
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
-     *  \param overflowNodePoolSize Size of the additional node pools.
+     *  \brief Initializes BSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
+     *  \param overflowNodePoolSize Size of the additional node pools
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     bss_manager(
         int32 componentCount,
@@ -46,22 +45,19 @@ struct bss_manager :
 
 /**
  *  \class mss_manager
- *  \brief Manager for creation of Multi-valued Decision diagrams
- *  and analysis of homogenous Multi-state Systems.
- *
- *  \tparam P number of component and system states.
+ *  \brief Manager for MDDs and analysis of homogeneous Multi-State Systems
+ *  \tparam M number of component and system states
  */
-template<int32 P>
+template<int32 M>
 struct mss_manager :
-    public reliability_manager<degrees::fixed<P>, domains::fixed<P>>
+    public reliability_manager<degrees::fixed<M>, domains::fixed<M>>
 {
     /**
-     *  \brief Initializes MSS manager.
-     *
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
+     *  \brief Initializes MSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     mss_manager(
         int32 componentCount,
@@ -70,13 +66,12 @@ struct mss_manager :
     );
 
     /**
-     *  \brief Initializes MSS manager.
-     *
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
-     *  \param overflowNodePoolSize Size of the additional node pools.
+     *  \brief Initializes MSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
+     *  \param overflowNodePoolSize Size of the additional node pools
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     mss_manager(
         int32 componentCount,
@@ -88,20 +83,18 @@ struct mss_manager :
 
 /**
  *  \class imss_manager
- *  \brief Manager for creation of (integer) Muti-valued Decision diagrams
- *  and analysis of non-homogenous Multi-state Systems.
+ *  \brief Manager for iMDDs and analysis of non-homogenous Multi-state Systems
  */
 struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
 {
     /**
-     *  \brief Initializes iMSS manager.
-     *
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
-     *  \param domains Domains of variables.
-     *  Number at index i is the domain of i-th variable.
+     *  \brief Initializes iMSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
+     *  \param domains Domains of variables
+     *  Number at index i is the domain of i-th variable
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     imss_manager(
         int32 componentCount,
@@ -111,15 +104,14 @@ struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
     );
 
     /**
-     *  \brief Initializes iMSS manager.
-     *
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
-     *  \param overflowNodePoolSize Size of the additional node pools.
-     *  \param domains Domains of variables.
+     *  \brief Initializes iMSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
+     *  \param overflowNodePoolSize Size of the additional node pools
+     *  \param domains Domains of variables
      *  Number at index i is the domain of i-th variable.
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     imss_manager(
         int32 componentCount,
@@ -132,24 +124,21 @@ struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
 
 /**
  *  \class ifmss_manager
- *  \brief Manager for creation of (integer) Muti-valued Decision diagrams
- *  and analysis of non-homogenous Multi-state Systems.
- *
- *  \tparam PMax maximal number of system and component states.
+ *  \brief Manager for iMDDs and analysis of non-homogenous Multi-state Systems.
+ *  \tparam M maximal number of system and component states.
  */
-template<int32 PMax>
+template<int32 M>
 struct ifmss_manager :
-    public reliability_manager<degrees::fixed<PMax>, domains::mixed>
+    public reliability_manager<degrees::fixed<M>, domains::mixed>
 {
     /**
-     *  \brief Initializes ifMSS manager.
-     *
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
-     *  \param domains Domains of variables.
+     *  \brief Initializes ifMSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
+     *  \param domains Domains of variables
      *  Number at index i is the domain of i-th variable.
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     ifmss_manager(
         int32 componentCount,
@@ -159,15 +148,14 @@ struct ifmss_manager :
     );
 
     /**
-     *  \brief Initializes ifMSS manager.
-     *
-     *  \param componentCount Number of components.
-     *  \param nodePoolSize Size of the main node pool.
-     *  \param overflowNodePoolSize Size of the additional node pools.
-     *  \param domains Domains of variables.
+     *  \brief Initializes ifMSS manager
+     *  \param componentCount Number of components
+     *  \param nodePoolSize Size of the main node pool
+     *  \param overflowNodePoolSize Size of the additional node pools
+     *  \param domains Domains of variables
      *  Number at index i is the domain of i-th variable.
      *  \param order Order of variables. Variables are ordered
-     *  by their indices by default.
+     *  by their indices by default
      */
     ifmss_manager(
         int32 componentCount,
@@ -207,8 +195,8 @@ inline bss_manager::bss_manager(
 {
 }
 
-template<int32 P>
-mss_manager<P>::mss_manager(
+template<int32 M>
+mss_manager<M>::mss_manager(
     int32 const componentCount,
     int64 const nodePoolSize,
     std::vector<int32> order
@@ -222,14 +210,14 @@ mss_manager<P>::mss_manager(
 {
 }
 
-template<int32 P>
-mss_manager<P>::mss_manager(
+template<int32 M>
+mss_manager<M>::mss_manager(
     int32 const componentCount,
     int64 const nodePoolSize,
     int64 const overflowNodePoolSize,
     std::vector<int32> order
 ) :
-    reliability_manager<degrees::fixed<P>, domains::fixed<P>>(
+    reliability_manager<degrees::fixed<M>, domains::fixed<M>>(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,
@@ -271,8 +259,8 @@ inline imss_manager::imss_manager(
 {
 }
 
-template<int32 PMax>
-ifmss_manager<PMax>::ifmss_manager(
+template<int32 M>
+ifmss_manager<M>::ifmss_manager(
     int32 const componentCount,
     int64 const nodePoolSize,
     std::vector<int32> domains,
@@ -288,15 +276,15 @@ ifmss_manager<PMax>::ifmss_manager(
 {
 }
 
-template<int32 PMax>
-ifmss_manager<PMax>::ifmss_manager(
+template<int32 M>
+ifmss_manager<M>::ifmss_manager(
     int32 const componentCount,
     int64 const nodePoolSize,
     int64 const overflowNodePoolSize,
     std::vector<int32> domains,
     std::vector<int32> order
 ) :
-    reliability_manager<degrees::fixed<PMax>, domains::mixed>(
+    reliability_manager<degrees::fixed<M>, domains::mixed>(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,

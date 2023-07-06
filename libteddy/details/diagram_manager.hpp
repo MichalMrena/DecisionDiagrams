@@ -501,6 +501,29 @@ public:
      *  \tparam Vars Container type that defines \c operator[] and allows
      *  assigning unsigned integers. std::vector is also allowed.
      *  \tparam O Output iterator type.
+     *  \param d Diagram representing the function.
+     *  \param out Output iterator that is used to output instances
+     *  of \p Vars .
+     */
+    template<out_var_values Vars, std::output_iterator<Vars> O>
+    requires(is_bdd<Degree>)
+    auto satisfy_all_g (diagram_t d, O out) const -> void;
+
+    /**
+     *  \brief Enumerates all elements of the satisfying set.
+     *
+     *  Enumerates all elements of the satisfying set of the function
+     *  i.e. variable assignments for which the function
+     *  evaluates to certain value.
+     *
+     *  Complexity is \c O(n*|Sf|) where \c |Sf| is the size of the
+     *  satisfying set and \c n is the number of variables. Please
+     *  note that this is quite high for bigger functions and
+     *  the computation will probably not finish in reasonable time.
+     *
+     *  \tparam Vars Container type that defines \c operator[] and allows
+     *  assigning unsigned integers. std::vector is also allowed.
+     *  \tparam O Output iterator type.
      *  \param val Value of the function.
      *  \param d Diagram representing the function.
      *  \param out Output iterator that is used to output instances
@@ -1335,7 +1358,7 @@ requires(is_bdd<Degree>)
 auto diagram_manager<Data, Degree, Domain>::satisfy_all(diagram_t d) const
     -> second_t<Foo, std::vector<Vars>>
 {
-    return this->satisfy_all<Vars>(d);
+    return this->satisfy_all<Vars>(1, d);
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1348,6 +1371,17 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all(
     auto vs = std::vector<Vars>();
     this->satisfy_all_g<Vars>(val, d, std::back_inserter(vs));
     return vs;
+}
+
+template<class Data, degree Degree, domain Domain>
+template<out_var_values Vars, std::output_iterator<Vars> O>
+requires(is_bdd<Degree>)
+auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
+    diagram_t d,
+    O out
+) const -> void
+{
+    return this->satisfy_all_g<Vars>(1, d, out);
 }
 
 template<class Data, degree Degree, domain Domain>

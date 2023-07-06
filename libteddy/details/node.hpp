@@ -116,8 +116,8 @@ public:
     auto get_index () const -> int32;
     auto set_index(int32) -> void;
     auto get_sons () const -> sons_t const&;
-    auto get_son(int32) const -> node*;
-    auto set_sons(sons_t) -> void;
+    auto get_son (int32) const -> node*;
+    auto set_sons (sons_t) -> void;
     auto get_value () const -> int32;
 
 private:

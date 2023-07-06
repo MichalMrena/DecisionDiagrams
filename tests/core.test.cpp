@@ -11,8 +11,10 @@
 
 #include <fmt/core.h>
 
+#include <concepts>
 #include <cstddef>
 
+#include "libteddy/reliability.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests
@@ -231,7 +233,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < ssize(actual); ++j)
     {
-        actual[as_uindex(j)] = manager.satisfy_count(j, diagram);
+        if constexpr (std::same_as<decltype(manager), teddy::bss_manager>)
+        {
+            actual[as_uindex(j)] = manager.satisfy_count(diagram);
+        }
+        else
+        {
+            actual[as_uindex(j)] = manager.satisfy_count(j, diagram);
+        }
     }
 
     for (auto k = 0; k < ssize(actual); ++k)
@@ -257,7 +266,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
             ++actual[as_uindex(k)];
         };
         auto out = tsl::forwarding_iterator<decltype(outf)>(outf);
-        manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
+        if constexpr (std::same_as<decltype(manager), teddy::bss_manager>)
+        {
+            manager.template satisfy_all_g<out_var_vals>(diagram, out);
+        }
+        else
+        {
+            manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
+        }
     }
 
     for (auto k = 0; k < ssize(actual); ++k)
