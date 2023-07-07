@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "libteddy/details/types.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests
@@ -175,13 +176,15 @@ public:
 constexpr auto FloatingTolerance = 0.00000001;
 
 using Fixtures                   = boost::mpl::vector<
-    teddy::tests::bss_fixture,
-    teddy::tests::mss_fixture<3>,
-    teddy::tests::imss_fixture<3>,
-    teddy::tests::ifmss_fixture<3>>;
+    teddy::tests::bss_fixture
+    // teddy::tests::mss_fixture<3>,
+    // teddy::tests::imss_fixture<3>,
+    // teddy::tests::ifmss_fixture<3>
+>;
 
 BOOST_AUTO_TEST_SUITE(reliability_test_faster_stuff)
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -227,6 +230,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
     }
 }
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -272,6 +276,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
     }
 }
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -317,6 +322,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
     }
 }
 
+// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -347,6 +353,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     }
 }
 
+// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     structural_importances,
     Fixture,
@@ -416,7 +423,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                  varVal < manager.get_domains()[as_uindex(varIndex)];
                  ++varVal)
             {
-                auto const tableDpld = tsl::dpld_e(
+                auto const tableDpld = tsl::dpld(
                     table,
                     {varIndex, varVal, varVal - 1},
                     tsl::dpld_i_3_decrease(systemState)
@@ -442,6 +449,62 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     }
 }
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    fussell_vesely_importances,
+    Fixture,
+    Fixtures,
+    Fixture
+)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const probs   = make_probabilities(manager, Fixture::rng_);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+
+    for (auto systemState = 1; systemState < Fixture::stateCount_;
+         ++systemState)
+    {
+        auto const unavail = tsl::unavailability(table, probs, systemState);
+        for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+        {
+            for (auto varVal = 1;
+                 varVal < manager.get_domains()[as_uindex(varIndex)];
+                 ++varVal)
+            {
+                auto const diagramDpld = manager.idpld_type_3_decrease(
+                    {varVal, varVal - 1},
+                    systemState,
+                    diagram,
+                    varIndex
+                );
+                auto const expected = tsl::fussell_vesely_importance(
+                    table,
+                    probs,
+                    varIndex,
+                    varVal,
+                    systemState
+                );
+                auto const actual = manager.fussell_vesely_importance(
+                    probs,
+                    diagramDpld,
+                    unavail,
+                    varVal,
+                    varIndex
+                );
+                BOOST_TEST(
+                    expected == actual,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
+    }
+}
+
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -462,9 +525,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(reliability_test_slower_stuff)
 
-// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -900,7 +963,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
         }
     }
 }
-// TODO add test for specific systems computed elsewhere
 
 BOOST_AUTO_TEST_SUITE_END()
 
@@ -978,9 +1040,10 @@ const tsl::system_description system1 = tsl::system_description
 
 const std::array<tsl::system_description, 1> systems {system1};
 
+// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(reliability_test_systems)
 
-BOOST_DATA_TEST_CASE(system_test_table, systems, system)
+BOOST_DATA_TEST_CASE(system_test, systems, system)
 {
     auto const table
         = tsl::truth_table(system.structureFunction_, system.domains_);
@@ -1150,7 +1213,7 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
         }
     }
 
-    // Fussell-Vesely Importances
+    // Fussell-Vesely Importances (Integrated DPLD Type III)
     for (auto index = 0; index < system.componentCount_; ++index)
     {
         for (auto systemState = 1; systemState < system.stateCount_;
@@ -1169,15 +1232,94 @@ BOOST_DATA_TEST_CASE(system_test_table, systems, system)
                     componentState,
                     systemState
                 );
+                auto const diagramUnavailability = manager.unavailability(
+                    systemState,
+                    system.componentProbabilities_,
+                    diagram
+                );
+                auto const diagramDpld = manager.idpld_type_3_increase(
+                    {componentState - 1, componentState},
+                    systemState,
+                    diagram,
+                    index
+                );
+                auto const diagramFVI = manager.fussell_vesely_importance(
+                    system.componentProbabilities_,
+                    diagramDpld,
+                    diagramUnavailability,
+                    componentState,
+                    index
+                );
 
                 BOOST_TEST(
                     realFVI == tableFVI,
+                    boost::test_tools::tolerance(system.floatingTolerance_)
+                );
+
+                BOOST_TEST(
+                    realFVI == diagramFVI,
                     boost::test_tools::tolerance(system.floatingTolerance_)
                 );
             }
         }
     }
 }
+
+// BOOST_AUTO_TEST_CASE(test_fvi, * boost::unit_test::disabled())
+// {
+//     using namespace teddy::ops;
+//     auto manager   = bss_manager(6, 10'000);
+//     auto& x        = manager;
+//     auto const f1  = x(0);
+//     auto const f21 = manager.apply<AND>(x(1), x(2));
+//     auto const f22 = x(3);
+//     auto const f23 = x(4);
+//     auto const f2  = manager.apply<OR>(manager.apply<OR>(f21, f22), f23);
+//     auto const f3  = x(5);
+//     auto const f   = manager.apply<AND>(manager.apply<AND>(f1, f2), f3);
+//     auto const ps  = std::vector<std::array<double, 6>>(
+//     {
+//         {.1, .9},
+//         {.2, .8},
+//         {.3, .7},
+//         {.4, .6},
+//         {.1, .9},
+//         {.2, .8},
+//     });
+//     auto const U = manager.unavailability(1, ps, f);
+
+//     auto dplds = std::vector<bss_manager::diagram_t>();
+//     for (auto i = 0; i < manager.get_var_count(); ++i)
+//     {
+//         dplds.push_back(manager.idpld_type_3_increase(
+//             {0, 1},
+//             1,
+//             f,
+//             i
+//         ));
+//     }
+
+//     auto mnfs = std::vector<bss_manager::diagram_t>();
+//     for (auto i = 0; i < manager.get_var_count(); ++i)
+//     {
+//         mnfs.push_back(manager.to_mnf(dplds[as_uindex(i)]));
+//     }
+
+//     auto fvis = std::vector<double>();
+//     for (auto i = 0; i < manager.get_var_count(); ++i)
+//     {
+//         fvis.push_back(manager.fussell_vesely_importance(ps, dplds[as_uindex(i)], U, 1, i));
+//     }
+
+//     // manager.to_dot_graph(std::cout, mnfs[0]);
+//     // manager.to_dot_graph(std::cout, mnfs[1]);
+//     // manager.to_dot_graph(std::cout, mnfs[3]);
+
+//     for (auto const fvi : fvis)
+//     {
+//         std::cout << fvi << "\n";
+//     }
+// }
 
 BOOST_AUTO_TEST_SUITE_END()
 

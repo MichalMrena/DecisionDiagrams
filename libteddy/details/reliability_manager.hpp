@@ -6,7 +6,8 @@
 #include <array>
 #include <vector>
 
-#include <type_traits>
+#include <concepts>
+#include "libteddy/details/types.hpp"
 #include <unordered_map>
 
 #include <fmt/core.h>
@@ -406,6 +407,18 @@ public:
     ) -> double;
 
     /**
+     *  \brief TODO
+     */
+    template<component_probabilities Ps>
+    auto fussell_vesely_importance (
+        Ps const& probabilities,
+        diagram_t const& dpld,
+        double unavailability,
+        int32 componentState,
+        int32 componentIndex
+    ) -> double;
+
+    /**
      *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
      *  respect to the system state \p j .
      *
@@ -489,7 +502,7 @@ protected:
     )
     requires(domains::is_mixed<Domain>()());
 
-private:
+public: // TODO tmp
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
 
     // TODO this will be merged with apply_dpld in the future
@@ -513,7 +526,7 @@ private:
         diagram_t d
     ) -> double;
 
-    auto to_mnf(diagram_t dpld) -> diagram_t;
+    auto to_mnf(diagram_t const& diagram) -> diagram_t;
 };
 
 template<degree Degree, domain Domain>
@@ -934,7 +947,34 @@ auto reliability_manager<Degree, Domain>::birnbaum_importance(
     diagram_t dpld
 ) -> double
 {
+    // this->calculate_probabilities(ps, dpld);
+    // return this->get_probability(1);
     return this->probability(1, ps, dpld);
+}
+
+template<degree Degree, domain Domain>
+template<component_probabilities Ps>
+auto reliability_manager<Degree, Domain>::fussell_vesely_importance (
+        Ps const& probabilities,
+        diagram_t const& dpld,
+        double const unavailability,
+        int32 const componentState,
+        int32 const componentIndex
+    ) -> double
+{
+    auto const mnf = this->to_mnf(dpld);
+    auto const mnfProbability = this->probability(
+        1,
+        probabilities,
+        mnf
+    );
+    auto nominator = .0;
+    for (auto r = 0; r < componentState; ++r)
+    {
+        nominator += probabilities[as_uindex(componentIndex)][as_uindex(r)];
+    }
+    nominator *= mnfProbability;
+    return nominator / unavailability;
 }
 
 template<degree Degree, domain Domain>
@@ -1164,6 +1204,54 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
         }
     );
     return d.unsafe_get_root()->data();
+}
+
+template<degree Degree, domain Domain>
+auto reliability_manager<Degree, Domain>::to_mnf(
+    diagram_t const& diagram
+) -> diagram_t
+{
+    auto const step = [this](auto& self, node_t* const node)
+    {
+        if (node->is_terminal())
+        {
+            return node;
+        }
+
+        auto const index = node->get_index();
+        auto const domain = this->nodes_.get_domain(index);
+        auto newSons = this->nodes_.make_sons(index,
+            [&self, node](int32 const k)
+        {
+            return self(self, node->get_son(k));
+        });
+
+        for (auto r = domain - 1; r > 0; --r)
+        {
+            auto const son = newSons[as_uindex(r)];
+            if (son->is_terminal() && son->get_value() == 1)
+            {
+                for (auto k = 0; k < r; ++k)
+                {
+                    newSons[as_uindex(k)] = son;
+                }
+                break;
+            }
+        }
+
+        for (auto r = domain - 2; r >= 0; --r)
+        {
+            auto const son = newSons[as_uindex(r)];
+            if (son->is_terminal() && son->get_value() == 0)
+            {
+                newSons[as_uindex(r)] = newSons[as_uindex(r + 1)];
+            }
+        }
+
+        return this->nodes_.internal_node(index, std::move(newSons));
+    };
+
+    return diagram_t(step(step, diagram.unsafe_get_root()));
 }
 
 template<degree Degree, domain Domain>

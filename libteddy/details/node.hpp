@@ -125,6 +125,7 @@ private:
 
     struct internal
     {
+        // TODO _ suffix
         sons_t sons;
         int32 index;
 
