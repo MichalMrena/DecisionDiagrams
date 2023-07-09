@@ -2,201 +2,235 @@
 #define LIBTEDDY_DETAILS_OPERATORS_HPP
 
 #include <libteddy/details/types.hpp>
+#include <libteddy/details/tools.hpp>
 
 #include <concepts>
 
 // TODO details namespace
 namespace teddy
 {
+namespace details
+{
 template<int32 M>
 struct plus_mod_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return (l + r) % M;
+        return (args + ...) % M;
     }
 };
 
 template<int32 M>
 struct multiplies_mod_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return (l * r) % M;
+        return (args * ...) % M;
     }
 };
 
 struct logical_and_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return l and r;
+        return (args && ...);
     }
 };
 
 struct logical_or_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return l or r;
+        return (args || ...);
     }
 };
 
 struct logical_nand_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return not (l and r);
+        return not (args && ...);
     }
 };
 
 struct logical_nor_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return not (l or r);
+        return not (args || ...);
     }
 };
 
 struct logical_xor_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return l != r;
+        return (args != ...);
     }
 };
 
 struct equal_to_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return l == r;
+        return (args == ...);
     }
 };
 
 struct not_equal_to_t
 {
-    template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    template<class... Args>
+    auto constexpr operator()(Args... args) const noexcept
     {
-        return l != r;
+        return (args != ...);
     }
 };
 
 struct less_t
 {
     template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
     {
-        return l < r;
+        return lhs < rhs;
     }
 };
 
 struct less_equal_t
 {
     template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
     {
-        return l <= r;
+        return lhs <= rhs;
     }
 };
 
 struct greater_t
 {
     template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
     {
-        return l > r;
+        return lhs > rhs;
     }
 };
 
 struct greater_equal_t
 {
     template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
     {
-        return l >= r;
+        return lhs >= rhs;
     }
 };
 
 struct min_t
 {
     template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
     {
-        return l < r ? l : r;
+        return lhs < rhs ? lhs : rhs;
     }
 };
 
 struct max_t
 {
     template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
     {
-        return l > r ? l : r;
+        return lhs > rhs ? lhs : rhs;
+    }
+};
+
+struct minimum_t
+{
+    template<class X>
+    auto constexpr operator()(X arg) const noexcept
+    {
+        return arg;
+    }
+
+    template<class X, class... Xs>
+    auto constexpr operator()(X arg, Xs... args) const noexcept
+    {
+        return min_t()(arg, minimum_t()(args...));
+    }
+};
+
+struct maximum_t
+{
+    template<class X>
+    auto constexpr operator()(X arg) const noexcept
+    {
+        return arg;
+    }
+
+    template<class X, class... Xs>
+    auto constexpr operator()(X arg, Xs... args) const noexcept
+    {
+        return max_t()(arg, maximum_t()(args...));
     }
 };
 
 struct pi_conj_t
 {
     template<class T>
-    auto constexpr operator() (T const l, T const r) const noexcept
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
     {
-        return min_t()(min_t()(l, r), Undefined);
+        return minimum_t()(lhs, rhs, Undefined);
     }
 };
 
 template<class BinOp, int32 AbsorbingVal = Undefined>
 struct bin_op_base
 {
-    [[nodiscard]] constexpr auto operator() (int32 const lhs, int32 const rhs)
-        const noexcept -> int32
+    template<class... Args>
+    [[nodiscard]]
+    constexpr auto operator()(Args... args) const noexcept -> int32
     {
         if constexpr (AbsorbingVal != Undefined)
         {
-            if (AbsorbingVal == lhs || AbsorbingVal == rhs)
+            if (utils::any((args == AbsorbingVal) ...))
             {
                 return AbsorbingVal;
             }
         }
 
-        if (lhs == Nondetermined || rhs == Nondetermined)
+        if (utils::any((args == Nondetermined) ...))
         {
             return Nondetermined;
         }
 
-        return static_cast<int32>(BinOp()(lhs, rhs));
+        return static_cast<int32>(BinOp()(args ...));
     }
 };
+}
 
 /**
  *  \brief Wraps binary operation so that it can be used in \c apply .
  *  Quick fix for stateful ops.
  */
-auto constexpr apply_op_wrap = [] (auto const& op)
+auto constexpr apply_op_wrap = [] (auto const& operation)
 {
-    return [op] (auto const l, auto const r)
+    return [operation] (auto const lhs, auto const rhs)
     {
-        if (l == Nondetermined || r == Nondetermined)
+        if (lhs == Nondetermined || rhs == Nondetermined)
         {
             return Nondetermined;
         }
-        return static_cast<int32>(op(l, r));
+        return static_cast<int32>(operation(lhs, rhs));
     };
 };
 
 /**
  *  \namespace ops
- *  \brief Contains definision of all binary operations that can be
- *  used in the \c apply function.
+ *  \brief Contains definision of all binary operations for \c apply function
  */
 namespace ops
 {
@@ -204,69 +238,69 @@ struct NOT
 {
 };
 
-struct AND : bin_op_base<logical_and_t, 0>
+struct AND : details::bin_op_base<details::logical_and_t, 0>
 {
 };
 
-struct OR : bin_op_base<logical_or_t, 1>
+struct OR : details::bin_op_base<details::logical_or_t, 1>
 {
 };
 
-struct XOR : bin_op_base<logical_xor_t>
+struct XOR : details::bin_op_base<details::logical_xor_t>
 {
 };
 
-struct PI_CONJ : bin_op_base<pi_conj_t, 0>
+struct PI_CONJ : details::bin_op_base<details::pi_conj_t, 0>
 {
 };
 
-struct NAND : bin_op_base<logical_nand_t>
+struct NAND : details::bin_op_base<details::logical_nand_t>
 {
 };
 
-struct NOR : bin_op_base<logical_nor_t>
+struct NOR : details::bin_op_base<details::logical_nor_t>
 {
 };
 
-struct EQUAL_TO : bin_op_base<equal_to_t>
+struct EQUAL_TO : details::bin_op_base<details::equal_to_t>
 {
 };
 
-struct NOT_EQUAL_TO : bin_op_base<not_equal_to_t>
+struct NOT_EQUAL_TO : details::bin_op_base<details::not_equal_to_t>
 {
 };
 
-struct LESS : bin_op_base<less_t>
+struct LESS : details::bin_op_base<details::less_t>
 {
 };
 
-struct LESS_EQUAL : bin_op_base<less_equal_t>
+struct LESS_EQUAL : details::bin_op_base<details::less_equal_t>
 {
 };
 
-struct GREATER : bin_op_base<greater_t>
+struct GREATER : details::bin_op_base<details::greater_t>
 {
 };
 
-struct GREATER_EQUAL : bin_op_base<greater_equal_t>
+struct GREATER_EQUAL : details::bin_op_base<details::greater_equal_t>
 {
 };
 
-struct MIN : bin_op_base<min_t, 0>
+struct MIN : details::bin_op_base<details::minimum_t, 0>
 {
 };
 
-struct MAX : bin_op_base<max_t>
-{
-};
-
-template<int32 P>
-struct PLUS : bin_op_base<plus_mod_t<P>>
+struct MAX : details::bin_op_base<details::maximum_t>
 {
 };
 
 template<int32 P>
-struct MULTIPLIES : bin_op_base<multiplies_mod_t<P>, 0>
+struct PLUS : details::bin_op_base<details::plus_mod_t<P>>
+{
+};
+
+template<int32 P>
+struct MULTIPLIES : details::bin_op_base<details::multiplies_mod_t<P>, 0>
 {
 };
 } // namespace ops

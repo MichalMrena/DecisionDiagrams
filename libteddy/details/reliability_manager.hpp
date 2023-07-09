@@ -1096,10 +1096,17 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
         decltype(cache_pair_hash),
         decltype(cache_pair_equals)>();
 
+    auto const get_node_value = [](node_t* const node)
+    {
+        return node->is_terminal() ? node->get_value() : Nondetermined;
+    };
+
     auto const go
         = [this,
            &cache,
-           change] (auto const& self, auto const l, auto const r) -> node_t*
+           change,
+           get_node_value
+        ] (auto const& self, auto const l, auto const r) -> node_t*
     {
         auto const cached = cache.find(cache_pair {l, r});
         if (cached != std::end(cache))
@@ -1107,8 +1114,8 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
             return cached->second;
         }
 
-        auto const lhsVal = node_value(l);
-        auto const rhsVal = node_value(r);
+        auto const lhsVal = get_node_value(l);
+        auto const rhsVal = get_node_value(r);
         auto const opVal // TODO toto by sa dalo lepsie
             = lhsVal == Nondetermined || rhsVal == Nondetermined
                 ? Nondetermined

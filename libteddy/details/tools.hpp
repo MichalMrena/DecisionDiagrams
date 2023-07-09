@@ -8,10 +8,11 @@
 #include <functional>
 #include <optional>
 #include <ranges>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-#include <string_view>
 
 // TODO constraints.hpp
 
@@ -107,6 +108,41 @@ auto parse (std::string_view const in) -> std::optional<Num>
     return std::errc {} == result.ec && result.ptr == in.data() + in.size()
              ? std::optional<Num>(ret)
              : std::nullopt;
+}
+
+/**
+ *  \brief Function object for tuple hash
+ */
+struct tuple_hash
+{
+template<class... Ts>
+auto operator()(std::tuple<Ts...> const& tuple) const noexcept
+{
+    // see boost::hash_combine
+    auto seed = std::size_t{0};
+    auto hash_combine = [&seed](auto const& elem)
+    {
+        auto hasher = std::hash<std::remove_cvref_t<decltype(elem)>>();
+        seed ^= hasher(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        return std::tuple<>();
+    };
+    std::apply(
+        [&](auto const&... elems){ return (hash_combine(elems), ...); },
+        tuple
+    );
+    return seed;
+}
+};
+
+/**
+ *  \brief Checks if any of the arguments is true
+ *  \param args boolean arguments
+ *  \return true if any of the arguments is true
+ */
+template<class... Args>
+auto any (Args... args)
+{
+    return (args || ...);
 }
 } // namespace teddy::utils
 

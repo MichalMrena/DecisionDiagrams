@@ -5,16 +5,26 @@ COMPILER=g++
 
 # Remove old build files
 rm -rf build/release
+rm -rf build/release-debug-info
 rm -rf build/debug
 
 # Create build directories
 mkdir -p build/release
+mkdir -p build/release-debug-info
 mkdir -p build/debug
 
 # Generate release Makefile
 cd build/release
 cmake -DCMAKE_CXX_COMPILER=$COMPILER \
       -DCMAKE_BUILD_TYPE=Release \
+      -DLIBTEDDY_BUILD_TESTS=true \
+      -DLIBTEDDY_BUILD_EXAMPLES=true \
+      ../..
+
+# Generate release-with-debug-info Makefile
+cd build/release
+cmake -DCMAKE_CXX_COMPILER=$COMPILER \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DLIBTEDDY_BUILD_TESTS=true \
       -DLIBTEDDY_BUILD_EXAMPLES=true \
       ../..

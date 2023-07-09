@@ -242,11 +242,11 @@ private:
     bool gcReorderDeferred_;
 };
 
-template<class Data, degree D>
-auto node_value (node<Data, D>* const n) -> int32
-{
-    return n->is_terminal() ? n->get_value() : Nondetermined;
-}
+// template<class Data, degree D>
+// auto node_value (node<Data, D>* const n) -> int32
+// {
+//     return n->is_terminal() ? n->get_value() : Nondetermined;
+// }
 
 template<class Data, degree D>
 auto id_inc_ref_count (node<Data, D>* const n) -> node<Data, D>*

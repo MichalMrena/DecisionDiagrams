@@ -301,13 +301,13 @@ public:
      *  manager.apply<teddy::ops::PLUS<4>>(mdd1, mdd2);
      *  \endcode
      *
-     *  \tparam Op Binary operation.
-     *  \param l first diagram.
-     *  \param r second diagram.
-     *  \return Diagram representing merger of \p l and \p r .
+     *  \tparam Op Binary operation
+     *  \param lhs first diagram
+     *  \param rhs second diagram
+     *  \return Diagram representing merger of \p lhs and \p rhs
      */
     template<bin_op Op>
-    auto apply (diagram_t l, diagram_t r) -> diagram_t;
+    auto apply (diagram_t const& lhs, diagram_t const& rhs) -> diagram_t;
 
     /**
      *  \brief Merges diagams in the range using the \c apply function
@@ -605,7 +605,7 @@ public:
      *
      *  \return Number of nodes.
      */
-    auto node_count () const -> int64;
+    [[nodiscard]] auto node_count () const -> int64;
 
     /**
      *  \brief Returns number of nodes in the diagram including
@@ -658,7 +658,7 @@ public:
      *  set in the constructor.
      *  \return Number of variables.
      */
-    auto get_var_count () const -> int32;
+    [[nodiscard]] auto get_var_count () const -> int32;
 
     /**
      *  \brief Returns current order of variables.
@@ -670,7 +670,7 @@ public:
      *  \return Vector of indices. Index at l-th position is the
      *  index of variable at l-th level of the diagram.
      */
-    auto get_order () const -> std::vector<int32> const&;
+    [[nodiscard]] auto get_order () const -> std::vector<int32> const&;
 
     /**
      *  \brief Return domains of variables.
@@ -682,7 +682,7 @@ public:
      *
      *  \return Vector of domains.
      */
-    auto get_domains () const -> std::vector<int32>;
+    [[nodiscard]] auto get_domains () const -> std::vector<int32>;
 
     /**
      *  \brief Sets the relative cache size w.r.t the number of nodes.
@@ -725,64 +725,62 @@ protected:
     using node_t = typename diagram<Data, Degree>::node_t;
 
 private:
-    // TODO to local lambda
-    struct cache_pair_hash_t
-    {
-        auto operator() (auto const& p) const noexcept
-        {
-            auto const hash1 = std::hash<node_t*>()(p.first);
-            auto const hash2 = std::hash<node_t*>()(p.second);
-            auto result      = std::size_t(0);
-            result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
-            result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
-            return result;
-        }
-    };
-
-    struct cache_pair_equal_t
-    {
-        auto operator() (auto const l, auto const r) const noexcept
-        {
-            return l.first == r.first && l.second == r.second;
-        }
-    };
-
+    /**
+     *  \class local_cache_handle
+     *  \brief Uses local map cache existing just for a single apply call
+     *  \tparam Op binary operation
+     */
     template<class Map>
     class local_cache_handle
     {
     public:
-        local_cache_handle(Map&);
-        auto put (node_t*, node_t*, node_t*) -> void;
-        auto lookup (node_t*, node_t*) const -> node_t*;
+        local_cache_handle(Map& map);
+
+        template<std::same_as<node<Data, Degree>*>... Nodes>
+        auto put(node_t* result, Nodes... input) -> void;
+
+        template<std::same_as<node<Data, Degree>*>... Nodes>
+        auto lookup(Nodes... input) const -> node_t*;
 
     private:
-        Map& map_;
+        Map* map_;
     };
 
+    /**
+     *  \class global_cache_handle
+     *  \brief Uses global operation cache persistent in-between apply calls
+     *  \tparam Op binary operation
+     */
     template<class Op>
     class global_cache_handle
     {
     public:
-        global_cache_handle(node_manager<Data, Degree, Domain>&);
-        auto put (node_t*, node_t*, node_t*) -> void;
-        auto lookup (node_t*, node_t*) const -> node_t*;
+        global_cache_handle(node_manager<Data, Degree, Domain>& nodeManager);
+        auto put (node_t* result, node_t* lhs, node_t* rhs) -> void;
+        auto lookup (node_t* lhs, node_t* rhs) const -> node_t*;
 
     private:
-        node_manager<Data, Degree, Domain>& nodes_;
+        node_manager<Data, Degree, Domain>* nodes_;
     };
 
 private:
     template<uint_to_uint F>
-    auto transform_terminal (node_t*, F) -> node_t*;
-
-    template<any_bin_op Op>
-    auto apply_local (node_t*, node_t*, Op) -> diagram_t;
-
-    template<bin_op Op>
-    auto apply_global (node_t*, node_t*, Op) -> diagram_t;
+    auto transform_terminal (node_t* root, F transformer) -> node_t*;
 
     template<any_bin_op Op, cache_handle<node<Data, Degree>> Cache>
-    auto apply_detail (node_t*, node_t*, Op, Cache&) -> diagram_t;
+    auto apply_detail (
+        Cache& cache,
+        Op operation,
+        node_t* left,
+        node_t* right
+    ) -> diagram_t;
+
+    template<class Op, class Cache, class... Nodes>
+    auto apply_detail_n(
+        Cache& cache,
+        Op operation,
+        Nodes... roots
+    ) -> diagram_t;
 
 protected:
     /**
@@ -1150,40 +1148,65 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
     Node const& root
 ) -> diagram_t
 {
-    auto const go = [this] (auto& self, auto const& exprNode)
+    using apply_cache_t = std::unordered_map<
+        std::tuple<node_t*, node_t*>,
+        node_t*,
+        utils::tuple_hash
+    >;
+
+    auto const step = [this](
+        auto const& self,
+        auto const& exprNode
+    )
     {
         if (exprNode.is_constant())
         {
             return this->constant(exprNode.get_value());
         }
-        else if (exprNode.is_variable())
+
+        if (exprNode.is_variable())
         {
             return this->variable(exprNode.get_index());
         }
-        else
-        {
-            assert(exprNode.is_operation());
-            auto const lhs = self(self, exprNode.get_left());
-            auto const rhs = self(self, exprNode.get_right());
-            auto const op  = apply_op_wrap(
-                [&] (auto const l, auto const r)
-                {
-                    return exprNode.evaluate(l, r);
-                }
-            );
-            return this
-                ->apply_local(lhs.unsafe_get_root(), rhs.unsafe_get_root(), op);
-        }
+
+        assert(exprNode.is_operation());
+        auto const lhs       = self(self, exprNode.get_left());
+        auto const rhs       = self(self, exprNode.get_right());
+        auto const operation = apply_op_wrap(
+            [&] (auto const left, auto const right)
+            {
+                return exprNode.evaluate(left, right);
+            }
+        );
+
+        auto applyCache = apply_cache_t();
+        auto cacheHandle = local_cache_handle<apply_cache_t>(applyCache);
+
+        return this->apply_detail(
+            cacheHandle,
+            operation,
+            lhs.unsafe_get_root(),
+            rhs.unsafe_get_root()
+        );
     };
-    return go(go, root);
+    return step(step, root);
 }
 
 template<class Data, degree Degree, domain Domain>
 template<bin_op Op>
-auto diagram_manager<Data, Degree, Domain>::apply(diagram_t d1, diagram_t d2)
+auto diagram_manager<Data, Degree, Domain>::apply(
+    diagram_t const& lhs,
+    diagram_t const& rhs
+)
     -> diagram_t
 {
-    return this->apply_global(d1.unsafe_get_root(), d2.unsafe_get_root(), Op());
+    auto cacheHandle = global_cache_handle<Op>(nodes_);
+    return this->apply_detail_n(
+        cacheHandle,
+        Op(),
+        lhs.unsafe_get_root(),
+        rhs.unsafe_get_root()
+    );
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1411,7 +1434,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
     auto go
         = [this, &xs, val, out] (auto& self, auto const l, auto const n) mutable
     {
-        auto const nodeValue = node_value(n);
+        auto const nodeValue = n->get_value();
         auto const nodeLevel = nodes_.get_level(n);
 
         if (n->is_terminal() && val != nodeValue)
@@ -1683,90 +1706,130 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
 }
 
 template<class Data, degree Degree, domain Domain>
-template<any_bin_op Op>
-auto diagram_manager<Data, Degree, Domain>::apply_local(
-    node_t* const lhs,
-    node_t* const rhs,
-    Op const op
-) -> diagram_t
-{
-    auto cache = std::unordered_map<
-        std::pair<node_t*, node_t*>,
-        node_t*,
-        cache_pair_hash_t,
-        cache_pair_equal_t>();
-
-    auto cacheHandle = local_cache_handle<decltype(cache)>(cache);
-
-    return this->apply_detail(lhs, rhs, op, cacheHandle);
-}
-
-template<class Data, degree Degree, domain Domain>
-template<bin_op Op>
-auto diagram_manager<Data, Degree, Domain>::apply_global(
-    node_t* const l,
-    node_t* const r,
-    Op const op
-) -> diagram_t
-{
-    auto cacheHandle = global_cache_handle<Op>(nodes_);
-    return this->apply_detail(l, r, op, cacheHandle);
-}
-
-template<class Data, degree Degree, domain Domain>
 template<any_bin_op Op, cache_handle<node<Data, Degree>> Cache>
 auto diagram_manager<Data, Degree, Domain>::apply_detail(
-    node_t* const lhs,
-    node_t* const rhs,
-    Op const op,
-    Cache& cache
+    Cache& cache,
+    Op const operation,
+    node_t* const left,
+    node_t* const right
 ) -> diagram_t
 {
-    auto const go = [&, this] (auto const self, auto const l, auto const r)
+    auto const get_node_value = [](node_t* const node)
     {
-        auto const cached = cache.lookup(l, r);
+        return node->is_terminal() ? node->get_value() : Nondetermined;
+    };
+
+    auto const step = [&, this](
+        auto const& self,
+        node_t* const lhs,
+        node_t* const rhs
+    )
+    {
+        auto const cached = cache.lookup(lhs, rhs);
         if (cached)
         {
             return cached;
         }
 
-        auto const lhsVal = node_value(l);
-        auto const rhsVal = node_value(r);
-        auto const opVal  = op(lhsVal, rhsVal);
-        auto u            = static_cast<node_t*>(nullptr);
+        auto const lhsVal = get_node_value(lhs);
+        auto const rhsVal = get_node_value(rhs);
+        auto const opVal  = operation(lhsVal, rhsVal);
+        auto result       = static_cast<node_t*>(nullptr);
 
         if (opVal != Nondetermined)
         {
-            u = nodes_.terminal_node(opVal);
+            result = nodes_.terminal_node(opVal);
         }
         else
         {
-            auto const lhsLevel = nodes_.get_level(l);
-            auto const rhsLevel = nodes_.get_level(r);
+            auto const lhsLevel = nodes_.get_level(lhs);
+            auto const rhsLevel = nodes_.get_level(rhs);
             auto const topLevel = std::min(lhsLevel, rhsLevel);
-            auto const topNode  = topLevel == lhsLevel ? l : r;
+            auto const topNode  = topLevel == lhsLevel ? lhs : rhs;
             auto const topIndex = topNode->get_index();
             auto sons           = nodes_.make_sons(
                 topIndex,
                 [=] (auto const k)
                 {
-                    auto const fst = lhsLevel == topLevel ? l->get_son(k) : l;
-                    auto const snd = rhsLevel == topLevel ? r->get_son(k) : r;
+                    auto const fst = lhsLevel == topLevel ? lhs->get_son(k) : lhs;
+                    auto const snd = rhsLevel == topLevel ? rhs->get_son(k) : rhs;
                     return self(self, fst, snd);
                 }
             );
 
-            u = nodes_.internal_node(topIndex, std::move(sons));
+            result = nodes_.internal_node(topIndex, std::move(sons));
         }
 
-        cache.put(l, r, u);
-        return u;
+        cache.put(result, lhs, rhs);
+        return result;
     };
 
-    auto const r = go(go, lhs, rhs);
-    auto const d = diagram_t(r);
+    auto const newRoot = step(step, left, right);
+    auto const newDiagram = diagram_t(newRoot);
     nodes_.run_deferred();
-    return d;
+    return newDiagram;
+}
+
+template<class Data, degree Degree, domain Domain>
+template<class Op, class Cache, class... Nodes>
+auto diagram_manager<Data, Degree, Domain>::apply_detail_n
+    (Cache& cache, Op operation, Nodes... roots) -> diagram_t
+{
+    auto const get_next = [this](
+        int32 const minLevel,
+        int32 const sonOrder,
+        node_t* const node
+    )
+    {
+        return nodes_.get_level(node) == minLevel
+            ? node->get_son(sonOrder)
+            : node;
+    };
+
+    auto const get_node_value = [](node_t* const node)
+    {
+        return node->is_terminal() ? node->get_value() : Nondetermined;
+    };
+
+    auto const step = [this, &cache, operation, get_next, get_node_value]
+        (auto const& self, auto const... nodes)
+    {
+        auto const cached = cache.lookup(nodes...);
+        if (cached)
+        {
+            return cached;
+        }
+
+        auto const opVal = operation(get_node_value(nodes)...);
+        auto result      = static_cast<node_t*>(nullptr);
+
+        if (opVal != Nondetermined)
+        {
+            result = nodes_.terminal_node(opVal);
+        }
+        else
+        {
+            auto const minLevel = std::min({nodes_.get_level(nodes)...});
+            auto const topIndex = nodes_.get_index(minLevel);
+            auto sons           = nodes_.make_sons(
+                topIndex,
+                [=](int32 const sonOrder)
+                {
+                    return self(self, get_next(minLevel, sonOrder, nodes)...);
+                }
+            );
+
+            result = nodes_.internal_node(topIndex, std::move(sons));
+        }
+
+        cache.put(result, nodes...);
+        return result;
+    };
+
+    auto const newRoot = step(step, roots...);
+    auto const newDiagram = diagram_t(newRoot);
+    nodes_.run_deferred();
+    return newDiagram;
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1807,67 +1870,71 @@ requires(domains::is_mixed<Domain>()())
 {
 }
 
+// diagram_manager::local_cache_handle definitions:
+
 template<class Data, degree Degree, domain Domain>
 template<class Map>
 diagram_manager<Data, Degree, Domain>::local_cache_handle<
-    Map>::local_cache_handle(Map& m) :
-    map_(m)
+    Map>::local_cache_handle(Map& map) :
+    map_(&map)
 {
 }
 
 template<class Data, degree Degree, domain Domain>
 template<class Map>
+template<std::same_as<node<Data, Degree>*>... Nodes>
 auto diagram_manager<Data, Degree, Domain>::local_cache_handle<Map>::put(
-    node_t* const l,
-    node_t* const r,
-    node_t* const u
+    node_t* const result,
+    Nodes... input
 ) -> void
 {
-    map_.emplace(
+    map_->emplace(
         std::piecewise_construct,
-        std::make_tuple(l, r),
-        std::make_tuple(u)
+        std::make_tuple(input...),
+        std::make_tuple(result)
     );
 }
 
 template<class Data, degree Degree, domain Domain>
 template<class Map>
+template<std::same_as<node<Data, Degree>*>... Nodes>
 auto diagram_manager<Data, Degree, Domain>::local_cache_handle<Map>::lookup(
-    node_t* const l,
-    node_t* const r
+    Nodes... input
 ) const -> node_t*
 {
-    auto const it = map_.find(std::make_pair(l, r));
-    return it != end(map_) ? it->second : nullptr;
+    auto const cacheIt = map_->find(std::make_tuple(input...));
+    return cacheIt != end(*map_) ? cacheIt->second : nullptr;
 }
+
+// diagram_manager::global_cache_handle definitions:
 
 template<class Data, degree Degree, domain Domain>
 template<class Op>
 diagram_manager<Data, Degree, Domain>::global_cache_handle<
-    Op>::global_cache_handle(node_manager<Data, Degree, Domain>& ns) :
-    nodes_(ns)
+    Op>::global_cache_handle(node_manager<Data, Degree, Domain>& nodeManager) :
+    nodes_(&nodeManager)
 {
 }
 
 template<class Data, degree Degree, domain Domain>
 template<class Op>
 auto diagram_manager<Data, Degree, Domain>::global_cache_handle<Op>::put(
-    node_t* const l,
-    node_t* const r,
-    node_t* const u
+    node_t* const result,
+    node_t* const lhs,
+    node_t* const rhs
 ) -> void
 {
-    nodes_.template cache_put<Op>(l, r, u);
+    nodes_->template cache_put<Op>(lhs, rhs, result);
 }
 
 template<class Data, degree Degree, domain Domain>
 template<class Op>
 auto diagram_manager<Data, Degree, Domain>::global_cache_handle<Op>::lookup(
-    node_t* const l,
-    node_t* const r
+    node_t* const lhs,
+    node_t* const rhs
 ) const -> node_t*
 {
-    return nodes_.template cache_find<Op>(l, r);
+    return nodes_->template cache_find<Op>(lhs, rhs);
 }
 } // namespace teddy
 
