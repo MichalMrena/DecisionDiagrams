@@ -3,6 +3,7 @@
 
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/operators.hpp>
+#include <libteddy/details/debug.hpp>
 
 #include <algorithm>
 #include <array>
@@ -243,10 +244,10 @@ public:
 
 public:
     // TODO bez zablon, posielat rovno ID, zahrnut komutativnost
-    template<bin_op O>
+    template<teddy_bin_op O>
     auto find (node_t*, node_t*) -> node_t*;
 
-    template<bin_op O>
+    template<teddy_bin_op O>
     auto put (node_t*, node_t*, node_t*) -> void;
 
     auto adjust_capacity (int64 aproxCapacity) -> void;
@@ -298,10 +299,12 @@ apply_cache<Data, D>::apply_cache(apply_cache&& other) :
 }
 
 template<class Data, degree D>
-template<bin_op O>
+template<teddy_bin_op O>
 auto apply_cache<Data, D>::find(node_t* const l, node_t* const r) -> node_t*
 {
-    auto const oid     = op_id(O());
+    // TODO commutative
+
+    auto const oid     = O::get_id();
     auto const index   = hash(oid, l, r) % entries_.size();
     auto& entry        = entries_[index];
     auto const matches = entry.oid == oid and entry.lhs == l and entry.rhs == r;
@@ -309,14 +312,16 @@ auto apply_cache<Data, D>::find(node_t* const l, node_t* const r) -> node_t*
 }
 
 template<class Data, degree D>
-template<bin_op O>
+template<teddy_bin_op O>
 auto apply_cache<Data, D>::put(
     node_t* const l,
     node_t* const r,
     node_t* const res
 ) -> void
 {
-    auto const oid = op_id(O());
+    // TODO commutative
+
+    auto const oid = O::get_id();
     this->put_impl(oid, l, r, res);
 }
 

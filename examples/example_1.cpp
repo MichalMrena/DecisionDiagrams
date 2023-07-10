@@ -62,8 +62,8 @@ int main()
         sf = manager.apply<OR>(sf, series);
     }
 
-    std::cout << "A = "   << manager.availability(ps, sf)   << "\n";
-    std::cout << "U = "   << manager.unavailability(ps, sf) << "\n";
+    std::cout << "A = "   << manager.calculate_availability(ps, sf)   << "\n";
+    std::cout << "U = "   << manager.calculate_unavailability(ps, sf) << "\n";
     std::cout << "Fr1 = " << manager.state_frequency(sf, 1) << "\n";
     std::cout << "Fr0 = " << manager.state_frequency(sf, 0) << "\n";
 }

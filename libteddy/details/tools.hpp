@@ -13,68 +13,83 @@
 #include <utility>
 #include <vector>
 
-
-// TODO constraints.hpp
-
 namespace teddy::utils
 {
-template<class F>
-concept i_gen           = requires(F f, int32 k) { std::invoke(f, k); };
-
-auto constexpr identity = [] (auto const a)
+template<class Gen>
+concept i_gen           = requires(Gen generator, int32 index)
 {
-    return a;
+    std::invoke(generator, index);
 };
 
-auto constexpr not_zero = [] (auto const x)
+template<class T>
+concept is_std_vector = std::same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
+
+/**
+ *  \brief Identity function
+ */
+auto constexpr identity = [] (auto const arg)
 {
-    return x != 0;
+    return arg;
 };
 
-auto constexpr constant = [] (auto const c)
+/**
+ *  \brief Checks if argument is not zerp
+ */
+auto constexpr not_zero = [] (auto const arg)
 {
-    return [c] (auto)
+    return arg != 0;
+};
+
+/**
+ *  \brief Creates constant function
+ */
+auto constexpr constant = [] (auto const arg)
+{
+    return [arg] (auto)
     {
-        return c;
+        return arg;
     };
 };
 
 template<i_gen Gen>
-auto fill_vector (int64 const n, Gen&& f)
+auto fill_vector (int64 const n, Gen generator)
 {
-    using T = decltype(std::invoke(f, int32 {}));
-    auto xs = std::vector<T>();
-    xs.reserve(as_usize(n));
+    using T = decltype(std::invoke(generator, int32 {}));
+    auto data = std::vector<T>();
+    data.reserve(as_usize(n));
     for (auto i = int32 {0}; i < n; ++i)
     {
-        xs.emplace_back(std::invoke(f, i));
+        data.emplace_back(std::invoke(generator, i));
     }
-    return xs;
+    return data;
 }
 
 template<std::input_iterator I, std::sentinel_for<I> S, class F>
-auto fmap (I it, S last, F f)
+auto fmap (I first, S last, F mapper)
 {
-    using U = decltype(std::invoke(f, *it));
-    auto ys = std::vector<U>();
+    using U = decltype(std::invoke(mapper, *first));
+    auto result = std::vector<U>();
     if constexpr (std::random_access_iterator<I>)
     {
-        ys.reserve(as_usize(std::distance(it, last)));
+        result.reserve(as_usize(std::distance(first, last)));
     }
-    while (it != last)
+    while (first != last)
     {
-        ys.emplace_back(std::invoke(f, *it));
-        ++it;
+        result.emplace_back(std::invoke(mapper, *first));
+        ++first;
     }
-    return ys;
+    return result;
 }
 
-template<std::ranges::input_range Xs, class F>
-auto fmap (Xs&& xs, F f)
+template<std::ranges::input_range Range, class F>
+auto fmap (Range&& input, F mapper)
 {
-    return fmap(std::ranges::begin(xs), std::ranges::end(xs), f);
+    return fmap(std::ranges::begin(input), std::ranges::end(input), mapper);
 }
 
+/**
+ *  \brief Exponentiation for integers
+ */
 template<class Base, std::integral Exponent>
 auto constexpr int_pow(Base base, Exponent exponent) -> Base
 {
@@ -100,12 +115,17 @@ auto constexpr int_pow(Base base, Exponent exponent) -> Base
     return result;
 }
 
+/**
+ *  \brief Tries to parse \p input to \p Num
+ *  \param input input string
+ *  \return optinal result
+ */
 template<class Num>
-auto parse (std::string_view const in) -> std::optional<Num>
+auto parse (std::string_view const input) -> std::optional<Num>
 {
     auto ret    = Num {};
-    auto result = std::from_chars(in.data(), in.data() + in.size(), ret);
-    return std::errc {} == result.ec && result.ptr == in.data() + in.size()
+    auto result = std::from_chars(input.data(), input.data() + input.size(), ret);
+    return std::errc {} == result.ec && result.ptr == input.data() + input.size()
              ? std::optional<Num>(ret)
              : std::nullopt;
 }

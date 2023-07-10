@@ -21,9 +21,9 @@ concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
 
 template<class Probabilities>
 concept component_probabilities
-    = requires(Probabilities ps, int32 index, int32 val) {
+    = requires(Probabilities probs, int32 index, int32 value) {
           {
-              ps[index][val]
+              probs[index][value]
           } -> std::convertible_to<double>;
       };
 
@@ -33,6 +33,97 @@ concept f_val_change = requires(F f, int32 l, int32 r) {
                                f(l, r)
                            } -> std::convertible_to<bool>;
                        };
+
+namespace dpld
+{
+/**
+ *  \brief Returns lambda that can be used in basic \c dpld
+ */
+inline static auto constexpr basic = [] (int32 const fFrom, int32 const fTo)
+{
+    return [=] (int32 const lhs, int32 const rhs)
+    {
+        return lhs == fFrom && rhs == fTo;
+    };
+};
+
+/**
+ *  \brief Returns lambda that can be used in \c dpld of type 1
+ */
+inline static auto constexpr type_1_decrease = [] (int32 const state)
+{
+    return [state] (int32 const lhs, int32 const rhs)
+    {
+        return lhs == state && rhs < state;
+    };
+};
+
+/**
+ *  \brief Returns lambda that can be used in \c dpld of type 1
+ */
+inline static auto constexpr type_1_increase = [] (int32 const state)
+{
+    return [state] (int32 const lhs, int32 const rhs)
+    {
+        return lhs == state && rhs > state;
+    };
+};
+
+/**
+ *  \brief Returns lambda that can be used in \c dpld of type 2
+ */
+inline static auto constexpr type_2_decrease = [] ()
+{
+    return [] (int32 const lhs, int32 const rhs)
+    {
+        return lhs > rhs;
+    };
+};
+
+/**
+ *  \brief Returns lambda that can be used in \c dpld of type 2
+ */
+inline static auto constexpr type_2_increase = [] ()
+{
+    return [] (int32 const lhs, int32 const rhs)
+    {
+        return lhs < rhs;
+    };
+};
+
+/**
+ *  \brief Returns lambda that can be used in \c dpld of type 3
+ */
+inline static auto constexpr type_3_decrease = [] (int32 const state)
+{
+    return [state] (int32 const lhs, int32 const rhs)
+    {
+        return lhs >= state && rhs < state;
+    };
+};
+
+/**
+ *  \brief Returns lambda that can be used in \c dpld of type 3
+ */
+inline static auto constexpr type_3_increase = [] (int32 const state)
+{
+    return [state] (int32 const lhs, int32 const rhs)
+    {
+        return lhs < state && rhs >= state;
+    };
+};
+}
+
+/**
+ *  \struct value_change
+ *  \brief Describes change in a value of a variable
+ */
+struct var_change
+{
+    int32 index_;
+    int32 from_;
+    int32 to_;
+};
 
 /**
  *  \struct value_change
@@ -60,35 +151,35 @@ public:
 
 public:
     /**
-     *  \brief Calculates probabilities of all system states.
+     *  \brief Calculates probabilities of all system states
      *
-     *  When used as \c ps[i][k] parameter \p ps must return probability
+     *  When used as \c probs[i][k] parameter \p probs must return probability
      *  that i-th component is in state k.
      *  After a call to this method you can acces individual system
      *  state probabilities using \c get_probability method.
      *
-     *  \tparam Type that holds component state probabilities.
-     *  \param ps Componenet state probabilities.
-     *  \param sf Structure function.
+     *  \tparam Type that holds component state probabilities
+     *  \param probs Componenet state probabilities
+     *  \param diagram Structure function
      */
     template<component_probabilities Ps>
-    auto calculate_probabilities (Ps const& ps, diagram_t sf) -> void;
+    auto calculate_probabilities (Ps const& probs, diagram_t const&  diagram) -> void;
 
     /**
-     *  \brief Calculates and returns probability of a system state \p j .
+     *  \brief Calculates and returns probability of a system state \p state
      *
-     *  When used as \c ps[i][k] parameter \p ps must return probability
+     *  When used as \c probs[i][k] parameter \p probs must return probability
      *  that i-th component is in state k.
      *
-     *  \tparam Type that holds component state probabilities.
-     *  \param j System state.
-     *  \param ps Component state probabilities.
-     *  \param sf Structure function.
-     *  \return Probability that system described by \p sf is in
-     *  state \p j given probabilities \p ps .
+     *  \tparam Type that holds component state probabilities
+     *  \param state System state
+     *  \param probs Component state probabilities
+     *  \param diagram Structure function
+     *  \return Probability that system described by \p diagran is in
+     *  state \p state given probabilities \p probs
      */
     template<component_probabilities Ps>
-    auto probability (int32 j, Ps const& ps, diagram_t sf) -> double;
+    auto calculate_probability (int32 state, Ps const& probs, diagram_t const& diagram) -> double;
 
     /**
      *  \brief Returns probability of given system state.
@@ -99,10 +190,10 @@ public:
      *  once using \c calculate_probabilities and later accessed using
      *  \c get_probability .
      *
-     *  \param j System state.
-     *  \return Probability of a system state \p j .
+     *  \param state System state.
+     *  \return Probability of a system state \p state
      */
-    auto get_probability (int32 j) const -> double;
+    [[nodiscard]] auto get_probability (int32 state) const -> double;
 
     /**
      *  \brief Calculates and returns availability of a BSS.
@@ -110,31 +201,31 @@ public:
      *  When used as \c ps[i][k] parameter \p ps must return probability
      *  that i-th component is in state k.
      *
-     *  \tparam Component state probabilities.
-     *  \tparam Foo Dummy parameter to enable SFINE.
-     *  \param ps Component state probabilities.
-     *  \param sf Structure function.
-     *  \return System availability.
+     *  \tparam Component state probabilities
+     *  \tparam Foo Dummy parameter to enable SFINE
+     *  \param probs Component state probabilities
+     *  \param diagram Structure function
+     *  \return System availability
      */
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
-    auto availability (Ps const& ps, diagram_t sf) -> second_t<Foo, double>;
+    auto calculate_availability (Ps const& probs, diagram_t const& diagram) -> second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
-     *  respect to the system state \p j .
+     *  respect to the system state \p state
      *
-     *  When used as \c ps[i][k] parameter \p ps must return probability
+     *  When used as \c probs[i][k] parameter \p probs must return probability
      *  that i-th component is in state k.
      *
-     *  \tparam Component state probabilities.
-     *  \param j System state.
-     *  \param ps Component state probabilities.
-     *  \param sf Structure function.
-     *  \return System availability with respect to the system state \p j .
+     *  \tparam Component state probabilities
+     *  \param state System state
+     *  \param probs Component state probabilities
+     *  \param diagram Structure function
+     *  \return System availability with respect to the system state \p state
      */
     template<component_probabilities Ps>
-    auto availability (int32 j, Ps const& ps, diagram_t sf) -> double;
+    auto calculate_availability (int32 state, Ps const& probs, diagram_t const& diagram) -> double;
 
     /**
      *  \brief Returns availability of a BSS.
@@ -149,55 +240,55 @@ public:
      *  \return System availability.
      */
     template<class Foo = void>
-    auto get_availability () const -> second_t<Foo, double>;
+    [[nodiscard]] auto get_availability () const -> second_t<Foo, double>;
 
     /**
      *  \brief Returns system availability with
-     *  respect to the system state \p j .
+     *  respect to the system state \p state
      *
      *  Call to \c calculate_probabilities must proceed call to this
      *  funtion otherwise the result is undefined. This is a bit
      *  unfortunate but the idea is that probabilities are calculated
      *  once using \c calculate_probabilities and availability and
      *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability .
+     *  and \c get_unavailability
      *
-     *  \param j System state.
-     *  \return System availability with respect to the system state \p j .
+     *  \param state System state
+     *  \return System availability with respect to the system state \p state
      */
-    auto get_availability (int32 j) const -> double;
+    [[nodiscard]] auto get_availability (int32 state) const -> double;
 
     /**
      *  \brief Calculates and returns unavailability of a BSS.
      *
-     *  When used as \c ps[i][k] parameter \p ps must return probability
-     *  that i-th component is in state k.
+     *  When used as \c probs[i][k] parameter \p probs must return probability
+     *  that i-th component is in state k
      *
-     *  \tparam Component state probabilities.
-     *  \tparam Foo Dummy parameter to enable SFINE.
-     *  \param ps Component state probabilities.
-     *  \param sf Structure function.
-     *  \return System unavailtability.
+     *  \tparam Component state probabilities
+     *  \tparam Foo Dummy parameter to enable SFINE
+     *  \param probs Component state probabilities
+     *  \param diagran Structure function
+     *  \return System unavailtability
      */
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
-    auto unavailability (Ps const& ps, diagram_t sf) -> second_t<Foo, double>;
+    auto calculate_unavailability (Ps const& probs, diagram_t const& diagram) -> second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
-     *  respect to the system state \p j .
+     *  respect to the system state \p state
      *
-     *  When used as \c ps[i][k] parameter \p ps must return probability
-     *  that i-th component is in state k.
+     *  When used as \c probs[i][k] parameter \p probs must return probability
+     *  that i-th component is in state k
      *
-     *  \tparam Component state probabilities.
-     *  \param j System state.
-     *  \param ps Component state probabilities.
-     *  \param sf Structure function.
-     *  \return System availability with respect to the system state \p j .
+     *  \tparam Component state probabilities
+     *  \param state System state
+     *  \param probs Component state probabilities
+     *  \param diagram Structure function
+     *  \return System availability with respect to the system state \p state
      */
     template<component_probabilities Ps>
-    auto unavailability (int32 j, Ps const& ps, diagram_t sf) -> double;
+    auto calculate_unavailability (int32 state, Ps const& probs, diagram_t const& diagram) -> double;
 
     /**
      *  \brief Returns system unavailability of a BSS.
@@ -209,166 +300,171 @@ public:
      *  unavailability are later accessed using \c get_availability
      *  and \c get_unavailability .
      *
-     *  \param j System state.
-     *  \return System availability with respect to the system state \p j .
+     *  \return System availability
      */
     template<class Foo = void>
     auto get_unavailability () -> second_t<Foo, double>;
 
     /**
      *  \brief Returns system unavailability with
-     *  respect to the system state \p j .
+     *  respect to the system state \p state
      *
      *  Call to \c calculate_probabilities must proceed call to this
      *  funtion otherwise the result is undefined. This is a bit
      *  unfortunate but the idea is that probabilities are calculated
      *  once using \c calculate_probabilities and availability and
      *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability .
+     *  and \c get_unavailability
      *
-     *  \param j System state.
+     *  \param state System state
      *  \return System unavailability with respect to
-     *  the system state \p j .
+     *  the system state \p state
      */
-    auto get_unavailability (int32 j) -> double;
+    [[nodiscard]] auto get_unavailability (int32 state) -> double;
 
     /**
-     *  \brief Returns system state frequency of state \p j .
-     *  \param sf Structure function.
-     *  \param j System state.
-     *  \return Frequency of system state \p j .
+     *  \brief Returns system state frequency of state \p state
+     *  \param diagram Structure function
+     *  \param state System state
+     *  \return Frequency of system state \p state
      */
-    auto state_frequency (diagram_t sf, int32 j) -> double;
+    auto state_frequency (diagram_t const& diagram, int32 state) -> double;
 
-    // TODO zjednotit rozhranie s table_reliability, pouzit
-    // var_change (index, from, to)
-    // function_change (from, to)
 
     /**
-     *  \brief Calculates Direct Partial Boolean Derivative.
-     *
-     *  \param var Change of the value of \p i th component.
-     *  \param f Change of the value of the system.
-     *  \param sf Structure function.
-     *  \param i Index of the component.
-     *  \return Diagram representing Direct Partial Boolean Derivative.
-     */
-    auto dpld (value_change var, value_change f, diagram_t sf, int32 i)
-        -> diagram_t;
-
-    /**
-     *  \brief Calculates Direct Partial Boolean Derivative of type 1.
-     *
-     *  Identifies situations in which change of the state of \p i th
-     *  component causes change of the system state from the state \p j
-     *  to a worse state.
-     *
-     *  \param var Change of the value of \p i th component.
-     *  \param j System state.
-     *  \param sf Structure function.
-     *  \param i Index of the component.
+     *  \brief Calculates Direct Partial Boolean Derivative
+     *  \param varChange Change of the value of a variable
+     *  \param fChange Change of the value of the system
+     *  \param diagram Structure function
      *  \return Diagram representing Direct Partial Boolean Derivative
-     *  of type 1.
      */
-    auto idpld_type_1_decrease (
-        value_change var,
-        int32 j,
-        diagram_t sf,
-        int32 i
-    ) -> diagram_t;
+    template<class FChange>
+    auto dpld (var_change varChange, FChange fChange, diagram_t const& diagram) -> diagram_t;
 
-    /**
-     *  \brief Calculates Direct Partial Boolean Derivative of type 1.
-     *
-     *  Identifies situations in which change of the state of \p i th
-     *  component causes change of the system state from the state \p j
-     *  to a better state.
-     *
-     *  \param var Change of the value of \p i th component.
-     *  \param j System state.
-     *  \param sf Structure function.
-     *  \param i Index of the component.
-     *  \return Diagram representing Direct Partial Boolean Derivative
-     *  of type 1.
-     */
-    auto idpld_type_1_increase (
-        value_change var,
-        int32 j,
-        diagram_t sf,
-        int32 i
-    ) -> diagram_t;
+    // /**
+    //  *  \brief Calculates Direct Partial Boolean Derivative.
+    //  *  \param var Change of the value of \p i th component.
+    //  *  \param f Change of the value of the system.
+    //  *  \param sf Structure function.
+    //  *  \param i Index of the component.
+    //  *  \return Diagram representing Direct Partial Boolean Derivative.
+    //  */
+    // auto dpld (value_change var, value_change f, diagram_t sf, int32 i)
+    //     -> diagram_t;
 
-    /**
-     *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-     *
-     *  Identifies situations in which change of the state of \p i th
-     *  component causes degradation of the system state.
-     *
-     *  \param var Change of the value of \p i th component.
-     *  \param sf Structure function.
-     *  \param i Index of the component.
-     *  \return Diagram representing Direct Partial Boolean Derivative
-     *  of type 2.
-     */
-    auto idpld_type_2_decrease (value_change var, diagram_t sf, int32 i)
-        -> diagram_t;
+    // /**
+    //  *  \brief Calculates Direct Partial Boolean Derivative of type 1.
+    //  *
+    //  *  Identifies situations in which change of the state of \p i th
+    //  *  component causes change of the system state from the state \p j
+    //  *  to a worse state.
+    //  *
+    //  *  \param var Change of the value of \p i th component.
+    //  *  \param j System state.
+    //  *  \param sf Structure function.
+    //  *  \param i Index of the component.
+    //  *  \return Diagram representing Direct Partial Boolean Derivative
+    //  *  of type 1.
+    //  */
+    // auto idpld_type_1_decrease (
+    //     value_change var,
+    //     int32 j,
+    //     diagram_t sf,
+    //     int32 i
+    // ) -> diagram_t;
 
-    /**
-     *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-     *
-     *  Identifies situations in which change of the state of \p i th
-     *  component causes improvement of the system state.
-     *
-     *  \param var Change of the value of \p i th component.
-     *  \param sf Structure function.
-     *  \param i Index of the component.
-     *  \return Diagram representing Direct Partial Boolean Derivative
-     *  of type 2.
-     */
-    auto idpld_type_2_increase (value_change var, diagram_t sf, int32 i)
-        -> diagram_t;
+    // /**
+    //  *  \brief Calculates Direct Partial Boolean Derivative of type 1.
+    //  *
+    //  *  Identifies situations in which change of the state of \p i th
+    //  *  component causes change of the system state from the state \p j
+    //  *  to a better state.
+    //  *
+    //  *  \param var Change of the value of \p i th component.
+    //  *  \param j System state.
+    //  *  \param sf Structure function.
+    //  *  \param i Index of the component.
+    //  *  \return Diagram representing Direct Partial Boolean Derivative
+    //  *  of type 1.
+    //  */
+    // auto idpld_type_1_increase (
+    //     value_change var,
+    //     int32 j,
+    //     diagram_t sf,
+    //     int32 i
+    // ) -> diagram_t;
 
-    /**
-     *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-     *
-     *  Identifies situations in which change ot the state of \p i th
-     *  component causes system state degradation from a state
-     *  at least \p j to a state worse than \p j .
-     *
-     *  \param var Change of the value of \p i th component.
-     *  \param j System state.
-     *  \param sf Structure function.
-     *  \param i Index of the component.
-     *  \return Diagram representing Direct Partial Boolean Derivative
-     *  of type 3.
-     */
-    auto idpld_type_3_decrease (
-        value_change var,
-        int32 j,
-        diagram_t sf,
-        int32 i
-    ) -> diagram_t;
+    // /**
+    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+    //  *
+    //  *  Identifies situations in which change of the state of \p i th
+    //  *  component causes degradation of the system state.
+    //  *
+    //  *  \param var Change of the value of \p i th component.
+    //  *  \param sf Structure function.
+    //  *  \param i Index of the component.
+    //  *  \return Diagram representing Direct Partial Boolean Derivative
+    //  *  of type 2.
+    //  */
+    // auto idpld_type_2_decrease (value_change var, diagram_t sf, int32 i)
+    //     -> diagram_t;
 
-    /**
-     *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-     *
-     *  Identifies situations in which change ot the state of \p i th
-     *  component causes system state improvement from a state
-     *  state worse than \p j to a state at least \p j .
-     *
-     *  \param var Change of the value of \p i th component.
-     *  \param j System state.
-     *  \param sf Structure function.
-     *  \param i Index of the component.
-     *  \return Diagram representing Direct Partial Boolean Derivative
-     *  of type 3.
-     */
-    auto idpld_type_3_increase (
-        value_change var,
-        int32 j,
-        diagram_t sf,
-        int32 i
-    ) -> diagram_t;
+    // /**
+    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+    //  *
+    //  *  Identifies situations in which change of the state of \p i th
+    //  *  component causes improvement of the system state.
+    //  *
+    //  *  \param var Change of the value of \p i th component.
+    //  *  \param sf Structure function.
+    //  *  \param i Index of the component.
+    //  *  \return Diagram representing Direct Partial Boolean Derivative
+    //  *  of type 2.
+    //  */
+    // auto idpld_type_2_increase (value_change var, diagram_t sf, int32 i)
+    //     -> diagram_t;
+
+    // /**
+    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+    //  *
+    //  *  Identifies situations in which change ot the state of \p i th
+    //  *  component causes system state degradation from a state
+    //  *  at least \p j to a state worse than \p j .
+    //  *
+    //  *  \param var Change of the value of \p i th component.
+    //  *  \param j System state.
+    //  *  \param sf Structure function.
+    //  *  \param i Index of the component.
+    //  *  \return Diagram representing Direct Partial Boolean Derivative
+    //  *  of type 3.
+    //  */
+    // auto idpld_type_3_decrease (
+    //     value_change var,
+    //     int32 j,
+    //     diagram_t sf,
+    //     int32 i
+    // ) -> diagram_t;
+
+    // /**
+    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
+    //  *
+    //  *  Identifies situations in which change ot the state of \p i th
+    //  *  component causes system state improvement from a state
+    //  *  state worse than \p j to a state at least \p j .
+    //  *
+    //  *  \param var Change of the value of \p i th component.
+    //  *  \param j System state.
+    //  *  \param sf Structure function.
+    //  *  \param i Index of the component.
+    //  *  \return Diagram representing Direct Partial Boolean Derivative
+    //  *  of type 3.
+    //  */
+    // auto idpld_type_3_increase (
+    //     value_change var,
+    //     int32 j,
+    //     diagram_t sf,
+    //     int32 i
+    // ) -> diagram_t;
 
     /**
      * \brief Transforms \p dpld into Extended DPLD
@@ -532,11 +628,11 @@ public: // TODO tmp
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_probabilities(
-    Ps const& ps,
-    diagram_t sf
+    Ps const& probs,
+    diagram_t const& diagram
 ) -> void
 {
-    auto const root = sf.unsafe_get_root();
+    auto const root = diagram.unsafe_get_root();
 
     this->nodes_.traverse_pre(
         root,
@@ -555,7 +651,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
 
     this->nodes_.traverse_level(
         root,
-        [this, &ps] (auto const node)
+        [this, &probs] (auto const node)
         {
             if (node->is_internal())
             {
@@ -563,10 +659,10 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
                 auto k               = 0;
                 this->nodes_.for_each_son(
                     node,
-                    [node, nodeIndex, &ps, &k] (auto const son)
+                    [node, nodeIndex, &probs, &k] (auto const son)
                     {
                         son->data() += node->data()
-                                     * ps[as_uindex(nodeIndex)][as_uindex(k)];
+                                     * probs[as_uindex(nodeIndex)][as_uindex(k)];
                         ++k;
                     }
                 );
@@ -577,53 +673,53 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::probability(
-    int32 const j,
-    Ps const& ps,
-    diagram_t f
+auto reliability_manager<Degree, Domain>::calculate_probability(
+    int32 const state,
+    Ps const& probs,
+    diagram_t const& diagram
 ) -> double
 {
-    return this->calculate_ntp({j}, ps, f);
+    return this->calculate_ntp({state}, probs, diagram);
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::get_probability(int32 const j) const
+auto reliability_manager<Degree, Domain>::get_probability(int32 const state) const
     -> double
 {
-    auto const n = this->nodes_.get_terminal_node(j);
-    return n ? n->data() : 0.0;
+    auto const terminalNode = this->nodes_.get_terminal_node(state);
+    return terminalNode ? terminalNode->data() : 0.0;
 }
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
-auto reliability_manager<Degree, Domain>::availability(
-    Ps const& ps,
-    diagram_t f
+auto reliability_manager<Degree, Domain>::calculate_availability(
+    Ps const& probs,
+    diagram_t const& diagram
 ) -> second_t<Foo, double>
 {
-    return this->availability(1, ps, f);
+    return this->calculate_availability(1, probs, diagram);
 }
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::availability(
-    int32 const j,
-    Ps const& ps,
-    diagram_t f
+auto reliability_manager<Degree, Domain>::calculate_availability(
+    int32 const state,
+    Ps const& probs,
+    diagram_t const& diagram
 ) -> double
 {
-    auto js = std::vector<int32>();
+    auto states = std::vector<int32>();
     this->nodes_.for_each_terminal_node(
-        [j, &js] (auto const n)
+        [state, &states] (node_t* const n)
         {
-            if (n->get_value() >= j)
+            if (n->get_value() >= state)
             {
-                js.emplace_back(n->get_value());
+                states.emplace_back(n->get_value());
             }
         }
     );
-    return this->calculate_ntp(js, ps, f);
+    return this->calculate_ntp(states, probs, diagram);
 }
 
 template<degree Degree, domain Domain>
@@ -631,57 +727,57 @@ template<class Foo>
 auto reliability_manager<Degree, Domain>::get_availability() const
     -> second_t<Foo, double>
 {
-    auto const node = this->nodes_.get_terminal_node(1);
-    return node ? node->data() : 0;
+    auto const terminalNode = this->nodes_.get_terminal_node(1);
+    return terminalNode ? terminalNode->data() : 0;
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::get_availability(int32 const j) const
+auto reliability_manager<Degree, Domain>::get_availability(int32 const state) const
     -> double
 {
-    auto A = .0;
+    auto result = .0;
     this->nodes_.for_each_terminal_node(
-        [j, &A] (auto const node)
+        [state, &result] (auto const node)
         {
-            if (node->get_value() >= j)
+            if (node->get_value() >= state)
             {
-                A += node->data();
+                result += node->data();
             }
         }
     );
-    return A;
+    return result;
 }
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
-auto reliability_manager<Degree, Domain>::unavailability(
-    Ps const& ps,
-    diagram_t f
+auto reliability_manager<Degree, Domain>::calculate_unavailability(
+    Ps const& probs,
+    diagram_t const& diagram
 ) -> second_t<Foo, double>
 {
-    return this->unavailability(1, ps, f);
+    return this->calculate_unavailability(1, probs, diagram);
 }
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::unavailability(
-    int32 const j,
-    Ps const& ps,
-    diagram_t f
+auto reliability_manager<Degree, Domain>::calculate_unavailability(
+    int32 const state,
+    Ps const& probs,
+    diagram_t const& diagram
 ) -> double
 {
-    auto js = std::vector<int32>();
+    auto states = std::vector<int32>();
     this->nodes_.for_each_terminal_node(
-        [j, &js] (auto const n)
+        [state, &states] (auto const n)
         {
-            if (n->get_value() < j)
+            if (n->get_value() < state)
             {
-                js.emplace_back(n->get_value());
+                states.emplace_back(n->get_value());
             }
         }
     );
-    return this->calculate_ntp(js, ps, f);
+    return this->calculate_ntp(states, probs, diagram);
 }
 
 template<degree Degree, domain Domain>
@@ -693,14 +789,14 @@ auto reliability_manager<Degree, Domain>::get_unavailability()
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::get_unavailability(int32 const j)
+auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
     -> double
 {
     auto result = .0;
     this->nodes_.for_each_terminal_node(
-        [j, &result] (auto const node)
+        [state, &result] (auto const node)
         {
-            if (node->get_value() < j)
+            if (node->get_value() < state)
             {
                 result += node->data();
             }
@@ -710,143 +806,159 @@ auto reliability_manager<Degree, Domain>::get_unavailability(int32 const j)
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::state_frequency(diagram_t sf, int32 j)
+auto reliability_manager<Degree, Domain>::state_frequency(diagram_t  const& diagram, int32 state)
     -> double
 {
-    return static_cast<double>(this->satisfy_count(j, sf))
+    return static_cast<double>(this->satisfy_count(state, diagram))
          / static_cast<double>(this->domain_size());
 }
 
 template<degree Degree, domain Domain>
+template<class FChange>
 auto reliability_manager<Degree, Domain>::dpld(
-    value_change const var,
-    value_change const f,
-    diagram_t sf,
-    int32 const i
+    var_change varChange,
+    FChange fChange,
+    diagram_t const& diagram
 ) -> diagram_t
 {
     return this->dpld_g(
-        sf,
-        var,
-        i,
-        [f] (auto const l, auto const r)
-        {
-            return l == f.from && r == f.to;
-        }
+        diagram,
+        {varChange.from_, varChange.to_},
+        varChange.index_,
+        fChange
     );
 }
 
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpld_type_1_decrease(
-    value_change var,
-    int32 j,
-    diagram_t sf,
-    int32 i
-) -> diagram_t
-{
-    return this->dpld_g(
-        sf,
-        var,
-        i,
-        [j] (auto const l, auto const r)
-        {
-            return l == j && r < j;
-        }
-    );
-}
+// template<degree Degree, domain Domain>
+// auto reliability_manager<Degree, Domain>::dpld(
+//     value_change const var,
+//     value_change const f,
+//     diagram_t sf,
+//     int32 const i
+// ) -> diagram_t
+// {
+//     return this->dpld_g(
+//         sf,
+//         var,
+//         i,
+//         [f] (auto const l, auto const r)
+//         {
+//             return l == f.from && r == f.to;
+//         }
+//     );
+// }
 
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
-    value_change var,
-    int32 j,
-    diagram_t sf,
-    int32 i
-) -> diagram_t
-{
-    return this->dpld_g(
-        sf,
-        var,
-        i,
-        [j] (auto const l, auto const r)
-        {
-            return l == j && r > j;
-        }
-    );
-}
+// template<degree Degree, domain Domain>
+// auto reliability_manager<Degree, Domain>::idpld_type_1_decrease(
+//     value_change var,
+//     int32 j,
+//     diagram_t sf,
+//     int32 i
+// ) -> diagram_t
+// {
+//     return this->dpld_g(
+//         sf,
+//         var,
+//         i,
+//         [j] (auto const l, auto const r)
+//         {
+//             return l == j && r < j;
+//         }
+//     );
+// }
 
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
-    value_change var,
-    diagram_t sf,
-    int32 i
-) -> diagram_t
-{
-    return this->dpld_g(
-        sf,
-        var,
-        i,
-        [] (auto const l, auto const r)
-        {
-            return l > r;
-        }
-    );
-}
+// template<degree Degree, domain Domain>
+// auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
+//     value_change var,
+//     int32 j,
+//     diagram_t sf,
+//     int32 i
+// ) -> diagram_t
+// {
+//     return this->dpld_g(
+//         sf,
+//         var,
+//         i,
+//         [j] (auto const l, auto const r)
+//         {
+//             return l == j && r > j;
+//         }
+//     );
+// }
 
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
-    value_change var,
-    diagram_t sf,
-    int32 i
-) -> diagram_t
-{
-    return this->dpld_g(
-        sf,
-        var,
-        i,
-        [] (auto const l, auto const r)
-        {
-            return l < r;
-        }
-    );
-}
+// template<degree Degree, domain Domain>
+// auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
+//     value_change var,
+//     diagram_t sf,
+//     int32 i
+// ) -> diagram_t
+// {
+//     return this->dpld_g(
+//         sf,
+//         var,
+//         i,
+//         [] (auto const l, auto const r)
+//         {
+//             return l > r;
+//         }
+//     );
+// }
 
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpld_type_3_decrease(
-    value_change const var,
-    int32 const j,
-    diagram_t sf,
-    int32 const i
-) -> diagram_t
-{
-    return this->dpld_g(
-        sf,
-        var,
-        i,
-        [j] (auto const l, auto const r)
-        {
-            return l >= j && r < j;
-        }
-    );
-}
+// template<degree Degree, domain Domain>
+// auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
+//     value_change var,
+//     diagram_t sf,
+//     int32 i
+// ) -> diagram_t
+// {
+//     return this->dpld_g(
+//         sf,
+//         var,
+//         i,
+//         [] (auto const l, auto const r)
+//         {
+//             return l < r;
+//         }
+//     );
+// }
 
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
-    value_change const var,
-    int32 const j,
-    diagram_t sf,
-    int32 const i
-) -> diagram_t
-{
-    return this->dpld_g(
-        sf,
-        var,
-        i,
-        [j] (auto const l, auto const r)
-        {
-            return l < j && r >= j;
-        }
-    );
-}
+// template<degree Degree, domain Domain>
+// auto reliability_manager<Degree, Domain>::idpld_type_3_decrease(
+//     value_change const var,
+//     int32 const j,
+//     diagram_t sf,
+//     int32 const i
+// ) -> diagram_t
+// {
+//     return this->dpld_g(
+//         sf,
+//         var,
+//         i,
+//         [j] (auto const l, auto const r)
+//         {
+//             return l >= j && r < j;
+//         }
+//     );
+// }
+
+// template<degree Degree, domain Domain>
+// auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
+//     value_change const var,
+//     int32 const j,
+//     diagram_t sf,
+//     int32 const i
+// ) -> diagram_t
+// {
+//     return this->dpld_g(
+//         sf,
+//         var,
+//         i,
+//         [j] (auto const l, auto const r)
+//         {
+//             return l < j && r >= j;
+//         }
+//     );
+// }
 
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::to_dpld_e(
@@ -949,7 +1061,7 @@ auto reliability_manager<Degree, Domain>::birnbaum_importance(
 {
     // this->calculate_probabilities(ps, dpld);
     // return this->get_probability(1);
-    return this->probability(1, ps, dpld);
+    return this->calculate_probability(1, ps, dpld);
 }
 
 template<degree Degree, domain Domain>
@@ -963,7 +1075,7 @@ auto reliability_manager<Degree, Domain>::fussell_vesely_importance (
     ) -> double
 {
     auto const mnf = this->to_mnf(dpld);
-    auto const mnfProbability = this->probability(
+    auto const mnfProbability = this->calculate_probability(
         1,
         probabilities,
         mnf
@@ -1058,8 +1170,8 @@ auto reliability_manager<Degree, Domain>::dpld_g(
     F change
 ) -> diagram_t
 {
-    auto const lhs = this->cofactor(sf, i, var.from);
-    auto const rhs = this->cofactor(sf, i, var.to);
+    auto const lhs = this->get_cofactor(sf, i, var.from);
+    auto const rhs = this->get_cofactor(sf, i, var.to);
     return this->apply_dpld(lhs, rhs, change);
 }
 

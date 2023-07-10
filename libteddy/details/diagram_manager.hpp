@@ -17,67 +17,55 @@
 
 namespace teddy
 {
-// TODO move to standalone header
+template<class Vars>
+concept in_var_values = requires(Vars values, int32 index)
+{
+    { values[index] } -> std::convertible_to<int32>;
+};
 
 template<class Vars>
-concept in_var_values = requires(Vars vs, int32 i) {
-                            {
-                                vs[i]
-                            } -> std::convertible_to<int32>;
-                        };
+concept out_var_values = requires(Vars values, int32 index, int32 value)
+{
+    values[index] = value;
+};
 
-template<class Vars>
-concept out_var_values = requires(Vars vs, int32 i, int32 v) { vs[i] = v; };
-
-template<class T>
-concept expression_node = requires(T t, int32 l, int32 r) {
+template<class Node>
+concept expression_node = requires(Node node, int32 value) {
                               {
-                                  t.is_variable()
+                                  node.is_variable()
                               } -> std::same_as<bool>;
                               {
-                                  t.is_constant()
+                                  node.is_constant()
                               } -> std::same_as<bool>;
                               {
-                                  t.is_operation()
+                                  node.is_operation()
                               } -> std::same_as<bool>;
                               {
-                                  t.get_index()
+                                  node.get_index()
                               } -> std::same_as<int32>;
                               {
-                                  t.get_value()
+                                  node.get_value()
                               } -> std::same_as<int32>;
                               {
-                                  t.evaluate(l, r)
+                                  node.evaluate(value, value)
                               } -> std::same_as<int32>;
                               {
-                                  t.get_left()
-                              } -> std::same_as<T const&>;
+                                  node.get_left()
+                              } -> std::same_as<Node const&>;
                               {
-                                  t.get_right()
-                              } -> std::same_as<T const&>;
+                                  node.get_right()
+                              } -> std::same_as<Node const&>;
                           };
 
-template<class O>
-concept any_bin_op = requires(O o, int32 l, int32 r) {
-                         {
-                             o(l, r)
-                         } -> std::convertible_to<int32>;
-                     };
-
-template<class C, class Node>
-concept cache_handle = requires(C c, Node* l, Node* r, Node* u) {
-                           c.put(l, r, u);
-                           {
-                               c.lookup(l, r)
-                           } -> std::same_as<Node*>;
-                       };
+template<class Cache, class Node>
+concept cache_handle = requires(Cache cache, Node* lhs, Node* rhs, Node* result)
+{
+    cache.put(result, lhs, rhs);
+    { cache.lookup(lhs, rhs) } -> std::same_as<Node*>;
+};
 
 template<class Degree>
 concept is_bdd = std::same_as<degrees::fixed<2>, Degree>;
-
-template<class T>
-concept is_std_vector = std::
-    same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
 
 enum class fold_type
 {
@@ -142,7 +130,7 @@ public:
 
     /**
      *  \brief Creates vector of diagrams representing functions
-     *  of single variables.
+     *  of single variables
      *
      *  \tparam I iterator type for the input range.
      *  \tparam S sentinel type for \p I . (end iterator)
@@ -164,7 +152,7 @@ public:
     auto variables (Is const& indices) -> std::vector<diagram_t>;
 
     /**
-     *  \brief Creates diagram from a truth vector of a function.
+     *  \brief Creates diagram from a truth vector of a function
      *
      *  Example for the function f(x) = max(x0, x1, x2):
      *  \code
@@ -189,28 +177,28 @@ public:
      *  \code
      *  // Teddy code:
      *  teddy::ifmdd_manager<3> manager(3, 100, {2, 2, 3});
-     *  std::vector<unsigned int> vec {0, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2};
+     *  std::vector<int> vec {0, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2};
      *  diagram_t f = manager.from_vector(vec);
      *  \endcode
      *
      *  \tparam I Iterator type for the input range.
-     *  \tparam S Sentinel type for \p I . (end iterator)
-     *  \param first iterator to the first element of the truth vector.
-     *  \param last sentinel for \p first . (end iterator)
-     *  \return Diagram representing function given by the truth vector.
+     *  \tparam S Sentinel type for \p I (end iterator)
+     *  \param first iterator to the first element of the truth vector
+     *  \param last sentinel for \p first (end iterator)
+     *  \return Diagram representing function given by the truth vector
      */
     template<std::input_iterator I, std::sentinel_for<I> S>
     auto from_vector (I first, S last) -> diagram_t;
 
     /**
-     *  \brief Creates diagram from a truth vector of a function.
+     *  \brief Creates diagram from a truth vector of a function
      *
      *  See the other overload for details.
      *
-     *  \tparam R Type of the range that contains the truth vector.
-     *  \param vector Range representing the truth vector.
-     *  Elements of the range must be convertible to unsigned int.
-     *  \return Diagram representing function given by the truth vector.
+     *  \tparam R Type of the range that contains the truth vector
+     *  \param vector Range representing the truth vector
+     *  Elements of the range must be convertible to int
+     *  \return Diagram representing function given by the truth vector
      */
     template<std::ranges::input_range R>
     auto from_vector (R&& vector) -> diagram_t;
@@ -228,7 +216,7 @@ public:
      *  \param diagram Diagram
      *  \return Vector of ints representing the truth vector
      */
-    auto to_vector (diagram_t diagram) const -> std::vector<int32>;
+    auto to_vector (diagram_t const& diagram) const -> std::vector<int32>;
 
     /**
      *  \brief Creates truth vector from the diagram
@@ -237,7 +225,7 @@ public:
      *  \param out Output iterator that is used to output the truth vector
      */
     template<std::output_iterator<teddy::int32> O>
-    auto to_vector_g (diagram_t diagram, O out) const -> void;
+    auto to_vector_g (diagram_t const& diagram, O out) const -> void;
 
     /**
      *  \brief Creates BDDs defined by PLA file.
@@ -300,12 +288,12 @@ public:
      *  \param rhs second diagram
      *  \return Diagram representing merger of \p lhs and \p rhs
      */
-    template<bin_op Op>
+    template<teddy_bin_op Op>
     auto apply (diagram_t const& lhs, diagram_t const& rhs) -> diagram_t;
 
     /**
      *  \brief Merges diagams in the range using the \c apply function
-     *  and binary operation.
+     *  and binary operation
      *
      *  Uses left fold order of evaluation (sequentially from the left).
      *
@@ -315,17 +303,17 @@ public:
      *  diagram_t product = manager.left_fold<teddy::ops>(vs);
      *  \endcode
      *
-     *  \tparam Op Binary operation.
-     *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>).
-     *  \param range Input range of diagrams to be merged.
-     *  \return Diagram representing merger of all diagrams from the range.
+     *  \tparam Op Binary operation
+     *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>)
+     *  \param diagrams Input range of diagrams to be merged
+     *  \return Diagram representing merger of all diagrams from the range
      */
-    template<bin_op Op, std::ranges::input_range R>
-    auto left_fold (R const& range) -> diagram_t;
+    template<teddy_bin_op Op, std::ranges::input_range R>
+    auto left_fold (R const& diagrams) -> diagram_t;
 
     /**
      *  \brief Merges diagams in the range using the \c apply function
-     *  and binary operation.
+     *  and binary operation
      *
      *  Uses left fold order of evaluation (sequentially from the left).
      *
@@ -336,19 +324,19 @@ public:
      *      vs.begin(), vs.end());
      *  \endcode
      *
-     *  \tparam Op Binary operation.
-     *  \tparam I Range iterator type.
-     *  \tparam S Sentinel type for \c I (end iterator).
-     *  \param first Input iterator to the first diagram.
-     *  \param last Sentinel for \p first (end iterator).
-     *  \return Diagram representing merger of all diagrams from the range.
+     *  \tparam Op Binary operation
+     *  \tparam I Range iterator type
+     *  \tparam S Sentinel type for \c I (end iterator)
+     *  \param first Input iterator to the first diagram
+     *  \param last Sentinel for \p first (end iterator)
+     *  \return Diagram representing merger of all diagrams from the range
      */
-    template<bin_op Op, std::input_iterator I, std::sentinel_for<I> S>
+    template<teddy_bin_op Op, std::input_iterator I, std::sentinel_for<I> S>
     auto left_fold (I first, S last) -> diagram_t;
 
     /**
      *  \brief Merges diagams in the range using the \c apply function
-     *  and binary operation.
+     *  and binary operation
      *
      *  Uses tree fold order of evaluation ((d1 op d2) op (d3 op d4) ...) .
      *  Tree fold uses the input range \p range to store some intermediate
@@ -360,18 +348,18 @@ public:
      *  diagram_t product = manager.tree_fold<teddy::ops>(vs);
      *  \endcode
      *
-     *  \tparam Op Binary operation.
-     *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>).
-     *  \param range Random access range of diagrams to be merged.
+     *  \tparam Op Binary operation
+     *  \tparam R Range containing diagrams (e.g. std::vector<diagram_t>)
+     *  \param diagrams Random access range of diagrams to be merged
      *  (e.g. std::vector)
-     *  \return Diagram representing merger of all diagrams from the range.
+     *  \return Diagram representing merger of all diagrams from the range
      */
-    template<bin_op Op, std::ranges::random_access_range R>
-    auto tree_fold (R& range) -> diagram_t;
+    template<teddy_bin_op Op, std::ranges::random_access_range R>
+    auto tree_fold (R& diagrams) -> diagram_t;
 
     /**
      *  \brief Merges diagams in the range using the \c apply function
-     *  and binary operation.
+     *  and binary operation
      *
      *  Uses tree fold order of evaluation ((d1 op d2) op (d3 op d4) ...) .
      *  Tree fold uses the input range \p range to store some intermediate
@@ -384,61 +372,61 @@ public:
      *      vs.begin(), vs.end());
      *  \endcode
      *
-     *  \tparam Op Binary operation.
-     *  \tparam I Range iterator type.
-     *  \tparam S Sentinel type for \c I (end iterator).
-     *  \param first Random access iterator to the first diagram.
-     *  \param last Sentinel for \p first (end iterator).
-     *  \return Diagram representing merger of all diagrams from the range.
+     *  \tparam Op Binary operation
+     *  \tparam I Range iterator type
+     *  \tparam S Sentinel type for \c I (end iterator)
+     *  \param first Random access iterator to the first diagram
+     *  \param last Sentinel for \p first (end iterator)
+     *  \return Diagram representing merger of all diagrams from the range
      */
-    template<bin_op Op, std::random_access_iterator I, std::sentinel_for<I> S>
+    template<teddy_bin_op Op, std::random_access_iterator I, std::sentinel_for<I> S>
     auto tree_fold (I first, S last) -> diagram_t;
 
     /**
-     *  \brief Evaluates value of the function represented by the diagram.
+     *  \brief Evaluates value of the function represented by the diagram
      *
      *  Complexity is \c O(n) where \c n is the number of variables.
      *
      *  \tparam Vars Container type that defines operator[] and returns
-     *  value convertible to unsigned int.
-     *  \param d Diagram.
-     *  \param vs Container holding values of variables.
+     *  value convertible to int
+     *  \param diagram Diagram
+     *  \param values Container holding values of variables
      *  \return Value of the function represented by \p d for variable
-     *  values given in \p vs .
+     *  values given in \p vs
      */
     template<in_var_values Vars>
-    auto evaluate (diagram_t d, Vars const& vs) const -> int32;
+    auto evaluate (diagram_t const& diagram, Vars const& values) const -> int32;
 
     /**
      *  \brief Calculates number of variable assignments for which
-     *  the functions evaluates to 1.
+     *  the functions evaluates to 1
      *
      *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
      *
-     *  \tparam Foo Dummy parameter to enable SFINE.
-     *  \param d Diagram representing the function.
+     *  \tparam Foo Dummy parameter to enable SFINE
+     *  \param diagram Diagram representing the function
      *  \return Number of different variable assignments for which the
-     *  the function represented by \p d evaluates to 1.
+     *  the function represented by \p d evaluates to 1
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
-    auto satisfy_count (diagram_t d) -> second_t<Foo, int64>;
+    auto satisfy_count (diagram_t const& diagram) -> second_t<Foo, int64>;
 
     /**
      *  \brief Calculates number of variable assignments for which
-     *  the functions evaluates to certain value.
+     *  the functions evaluates to certain value
      *
      *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
      *
-     *  \param val Value of the function.
-     *  \param d Diagram representing the function.
+     *  \param value Value of the function
+     *  \param diagram Diagram representing the function
      *  \return Number of different variable assignments for which the
-     *  the function represented by \p d evaluates to \p val .
+     *  the function represented by \p d evaluates to \p val
      */
-    auto satisfy_count (int32 val, diagram_t d) -> int64;
+    auto satisfy_count (int32 value, diagram_t const& diagram) -> int64;
 
     /**
-     *  \brief Enumerates all elements of the satisfying set.
+     *  \brief Enumerates all elements of the satisfying set
      *
      *  Enumerates all elements of the satisfying set of the function
      *  i.e. variable assignments for which the Boolean function
@@ -450,14 +438,14 @@ public:
      *  the computation will probably not finish in reasonable time.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning unsigned integers.
-     *  \tparam Foo Dummy parameter to enable SFINE.
-     *  \param d Diagram representing the function.
-     *  \return Vector of \p Vars .
+     *  assigning integers
+     *  \tparam Foo Dummy parameter to enable SFINE
+     *  \param diagram Diagram representing the function
+     *  \return Vector of \p Vars
      */
     template<out_var_values Vars, class Foo = void>
     requires(is_bdd<Degree>)
-    auto satisfy_all (diagram_t d) const -> second_t<Foo, std::vector<Vars>>;
+    auto satisfy_all (diagram_t const& diagram) const -> second_t<Foo, std::vector<Vars>>;
 
     /**
      *  \brief Enumerates all elements of the satisfying set.
@@ -472,13 +460,13 @@ public:
      *  the computation will probably not finish in reasonable time.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning unsigned integers. std::vector is also allowed.
-     *  \param val Value of the function.
-     *  \param d Diagram representing the function.
-     *  \return Vector of \p Vars .
+     *  assigning integers. std::vector is also allowed
+     *  \param value Value of the function
+     *  \param diagram Diagram representing the function
+     *  \return Vector of \p Vars
      */
     template<out_var_values Vars>
-    auto satisfy_all (int32 val, diagram_t d) const -> std::vector<Vars>;
+    auto satisfy_all (int32 value, diagram_t const& diagram) const -> std::vector<Vars>;
 
     /**
      *  \brief Enumerates all elements of the satisfying set.
@@ -493,15 +481,15 @@ public:
      *  the computation will probably not finish in reasonable time.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning unsigned integers. std::vector is also allowed.
-     *  \tparam O Output iterator type.
-     *  \param d Diagram representing the function.
+     *  assigning integers. std::vector is also allowed
+     *  \tparam O Output iterator type
+     *  \param diagram Diagram representing the function
      *  \param out Output iterator that is used to output instances
-     *  of \p Vars .
+     *  of \p Vars
      */
     template<out_var_values Vars, std::output_iterator<Vars> O>
     requires(is_bdd<Degree>)
-    auto satisfy_all_g (diagram_t d, O out) const -> void;
+    auto satisfy_all_g (diagram_t const& diagram, O out) const -> void;
 
     /**
      *  \brief Enumerates all elements of the satisfying set.
@@ -516,67 +504,65 @@ public:
      *  the computation will probably not finish in reasonable time.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning unsigned integers. std::vector is also allowed.
+     *  assigning integers. std::vector is also allowed.
      *  \tparam O Output iterator type.
-     *  \param val Value of the function.
-     *  \param d Diagram representing the function.
+     *  \param value Value of the function
+     *  \param diagram Diagram representing the function
      *  \param out Output iterator that is used to output instances
      *  of \p Vars .
      */
     template<out_var_values Vars, std::output_iterator<Vars> O>
-    auto satisfy_all_g (int32 val, diagram_t d, O out) const -> void;
+    auto satisfy_all_g (int32 value, diagram_t const& diagram, O out) const -> void;
 
     /**
-     *  \brief Calculates cofactor of the functions.
+     *  \brief Calculates cofactor of the functions
      *
      *  Calculates cofactor of the function i.e. fixes value of the \p i th
      *  variable to the value \p val .
      *
-     *  \param d Diagram representing the function.
-     *  \param i Index of the variable to be fixed.
-     *  \param val Value to which the \p i th varibale should be fixed.
-     *  \return Diagram representing cofactor of the function.
+     *  \param diagram Diagram representing the function
+     *  \param varIndex Index of the variable to be fixed
+     *  \param varValue Value to which the \p i th varibale should be fixed
+     *  \return Diagram representing cofactor of the function
      */
-    auto cofactor (diagram_t d, int32 i, int32 val) -> diagram_t;
+    auto get_cofactor (diagram_t const& diagram, int32 varIndex, int32 varValue) -> diagram_t;
 
     /**
-     *  \brief Transforms values of the function.
+     *  \brief Transforms values of the function
      *
      *  \code
      *  // Example of the call with 4-valued MDD.
-     *  manager.transform(diagram, [](unsigned int v)
+     *  manager.transform(diagram, [](int v)
      *  {
      *      return 3 - v;
      *  });
      *  \endcode
      *
-     *  \tparam F Type of the transformation function.
-     *  \param d Diagram representing the function.
-     *  \param f Transformation function that is applied
+     *  \tparam F Type of the transformation function
+     *  \param diagram Diagram representing the function
+     *  \param transformer Transformation function that is applied
      *  to values of the function. Default value keeps 0 and transform
-     *  everything else to 1.
-     *  \return Diagram representing transformed function.
+     *  everything else to 1
+     *  \return Diagram representing transformed function
      */
     template<uint_to_bool F>
-    auto transform (diagram_t d, F f = utils::not_zero) -> diagram_t;
+    auto transform (diagram_t const& diagram, F transformer) -> diagram_t;
 
     /**
-     *  \brief Enumerates indices of variables that the function depends on.
-     *
-     *  \param d Diagram representing the function.
-     *  \return Vector of indices.
+     *  \brief Enumerates indices of variables that the function depends on
+     *  \param diagram Diagram representing the function
+     *  \return Vector of indices
      */
-    auto dependency_set (diagram_t d) const -> std::vector<int32>;
+    auto get_dependency_set (diagram_t const& diagram) const -> std::vector<int32>;
 
     /**
-     *  \brief Enumerates indices of variables that the function depends on.
-     *
+     *  \brief Enumerates indices of variables that the function depends on
      *  \tparam O Output iterator type.
-     *  \param d Diagram representing the function.
+     *  \param diagram Diagram representing the function.
      *  \param out Output iterator that is used to output indices.
      */
     template<std::output_iterator<int32> O>
-    auto dependency_set_g (diagram_t d, O out) const -> void;
+    auto get_dependency_set_g (diagram_t const& diagram, O out) const -> void;
 
     /**
      *  \brief Reduces diagrams to its canonical form
@@ -597,9 +583,9 @@ public:
      *  and probably will be higher. See implementation details on github
      *  for details.
      *
-     *  \return Number of nodes.
+     *  \return Number of nodes
      */
-    [[nodiscard]] auto node_count () const -> int64;
+    [[nodiscard]] auto get_node_count () const -> int64;
 
     /**
      *  \brief Returns number of nodes in the diagram including
@@ -607,10 +593,10 @@ public:
      *  \param diagram Diagram
      *  \return Number of node
      */
-    auto node_count (diagram_t const& diagram) const -> int64;
+    auto get_node_count (diagram_t const& diagram) const -> int64;
 
     /**
-     *  \brief Prints dot representation of the graph.
+     *  \brief Prints dot representation of the graph
      *
      *  Prints dot representation of the entire multi rooted graph to
      *  the output stream.
@@ -804,29 +790,21 @@ protected:
         int32 varCount,
         int64 nodePoolSize,
         int64 overflowNodePoolSize,
-        domains::mixed ds,
+        domains::mixed domain,
         std::vector<int32> order
     )
     requires(domains::is_mixed<Domain>()());
 
 public:
-    diagram_manager(diagram_manager const&)                     = delete;
-    diagram_manager(diagram_manager&&)                          = default;
-    auto operator= (diagram_manager const&) -> diagram_manager& = delete;
-    auto operator= (diagram_manager&&) -> diagram_manager&      = default;
+    diagram_manager(diagram_manager const&)                         = delete;
+    diagram_manager(diagram_manager&&) noexcept                     = default;
+    ~diagram_manager()                                              = default;
+    auto operator= (diagram_manager const&) -> diagram_manager&     = delete;
+    auto operator= (diagram_manager&&) noexcept -> diagram_manager& = default;
 
 protected:
     node_manager<Data, Degree, Domain> nodes_;
 };
-
-namespace detail
-{
-inline auto default_or_fwd (int64 const n, std::vector<int32>& is)
-{
-    return is.empty() ? utils::fill_vector(n, utils::identity)
-                      : std::vector<int32>(std::move(is));
-}
-} // namespace detail
 
 template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::constant(int32 const val) -> diagram_t
@@ -949,12 +927,12 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
                 break;
             }
 
-            auto const end = std::rend(stack);
-            auto it        = std::rbegin(stack);
-            auto count     = 0;
-            while (it != end and it->level == currentLevel)
+            auto const endId = rend(stack);
+            auto stackIt     = rbegin(stack);
+            auto count       = 0;
+            while (stackIt != endId and stackIt->level == currentLevel)
             {
-                ++it;
+                ++stackIt;
                 ++count;
             }
             auto const newIndex  = nodes_.get_index(currentLevel - 1);
@@ -967,14 +945,14 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
 
             auto newSons = nodes_.make_sons(
                 newIndex,
-                [&stack, newDomain] (auto const o)
+                [&stack, newDomain] (auto const sonOrder)
                 {
-                    return stack[as_uindex(ssize(stack) - newDomain + o)].node;
+                    return stack[as_uindex(ssize(stack) - newDomain + sonOrder)].node;
                 }
             );
             auto const newNode
                 = nodes_.internal_node(newIndex, std::move(newSons));
-            stack.erase(std::end(stack) - newDomain, std::end(stack));
+            stack.erase(end(stack) - newDomain, end(stack));
             stack.push_back(stack_frame {newNode, currentLevel - 1});
         }
     };
@@ -999,13 +977,13 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
 
 template<class Data, degree Degree, domain Domain>
 template<std::ranges::input_range R>
-auto diagram_manager<Data, Degree, Domain>::from_vector(R&& r) -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::from_vector(R&& vector) -> diagram_t
 {
-    return this->from_vector(std::ranges::begin(r), std::ranges::end(r));
+    return this->from_vector(begin(vector), end(vector));
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::to_vector(diagram_t diagram) const
+auto diagram_manager<Data, Degree, Domain>::to_vector(diagram_t const& diagram) const
     -> std::vector<int32>
 {
     auto vector = std::vector<int32>();
@@ -1017,7 +995,7 @@ auto diagram_manager<Data, Degree, Domain>::to_vector(diagram_t diagram) const
 template<class Data, degree Degree, domain Domain>
 template<std::output_iterator<teddy::int32> O>
 auto diagram_manager<Data, Degree, Domain>::to_vector_g(
-    diagram_t diagram,
+    diagram_t const& diagram,
     O out
 ) const -> void
 {
@@ -1062,31 +1040,31 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
 {
     auto const product = [this] (auto const& cube)
     {
-        auto vs = std::vector<diagram_t>();
-        vs.reserve(cube.size());
+        auto variables = std::vector<diagram_t>();
+        variables.reserve(cube.size());
         for (auto i = 0; i < cube.size(); ++i)
         {
             if (cube.get(i) == 1)
             {
-                vs.emplace_back(this->variable(i));
+                variables.emplace_back(this->variable(i));
             }
             else if (cube.get(i) == 0)
             {
-                vs.emplace_back(this->variable_not(i));
+                variables.emplace_back(this->variable_not(i));
             }
         }
-        return this->left_fold<ops::AND>(vs);
+        return this->left_fold<ops::AND>(variables);
     };
 
-    auto const orFold = [this, foldType] (auto& ds)
+    auto const orFold = [this, foldType] (auto& diagrams)
     {
         switch (foldType)
         {
         case fold_type::Left:
-            return this->left_fold<ops::OR>(ds);
+            return this->left_fold<ops::OR>(diagrams);
 
         case fold_type::Tree:
-            return this->tree_fold<ops::OR>(ds);
+            return this->tree_fold<ops::OR>(diagrams);
 
         default:
             assert(false);
@@ -1141,7 +1119,19 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
         utils::tuple_hash
     >;
 
-    auto const step = [this](
+    auto constexpr apply_op_wrap = [] (auto const& operation)
+    {
+        return [operation] (auto const lhs, auto const rhs)
+        {
+            if (lhs == Nondetermined || rhs == Nondetermined)
+            {
+                return Nondetermined;
+            }
+            return static_cast<int32>(operation(lhs, rhs));
+        };
+    };
+
+    auto const step = [this, apply_op_wrap](
         auto const& self,
         auto const& exprNode
     )
@@ -1180,7 +1170,7 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
 }
 
 template<class Data, degree Degree, domain Domain>
-template<bin_op Op>
+template<teddy_bin_op Op>
 auto diagram_manager<Data, Degree, Domain>::apply(
     diagram_t const& lhs,
     diagram_t const& rhs
@@ -1197,40 +1187,40 @@ auto diagram_manager<Data, Degree, Domain>::apply(
 }
 
 template<class Data, degree Degree, domain Domain>
-template<bin_op Op, std::ranges::input_range R>
-auto diagram_manager<Data, Degree, Domain>::left_fold(R const& ds) -> diagram_t
+template<teddy_bin_op Op, std::ranges::input_range R>
+auto diagram_manager<Data, Degree, Domain>::left_fold(R const& diagrams) -> diagram_t
 {
-    return this->left_fold<Op>(std::ranges::begin(ds), std::ranges::end(ds));
+    return this->left_fold<Op>(std::ranges::begin(diagrams), std::ranges::end(diagrams));
 }
 
 template<class Data, degree Degree, domain Domain>
-template<bin_op Op, std::input_iterator I, std::sentinel_for<I> S>
+template<teddy_bin_op Op, std::input_iterator I, std::sentinel_for<I> S>
 auto diagram_manager<Data, Degree, Domain>::left_fold(I first, S const last)
     -> diagram_t
 {
     static_assert(std::same_as<std::iter_value_t<I>, diagram_t>);
 
-    auto r = std::move(*first);
+    auto result = std::move(*first);
     ++first;
 
     while (first != last)
     {
-        r = this->apply<Op>(r, *first);
+        result = this->apply<Op>(result, *first);
         ++first;
     }
 
-    return r;
+    return result;
 }
 
 template<class Data, degree Degree, domain Domain>
-template<bin_op Op, std::ranges::random_access_range R>
-auto diagram_manager<Data, Degree, Domain>::tree_fold(R& ds) -> diagram_t
+template<teddy_bin_op Op, std::ranges::random_access_range R>
+auto diagram_manager<Data, Degree, Domain>::tree_fold(R& diagrams) -> diagram_t
 {
-    return this->tree_fold<Op>(std::ranges::begin(ds), std::ranges::end(ds));
+    return this->tree_fold<Op>(std::ranges::begin(diagrams), std::ranges::end(diagrams));
 }
 
 template<class Data, degree Degree, domain Domain>
-template<bin_op Op, std::random_access_iterator I, std::sentinel_for<I> S>
+template<teddy_bin_op Op, std::random_access_iterator I, std::sentinel_for<I> S>
 auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
     -> diagram_t
 {
@@ -1265,40 +1255,40 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
 template<class Data, degree Degree, domain Domain>
 template<in_var_values Vars>
 auto diagram_manager<Data, Degree, Domain>::evaluate(
-    diagram_t d,
-    Vars const& vs
+    diagram_t const& diagram,
+    Vars const& values
 ) const -> int32
 {
-    auto n = d.unsafe_get_root();
+    auto node = diagram.unsafe_get_root();
 
-    while (not n->is_terminal())
+    while (not node->is_terminal())
     {
-        auto const i = n->get_index();
-        assert(nodes_.is_valid_var_value(i, vs[as_uindex(i)]));
-        n = n->get_son(vs[as_uindex(i)]);
+        auto const index = node->get_index();
+        assert(nodes_.is_valid_var_value(index, values[as_uindex(index)]));
+        node = node->get_son(values[as_uindex(index)]);
     }
 
-    return n->get_value();
+    return node->get_value();
 }
 
 template<class Data, degree Degree, domain Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_count(diagram_t d)
+auto diagram_manager<Data, Degree, Domain>::satisfy_count(diagram_t const& diagram)
     -> second_t<Foo, int64>
 {
-    return this->satisfy_count(1, d);
+    return this->satisfy_count(1, diagram);
 }
 
 template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::satisfy_count(
-    int32 const val,
-    diagram_t d
+    int32 const value,
+    diagram_t const& diagram
 ) -> int64
 {
     if constexpr (domains::is_fixed<Domain>()())
     {
-        assert(val < Domain()());
+        assert(value < Domain()());
     }
 
     auto constexpr CanUseDataMember
@@ -1332,84 +1322,84 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
 
     // Actual satisfy count algorithm.
     nodes_.traverse_post(
-        d.unsafe_get_root(),
-        [this, val, &data] (auto const n) mutable
+        diagram.unsafe_get_root(),
+        [this, value, &data] (node_t* const node) mutable
         {
-            if (n->is_terminal())
+            if (node->is_terminal())
             {
-                data(n) = n->get_value() == val ? 1 : 0;
+                data(node) = node->get_value() == value ? 1 : 0;
             }
             else
             {
-                data(n)           = 0;
-                auto const nLevel = nodes_.get_level(n);
+                data(node)           = 0;
+                auto const nLevel = nodes_.get_level(node);
                 nodes_.for_each_son(
-                    n,
+                    node,
                     [=, this, &data] (auto const son) mutable
                     {
                         auto const sonLevel = nodes_.get_level(son);
                         auto const diff
                             = nodes_.domain_product(nLevel + 1, sonLevel);
-                        data(n) += data(son) * static_cast<T>(diff);
+                        data(node) += data(son) * static_cast<T>(diff);
                     }
                 );
             }
         }
     );
 
-    auto const rootAlpha = static_cast<int64>(data(d.unsafe_get_root()));
-    auto const rootLevel = nodes_.get_level(d.unsafe_get_root());
+    auto const rootAlpha = static_cast<int64>(data(diagram.unsafe_get_root()));
+    auto const rootLevel = nodes_.get_level(diagram.unsafe_get_root());
     return rootAlpha * nodes_.domain_product(0, rootLevel);
 }
 
 template<class Data, degree Degree, domain Domain>
 template<out_var_values Vars, class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_all(diagram_t d) const
+auto diagram_manager<Data, Degree, Domain>::satisfy_all(diagram_t const& diagram) const
     -> second_t<Foo, std::vector<Vars>>
 {
-    return this->satisfy_all<Vars>(1, d);
+    return this->satisfy_all<Vars>(1, diagram);
 }
 
 template<class Data, degree Degree, domain Domain>
 template<out_var_values Vars>
 auto diagram_manager<Data, Degree, Domain>::satisfy_all(
-    int32 const val,
-    diagram_t d
+    int32 const value,
+    diagram_t const& diagram
 ) const -> std::vector<Vars>
 {
-    auto vs = std::vector<Vars>();
-    this->satisfy_all_g<Vars>(val, d, std::back_inserter(vs));
-    return vs;
+    auto result = std::vector<Vars>();
+    this->satisfy_all_g<Vars>(value, diagram, std::back_inserter(result));
+    return result;
 }
 
 template<class Data, degree Degree, domain Domain>
 template<out_var_values Vars, std::output_iterator<Vars> O>
 requires(is_bdd<Degree>)
 auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
-    diagram_t d,
+    diagram_t const& diagram,
     O out
 ) const -> void
 {
-    return this->satisfy_all_g<Vars>(1, d, out);
+    return this->satisfy_all_g<Vars>(1, diagram, out);
 }
 
 template<class Data, degree Degree, domain Domain>
 template<out_var_values Vars, std::output_iterator<Vars> O>
 auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
-    int32 const val,
-    diagram_t d,
+    int32 const value,
+    diagram_t const& diagram,
     O out
 ) const -> void
 {
     if constexpr (domains::is_fixed<Domain>()())
     {
-        assert(val < Domain()());
+        assert(value < Domain()());
     }
 
-    auto xs = [this] ()
+    auto varValues = [this] ()
     {
-        if constexpr (is_std_vector<Vars>)
+        if constexpr (utils::is_std_vector<Vars>)
         {
             return Vars(as_usize(this->get_var_count()));
         }
@@ -1418,28 +1408,28 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
             return Vars {};
         }
     }();
-    auto go
-        = [this, &xs, val, out] (auto& self, auto const l, auto const n) mutable
+    auto step
+        = [this, &varValues, value, out] (auto& self, auto const currentLevel, node_t* const n) mutable
     {
-        if (n->is_terminal() && val != n->get_value())
+        if (n->is_terminal() && value != n->get_value())
         {
             return;
         }
 
-        if (l == nodes_.get_leaf_level() && val == n->get_value())
+        if (currentLevel == nodes_.get_leaf_level() && value == n->get_value())
         {
-            *out++ = xs;
+            *out++ = varValues;
             return;
         }
 
-        if (nodes_.get_level(n) > l)
+        if (nodes_.get_level(n) > currentLevel)
         {
-            auto const index  = nodes_.get_index(l);
+            auto const index  = nodes_.get_index(currentLevel);
             auto const domain = nodes_.get_domain(index);
             for (auto iv = 0; iv < domain; ++iv)
             {
-                xs[as_uindex(index)] = iv;
-                self(self, l + 1, n);
+                varValues[as_uindex(index)] = iv;
+                self(self, currentLevel + 1, n);
             }
         }
         else
@@ -1447,115 +1437,118 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
             auto const index = n->get_index();
             nodes_.for_each_son(
                 n,
-                [=, &xs, iv = int32 {0}] (auto const son) mutable
+                [=, &varValues, sonOrder = int32 {0}] (node_t* const son) mutable
                 {
-                    xs[as_uindex(index)] = iv;
-                    self(self, l + 1, son);
-                    ++iv;
+                    varValues[as_uindex(index)] = sonOrder;
+                    self(self, currentLevel + 1, son);
+                    ++sonOrder;
                 }
             );
         }
     };
 
-    go(go, int32 {0}, d.unsafe_get_root());
+    step(step, int32 {0}, diagram.unsafe_get_root());
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::cofactor(
-    diagram_t d,
-    int32 const i,
-    int32 const v
+auto diagram_manager<Data, Degree, Domain>::get_cofactor(
+    diagram_t const& diagram,
+    int32 const varIndex,
+    int32 const varValue
 ) -> diagram_t
 {
-    if (d.unsafe_get_root()->is_terminal())
+    if (diagram.unsafe_get_root()->is_terminal())
     {
-        return d;
+        return diagram;
     }
 
-    auto const root = d.unsafe_get_root();
-    if (root->get_index() == i)
+    auto const root = diagram.unsafe_get_root();
+    if (root->get_index() == varIndex)
     {
-        return diagram_t(root->get_son(v));
+        return diagram_t(root->get_son(varValue));
     }
 
-    auto memo     = std::unordered_map<node_t*, node_t*>();
-    auto const go = [this, &memo, i, v] (auto const& self, auto const n)
+    auto memo = std::unordered_map<node_t*, node_t*>();
+    auto const step = [this, &memo, varIndex, varValue](
+        auto const& self,
+        node_t* const node
+    )
     {
-        auto const memoIt = memo.find(n);
+        auto const memoIt = memo.find(node);
         if (memoIt != std::end(memo))
         {
             return memoIt->second;
         }
 
-        if (n->is_terminal())
+        if (node->is_terminal())
         {
-            return n;
+            return node;
         }
 
-        auto sons       = n->get_index() == i
+        auto sons       = node->get_index() == varIndex
                             ? nodes_.make_sons(
-                          i,
-                          [son = n->get_son(v)] (auto const)
+                          varIndex,
+                          [son = node->get_son(varValue)] (auto const)
                           {
                               return son;
                           }
                       )
                             : nodes_.make_sons(
-                          n->get_index(),
-                          [n, &self] (auto const k)
+                          node->get_index(),
+                          [node, &self] (auto const sonOrder)
                           {
-                              return self(self, n->get_son(k));
+                              return self(self, node->get_son(sonOrder));
                           }
                       );
 
-        auto const newN = nodes_.internal_node(n->get_index(), std::move(sons));
-        memo.emplace(n, newN);
+        auto const newN = nodes_.internal_node(node->get_index(), std::move(sons));
+        memo.emplace(node, newN);
         return newN;
     };
 
-    auto const newRoot = go(go, root);
+    auto const newRoot = step(step, root);
     return diagram_t(newRoot);
 }
 
 template<class Data, degree Degree, domain Domain>
 template<uint_to_bool F>
-auto diagram_manager<Data, Degree, Domain>::transform(diagram_t d, F f)
+auto diagram_manager<Data, Degree, Domain>::transform(diagram_t const& diagram, F transformer)
     -> diagram_t
 {
-    auto const r = this->transform_terminal(d.unsafe_get_root(), f);
+    auto const newRoot = this->transform_terminal(diagram.unsafe_get_root(), transformer);
     nodes_.run_deferred();
-    return diagram_t(r);
+    return diagram_t(newRoot);
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::dependency_set(diagram_t d) const
+auto diagram_manager<Data, Degree, Domain>::get_dependency_set(diagram_t const& diagram) const
     -> std::vector<int32>
 {
-    auto is = std::vector<int32>();
-    is.reserve(this->get_var_count());
-    this->dependency_set_g(d, std::back_inserter(is));
-    is.shrink_to_fit();
-    return is;
+    auto indices = std::vector<int32>();
+    indices.reserve(this->get_var_count());
+    this->get_dependency_set_g(diagram, std::back_inserter(indices));
+    indices.shrink_to_fit();
+    return indices;
 }
 
 template<class Data, degree Degree, domain Domain>
 template<std::output_iterator<int32> O>
-auto diagram_manager<Data, Degree, Domain>::dependency_set_g(diagram_t d, O out)
+auto diagram_manager<Data, Degree, Domain>::get_dependency_set_g(diagram_t const& diagram, O out)
     const -> void
 {
     auto memo = std::vector<bool>(this->get_var_count(), false);
     nodes_.traverse_pre(
-        d.unsafe_get_root(),
+        diagram.unsafe_get_root(),
         [&memo, out] (auto const n) mutable
         {
             if (n->is_internal())
             {
-                auto const i = n->get_index();
-                if (not memo[i])
+                auto const index = n->get_index();
+                if (not memo[index])
                 {
-                    *out++ = i;
+                    *out++ = index;
                 }
-                memo[i] = true;
+                memo[index] = true;
             }
         }
     );
@@ -1574,13 +1567,13 @@ auto diagram_manager<Data, Degree, Domain>::reduce(
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::node_count() const -> int64
+auto diagram_manager<Data, Degree, Domain>::get_node_count() const -> int64
 {
     return nodes_.get_node_count();
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::node_count(diagram_t const& diagram) const
+auto diagram_manager<Data, Degree, Domain>::get_node_count(diagram_t const& diagram) const
     -> int64
 {
     return nodes_.get_node_count(diagram.unsafe_get_root());
@@ -1663,13 +1656,13 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
     F transformer
 ) -> node_t*
 {
-    auto memo     = std::unordered_map<node_t*, node_t*>();
-    auto const go = [this, transformer, &memo] (auto const& self, auto const n)
+    auto memo = std::unordered_map<node_t*, node_t*>();
+    auto const step = [this, transformer, &memo] (auto const& self, auto const n)
     {
-        auto const it = memo.find(n);
-        if (memo.end() != it)
+        auto const memoIt = memo.find(n);
+        if (memo.end() != memoIt)
         {
-            return it->second;
+            return memoIt->second;
         }
 
         if (n->is_terminal())
@@ -1678,14 +1671,14 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
             return nodes_.terminal_node(newVal);
         }
 
-        auto const i       = n->get_index();
+        auto const index  = n->get_index();
         auto const newNode = nodes_.internal_node(
-            i,
+            index,
             nodes_.make_sons(
-                i,
-                [&self, n] (auto const k)
+                index,
+                [&self, n] (auto const sonOrder)
                 {
-                    return self(self, n->get_son(k));
+                    return self(self, n->get_son(sonOrder));
                 }
             )
         );
@@ -1693,7 +1686,7 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
         memo.emplace(n, newNode);
         return newNode;
     };
-    return go(go, root);
+    return step(step, root);
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1758,6 +1751,15 @@ auto diagram_manager<Data, Degree, Domain>::apply_detail_n
     return newDiagram;
 }
 
+namespace detail
+{
+inline auto default_or_fwd (int64 const n, std::vector<int32>& indices)
+{
+    return indices.empty() ? utils::fill_vector(n, utils::identity)
+                           : std::vector<int32>(std::move(indices));
+}
+} // namespace detail
+
 template<class Data, degree Degree, domain Domain>
 diagram_manager<Data, Degree, Domain>::diagram_manager(
     int32 const varCount,
@@ -1781,7 +1783,7 @@ diagram_manager<Data, Degree, Domain>::diagram_manager(
     int32 const varCount,
     int64 const nodePoolSize,
     int64 const overflowNodePoolSize,
-    domains::mixed ds,
+    domains::mixed domain,
     std::vector<int32> order
 )
 requires(domains::is_mixed<Domain>()())
@@ -1791,7 +1793,7 @@ requires(domains::is_mixed<Domain>()())
         nodePoolSize,
         overflowNodePoolSize,
         detail::default_or_fwd(varCount, order),
-        std::move(ds)
+        std::move(domain)
     )
 {
 }

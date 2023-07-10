@@ -174,10 +174,10 @@ public:
     template<node_op<node<Data, Degree>> NodeOp>
     auto for_each_terminal_node (NodeOp&&) const -> void;
 
-    template<bin_op O>
+    template<teddy_bin_op O>
     auto cache_find (node_t*, node_t*) -> node_t*;
 
-    template<bin_op O>
+    template<teddy_bin_op O>
     auto cache_put (node_t*, node_t*, node_t*) -> void;
 
     template<node_op<node<Data, Degree>> NodeOp>
@@ -400,11 +400,6 @@ auto node_manager<Data, Degree, Domain>::terminal_node(int32 const v) -> node_t*
 
     if constexpr (domains::is_fixed<Domain>()())
     {
-        // auto const msg = std::to_string(v) + " < " + std::to_string(Domain()());
-        // if (not (v < Domain()()))
-        // {
-        //     std::cerr << msg << "\n";
-        // }
         assert(v < Domain()());
     }
 
@@ -749,7 +744,7 @@ auto node_manager<Data, Degree, Domain>::for_each_terminal_node(NodeOp&& f
 }
 
 template<class Data, degree Degree, domain Domain>
-template<bin_op O>
+template<teddy_bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_find(
     node_t* const l,
     node_t* const r
@@ -764,7 +759,7 @@ auto node_manager<Data, Degree, Domain>::cache_find(
 }
 
 template<class Data, degree Degree, domain Domain>
-template<bin_op O>
+template<teddy_bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_put(
     node_t* const l,
     node_t* const r,

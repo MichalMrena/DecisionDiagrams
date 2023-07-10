@@ -6,7 +6,6 @@
 
 #include <concepts>
 
-// TODO details namespace
 namespace teddy
 {
 namespace details
@@ -188,7 +187,7 @@ struct pi_conj_t
 };
 
 template<class BinOp, int32 AbsorbingVal = Undefined>
-struct bin_op_base
+struct operation_base
 {
     template<class... Args>
     [[nodiscard]]
@@ -213,22 +212,6 @@ struct bin_op_base
 }
 
 /**
- *  \brief Wraps binary operation so that it can be used in \c apply .
- *  Quick fix for stateful ops.
- */
-auto constexpr apply_op_wrap = [] (auto const& operation)
-{
-    return [operation] (auto const lhs, auto const rhs)
-    {
-        if (lhs == Nondetermined || rhs == Nondetermined)
-        {
-            return Nondetermined;
-        }
-        return static_cast<int32>(operation(lhs, rhs));
-    };
-};
-
-/**
  *  \namespace ops
  *  \brief Contains definision of all binary operations for \c apply function
  */
@@ -238,246 +221,142 @@ struct NOT
 {
 };
 
-struct AND : details::bin_op_base<details::logical_and_t, 0>
+struct AND : details::operation_base<details::logical_and_t, 0>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 1;
+    }
 };
 
-struct OR : details::bin_op_base<details::logical_or_t, 1>
+struct OR : details::operation_base<details::logical_or_t, 1>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 2;
+    }
 };
 
-struct XOR : details::bin_op_base<details::logical_xor_t>
+struct XOR : details::operation_base<details::logical_xor_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 3;
+    }
 };
 
-struct PI_CONJ : details::bin_op_base<details::pi_conj_t, 0>
+struct PI_CONJ : details::operation_base<details::pi_conj_t, 0>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 4;
+    }
 };
 
-struct NAND : details::bin_op_base<details::logical_nand_t>
+struct NAND : details::operation_base<details::logical_nand_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 5;
+    }
 };
 
-struct NOR : details::bin_op_base<details::logical_nor_t>
+struct NOR : details::operation_base<details::logical_nor_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 6;
+    }
 };
 
-struct EQUAL_TO : details::bin_op_base<details::equal_to_t>
+struct EQUAL_TO : details::operation_base<details::equal_to_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 7;
+    }
 };
 
-struct NOT_EQUAL_TO : details::bin_op_base<details::not_equal_to_t>
+struct NOT_EQUAL_TO : details::operation_base<details::not_equal_to_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 8;
+    }
 };
 
-struct LESS : details::bin_op_base<details::less_t>
+struct LESS : details::operation_base<details::less_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 9;
+    }
 };
 
-struct LESS_EQUAL : details::bin_op_base<details::less_equal_t>
+struct LESS_EQUAL : details::operation_base<details::less_equal_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 10;
+    }
 };
 
-struct GREATER : details::bin_op_base<details::greater_t>
+struct GREATER : details::operation_base<details::greater_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 11;
+    }
 };
 
-struct GREATER_EQUAL : details::bin_op_base<details::greater_equal_t>
+struct GREATER_EQUAL : details::operation_base<details::greater_equal_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 12;
+    }
 };
 
-struct MIN : details::bin_op_base<details::minimum_t, 0>
+struct MIN : details::operation_base<details::minimum_t, 0>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 13;
+    }
 };
 
-struct MAX : details::bin_op_base<details::maximum_t>
+struct MAX : details::operation_base<details::maximum_t>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 14;
+    }
 };
 
 template<int32 P>
-struct PLUS : details::bin_op_base<details::plus_mod_t<P>>
+struct PLUS : details::operation_base<details::plus_mod_t<P>>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 15;
+    }
 };
 
 template<int32 P>
-struct MULTIPLIES : details::bin_op_base<details::multiplies_mod_t<P>, 0>
+struct MULTIPLIES : details::operation_base<details::multiplies_mod_t<P>, 0>
 {
+    [[nodiscard]] static auto constexpr get_id () noexcept -> int32
+    {
+        return 16;
+    }
 };
 } // namespace ops
 
-constexpr auto op_id (ops::AND)
+template<class Operation>
+concept teddy_bin_op = requires()
 {
-    return int32 {0};
-}
-
-constexpr auto op_id (ops::OR)
-{
-    return int32 {1};
-}
-
-constexpr auto op_id (ops::XOR)
-{
-    return int32 {2};
-}
-
-constexpr auto op_id (ops::PI_CONJ)
-{
-    return int32 {3};
-}
-
-constexpr auto op_id (ops::NAND)
-{
-    return int32 {4};
-}
-
-constexpr auto op_id (ops::NOR)
-{
-    return int32 {5};
-}
-
-constexpr auto op_id (ops::EQUAL_TO)
-{
-    return int32 {6};
-}
-
-constexpr auto op_id (ops::NOT_EQUAL_TO)
-{
-    return int32 {7};
-}
-
-constexpr auto op_id (ops::LESS)
-{
-    return int32 {8};
-}
-
-constexpr auto op_id (ops::LESS_EQUAL)
-{
-    return int32 {9};
-}
-
-constexpr auto op_id (ops::GREATER)
-{
-    return int32 {10};
-}
-
-constexpr auto op_id (ops::GREATER_EQUAL)
-{
-    return int32 {11};
-}
-
-constexpr auto op_id (ops::MIN)
-{
-    return int32 {12};
-}
-
-constexpr auto op_id (ops::MAX)
-{
-    return int32 {13};
-}
-
-template<int32 P>
-constexpr auto op_id (ops::PLUS<P>)
-{
-    return int32 {14};
-}
-
-template<int32 P>
-constexpr auto op_id (ops::MULTIPLIES<P>)
-{
-    return int32 {15};
-}
-
-constexpr auto op_is_commutative (ops::AND)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::OR)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::XOR)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::PI_CONJ)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::NAND)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::NOR)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::EQUAL_TO)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::NOT_EQUAL_TO)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::LESS)
-{
-    return false;
-}
-
-constexpr auto op_is_commutative (ops::LESS_EQUAL)
-{
-    return false;
-}
-
-constexpr auto op_is_commutative (ops::GREATER)
-{
-    return false;
-}
-
-constexpr auto op_is_commutative (ops::GREATER_EQUAL)
-{
-    return false;
-}
-
-constexpr auto op_is_commutative (ops::MIN)
-{
-    return true;
-}
-
-constexpr auto op_is_commutative (ops::MAX)
-{
-    return true;
-}
-
-template<int32 P>
-constexpr auto op_is_commutative (ops::PLUS<P>)
-{
-    return true;
-}
-
-template<int32 P>
-constexpr auto op_is_commutative (ops::MULTIPLIES<P>)
-{
-    return true;
-}
-
-template<class O>
-concept bin_op = requires(O o) {
-                     {
-                         op_id(o)
-                     } -> std::convertible_to<int32>;
-                     {
-                         op_is_commutative(o)
-                     } -> std::same_as<bool>;
-                 };
+    { Operation::get_id() } -> std::same_as<int32>;
+};
 } // namespace teddy
 
 #endif

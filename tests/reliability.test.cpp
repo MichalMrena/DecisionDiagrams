@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "libteddy/details/reliability_manager.hpp"
 #include "libteddy/details/types.hpp"
 #include "setup.hpp"
 
@@ -218,7 +219,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
-        actual[as_uindex(j)] = manager.probability(j, probs, diagram);
+        actual[as_uindex(j)] = manager.calculate_probability(j, probs, diagram);
     }
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
@@ -250,7 +251,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
-        actual[as_uindex(j)] = manager.availability(j, probs, diagram);
+        actual[as_uindex(j)] = manager.calculate_availability(j, probs, diagram);
     }
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
@@ -296,7 +297,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
-        actual[as_uindex(j)] = manager.unavailability(j, probs, diagram);
+        actual[as_uindex(j)] = manager.calculate_unavailability(j, probs, diagram);
     }
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
@@ -1065,7 +1066,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         );
         BOOST_TEST(
             system.stateProbabilities_[tsl::as_uindex(state)]
-                == manager.probability(state, system.componentProbabilities_, diagram),
+                == manager.calculate_probability(state, system.componentProbabilities_, diagram),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
@@ -1084,7 +1085,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         );
         BOOST_TEST(
             system.availabilities_[tsl::as_uindex(state)]
-                == manager.availability(state, system.componentProbabilities_, diagram),
+                == manager.calculate_availability(state, system.componentProbabilities_, diagram),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
@@ -1103,7 +1104,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         );
         BOOST_TEST(
             system.unavailabilities_[tsl::as_uindex(state)]
-                == manager.unavailability(state, system.componentProbabilities_, diagram),
+                == manager.calculate_unavailability(state, system.componentProbabilities_, diagram),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
@@ -1131,30 +1132,30 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
     }
 
     // Structural Importances (Integrated DPLD Type III)
-    for (auto index = 0; index < system.componentCount_; ++index)
+    for (auto varIndex = 0; varIndex < system.componentCount_; ++varIndex)
     {
         for (auto systemState = 1; systemState < system.stateCount_;
              ++systemState)
         {
-            auto const domain = system.domains_[as_uindex(index)];
+            auto const domain = system.domains_[as_uindex(varIndex)];
             for (auto componentState = 1; componentState < domain;
                  ++componentState)
             {
                 auto const tableDpld = tsl::dpld(
                     table,
-                    {index, componentState, componentState - 1},
+                    {varIndex, componentState, componentState - 1},
                     tsl::dpld_i_3_decrease(systemState)
                 );
-                auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {componentState, componentState - 1},
-                    systemState,
-                    diagram, index
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, componentState, componentState - 1},
+                    dpld::type_3_decrease(systemState),
+                    diagram
                 );
                 auto const realSI
-                    = system.structuralImportances_[as_uindex(index
+                    = system.structuralImportances_[as_uindex(varIndex
                     )][as_uindex(systemState)][as_uindex(componentState)];
                 auto const tableSI
-                    = tsl::structural_importance(tableDpld, index);
+                    = tsl::structural_importance(tableDpld, varIndex);
                 auto const diagramSI = manager.structural_importance(diagramDpld);
 
                 BOOST_TEST(
@@ -1184,11 +1185,10 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
                     {varIndex, componentState, componentState - 1},
                     tsl::dpld_i_3_decrease(systemState)
                 );
-                auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {componentState, componentState - 1},
-                    systemState,
-                    diagram,
-                    varIndex
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, componentState, componentState - 1},
+                    dpld::type_3_increase(systemState),
+                    diagram
                 );
                 auto const realBI  = system.birnbaumImportances_[as_uindex(varIndex
                 )][as_uindex(systemState)][as_uindex(componentState)];
@@ -1214,41 +1214,40 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
     }
 
     // Fussell-Vesely Importances (Integrated DPLD Type III)
-    for (auto index = 0; index < system.componentCount_; ++index)
+    for (auto varIndex = 0; varIndex < system.componentCount_; ++varIndex)
     {
         for (auto systemState = 1; systemState < system.stateCount_;
              ++systemState)
         {
-            auto const domain = system.domains_[as_uindex(index)];
+            auto const domain = system.domains_[as_uindex(varIndex)];
             for (auto componentState = 1; componentState < domain;
                  ++componentState)
             {
-                auto const realFVI = system.fussellVeselyImportances_[as_uindex(index
+                auto const realFVI = system.fussellVeselyImportances_[as_uindex(varIndex
                 )][as_uindex(systemState)][as_uindex(componentState)];
                 auto const tableFVI = tsl::fussell_vesely_importance(
                     table,
                     system.componentProbabilities_,
-                    index,
+                    varIndex,
                     componentState,
                     systemState
                 );
-                auto const diagramUnavailability = manager.unavailability(
+                auto const diagramUnavailability = manager.calculate_unavailability(
                     systemState,
                     system.componentProbabilities_,
                     diagram
                 );
-                auto const diagramDpld = manager.idpld_type_3_increase(
-                    {componentState - 1, componentState},
-                    systemState,
-                    diagram,
-                    index
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, componentState - 1, componentState},
+                    dpld::type_3_increase(systemState),
+                    diagram
                 );
                 auto const diagramFVI = manager.fussell_vesely_importance(
                     system.componentProbabilities_,
                     diagramDpld,
                     diagramUnavailability,
                     componentState,
-                    index
+                    varIndex
                 );
 
                 BOOST_TEST(
