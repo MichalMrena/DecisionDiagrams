@@ -22,7 +22,7 @@ cmake -DCMAKE_CXX_COMPILER=$COMPILER \
       ../..
 
 # Generate release-with-debug-info Makefile
-cd build/release
+cd ../release-debug-info
 cmake -DCMAKE_CXX_COMPILER=$COMPILER \
       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
       -DLIBTEDDY_BUILD_TESTS=true \

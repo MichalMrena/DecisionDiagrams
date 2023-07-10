@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+#include <iostream>
+
 namespace teddy
 {
 namespace domains
@@ -398,6 +400,11 @@ auto node_manager<Data, Degree, Domain>::terminal_node(int32 const v) -> node_t*
 
     if constexpr (domains::is_fixed<Domain>()())
     {
+        // auto const msg = std::to_string(v) + " < " + std::to_string(Domain()());
+        // if (not (v < Domain()()))
+        // {
+        //     std::cerr << msg << "\n";
+        // }
         assert(v < Domain()());
     }
 

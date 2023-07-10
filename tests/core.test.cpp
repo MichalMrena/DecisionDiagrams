@@ -178,7 +178,8 @@ using Fixtures = boost::mpl::vector<
     teddy::tests::bdd_fixture,
     teddy::tests::mdd_fixture,
     teddy::tests::imdd_fixture,
-    teddy::tests::ifmdd_fixture>;
+    teddy::tests::ifmdd_fixture
+>;
 
 BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(core_test)
@@ -293,7 +294,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators, Fixture, Fixtures, Fixture)
     );
     auto const zero = manager.constant(0);
     auto const one  = manager.constant(1);
-    auto const sup  = manager.constant(std::ranges::max(manager.get_domains()));
+    auto const sup  = manager.constant(std::ranges::max(manager.get_domains()) - 1);
     auto const boolValDiagram = manager.transform(diagram, utils::not_zero);
 
     BOOST_REQUIRE_MESSAGE(

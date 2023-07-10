@@ -176,10 +176,10 @@ public:
 constexpr auto FloatingTolerance = 0.00000001;
 
 using Fixtures                   = boost::mpl::vector<
-    teddy::tests::bss_fixture
-    // teddy::tests::mss_fixture<3>,
-    // teddy::tests::imss_fixture<3>,
-    // teddy::tests::ifmss_fixture<3>
+    teddy::tests::bss_fixture,
+    teddy::tests::mss_fixture<3>,
+    teddy::tests::imss_fixture<3>,
+    teddy::tests::ifmss_fixture<3>
 >;
 
 BOOST_AUTO_TEST_SUITE(reliability_test_faster_stuff)

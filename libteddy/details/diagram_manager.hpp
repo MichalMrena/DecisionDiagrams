@@ -102,45 +102,43 @@ public:
 
 public:
     /**
-     *  \brief Creates diagram representing constant function.
-     *  \param v Value of the constant function.
-     *  \return Diagram representing constant function.
+     *  \brief Creates diagram representing constant function
+     *  \param val Value of the constant function
+     *  \return Diagram representing constant function
      */
-    auto constant (int32 v) -> diagram_t;
+    auto constant (int32 val) -> diagram_t;
 
     /**
-     *  \brief Creates diagram representing function of single variable.
-     *  \param i Index of the variable.
-     *  \return Diagram of a function of single variable.
+     *  \brief Creates diagram representing function of single variable
+     *  \param index Index of the variable
+     *  \return Diagram of a function of single variable
      */
-    auto variable (int32 i) -> diagram_t;
+    auto variable (int32 index) -> diagram_t;
 
     /**
-     *  \brief Creates BDD representing function of complemented variable.
-     *  \param i Index of the variable.
-     *  \return Diagram of a function of single variable.
+     *  \brief Creates BDD representing function of complemented variable
+     *  \param index Index of the variable
+     *  \return Diagram of a function of single variable
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
-    auto variable_not (int32 i) -> second_t<Foo, diagram_t>;
+    auto variable_not (int32 index) -> second_t<Foo, diagram_t>;
 
     /**
-     *  \brief Creates diagram representing function of single variable.
-     *  \param i Index of the variable.
-     *  \return Diagram of a function of single variable.
+     *  \brief Creates diagram representing function of single variable
+     *  \param i Index of the variable
+     *  \return Diagram of a function of single variable
      */
-    auto operator() (int32 i) -> diagram_t;
+    auto operator() (int32 index) -> diagram_t;
 
     /**
-     *  \brief Creates vector of diagrams representing functions
-     *  of single variables.
-     *
-     *  \tparam T integral type convertible to unsgined int.
-     *  \param is initializer list of indices.
-     *  \return Vector of diagrams.
+     *  \brief Creates vector of diagrams representing single variables
+     *  \tparam T integral type convertible to unsgined int
+     *  \param indices initializer list of indices
+     *  \return Vector of diagrams
      */
     template<std::convertible_to<int32> T>
-    auto variables (std::initializer_list<T> is) -> std::vector<diagram_t>;
+    auto variables (std::initializer_list<T> indices) -> std::vector<diagram_t>;
 
     /**
      *  \brief Creates vector of diagrams representing functions
@@ -157,16 +155,13 @@ public:
     auto variables (I first, S last) -> std::vector<diagram_t>;
 
     /**
-     *  \brief Creates vector of diagrams representing functions
-     *  of single variables.
-     *
-     *  \tparam Is range of indices represented by integral type
-     *  convertible to unsigned int.
-     *  \param is range of Ts (e.g. std::vector<unsigned int>).
-     *  \return Vector of diagrams.
+     *  \brief Creates vector of diagrams representing single variables
+     *  \tparam Is range of integral indices
+     *  \param indices range of Ts (e.g. std::vector<int>)
+     *  \return Vector of diagrams
      */
     template<std::ranges::input_range Is>
-    auto variables (Is const& is) -> std::vector<diagram_t>;
+    auto variables (Is const& indices) -> std::vector<diagram_t>;
 
     /**
      *  \brief Creates diagram from a truth vector of a function.
@@ -221,29 +216,28 @@ public:
     auto from_vector (R&& vector) -> diagram_t;
 
     /**
-     *  \brief Creates truth vector from the diagram.
+     *  \brief Creates truth vector from the diagram
      *
      *  Significance of variables is the same as in the \c from_vector
-     *  function i.e. variable on the last level of the diagram is
+     *  function i.e., variable on the last level of the diagram is
      *  least significant. The following assertion holds:
      *  \code
      *  assert(manager.from_vector(manager.to_vector(d)))
      *  \endcode
      *
-     *  \param d Diagram.
-     *  \return Vector of ints representing truth vector.
+     *  \param diagram Diagram
+     *  \return Vector of ints representing the truth vector
      */
-    auto to_vector (diagram_t d) const -> std::vector<int32>;
+    auto to_vector (diagram_t diagram) const -> std::vector<int32>;
 
     /**
-     *  \brief Creates truth vector from the diagram.
-     *
+     *  \brief Creates truth vector from the diagram
      *  \tparam O Output iterator type
-     *  \param d Diagram.
-     *  \param out Output iterator that is used to output the truth vector.
+     *  \param diagram Diagram
+     *  \param out Output iterator that is used to output the truth vector
      */
     template<std::output_iterator<teddy::int32> O>
-    auto to_vector_g (diagram_t d, O out) const -> void;
+    auto to_vector_g (diagram_t diagram, O out) const -> void;
 
     /**
      *  \brief Creates BDDs defined by PLA file.
@@ -585,14 +579,14 @@ public:
     auto dependency_set_g (diagram_t d, O out) const -> void;
 
     /**
-     *  \brief Reduces diagrams to its canonical form.
+     *  \brief Reduces diagrams to its canonical form
      *
      *  You probably won't need to call this.
      *
-     *  \param  d Diagram.
-     *  \return Diagram in a reduced canonical form.
+     *  \param  diagram Diagram
+     *  \return Diagram in a reduced canonical form
      */
-    auto reduce(diagram_t) -> diagram_t;
+    auto reduce(diagram_t const& diagram) -> diagram_t;
 
     /**
      *  \brief Returns number of nodes that are currently
@@ -609,11 +603,11 @@ public:
 
     /**
      *  \brief Returns number of nodes in the diagram including
-     *  terminal nodes.
-     *  \param d Diagram.
-     *  \return Number of node.
+     *  terminal nodes
+     *  \param diagram Diagram
+     *  \return Number of node
      */
-    auto node_count (diagram_t d) const -> int64;
+    auto node_count (diagram_t const& diagram) const -> int64;
 
     /**
      *  \brief Prints dot representation of the graph.
@@ -626,15 +620,15 @@ public:
     auto to_dot_graph (std::ostream& out) const -> void;
 
     /**
-     *  \brief Prints dot representation of the diagram.
+     *  \brief Prints dot representation of the diagram
      *
      *  Prints dot representation of the diagram to
      *  the output stream.
      *
      *  \param out Output stream (e.g. \c std::cout or \c std::ofstream )
-     *  \param d Diagram.
+     *  \param diagram Diagram
      */
-    auto to_dot_graph (std::ostream& out, diagram_t d) const -> void;
+    auto to_dot_graph (std::ostream& out, diagram_t const& diagram) const -> void;
 
     /**
      *  \brief Runs garbage collection.
@@ -685,41 +679,41 @@ public:
     [[nodiscard]] auto get_domains () const -> std::vector<int32>;
 
     /**
-     *  \brief Sets the relative cache size w.r.t the number of nodes.
+     *  \brief Sets the relative cache size w.r.t the number of nodes
      *
      *  Size of the cache is calculated as:
      *  \code
      *  ratio * uniqueNodeCount
      *  \endcode
      *
-     *  \param ratio Number from the interval (0,oo).
+     *  \param ratio Number from the interval (0,oo)
      */
     auto set_cache_ratio (double ratio) -> void;
 
     /**
-     *  \brief Sets ratio used to determine new node pool allocation.
+     *  \brief Sets ratio used to determine new node pool allocation
      *
      *  New pool is allocated if:
      *  \code
      *  garbageCollectedNodes < ratio * initNodeCount
      *  \endcode
      *
-     *  \param ratio Number from the interval [0,1].
+     *  \param ratio Number from the interval [0,1]
      */
     auto set_gc_ratio (double ratio) -> void;
 
     /**
-     *  \brief Enables or disables automatic variable reordering.
+     *  \brief Enables or disables automatic variable reordering
      *
      *  Note that when automatic reordering is enabled the manager
      *  can't guarantee that all diagrams will remain canonical.
      *  To ensure that a diagram \c d is canonical
      *  (e.g. to compare two functions), you need to call \c reduce on them.
      *
-     *  \param r Specifies whether to disable (false) or
-     *           enable (true) automatic reordering.
+     *  \param doReorder Specifies whether to disable (false) or
+     *           enable (true) automatic reordering
      */
-    auto set_auto_reorder (bool r) -> void;
+    auto set_auto_reorder (bool doReorder) -> void;
 
 protected:
     using node_t = typename diagram<Data, Degree>::node_t;
@@ -766,14 +760,6 @@ private:
 private:
     template<uint_to_uint F>
     auto transform_terminal (node_t* root, F transformer) -> node_t*;
-
-    template<any_bin_op Op, cache_handle<node<Data, Degree>> Cache>
-    auto apply_detail (
-        Cache& cache,
-        Op operation,
-        node_t* left,
-        node_t* right
-    ) -> diagram_t;
 
     template<class Op, class Cache, class... Nodes>
     auto apply_detail_n(
@@ -843,21 +829,21 @@ inline auto default_or_fwd (int64 const n, std::vector<int32>& is)
 } // namespace detail
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::constant(int32 const v) -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::constant(int32 const val) -> diagram_t
 {
-    return diagram_t(nodes_.terminal_node(v));
+    return diagram_t(nodes_.terminal_node(val));
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::variable(int32 const i) -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::variable(int32 const index) -> diagram_t
 {
     return diagram_t(nodes_.internal_node(
-        i,
+        index,
         nodes_.make_sons(
-            i,
-            [this] (auto const v)
+            index,
+            [this] (int32 const val)
             {
-                return nodes_.terminal_node(v);
+                return nodes_.terminal_node(val);
             }
         )
     ));
@@ -866,43 +852,43 @@ auto diagram_manager<Data, Degree, Domain>::variable(int32 const i) -> diagram_t
 template<class Data, degree Degree, domain Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const i)
+auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index)
     -> second_t<Foo, diagram_t>
 {
     return diagram_t(nodes_.internal_node(
-        i,
+        index,
         nodes_.make_sons(
-            i,
-            [this] (auto const v)
+            index,
+            [this] (int32 const val)
             {
-                return nodes_.terminal_node(1 - v);
+                return nodes_.terminal_node(1 - val);
             }
         )
     ));
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::operator() (int32 const i)
+auto diagram_manager<Data, Degree, Domain>::operator() (int32 const index)
     -> diagram_t
 {
-    return this->variable(i);
+    return this->variable(index);
 }
 
 template<class Data, degree Degree, domain Domain>
 template<std::ranges::input_range Is>
-auto diagram_manager<Data, Degree, Domain>::variables(Is const& is)
+auto diagram_manager<Data, Degree, Domain>::variables(Is const& indices)
     -> std::vector<diagram_t>
 {
-    return this->variables(std::ranges::begin(is), std::ranges::end(is));
+    return this->variables(begin(indices), end(indices));
 }
 
 template<class Data, degree Degree, domain Domain>
 template<std::convertible_to<int32> T>
 auto diagram_manager<Data, Degree, Domain>::variables(
-    std::initializer_list<T> const is
+    std::initializer_list<T> const indices
 ) -> std::vector<diagram_t>
 {
-    return this->variables(std::ranges::begin(is), std::ranges::end(is));
+    return this->variables(begin(indices), end(indices));
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -916,9 +902,9 @@ auto diagram_manager<Data, Degree, Domain>::variables(
     return utils::fmap(
         first,
         last,
-        [this] (auto const i)
+        [this] (auto const index)
         {
-            return this->variable(static_cast<int32>(i));
+            return this->variable(static_cast<int32>(index));
         }
     );
 }
@@ -999,8 +985,7 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
             lastIndex,
             [this, &first] (auto const)
             {
-                return nodes_.terminal_node(*first++
-                ); // TODO add cast to unsigned
+                return nodes_.terminal_node(*first++);
             }
         );
         auto const node = nodes_.internal_node(lastIndex, std::move(sons));
@@ -1020,24 +1005,26 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(R&& r) -> diagram_t
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::to_vector(diagram_t d) const
+auto diagram_manager<Data, Degree, Domain>::to_vector(diagram_t diagram) const
     -> std::vector<int32>
 {
-    auto vs = std::vector<int32>();
-    vs.reserve(as_usize(nodes_.domain_product(0, this->get_var_count())));
-    this->to_vector_g(d, std::back_inserter(vs));
-    return vs;
+    auto vector = std::vector<int32>();
+    vector.reserve(as_usize(nodes_.domain_product(0, this->get_var_count())));
+    this->to_vector_g(diagram, std::back_inserter(vector));
+    return vector;
 }
 
 template<class Data, degree Degree, domain Domain>
 template<std::output_iterator<teddy::int32> O>
-auto diagram_manager<Data, Degree, Domain>::to_vector_g(diagram_t d, O out)
-    const -> void
+auto diagram_manager<Data, Degree, Domain>::to_vector_g(
+    diagram_t diagram,
+    O out
+) const -> void
 {
     if (this->get_var_count() == 0)
     {
-        assert(d.unsafe_get_root()->is_terminal());
-        *out++ = d.unsafe_get_root()->get_value();
+        assert(diagram.unsafe_get_root()->is_terminal());
+        *out++ = diagram.unsafe_get_root()->get_value();
         return;
     }
 
@@ -1045,7 +1032,7 @@ auto diagram_manager<Data, Degree, Domain>::to_vector_g(diagram_t d, O out)
     auto wasLast = false;
     do
     {
-        *out++        = this->evaluate(d, vars);
+        *out++        = this->evaluate(diagram, vars);
 
         auto overflow = true;
         auto level    = nodes_.get_leaf_level();
@@ -1182,7 +1169,7 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
         auto applyCache = apply_cache_t();
         auto cacheHandle = local_cache_handle<apply_cache_t>(applyCache);
 
-        return this->apply_detail(
+        return this->apply_detail_n(
             cacheHandle,
             operation,
             lhs.unsafe_get_root(),
@@ -1434,19 +1421,18 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
     auto go
         = [this, &xs, val, out] (auto& self, auto const l, auto const n) mutable
     {
-        auto const nodeValue = n->get_value();
-        auto const nodeLevel = nodes_.get_level(n);
-
-        if (n->is_terminal() && val != nodeValue)
+        if (n->is_terminal() && val != n->get_value())
         {
             return;
         }
-        else if (l == nodes_.get_leaf_level() && val == nodeValue)
+
+        if (l == nodes_.get_leaf_level() && val == n->get_value())
         {
             *out++ = xs;
             return;
         }
-        else if (nodeLevel > l)
+
+        if (nodes_.get_level(n) > l)
         {
             auto const index  = nodes_.get_index(l);
             auto const domain = nodes_.get_domain(index);
@@ -1576,10 +1562,14 @@ auto diagram_manager<Data, Degree, Domain>::dependency_set_g(diagram_t d, O out)
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::reduce(diagram_t d) -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::reduce(
+    diagram_t const& diagram
+) -> diagram_t
 {
-    auto const newRoot
-        = this->transform_terminal(d.unsafe_get_root(), utils::identity);
+    auto const newRoot = this->transform_terminal(
+        diagram.unsafe_get_root(),
+        utils::identity
+    );
     return diagram_t(newRoot);
 }
 
@@ -1590,26 +1580,27 @@ auto diagram_manager<Data, Degree, Domain>::node_count() const -> int64
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::node_count(diagram_t d) const
+auto diagram_manager<Data, Degree, Domain>::node_count(diagram_t const& diagram) const
     -> int64
 {
-    return nodes_.get_node_count(d.unsafe_get_root());
-}
-
-template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& ost
-) const -> void
-{
-    nodes_.to_dot_graph(ost);
+    return nodes_.get_node_count(diagram.unsafe_get_root());
 }
 
 template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::to_dot_graph(
-    std::ostream& ost,
-    diagram_t d
+    std::ostream& out
 ) const -> void
 {
-    nodes_.to_dot_graph(ost, d.unsafe_get_root());
+    nodes_.to_dot_graph(out);
+}
+
+template<class Data, degree Degree, domain Domain>
+auto diagram_manager<Data, Degree, Domain>::to_dot_graph(
+    std::ostream& out,
+    diagram_t const& diagram
+) const -> void
+{
+    nodes_.to_dot_graph(out, diagram.unsafe_get_root());
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1646,10 +1637,11 @@ auto diagram_manager<Data, Degree, Domain>::set_gc_ratio(double ratio) -> void
 }
 
 template<class Data, degree Degree, domain Domain>
-auto diagram_manager<Data, Degree, Domain>::set_auto_reorder(bool const r)
-    -> void
+auto diagram_manager<Data, Degree, Domain>::set_auto_reorder(
+    bool const doReorder
+) -> void
 {
-    nodes_.set_auto_reorder(r);
+    nodes_.set_auto_reorder(doReorder);
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1668,11 +1660,11 @@ template<class Data, degree Degree, domain Domain>
 template<uint_to_uint F>
 auto diagram_manager<Data, Degree, Domain>::transform_terminal(
     node_t* const root,
-    F f
+    F transformer
 ) -> node_t*
 {
     auto memo     = std::unordered_map<node_t*, node_t*>();
-    auto const go = [this, f, &memo] (auto const& self, auto const n)
+    auto const go = [this, transformer, &memo] (auto const& self, auto const n)
     {
         auto const it = memo.find(n);
         if (memo.end() != it)
@@ -1682,92 +1674,26 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
 
         if (n->is_terminal())
         {
-            auto const newVal = static_cast<int32>(f(n->get_value()));
+            auto const newVal = static_cast<int32>(transformer(n->get_value()));
             return nodes_.terminal_node(newVal);
         }
-        else
-        {
-            auto const i       = n->get_index();
-            auto const newNode = nodes_.internal_node(
+
+        auto const i       = n->get_index();
+        auto const newNode = nodes_.internal_node(
+            i,
+            nodes_.make_sons(
                 i,
-                nodes_.make_sons(
-                    i,
-                    [&self, n] (auto const k)
-                    {
-                        return self(self, n->get_son(k));
-                    }
-                )
-            );
-            memo.emplace(n, newNode);
-            return newNode;
-        }
+                [&self, n] (auto const k)
+                {
+                    return self(self, n->get_son(k));
+                }
+            )
+        );
+
+        memo.emplace(n, newNode);
+        return newNode;
     };
     return go(go, root);
-}
-
-template<class Data, degree Degree, domain Domain>
-template<any_bin_op Op, cache_handle<node<Data, Degree>> Cache>
-auto diagram_manager<Data, Degree, Domain>::apply_detail(
-    Cache& cache,
-    Op const operation,
-    node_t* const left,
-    node_t* const right
-) -> diagram_t
-{
-    auto const get_node_value = [](node_t* const node)
-    {
-        return node->is_terminal() ? node->get_value() : Nondetermined;
-    };
-
-    auto const step = [&, this](
-        auto const& self,
-        node_t* const lhs,
-        node_t* const rhs
-    )
-    {
-        auto const cached = cache.lookup(lhs, rhs);
-        if (cached)
-        {
-            return cached;
-        }
-
-        auto const lhsVal = get_node_value(lhs);
-        auto const rhsVal = get_node_value(rhs);
-        auto const opVal  = operation(lhsVal, rhsVal);
-        auto result       = static_cast<node_t*>(nullptr);
-
-        if (opVal != Nondetermined)
-        {
-            result = nodes_.terminal_node(opVal);
-        }
-        else
-        {
-            auto const lhsLevel = nodes_.get_level(lhs);
-            auto const rhsLevel = nodes_.get_level(rhs);
-            auto const topLevel = std::min(lhsLevel, rhsLevel);
-            auto const topNode  = topLevel == lhsLevel ? lhs : rhs;
-            auto const topIndex = topNode->get_index();
-            auto sons           = nodes_.make_sons(
-                topIndex,
-                [=] (auto const k)
-                {
-                    auto const fst = lhsLevel == topLevel ? lhs->get_son(k) : lhs;
-                    auto const snd = rhsLevel == topLevel ? rhs->get_son(k) : rhs;
-                    return self(self, fst, snd);
-                }
-            );
-
-            result = nodes_.internal_node(topIndex, std::move(sons));
-        }
-
-        cache.put(result, lhs, rhs);
-        return result;
-    };
-
-    auto const newRoot = step(step, left, right);
-    auto const newDiagram = diagram_t(newRoot);
-    nodes_.run_deferred();
-    return newDiagram;
 }
 
 template<class Data, degree Degree, domain Domain>
