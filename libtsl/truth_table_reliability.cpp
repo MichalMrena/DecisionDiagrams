@@ -1,12 +1,12 @@
 #include <libtsl/truth_table_reliability.hpp>
 
+#include <fmt/color.h>
+#include <fmt/ranges.h>
+
 #include <algorithm>
 #include <functional>
 #include <numeric>
 #include <ranges>
-
-#include <fmt/color.h>
-#include <fmt/ranges.h>
 
 namespace teddy::tsl
 {
@@ -128,16 +128,19 @@ auto fussell_vesely_importance (
             {
                 if (compare(elem, mcv, std::less_equal<>()))
                 {
-                    auto const vectorProbability = vector_probability(elem, probabilities);
+                    auto const vectorProbability
+                        = vector_probability(elem, probabilities);
                     result += vectorProbability;
-                    // fmt::print("{} -> {}\n", fmt::join(elem, ""), vectorProbability);
+                    // fmt::print("{} -> {}\n", fmt::join(elem, ""),
+                    // vectorProbability);
                     break;
                 }
             }
         }
     );
 
-    auto const unavailability = tsl::unavailability(structureFunction, probabilities, systemState);
+    auto const unavailability
+        = tsl::unavailability(structureFunction, probabilities, systemState);
 
     return result / unavailability;
 }
@@ -157,7 +160,7 @@ auto calculate_mcvs (truth_table const& table, int32 state)
         for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom)
         {
             auto const varChange = var_change {varIndex, varFrom, varFrom + 1};
-            dplds.push_back(dpld_e(table, varChange, dpld_i_3_increase(state)));
+            dplds.push_back(dpld_e(table, varChange, type_3_increase(state)));
         }
     }
 
@@ -185,7 +188,7 @@ auto calculate_mpvs (truth_table const& table, int32 state)
         for (auto varFrom = 1; varFrom < varDomain; ++varFrom)
         {
             auto const varChange = var_change {varIndex, varFrom, varFrom - 1};
-            dplds.push_back(dpld_e(table, varChange, dpld_i_3_decrease(state)));
+            dplds.push_back(dpld_e(table, varChange, type_3_decrease(state)));
         }
     }
 

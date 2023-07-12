@@ -14,25 +14,24 @@ using uint64                        = std::uint64_t;
 inline constexpr auto Undefined     = (std::numeric_limits<int32>::max)();
 inline constexpr auto Nondetermined = (std::numeric_limits<int32>::max)() - 1;
 
-// TODO move to tools
-[[nodiscard]] inline auto constexpr as_uindex(int32 const i)
+[[nodiscard]] inline auto constexpr as_uindex(int32 const index)
 {
-    return static_cast<std::size_t>(i);
+    return static_cast<uint32>(index);
 }
 
-[[nodiscard]] inline auto constexpr as_uindex(int64 const i)
+[[nodiscard]] inline auto constexpr as_uindex(int64 const index)
 {
-    return static_cast<std::size_t>(i);
+    return static_cast<std::size_t>(index);
 }
 
-[[nodiscard]] inline auto constexpr as_usize(int32 const s)
+[[nodiscard]] inline auto constexpr as_usize(int32 const size)
 {
-    return static_cast<std::size_t>(s);
+    return static_cast<uint32>(size);
 }
 
-[[nodiscard]] inline auto constexpr as_usize(int64 const s)
+[[nodiscard]] inline auto constexpr as_usize(int64 const size)
 {
-    return static_cast<std::size_t>(s);
+    return static_cast<std::size_t>(size);
 }
 
 [[nodiscard]] inline auto constexpr special_to_index(int32 const val) -> int32

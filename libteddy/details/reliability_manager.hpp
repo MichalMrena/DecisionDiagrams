@@ -3,16 +3,16 @@
 
 #include <libteddy/details/diagram_manager.hpp>
 
-#include <array>
-#include <vector>
-
-#include <concepts>
-#include "libteddy/details/types.hpp"
-#include <unordered_map>
-
 #include <fmt/core.h>
 #include <fmt/ranges.h>
+
+#include <array>
+#include <concepts>
 #include <iostream>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace teddy
 {
@@ -26,13 +26,6 @@ concept component_probabilities
               probs[index][value]
           } -> std::convertible_to<double>;
       };
-
-template<class F>
-concept f_val_change = requires(F f, int32 l, int32 r) {
-                           {
-                               f(l, r)
-                           } -> std::convertible_to<bool>;
-                       };
 
 namespace dpld
 {
@@ -112,10 +105,10 @@ inline static auto constexpr type_3_increase = [] (int32 const state)
         return lhs < state && rhs >= state;
     };
 };
-}
+} // namespace dpld
 
 /**
- *  \struct value_change
+ *  \struct var_change
  *  \brief Describes change in a value of a variable
  */
 struct var_change
@@ -125,6 +118,7 @@ struct var_change
     int32 to_;
 };
 
+// TODO deprecated
 /**
  *  \struct value_change
  *  \brief Describes change of a value of a variable or a function.
@@ -163,7 +157,8 @@ public:
      *  \param diagram Structure function
      */
     template<component_probabilities Ps>
-    auto calculate_probabilities (Ps const& probs, diagram_t const&  diagram) -> void;
+    auto calculate_probabilities (Ps const& probs, diagram_t const& diagram)
+        -> void;
 
     /**
      *  \brief Calculates and returns probability of a system state \p state
@@ -179,7 +174,11 @@ public:
      *  state \p state given probabilities \p probs
      */
     template<component_probabilities Ps>
-    auto calculate_probability (int32 state, Ps const& probs, diagram_t const& diagram) -> double;
+    auto calculate_probability (
+        int32 state,
+        Ps const& probs,
+        diagram_t const& diagram
+    ) -> double;
 
     /**
      *  \brief Returns probability of given system state.
@@ -209,7 +208,8 @@ public:
      */
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
-    auto calculate_availability (Ps const& probs, diagram_t const& diagram) -> second_t<Foo, double>;
+    auto calculate_availability (Ps const& probs, diagram_t const& diagram)
+        -> second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
@@ -225,7 +225,11 @@ public:
      *  \return System availability with respect to the system state \p state
      */
     template<component_probabilities Ps>
-    auto calculate_availability (int32 state, Ps const& probs, diagram_t const& diagram) -> double;
+    auto calculate_availability (
+        int32 state,
+        Ps const& probs,
+        diagram_t const& diagram
+    ) -> double;
 
     /**
      *  \brief Returns availability of a BSS.
@@ -272,7 +276,8 @@ public:
      */
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
-    auto calculate_unavailability (Ps const& probs, diagram_t const& diagram) -> second_t<Foo, double>;
+    auto calculate_unavailability (Ps const& probs, diagram_t const& diagram)
+        -> second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
@@ -288,7 +293,11 @@ public:
      *  \return System availability with respect to the system state \p state
      */
     template<component_probabilities Ps>
-    auto calculate_unavailability (int32 state, Ps const& probs, diagram_t const& diagram) -> double;
+    auto calculate_unavailability (
+        int32 state,
+        Ps const& probs,
+        diagram_t const& diagram
+    ) -> double;
 
     /**
      *  \brief Returns system unavailability of a BSS.
@@ -330,7 +339,6 @@ public:
      */
     auto state_frequency (diagram_t const& diagram, int32 state) -> double;
 
-
     /**
      *  \brief Calculates Direct Partial Boolean Derivative
      *  \param varChange Change of the value of a variable
@@ -339,141 +347,18 @@ public:
      *  \return Diagram representing Direct Partial Boolean Derivative
      */
     template<class FChange>
-    auto dpld (var_change varChange, FChange fChange, diagram_t const& diagram) -> diagram_t;
-
-    // /**
-    //  *  \brief Calculates Direct Partial Boolean Derivative.
-    //  *  \param var Change of the value of \p i th component.
-    //  *  \param f Change of the value of the system.
-    //  *  \param sf Structure function.
-    //  *  \param i Index of the component.
-    //  *  \return Diagram representing Direct Partial Boolean Derivative.
-    //  */
-    // auto dpld (value_change var, value_change f, diagram_t sf, int32 i)
-    //     -> diagram_t;
-
-    // /**
-    //  *  \brief Calculates Direct Partial Boolean Derivative of type 1.
-    //  *
-    //  *  Identifies situations in which change of the state of \p i th
-    //  *  component causes change of the system state from the state \p j
-    //  *  to a worse state.
-    //  *
-    //  *  \param var Change of the value of \p i th component.
-    //  *  \param j System state.
-    //  *  \param sf Structure function.
-    //  *  \param i Index of the component.
-    //  *  \return Diagram representing Direct Partial Boolean Derivative
-    //  *  of type 1.
-    //  */
-    // auto idpld_type_1_decrease (
-    //     value_change var,
-    //     int32 j,
-    //     diagram_t sf,
-    //     int32 i
-    // ) -> diagram_t;
-
-    // /**
-    //  *  \brief Calculates Direct Partial Boolean Derivative of type 1.
-    //  *
-    //  *  Identifies situations in which change of the state of \p i th
-    //  *  component causes change of the system state from the state \p j
-    //  *  to a better state.
-    //  *
-    //  *  \param var Change of the value of \p i th component.
-    //  *  \param j System state.
-    //  *  \param sf Structure function.
-    //  *  \param i Index of the component.
-    //  *  \return Diagram representing Direct Partial Boolean Derivative
-    //  *  of type 1.
-    //  */
-    // auto idpld_type_1_increase (
-    //     value_change var,
-    //     int32 j,
-    //     diagram_t sf,
-    //     int32 i
-    // ) -> diagram_t;
-
-    // /**
-    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-    //  *
-    //  *  Identifies situations in which change of the state of \p i th
-    //  *  component causes degradation of the system state.
-    //  *
-    //  *  \param var Change of the value of \p i th component.
-    //  *  \param sf Structure function.
-    //  *  \param i Index of the component.
-    //  *  \return Diagram representing Direct Partial Boolean Derivative
-    //  *  of type 2.
-    //  */
-    // auto idpld_type_2_decrease (value_change var, diagram_t sf, int32 i)
-    //     -> diagram_t;
-
-    // /**
-    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-    //  *
-    //  *  Identifies situations in which change of the state of \p i th
-    //  *  component causes improvement of the system state.
-    //  *
-    //  *  \param var Change of the value of \p i th component.
-    //  *  \param sf Structure function.
-    //  *  \param i Index of the component.
-    //  *  \return Diagram representing Direct Partial Boolean Derivative
-    //  *  of type 2.
-    //  */
-    // auto idpld_type_2_increase (value_change var, diagram_t sf, int32 i)
-    //     -> diagram_t;
-
-    // /**
-    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-    //  *
-    //  *  Identifies situations in which change ot the state of \p i th
-    //  *  component causes system state degradation from a state
-    //  *  at least \p j to a state worse than \p j .
-    //  *
-    //  *  \param var Change of the value of \p i th component.
-    //  *  \param j System state.
-    //  *  \param sf Structure function.
-    //  *  \param i Index of the component.
-    //  *  \return Diagram representing Direct Partial Boolean Derivative
-    //  *  of type 3.
-    //  */
-    // auto idpld_type_3_decrease (
-    //     value_change var,
-    //     int32 j,
-    //     diagram_t sf,
-    //     int32 i
-    // ) -> diagram_t;
-
-    // /**
-    //  *  \brief Calculates Direct Partial Boolean Derivative of type 2.
-    //  *
-    //  *  Identifies situations in which change ot the state of \p i th
-    //  *  component causes system state improvement from a state
-    //  *  state worse than \p j to a state at least \p j .
-    //  *
-    //  *  \param var Change of the value of \p i th component.
-    //  *  \param j System state.
-    //  *  \param sf Structure function.
-    //  *  \param i Index of the component.
-    //  *  \return Diagram representing Direct Partial Boolean Derivative
-    //  *  of type 3.
-    //  */
-    // auto idpld_type_3_increase (
-    //     value_change var,
-    //     int32 j,
-    //     diagram_t sf,
-    //     int32 i
-    // ) -> diagram_t;
+    auto dpld (var_change varChange, FChange fChange, diagram_t const& diagram)
+        -> diagram_t;
 
     /**
      * \brief Transforms \p dpld into Extended DPLD
      * \param varFrom Value from whitch the variable changes
-     * \param i Index of the variable
+     * \param varIndex Index of the variable
      * \param varFrom Derivative
      * \return Diagram representing Extended DPLD
      */
-    auto to_dpld_e (int32 varFrom, int32 i, diagram_t dpld) -> diagram_t;
+    auto to_dpld_e (int32 varFrom, int32 varIndex, diagram_t const& dpld)
+        -> diagram_t;
 
     /**
      *  \brief Calculates Structural Importace (SI) of a component
@@ -482,32 +367,39 @@ public:
      *  It is up to the user to pick the one that suits his needs.
      *
      *  \param dpld Direct Partial Boolean Derivative of any type
-     *  \return Structural importance of given component
+     *  \return Structural importance of the component
      */
-    auto structural_importance (diagram_t dpld) -> double;
+    auto structural_importance (diagram_t const& dpld) -> double;
 
     /**
-     *  \brief Calculates Birnbaum importance (BI) of a component.
+     *  \brief Calculates Birnbaum importance (BI) of a component
      *
      *  Different types of DPLDs can be used for the calculation.
      *  It is up to the user to pick the one that suits his needs.
      *
-     *  \param ps Component state probabilities
+     *  \param probs Component state probabilities
      *  \param dpld Direct Partial Boolean Derivative of any type
-     *  \return Birnbaum importance of given component
+     *  \return Birnbaum importance of the component
      */
     template<component_probabilities Ps>
-    auto birnbaum_importance (
-        Ps const& ps,
-        diagram_t dpld
-    ) -> double;
+    auto birnbaum_importance (Ps const& probs, diagram_t const& dpld) -> double;
 
     /**
-     *  \brief TODO
+     *  \brief Calculates Fussell-Vesely importance (FVI) of a component
+     *
+     *  Different types of DPLDs can be used for the calculation.
+     *  It is up to the user to pick the one that suits his needs.
+     *
+     *  \param probs Component state probabilities
+     *  \param dpld Direct Partial Boolean Derivative of any type
+     *  \param unavailability System unavailability
+     *  \param componentState State of the component
+     *  \param componentIndex Component index
+     *  \return Fussell-Vesely of the component
      */
     template<component_probabilities Ps>
     auto fussell_vesely_importance (
-        Ps const& probabilities,
+        Ps const& probs,
         diagram_t const& dpld,
         double unavailability,
         int32 componentState,
@@ -516,19 +408,19 @@ public:
 
     /**
      *  \brief Finds all Minimal Cut Vector (MCVs) of the system with
-     *  respect to the system state \p j .
+     *  respect to the system state \p State
      *
      *  This function uses \c satisfy_all function. Please keep in mind
      *  that for bigger systems, there can be a huge number of MCVs.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
      *  assigning integers e.g std::vector or std::array
-     *  \param sf Structure function.
-     *  \param j System state.
-     *  \returns Vector of Minimal Cut Vectors.
+     *  \param diagram Structure function
+     *  \param state System state
+     *  \returns Vector of Minimal Cut Vectors
      */
     template<out_var_values Vars>
-    auto mcvs (diagram_t sf, int32 j) -> std::vector<Vars>;
+    auto mcvs (diagram_t const& diagram, int32 state) -> std::vector<Vars>;
 
     /**
      *  \brief Finds all Minimal Path Vector (MPVs) of the system with
@@ -539,29 +431,29 @@ public:
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
      *  assigning integers e.g std::vector or std::array
-     *  \param structureFunction Structure function
-     *  \param systemState System state
+     *  \param diagram Structure function
+     *  \param state System state
      *  \returns Vector of Minimal Cut Vectors.
      */
     template<out_var_values Vars>
-    auto mpvs (diagram_t const& structureFunction, int32 systemState) -> std::vector<Vars>;
+    auto mpvs (diagram_t const& diagram, int32 state) -> std::vector<Vars>;
 
     /**
      *  \brief Finds all Minimal Cut Vector of the system with respect
-     *  to the system state \p j .
+     *  to the system state \p state
      *
      *  This function uses \c satisfy_all_g function. Please keep in mind
      *  that for bigger systems, there can be a huge number of MCVs.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
      *  assigning integers e.g std::vector or std::array
-     *  \param sf Structure function.
-     *  \param j System state.
+     *  \param diagram Structure function
+     *  \param state System state
      *  \param out Output iterator that is used to output instances
-     *  of \p Vars .
+     *  of \p Vars
      */
     template<out_var_values Vars, std::output_iterator<Vars> Out>
-    auto mcvs_g (diagram_t sf, int32 j, Out out) -> void;
+    auto mcvs_g (diagram_t const& diagram, int32 state, Out out) -> void;
 
     /**
      *  \brief Finds all Minimal Path Vector (MPVs) of the system with
@@ -572,13 +464,13 @@ public:
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
      *  assigning integers e.g std::vector or std::array
-     *  \param structureFunction Structure function
-     *  \param systemState System state
+     *  \param diagram Structure function
+     *  \param state System state
      *  \param out Output iterator that is used to output instances
      *  of \p Vars .
      */
     template<out_var_values Vars, std::output_iterator<Vars> Out>
-    auto mpvs_g (diagram_t const& structureFunction, int32 systemState, Out out) -> void;
+    auto mpvs_g (diagram_t const& diagram, int32 state, Out out) -> void;
 
 protected:
     reliability_manager(
@@ -593,36 +485,39 @@ protected:
         int32 varCount,
         int64 nodePoolSize,
         int64 overflowNodePoolSize,
-        domains::mixed,
+        domains::mixed domain,
         std::vector<int32> order
     )
     requires(domains::is_mixed<Domain>()());
 
-public: // TODO tmp
+private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
 
     // TODO this will be merged with apply_dpld in the future
-    template<f_val_change F>
-    auto dpld_g (diagram_t sf, value_change var, int32 i, F change)
-        -> diagram_t;
+    template<class F>
+    auto dpld_g (
+        diagram_t const& diagram,
+        value_change varChange,
+        int32 varIndex,
+        F fChange
+    ) -> diagram_t;
 
     // TODO toto by mohlo preberat aj zmenu premennej
     // potom by to nebralo dva diagramy ale iba jeden - priamo
     // strukturnu funkciu. Prehladavanie v apply by sa modifikovalo
     // podla zmien premennych.
-    template<f_val_change F>
-    auto apply_dpld(diagram_t, diagram_t, F) -> diagram_t;
-
-    auto domain_size () const -> int64;
+    template<class F>
+    auto apply_dpld (diagram_t const& left, diagram_t const& right, F fChange)
+        -> diagram_t;
 
     template<component_probabilities Ps>
     auto calculate_ntp (
         std::vector<int32> const& selected,
-        Ps const& ps,
-        diagram_t d
+        Ps const& probs,
+        diagram_t const& diagram
     ) -> double;
 
-    auto to_mnf(diagram_t const& diagram) -> diagram_t;
+    auto to_mnf (diagram_t const& diagram) -> diagram_t;
 };
 
 template<degree Degree, domain Domain>
@@ -656,14 +551,15 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
             if (node->is_internal())
             {
                 auto const nodeIndex = node->get_index();
-                auto k               = 0;
+                auto sonOrder        = 0;
                 this->nodes_.for_each_son(
                     node,
-                    [node, nodeIndex, &probs, &k] (auto const son)
+                    [node, nodeIndex, &probs, &sonOrder] (auto const son)
                     {
-                        son->data() += node->data()
-                                     * probs[as_uindex(nodeIndex)][as_uindex(k)];
-                        ++k;
+                        son->data()
+                            += node->data()
+                             * probs[as_uindex(nodeIndex)][as_uindex(sonOrder)];
+                        ++sonOrder;
                     }
                 );
             }
@@ -683,8 +579,8 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::get_probability(int32 const state) const
-    -> double
+auto reliability_manager<Degree, Domain>::get_probability(int32 const state
+) const -> double
 {
     auto const terminalNode = this->nodes_.get_terminal_node(state);
     return terminalNode ? terminalNode->data() : 0.0;
@@ -732,8 +628,8 @@ auto reliability_manager<Degree, Domain>::get_availability() const
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::get_availability(int32 const state) const
-    -> double
+auto reliability_manager<Degree, Domain>::get_availability(int32 const state
+) const -> double
 {
     auto result = .0;
     this->nodes_.for_each_terminal_node(
@@ -806,11 +702,16 @@ auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::state_frequency(diagram_t  const& diagram, int32 state)
-    -> double
+auto reliability_manager<Degree, Domain>::state_frequency(
+    diagram_t const& diagram,
+    int32 state
+) -> double
 {
+    auto const indexFrom  = int32(0);
+    auto const indexTo    = this->get_var_count();
+    auto const domainSize = this->nodes_.domain_product(indexFrom, indexTo);
     return static_cast<double>(this->satisfy_count(state, diagram))
-         / static_cast<double>(this->domain_size());
+         / static_cast<double>(domainSize);
 }
 
 template<degree Degree, domain Domain>
@@ -829,164 +730,35 @@ auto reliability_manager<Degree, Domain>::dpld(
     );
 }
 
-// template<degree Degree, domain Domain>
-// auto reliability_manager<Degree, Domain>::dpld(
-//     value_change const var,
-//     value_change const f,
-//     diagram_t sf,
-//     int32 const i
-// ) -> diagram_t
-// {
-//     return this->dpld_g(
-//         sf,
-//         var,
-//         i,
-//         [f] (auto const l, auto const r)
-//         {
-//             return l == f.from && r == f.to;
-//         }
-//     );
-// }
-
-// template<degree Degree, domain Domain>
-// auto reliability_manager<Degree, Domain>::idpld_type_1_decrease(
-//     value_change var,
-//     int32 j,
-//     diagram_t sf,
-//     int32 i
-// ) -> diagram_t
-// {
-//     return this->dpld_g(
-//         sf,
-//         var,
-//         i,
-//         [j] (auto const l, auto const r)
-//         {
-//             return l == j && r < j;
-//         }
-//     );
-// }
-
-// template<degree Degree, domain Domain>
-// auto reliability_manager<Degree, Domain>::idpld_type_1_increase(
-//     value_change var,
-//     int32 j,
-//     diagram_t sf,
-//     int32 i
-// ) -> diagram_t
-// {
-//     return this->dpld_g(
-//         sf,
-//         var,
-//         i,
-//         [j] (auto const l, auto const r)
-//         {
-//             return l == j && r > j;
-//         }
-//     );
-// }
-
-// template<degree Degree, domain Domain>
-// auto reliability_manager<Degree, Domain>::idpld_type_2_decrease(
-//     value_change var,
-//     diagram_t sf,
-//     int32 i
-// ) -> diagram_t
-// {
-//     return this->dpld_g(
-//         sf,
-//         var,
-//         i,
-//         [] (auto const l, auto const r)
-//         {
-//             return l > r;
-//         }
-//     );
-// }
-
-// template<degree Degree, domain Domain>
-// auto reliability_manager<Degree, Domain>::idpld_type_2_increase(
-//     value_change var,
-//     diagram_t sf,
-//     int32 i
-// ) -> diagram_t
-// {
-//     return this->dpld_g(
-//         sf,
-//         var,
-//         i,
-//         [] (auto const l, auto const r)
-//         {
-//             return l < r;
-//         }
-//     );
-// }
-
-// template<degree Degree, domain Domain>
-// auto reliability_manager<Degree, Domain>::idpld_type_3_decrease(
-//     value_change const var,
-//     int32 const j,
-//     diagram_t sf,
-//     int32 const i
-// ) -> diagram_t
-// {
-//     return this->dpld_g(
-//         sf,
-//         var,
-//         i,
-//         [j] (auto const l, auto const r)
-//         {
-//             return l >= j && r < j;
-//         }
-//     );
-// }
-
-// template<degree Degree, domain Domain>
-// auto reliability_manager<Degree, Domain>::idpld_type_3_increase(
-//     value_change const var,
-//     int32 const j,
-//     diagram_t sf,
-//     int32 const i
-// ) -> diagram_t
-// {
-//     return this->dpld_g(
-//         sf,
-//         var,
-//         i,
-//         [j] (auto const l, auto const r)
-//         {
-//             return l < j && r >= j;
-//         }
-//     );
-// }
-
 template<degree Degree, domain Domain>
 auto reliability_manager<Degree, Domain>::to_dpld_e(
-    int32 varFrom,
-    int32 i,
-    diagram_t dpld
+    int32 const varFrom,
+    int32 const varIndex,
+    diagram_t const& dpld
 ) -> diagram_t
 {
     auto const root      = dpld.unsafe_get_root();
     auto const rootLevel = this->nodes_.get_level(root);
-    auto const varLevel  = this->nodes_.get_level(i);
+    auto const varLevel  = this->nodes_.get_level(varIndex);
 
     if (varLevel < rootLevel)
     {
         auto sons = this->nodes_.make_sons(
-            i,
-            [this, varFrom, root] (int32 const k)
+            varIndex,
+            [this, varFrom, root] (int32 const sonOrder)
             {
-                return k == varFrom ? root
-                                    : this->nodes_.terminal_node(Undefined);
+                return sonOrder == varFrom
+                         ? root
+                         : this->nodes_.make_terminal_node(Undefined);
             }
         );
-        auto const newRoot = this->nodes_.internal_node(i, std::move(sons));
+        auto const newRoot
+            = this->nodes_.make_internal_node(varIndex, std::move(sons));
         return diagram_t(newRoot);
     }
 
-    auto memo     = std::unordered_map<node_t*, node_t*>();
-    auto const go = [=, this, &memo] (auto const& self, node_t* const n)
+    auto memo       = std::unordered_map<node_t*, node_t*>();
+    auto const step = [=, this, &memo] (auto const& self, node_t* const n)
     {
         if (n->is_terminal())
         {
@@ -1003,9 +775,9 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
         auto const nodeIndex = n->get_index();
         auto sons            = this->nodes_.make_sons(
             nodeIndex,
-            [=, this, &self] (int32 const k)
+            [=, this, &self] (int32 const sonOrder)
             {
-                auto const son      = n->get_son(k);
+                auto const son      = n->get_son(sonOrder);
                 auto const sonLevel = this->nodes_.get_level(son);
                 if (varLevel > nodeLevel && varLevel < sonLevel)
                 {
@@ -1013,41 +785,40 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
                     // and its k th son.
                     // Transformation does not need to continue.
                     auto newNodeSons = this->nodes_.make_sons(
-                        i,
-                        [this, varFrom, son] (int32 const l)
+                        varIndex,
+                        [this, varFrom, son] (int32 const newSonOrder)
                         {
-                            return l == varFrom
-                                                ? son
-                                                : this->nodes_.terminal_node(Undefined);
+                            return newSonOrder == varFrom
+                                ? son
+                                : this->nodes_.make_terminal_node(Undefined);
                         }
                     );
-                    return this->nodes_.internal_node(
-                        i,
+                    return this->nodes_.make_internal_node(
+                        varIndex,
                         std::move(newNodeSons)
                     );
                 }
-                else
-                {
-                    // A new node will be inserted somewhere deeper.
-                    return self(self, son);
-                }
+
+                // A new node will be inserted somewhere deeper.
+                return self(self, son);
             }
         );
         auto const transformedNode
-            = this->nodes_.internal_node(nodeIndex, std::move(sons));
+            = this->nodes_.make_internal_node(nodeIndex, std::move(sons));
         memo.emplace(n, transformedNode);
         return transformedNode;
     };
-    return diagram_t(go(go, root));
+    return diagram_t(step(step, root));
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::structural_importance(diagram_t dpld)
-    -> double
+auto reliability_manager<Degree, Domain>::structural_importance(
+    diagram_t const& dpld
+) -> double
 {
-    auto const from       = int32(0);
-    auto const to         = static_cast<int32>(this->get_var_count());
-    auto const domainSize = this->nodes_.domain_product(from, to);
+    auto const indexFrom  = int32(0);
+    auto const indexTo    = static_cast<int32>(this->get_var_count());
+    auto const domainSize = this->nodes_.domain_product(indexFrom, indexTo);
     return static_cast<double>(this->satisfy_count(1, dpld))
          / static_cast<double>(domainSize);
 }
@@ -1055,35 +826,29 @@ auto reliability_manager<Degree, Domain>::structural_importance(diagram_t dpld)
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::birnbaum_importance(
-    Ps const& ps,
-    diagram_t dpld
+    Ps const& probs,
+    diagram_t const& dpld
 ) -> double
 {
-    // this->calculate_probabilities(ps, dpld);
-    // return this->get_probability(1);
-    return this->calculate_probability(1, ps, dpld);
+    return this->calculate_probability(1, probs, dpld);
 }
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::fussell_vesely_importance (
-        Ps const& probabilities,
-        diagram_t const& dpld,
-        double const unavailability,
-        int32 const componentState,
-        int32 const componentIndex
-    ) -> double
+auto reliability_manager<Degree, Domain>::fussell_vesely_importance(
+    Ps const& probs,
+    diagram_t const& dpld,
+    double const unavailability,
+    int32 const componentState,
+    int32 const componentIndex
+) -> double
 {
-    auto const mnf = this->to_mnf(dpld);
-    auto const mnfProbability = this->calculate_probability(
-        1,
-        probabilities,
-        mnf
-    );
-    auto nominator = .0;
-    for (auto r = 0; r < componentState; ++r)
+    auto const mnf            = this->to_mnf(dpld);
+    auto const mnfProbability = this->calculate_probability(1, probs, mnf);
+    auto nominator            = .0;
+    for (auto lowerState = 0; lowerState < componentState; ++lowerState)
     {
-        nominator += probabilities[as_uindex(componentIndex)][as_uindex(r)];
+        nominator += probs[as_uindex(componentIndex)][as_uindex(lowerState)];
     }
     nominator *= mnfProbability;
     return nominator / unavailability;
@@ -1091,43 +856,48 @@ auto reliability_manager<Degree, Domain>::fussell_vesely_importance (
 
 template<degree Degree, domain Domain>
 template<out_var_values Vars>
-auto reliability_manager<Degree, Domain>::mcvs(diagram_t sf, int32 const j)
-    -> std::vector<Vars>
+auto reliability_manager<Degree, Domain>::mcvs(
+    diagram_t const& diagram,
+    int32 const state
+) -> std::vector<Vars>
 {
     auto cuts = std::vector<Vars>();
-    this->mcvs_g<Vars>(sf, j, std::back_inserter(cuts));
+    this->mcvs_g<Vars>(diagram, state, std::back_inserter(cuts));
     return cuts;
 }
 
 template<degree Degree, domain Domain>
 template<out_var_values Vars>
-auto reliability_manager<Degree, Domain>::mpvs
-    (diagram_t const& structureFunction, int32 systemState) -> std::vector<Vars>
+auto reliability_manager<Degree, Domain>::mpvs(
+    diagram_t const& diagram,
+    int32 state
+) -> std::vector<Vars>
 {
     auto cuts = std::vector<Vars>();
-    this->mcvs_g<Vars>(structureFunction, systemState, std::back_inserter(cuts));
+    this->mcvs_g<Vars>(diagram, state, std::back_inserter(cuts));
     return cuts;
 }
 
 template<degree Degree, domain Domain>
 template<out_var_values Vars, std::output_iterator<Vars> Out>
 auto reliability_manager<Degree, Domain>::mcvs_g(
-    diagram_t sf,
-    int32 const j,
+    diagram_t const& diagram,
+    int32 const state,
     Out out
 ) -> void
 {
     auto const varCount = this->get_var_count();
     auto dpldes         = std::vector<diagram_t>();
 
-    for (auto i = 0; i < varCount; ++i)
+    for (auto varIndex = 0; varIndex < varCount; ++varIndex)
     {
-        auto const varDomain = this->nodes_.get_domain(i);
+        auto const varDomain = this->nodes_.get_domain(varIndex);
         for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom)
         {
-            auto const varChange = value_change {varFrom, varFrom + 1};
-            auto const dpld = this->idpld_type_3_increase(varChange, j, sf, i);
-            dpldes.emplace_back(this->to_dpld_e(varFrom, i, dpld));
+            auto const varChange = var_change {varIndex, varFrom, varFrom + 1};
+            auto const dpld
+                = this->dpld(varChange, dpld::type_3_increase(state), diagram);
+            dpldes.emplace_back(this->to_dpld_e(varFrom, varIndex, dpld));
         }
     }
 
@@ -1138,8 +908,8 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
 template<degree Degree, domain Domain>
 template<out_var_values Vars, std::output_iterator<Vars> Out>
 auto reliability_manager<Degree, Domain>::mpvs_g(
-    diagram_t const& structureFunction,
-    int32 const systemState,
+    diagram_t const& diagram,
+    int32 const state,
     Out out
 ) -> void
 {
@@ -1151,8 +921,9 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
         auto const varDomain = this->nodes_.get_domain(varIndex);
         for (auto varFrom = 1; varFrom < varDomain; ++varFrom)
         {
-            auto const varChange = value_change {varFrom, varFrom - 1};
-            auto const dpld = this->idpld_type_3_decrease(varChange, systemState, structureFunction, varIndex);
+            auto const varChange = var_change {varIndex, varFrom, varFrom - 1};
+            auto const dpld
+                = this->dpld(varChange, dpld::type_3_decrease(state), diagram);
             dpldes.emplace_back(this->to_dpld_e(varFrom, varIndex, dpld));
         }
     }
@@ -1162,128 +933,103 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 }
 
 template<degree Degree, domain Domain>
-template<f_val_change F>
+template<class F>
 auto reliability_manager<Degree, Domain>::dpld_g(
-    diagram_t sf,
-    value_change var,
-    int32 i,
-    F change
+    diagram_t const& diagram,
+    value_change varChange,
+    int32 varIndex,
+    F fChange
 ) -> diagram_t
 {
-    auto const lhs = this->get_cofactor(sf, i, var.from);
-    auto const rhs = this->get_cofactor(sf, i, var.to);
-    return this->apply_dpld(lhs, rhs, change);
+    auto const lhs = this->get_cofactor(diagram, varIndex, varChange.from);
+    auto const rhs = this->get_cofactor(diagram, varIndex, varChange.to);
+    return this->apply_dpld(lhs, rhs, fChange);
 }
 
 template<degree Degree, domain Domain>
-template<f_val_change F>
+template<class F>
 auto reliability_manager<Degree, Domain>::apply_dpld(
-    diagram_t lhs,
-    diagram_t rhs,
-    F change
+    diagram_t const& left,
+    diagram_t const& right,
+    F fChange
 ) -> diagram_t
 {
-    using cache_pair = struct
-    {
-        node_t* left;
-        node_t* right;
-    };
+    auto cache = std::
+        unordered_map<std::tuple<node_t*, node_t*>, node_t*, utils::tuple_hash>(
+        );
 
-    auto constexpr cache_pair_hash = [] (auto const p)
-    {
-        auto const hash1 = std::hash<node_t*>()(p.left);
-        auto const hash2 = std::hash<node_t*>()(p.right);
-        auto result      = size_t {0};
-        result ^= hash1 + 0x9e3779b9 + (result << 6) + (result >> 2);
-        result ^= hash2 + 0x9e3779b9 + (result << 6) + (result >> 2);
-        return result;
-    };
-    auto constexpr cache_pair_equals = [] (auto const l, auto const r)
-    {
-        return l.left == r.left && l.right == r.right;
-    };
-    auto cache = std::unordered_map<
-        cache_pair,
-        node_t*,
-        decltype(cache_pair_hash),
-        decltype(cache_pair_equals)>();
-
-    auto const get_node_value = [](node_t* const node)
+    auto const get_node_value = [] (node_t* const node)
     {
         return node->is_terminal() ? node->get_value() : Nondetermined;
     };
 
-    auto const go
-        = [this,
-           &cache,
-           change,
-           get_node_value
-        ] (auto const& self, auto const l, auto const r) -> node_t*
+    auto const step = [this, &cache, fChange, get_node_value] (
+                          auto const& self,
+                          node_t* const lhs,
+                          node_t* const rhs
+                      ) -> node_t*
     {
-        auto const cached = cache.find(cache_pair {l, r});
+        auto const cached = cache.find(std::make_tuple(lhs, rhs));
         if (cached != std::end(cache))
         {
             return cached->second;
         }
 
-        auto const lhsVal = get_node_value(l);
-        auto const rhsVal = get_node_value(r);
+        auto const lhsVal = get_node_value(lhs);
+        auto const rhsVal = get_node_value(rhs);
         auto const opVal // TODO toto by sa dalo lepsie
             = lhsVal == Nondetermined || rhsVal == Nondetermined
                 ? Nondetermined
-                : static_cast<int32>(change(lhsVal, rhsVal));
-        auto u = static_cast<node_t*>(nullptr);
+                : static_cast<int32>(fChange(lhsVal, rhsVal));
+        auto result = static_cast<node_t*>(nullptr);
 
         if (opVal != Nondetermined)
         {
-            u = this->nodes_.terminal_node(opVal);
+            result = this->nodes_.make_terminal_node(opVal);
         }
         else
         {
-            auto const lhsLevel = this->nodes_.get_level(l);
-            auto const rhsLevel = this->nodes_.get_level(r);
+            auto const lhsLevel = this->nodes_.get_level(lhs);
+            auto const rhsLevel = this->nodes_.get_level(rhs);
             auto const topLevel = std::min(lhsLevel, rhsLevel);
-            auto const topNode  = topLevel == lhsLevel ? l : r;
+            auto const topNode  = topLevel == lhsLevel ? lhs : rhs;
             auto const topIndex = topNode->get_index();
             auto sons           = this->nodes_.make_sons(
                 topIndex,
-                [=, &self] (auto const k)
+                [=, &self] (int32 const sonOrder)
                 {
-                    auto const fst = lhsLevel == topLevel
-                                                 ? l->get_son(k)
-                                                 : l; // TODO tu by bol get_son, ktory by
+                    // TODO tu by bol get_son, ktory by
                     // preskakoval fixovane premenne
-                    auto const snd = rhsLevel == topLevel ? r->get_son(k) : r;
+                    auto const fst
+                        = lhsLevel == topLevel ? lhs->get_son(sonOrder) : lhs;
+                    auto const snd
+                        = rhsLevel == topLevel ? rhs->get_son(sonOrder) : rhs;
                     return self(self, fst, snd);
                 }
             );
 
-            u = this->nodes_.internal_node(topIndex, std::move(sons));
+            result = this->nodes_.make_internal_node(topIndex, std::move(sons));
         }
 
-        // TODO in place
-        cache.emplace(std::make_pair(cache_pair {l, r}, u));
-        return u;
+        cache.emplace(
+            std::piecewise_construct,
+            std::make_tuple(lhs, rhs),
+            std::make_tuple(result)
+        );
+        return result;
     };
 
-    auto const newRoot = go(go, lhs.unsafe_get_root(), rhs.unsafe_get_root());
+    auto const newRoot
+        = step(step, left.unsafe_get_root(), right.unsafe_get_root());
     return diagram_t(newRoot);
-}
-
-template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::domain_size() const -> int64
-{
-    auto const from = int32(0);
-    auto const to   = this->get_var_count();
-    return this->nodes_.domain_product(from, to);
 }
 
 template<degree Degree, domain Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_ntp(
-    std::vector<int32> const& selected,
-    Ps const& ps,
-    diagram_t d
+    std::vector<int32> const& selectedValues,
+    Ps const& probs,
+    diagram_t const& diagram
 ) -> double
 {
     this->nodes_.for_each_terminal_node(
@@ -1293,64 +1039,66 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
         }
     );
 
-    for (auto const s : selected)
+    for (auto const selectedValue : selectedValues)
     {
-        auto const n = this->nodes_.get_terminal_node(s);
-        if (n)
+        auto const terminalNode = this->nodes_.get_terminal_node(selectedValue);
+        if (terminalNode)
         {
-            n->data() = 1.0;
+            terminalNode->data() = 1.0;
         }
     }
 
     this->nodes_.traverse_post(
-        d.unsafe_get_root(),
-        [this, &ps] (auto const n) mutable
+        diagram.unsafe_get_root(),
+        [this, &probs] (node_t* const node) mutable
         {
-            if (not n->is_terminal())
+            if (not node->is_terminal())
             {
-                n->data()    = 0.0;
-                auto const i = n->get_index();
+                node->data()         = 0.0;
+                auto const nodeIndex = node->get_index();
                 this->nodes_.for_each_son(
-                    n,
-                    [=, k = 0, &ps] (auto const son) mutable
+                    node,
+                    [=, sonState = 0, &probs] (node_t* const son) mutable
                     {
-                        auto const p = ps[as_uindex(i)][as_uindex(k)];
-                        n->data() += son->data() * p;
-                        ++k;
+                        node->data()
+                            += son->data()
+                             * probs[as_uindex(nodeIndex)][as_uindex(sonState)];
+                        ++sonState;
                     }
                 );
             }
         }
     );
-    return d.unsafe_get_root()->data();
+    return diagram.unsafe_get_root()->data();
 }
 
 template<degree Degree, domain Domain>
-auto reliability_manager<Degree, Domain>::to_mnf(
-    diagram_t const& diagram
-) -> diagram_t
+auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
+    -> diagram_t
 {
-    auto const step = [this](auto& self, node_t* const node)
+    auto const step = [this] (auto& self, node_t* const node)
     {
         if (node->is_terminal())
         {
             return node;
         }
 
-        auto const index = node->get_index();
+        auto const index  = node->get_index();
         auto const domain = this->nodes_.get_domain(index);
-        auto newSons = this->nodes_.make_sons(index,
-            [&self, node](int32 const k)
-        {
-            return self(self, node->get_son(k));
-        });
+        auto newSons      = this->nodes_.make_sons(
+            index,
+            [&self, node] (int32 const sonOrder)
+            {
+                return self(self, node->get_son(sonOrder));
+            }
+        );
 
-        for (auto r = domain - 1; r > 0; --r)
+        for (auto sonOrder = domain - 1; sonOrder > 0; --sonOrder)
         {
-            auto const son = newSons[as_uindex(r)];
+            auto const son = newSons[as_uindex(sonOrder)];
             if (son->is_terminal() && son->get_value() == 1)
             {
-                for (auto k = 0; k < r; ++k)
+                for (auto k = 0; k < sonOrder; ++k)
                 {
                     newSons[as_uindex(k)] = son;
                 }
@@ -1358,16 +1106,16 @@ auto reliability_manager<Degree, Domain>::to_mnf(
             }
         }
 
-        for (auto r = domain - 2; r >= 0; --r)
+        for (auto sonOrder = domain - 2; sonOrder >= 0; --sonOrder)
         {
-            auto const son = newSons[as_uindex(r)];
+            auto const son = newSons[as_uindex(sonOrder)];
             if (son->is_terminal() && son->get_value() == 0)
             {
-                newSons[as_uindex(r)] = newSons[as_uindex(r + 1)];
+                newSons[as_uindex(sonOrder)] = newSons[as_uindex(sonOrder + 1)];
             }
         }
 
-        return this->nodes_.internal_node(index, std::move(newSons));
+        return this->nodes_.make_internal_node(index, std::move(newSons));
     };
 
     return diagram_t(step(step, diagram.unsafe_get_root()));
@@ -1396,7 +1144,7 @@ reliability_manager<Degree, Domain>::reliability_manager(
     int32 const varCount,
     int64 const nodePoolSize,
     int64 const overflowNodePoolSize,
-    domains::mixed ds,
+    domains::mixed domain,
     std::vector<int32> order
 )
 requires(domains::is_mixed<Domain>()())
@@ -1405,7 +1153,7 @@ requires(domains::is_mixed<Domain>()())
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(ds),
+        std::move(domain),
         std::move(order)
     )
 {

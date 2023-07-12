@@ -178,10 +178,9 @@ using Fixtures = boost::mpl::vector<
     teddy::tests::bdd_fixture,
     teddy::tests::mdd_fixture,
     teddy::tests::imdd_fixture,
-    teddy::tests::ifmdd_fixture
->;
+    teddy::tests::ifmdd_fixture>;
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(core_test)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture)
@@ -189,7 +188,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto domainit = make_domain_iterator(manager);
     auto evalit   = teddy::tsl::evaluating_iterator(domainit, expr);
@@ -228,7 +228,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto expected = expected_counts(manager, expr);
     auto actual   = std::vector<int64>(expected.size(), 0);
@@ -256,7 +257,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto expected = expected_counts(manager, expr);
     auto actual   = std::vector<int64>(expected.size(), 0);
@@ -290,11 +292,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto const zero = manager.constant(0);
     auto const one  = manager.constant(1);
-    auto const sup  = manager.constant(std::ranges::max(manager.get_domains()) - 1);
+    auto const sup
+        = manager.constant(std::ranges::max(manager.get_domains()) - 1);
     auto const boolValDiagram = manager.transform(diagram, utils::not_zero);
 
     BOOST_REQUIRE_MESSAGE(
@@ -404,7 +408,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto const maxIndex = manager.get_var_count() - 1;
     auto indexDist      = std::uniform_int_distribution<int32>(0, maxIndex);
@@ -421,9 +426,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
             }
         }
     }();
-    auto const value1              = int32 {0};
-    auto const value2              = int32 {1};
-    auto const intermediateDiagram = manager.get_cofactor(diagram, index1, value1);
+    auto const value1 = int32 {0};
+    auto const value2 = int32 {1};
+    auto const intermediateDiagram
+        = manager.get_cofactor(diagram, index1, value1);
     auto const cofactoredDiagram
         = manager.get_cofactor(intermediateDiagram, index2, value2);
 
@@ -441,7 +447,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     manager.force_gc();
     manager.force_reorder();
@@ -475,7 +482,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto domainit = make_domain_iterator(manager);
     auto evalit   = tsl::evaluating_iterator(domainit, expr);
@@ -492,7 +500,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(to_vector, Fixture, Fixtures, Fixture)
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(fmt::format("Node count {}", manager.get_node_count(diagram))
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto vector  = manager.to_vector(diagram);
     auto vectord = manager.from_vector(vector);

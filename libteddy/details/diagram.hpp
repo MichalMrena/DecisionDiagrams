@@ -79,7 +79,7 @@ public:
      *  \param other Diagram to be compared with this one.
      *  \return true iif diagrams represent the same function.
      */
-    auto equals (diagram other) const -> bool;
+    auto equals (diagram const& other) const -> bool;
 
     /**
      *  \brief Returns pointer to internal node type.
@@ -111,7 +111,7 @@ auto swap (diagram<Data, D>& lhs, diagram<Data, D>& rhs) -> void
  *  \return true iif diagrams represent the same function.
  */
 template<class Data, degree D>
-auto operator== (diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
+auto operator== (diagram<Data, D> const& lhs, diagram<Data, D> const& rhs) -> bool
 {
     return lhs.equals(rhs);
 }
@@ -129,19 +129,19 @@ auto equals (diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
 }
 
 template<class Data, degree D>
-diagram<Data, D>::diagram(node_t* const r) :
-    root_(id_set_notmarked(id_inc_ref_count(r)))
+diagram<Data, D>::diagram(node_t* const root) :
+    root_(id_set_notmarked(id_inc_ref_count(root)))
 {
 }
 
 template<class Data, degree D>
-diagram<Data, D>::diagram(diagram const& d) : root_(id_inc_ref_count(d.root_))
+diagram<Data, D>::diagram(diagram const& other) : root_(id_inc_ref_count(other.root_))
 {
 }
 
 template<class Data, degree D>
-diagram<Data, D>::diagram(diagram&& d) noexcept :
-    root_(std::exchange(d.root_, nullptr))
+diagram<Data, D>::diagram(diagram&& other) noexcept :
+    root_(std::exchange(other.root_, nullptr))
 {
 }
 
@@ -155,22 +155,22 @@ diagram<Data, D>::~diagram()
 }
 
 template<class Data, degree D>
-auto diagram<Data, D>::operator= (diagram d) -> diagram&
+auto diagram<Data, D>::operator= (diagram other) -> diagram&
 {
-    d.swap(*this);
+    other.swap(*this);
     return *this;
 }
 
 template<class Data, degree D>
-auto diagram<Data, D>::swap(diagram& d) -> void
+auto diagram<Data, D>::swap(diagram& other) -> void
 {
-    std::swap(root_, d.root_);
+    std::swap(root_, other.root_);
 }
 
 template<class Data, degree D>
-auto diagram<Data, D>::equals(diagram d) const -> bool
+auto diagram<Data, D>::equals(diagram const& other) const -> bool
 {
-    return root_ == d.unsafe_get_root();
+    return root_ == other.unsafe_get_root();
 }
 
 template<class Data, degree D>
@@ -185,10 +185,10 @@ namespace std
 template<class Data, teddy::degree D>
 struct hash<teddy::diagram<Data, D>>
 {
-    [[nodiscard]] auto operator() (teddy::diagram<Data, D> const& d
+    [[nodiscard]] auto operator() (teddy::diagram<Data, D> const& diagram
     ) const noexcept -> std::size_t
     {
-        return std::hash<decltype(d.unsafe_get_root())>()(d.unsafe_get_root());
+        return std::hash<decltype(diagram.unsafe_get_root())>()(diagram.unsafe_get_root());
     }
 };
 
@@ -196,11 +196,11 @@ template<class Data, teddy::degree D>
 struct equal_to<teddy::diagram<Data, D>>
 {
     [[nodiscard]] auto operator() (
-        teddy::diagram<Data, D> const& l,
-        teddy::diagram<Data, D> const& r
+        teddy::diagram<Data, D> const& lhs,
+        teddy::diagram<Data, D> const& rhs
     ) const noexcept -> bool
     {
-        return l.equals(r);
+        return lhs.equals(rhs);
     }
 };
 } // namespace std

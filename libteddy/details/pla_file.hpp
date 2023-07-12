@@ -161,8 +161,10 @@ inline auto cube_t::size() const -> int32
 inline auto cube_t::get(int32 const i) const -> int32
 {
     auto const byteIndex = i / 4;
-    debug::assert_in_range(byteIndex, ssize(values_));
     auto const uByteIndex = as_uindex(byteIndex);
+
+    assert(byteIndex >= 0 && byteIndex < ssize(values_));
+
     switch (i % 4)
     {
     case 0:
@@ -180,9 +182,11 @@ inline auto cube_t::get(int32 const i) const -> int32
 inline auto cube_t::set(int32 const i, int32 const val) -> void
 {
     auto const byteIndex = i / 4;
-    debug::assert_in_range(byteIndex, ssize(values_));
-    debug::assert_true(val == 0 || val == 1 || val == DontCare);
     auto const uByteIndex = as_uindex(byteIndex);
+
+    assert((byteIndex >= 0 && byteIndex < ssize(values_)));
+    assert(val == 0 || val == 1 || val == DontCare);
+
     switch (i % 4)
     {
     case 0:

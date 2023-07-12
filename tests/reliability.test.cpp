@@ -180,12 +180,12 @@ using Fixtures                   = boost::mpl::vector<
     teddy::tests::bss_fixture,
     teddy::tests::mss_fixture<3>,
     teddy::tests::imss_fixture<3>,
-    teddy::tests::ifmss_fixture<3>
->;
+    teddy::tests::ifmss_fixture<3>>;
 
 BOOST_AUTO_TEST_SUITE(reliability_test_faster_stuff)
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -231,7 +231,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -251,7 +252,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
-        actual[as_uindex(j)] = manager.calculate_availability(j, probs, diagram);
+        actual[as_uindex(j)]
+            = manager.calculate_availability(j, probs, diagram);
     }
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
@@ -277,7 +279,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -297,7 +300,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
-        actual[as_uindex(j)] = manager.calculate_unavailability(j, probs, diagram);
+        actual[as_uindex(j)]
+            = manager.calculate_unavailability(j, probs, diagram);
     }
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
@@ -380,13 +384,12 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                 auto const tableDpld = tsl::dpld(
                     table,
                     {varIndex, varVal, varVal - 1},
-                    tsl::dpld_i_3_decrease(systemState)
+                    tsl::type_3_decrease(systemState)
                 );
-                auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {varVal, varVal - 1},
-                    systemState,
-                    diagram,
-                    varIndex
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, varVal, varVal - 1},
+                    dpld::type_3_decrease(systemState),
+                    diagram
                 );
                 auto const expected
                     = tsl::structural_importance(tableDpld, varIndex);
@@ -427,20 +430,17 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                 auto const tableDpld = tsl::dpld(
                     table,
                     {varIndex, varVal, varVal - 1},
-                    tsl::dpld_i_3_decrease(systemState)
+                    tsl::type_3_decrease(systemState)
                 );
-                auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {varVal, varVal - 1},
-                    systemState,
-                    diagram,
-                    varIndex
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, varVal, varVal - 1},
+                    dpld::type_3_decrease(systemState),
+                    diagram
                 );
                 auto const expected
                     = tsl::birnbaum_importance(tableDpld, probs);
-                auto const actual = manager.birnbaum_importance(
-                    probs,
-                    diagramDpld
-                );
+                auto const actual
+                    = manager.birnbaum_importance(probs, diagramDpld);
                 BOOST_TEST(
                     expected == actual,
                     boost::test_tools::tolerance(FloatingTolerance)
@@ -450,7 +450,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     fussell_vesely_importances,
     Fixture,
@@ -476,11 +477,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                  varVal < manager.get_domains()[as_uindex(varIndex)];
                  ++varVal)
             {
-                auto const diagramDpld = manager.idpld_type_3_decrease(
-                    {varVal, varVal - 1},
-                    systemState,
-                    diagram,
-                    varIndex
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, varVal, varVal - 1},
+                    dpld::type_3_decrease(systemState),
+                    diagram
                 );
                 auto const expected = tsl::fussell_vesely_importance(
                     table,
@@ -505,7 +505,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     }
 }
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -526,7 +527,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
+BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(reliability_test_slower_stuff)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
@@ -566,22 +567,21 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
         {
             for (auto const& fChange : fChanges)
             {
-                auto tableDpld = tsl::dpld(
+                auto const tableDpld = tsl::dpld(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
                     tsl::dpld_basic(fChange.from, fChange.to)
                 );
-                auto tableDpldExtended = tsl::dpld_e(
+                auto const tableDpldExtended = tsl::dpld_e(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
                     tsl::dpld_basic(fChange.from, fChange.to)
                 );
 
                 auto const diagramDpld = manager.dpld(
-                    {varChange.from, varChange.to},
-                    {fChange.from, fChange.to},
-                    diagram,
-                    varIndex
+                    {varIndex, varChange.from, varChange.to},
+                    dpld::basic(fChange.from, fChange.to),
+                    diagram
                 );
                 auto const diagramDpldExtended
                     = manager.to_dpld_e(varChange.from, varIndex, diagramDpld);
@@ -636,43 +636,41 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
         {
             for (auto const& varChange : varChanges)
             {
-                auto tableDpldDecrease = tsl::dpld(
+                auto const tableDpldDecrease = tsl::dpld(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_1_decrease(fValue + 1)
+                    tsl::type_1_decrease(fValue + 1)
                 );
-                auto tableDpldDecreaseExtended = tsl::dpld_e(
+                auto const tableDpldDecreaseExtended = tsl::dpld_e(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_1_decrease(fValue + 1)
+                    tsl::type_1_decrease(fValue + 1)
                 );
-                auto tableDpldIncrease = tsl::dpld(
+                auto const tableDpldIncrease = tsl::dpld(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_1_increase(fValue)
+                    tsl::type_1_increase(fValue)
                 );
-                auto tableDpldIncreaseExtended = tsl::dpld_e(
+                auto const tableDpldIncreaseExtended = tsl::dpld_e(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_1_increase(fValue)
+                    tsl::type_1_increase(fValue)
                 );
 
-                auto const diagramDpldDecrease = manager.idpld_type_1_decrease(
-                    {varChange.from, varChange.to},
-                    fValue + 1,
-                    diagram,
-                    varIndex
+                auto const diagramDpldDecrease = manager.dpld(
+                    {varIndex, varChange.from, varChange.to},
+                    dpld::type_1_decrease(fValue + 1),
+                    diagram
                 );
                 auto const diagramDpldDecreaseExtended = manager.to_dpld_e(
                     varChange.from,
                     varIndex,
                     diagramDpldDecrease
                 );
-                auto const diagramDpldIncrease = manager.idpld_type_1_increase(
-                    {varChange.from, varChange.to},
-                    fValue,
-                    diagram,
-                    varIndex
+                auto const diagramDpldIncrease = manager.dpld(
+                    {varIndex, varChange.from, varChange.to},
+                    dpld::type_1_increase(fValue),
+                    diagram
                 );
                 auto const diagramDpldIncreaseExtended = manager.to_dpld_e(
                     varChange.from,
@@ -759,37 +757,37 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
             auto const tableDpldDecrease = tsl::dpld(
                 table,
                 tsl::var_change {varIndex, varChange.from, varChange.to},
-                tsl::dpld_i_2_decrease()
+                tsl::type_2_decrease()
             );
             auto const tableDpldDecreaseExtended = tsl::dpld_e(
                 table,
                 tsl::var_change {varIndex, varChange.from, varChange.to},
-                tsl::dpld_i_2_decrease()
+                tsl::type_2_decrease()
             );
             auto const tableDpldIncrease = tsl::dpld(
                 table,
                 tsl::var_change {varIndex, varChange.from, varChange.to},
-                tsl::dpld_i_2_increase()
+                tsl::type_2_increase()
             );
             auto const tableDpldIncreaseExtended = tsl::dpld_e(
                 table,
                 tsl::var_change {varIndex, varChange.from, varChange.to},
-                tsl::dpld_i_2_increase()
+                tsl::type_2_increase()
             );
-            auto const diagramDpldDecrease = manager.idpld_type_2_decrease(
-                {varChange.from, varChange.to},
-                diagram,
-                varIndex
+            auto const diagramDpldDecrease = manager.dpld(
+                {varIndex, varChange.from, varChange.to},
+                dpld::type_2_decrease(),
+                diagram
             );
             auto const diagramDpldDecreaseExtended = manager.to_dpld_e(
                 varChange.from,
                 varIndex,
                 diagramDpldDecrease
             );
-            auto const diagramDpldIncrease = manager.idpld_type_2_increase(
-                {varChange.from, varChange.to},
-                diagram,
-                varIndex
+            auto const diagramDpldIncrease = manager.dpld(
+                {varIndex, varChange.from, varChange.to},
+                dpld::type_2_increase(),
+                diagram
             );
             auto const diagramDpldIncreaseExtended = manager.to_dpld_e(
                 varChange.from,
@@ -873,40 +871,38 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
                 auto tableDpldDecrease = tsl::dpld(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_3_decrease(fValue)
+                    tsl::type_3_decrease(fValue)
                 );
                 auto tableDpldDecreaseExtended = tsl::dpld_e(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_3_decrease(fValue)
+                    tsl::type_3_decrease(fValue)
                 );
                 auto tableDpldIncrease = tsl::dpld(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_3_increase(fValue)
+                    tsl::type_3_increase(fValue)
                 );
                 auto tableDpldIncreaseExtended = tsl::dpld_e(
                     table,
                     tsl::var_change {varIndex, varChange.from, varChange.to},
-                    tsl::dpld_i_3_increase(fValue)
+                    tsl::type_3_increase(fValue)
                 );
 
-                auto const diagramDpldDecrease = manager.idpld_type_3_decrease(
-                    {varChange.from, varChange.to},
-                    fValue,
-                    diagram,
-                    varIndex
+                auto const diagramDpldDecrease = manager.dpld(
+                    {varIndex, varChange.from, varChange.to},
+                    dpld::type_3_decrease(fValue),
+                    diagram
                 );
                 auto const diagramDpldDecreaseExtended = manager.to_dpld_e(
                     varChange.from,
                     varIndex,
                     diagramDpldDecrease
                 );
-                auto const diagramDpldIncrease = manager.idpld_type_3_increase(
-                    {varChange.from, varChange.to},
-                    fValue,
-                    diagram,
-                    varIndex
+                auto const diagramDpldIncrease = manager.dpld(
+                    {varIndex, varChange.from, varChange.to},
+                    dpld::type_3_increase(fValue),
+                    diagram
                 );
                 auto const diagramDpldIncreaseExtended = manager.to_dpld_e(
                     varChange.from,
@@ -1049,7 +1045,11 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
     auto const table
         = tsl::truth_table(system.structureFunction_, system.domains_);
     auto constexpr InitNodeCount = 10'000;
-    auto manager = teddy::imss_manager(system.componentCount_, InitNodeCount, system.domains_);
+    auto manager                 = teddy::imss_manager(
+        system.componentCount_,
+        InitNodeCount,
+        system.domains_
+    );
     auto const diagram = manager.from_vector(system.structureFunction_);
 
     // System State Probabilities
@@ -1066,7 +1066,11 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         );
         BOOST_TEST(
             system.stateProbabilities_[tsl::as_uindex(state)]
-                == manager.calculate_probability(state, system.componentProbabilities_, diagram),
+                == manager.calculate_probability(
+                    state,
+                    system.componentProbabilities_,
+                    diagram
+                ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
@@ -1085,7 +1089,11 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         );
         BOOST_TEST(
             system.availabilities_[tsl::as_uindex(state)]
-                == manager.calculate_availability(state, system.componentProbabilities_, diagram),
+                == manager.calculate_availability(
+                    state,
+                    system.componentProbabilities_,
+                    diagram
+                ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
@@ -1104,7 +1112,11 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         );
         BOOST_TEST(
             system.unavailabilities_[tsl::as_uindex(state)]
-                == manager.calculate_unavailability(state, system.componentProbabilities_, diagram),
+                == manager.calculate_unavailability(
+                    state,
+                    system.componentProbabilities_,
+                    diagram
+                ),
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
@@ -1112,23 +1124,27 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
     // Minimal Cut Vectors
     for (auto state = 1; state < system.stateCount_; ++state)
     {
-        BOOST_REQUIRE(
-            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], tsl::calculate_mcvs(table, state))
-        );
-        BOOST_REQUIRE(
-            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], manager.mcvs<std::vector<int32>>(diagram, state))
-        );
+        BOOST_REQUIRE(std::ranges::is_permutation(
+            system.mcvs_[as_uindex(state)],
+            tsl::calculate_mcvs(table, state)
+        ));
+        BOOST_REQUIRE(std::ranges::is_permutation(
+            system.mcvs_[as_uindex(state)],
+            manager.mcvs<std::vector<int32>>(diagram, state)
+        ));
     }
 
     // Minimal Path Vectors
     for (auto state = 1; state < system.stateCount_; ++state)
     {
-        BOOST_REQUIRE(
-            std::ranges::is_permutation(system.mpvs_[as_uindex(state)], tsl::calculate_mpvs(table, state))
-        );
-        BOOST_REQUIRE(
-            std::ranges::is_permutation(system.mcvs_[as_uindex(state)], manager.mpvs<std::vector<int32>>(diagram, state))
-        );
+        BOOST_REQUIRE(std::ranges::is_permutation(
+            system.mpvs_[as_uindex(state)],
+            tsl::calculate_mpvs(table, state)
+        ));
+        BOOST_REQUIRE(std::ranges::is_permutation(
+            system.mcvs_[as_uindex(state)],
+            manager.mpvs<std::vector<int32>>(diagram, state)
+        ));
     }
 
     // Structural Importances (Integrated DPLD Type III)
@@ -1144,7 +1160,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
                 auto const tableDpld = tsl::dpld(
                     table,
                     {varIndex, componentState, componentState - 1},
-                    tsl::dpld_i_3_decrease(systemState)
+                    tsl::type_3_decrease(systemState)
                 );
                 auto const diagramDpld = manager.dpld(
                     {varIndex, componentState, componentState - 1},
@@ -1156,7 +1172,8 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
                     )][as_uindex(systemState)][as_uindex(componentState)];
                 auto const tableSI
                     = tsl::structural_importance(tableDpld, varIndex);
-                auto const diagramSI = manager.structural_importance(diagramDpld);
+                auto const diagramSI
+                    = manager.structural_importance(diagramDpld);
 
                 BOOST_TEST(
                     realSI == tableSI,
@@ -1183,15 +1200,16 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
                 auto const tableDpld = tsl::dpld(
                     table,
                     {varIndex, componentState, componentState - 1},
-                    tsl::dpld_i_3_decrease(systemState)
+                    tsl::type_3_decrease(systemState)
                 );
                 auto const diagramDpld = manager.dpld(
                     {varIndex, componentState, componentState - 1},
                     dpld::type_3_increase(systemState),
                     diagram
                 );
-                auto const realBI  = system.birnbaumImportances_[as_uindex(varIndex
-                )][as_uindex(systemState)][as_uindex(componentState)];
+                auto const realBI
+                    = system.birnbaumImportances_[as_uindex(varIndex
+                    )][as_uindex(systemState)][as_uindex(componentState)];
                 auto const tableBI = tsl::birnbaum_importance(
                     tableDpld,
                     system.componentProbabilities_
@@ -1223,8 +1241,9 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
             for (auto componentState = 1; componentState < domain;
                  ++componentState)
             {
-                auto const realFVI = system.fussellVeselyImportances_[as_uindex(varIndex
-                )][as_uindex(systemState)][as_uindex(componentState)];
+                auto const realFVI
+                    = system.fussellVeselyImportances_[as_uindex(varIndex
+                    )][as_uindex(systemState)][as_uindex(componentState)];
                 auto const tableFVI = tsl::fussell_vesely_importance(
                     table,
                     system.componentProbabilities_,
@@ -1232,11 +1251,12 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
                     componentState,
                     systemState
                 );
-                auto const diagramUnavailability = manager.calculate_unavailability(
-                    systemState,
-                    system.componentProbabilities_,
-                    diagram
-                );
+                auto const diagramUnavailability
+                    = manager.calculate_unavailability(
+                        systemState,
+                        system.componentProbabilities_,
+                        diagram
+                    );
                 auto const diagramDpld = manager.dpld(
                     {varIndex, componentState - 1, componentState},
                     dpld::type_3_increase(systemState),
@@ -1307,7 +1327,8 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
 //     auto fvis = std::vector<double>();
 //     for (auto i = 0; i < manager.get_var_count(); ++i)
 //     {
-//         fvis.push_back(manager.fussell_vesely_importance(ps, dplds[as_uindex(i)], U, 1, i));
+//         fvis.push_back(manager.fussell_vesely_importance(ps,
+//         dplds[as_uindex(i)], U, 1, i));
 //     }
 
 //     // manager.to_dot_graph(std::cout, mnfs[0]);

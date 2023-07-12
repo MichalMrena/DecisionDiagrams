@@ -6,31 +6,16 @@
 #endif
 
 #include <libteddy/details/types.hpp>
-
 #include <cassert>
 
 namespace teddy::debug
 {
 template<class... Ts>
-auto out ([[maybe_unused]] Ts... s)
+auto out ([[maybe_unused]] Ts... str)
 {
 #ifdef LIBTEDDY_VERBOSE
-    ((std::cout << s), ...);
+    ((std::cout << str), ...);
 #endif
-}
-
-// TODO asi pred, stacia asserty
-inline auto assert_true ([[maybe_unused]] bool const b)
-{
-    assert(b);
-}
-
-inline auto assert_in_range (
-    [[maybe_unused]] int64 const i,
-    [[maybe_unused]] int64 const size
-)
-{
-    assert((i >= 0 && i < size) && "Invalid index!");
 }
 } // namespace teddy::debug
 

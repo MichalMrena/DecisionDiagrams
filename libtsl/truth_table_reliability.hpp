@@ -114,7 +114,7 @@ inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 1
  */
-inline static auto constexpr dpld_i_1_decrease = [] (auto const val)
+inline static auto constexpr type_1_decrease = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
     {
@@ -125,7 +125,7 @@ inline static auto constexpr dpld_i_1_decrease = [] (auto const val)
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 1
  */
-inline static auto constexpr dpld_i_1_increase = [] (auto const val)
+inline static auto constexpr type_1_increase = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
     {
@@ -136,7 +136,7 @@ inline static auto constexpr dpld_i_1_increase = [] (auto const val)
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 2
  */
-inline static auto constexpr dpld_i_2_decrease = [] ()
+inline static auto constexpr type_2_decrease = [] ()
 {
     return [] (auto const lhs, auto const rhs)
     {
@@ -147,7 +147,7 @@ inline static auto constexpr dpld_i_2_decrease = [] ()
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 2
  */
-inline static auto constexpr dpld_i_2_increase = [] ()
+inline static auto constexpr type_2_increase = [] ()
 {
     return [] (auto const lhs, auto const rhs)
     {
@@ -158,7 +158,7 @@ inline static auto constexpr dpld_i_2_increase = [] ()
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 3
  */
-inline static auto constexpr dpld_i_3_decrease = [] (auto const val)
+inline static auto constexpr type_3_decrease = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
     {
@@ -169,7 +169,7 @@ inline static auto constexpr dpld_i_3_decrease = [] (auto const val)
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 3
  */
-inline static auto constexpr dpld_i_3_increase = [] (auto const val)
+inline static auto constexpr type_3_increase = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
     {
