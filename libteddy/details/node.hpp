@@ -64,9 +64,8 @@ public:
 public:
     explicit node(int32 value);
     node(int32 index, son_container&& sons);
-    // ~node () = default; // TODO zatial nefunguje v clangu
-    // ~node () requires(degrees::is_mixed<D>()());
-    ~node();
+    ~node () = default;
+    ~node () requires(degrees::is_mixed<Degree>()());
 
     node(node const&) = delete;
     node(node&&)      = delete;
@@ -172,14 +171,14 @@ auto node<Data, D>::make_son_container(
     return std::make_unique<node*[]>(as_usize(domain));
 }
 
-template<class Data, degree D>
-node<Data, D>::node(int32 const value) : union_ {}, next_ {nullptr}, bits_ {LeafM | UsedM}
+template<class Data, degree Degree>
+node<Data, Degree>::node(int32 const value) : union_ {}, next_ {nullptr}, bits_ {LeafM | UsedM}
 {
     std::construct_at(this->union_terminal(), value);
 }
 
-template<class Data, degree D>
-node<Data, D>::node(int32 const index, son_container&& sons) :
+template<class Data, degree Degree>
+node<Data, Degree>::node(int32 const index, son_container&& sons) :
     union_ {},
     next_ {nullptr},
     bits_ {UsedM}
@@ -187,18 +186,9 @@ node<Data, D>::node(int32 const index, son_container&& sons) :
     std::construct_at(this->union_internal(), std::move(sons), index);
 }
 
-// template<class Data, degree D>
-// node<Data, D>::~node
-//     () requires(degrees::is_mixed<D>()())
-// {
-//     if (this->is_or_was_internal())
-//     {
-//         std::destroy_at(this->union_internal_unsafe());
-//     }
-// }
-
-template<class Data, degree D>
-node<Data, D>::~node()
+template<class Data, degree Degree>
+node<Data, Degree>::~node
+    () requires(degrees::is_mixed<Degree>()())
 {
     if (this->is_or_was_internal())
     {
@@ -206,177 +196,177 @@ node<Data, D>::~node()
     }
 }
 
-template<class Data, degree D>
+template<class Data, degree Degree>
 template<class Foo>
 requires(not std::is_void_v<Data>)
-auto node<Data, D>::data() -> second_t<Foo, Data>&
+auto node<Data, Degree>::data() -> second_t<Foo, Data>&
 {
     assert(this->is_used());
     return data_.member_;
 }
 
-template<class Data, degree D>
+template<class Data, degree Degree>
 template<class Foo>
 requires(not std::is_void_v<Data>)
-auto node<Data, D>::data() const -> second_t<Foo, Data> const&
+auto node<Data, Degree>::data() const -> second_t<Foo, Data> const&
 {
     assert(this->is_used());
     return data_.member_;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::get_next() const -> node*
+template<class Data, degree Degree>
+auto node<Data, Degree>::get_next() const -> node*
 {
     return next_;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::set_next(node* const next) -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::set_next(node* const next) -> void
 {
     next_ = next;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::get_sons() const -> son_container const&
+template<class Data, degree Degree>
+auto node<Data, Degree>::get_sons() const -> son_container const&
 {
     return this->union_internal()->sons_;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::get_son(int32 const sonOrder) const -> node*
+template<class Data, degree Degree>
+auto node<Data, Degree>::get_son(int32 const sonOrder) const -> node*
 {
     return (this->union_internal()->sons_)[as_uindex(sonOrder)];
 }
 
-template<class Data, degree D>
-auto node<Data, D>::set_sons(son_container sons) -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::set_sons(son_container sons) -> void
 {
     using std::swap;
     swap(this->union_internal()->sons_, sons);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::get_value() const -> int32
+template<class Data, degree Degree>
+auto node<Data, Degree>::get_value() const -> int32
 {
     return this->union_terminal()->value_;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::is_internal() const -> bool
+template<class Data, degree Degree>
+auto node<Data, Degree>::is_internal() const -> bool
 {
     return this->is_used() && not this->is_terminal();
 }
 
-template<class Data, degree D>
-auto node<Data, D>::is_terminal() const -> bool
+template<class Data, degree Degree>
+auto node<Data, Degree>::is_terminal() const -> bool
 {
     return this->is_used() && (bits_ & LeafM);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::is_used() const -> bool
+template<class Data, degree Degree>
+auto node<Data, Degree>::is_used() const -> bool
 {
     return static_cast<bool>(bits_ & UsedM);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::set_unused() -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::set_unused() -> void
 {
     bits_ &= ~UsedM;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::is_marked() const -> bool
+template<class Data, degree Degree>
+auto node<Data, Degree>::is_marked() const -> bool
 {
     return static_cast<bool>(bits_ & MarkM);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::toggle_marked() -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::toggle_marked() -> void
 {
     bits_ ^= MarkM;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::set_marked() -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::set_marked() -> void
 {
     bits_ |= MarkM;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::set_notmarked() -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::set_notmarked() -> void
 {
     bits_ &= ~MarkM;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::get_ref_count() const -> int32
+template<class Data, degree Degree>
+auto node<Data, Degree>::get_ref_count() const -> int32
 {
     return static_cast<int32>(bits_ & RefsM);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::inc_ref_count() -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::inc_ref_count() -> void
 {
     assert(this->get_ref_count() < static_cast<int32>(RefsMax));
     ++bits_;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::dec_ref_count() -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::dec_ref_count() -> void
 {
     assert(this->get_ref_count() > 0);
     --bits_;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::get_index() const -> int32
+template<class Data, degree Degree>
+auto node<Data, Degree>::get_index() const -> int32
 {
     return this->union_internal()->index_;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::set_index(int32 const index) -> void
+template<class Data, degree Degree>
+auto node<Data, Degree>::set_index(int32 const index) -> void
 {
     this->union_internal()->index_ = index;
 }
 
-template<class Data, degree D>
-auto node<Data, D>::union_internal() -> internal*
+template<class Data, degree Degree>
+auto node<Data, Degree>::union_internal() -> internal*
 {
     assert(this->is_internal());
     return reinterpret_cast<internal*>(&union_);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::union_internal() const -> internal const*
+template<class Data, degree Degree>
+auto node<Data, Degree>::union_internal() const -> internal const*
 {
     assert(this->is_internal());
     return reinterpret_cast<internal const*>(&union_);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::union_terminal() -> terminal*
+template<class Data, degree Degree>
+auto node<Data, Degree>::union_terminal() -> terminal*
 {
     assert(this->is_terminal());
     return reinterpret_cast<terminal*>(&union_);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::union_terminal() const -> terminal const*
+template<class Data, degree Degree>
+auto node<Data, Degree>::union_terminal() const -> terminal const*
 {
     assert(this->is_terminal());
     return reinterpret_cast<terminal const*>(&union_);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::union_internal_unsafe() -> internal*
+template<class Data, degree Degree>
+auto node<Data, Degree>::union_internal_unsafe() -> internal*
 {
     return reinterpret_cast<internal*>(&union_);
 }
 
-template<class Data, degree D>
-auto node<Data, D>::is_or_was_internal() const -> bool
+template<class Data, degree Degree>
+auto node<Data, Degree>::is_or_was_internal() const -> bool
 {
     return not static_cast<bool>(bits_ & LeafM);
 }

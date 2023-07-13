@@ -12,11 +12,11 @@
 
 namespace teddy
 {
-template<class Data, degree D>
+template<class Data, degree Degree>
 class node_pool
 {
 public:
-    using node_t = node<Data, D>;
+    using node_t = node<Data, Degree>;
     using son_container = typename node_t::son_container;
 
 public:
@@ -58,8 +58,8 @@ private:
     int64 availableNodes_;
 };
 
-template<class Data, degree D>
-node_pool<Data, D>::node_pool(
+template<class Data, degree Degree>
+node_pool<Data, Degree>::node_pool(
     int64 const mainPoolSize,
     int64 const overflowPoolSize
 ) :
@@ -79,8 +79,8 @@ node_pool<Data, D>::node_pool(
     );
 }
 
-template<class Data, degree D>
-node_pool<Data, D>::node_pool(node_pool&& other)  noexcept :
+template<class Data, degree Degree>
+node_pool<Data, Degree>::node_pool(node_pool&& other)  noexcept :
     mainPool_(std::exchange(other.mainPool_, nullptr)),
     overflowPools_(std::move(other.overflowPools_)),
     freeNodeList_(std::exchange(other.freeNodeList_, nullptr)),
@@ -92,8 +92,8 @@ node_pool<Data, D>::node_pool(node_pool&& other)  noexcept :
 {
 }
 
-template<class Data, degree D>
-node_pool<Data, D>::~node_pool()
+template<class Data, degree Degree>
+node_pool<Data, Degree>::~node_pool()
 {
     if (this->get_current_pool() != mainPool_)
     {
@@ -125,28 +125,28 @@ node_pool<Data, D>::~node_pool()
     deallocate_pool(pool);
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::operator= (node_pool other) -> node_pool&
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::operator= (node_pool other) -> node_pool&
 {
     this->swap(other);
     return *this;
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::get_available_node_count() const -> int64
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::get_available_node_count() const -> int64
 {
     return availableNodes_;
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::get_main_pool_size() const -> int64
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::get_main_pool_size() const -> int64
 {
     return mainPoolSize_;
 }
 
-template<class Data, degree D>
+template<class Data, degree Degree>
 template<class... Args>
-auto node_pool<Data, D>::create(Args&&... args) -> node_t*
+auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
 {
     assert(availableNodes_ > 0);
     --availableNodes_;
@@ -167,16 +167,16 @@ auto node_pool<Data, D>::create(Args&&... args) -> node_t*
     return std::construct_at(node, std::forward<Args>(args)...);
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::destroy(node_t* const node) -> void
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::destroy(node_t* const node) -> void
 {
     ++availableNodes_;
     node->set_next(freeNodeList_);
     freeNodeList_ = node;
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::grow() -> void
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::grow() -> void
 {
     debug::out(
         "node_pool: Allocating overflow pool with size ",
@@ -190,24 +190,24 @@ auto node_pool<Data, D>::grow() -> void
     availableNodes_ += overflowPoolSize_;
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::get_current_pool() const -> node_t*
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::get_current_pool() const -> node_t*
 {
     return overflowPools_.empty()
              ? mainPool_
              : overflowPools_[as_uindex(currentPoolIndex_)];
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::get_current_pool_end() const -> node_t*
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::get_current_pool_end() const -> node_t*
 {
     return overflowPools_.empty()
              ? mainPool_ + mainPoolSize_
              : overflowPools_[as_uindex(currentPoolIndex_)] + overflowPoolSize_;
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::swap(node_pool& other) -> void
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::swap(node_pool& other) -> void
 {
     using std::swap;
     swap(mainPool_, other.mainPool_);
@@ -220,15 +220,15 @@ auto node_pool<Data, D>::swap(node_pool& other) -> void
     swap(overflowPoolSize_, other.overflowPoolSize_);
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::allocate_pool(int64 const size) -> node_t*
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::allocate_pool(int64 const size) -> node_t*
 {
     return static_cast<node_t*>(::operator new (as_usize(size) * sizeof(node_t))
     );
 }
 
-template<class Data, degree D>
-auto node_pool<Data, D>::deallocate_pool(node_t* const poolPtr) -> void
+template<class Data, degree Degree>
+auto node_pool<Data, Degree>::deallocate_pool(node_t* const poolPtr) -> void
 {
     ::operator delete (poolPtr);
 }

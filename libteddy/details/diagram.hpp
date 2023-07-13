@@ -18,11 +18,11 @@ namespace teddy
  *  it is a cheap value type. Multiple diagrams can point to a same node
  *  i.e. represent the same function.
  */
-template<class Data, degree D>
+template<class Data, degree Degree>
 class diagram
 {
 public:
-    using node_t = node<Data, D>;
+    using node_t = node<Data, Degree>;
 
 public:
     /**
@@ -98,8 +98,8 @@ private:
  *  \param lhs First diagram.
  *  \param rhs Second diagram.
  */
-template<class Data, degree D>
-auto swap (diagram<Data, D>& lhs, diagram<Data, D>& rhs) -> void
+template<class Data, degree Degree>
+auto swap (diagram<Data, Degree>& lhs, diagram<Data, Degree>& rhs) -> void
 {
     lhs.swap(rhs);
 }
@@ -110,8 +110,8 @@ auto swap (diagram<Data, D>& lhs, diagram<Data, D>& rhs) -> void
  *  \param rhs Second diagram.
  *  \return true iif diagrams represent the same function.
  */
-template<class Data, degree D>
-auto operator== (diagram<Data, D> const& lhs, diagram<Data, D> const& rhs) -> bool
+template<class Data, degree Degree>
+auto operator== (diagram<Data, Degree> const& lhs, diagram<Data, Degree> const& rhs) -> bool
 {
     return lhs.equals(rhs);
 }
@@ -122,20 +122,20 @@ auto operator== (diagram<Data, D> const& lhs, diagram<Data, D> const& rhs) -> bo
  *  \param rhs Second diagram.
  *  \return true iif diagrams represent the same function.
  */
-template<class Data, degree D>
-auto equals (diagram<Data, D> lhs, diagram<Data, D> rhs) -> bool
+template<class Data, degree Degree>
+auto equals (diagram<Data, Degree> lhs, diagram<Data, Degree> rhs) -> bool
 {
     return lhs.equals(rhs);
 }
 
-template<class Data, degree D>
-diagram<Data, D>::diagram(node_t* const root) :
+template<class Data, degree Degree>
+diagram<Data, Degree>::diagram(node_t* const root) :
     root_(id_set_notmarked(id_inc_ref_count(root)))
 {
 }
 
-template<class Data, degree D>
-diagram<Data, D>::diagram(diagram const& other) : root_(id_inc_ref_count(other.root_))
+template<class Data, degree Degree>
+diagram<Data, Degree>::diagram(diagram const& other) : root_(id_inc_ref_count(other.root_))
 {
 }
 
@@ -145,8 +145,8 @@ diagram<Data, D>::diagram(diagram&& other) noexcept :
 {
 }
 
-template<class Data, degree D>
-diagram<Data, D>::~diagram()
+template<class Data, degree Degree>
+diagram<Data, Degree>::~diagram()
 {
     if (root_)
     {
@@ -154,27 +154,27 @@ diagram<Data, D>::~diagram()
     }
 }
 
-template<class Data, degree D>
-auto diagram<Data, D>::operator= (diagram other) -> diagram&
+template<class Data, degree Degree>
+auto diagram<Data, Degree>::operator= (diagram other) -> diagram&
 {
     other.swap(*this);
     return *this;
 }
 
-template<class Data, degree D>
-auto diagram<Data, D>::swap(diagram& other) -> void
+template<class Data, degree Degree>
+auto diagram<Data, Degree>::swap(diagram& other) -> void
 {
     std::swap(root_, other.root_);
 }
 
-template<class Data, degree D>
-auto diagram<Data, D>::equals(diagram const& other) const -> bool
+template<class Data, degree Degree>
+auto diagram<Data, Degree>::equals(diagram const& other) const -> bool
 {
     return root_ == other.unsafe_get_root();
 }
 
-template<class Data, degree D>
-auto diagram<Data, D>::unsafe_get_root() const -> node_t*
+template<class Data, degree Degree>
+auto diagram<Data, Degree>::unsafe_get_root() const -> node_t*
 {
     return root_;
 }
@@ -182,22 +182,22 @@ auto diagram<Data, D>::unsafe_get_root() const -> node_t*
 
 namespace std
 {
-template<class Data, teddy::degree D>
-struct hash<teddy::diagram<Data, D>>
+template<class Data, teddy::degree Degree>
+struct hash<teddy::diagram<Data, Degree>>
 {
-    [[nodiscard]] auto operator() (teddy::diagram<Data, D> const& diagram
+    [[nodiscard]] auto operator() (teddy::diagram<Data, Degree> const& diagram
     ) const noexcept -> std::size_t
     {
         return std::hash<decltype(diagram.unsafe_get_root())>()(diagram.unsafe_get_root());
     }
 };
 
-template<class Data, teddy::degree D>
-struct equal_to<teddy::diagram<Data, D>>
+template<class Data, teddy::degree Degree>
+struct equal_to<teddy::diagram<Data, Degree>>
 {
     [[nodiscard]] auto operator() (
-        teddy::diagram<Data, D> const& lhs,
-        teddy::diagram<Data, D> const& rhs
+        teddy::diagram<Data, Degree> const& lhs,
+        teddy::diagram<Data, Degree> const& rhs
     ) const noexcept -> bool
     {
         return lhs.equals(rhs);

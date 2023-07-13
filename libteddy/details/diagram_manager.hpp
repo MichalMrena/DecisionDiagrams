@@ -1082,7 +1082,7 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
     };
 
     auto const& plaLines     = file.get_lines();
-    auto const lineCount     = file.line_count();
+    auto const lineCount     = file.get_line_count();
     auto const functionCount = file.function_count();
 
     // Create a diagram for each function.
@@ -1097,9 +1097,9 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
         {
             // We are doing SOP so we are only interested
             // in functions with value 1.
-            if (plaLines[as_usize(li)].fVals.get(fi) == 1)
+            if (plaLines[as_usize(li)].fVals_.get(fi) == 1)
             {
-                products.emplace_back(product(plaLines[li].cube));
+                products.emplace_back(product(plaLines[li].cube_));
             }
         }
 

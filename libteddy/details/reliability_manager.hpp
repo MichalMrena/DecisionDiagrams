@@ -493,21 +493,16 @@ protected:
 private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
 
-    // TODO this will be merged with apply_dpld in the future
-    template<class F>
-    auto dpld_g (
-        diagram_t const& diagram,
-        value_change varChange,
-        int32 varIndex,
-        F fChange
-    ) -> diagram_t;
-
     // TODO toto by mohlo preberat aj zmenu premennej
     // potom by to nebralo dva diagramy ale iba jeden - priamo
     // strukturnu funkciu. Prehladavanie v apply by sa modifikovalo
     // podla zmien premennych.
     template<class F>
     auto apply_dpld (diagram_t const& left, diagram_t const& right, F fChange)
+        -> diagram_t;
+
+    template<class F>
+    auto apply_dpld_new (diagram_t const& diagram, var_change varChange, F fChange)
         -> diagram_t;
 
     template<component_probabilities Ps>
@@ -722,12 +717,9 @@ auto reliability_manager<Degree, Domain>::dpld(
     diagram_t const& diagram
 ) -> diagram_t
 {
-    return this->dpld_g(
-        diagram,
-        {varChange.from_, varChange.to_},
-        varChange.index_,
-        fChange
-    );
+    auto const lhs = this->get_cofactor(diagram, varChange.index_, varChange.from_);
+    auto const rhs = this->get_cofactor(diagram, varChange.index_, varChange.to_);
+    return this->apply_dpld(lhs, rhs, fChange);
 }
 
 template<degree Degree, domain Domain>
@@ -934,20 +926,6 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 
 template<degree Degree, domain Domain>
 template<class F>
-auto reliability_manager<Degree, Domain>::dpld_g(
-    diagram_t const& diagram,
-    value_change varChange,
-    int32 varIndex,
-    F fChange
-) -> diagram_t
-{
-    auto const lhs = this->get_cofactor(diagram, varIndex, varChange.from);
-    auto const rhs = this->get_cofactor(diagram, varIndex, varChange.to);
-    return this->apply_dpld(lhs, rhs, fChange);
-}
-
-template<degree Degree, domain Domain>
-template<class F>
 auto reliability_manager<Degree, Domain>::apply_dpld(
     diagram_t const& left,
     diagram_t const& right,
@@ -1022,6 +1000,14 @@ auto reliability_manager<Degree, Domain>::apply_dpld(
     auto const newRoot
         = step(step, left.unsafe_get_root(), right.unsafe_get_root());
     return diagram_t(newRoot);
+}
+
+template<degree Degree, domain Domain>
+template<class F>
+auto reliability_manager<Degree, Domain>::apply_dpld_new (diagram_t const& diagram, var_change varChange, F fChange) -> diagram_t
+{
+    // TODO
+    return diagram_t();
 }
 
 template<degree Degree, domain Domain>
