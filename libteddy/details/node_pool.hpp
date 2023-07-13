@@ -16,7 +16,7 @@ template<class Data, degree Degree>
 class node_pool
 {
 public:
-    using node_t = node<Data, Degree>;
+    using node_t        = node<Data, Degree>;
     using son_container = typename node_t::son_container;
 
 public:
@@ -44,7 +44,7 @@ private:
 
     auto swap (node_pool& other) -> void;
 
-    [[nodiscard]] static auto allocate_pool(int64 size) -> node_t*;
+    [[nodiscard]] static auto allocate_pool (int64 size) -> node_t*;
     static auto deallocate_pool (node_t* poolPtr) -> void;
 
 private:
@@ -80,7 +80,7 @@ node_pool<Data, Degree>::node_pool(
 }
 
 template<class Data, degree Degree>
-node_pool<Data, Degree>::node_pool(node_pool&& other)  noexcept :
+node_pool<Data, Degree>::node_pool(node_pool&& other) noexcept :
     mainPool_(std::exchange(other.mainPool_, nullptr)),
     overflowPools_(std::move(other.overflowPools_)),
     freeNodeList_(std::exchange(other.freeNodeList_, nullptr)),
@@ -154,7 +154,7 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
     auto node = static_cast<node_t*>(nullptr);
     if (freeNodeList_)
     {
-        node             = freeNodeList_;
+        node          = freeNodeList_;
         freeNodeList_ = freeNodeList_->get_next();
         std::destroy_at(node);
     }

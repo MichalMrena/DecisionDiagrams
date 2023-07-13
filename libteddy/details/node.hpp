@@ -1,15 +1,15 @@
 #ifndef LIBTEDDY_DETAILS_NODE_HPP
 #define LIBTEDDY_DETAILS_NODE_HPP
 
-#include <libteddy/details/types.hpp>
 #include <libteddy/details/tools.hpp>
+#include <libteddy/details/types.hpp>
 
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <memory>
-#include <utility>
 #include <type_traits>
+#include <utility>
 
 namespace teddy
 {
@@ -52,10 +52,10 @@ class node
 {
 public:
     template<int32 N>
-    static auto make_son_container(int32 domain, degrees::fixed<N> degreeTag)
+    static auto make_son_container (int32 domain, degrees::fixed<N> degreeTag)
         -> std::array<node*, as_usize(N)>;
 
-    static auto make_son_container(int32 domain, degrees::mixed degreeTag)
+    static auto make_son_container (int32 domain, degrees::mixed degreeTag)
         -> std::unique_ptr<node*[]>;
 
 public:
@@ -64,13 +64,14 @@ public:
 public:
     explicit node(int32 value);
     node(int32 index, son_container&& sons);
-    ~node () = default;
-    ~node () requires(degrees::is_mixed<Degree>()());
+    ~node() = default;
+    ~node()
+    requires(degrees::is_mixed<Degree>()());
 
-    node(node const&) = delete;
-    node(node&&)      = delete;
+    node(node const&)            = delete;
+    node(node&&)                 = delete;
     auto operator= (node const&) = delete;
-    auto operator= (node&&) = delete;
+    auto operator= (node&&)      = delete;
 
     // notice: Making it a dummy template and making the return type
     //         dependent on the template makes it SFINE.
@@ -96,10 +97,10 @@ public:
     auto inc_ref_count () -> void;
     auto dec_ref_count () -> void;
     [[nodiscard]] auto get_index () const -> int32;
-    auto set_index(int32 index) -> void;
+    auto set_index (int32 index) -> void;
     [[nodiscard]] auto get_sons () const -> son_container const&;
-    [[nodiscard]] auto get_son(int32 sonOrder) const -> node*;
-    auto set_sons(son_container sons) -> void;
+    [[nodiscard]] auto get_son (int32 sonOrder) const -> node*;
+    auto set_sons (son_container sons) -> void;
     [[nodiscard]] auto get_value () const -> int32;
 
 private:
@@ -111,8 +112,8 @@ private:
         int32 index_;
 
         internal(son_container sons, int32 index) :
-            sons_ (std::move(sons)),
-            index_ (index)
+            sons_(std::move(sons)),
+            index_(index)
         {
         }
     };
@@ -153,8 +154,7 @@ template<int32 N>
 auto node<Data, D>::make_son_container(
     [[maybe_unused]] int32 const domain,
     [[maybe_unused]] degrees::fixed<N> const degree
-)
-    -> std::array<node*, as_usize(N)>
+) -> std::array<node*, as_usize(N)>
 {
     return std::array<node*, as_usize(N)>();
 }
@@ -163,8 +163,7 @@ template<class Data, degree D>
 auto node<Data, D>::make_son_container(
     int32 const domain,
     [[maybe_unused]] degrees::mixed const degreeTag
-)
-    -> std::unique_ptr<node*[]>
+) -> std::unique_ptr<node*[]>
 {
     // Not supported yet.
     // return std::make_unique_for_overwrite<node*[]>(domain);
@@ -172,7 +171,10 @@ auto node<Data, D>::make_son_container(
 }
 
 template<class Data, degree Degree>
-node<Data, Degree>::node(int32 const value) : union_ {}, next_ {nullptr}, bits_ {LeafM | UsedM}
+node<Data, Degree>::node(int32 const value) :
+    union_ {},
+    next_ {nullptr},
+    bits_ {LeafM | UsedM}
 {
     std::construct_at(this->union_terminal(), value);
 }
@@ -187,8 +189,8 @@ node<Data, Degree>::node(int32 const index, son_container&& sons) :
 }
 
 template<class Data, degree Degree>
-node<Data, Degree>::~node
-    () requires(degrees::is_mixed<Degree>()())
+node<Data, Degree>::~node()
+requires(degrees::is_mixed<Degree>()())
 {
     if (this->is_or_was_internal())
     {

@@ -22,8 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include "libteddy/details/reliability_manager.hpp"
-#include "libteddy/details/types.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests

@@ -26,7 +26,7 @@ private:
         325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289};
 
 public:
-    static auto get_gte_capacity(int64 capacity) -> int64;
+    static auto get_gte_capacity (int64 capacity) -> int64;
 };
 
 /**
@@ -91,10 +91,10 @@ public:
      */
     unique_table(unique_table&& other) noexcept;
 
-    ~unique_table() = default;
-    unique_table(unique_table const&) = delete;
-    auto operator=(unique_table const&) = delete;
-    auto operator=(unique_table&&) = delete;
+    ~unique_table()                      = default;
+    unique_table(unique_table const&)    = delete;
+    auto operator= (unique_table const&) = delete;
+    auto operator= (unique_table&&)      = delete;
 
 public:
     /**
@@ -246,11 +246,11 @@ public:
 public:
     apply_cache();
     apply_cache(apply_cache&& other) noexcept;
-    ~apply_cache() = default;
+    ~apply_cache()                      = default;
 
-    apply_cache(apply_cache const&) = delete;
-    auto operator=(apply_cache const&) = delete;
-    auto operator=(apply_cache&&) = delete;
+    apply_cache(apply_cache const&)     = delete;
+    auto operator= (apply_cache const&) = delete;
+    auto operator= (apply_cache&&)      = delete;
 
 public:
     auto find (int32 opId, node_t* lhs, node_t* rhs) -> node_t*;
@@ -280,11 +280,8 @@ inline auto table_base::get_gte_capacity(int64 const capacity) -> int64
     {
         return currentCapacity > capacity;
     };
-    auto const* const tableIt = std::find_if(
-        begin(Capacities),
-        end(Capacities),
-        predicate
-    );
+    auto const* const tableIt
+        = std::find_if(begin(Capacities), end(Capacities), predicate);
     return tableIt == std::end(Capacities) ? Capacities.back() : *tableIt;
 }
 
@@ -305,11 +302,17 @@ apply_cache<Data, D>::apply_cache(apply_cache&& other) noexcept :
 }
 
 template<class Data, degree D>
-auto apply_cache<Data, D>::find(int32 const opId, node_t* const lhs, node_t* const rhs) -> node_t*
+auto apply_cache<Data, D>::find(
+    int32 const opId,
+    node_t* const lhs,
+    node_t* const rhs
+) -> node_t*
 {
-    auto const index   = utils::tuple_hash()(std::make_tuple(opId, lhs, rhs)) % size(entries_);
-    auto& entry        = entries_[index];
-    auto const matches = entry.opId_ == opId && entry.lhs_ == lhs && entry.rhs_ == rhs;
+    auto const index
+        = utils::tuple_hash()(std::make_tuple(opId, lhs, rhs)) % size(entries_);
+    auto& entry = entries_[index];
+    auto const matches
+        = entry.opId_ == opId && entry.lhs_ == lhs && entry.rhs_ == rhs;
     return matches ? entry.result_ : nullptr;
 }
 
@@ -347,7 +350,8 @@ auto apply_cache<Data, D>::remove_unused() -> void
     {
         if (entry.result_)
         {
-            auto const used = entry.lhs_->is_used() && entry.rhs_->is_used() && entry.result_->is_used();
+            auto const used = entry.lhs_->is_used() && entry.rhs_->is_used()
+                           && entry.result_->is_used();
             if (not used)
             {
                 entry = cache_entry {};
@@ -376,7 +380,8 @@ auto apply_cache<Data, D>::get_capacity() const -> int64
 template<class Data, degree D>
 auto apply_cache<Data, D>::get_load_factor() const -> double
 {
-    return static_cast<double>(size_) / static_cast<double>(this->get_capacity());
+    return static_cast<double>(size_)
+         / static_cast<double>(this->get_capacity());
 }
 
 template<class Data, degree D>
@@ -425,7 +430,8 @@ unique_table_iterator<BucketIt, Data, D>::unique_table_iterator(
 }
 
 template<class BucketIt, class Data, degree D>
-auto unique_table_iterator<BucketIt, Data, D>::operator++ () -> unique_table_iterator&
+auto unique_table_iterator<BucketIt, Data, D>::operator++ ()
+    -> unique_table_iterator&
 {
     node_ = node_->get_next();
     if (not node_)
@@ -437,7 +443,8 @@ auto unique_table_iterator<BucketIt, Data, D>::operator++ () -> unique_table_ite
 }
 
 template<class BucketIt, class Data, degree D>
-auto unique_table_iterator<BucketIt, Data, D>::operator++ (int) -> unique_table_iterator
+auto unique_table_iterator<BucketIt, Data, D>::operator++ (int)
+    -> unique_table_iterator
 {
     auto const tmp = *this;
     ++(*this);
@@ -461,9 +468,8 @@ auto unique_table_iterator<BucketIt, Data, D>::operator== (
     unique_table_iterator const& other
 ) const -> bool
 {
-    return bucketIt_ == other.bucketIt_ &&
-           lastBucketIt_ == other.lastBucketIt_ &&
-           node_ == other.node_;
+    return bucketIt_ == other.bucketIt_ && lastBucketIt_ == other.lastBucketIt_
+        && node_ == other.node_;
 }
 
 template<class BucketIt, class Data, degree D>
@@ -679,7 +685,8 @@ auto unique_table<Data, D>::get_capacity() const -> int64
 template<class Data, degree D>
 auto unique_table<Data, D>::get_load_factor() const -> double
 {
-    return static_cast<double>(size_) / static_cast<double>(this->get_capacity());
+    return static_cast<double>(size_)
+         / static_cast<double>(this->get_capacity());
 }
 
 template<class Data, degree D>

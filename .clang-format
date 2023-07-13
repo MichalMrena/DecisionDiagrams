@@ -82,10 +82,12 @@ IncludeCategories:
     Priority:        3
   - Regex:           '^<(fmt)/'
     Priority:        4
-  - Regex:           '<[[:alnum:].]+>'
+  - Regex:           '<.+>'
     Priority:        5
-  - Regex:           '.*'
+  - Regex:           '".+"'
     Priority:        6
+  - Regex:           '.*'
+    Priority:        7
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false

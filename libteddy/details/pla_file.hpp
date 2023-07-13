@@ -110,7 +110,8 @@ public:
      *  labels of input variables
      *  \return Reference to a vector
      */
-    [[nodiscard]] auto get_input_labels () const& -> std::vector<std::string> const&;
+    [[nodiscard]] auto get_input_labels (
+    ) const& -> std::vector<std::string> const&;
 
     /**
      *  \brief Returns copy of a vector holding
@@ -123,7 +124,8 @@ public:
      *  \brief Return reference to a vector holding labels of functions
      *  \return Reference to a vector
      */
-    [[nodiscard]] auto get_output_labels () const& -> std::vector<std::string> const&;
+    [[nodiscard]] auto get_output_labels (
+    ) const& -> std::vector<std::string> const&;
 
     /**
      *  \brief Return copy of a vector holding labels of functions.
@@ -159,7 +161,7 @@ inline auto bool_cube::size() const -> int32
 
 inline auto bool_cube::get(int32 const i) const -> int32
 {
-    auto const byteIndex = i / 4;
+    auto const byteIndex  = i / 4;
     auto const uByteIndex = as_uindex(byteIndex);
 
     assert(byteIndex >= 0 && byteIndex < ssize(values_));
@@ -180,7 +182,7 @@ inline auto bool_cube::get(int32 const i) const -> int32
 
 inline auto bool_cube::set(int32 const index, int32 const value) -> void
 {
-    auto const byteIndex = index / 4;
+    auto const byteIndex  = index / 4;
     auto const uByteIndex = as_uindex(byteIndex);
 
     assert((byteIndex >= 0 && byteIndex < ssize(values_)));

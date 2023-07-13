@@ -111,7 +111,10 @@ auto swap (diagram<Data, Degree>& lhs, diagram<Data, Degree>& rhs) -> void
  *  \return true iif diagrams represent the same function.
  */
 template<class Data, degree Degree>
-auto operator== (diagram<Data, Degree> const& lhs, diagram<Data, Degree> const& rhs) -> bool
+auto operator== (
+    diagram<Data, Degree> const& lhs,
+    diagram<Data, Degree> const& rhs
+) -> bool
 {
     return lhs.equals(rhs);
 }
@@ -135,7 +138,8 @@ diagram<Data, Degree>::diagram(node_t* const root) :
 }
 
 template<class Data, degree Degree>
-diagram<Data, Degree>::diagram(diagram const& other) : root_(id_inc_ref_count(other.root_))
+diagram<Data, Degree>::diagram(diagram const& other) :
+    root_(id_inc_ref_count(other.root_))
 {
 }
 
@@ -188,7 +192,8 @@ struct hash<teddy::diagram<Data, Degree>>
     [[nodiscard]] auto operator() (teddy::diagram<Data, Degree> const& diagram
     ) const noexcept -> std::size_t
     {
-        return std::hash<decltype(diagram.unsafe_get_root())>()(diagram.unsafe_get_root());
+        return std::hash<decltype(diagram.unsafe_get_root())>(
+        )(diagram.unsafe_get_root());
     }
 };
 

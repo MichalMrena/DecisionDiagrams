@@ -14,8 +14,6 @@
 #include <variant>
 #include <vector>
 
-#include <librog/rog.hpp>
-
 namespace teddy::tests
 {
 /**
@@ -506,37 +504,6 @@ auto make_domain_iterator (diagram_manager<Dat, Deg, Dom> const& manager)
 {
     return tsl::domain_iterator(manager.get_domains(), manager.get_order());
 }
-
-/**
- *  \brief Holds data common for all tests.
- *  Each test uses some settings and random generator.
- */
-template<class Settings>
-class test_base : public rog::LeafTest
-{
-public:
-    test_base(std::string name, Settings settings) :
-        rog::LeafTest(std::move(name), rog::AssertPolicy::RunAll),
-        settings_(std::move(settings)),
-        rng_(settings_.seed_)
-    {
-    }
-
-protected:
-    auto settings () const -> Settings const&
-    {
-        return settings_;
-    }
-
-    auto rng () -> std::mt19937_64&
-    {
-        return rng_;
-    }
-
-private:
-    Settings settings_;
-    std::mt19937_64 rng_;
-};
 
 } // namespace teddy::tests
 

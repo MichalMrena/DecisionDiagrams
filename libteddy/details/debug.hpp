@@ -6,6 +6,7 @@
 #endif
 
 #include <libteddy/details/types.hpp>
+
 #include <cassert>
 
 namespace teddy::debug

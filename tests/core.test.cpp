@@ -14,7 +14,6 @@
 #include <concepts>
 #include <cstddef>
 
-#include "libteddy/reliability.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests
