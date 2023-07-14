@@ -717,11 +717,13 @@ auto reliability_manager<Degree, Domain>::dpld(
     diagram_t const& diagram
 ) -> diagram_t
 {
-    auto const lhs
-        = this->get_cofactor(diagram, varChange.index_, varChange.from_);
-    auto const rhs
-        = this->get_cofactor(diagram, varChange.index_, varChange.to_);
-    return this->apply_dpld(lhs, rhs, fChange);
+    // auto const lhs
+    //     = this->get_cofactor(diagram, varChange.index_, varChange.from_);
+    // auto const rhs
+    //     = this->get_cofactor(diagram, varChange.index_, varChange.to_);
+    // return this->apply_dpld(lhs, rhs, fChange);
+
+    return this->apply_dpld_new(diagram, varChange, fChange);
 }
 
 template<degree Degree, domain Domain>
@@ -1013,8 +1015,106 @@ auto reliability_manager<Degree, Domain>::apply_dpld_new(
     F fChange
 ) -> diagram_t
 {
-    // TODO
-    return diagram_t();
+    auto cache = std::unordered_map<
+        std::tuple<node_t*, node_t*>,
+        node_t*,
+        utils::tuple_hash
+    >();
+
+    auto const get_node_value = [] (node_t* const node)
+    {
+        return node->is_terminal() ? node->get_value() : Nondetermined;
+    };
+
+    auto const get_lhs_son = [varChange](node_t* const node, int32 const sonOrder)
+    {
+        auto const son = node->get_son(sonOrder);
+        return son->is_internal() && son->get_index() == varChange.index_
+            ? son->get_son(varChange.from_)
+            : son;
+    };
+
+    auto const get_rhs_son = [varChange](node_t* const node, int32 const sonOrder)
+    {
+        auto const son = node->get_son(sonOrder);
+        return son->is_internal() && son->get_index() == varChange.index_
+            ? son->get_son(varChange.to_)
+            : son;
+    };
+
+    auto const step = [
+        this,
+        &cache,
+        fChange,
+        get_node_value,
+        get_lhs_son,
+        get_rhs_son
+    ] (
+        auto const& self,
+        node_t* const lhs,
+        node_t* const rhs
+    ) -> node_t*
+    {
+        auto const cached = cache.find(std::make_tuple(lhs, rhs));
+        if (cached != end(cache))
+        {
+            return cached->second;
+        }
+
+        auto const lhsVal = get_node_value(lhs);
+        auto const rhsVal = get_node_value(rhs);
+        auto const opVal = lhsVal == Nondetermined || rhsVal == Nondetermined
+            ? Nondetermined
+            : static_cast<int32>(fChange(lhsVal, rhsVal));
+        auto result = static_cast<node_t*>(nullptr);
+
+        if (opVal != Nondetermined)
+        {
+            result = this->nodes_.make_terminal_node(opVal);
+        }
+        else
+        {
+            auto const lhsLevel = this->nodes_.get_level(lhs);
+            auto const rhsLevel = this->nodes_.get_level(rhs);
+            auto const topLevel = std::min(lhsLevel, rhsLevel);
+            auto const topNode  = topLevel == lhsLevel ? lhs : rhs;
+            auto const topIndex = topNode->get_index();
+            auto sons           = this->nodes_.make_sons(
+                topIndex,
+                [=, &self] (int32 const sonOrder)
+                {
+                    auto const fst = lhsLevel == topLevel
+                        ? get_lhs_son(lhs, sonOrder)
+                        : lhs;
+
+                    auto const snd = rhsLevel == topLevel
+                        ? get_rhs_son(rhs, sonOrder)
+                        : rhs;
+
+                    return self(self, fst, snd);
+                }
+            );
+
+            result = this->nodes_.make_internal_node(topIndex, std::move(sons));
+        }
+
+        cache.emplace(
+            std::piecewise_construct,
+            std::make_tuple(lhs, rhs),
+            std::make_tuple(result)
+        );
+        return result;
+    };
+
+    auto const oldRoot = diagram.unsafe_get_root();
+    auto const lhsRoot = oldRoot->get_index() == varChange.index_
+        ? oldRoot->get_son(varChange.from_)
+        : oldRoot;
+    auto const rhsRoot = oldRoot->get_index() == varChange.index_
+        ? oldRoot->get_son(varChange.to_)
+        : oldRoot;
+    auto const newRoot = step(step, lhsRoot, rhsRoot);
+    return diagram_t(newRoot);
 }
 
 template<degree Degree, domain Domain>
