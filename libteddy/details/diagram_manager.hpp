@@ -430,6 +430,21 @@ public:
     auto satisfy_count (int32 value, diagram_t const& diagram) -> int64;
 
     /**
+     *  \brief TODO
+     */
+    template<out_var_values Vars, class Foo = void>
+    requires(is_bdd<Degree>)
+    auto satisfy_one (diagram_t const& diagram) const
+        -> second_t<Foo, std::vector<Vars>>;
+
+    /**
+     *  \brief TODO
+     */
+    template<out_var_values Vars>
+    auto satisfy_one (int32 value, diagram_t const& diagram) const
+        -> std::vector<Vars>;
+
+    /**
      *  \brief Enumerates all elements of the satisfying set
      *
      *  Enumerates all elements of the satisfying set of the function

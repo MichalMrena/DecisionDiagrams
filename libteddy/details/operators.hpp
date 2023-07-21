@@ -75,6 +75,15 @@ struct logical_xor_t
     }
 };
 
+struct implies_t
+{
+    template<class T>
+    auto constexpr operator() (T const lhs, T const rhs) const noexcept
+    {
+        return not lhs || rhs;
+    }
+};
+
 struct equal_to_t
 {
     template<class... Args>
@@ -348,6 +357,14 @@ struct MULTIPLIES : details::operation_base<details::multiplies_mod_t<P>, 0>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 16;
+    }
+};
+
+struct IMPLIES : details::operation_base<details::implies_t>
+{
+    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    {
+        return 17;
     }
 };
 } // namespace ops
