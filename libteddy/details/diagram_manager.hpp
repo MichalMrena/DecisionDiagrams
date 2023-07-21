@@ -11,6 +11,7 @@
 #include <concepts>
 #include <initializer_list>
 #include <iterator>
+#include <optional>
 #include <ranges>
 #include <tuple>
 
@@ -403,21 +404,6 @@ public:
 
     /**
      *  \brief Calculates number of variable assignments for which
-     *  the functions evaluates to 1
-     *
-     *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
-     *
-     *  \tparam Foo Dummy parameter to enable SFINE
-     *  \param diagram Diagram representing the function
-     *  \return Number of different variable assignments for which the
-     *  the function represented by \p d evaluates to 1
-     */
-    template<class Foo = void>
-    requires(is_bdd<Degree>)
-    auto satisfy_count (diagram_t const& diagram) -> second_t<Foo, int64>;
-
-    /**
-     *  \brief Calculates number of variable assignments for which
      *  the functions evaluates to certain value
      *
      *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
@@ -430,42 +416,17 @@ public:
     auto satisfy_count (int32 value, diagram_t const& diagram) -> int64;
 
     /**
-     *  \brief TODO
-     */
-    template<out_var_values Vars, class Foo = void>
-    requires(is_bdd<Degree>)
-    auto satisfy_one (diagram_t const& diagram) const
-        -> second_t<Foo, std::vector<Vars>>;
-
-    /**
-     *  \brief TODO
+     *  \brief Finds variable assignment for which diagram evaluates to \p value
+     *
+     *  Complexity is \c O(|n|) where \c |n| is the number of nodes.
+     *
+     *  \param value Value of the function
+     *  \param diagram Diagram representing the function
+     *  \return Optinal containing variable assignment or std::nullopt
+     *          if there is no such an assignment
      */
     template<out_var_values Vars>
-    auto satisfy_one (int32 value, diagram_t const& diagram) const
-        -> std::vector<Vars>;
-
-    /**
-     *  \brief Enumerates all elements of the satisfying set
-     *
-     *  Enumerates all elements of the satisfying set of the function
-     *  i.e. variable assignments for which the Boolean function
-     *  evaluates to 1.
-     *
-     *  Complexity is \c O(n*|Sf|) where \c |Sf| is the size of the
-     *  satisfying set and \c n is the number of variables. Please
-     *  note that this is quite high for bigger functions and
-     *  the computation will probably not finish in reasonable time.
-     *
-     *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning integers
-     *  \tparam Foo Dummy parameter to enable SFINE
-     *  \param diagram Diagram representing the function
-     *  \return Vector of \p Vars
-     */
-    template<out_var_values Vars, class Foo = void>
-    requires(is_bdd<Degree>)
-    auto satisfy_all (diagram_t const& diagram) const
-        -> second_t<Foo, std::vector<Vars>>;
+    auto satisfy_one (int32 value, diagram_t const& diagram) -> std::optional<Vars>;
 
     /**
      *  \brief Enumerates all elements of the satisfying set.
@@ -480,7 +441,7 @@ public:
      *  the computation will probably not finish in reasonable time.
      *
      *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning integers. std::vector is also allowed
+     *  assigning integers, std::vector is also allowed
      *  \param value Value of the function
      *  \param diagram Diagram representing the function
      *  \return Vector of \p Vars
@@ -488,29 +449,6 @@ public:
     template<out_var_values Vars>
     auto satisfy_all (int32 value, diagram_t const& diagram) const
         -> std::vector<Vars>;
-
-    /**
-     *  \brief Enumerates all elements of the satisfying set.
-     *
-     *  Enumerates all elements of the satisfying set of the function
-     *  i.e. variable assignments for which the function
-     *  evaluates to certain value.
-     *
-     *  Complexity is \c O(n*|Sf|) where \c |Sf| is the size of the
-     *  satisfying set and \c n is the number of variables. Please
-     *  note that this is quite high for bigger functions and
-     *  the computation will probably not finish in reasonable time.
-     *
-     *  \tparam Vars Container type that defines \c operator[] and allows
-     *  assigning integers. std::vector is also allowed
-     *  \tparam O Output iterator type
-     *  \param diagram Diagram representing the function
-     *  \param out Output iterator that is used to output instances
-     *  of \p Vars
-     */
-    template<out_var_values Vars, std::output_iterator<Vars> O>
-    requires(is_bdd<Degree>)
-    auto satisfy_all_g (diagram_t const& diagram, O out) const -> void;
 
     /**
      *  \brief Enumerates all elements of the satisfying set.
@@ -1297,16 +1235,6 @@ auto diagram_manager<Data, Degree, Domain>::evaluate(
 }
 
 template<class Data, degree Degree, domain Domain>
-template<class Foo>
-requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_count(
-    diagram_t const& diagram
-) -> second_t<Foo, int64>
-{
-    return this->satisfy_count(1, diagram);
-}
-
-template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::satisfy_count(
     int32 const value,
     diagram_t const& diagram
@@ -1361,7 +1289,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
                 auto const nLevel = nodes_.get_level(node);
                 nodes_.for_each_son(
                     node,
-                    [=, this, &data] (auto const son) mutable
+                    [this, &data, node, nLevel] (auto const son) mutable
                     {
                         auto const sonLevel = nodes_.get_level(son);
                         auto const diff
@@ -1379,12 +1307,55 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
 }
 
 template<class Data, degree Degree, domain Domain>
-template<out_var_values Vars, class Foo>
-requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_all(diagram_t const& diagram
-) const -> second_t<Foo, std::vector<Vars>>
+template<out_var_values Vars>
+auto diagram_manager<Data, Degree, Domain>::satisfy_one(
+    int32 const value,
+    diagram_t const& diagram
+) -> std::optional<Vars>
 {
-    return this->satisfy_all<Vars>(1, diagram);
+    if constexpr (domains::is_fixed<Domain>()())
+    {
+        assert(value < Domain()());
+    }
+
+    auto varValues = [this] ()
+    {
+        if constexpr (utils::is_std_vector<Vars>)
+        {
+            return Vars(as_usize(this->get_var_count()));
+        }
+        else
+        {
+            return Vars {};
+        }
+    }();
+
+    auto const step = [this, &varValues, value](
+        auto const& self,
+        node_t* const node
+    )
+    {
+        if (node->is_terminal())
+        {
+            return node->get_value() == value;
+        }
+
+        auto const nodeDomain = nodes_.get_domain(node->get_index());
+        for (auto sonOrder = 0; sonOrder < nodeDomain; ++sonOrder)
+        {
+            varValues[as_uindex(node->get_index())] = sonOrder;
+            if (self(self, node->get_son(sonOrder)))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    return step(step, diagram.unsafe_get_root())
+        ? std::make_optional(varValues)
+        : std::nullopt;
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1397,17 +1368,6 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all(
     auto result = std::vector<Vars>();
     this->satisfy_all_g<Vars>(value, diagram, std::back_inserter(result));
     return result;
-}
-
-template<class Data, degree Degree, domain Domain>
-template<out_var_values Vars, std::output_iterator<Vars> O>
-requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
-    diagram_t const& diagram,
-    O out
-) const -> void
-{
-    return this->satisfy_all_g<Vars>(1, diagram, out);
 }
 
 template<class Data, degree Degree, domain Domain>

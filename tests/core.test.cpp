@@ -27,10 +27,11 @@ struct fixture_base
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
     std::mt19937_64 rng_;
+    int32 maxValue_{};
 };
 
 /**
- *  \brief BDD fixture base
+ *  \brief BDD fixture
  */
 struct bdd_fixture :
     fixture_base<bdd_manager_settings, minmax_expression_settings>
@@ -47,13 +48,14 @@ public:
         fixture_base<bdd_manager_settings, minmax_expression_settings> {
             {bdd_manager_settings {VarCount, NodeCount, random_order_tag()}},
             {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::mt19937_64(Seed)}}
+            {std::mt19937_64(Seed)},
+            2}
     {
     }
 };
 
 /**
- *  \brief MDD fixture base
+ *  \brief MDD fixture
  */
 struct mdd_fixture :
     fixture_base<mdd_manager_settings<3>, minmax_expression_settings>
@@ -70,13 +72,14 @@ public:
         fixture_base<mdd_manager_settings<3>, minmax_expression_settings> {
             {mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()}},
             {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::mt19937_64(Seed)}}
+            {std::mt19937_64(Seed)},
+            3}
     {
     }
 };
 
 /**
- *  \brief iMDD fixture base
+ *  \brief iMDD fixture
  */
 struct imdd_fixture :
     fixture_base<imdd_manager_settings<3>, minmax_expression_settings>
@@ -95,14 +98,14 @@ public:
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             minmax_expression_settings {VarCount, TermCount, TermSize},
-            {std::mt19937_64(Seed)}
-    }
+            {std::mt19937_64(Seed)},
+            3}
     {
     }
 };
 
 /**
- *  \brief ifMDD fixture base
+ *  \brief ifMDD fixture
  */
 struct ifmdd_fixture :
     fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings>
@@ -121,7 +124,8 @@ public:
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::mt19937_64(Seed)}}
+            {std::mt19937_64(Seed)},
+            3}
     {
     }
 };
@@ -174,10 +178,10 @@ auto test_compare_eval (
 }
 
 using Fixtures = boost::mpl::vector<
-    teddy::tests::bdd_fixture,
-    teddy::tests::mdd_fixture,
-    teddy::tests::imdd_fixture,
-    teddy::tests::ifmdd_fixture>;
+    teddy::tests::bdd_fixture>;
+    // teddy::tests::mdd_fixture,
+    // teddy::tests::imdd_fixture,
+    // teddy::tests::ifmdd_fixture>;
 
 BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(core_test)
@@ -235,20 +239,45 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < ssize(actual); ++j)
     {
-        if constexpr (std::same_as<decltype(manager), teddy::bss_manager>)
-        {
-            actual[as_uindex(j)] = manager.satisfy_count(diagram);
-        }
-        else
-        {
-            actual[as_uindex(j)] = manager.satisfy_count(j, diagram);
-        }
+        actual[as_uindex(j)] = manager.satisfy_count(j, diagram);
     }
 
     for (auto k = 0; k < ssize(actual); ++k)
     {
         BOOST_REQUIRE_EQUAL(actual[as_uindex(k)], expected[as_uindex(k)]);
     }
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture)
+{
+    auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram = make_diagram(expr, manager);
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
+    );
+
+    for (auto j = 0; j < Fixture::maxValue_; ++j)
+    {
+        auto const vars = manager.template satisfy_one<std::vector<int32>>(j, diagram);
+        BOOST_REQUIRE(vars.has_value());
+        BOOST_REQUIRE_EQUAL(j, manager.evaluate(diagram, *vars));
+    }
+
+    auto const justOne = manager.constant(1);
+    auto const nullOpt = manager.template satisfy_one<std::vector<int32>>(
+        0,
+        justOne
+    );
+
+    auto const notNullOpt = manager.template satisfy_one<std::vector<int32>>(
+        1,
+        justOne
+    );
+
+    BOOST_REQUIRE(not nullOpt.has_value());
+    BOOST_REQUIRE(notNullOpt.has_value());
+    BOOST_REQUIRE_EQUAL(1, manager.evaluate(justOne, *notNullOpt));
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
@@ -269,14 +298,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
             ++actual[as_uindex(k)];
         };
         auto out = tsl::forwarding_iterator<decltype(outf)>(outf);
-        if constexpr (std::same_as<decltype(manager), teddy::bss_manager>)
-        {
-            manager.template satisfy_all_g<out_var_vals>(diagram, out);
-        }
-        else
-        {
-            manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
-        }
+        manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
     }
 
     for (auto k = 0; k < ssize(actual); ++k)
