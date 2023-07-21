@@ -18,12 +18,12 @@ namespace teddy
 class table_base
 {
 private:
-    inline static constexpr auto Capacities = std::array<int64, 24> {
+    inline static constexpr auto Capacities = std::array<int64, 24> {{
         307,         617,         1'237,         2'477,        4'957,
         9'923,       19'853,      39'709,        79'423,       158'849,
         317'701,     635'413,     1'270'849,     2'541'701,    5'083'423,
         10'166'857,  20'333'759,  40'667'527,    81'335'063,   162'670'129,
-        325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289};
+        325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289}};
 
 public:
     static auto get_gte_capacity (int64 capacity) -> int64;
@@ -280,7 +280,7 @@ inline auto table_base::get_gte_capacity(int64 const capacity) -> int64
     {
         return currentCapacity > capacity;
     };
-    auto const* const tableIt
+    auto const tableIt
         = std::find_if(begin(Capacities), end(Capacities), predicate);
     return tableIt == std::end(Capacities) ? Capacities.back() : *tableIt;
 }
@@ -308,8 +308,8 @@ auto apply_cache<Data, D>::find(
     node_t* const rhs
 ) -> node_t*
 {
-    auto const index
-        = utils::tuple_hash()(std::make_tuple(opId, lhs, rhs)) % size(entries_);
+    auto const tupleHash = utils::tuple_hash()(std::make_tuple(opId, lhs, rhs));
+    auto const index = tupleHash % size(entries_);
     auto& entry = entries_[index];
     auto const matches
         = entry.opId_ == opId && entry.lhs_ == lhs && entry.rhs_ == rhs;
@@ -325,8 +325,8 @@ auto apply_cache<Data, Degree>::put(
 ) -> void
 {
     auto const tupleHash = utils::tuple_hash()(std::make_tuple(opId, lhs, rhs));
-    auto const index     = static_cast<int64>(tupleHash) % this->get_capacity();
-    auto& entry          = entries_[as_uindex(index)];
+    auto const index     = tupleHash % size(entries_);
+    auto& entry          = entries_[index];
     if (not entry.result_)
     {
         ++size_;

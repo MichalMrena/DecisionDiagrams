@@ -5,12 +5,12 @@ cmake_minimum_required(
 )
 
 set(
-    LIBTEDDY_VERSION_FILE "teddy-version"
+    LIBTEDDY_VERSION_FILE "${CMAKE_CURRENT_SOURCE_DIR}/teddy-version"
 )
 
-if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${LIBTEDDY_VERSION_FILE}")
+if(NOT EXISTS ${LIBTEDDY_VERSION_FILE})
     message(
-        FATAL_ERROR "Missing project version file '${LIBTEDDY_VERSION_FILE}'!"
+        FATAL_ERROR "Missing project version file: ${LIBTEDDY_VERSION_FILE}"
     )
 endif()
 

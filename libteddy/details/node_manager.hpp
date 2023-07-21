@@ -1186,7 +1186,10 @@ template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     -> void
 {
-    auto const mkmatrix = [] (auto const nRow, auto const nCol)
+    auto const mkmatrix = [] (
+        [[maybe_unused]] auto const nRow,
+        [[maybe_unused]] auto const nCol
+    )
     {
         if constexpr (degrees::is_fixed<Degree>()())
         {

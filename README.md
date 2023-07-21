@@ -122,12 +122,12 @@ int main()
 
     // To calculate number of different variable assignments for which the
     // function evaluates to 1 we can use .satisfy_count.
-    long long sc = manager.satisfy_count(f);
+    long long sc = manager.satisfy_count(1, f);
 
     // We can also enumerate all variable assignments for which the
     // the function evaluates to 1.
     std::vector<std::array<int, 4>> sa
-        = manager.satisfy_all<std::array<int, 4>>(f);
+        = manager.satisfy_all<std::array<int, 4>>(1, f);
 }
 ```
 All diagram managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html). For more examples see the [examples](./examples/) folder.
@@ -150,6 +150,7 @@ The usage of reliability managers analogous to diagram managers. Many of the rel
 #include <array>
 #include <iostream>
 #include <vector>
+#include "libteddy/details/reliability_manager.hpp"
 
 int main()
 {
@@ -182,8 +183,8 @@ int main()
 
     // To calculate system availability or unavailability for a given.
     // System state (1) is as simple as:
-    const double A = manager.availability(1, ps, sf);
-    const double U = manager.unavailability(1, ps, sf);
+    const double A = manager.calculate_availability(1, ps, sf);
+    const double U = manager.calculate_unavailability(1, ps, sf);
     std::cout << "A = " << A << "\n";
     std::cout << "U = " << U << "\n";
 
@@ -198,7 +199,7 @@ int main()
 
     // To calculate Structural Importance we first need to calculate
     // the derivative.
-    diagram_t dpbd = manager.idpld_type_3_decrease({1, 0}, 1, sf, 2);
+    diagram_t dpbd = manager.dpld({2, 1, 0}, teddy::dpld::type_3_decrease(1), sf);
 
     // Now, to calculate the Structural Importance of the second component,
     // we use the derivative.

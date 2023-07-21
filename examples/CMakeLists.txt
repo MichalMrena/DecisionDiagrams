@@ -1,32 +1,17 @@
+# Example 1
 add_executable(
-    libteddy-example-1
-    example_1.cpp
+    libteddy-example-1 example_1.cpp
 )
 
 target_link_libraries(
-    libteddy-example-1
-    PRIVATE teddy
+    libteddy-example-1 PRIVATE teddy
 )
 
-target_compile_options(
-    libteddy-example-1
-    PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-        -Wconversion
-        -Wsign-conversion
-        -Wshadow
+# Example 2
+add_executable(
+    libteddy-example-2 example_2.cpp
 )
 
-target_compile_features(
-    libteddy-example-1
-    PRIVATE cxx_std_20
-)
-
-set_target_properties(
-    libteddy-example-1
-    PROPERTIES
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS NO
+target_link_libraries(
+    libteddy-example-2 PRIVATE teddy
 )

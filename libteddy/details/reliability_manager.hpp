@@ -3,9 +3,6 @@
 
 #include <libteddy/details/diagram_manager.hpp>
 
-#include <fmt/core.h>
-#include <fmt/ranges.h>
-
 #include <array>
 #include <concepts>
 #include <iostream>
@@ -493,11 +490,6 @@ protected:
 private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
 
-    // TODO (hopefully) deprecated
-    template<class F>
-    auto apply_dpld (diagram_t const& left, diagram_t const& right, F fChange)
-        -> diagram_t;
-
     template<class F>
     auto apply_dpld_new (
         diagram_t const& diagram,
@@ -717,12 +709,6 @@ auto reliability_manager<Degree, Domain>::dpld(
     diagram_t const& diagram
 ) -> diagram_t
 {
-    // auto const lhs
-    //     = this->get_cofactor(diagram, varChange.index_, varChange.from_);
-    // auto const rhs
-    //     = this->get_cofactor(diagram, varChange.index_, varChange.to_);
-    // return this->apply_dpld(lhs, rhs, fChange);
-
     return this->apply_dpld_new(diagram, varChange, fChange);
 }
 
@@ -927,84 +913,6 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 
     auto const conj = this->template tree_fold<ops::PI_CONJ>(dpldes);
     this->template satisfy_all_g<Vars, Out>(1, conj, out);
-}
-
-template<degree Degree, domain Domain>
-template<class F>
-auto reliability_manager<Degree, Domain>::apply_dpld(
-    diagram_t const& left,
-    diagram_t const& right,
-    F fChange
-) -> diagram_t
-{
-    auto cache = std::
-        unordered_map<std::tuple<node_t*, node_t*>, node_t*, utils::tuple_hash>(
-        );
-
-    auto const get_node_value = [] (node_t* const node)
-    {
-        return node->is_terminal() ? node->get_value() : Nondetermined;
-    };
-
-    auto const step = [this, &cache, fChange, get_node_value] (
-                          auto const& self,
-                          node_t* const lhs,
-                          node_t* const rhs
-                      ) -> node_t*
-    {
-        auto const cached = cache.find(std::make_tuple(lhs, rhs));
-        if (cached != std::end(cache))
-        {
-            return cached->second;
-        }
-
-        auto const lhsVal = get_node_value(lhs);
-        auto const rhsVal = get_node_value(rhs);
-        auto const opVal // TODO toto by sa dalo lepsie
-            = lhsVal == Nondetermined || rhsVal == Nondetermined
-                ? Nondetermined
-                : static_cast<int32>(fChange(lhsVal, rhsVal));
-        auto result = static_cast<node_t*>(nullptr);
-
-        if (opVal != Nondetermined)
-        {
-            result = this->nodes_.make_terminal_node(opVal);
-        }
-        else
-        {
-            auto const lhsLevel = this->nodes_.get_level(lhs);
-            auto const rhsLevel = this->nodes_.get_level(rhs);
-            auto const topLevel = std::min(lhsLevel, rhsLevel);
-            auto const topNode  = topLevel == lhsLevel ? lhs : rhs;
-            auto const topIndex = topNode->get_index();
-            auto sons           = this->nodes_.make_sons(
-                topIndex,
-                [=, &self] (int32 const sonOrder)
-                {
-                    // TODO tu by bol get_son, ktory by
-                    // preskakoval fixovane premenne
-                    auto const fst
-                        = lhsLevel == topLevel ? lhs->get_son(sonOrder) : lhs;
-                    auto const snd
-                        = rhsLevel == topLevel ? rhs->get_son(sonOrder) : rhs;
-                    return self(self, fst, snd);
-                }
-            );
-
-            result = this->nodes_.make_internal_node(topIndex, std::move(sons));
-        }
-
-        cache.emplace(
-            std::piecewise_construct,
-            std::make_tuple(lhs, rhs),
-            std::make_tuple(result)
-        );
-        return result;
-    };
-
-    auto const newRoot
-        = step(step, left.unsafe_get_root(), right.unsafe_get_root());
-    return diagram_t(newRoot);
 }
 
 template<degree Degree, domain Domain>

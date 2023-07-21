@@ -1,69 +1,59 @@
-#include <libteddy/reliability.hpp>
-#include <algorithm>
+#include <libteddy/core.hpp>
+#include <cassert>
+#include <fstream>
 #include <iostream>
-#include <random>
-#include <string_view>
-
-// TODO description and ASCII RBD
+#include <vector>
 
 int main()
 {
-    auto const perStringTurbineCount = 3;
-    auto const stringCount = 4;
-    auto const varCount = perStringTurbineCount * stringCount;
+    // 4 variables, 1000 pre-allocated nodes (see memory management)
+    teddy::bdd_manager manager(4, 1'000);
 
-    // auto rngp = std::mt19937_64(123123);
-    // auto distp = std::uniform_real_distribution(.0, 1.);
-    // auto ps = std::vector<std::vector<double>>(varCount);
-    // std::ranges::generate_n(begin(ps), varCount, [&]()
-    // {
-    //     auto const p = distp(rngp);
-    //     return std::vector<double> {1 - p, p};
-    // });
-    auto const ps = std::vector<std::array<double, 2>>
-    ({
-        {0.1, 0.9},
-        {0.2, 0.8},
-        {0.2, 0.8},
-        {0.1, 0.9},
-        {0.2, 0.8},
-        {0.2, 0.8},
-        {0.1, 0.9},
-        {0.3, 0.7},
-        {0.1, 0.9},
-        {0.2, 0.8},
-        {0.1, 0.9},
-        {0.3, 0.7},
-    });
-    // auto ps = std::vector<std::vector<double>>(varCount);
-    // std::ranges::generate_n(begin(ps), varCount, []()
-    // {
-    //     return std::vector<double> {0.5, 0.5};
-    // });
+    // Alias for the type of the diagram, or you can just use auto.
+    using diagram_t = teddy::bdd_manager::diagram_t;
 
+    // Create diagram for a single variable (indices start at 0).
+    diagram_t x0 = manager.variable(0);
+    diagram_t x1 = manager.variable(1);
+
+    // operator() serves the same purpose as .variable call.
+    // It is convenient to create a reference to the manager with name x.
+    teddy::bdd_manager& x = manager;
+    diagram_t x2 = x(2);
+
+    // Diagrams for multiple variables can be created at once.
+    std::vector<diagram_t> xs = manager.variables({0, 1, 2, 3});
+
+    // diagram_t is cheap handle type, multiple diagrams can point
+    // to the same node, to test whether they do use .equals.
+    assert(x1.equals(xs[1]));
+
+    // (to simplify operator names)
     using namespace teddy::ops;
-    using manager_t = teddy::bss_manager;
-    auto manager = manager_t(varCount, 100'000);
-    auto sf = manager.constant(0);
-    auto nextVar = 0;
+    // Finally, to create a diagram for the function:
+    // f(x) = (x0 and x1) or (x2 and x3)
+    // we use the apply function.
+    diagram_t f1 = manager.apply<AND>(xs[0], xs[1]);
+    diagram_t f2 = manager.apply<AND>(xs[2], xs[3]);
+    diagram_t f  = manager.apply<OR>(f1, f2);
 
-    for (auto i = 0; i < stringCount; ++i)
-    {
-        auto series = manager.variable(nextVar);
-        ++nextVar;
-        for (auto j = 1; j < perStringTurbineCount; ++j)
-        {
-            series = manager.apply<AND>(
-                series,
-                manager.variable(nextVar)
-            );
-            ++nextVar;
-        }
-        sf = manager.apply<OR>(sf, series);
-    }
+    // Now that we have diagram for the funtion f, we can test its properties
+    // e.g., evaluate it for give variable assignment.
+    const int val = manager.evaluate(f, std::array {1, 1, 0, 1});
+    assert(val == 1);
 
-    std::cout << "A = "   << manager.calculate_availability(ps, sf)   << "\n";
-    std::cout << "U = "   << manager.calculate_unavailability(ps, sf) << "\n";
-    std::cout << "Fr1 = " << manager.state_frequency(sf, 1) << "\n";
-    std::cout << "Fr0 = " << manager.state_frequency(sf, 0) << "\n";
+    // We can see how the diagram looks like by printing its dot representation
+    // into a file or console and visualizing it using e.g. graphviz.
+    manager.to_dot_graph(std::cout, f);
+    std::ofstream ofst("f.dot");
+    manager.to_dot_graph(ofst, f);
+
+    // To calculate number of different variable assignments for which the
+    // function evaluates to 1 we can use .satisfy_count.
+    long long sc = manager.satisfy_count(1, f);
+
+    // We can also enumerate all variable assignments for which the
+    // the function evaluates to 1.
+    std::vector<std::array<int, 4>> sa
+        = manager.satisfy_all<std::array<int, 4>>(1, f);
 }

@@ -710,7 +710,7 @@ private:
     auto transform_terminal (node_t* root, F transformer) -> node_t*;
 
     template<class Op, class Cache, class... Nodes>
-    auto apply_detail_n (Cache& cache, Op operation, Nodes... roots)
+    auto apply_detail (Cache& cache, Op operation, Nodes... roots)
         -> diagram_t;
 
 protected:
@@ -1116,7 +1116,7 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
         auto applyCache  = apply_cache_t();
         auto cacheHandle = local_cache_handle<apply_cache_t>(applyCache);
 
-        return this->apply_detail_n(
+        return this->apply_detail(
             cacheHandle,
             operation,
             lhs.unsafe_get_root(),
@@ -1134,7 +1134,7 @@ auto diagram_manager<Data, Degree, Domain>::apply(
 ) -> diagram_t
 {
     auto cacheHandle = global_cache_handle<Op>(nodes_);
-    return this->apply_detail_n(
+    return this->apply_detail(
         cacheHandle,
         Op(),
         lhs.unsafe_get_root(),
@@ -1684,7 +1684,7 @@ auto diagram_manager<Data, Degree, Domain>::transform_terminal(
 
 template<class Data, degree Degree, domain Domain>
 template<class Op, class Cache, class... Nodes>
-auto diagram_manager<Data, Degree, Domain>::apply_detail_n(
+auto diagram_manager<Data, Degree, Domain>::apply_detail(
     Cache& cache,
     Op operation,
     Nodes... roots
