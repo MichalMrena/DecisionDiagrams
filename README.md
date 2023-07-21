@@ -27,7 +27,7 @@ cd build
 cmake ..
 sudo make install
 ```
-This installs library files to default location which should be visible to your compiler. You can specify different path by passing the `-DCMAKE_INSTALL_PREFIX=<your path>` to cmake. Cmake writes paths to all installed files into the `install_manifest.txt` file. To uninstall the library go to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.  
+This installs library files to the default location which should be visible to your compiler. You can specify a different path by passing the `-DCMAKE_INSTALL_PREFIX=<your path>` to cmake. Cmake writes paths to all installed files into the `install_manifest.txt` file. To uninstall the library go to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.  
 Subsequently, you can use the library in the following way:
 ```cmake
 find_package(
@@ -48,10 +48,10 @@ target_link_libraries(
 TeDDy uses features from `C++20` so you may need to set your compiler to this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. If you are using `cmake` it should handle this for you. We tested it on Linux with `g++ 10.0.0`, `clang++ (libc++) 13.0.0`, `clang++ (libstdc++) 11.0.0`, and on Windows with `MSVC 19.31.31107`.  
 
 # How to use
-TeDDy consists of two modules. The first module `teddy-core` contains algorithms for general manipulation and creation of decision diagrams. The second module `teddy-reliability` contains algorithms aimed at reliability analysis utilizing decision diagrams.
+TeDDy consists of two modules. The first module `teddy-core` contains algorithms for general manipulation and the creation of decision diagrams. The second module `teddy-reliability` contains algorithms aimed at reliability analysis utilizing decision diagrams.
 
 ## Core
-All library functions are accessible via instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
+All library functions are accessible via an instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
 1. `bdd_manager` for Binary Decision Diagrams (BDDs).  
 
 2. `mdd_manager<M>` for Multi-valued Decision Diagrams (MDDs) representing Multiple-Valued logic functions. The domain of each variable is `{0,1,...,M-1}` and the set of values of the function is also `{0,1,...,M-1}`.  
@@ -65,7 +65,7 @@ Managers 1, 2, and 4 use nodes with more compact memory representation since the
 Typical usage of the library can be summarized in 3 steps:
 1. Choose one of the four diagram managers.
 2. Create a decision diagram representing desired function(s).
-3. Examine properties of the function(s).  
+3. Examine the properties of the function(s).  
 
 The following example shows the above steps for the `bdd_manager` and Boolean function `f(x) = (x0 and x1) or (x2 and x3)`:
 
@@ -133,7 +133,7 @@ int main()
 All diagram managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html). For more examples see the [examples](./examples/) folder.
 
 ## Reliability
-As with diagram manipulation, the reliability analysis functions are accessible via instance of a reliability manager. There are four reliability managers analogous to diagram managers.
+As with diagram manipulation, the reliability analysis functions are accessible via an instance of a reliability manager. There are four reliability managers analogous to diagram managers.
 1. `bss_manager` for Binary-State Systems (BSS). Uses BDDs.  
 
 2. `mss_manager<M>` for homogeneous Multi-State Systems (MSS). Domains of variables and sets of values of functions correspond to the number of component/system states. Uses MDDs.  
@@ -142,9 +142,9 @@ As with diagram manipulation, the reliability analysis functions are accessible 
 
 4. `ifmss_manager<M>` for non-homogenous Multi-State Systems (MSS). Domains of variables and sets of values of functions correspond to the number of component/system states. Uses ifMDDs.  
   
-Note that each reliability manager is a child class of the corresponding diagram manager, hence, advantages and disadvantages of the base managers apply. All reliability managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html).
+Note that each reliability manager is a child class of the corresponding diagram manager, hence, the advantages and disadvantages of the base managers apply. All reliability managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html).
 
-The usage of reliability managers analogous to diagram managers. Many of the reliability functions have a parameter that represents component state probabilities. The parameter does not have a specific type but instead uses a template. The reason is that probabilities can be stored in different combinations of containers such as `std::vector` or `std::array`. The type holding the probabilities must satisfy that if `ps` is the name of the parameter then the expression `ps[i][k]` returns the probability that the `i`-th component is in the state `k`. The following example shows the basic usage of the reliability manager:
+The usage of reliability managers is analogous to diagram managers. Many of the reliability functions have a parameter that represents component state probabilities. The parameter does not have a specific type but instead uses a template. The reason is that probabilities can be stored in different combinations of containers such as `std::vector` or `std::array`. The type holding the probabilities must satisfy that if `ps` is the name of the parameter then the expression `ps[i][k]` returns the probability that the `i`-th component is in the state `k`. The following example shows the basic usage of the reliability manager:
 ```C++
 #include <libteddy/reliability.hpp>
 #include <array>
@@ -211,18 +211,18 @@ For more examples see the [examples](./examples/) folder.
 
 ## Memory management
 ### Node pool
-TeDDy uses a pool of pre-allocated nodes. The initial number of allocated nodes (`nodePoolSize`) is provided by the user in the manager's constructor. It is hard to give general advice on how many nodes you should allocate. On modern hardware, it should not be a problem to allocate a couple of millions of nodes that will occupy roughly tens or hundreds of MiBs of memory depending on the type of the manager used. The more nodes you allocate at the beginning, the fewer allocations will be needed during computations resulting in a faster computation. Clearly, for small examples, hundreds or thousands of nodes are just enough.  
+TeDDy uses a pool of pre-allocated nodes. The initial number of allocated nodes (`nodePoolSize`) is provided by the user in the manager's constructor. It is hard to give general advice on how many nodes you should allocate. On modern hardware, it should not be a problem to allocate a couple of millions of nodes that will occupy roughly tens or hundreds of MiBs of memory depending on the type of manager used. The more nodes you allocate at the beginning, the fewer allocations will be needed during computations resulting in a faster computation. Clearly, for small examples, hundreds or thousands of nodes are just enough.  
 
-If there are no nodes left in the pool, automatic garbage collection (`gc`) is performed to recycle unused nodes. Let `gcCount` be the number of garbage collected nodes (returned to the pool). Then if `gcCount < gcThreshold * nodePoolSize` an additional node poll of size `overflowNodePoolSize` is allocated. Default value of the parameter `gcThreshold` is `0.05`. The user can adjust the parameter by using `set_gc_ratio` function. Size of the additional pool `overflowNodePoolSize` can be set in the manager's constructor alongside the `nodePoolSize`. The default value is `overflowNodePoolSize = nodePoolSize / 2`.
+If there are no nodes left in the pool, automatic garbage collection (`gc`) is performed to recycle unused nodes. Let `gcCount` be the number of garbage collected nodes (returned to the pool). Then if `gcCount < gcThreshold * nodePoolSize` an additional node poll of size `overflowNodePoolSize` is allocated. The default value of the parameter `gcThreshold` is `0.05`. The user can adjust the parameter by using `set_gc_ratio` function. The size of the additional pool `overflowNodePoolSize` can be set in the manager's constructor alongside the `nodePoolSize`. The default value is `overflowNodePoolSize = nodePoolSize / 2`.
 
 ### Cache
-The library uses cache to speed up diagram manipulation by avoiding expensive recomputations. The size of the cache depends on the number of currently used nodes. The size is calculated as `cacheRatio * uniqueNodeCount`, where the `uniqueNodeCount` is the number of unique nodes currently used by the manager. The default value of `cacheRatio` is `0.5`. The user can adjust the ratio by using `set_cache_ratio` function. The bigger the cache the better the computation speed. However, a bigger ratio means higher memory consumption. It is up to the user to keep the two factors balanced. From the experience even cache ratios `1.0` of `2.0` are fine.
+The library uses a cache to speed up diagram manipulation by avoiding expensive recomputations. The size of the cache depends on the number of currently used nodes. The size is calculated as `cacheRatio * uniqueNodeCount`, where the `uniqueNodeCount` is the number of unique nodes currently used by the manager. The default value of `cacheRatio` is `0.5`. The user can adjust the ratio by using `set_cache_ratio` function. The bigger the cache the better the computation speed. However, a bigger ratio means higher memory consumption. It is up to the user to keep the two factors balanced. From the experience even cache ratios `1.0` of `2.0` are fine.
 
 ## Assertions
-By default, the library contains runtime assertions that perform various checks such as bounds checking and similar. In case you want to ignore these assertions e.g. in some performance demanding use case, you need to put `#define NDEBUG` before you include the TeDDy header.  
+By default, the library contains runtime assertions that perform various checks such as bounds checking and similar. In case you want to ignore these assertions e.g. in some performance-demanding use case, you need to put `#define NDEBUG` before you include the TeDDy header.  
 
 ## Variable ordering
-The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke reordering heuristic by using the `force_reorder` function. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
+The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke the reordering heuristic by using the `force_reorder` function. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
 # Publications and citation
 *A paper describing TeDDy itself is in preparation.*  
