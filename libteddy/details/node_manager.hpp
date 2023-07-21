@@ -749,7 +749,6 @@ auto node_manager<Data, Degree, Domain>::cache_find(
     node_t* const rhs
 ) -> node_t*
 {
-    // TODO zahrnut komutativnost
     auto const node = opCache_.find(O::get_id(), lhs, rhs);
     if (node)
     {
@@ -766,7 +765,6 @@ auto node_manager<Data, Degree, Domain>::cache_put(
     node_t* const rhs
 ) -> void
 {
-    // TODO zahrnut komutativnost
     opCache_.put(O::get_id(), result, lhs, rhs);
 }
 

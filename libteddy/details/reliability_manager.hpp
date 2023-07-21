@@ -115,17 +115,6 @@ struct var_change
     int32 to_;
 };
 
-// TODO deprecated
-/**
- *  \struct value_change
- *  \brief Describes change of a value of a variable or a function.
- */
-struct value_change
-{
-    int32 from;
-    int32 to;
-};
-
 /**
  *  \class reliability_manager
  *  \brief Base class for reliability managers.

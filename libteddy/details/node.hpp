@@ -104,8 +104,6 @@ public:
     [[nodiscard]] auto get_value () const -> int32;
 
 private:
-    // TODO: c++20, constructors not necessary
-
     struct internal
     {
         son_container sons_;
