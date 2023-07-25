@@ -30,6 +30,10 @@ add_library(
     teddy INTERFACE
 )
 
+add_library(
+    teddy::teddy ALIAS teddy
+)
+
 target_include_directories(
     teddy INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

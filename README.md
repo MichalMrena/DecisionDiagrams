@@ -15,19 +15,18 @@ This text assumes that the reader is familiar with decision diagrams to some ext
 TeDDY is a header-only library. There are two principal ways to use it in your project.
 
 ## Copy the files
-The simplest way is to download the library (using `git clone`, [one of the releases](https://github.com/MichalMrena/DecisionDiagrams/releases), or [download as zip](https://github.com/MichalMrena/DecisionDiagrams/archive/refs/heads/master.zip)) and place the [libteddy](./libteddy/) folder somewhere where your compiler can see it e.g., directly in your project.
+The simplest way is to download the library (using `git clone`, [one of the releases](https://github.com/MichalMrena/DecisionDiagrams/releases), or [download as zip](https://github.com/MichalMrena/DecisionDiagrams/archive/refs/heads/master.zip)) and place the [libteddy](./libteddy/) directory somewhere where your compiler can see it e.g., directly in your project.
 
 ## Using cmake
 You can install the library using standard procedure.  
 ```sh
 git clone git@github.com:MichalMrena/DecisionDiagrams.git
 cd DecisionDiagrams
-mkdir build
-cd build
-cmake ..
-sudo make install
+cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+cmake --build build
+sudo cmake --install build --config Release
 ```
-This installs library files to the default location which should be visible to your compiler. You can specify a different path by passing the `-DCMAKE_INSTALL_PREFIX=<your path>` to cmake. Cmake writes paths to all installed files into the `install_manifest.txt` file. To uninstall the library go to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.  
+This installs library files to the default location which should be visible to your compiler. You can specify a different path by passing the `-DCMAKE_INSTALL_PREFIX=<your path>` to cmake. Cmake writes paths to all installed files into the `build/install_manifest.txt` file. To uninstall the library switch to the directory where the `install_manifest.txt` file is located and run `[sudo] xargs rm < install_manifest.txt`.  
 Subsequently, you can use the library in the following way:
 ```cmake
 find_package(
@@ -35,8 +34,20 @@ find_package(
 )
 
 add_executable(
-    yourtarget
-        main.cpp
+    yourtarget main.cpp
+)
+
+target_link_libraries(
+    yourtarget PRIVATE teddy::teddy
+)
+```
+
+Alternatively, you can add the library as a subdirectory in your project and use in the following way:
+```cmake
+add_subdirectory(DecisionDiagrams)
+
+add_executable(
+    yourtarget main.cpp
 )
 
 target_link_libraries(
@@ -47,23 +58,36 @@ target_link_libraries(
 ## Compiling
 TeDDy uses features from `C++20` so you may need to set your compiler to this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. If you are using `cmake` it should handle this for you. We tested it on Linux with `g++ 10.0.0`, `clang++ (libc++) 13.0.0`, `clang++ (libstdc++) 11.0.0`, and on Windows with `MSVC 19.31.31107`.  
 
-## Running tests
+## Compiling and running examples
+You can compile and run examples from the root directory:
+```sh
+cmake -DLIBTEDDY_BUILD_EXAMPLES=true -S . -B build
+cmake --build build -j4
+./build/examples/libteddy-example-1
+```
+
+## Compiling and running tests
 To run the tests, you will need to install [Boost.Test](https://www.boost.org/doc/libs/1_82_0/libs/test/doc/html/index.html) and [fmt](https://github.com/fmtlib/fmt) (until `std::format` gets better support).
-You can install them using your distribution package manager. For **Boost**, search for the following packages:
+You can install them using your distribution package manager. For **Boost.Test**, search for the following packages:
 - `boost-devel`, `boost-test` (dnf),
 - `libboost-test-dev` (apt),
 - `boost-devel`, `libboost_unit_test_framework` (xbps),
 - (or similar for other package managers).  
+
 If no such package exists for your OS, follow the [Getting started](https://www.boost.org/doc/libs/1_82_0/more/getting_started/index.html) section of the Boost website.  
-For fmt search for:
+For **fmt** search for:
 - `fmt-devel` (dnf, xbps),
 - `libfmt-dev` (apt).  
-After installing **Boost** and **fmt**, you can compile and run the tests using cmake in the following way (assuming you are in the `DecisionDiagrams` folder):
+
+If no such package exists for your OS, follow the [documentation](https://fmt.dev/latest/usage.html) for alternative means of installation.
+
+After installing **Boost.Test** and **fmt**, you can compile and run the tests using cmake in the following way from the root directory:
 ```sh
 cmake -DCMAKE_BUILD_TYPE=Release -DLIBTEDDY_BUILD_TESTS=true -S . -B build
 cmake --build build -j4
 cmake --build build -t test
 ```
+*Note that the second test might take a couple of minutes to execute depending on the hardware.*
 
 # How to use
 TeDDy consists of two modules. The first module `teddy-core` contains algorithms for general manipulation and the creation of decision diagrams. The second module `teddy-reliability` contains algorithms aimed at reliability analysis utilizing decision diagrams.
@@ -148,7 +172,7 @@ int main()
         = manager.satisfy_all<std::array<int, 4>>(1, f);
 }
 ```
-All diagram managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html). For more examples see the [examples](./examples/) folder.
+All diagram managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html). For more examples see the [examples](./examples/) directory.
 
 ## Reliability
 As with diagram manipulation, the reliability analysis functions are accessible via an instance of a reliability manager. There are four reliability managers analogous to diagram managers.
@@ -225,7 +249,7 @@ int main()
     std::cout << "SI_2 = " << SI_2 << "\n";
 }
 ```
-For more examples see the [examples](./examples/) folder.
+For more examples see the [examples](./examples/) directory.
 
 ## Memory management
 ### Node pool
