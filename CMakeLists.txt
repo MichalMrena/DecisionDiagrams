@@ -135,7 +135,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_LIBCXX)
 endif()
 
 ## Enable sanitizers for Debug build
-if(CMAKE_BUILD_TYPE STREQUAL Debug AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if(LIBTEDDY_ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message(
         "=== Asan a Ubsan enabled for Debug build"
     )
@@ -161,6 +161,7 @@ if(LIBTEDDY_BUILD_TESTS)
     # NOTE: will be moved to libteddy-utils in the future
     add_subdirectory(libtsl)
 
+    enable_testing()
     add_subdirectory(tests)
 endif()
 

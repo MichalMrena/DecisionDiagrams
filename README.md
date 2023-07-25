@@ -47,6 +47,24 @@ target_link_libraries(
 ## Compiling
 TeDDy uses features from `C++20` so you may need to set your compiler to this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. If you are using `cmake` it should handle this for you. We tested it on Linux with `g++ 10.0.0`, `clang++ (libc++) 13.0.0`, `clang++ (libstdc++) 11.0.0`, and on Windows with `MSVC 19.31.31107`.  
 
+## Running tests
+To run the tests, you will need to install [Boost.Test](https://www.boost.org/doc/libs/1_82_0/libs/test/doc/html/index.html) and [fmt](https://github.com/fmtlib/fmt) (until `std::format` gets better support).
+You can install them using your distribution package manager. For **Boost**, search for the following packages:
+- `boost-devel`, `boost-test` (dnf),
+- `libboost-test-dev` (apt),
+- `boost-devel`, `libboost_unit_test_framework` (xbps),
+- (or similar for other package managers).  
+If no such package exists for your OS, follow the [Getting started](https://www.boost.org/doc/libs/1_82_0/more/getting_started/index.html) section of the Boost website.  
+For fmt search for:
+- `fmt-devel` (dnf, xbps),
+- `libfmt-dev` (apt).  
+After installing **Boost** and **fmt**, you can compile and run the tests using cmake in the following way (assuming you are in the `DecisionDiagrams` folder):
+```sh
+cmake -DCMAKE_BUILD_TYPE=Release -DLIBTEDDY_BUILD_TESTS=true -S . -B build
+cmake --build build -j4
+cmake --build build -t test
+```
+
 # How to use
 TeDDy consists of two modules. The first module `teddy-core` contains algorithms for general manipulation and the creation of decision diagrams. The second module `teddy-reliability` contains algorithms aimed at reliability analysis utilizing decision diagrams.
 

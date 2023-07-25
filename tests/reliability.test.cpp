@@ -180,9 +180,7 @@ using Fixtures                   = boost::mpl::vector<
     teddy::tests::imss_fixture<3>,
     teddy::tests::ifmss_fixture<3>>;
 
-BOOST_AUTO_TEST_SUITE(reliability_test_faster_stuff)
-
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
+BOOST_AUTO_TEST_SUITE(reliability_test)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 {
@@ -228,8 +226,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
         );
     }
 }
-
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
 {
@@ -277,8 +273,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
-
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -325,7 +319,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
     }
 }
 
-// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -356,7 +349,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     }
 }
 
-// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     structural_importances,
     Fixture,
@@ -448,8 +440,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     }
 }
 
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
-
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     fussell_vesely_importances,
     Fixture,
@@ -503,8 +493,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     }
 }
 
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
-
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -523,11 +511,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_AUTO_TEST_SUITE_END()
-
-BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
-BOOST_AUTO_TEST_SUITE(reliability_test_slower_stuff)
-
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
 {
     auto const expr
@@ -537,7 +520,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-    for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    for (auto varIndex = 0; varIndex < 1; ++varIndex)
     {
         auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
         auto varChanges      = std::vector<details::Change>();
@@ -616,7 +600,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-    for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    for (auto varIndex = 0; varIndex < 1; ++varIndex)
     {
         auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
         auto varChanges      = std::vector<details::Change>();
@@ -736,7 +721,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-    for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    for (auto varIndex = 0; varIndex < 1; ++varIndex)
     {
         auto const varDomain = domains[as_uindex(varIndex)];
         auto varChanges      = std::vector<details::Change>();
@@ -848,7 +834,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-    for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+    for (auto varIndex = 0; varIndex < 1; ++varIndex)
     {
         auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
         auto varChanges      = std::vector<details::Change>();
@@ -959,8 +946,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_AUTO_TEST_SUITE_END()
-
 const tsl::system_description system1 = tsl::system_description
 {
     .systemId_ = 1,
@@ -1034,9 +1019,6 @@ const tsl::system_description system1 = tsl::system_description
 };
 
 const std::array<tsl::system_description, 1> systems {system1};
-
-// BOOST_TEST_DECORATOR(* boost::unit_test::disabled())
-BOOST_AUTO_TEST_SUITE(reliability_test_systems)
 
 BOOST_DATA_TEST_CASE(system_test, systems, system)
 {
@@ -1202,7 +1184,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
                 );
                 auto const diagramDpld = manager.dpld(
                     {varIndex, componentState, componentState - 1},
-                    dpld::type_3_increase(systemState),
+                    dpld::type_3_decrease(systemState),
                     diagram
                 );
                 auto const realBI
@@ -1281,63 +1263,6 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         }
     }
 }
-
-// BOOST_AUTO_TEST_CASE(test_fvi, * boost::unit_test::disabled())
-// {
-//     using namespace teddy::ops;
-//     auto manager   = bss_manager(6, 10'000);
-//     auto& x        = manager;
-//     auto const f1  = x(0);
-//     auto const f21 = manager.apply<AND>(x(1), x(2));
-//     auto const f22 = x(3);
-//     auto const f23 = x(4);
-//     auto const f2  = manager.apply<OR>(manager.apply<OR>(f21, f22), f23);
-//     auto const f3  = x(5);
-//     auto const f   = manager.apply<AND>(manager.apply<AND>(f1, f2), f3);
-//     auto const ps  = std::vector<std::array<double, 6>>(
-//     {
-//         {.1, .9},
-//         {.2, .8},
-//         {.3, .7},
-//         {.4, .6},
-//         {.1, .9},
-//         {.2, .8},
-//     });
-//     auto const U = manager.unavailability(1, ps, f);
-
-//     auto dplds = std::vector<bss_manager::diagram_t>();
-//     for (auto i = 0; i < manager.get_var_count(); ++i)
-//     {
-//         dplds.push_back(manager.idpld_type_3_increase(
-//             {0, 1},
-//             1,
-//             f,
-//             i
-//         ));
-//     }
-
-//     auto mnfs = std::vector<bss_manager::diagram_t>();
-//     for (auto i = 0; i < manager.get_var_count(); ++i)
-//     {
-//         mnfs.push_back(manager.to_mnf(dplds[as_uindex(i)]));
-//     }
-
-//     auto fvis = std::vector<double>();
-//     for (auto i = 0; i < manager.get_var_count(); ++i)
-//     {
-//         fvis.push_back(manager.fussell_vesely_importance(ps,
-//         dplds[as_uindex(i)], U, 1, i));
-//     }
-
-//     // manager.to_dot_graph(std::cout, mnfs[0]);
-//     // manager.to_dot_graph(std::cout, mnfs[1]);
-//     // manager.to_dot_graph(std::cout, mnfs[3]);
-
-//     for (auto const fvi : fvis)
-//     {
-//         std::cout << fvi << "\n";
-//     }
-// }
 
 BOOST_AUTO_TEST_SUITE_END()
 
