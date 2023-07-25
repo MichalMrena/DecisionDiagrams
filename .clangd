@@ -3,3 +3,6 @@ InlayHints:
   Designators: No
   Enabled: Yes
   ParameterNames: No
+
+Diagnostics:
+  UnusedIncludes: Strict

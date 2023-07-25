@@ -4,4 +4,4 @@
 .vscode
 build
 compile_commands.json
-doc/html
+doxygen/doc

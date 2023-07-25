@@ -596,6 +596,11 @@ public:
     auto force_reorder () -> void;
 
     /**
+     *  \brief Clears apply cache.
+     */
+    auto clear_cache () -> void;
+
+    /**
      *  \brief Returns number of variables for this manager
      *  set in the constructor.
      *  \return Number of variables.
@@ -1639,6 +1644,12 @@ template<class Data, degree Degree, domain Domain>
 auto diagram_manager<Data, Degree, Domain>::force_reorder() -> void
 {
     nodes_.sift_variables();
+}
+
+template<class Data, degree Degree, domain Domain>
+auto diagram_manager<Data, Degree, Domain>::clear_cache() -> void
+{
+    nodes_.cache_clear();
 }
 
 template<class Data, degree Degree, domain Domain>

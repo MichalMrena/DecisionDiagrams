@@ -159,17 +159,15 @@ endif()
 
 if(LIBTEDDY_BUILD_TESTS)
     # NOTE: will be moved to libteddy-utils in the future
-    add_subdirectory(
-        libtsl
-    )
+    add_subdirectory(libtsl)
 
-    add_subdirectory(
-        tests
-    )
+    add_subdirectory(tests)
 endif()
 
 if(LIBTEDDY_BUILD_EXAMPLES)
-    add_subdirectory(
-        examples
-    )
+    add_subdirectory(examples)
+endif()
+
+if(LIBTEDDY_BUILD_EXPERIMENTS)
+    add_subdirectory(experiments)
 endif()

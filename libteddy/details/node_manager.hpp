@@ -177,6 +177,8 @@ public:
     template<teddy_bin_op O>
     auto cache_put (node_t* result, node_t* lhs, node_t* rhs) -> void;
 
+    auto cache_clear () -> void;
+
     template<node_op<node<Data, Degree>> NodeOp>
     auto traverse_pre (node_t* rootNode, NodeOp&& nodeOp) const -> void;
 
@@ -769,6 +771,12 @@ auto node_manager<Data, Degree, Domain>::cache_put(
 }
 
 template<class Data, degree Degree, domain Domain>
+auto node_manager<Data, Degree, Domain>::cache_clear () -> void
+{
+    opCache_.clear();
+}
+
+template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::is_valid_var_value(
     int32 const index,
     int32 const value
@@ -783,7 +791,7 @@ auto node_manager<Data, Degree, Domain>::run_deferred() -> void
     if (gcReorderDeferred_)
     {
         this->collect_garbage();
-        opCache_.clear();
+        opCache_.clear(); // TODO why not remove_unused?
         this->sift_variables();
     }
 }
