@@ -509,6 +509,17 @@ public:
     auto transform (diagram_t const& diagram, F transformer) -> diagram_t;
 
     /**
+     *  \brief Negates Boolean function
+     *  \param diagram Diagram representing the function
+     *  \param transformer Transformation function that is applied
+     *  to values of the function.
+     *  \return Diagram representing transformed function
+     */
+    template<class Foo = void>
+    requires(is_bdd<Degree>)
+    auto negate (diagram_t const& diagram) -> second_t<Foo, diagram_t>;
+
+    /**
      *  \brief Enumerates indices of variables that the function depends on
      *  \param diagram Diagram representing the function
      *  \return Vector of indices
@@ -1515,6 +1526,19 @@ auto diagram_manager<Data, Degree, Domain>::transform(
         = this->transform_terminal(diagram.unsafe_get_root(), transformer);
     nodes_.run_deferred();
     return diagram_t(newRoot);
+}
+
+template<class Data, degree Degree, domain Domain>
+template<class Foo>
+requires(is_bdd<Degree>)
+auto diagram_manager<Data, Degree, Domain>::negate(
+    const diagram_t& diagram
+) -> second_t<Foo, diagram_t>
+{
+    return this->transform(diagram, [](int32 const value)
+    {
+        return 1 - value;
+    });
 }
 
 template<class Data, degree Degree, domain Domain>

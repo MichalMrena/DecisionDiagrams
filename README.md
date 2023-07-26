@@ -3,13 +3,10 @@
 TeDDy is a C++ library for the creation and manipulation of decision diagrams. It is being developed at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), the [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).  
 This text assumes that the reader is familiar with decision diagrams to some extent. Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDDs) and their generalization Multi-Valued Decision Diagrams (MDDs).
 
----
 # Contents
   * [How to install](#how-to-install)
   * [How to use](#how-to-use)
   * [Publications and citation](#publications-and-citation)
-
----
 
 # How to install
 TeDDY is a header-only library. There are two principal ways to use it in your project.
@@ -77,7 +74,8 @@ You can install them using your distribution package manager. For **Boost.Test**
 If no such package exists for your OS, follow the [Getting started](https://www.boost.org/doc/libs/1_82_0/more/getting_started/index.html) section of the Boost website.  
 For **fmt** search for:
 - `fmt-devel` (dnf, xbps),
-- `libfmt-dev` (apt).  
+- `libfmt-dev` (apt),
+- (or similar for other package managers).  
 
 If no such package exists for your OS, follow the [documentation](https://fmt.dev/latest/usage.html) for alternative means of installation.
 
