@@ -236,6 +236,11 @@ struct AND : details::operation_base<details::logical_and_t, 0>
     {
         return 1;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
+    }
 };
 
 struct OR : details::operation_base<details::logical_or_t, 1>
@@ -243,6 +248,11 @@ struct OR : details::operation_base<details::logical_or_t, 1>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 2;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
     }
 };
 
@@ -252,6 +262,11 @@ struct XOR : details::operation_base<details::logical_xor_t>
     {
         return 3;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
+    }
 };
 
 struct PI_CONJ : details::operation_base<details::pi_conj_t, 0>
@@ -259,6 +274,11 @@ struct PI_CONJ : details::operation_base<details::pi_conj_t, 0>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 4;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
     }
 };
 
@@ -268,6 +288,11 @@ struct NAND : details::operation_base<details::logical_nand_t>
     {
         return 5;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
+    }
 };
 
 struct NOR : details::operation_base<details::logical_nor_t>
@@ -275,6 +300,11 @@ struct NOR : details::operation_base<details::logical_nor_t>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 6;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
     }
 };
 
@@ -284,6 +314,11 @@ struct EQUAL_TO : details::operation_base<details::equal_to_t>
     {
         return 7;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
+    }
 };
 
 struct NOT_EQUAL_TO : details::operation_base<details::not_equal_to_t>
@@ -291,6 +326,11 @@ struct NOT_EQUAL_TO : details::operation_base<details::not_equal_to_t>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 8;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
     }
 };
 
@@ -300,6 +340,11 @@ struct LESS : details::operation_base<details::less_t>
     {
         return 9;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return false;
+    }
 };
 
 struct LESS_EQUAL : details::operation_base<details::less_equal_t>
@@ -307,6 +352,11 @@ struct LESS_EQUAL : details::operation_base<details::less_equal_t>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 10;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return false;
     }
 };
 
@@ -316,6 +366,11 @@ struct GREATER : details::operation_base<details::greater_t>
     {
         return 11;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return false;
+    }
 };
 
 struct GREATER_EQUAL : details::operation_base<details::greater_equal_t>
@@ -323,6 +378,11 @@ struct GREATER_EQUAL : details::operation_base<details::greater_equal_t>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 12;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return false;
     }
 };
 
@@ -332,6 +392,11 @@ struct MIN : details::operation_base<details::minimum_t, 0>
     {
         return 13;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
+    }
 };
 
 struct MAX : details::operation_base<details::maximum_t>
@@ -339,6 +404,11 @@ struct MAX : details::operation_base<details::maximum_t>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 14;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
     }
 };
 
@@ -349,6 +419,11 @@ struct PLUS : details::operation_base<details::plus_mod_t<P>>
     {
         return 15;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
+    }
 };
 
 template<int32 P>
@@ -358,6 +433,11 @@ struct MULTIPLIES : details::operation_base<details::multiplies_mod_t<P>, 0>
     {
         return 16;
     }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return true;
+    }
 };
 
 struct IMPLIES : details::operation_base<details::implies_t>
@@ -365,6 +445,11 @@ struct IMPLIES : details::operation_base<details::implies_t>
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 17;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+    {
+        return false;
     }
 };
 } // namespace ops
@@ -374,6 +459,9 @@ concept teddy_bin_op = requires() {
                            {
                                Operation::get_id()
                            } -> std::same_as<int32>;
+                           {
+                               Operation::is_commutative()
+                           } -> std::same_as<bool>;
                        };
 } // namespace teddy
 

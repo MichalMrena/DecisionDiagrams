@@ -747,11 +747,17 @@ auto node_manager<Data, Degree, Domain>::for_each_terminal_node(
 template<class Data, degree Degree, domain Domain>
 template<teddy_bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_find(
-    node_t* const lhs,
-    node_t* const rhs
+    node_t* lhs,
+    node_t* rhs
 ) -> node_t*
 {
-    // TODO zahrnut komutativnost
+    if constexpr (O::is_commutative())
+    {
+        if (std::less<node_t*>()(rhs, lhs))
+        {
+            std::swap(lhs, rhs);
+        }
+    }
     auto const node = opCache_.find(O::get_id(), lhs, rhs);
     if (node)
     {
@@ -764,11 +770,17 @@ template<class Data, degree Degree, domain Domain>
 template<teddy_bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_put(
     node_t* const result,
-    node_t* const lhs,
-    node_t* const rhs
+    node_t* lhs,
+    node_t* rhs
 ) -> void
 {
-    // TODO zahrnut komutativnost
+    if constexpr (O::is_commutative())
+    {
+        if (std::less<node_t*>()(rhs, lhs))
+        {
+            std::swap(lhs, rhs);
+        }
+    }
     opCache_.put(O::get_id(), result, lhs, rhs);
 }
 
