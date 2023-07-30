@@ -37,11 +37,11 @@ struct bdd_fixture :
     fixture_base<bdd_manager_settings, minmax_expression_settings>
 {
 private:
-    inline static auto constexpr VarCount  = 15;
-    inline static auto constexpr NodeCount = 5'000;
-    inline static auto constexpr TermCount = 20;
-    inline static auto constexpr TermSize  = 5;
-    inline static auto constexpr Seed      = 911;
+    static auto constexpr VarCount  = 15;
+    static auto constexpr NodeCount = 5'000;
+    static auto constexpr TermCount = 20;
+    static auto constexpr TermSize  = 5;
+    static auto constexpr Seed      = 911;
 
 public:
     bdd_fixture() :
@@ -61,11 +61,11 @@ struct mdd_fixture :
     fixture_base<mdd_manager_settings<3>, minmax_expression_settings>
 {
 private:
-    inline static auto constexpr VarCount  = 15;
-    inline static auto constexpr NodeCount = 5'000;
-    inline static auto constexpr TermCount = 20;
-    inline static auto constexpr TermSize  = 5;
-    inline static auto constexpr Seed      = 911;
+    static auto constexpr VarCount  = 15;
+    static auto constexpr NodeCount = 5'000;
+    static auto constexpr TermCount = 20;
+    static auto constexpr TermSize  = 5;
+    static auto constexpr Seed      = 911;
 
 public:
     mdd_fixture() :
@@ -85,11 +85,11 @@ struct imdd_fixture :
     fixture_base<imdd_manager_settings<3>, minmax_expression_settings>
 {
 private:
-    inline static auto constexpr VarCount  = 15;
-    inline static auto constexpr NodeCount = 5'000;
-    inline static auto constexpr TermCount = 20;
-    inline static auto constexpr TermSize  = 5;
-    inline static auto constexpr Seed      = 911;
+    static auto constexpr VarCount  = 15;
+    static auto constexpr NodeCount = 5'000;
+    static auto constexpr TermCount = 20;
+    static auto constexpr TermSize  = 5;
+    static auto constexpr Seed      = 911;
 
 public:
     imdd_fixture() :
@@ -111,11 +111,11 @@ struct ifmdd_fixture :
     fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings>
 {
 private:
-    inline static auto constexpr VarCount  = 15;
-    inline static auto constexpr NodeCount = 5'000;
-    inline static auto constexpr TermCount = 20;
-    inline static auto constexpr TermSize  = 5;
-    inline static auto constexpr Seed      = 911;
+    static auto constexpr VarCount  = 15;
+    static auto constexpr NodeCount = 5'000;
+    static auto constexpr TermCount = 20;
+    static auto constexpr TermSize  = 5;
+    static auto constexpr Seed      = 911;
 
 public:
     ifmdd_fixture() :
@@ -178,10 +178,10 @@ auto test_compare_eval (
 }
 
 using Fixtures = boost::mpl::vector<
-    teddy::tests::bdd_fixture>;
-    // teddy::tests::mdd_fixture,
-    // teddy::tests::imdd_fixture,
-    // teddy::tests::ifmdd_fixture>;
+    teddy::tests::bdd_fixture,
+    teddy::tests::mdd_fixture,
+    teddy::tests::imdd_fixture,
+    teddy::tests::ifmdd_fixture>;
 
 BOOST_TEST_DECORATOR(*boost::unit_test::disabled())
 BOOST_AUTO_TEST_SUITE(core_test)
