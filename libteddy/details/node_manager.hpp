@@ -228,6 +228,11 @@ private:
     [[nodiscard]] static auto can_be_gced (node_t* node) -> bool;
 
 private:
+    static constexpr int32 DEFAULT_FIRST_TABLE_ADJUSTMENT = 230;
+    static constexpr double DEFAULT_CACHE_RATIO = 1.0;
+    static constexpr double DEFAULT_GC_RATIO = 0.20;
+
+private:
     apply_cache<Data, Degree> opCache_;
     node_pool<Data, Degree> pool_;
     std::vector<unique_table<Data, Degree>> uniqueTables_;
@@ -236,10 +241,11 @@ private:
     std::vector<int32> indexToLevel_;
     std::vector<int32> levelToIndex_;
     [[no_unique_address]] Domain domains_;
+    int32 varCount_;
     int64 nodeCount_;
+    int64 adjustmentNodeCount_;
     double cacheRatio_;
     double gcRatio_;
-    int64 nextTableAdjustment_;
     bool autoReorderEnabled_;
     bool gcReorderDeferred_;
 };
@@ -301,11 +307,7 @@ requires(domains::is_mixed<Domain>()())
         nodePoolSize,
         overflowNodePoolSize,
         std::move(order),
-        [&] () -> decltype(auto)
-        {
-            assert(ssize(domains.domains_) == varCount);
-            return std::move(domains);
-        }()
+        std::move(domains)
     )
 {
 }
@@ -319,38 +321,72 @@ node_manager<Data, Degree, Domain>::node_manager(
     std::vector<int32> order,
     Domain domains
 ) :
-    opCache_(),
+    opCache_(static_cast<int64>(
+        DEFAULT_CACHE_RATIO * static_cast<double>(nodePoolSize))
+    ),
     pool_(nodePoolSize, overflowNodePoolSize),
-    uniqueTables_(as_usize(varCount)),
-    terminals_({}),
-    specials_({}),
+    uniqueTables_(),
+    terminals_(),
+    specials_(),
     indexToLevel_(as_usize(varCount)),
     levelToIndex_(std::move(order)),
     domains_(std::move(domains)),
+    varCount_(varCount),
     nodeCount_(0),
-    cacheRatio_(0.5),
-    gcRatio_(0.05),
-    nextTableAdjustment_(230),
+    adjustmentNodeCount_(DEFAULT_FIRST_TABLE_ADJUSTMENT),
+    cacheRatio_(DEFAULT_CACHE_RATIO),
+    gcRatio_(DEFAULT_GC_RATIO),
     autoReorderEnabled_(false),
     gcReorderDeferred_(false)
 {
-    assert(ssize(levelToIndex_) == this->get_var_count());
+    assert(ssize(levelToIndex_) == varCount_);
     assert(check_distinct(levelToIndex_));
-    if constexpr (domains::is_mixed<Domain>()() && degrees::is_fixed<Degree>()())
+
+    if constexpr (domains::is_mixed<Domain>()())
     {
-        for ([[maybe_unused]] auto const domain : domains_.domains_)
+        assert(ssize(domains_.domains_) == varCount_);
+        if constexpr (degrees::is_fixed<Degree>()())
         {
-            assert(domain <= Degree()());
+            for ([[maybe_unused]] int32 const domain : domains_.domains_)
+            {
+                assert(domain <= Degree()());
+            }
         }
     }
 
-    // Create reverse mapping
-    // from (level -> index)
-    // to   (index -> level).
-    auto level = 0;
-    for (auto const index : levelToIndex_)
+    // Create reverse mapping from (level -> index) to (index -> level)
+    int32 level = 0;
+    for (int32 const index : levelToIndex_)
     {
         indexToLevel_[as_uindex(index)] = level++;
+    }
+
+    // Initialize unique tables with pre-allocated sizes
+    // The sizes follow triangular distribution with
+    // a = 0
+    // c = RelPeakPosition * varCount
+    // b = varCount
+    // f(c) = RelPeakNodeCount * nodePoolSize
+
+    // These two magic numbers are empirically obtained
+    double constexpr RelPeakPosition  = 0.71;
+    double constexpr RelPeakNodeCount = 0.05;
+    double const c  = RelPeakPosition * (static_cast<double>(varCount) - 1);
+    double const fc = RelPeakNodeCount * static_cast<double>(nodePoolSize);
+
+    for (int32 i = 0; i <= static_cast<int32>(c); ++i)
+    {
+        auto const x = static_cast<double>(i);
+        uniqueTables_.emplace_back(static_cast<int64>(fc * x / c));
+    }
+
+    for (auto i = static_cast<int32>(c) + 1; i < varCount_; ++i)
+    {
+        auto const n = static_cast<double>(varCount) - 1;
+        auto const x = static_cast<double>(i);
+        uniqueTables_.emplace_back(
+            static_cast<int64>((fc * x) / (c - n) - (fc * n) / (c - n))
+        );
     }
 }
 
@@ -536,7 +572,7 @@ auto node_manager<Data, Degree, Domain>::get_node_count() const -> int64
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::get_var_count() const -> int32
 {
-    return static_cast<int32>(uniqueTables_.size());
+    return varCount_;
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -551,9 +587,10 @@ auto node_manager<Data, Degree, Domain>::get_domains() const
     -> std::vector<int32>
 {
     auto domains = std::vector<int32>();
+    domains.reserve(as_usize(varCount_));
     for (auto k = 0; k < this->get_var_count(); ++k)
     {
-        domains.emplace_back(domains_[k]);
+        domains.push_back(domains_[k]);
     }
     return domains;
 }
@@ -960,9 +997,8 @@ auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
 template<class Data, degree Degree, domain Domain>
 auto node_manager<Data, Degree, Domain>::adjust_caches() -> void
 {
-    auto const newSize    = cacheRatio_ * static_cast<double>(nodeCount_);
-    auto const newIntSize = static_cast<int64>(newSize);
-    opCache_.adjust_capacity(newIntSize);
+    auto const newCapacity = cacheRatio_ * static_cast<double>(nodeCount_);
+    opCache_.grow_capacity(static_cast<int64>(newCapacity));
 }
 
 template<class Data, degree Degree, domain Domain>
@@ -1002,13 +1038,13 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
         }
     }
 
-    if (nodeCount_ >= nextTableAdjustment_)
+    if (nodeCount_ >= adjustmentNodeCount_)
     {
         // When the number of nodes doubles,
         // adjust cache and table sizes.
         this->adjust_tables();
         this->adjust_caches();
-        nextTableAdjustment_ *= 2;
+        adjustmentNodeCount_ *= 2;
     }
 
     ++nodeCount_;

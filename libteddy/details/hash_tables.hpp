@@ -3,11 +3,11 @@
 
 #include <libteddy/details/debug.hpp>
 #include <libteddy/details/node.hpp>
-#include <libteddy/details/operators.hpp>
+#include <libteddy/details/tools.hpp>
 
-#include <algorithm>
-#include <array>
-#include <tuple>
+#include <functional>
+#include <iterator> // TODO tmp
+#include <utility>
 #include <vector>
 
 namespace teddy
@@ -18,12 +18,12 @@ namespace teddy
 class table_base
 {
 private:
-    inline static constexpr auto Capacities = std::array<int64, 24> {{
+    static constexpr int64 Capacities[] {
         307,         617,         1'237,         2'477,        4'957,
         9'923,       19'853,      39'709,        79'423,       158'849,
         317'701,     635'413,     1'270'849,     2'541'701,    5'083'423,
         10'166'857,  20'333'759,  40'667'527,    81'335'063,   162'670'129,
-        325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289}};
+        325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289};
 
 public:
     static auto get_gte_capacity (int64 capacity) -> int64;
@@ -73,7 +73,7 @@ class unique_table
 {
 public:
     using node_t           = node<Data, D>;
-    using sons_t           = typename node_t::son_container;
+    using son_container    = typename node_t::son_container;
     using hash_t           = std::size_t;
     using bucket_iterator  = typename std::vector<node_t*>::iterator;
     using cbucket_iterator = typename std::vector<node_t*>::const_iterator;
@@ -81,10 +81,18 @@ public:
     using const_iterator   = unique_table_iterator<cbucket_iterator, Data, D>;
 
 public:
+    struct result_of_find
+    {
+        node_t* node_;
+        hash_t  hash_;
+    };
+
+public:
     /**
      *  \brief Initializes empty table
+     *  \param capacity Initial capacity
      */
-    unique_table();
+    unique_table(int64 capacity);
 
     /**
      *  \brief Move constructs tbale from \p other
@@ -104,8 +112,7 @@ public:
      *  \return Pointer to the found node, nullptr if not found.
      *          Hash of the node that can be used in insertion.
      */
-    auto find (sons_t const& sons, int32 domain) const
-        -> std::tuple<node_t*, hash_t>;
+    auto find (son_container const& sons, int32 domain) const -> result_of_find;
 
     /**
      *  \brief Adds all nodes from \p other into this table.
@@ -206,7 +213,7 @@ private:
      *  \param domain Number of sons.
      *  \return Hash value of the node.
      */
-    static auto node_hash (sons_t const& sons, int32 domain) -> hash_t;
+    static auto node_hash (son_container const& sons, int32 domain) -> hash_t;
 
     /**
      *  \brief Compares two nodes for equality
@@ -216,7 +223,7 @@ private:
      *  \param domain Number of sons.
      *  \return True if the nodes are equal, false otherwise.
      */
-    static auto node_equals (node_t* node, sons_t const& sons, int32 domain)
+    static auto node_equals (node_t* node, son_container const& sons, int32 domain)
         -> bool;
 
 private:
@@ -232,7 +239,6 @@ class apply_cache
 {
 public:
     using node_t = node<Data, Degree>;
-    using hash_t = std::size_t;
 
 public:
     struct cache_entry
@@ -244,7 +250,7 @@ public:
     };
 
 public:
-    apply_cache();
+    apply_cache(int64 capacity);
     apply_cache(apply_cache&& other) noexcept;
     ~apply_cache()                      = default;
 
@@ -253,14 +259,44 @@ public:
     auto operator= (apply_cache&&)      = delete;
 
 public:
+    /**
+     *  \brief Looks up result of an operation
+     *  \param opId id of the operation
+     *  \param lhs first operand
+     *  \param rhs second operand
+     *  \result result of the previous operation or nullptr
+     */
     auto find (int32 opId, node_t* lhs, node_t* rhs) -> node_t*;
+
+    /**
+     *  \brief Puts the result into the cache possibly overwriting old value
+     *  \param opId id of the operation
+     *  \param result result
+     *  \param lhs first operand
+     *  \param rhs second operand
+     *  \result result of the previous operation or nullptr
+     */
     auto put (int32 opId, node_t* result, node_t* lhs, node_t* rhs) -> void;
-    auto adjust_capacity (int64 aproxCapacity) -> void;
+
+    /**
+     *  \brief Increases the capacity so that it is close to \p aproxCapacity
+     *  Never lowers the capacity!
+     *  \param aproxCapacity new capacity
+     */
+    auto grow_capacity (int64 aproxCapacity) -> void;
+
+    /**
+     *  \brief Removes entries pointing to unused nodes
+     */
     auto remove_unused () -> void;
+
+    /**
+     *  \brief Clears all entries
+     */
     auto clear () -> void;
 
 private:
-    inline static constexpr auto LoadThreshold = 0.75;
+    static constexpr double LoadThreshold = 0.75;
 
 private:
     [[nodiscard]] auto get_capacity () const -> int64;
@@ -274,22 +310,23 @@ private:
 
 // table_base definitions:
 
-inline auto table_base::get_gte_capacity(int64 const capacity) -> int64
+inline auto table_base::get_gte_capacity(int64 const desiredCapacity) -> int64
 {
-    auto const predicate = [capacity] (int64 const currentCapacity)
+    for (int64 const tableCapacity : Capacities)
     {
-        return currentCapacity > capacity;
-    };
-    auto const tableIt
-        = std::find_if(begin(Capacities), end(Capacities), predicate);
-    return tableIt == std::end(Capacities) ? Capacities.back() : *tableIt;
+        if (tableCapacity > desiredCapacity)
+        {
+            return tableCapacity;
+        }
+    }
+    return Capacities[std::size(Capacities) - 1];
 }
 
 // apply_cache definitions:
 
 template<class Data, degree D>
-apply_cache<Data, D>::apply_cache() :
-    entries_(as_usize(table_base::get_gte_capacity(0))),
+apply_cache<Data, D>::apply_cache(int64 const capacity) :
+    entries_(as_usize(table_base::get_gte_capacity(capacity))),
     size_(0)
 {
 }
@@ -308,8 +345,8 @@ auto apply_cache<Data, D>::find(
     node_t* const rhs
 ) -> node_t*
 {
-    auto const tupleHash = utils::tuple_hash()(std::make_tuple(opId, lhs, rhs));
-    auto const index = tupleHash % size(entries_);
+    auto const hash = utils::hash_combine(opId, lhs, rhs);
+    auto const index = hash % size(entries_);
     auto& entry = entries_[index];
     auto const matches
         = entry.opId_ == opId && entry.lhs_ == lhs && entry.rhs_ == rhs;
@@ -324,9 +361,9 @@ auto apply_cache<Data, Degree>::put(
     node_t* const rhs
 ) -> void
 {
-    auto const tupleHash = utils::tuple_hash()(std::make_tuple(opId, lhs, rhs));
-    auto const index     = tupleHash % size(entries_);
-    auto& entry          = entries_[index];
+    auto const hash  = utils::hash_combine(opId, lhs, rhs);
+    auto const index = hash % size(entries_);
+    auto& entry      = entries_[index];
     if (not entry.result_)
     {
         ++size_;
@@ -338,9 +375,12 @@ auto apply_cache<Data, Degree>::put(
 }
 
 template<class Data, degree D>
-auto apply_cache<Data, D>::adjust_capacity(int64 const aproxCapacity) -> void
+auto apply_cache<Data, D>::grow_capacity(int64 const aproxCapacity) -> void
 {
-    this->rehash(table_base::get_gte_capacity(aproxCapacity));
+    if (this->get_capacity() < aproxCapacity)
+    {
+        this->rehash(table_base::get_gte_capacity(aproxCapacity));
+    }
 }
 
 template<class Data, degree D>
@@ -387,11 +427,6 @@ auto apply_cache<Data, D>::get_load_factor() const -> double
 template<class Data, degree D>
 auto apply_cache<Data, D>::rehash(int64 const newCapacity) -> void
 {
-    if (this->get_capacity() == newCapacity)
-    {
-        return;
-    }
-
     debug::out(
         "apply_cache: Load factor is ",
         this->get_load_factor(),
@@ -405,7 +440,7 @@ auto apply_cache<Data, D>::rehash(int64 const newCapacity) -> void
     auto const oldEntries = std::vector<cache_entry>(std::move(entries_));
     entries_              = std::vector<cache_entry>(as_usize(newCapacity));
     size_                 = 0;
-    for (auto const& entry : oldEntries)
+    for (cache_entry const& entry : oldEntries)
     {
         if (entry.result_)
         {
@@ -499,8 +534,8 @@ auto unique_table_iterator<BucketIt, Data, D>::move_next() -> node_t*
 // unique_table definitions:
 
 template<class Data, degree D>
-unique_table<Data, D>::unique_table() :
-    buckets_(as_usize(table_base::get_gte_capacity(0)), nullptr),
+unique_table<Data, D>::unique_table(int64 capacity) :
+    buckets_(as_usize(table_base::get_gte_capacity(capacity)), nullptr),
     size_(0)
 {
 }
@@ -514,8 +549,8 @@ unique_table<Data, D>::unique_table(unique_table&& other) noexcept :
 }
 
 template<class Data, degree D>
-auto unique_table<Data, D>::find(sons_t const& sons, int32 const domain) const
-    -> std::tuple<node_t*, hash_t>
+auto unique_table<Data, D>::find(son_container const& sons, int32 const domain) const
+    -> result_of_find
 {
     auto const hash  = node_hash(sons, domain);
     auto const index = hash % buckets_.size();
@@ -614,7 +649,10 @@ template<class Data, degree D>
 auto unique_table<Data, D>::clear() -> void
 {
     size_ = 0;
-    std::fill(std::begin(buckets_), std::end(buckets_), nullptr);
+    for (node_t*& bucket : buckets_)
+    {
+        bucket = nullptr;
+    }
 }
 
 template<class Data, degree D>
@@ -704,7 +742,7 @@ auto unique_table<Data, D>::insert_impl(node_t* const node, hash_t const hash)
 }
 
 template<class Data, degree D>
-auto unique_table<Data, D>::node_hash(sons_t const& sons, int32 const domain)
+auto unique_table<Data, D>::node_hash(son_container const& sons, int32 const domain)
     -> hash_t
 {
     auto result = hash_t(0);
@@ -719,7 +757,7 @@ auto unique_table<Data, D>::node_hash(sons_t const& sons, int32 const domain)
 template<class Data, degree D>
 auto unique_table<Data, D>::node_equals(
     node_t* const node,
-    sons_t const& sons,
+    son_container const& sons,
     int32 const domain
 ) -> bool
 {
