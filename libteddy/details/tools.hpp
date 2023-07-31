@@ -9,6 +9,7 @@
 #include <optional>
 #include <ranges>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -139,6 +140,23 @@ auto parse (std::string_view const input) -> std::optional<Num>
 }
 
 /**
+ *  \brief Computes hash of the \p args
+ */
+template<class... Ts>
+auto hash_combine (Ts const&... args) -> std::size_t
+{
+    // see boost::hash_combine
+    std::size_t seed = 0;
+    auto combine = [&seed] (auto const& elem)
+    {
+        auto hasher = std::hash<std::remove_cvref_t<decltype(elem)>>();
+        seed ^= hasher(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    };
+    (combine(args), ...);
+    return seed;
+}
+
+/**
  *  \brief Function object for tuple hash
  */
 struct tuple_hash
@@ -146,22 +164,7 @@ struct tuple_hash
     template<class... Ts>
     auto operator() (std::tuple<Ts...> const& tuple) const noexcept
     {
-        // see boost::hash_combine
-        auto seed         = std::size_t {0};
-        auto hash_combine = [&seed] (auto const& elem)
-        {
-            auto hasher = std::hash<std::remove_cvref_t<decltype(elem)>>();
-            seed ^= hasher(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            return std::tuple<>();
-        };
-        std::apply(
-            [&] (auto const&... elems)
-            {
-                return (hash_combine(elems), ...);
-            },
-            tuple
-        );
-        return seed;
+        return std::apply(hash_combine<Ts...>, tuple);
     }
 };
 

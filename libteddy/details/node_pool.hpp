@@ -4,11 +4,9 @@
 #include <libteddy/details/debug.hpp>
 #include <libteddy/details/node.hpp>
 
-#include <array>
-#include <cstddef>
-#include <iterator>
-#include <limits>
-#include <memory>
+#include <new>
+#include <utility>
+#include <vector>
 
 namespace teddy
 {
@@ -16,8 +14,7 @@ template<class Data, degree Degree>
 class node_pool
 {
 public:
-    using node_t        = node<Data, Degree>;
-    using son_container = typename node_t::son_container;
+    using node_t = node<Data, Degree>;
 
 public:
     node_pool(int64 mainPoolSize, int64 overflowPoolSize);
@@ -64,9 +61,9 @@ node_pool<Data, Degree>::node_pool(
     int64 const overflowPoolSize
 ) :
     mainPool_(allocate_pool(mainPoolSize)),
-    overflowPools_({}),
+    overflowPools_(),
     freeNodeList_(nullptr),
-    currentPoolIndex_(std::numeric_limits<int64>::max()),
+    currentPoolIndex_(-1),
     nextPoolNodeIndex_(0),
     mainPoolSize_(mainPoolSize),
     overflowPoolSize_(overflowPoolSize),
@@ -97,30 +94,30 @@ node_pool<Data, Degree>::~node_pool()
 {
     if (this->get_current_pool() != mainPool_)
     {
-        // Destroy main pool.
-        for (auto i = int64(0); i < mainPoolSize_; ++i)
+        // Destroy main pool
+        for (int64 i = 0; i < mainPoolSize_; ++i)
         {
-            std::destroy_at(mainPool_ + i);
+            (mainPool_ + i)->~node_t();
         }
         deallocate_pool(mainPool_);
 
-        // Destroy other fully used pools.
-        for (auto i = int64(0); i < currentPoolIndex_; ++i)
+        // Destroy other fully used pools
+        for (int64 i = 0; i < currentPoolIndex_; ++i)
         {
             auto const pool = overflowPools_[as_uindex(i)];
-            for (auto k = int64(0); k < overflowPoolSize_; ++k)
+            for (int64 k = 0; k < overflowPoolSize_; ++k)
             {
-                std::destroy_at(pool + k);
+                (pool + k)->~node_t();
             }
             deallocate_pool(pool);
         }
     }
 
-    // Destroy current partially used pool (main or overflow).
+    // Destroy current partially used pool (main or overflow)
     auto const pool = this->get_current_pool();
-    for (auto k = int64(0); k < nextPoolNodeIndex_; ++k)
+    for (int64 k = 0; k < nextPoolNodeIndex_; ++k)
     {
-        std::destroy_at(pool + k);
+        (pool + k)->~node_t();
     }
     deallocate_pool(pool);
 }
@@ -151,12 +148,12 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
     assert(availableNodes_ > 0);
     --availableNodes_;
 
-    auto node = static_cast<node_t*>(nullptr);
+    node_t* node = nullptr;
     if (freeNodeList_)
     {
         node          = freeNodeList_;
         freeNodeList_ = freeNodeList_->get_next();
-        std::destroy_at(node);
+        node->~node_t();
     }
     else
     {
@@ -164,7 +161,9 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
         ++nextPoolNodeIndex_;
     }
 
-    return std::construct_at(node, std::forward<Args>(args)...);
+    return static_cast<node_t*>(
+        ::new (node) node_t(std::forward<Args>(args)...)
+    );
 }
 
 template<class Data, degree Degree>
@@ -184,7 +183,7 @@ auto node_pool<Data, Degree>::grow() -> void
         ".\n"
     );
 
-    overflowPools_.emplace_back(allocate_pool(overflowPoolSize_));
+    overflowPools_.push_back(allocate_pool(overflowPoolSize_));
     currentPoolIndex_  = ssize(overflowPools_) - 1;
     nextPoolNodeIndex_ = 0;
     availableNodes_ += overflowPoolSize_;
@@ -223,7 +222,8 @@ auto node_pool<Data, Degree>::swap(node_pool& other) -> void
 template<class Data, degree Degree>
 auto node_pool<Data, Degree>::allocate_pool(int64 const size) -> node_t*
 {
-    return static_cast<node_t*>(::operator new (as_usize(size) * sizeof(node_t))
+    return static_cast<node_t*>(
+        ::operator new (as_usize(size) * sizeof(node_t))
     );
 }
 

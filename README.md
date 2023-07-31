@@ -58,7 +58,7 @@ TeDDy uses features from `C++20` so you may need to set your compiler to this ve
 ## Compiling and running examples
 You can compile and run examples from the root directory:
 ```sh
-cmake -DLIBTEDDY_BUILD_EXAMPLES=true -S . -B build
+cmake -DLIBTEDDY_BUILD_EXAMPLES=ON -S . -B build
 cmake --build build -j4
 ./build/examples/libteddy-example-1
 ```
@@ -81,7 +81,7 @@ If no such package exists for your OS, follow the [documentation](https://fmt.de
 
 After installing **Boost.Test** and **fmt**, you can compile and run the tests using cmake in the following way from the root directory:
 ```sh
-cmake -DCMAKE_BUILD_TYPE=Release -DLIBTEDDY_BUILD_TESTS=true -S . -B build
+cmake -DCMAKE_BUILD_TYPE=Release -DLIBTEDDY_BUILD_TESTS=ON -S . -B build
 cmake --build build -j4
 cmake --build build -t test
 ```

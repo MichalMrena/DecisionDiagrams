@@ -1091,8 +1091,11 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
     Node const& root
 ) -> diagram_t
 {
-    using apply_cache_t = std::
-        unordered_map<std::tuple<node_t*, node_t*>, node_t*, utils::tuple_hash>;
+    using apply_cache_t = std::unordered_map<
+        std::tuple<node_t*, node_t*>,
+        node_t*,
+        utils::tuple_hash
+    >;
 
     auto constexpr apply_op_wrap = [] (auto const& operation)
     {
