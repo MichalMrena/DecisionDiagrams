@@ -15,9 +15,9 @@ mkdir -p build/debug
 cd build/release
 cmake -DCMAKE_CXX_COMPILER=$COMPILER \
       -DCMAKE_BUILD_TYPE=Release \
-      -DLIBTEDDY_BUILD_TESTS=true \
-      -DLIBTEDDY_BUILD_EXAMPLES=true \
-      -DLIBTEDDY_BUILD_EXPERIMENTS=true \
+      -DLIBTEDDY_BUILD_TESTS=ON \
+      -DLIBTEDDY_BUILD_EXAMPLES=ON \
+      -DLIBTEDDY_BUILD_EXPERIMENTS=ON \
       ../..
 
 # Generate debug Makefile
@@ -25,10 +25,10 @@ cd ../debug
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
       -DCMAKE_CXX_COMPILER=$COMPILER \
       -DCMAKE_BUILD_TYPE=Debug \
-      -DLIBTEDDY_ENABLE_SANITIZERS=true \
-      -DLIBTEDDY_BUILD_TESTS=true \
-      -DLIBTEDDY_BUILD_EXAMPLES=true \
-      -DLIBTEDDY_BUILD_EXPERIMENTS=true \
+      -DLIBTEDDY_USE_SANITIZERS=ON \
+      -DLIBTEDDY_BUILD_TESTS=ON \
+      -DLIBTEDDY_BUILD_EXAMPLES=ON \
+      -DLIBTEDDY_BUILD_EXPERIMENTS=ON \
       ../..
 
 # Move compile commnads out of the build directory

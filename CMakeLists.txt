@@ -26,6 +26,7 @@ project(
 )
 
 # TeDDy library target
+
 add_library(
     teddy INTERFACE
 )
@@ -102,7 +103,14 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-# Internal subprojects
+# Subprojects
+
+## Options to enable subprojects and build parameters
+option(LIBTEDDY_USE_LIBCXX        "Use libc++"            OFF)
+option(LIBTEDDY_USE_SANITIZERS    "Enable asan and ubsan" OFF)
+option(LIBTEDDY_BUILD_TESTS       "Build tests"           OFF)
+option(LIBTEDDY_BUILD_EXAMPLES    "Build examples"        OFF)
+option(LIBTEDDY_BUILD_EXPERIMENTS "Build experiments"     OFF)
 
 ## Common compile and link options for subprojects
 string(
@@ -139,7 +147,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_LIBCXX)
 endif()
 
 ## Enable sanitizers for Debug build
-if(LIBTEDDY_ENABLE_SANITIZERS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+if(LIBTEDDY_USE_SANITIZERS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message(
         "=== Asan a Ubsan enabled for Debug build"
     )
