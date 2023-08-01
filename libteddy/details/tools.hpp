@@ -178,10 +178,22 @@ auto any (Args... args)
 {
     return (args || ...);
 }
-} // namespace teddy::utils
 
+// TODO remove type_traits
 template<class X, class T>
 using second_t = std::conditional_t<false, X, T>;
+
+template<class T>
+struct is_void
+{
+    static constexpr bool value = false;
+};
+
+template<>
+struct is_void<void>
+{
+    static constexpr bool value = true;
+};
 
 template<class T>
 struct optional_member
@@ -193,5 +205,7 @@ template<>
 struct optional_member<void>
 {
 };
+} // namespace teddy::utils
+
 
 #endif

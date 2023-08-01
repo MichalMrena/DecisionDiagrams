@@ -1,6 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_HASH_TABLES_HPP
 #define LIBTEDDY_DETAILS_HASH_TABLES_HPP
 
+#include <libteddy/details/config.hpp>
 #include <libteddy/details/debug.hpp>
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/tools.hpp>
@@ -427,6 +428,7 @@ auto apply_cache<Data, D>::get_load_factor() const -> double
 template<class Data, degree D>
 auto apply_cache<Data, D>::rehash(int64 const newCapacity) -> void
 {
+    #ifdef LIBTEDDY_VERBOSE
     debug::out(
         "apply_cache: Load factor is ",
         this->get_load_factor(),
@@ -436,6 +438,7 @@ auto apply_cache<Data, D>::rehash(int64 const newCapacity) -> void
         newCapacity,
         "."
     );
+    #endif
 
     auto const oldEntries = std::vector<cache_entry>(std::move(entries_));
     entries_              = std::vector<cache_entry>(as_usize(newCapacity));
@@ -448,7 +451,9 @@ auto apply_cache<Data, D>::rehash(int64 const newCapacity) -> void
         }
     }
 
+    #ifdef LIBTEDDY_VERBOSE
     debug::out(" New load factor is ", this->get_load_factor(), ".\n");
+    #endif
 }
 
 // unique_table_iterator definitions:
@@ -688,6 +693,7 @@ auto unique_table<Data, D>::rehash(int64 const newCapacity, int32 const domain)
         return;
     }
 
+    #ifdef LIBTEDDY_VERBOSE
     debug::out(
         "  unique_table: Load factor is ",
         this->get_load_factor(),
@@ -696,6 +702,7 @@ auto unique_table<Data, D>::rehash(int64 const newCapacity, int32 const domain)
         " should be ",
         newCapacity
     );
+    #endif
 
     auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));
     buckets_ = std::vector<node_t*>(as_usize(newCapacity), nullptr);
@@ -711,7 +718,9 @@ auto unique_table<Data, D>::rehash(int64 const newCapacity, int32 const domain)
         }
     };
 
+    #ifdef LIBTEDDY_VERBOSE
     debug::out(". New load factor is ", this->get_load_factor(), ".\n");
+    #endif
 }
 
 template<class Data, degree D>

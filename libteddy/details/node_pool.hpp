@@ -1,9 +1,11 @@
 #ifndef LIBTEDDY_DETAILS_NODE_POOL_HPP
 #define LIBTEDDY_DETAILS_NODE_POOL_HPP
 
+#include <libteddy/details/config.hpp>
 #include <libteddy/details/debug.hpp>
 #include <libteddy/details/node.hpp>
 
+#include <cassert>
 #include <new>
 #include <utility>
 #include <vector>
@@ -69,11 +71,13 @@ node_pool<Data, Degree>::node_pool(
     overflowPoolSize_(overflowPoolSize),
     availableNodes_(mainPoolSize)
 {
+    #ifdef LIBTEDDY_VERBOSE
     debug::out(
         "node_pool: Allocating initial pool with size ",
         mainPoolSize_,
         ".\n"
     );
+    #endif
 }
 
 template<class Data, degree Degree>
@@ -177,11 +181,13 @@ auto node_pool<Data, Degree>::destroy(node_t* const node) -> void
 template<class Data, degree Degree>
 auto node_pool<Data, Degree>::grow() -> void
 {
+    #ifdef LIBTEDDY_VERBOSE
     debug::out(
         "node_pool: Allocating overflow pool with size ",
         overflowPoolSize_,
         ".\n"
     );
+    #endif
 
     overflowPools_.push_back(allocate_pool(overflowPoolSize_));
     currentPoolIndex_  = ssize(overflowPools_) - 1;

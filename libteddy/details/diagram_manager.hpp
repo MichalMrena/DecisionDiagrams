@@ -7,13 +7,16 @@
 #include <libteddy/details/pla_file.hpp>
 #include <libteddy/details/tools.hpp>
 
+    #include <algorithm>
 #include <cmath>
 #include <concepts>
 #include <initializer_list>
 #include <iterator>
 #include <optional>
-#include <ranges>
-#include <tuple>
+    #include <ranges>
+    #include <tuple>
+#include <type_traits>
+#include <vector>
 
 namespace teddy
 {
@@ -112,7 +115,7 @@ public:
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
-    auto variable_not (int32 index) -> second_t<Foo, diagram_t>;
+    auto variable_not (int32 index) -> utils::second_t<Foo, diagram_t>;
 
     /**
      *  \brief Creates diagram representing function of single variable
@@ -240,7 +243,7 @@ public:
     template<class Foo = void>
     requires(is_bdd<Degree>)
     auto from_pla (pla_file const& file, fold_type foldType = fold_type::Tree)
-        -> second_t<Foo, std::vector<diagram_t>>;
+        -> utils::second_t<Foo, std::vector<diagram_t>>;
 
     /**
      *  \brief Creates diagram from an expression tree (AST).
@@ -517,7 +520,7 @@ public:
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
-    auto negate (diagram_t const& diagram) -> second_t<Foo, diagram_t>;
+    auto negate (diagram_t const& diagram) -> utils::second_t<Foo, diagram_t>;
 
     /**
      *  \brief Enumerates indices of variables that the function depends on
@@ -747,7 +750,7 @@ protected:
         int64 overflowNodePoolSize,
         std::vector<int32> order
     )
-    requires(domains::is_fixed<Domain>()());
+    requires(domains::is_fixed<Domain>::value);
 
     /**
      *  \brief Initializes diagram manager.
@@ -768,7 +771,7 @@ protected:
         domains::mixed domain,
         std::vector<int32> order
     )
-    requires(domains::is_mixed<Domain>()());
+    requires(domains::is_mixed<Domain>::value);
 
 public:
     diagram_manager(diagram_manager const&)                         = delete;
@@ -808,7 +811,7 @@ template<class Data, degree Degree, domain Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
 auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index)
-    -> second_t<Foo, diagram_t>
+    -> utils::second_t<Foo, diagram_t>
 {
     return diagram_t(nodes_.make_internal_node(
         index,
@@ -1014,7 +1017,7 @@ requires(is_bdd<Degree>)
 auto diagram_manager<Data, Degree, Domain>::from_pla(
     pla_file const& file,
     fold_type const foldType
-) -> second_t<Foo, std::vector<diagram_t>>
+) -> utils::second_t<Foo, std::vector<diagram_t>>
 {
     auto const product = [this] (auto const& cube)
     {
@@ -1259,9 +1262,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
     diagram_t const& diagram
 ) -> int64
 {
-    if constexpr (domains::is_fixed<Domain>()())
+    if constexpr (domains::is_fixed<Domain>::value)
     {
-        assert(value < Domain()());
+        assert(value < Domain::value);
     }
 
     auto constexpr CanUseDataMember
@@ -1332,9 +1335,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_one(
     diagram_t const& diagram
 ) -> std::optional<Vars>
 {
-    if constexpr (domains::is_fixed<Domain>()())
+    if constexpr (domains::is_fixed<Domain>::value)
     {
-        assert(value < Domain()());
+        assert(value < Domain::value);
     }
 
     auto varValues = [this] ()
@@ -1397,9 +1400,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
     O out
 ) const -> void
 {
-    if constexpr (domains::is_fixed<Domain>()())
+    if constexpr (domains::is_fixed<Domain>::value)
     {
-        assert(value < Domain()());
+        assert(value < Domain::value);
     }
 
     auto varValues = [this] ()
@@ -1536,7 +1539,7 @@ template<class Foo>
 requires(is_bdd<Degree>)
 auto diagram_manager<Data, Degree, Domain>::negate(
     const diagram_t& diagram
-) -> second_t<Foo, diagram_t>
+) -> utils::second_t<Foo, diagram_t>
 {
     return this->transform(diagram, [](int32 const value)
     {
@@ -1799,7 +1802,7 @@ diagram_manager<Data, Degree, Domain>::diagram_manager(
     int64 const overflowNodePoolSize,
     std::vector<int32> order
 )
-requires(domains::is_fixed<Domain>()())
+requires(domains::is_fixed<Domain>::value)
     :
     nodes_(
         varCount,
@@ -1818,7 +1821,7 @@ diagram_manager<Data, Degree, Domain>::diagram_manager(
     domains::mixed domain,
     std::vector<int32> order
 )
-requires(domains::is_mixed<Domain>()())
+requires(domains::is_mixed<Domain>::value)
     :
     nodes_(
         varCount,

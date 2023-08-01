@@ -195,7 +195,7 @@ public:
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
     auto calculate_availability (Ps const& probs, diagram_t const& diagram)
-        -> second_t<Foo, double>;
+        -> utils::second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
@@ -230,7 +230,7 @@ public:
      *  \return System availability.
      */
     template<class Foo = void>
-    [[nodiscard]] auto get_availability () const -> second_t<Foo, double>;
+    [[nodiscard]] auto get_availability () const -> utils::second_t<Foo, double>;
 
     /**
      *  \brief Returns system availability with
@@ -263,7 +263,7 @@ public:
     template<component_probabilities Ps, class Foo = void>
     requires(is_bss<Degree>)
     auto calculate_unavailability (Ps const& probs, diagram_t const& diagram)
-        -> second_t<Foo, double>;
+        -> utils::second_t<Foo, double>;
 
     /**
      *  \brief Calculates and returns system availability with
@@ -298,7 +298,7 @@ public:
      *  \return System availability
      */
     template<class Foo = void>
-    auto get_unavailability () -> second_t<Foo, double>;
+    auto get_unavailability () -> utils::second_t<Foo, double>;
 
     /**
      *  \brief Returns system unavailability with
@@ -465,7 +465,7 @@ protected:
         int64 overflowNodePoolSize,
         std::vector<int32> order
     )
-    requires(domains::is_fixed<Domain>()());
+    requires(domains::is_fixed<Domain>::value);
 
     reliability_manager(
         int32 varCount,
@@ -474,7 +474,7 @@ protected:
         domains::mixed domain,
         std::vector<int32> order
     )
-    requires(domains::is_mixed<Domain>()());
+    requires(domains::is_mixed<Domain>::value);
 
 private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
@@ -568,7 +568,7 @@ requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_availability(
     Ps const& probs,
     diagram_t const& diagram
-) -> second_t<Foo, double>
+) -> utils::second_t<Foo, double>
 {
     return this->calculate_availability(1, probs, diagram);
 }
@@ -597,7 +597,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 template<degree Degree, domain Domain>
 template<class Foo>
 auto reliability_manager<Degree, Domain>::get_availability() const
-    -> second_t<Foo, double>
+    -> utils::second_t<Foo, double>
 {
     auto const terminalNode = this->nodes_.get_terminal_node(1);
     return terminalNode ? terminalNode->data() : 0;
@@ -626,7 +626,7 @@ requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
     Ps const& probs,
     diagram_t const& diagram
-) -> second_t<Foo, double>
+) -> utils::second_t<Foo, double>
 {
     return this->calculate_unavailability(1, probs, diagram);
 }
@@ -655,7 +655,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
 template<degree Degree, domain Domain>
 template<class Foo>
 auto reliability_manager<Degree, Domain>::get_unavailability()
-    -> second_t<Foo, double>
+    -> utils::second_t<Foo, double>
 {
     return this->get_unavailability(1);
 }
@@ -1118,7 +1118,7 @@ reliability_manager<Degree, Domain>::reliability_manager(
     int64 const overflowNodePoolSize,
     std::vector<int32> order
 )
-requires(domains::is_fixed<Domain>()())
+requires(domains::is_fixed<Domain>::value)
     :
     diagram_manager<double, Degree, Domain>(
         varCount,
@@ -1137,7 +1137,7 @@ reliability_manager<Degree, Domain>::reliability_manager(
     domains::mixed domain,
     std::vector<int32> order
 )
-requires(domains::is_mixed<Domain>()())
+requires(domains::is_mixed<Domain>::value)
     :
     diagram_manager<double, Degree, Domain>(
         varCount,

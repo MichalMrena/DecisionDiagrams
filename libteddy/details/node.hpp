@@ -4,12 +4,11 @@
 #include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
-#include <array>
+    #include <array>
 #include <cassert>
-#include <cstddef>
-#include <memory>
-#include <type_traits>
-#include <utility>
+    #include <memory>
+#include <new>
+    #include <utility>
 
 namespace teddy
 {
@@ -23,6 +22,7 @@ template<int32 N>
 struct fixed
 {
     static_assert(N > 1);
+    static constexpr int32 value = N;
 
     auto constexpr operator() ()
     {
@@ -31,21 +31,33 @@ struct fixed
 };
 
 template<class T>
-struct is_fixed : public std::false_type
+struct is_fixed
 {
+    static constexpr bool value = false;
 };
 
 template<int32 N>
-struct is_fixed<fixed<N>> : public std::true_type
+struct is_fixed<fixed<N>>
 {
+    static constexpr bool value = true;
 };
 
 template<class T>
-using is_mixed = std::is_same<T, mixed>;
+struct is_mixed
+{
+    static constexpr bool value = false;
+};
+
+template<>
+struct is_mixed<mixed>
+{
+    static constexpr bool value = true;
+};
 } // namespace degrees
 
+// TODO tento koncept netreba
 template<class T>
-concept degree = degrees::is_mixed<T>()() || degrees::is_fixed<T>()();
+concept degree = degrees::is_mixed<T>::value || degrees::is_fixed<T>::value;
 
 template<class Data, degree Degree>
 class node
@@ -65,8 +77,7 @@ public:
     explicit node(int32 value);
     node(int32 index, son_container&& sons);
     ~node() = default;
-    ~node()
-    requires(degrees::is_mixed<Degree>()());
+    ~node() requires(degrees::is_mixed<Degree>::value);
 
     node(node const&)            = delete;
     node(node&&)                 = delete;
@@ -76,12 +87,12 @@ public:
     // notice: Making it a dummy template and making the return type
     //         dependent on the template makes it SFINE.
     template<class Foo = void>
-    requires(not std::is_void_v<Data>)
-    auto data () -> second_t<Foo, Data>&;
+    requires(not utils::is_void<Data>::value)
+    auto data () -> utils::second_t<Foo, Data>&;
 
     template<class Foo = void>
-    requires(not std::is_void_v<Data>)
-    auto data () const -> second_t<Foo, Data> const&;
+    requires(not utils::is_void<Data>::value)
+    auto data () const -> utils::second_t<Foo, Data> const&;
 
     [[nodiscard]] auto get_next () const -> node*;
     auto set_next (node* next) -> void;
@@ -136,15 +147,15 @@ private:
     [[nodiscard]] auto is_or_was_internal () const -> bool;
 
 private:
-    inline static constexpr uint32 MarkM   = 1U << (8 * sizeof(uint32) - 1);
-    inline static constexpr uint32 UsedM   = 1U << (8 * sizeof(uint32) - 2);
-    inline static constexpr uint32 LeafM   = 1U << (8 * sizeof(uint32) - 3);
-    inline static constexpr uint32 RefsM   = ~(MarkM | UsedM | LeafM);
-    inline static constexpr uint32 RefsMax = RefsM + 1;
+    static constexpr uint32 MarkM   = 1U << (8 * sizeof(uint32) - 1);
+    static constexpr uint32 UsedM   = 1U << (8 * sizeof(uint32) - 2);
+    static constexpr uint32 LeafM   = 1U << (8 * sizeof(uint32) - 3);
+    static constexpr uint32 RefsM   = ~(MarkM | UsedM | LeafM);
+    static constexpr uint32 RefsMax = RefsM + 1;
 
 private:
-    alignas(internal) std::byte union_[sizeof(internal)];
-    [[no_unique_address]] optional_member<Data> data_;
+    alignas(internal) char union_[sizeof(internal)];
+    [[no_unique_address]] utils::optional_member<Data> data_;
     node* next_;
     uint32 bits_;
 };
@@ -176,7 +187,7 @@ node<Data, Degree>::node(int32 const value) :
     next_ {nullptr},
     bits_ {LeafM | UsedM}
 {
-    std::construct_at(this->union_terminal(), value);
+    ::new (this->union_terminal()) terminal(value);
 }
 
 template<class Data, degree Degree>
@@ -185,23 +196,23 @@ node<Data, Degree>::node(int32 const index, son_container&& sons) :
     next_ {nullptr},
     bits_ {UsedM}
 {
-    std::construct_at(this->union_internal(), std::move(sons), index);
+    ::new (this->union_internal()) internal(std::move(sons), index);
 }
 
 template<class Data, degree Degree>
 node<Data, Degree>::~node()
-requires(degrees::is_mixed<Degree>()())
+requires(degrees::is_mixed<Degree>::value)
 {
     if (this->is_or_was_internal())
     {
-        std::destroy_at(this->union_internal_unsafe());
+        this->union_internal_unsafe()->~internal();
     }
 }
 
 template<class Data, degree Degree>
 template<class Foo>
-requires(not std::is_void_v<Data>)
-auto node<Data, Degree>::data() -> second_t<Foo, Data>&
+requires(not utils::is_void<Data>::value)
+auto node<Data, Degree>::data() -> utils::second_t<Foo, Data>&
 {
     assert(this->is_used());
     return data_.member_;
@@ -209,8 +220,8 @@ auto node<Data, Degree>::data() -> second_t<Foo, Data>&
 
 template<class Data, degree Degree>
 template<class Foo>
-requires(not std::is_void_v<Data>)
-auto node<Data, Degree>::data() const -> second_t<Foo, Data> const&
+requires(not utils::is_void<Data>::value)
+auto node<Data, Degree>::data() const -> utils::second_t<Foo, Data> const&
 {
     assert(this->is_used());
     return data_.member_;
@@ -245,6 +256,10 @@ auto node<Data, Degree>::set_sons(son_container sons) -> void
 {
     using std::swap;
     swap(this->union_internal()->sons_, sons);
+
+    // if constexpr (mixed)
+    // delete old sons
+    // this->union_internal()->sons_ = sons;
 }
 
 template<class Data, degree Degree>
