@@ -76,10 +76,6 @@ struct is_mixed<mixed>
 };
 } // namespace domains
 
-// TODO tento koncept netreba
-template<class T>
-concept domain = domains::is_mixed<T>::value || domains::is_fixed<T>::value;
-
 template<class F>
 concept int_to_int = requires(F function, int32 value) {
                          {
@@ -90,7 +86,7 @@ concept int_to_int = requires(F function, int32 value) {
 template<class F, class Node>
 concept node_op = requires(F function, Node* node) { function(node); };
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 class node_manager
 {
 public:
@@ -263,28 +259,28 @@ private:
     bool gcReorderDeferred_;
 };
 
-template<class Data, degree D>
-auto id_inc_ref_count (node<Data, D>* const node) -> ::teddy::node<Data, D>*
+template<class Data, class Degree>
+auto id_inc_ref_count (node<Data, Degree>* const node) -> ::teddy::node<Data, Degree>*
 {
     node->inc_ref_count();
     return node;
 }
 
-template<class Data, degree D>
-auto id_set_marked (node<Data, D>* const node) -> ::teddy::node<Data, D>*
+template<class Data, class Degree>
+auto id_set_marked (node<Data, Degree>* const node) -> ::teddy::node<Data, Degree>*
 {
     node->set_marked();
     return node;
 }
 
-template<class Data, degree D>
-auto id_set_notmarked (node<Data, D>* const node) -> ::teddy::node<Data, D>*
+template<class Data, class Degree>
+auto id_set_notmarked (node<Data, Degree>* const node) -> ::teddy::node<Data, Degree>*
 {
     node->set_notmarked();
     return node;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 node_manager<Data, Degree, Domain>::node_manager(
     int32 const varCount,
     int64 const nodePoolSize,
@@ -304,7 +300,7 @@ requires(domains::is_fixed<Domain>::value)
 {
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 node_manager<Data, Degree, Domain>::node_manager(
     int32 const varCount,
     int64 const nodePoolSize,
@@ -325,7 +321,7 @@ requires(domains::is_mixed<Domain>::value)
 {
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 node_manager<Data, Degree, Domain>::node_manager(
     [[maybe_unused]] common_init_tag initTag,
     int32 const varCount,
@@ -403,7 +399,7 @@ node_manager<Data, Degree, Domain>::node_manager(
     }
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::set_cache_ratio(double const ratio)
     -> void
 {
@@ -411,7 +407,7 @@ auto node_manager<Data, Degree, Domain>::set_cache_ratio(double const ratio)
     cacheRatio_ = ratio;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::set_gc_ratio(double const ratio)
     -> void
 {
@@ -419,21 +415,21 @@ auto node_manager<Data, Degree, Domain>::set_gc_ratio(double const ratio)
     gcRatio_ = ratio;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::set_auto_reorder(bool const doReorder)
     -> void
 {
     autoReorderEnabled_ = doReorder;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_terminal_node(int32 const value
 ) const -> node_t*
 {
     return value < ssize(terminals_) ? terminals_[as_uindex(value)] : nullptr;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_terminal_node(int32 const value)
     -> node_t*
 {
@@ -460,7 +456,7 @@ auto node_manager<Data, Degree, Domain>::make_terminal_node(int32 const value)
     return id_set_marked(terminals_[as_uindex(value)]);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_special_node(
     [[maybe_unused]] int32 const value
 ) -> node_t*
@@ -480,7 +476,7 @@ auto node_manager<Data, Degree, Domain>::make_special_node(
     return id_set_marked(specials_[0]);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_internal_node(
     int32 const index,
     son_container&& sons
@@ -516,14 +512,14 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     return id_set_marked(ret);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_level(int32 const index) const
     -> int32
 {
     return indexToLevel_[as_uindex(index)];
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_level(node_t* const node) const
     -> int32
 {
@@ -531,13 +527,13 @@ auto node_manager<Data, Degree, Domain>::get_level(node_t* const node) const
                                : this->get_level(node->get_index());
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_leaf_level() const -> int32
 {
     return static_cast<int32>(this->get_var_count());
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_index(int32 const level) const
     -> int32
 {
@@ -545,7 +541,7 @@ auto node_manager<Data, Degree, Domain>::get_index(int32 const level) const
     return levelToIndex_[as_uindex(level)];
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_domain(int32 const index) const
     -> int32
 {
@@ -553,14 +549,14 @@ auto node_manager<Data, Degree, Domain>::get_domain(int32 const index) const
     return domains_[index];
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_domain(node_t* const node) const
     -> int32
 {
     return this->get_domain(node->get_index());
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_node_count(int32 const index) const
     -> int64
 {
@@ -568,7 +564,7 @@ auto node_manager<Data, Degree, Domain>::get_node_count(int32 const index) const
     return uniqueTables_[as_uindex(index)].size();
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_node_count(node_t* const node
 ) const -> int64
 {
@@ -583,26 +579,26 @@ auto node_manager<Data, Degree, Domain>::get_node_count(node_t* const node
     return count;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_node_count() const -> int64
 {
     return nodeCount_;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_var_count() const -> int32
 {
     return varCount_;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_order() const
     -> std::vector<int32> const&
 {
     return levelToIndex_;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_domains() const
     -> std::vector<int32>
 {
@@ -615,14 +611,14 @@ auto node_manager<Data, Degree, Domain>::get_domains() const
     return domains;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::force_gc() -> void
 {
     this->collect_garbage();
     opCache_.remove_unused();
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 {
     #ifdef LIBTEDDY_VERBOSE
@@ -682,7 +678,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
     #endif
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& ost) const
     -> void
 {
@@ -695,7 +691,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& ost) const
     );
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::to_dot_graph(
     std::ostream& ost,
     node_t* const node
@@ -710,7 +706,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph(
     );
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::domain_product(
     int32 const levelFrom,
     int32 const levelTo
@@ -731,7 +727,7 @@ auto node_manager<Data, Degree, Domain>::domain_product(
     }
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<utils::i_gen F>
 auto node_manager<Data, Degree, Domain>::make_sons(
     int32 const index,
@@ -746,7 +742,7 @@ auto node_manager<Data, Degree, Domain>::make_sons(
     return sons;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
     node_t* const node,
@@ -760,7 +756,7 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
     }
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
     int32 const index,
@@ -774,7 +770,7 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
     }
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation) const
     -> void
@@ -790,7 +786,7 @@ auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation) const
     this->for_each_terminal_node(operation);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_terminal_node(
     NodeOp&& operation
@@ -805,7 +801,7 @@ auto node_manager<Data, Degree, Domain>::for_each_terminal_node(
     }
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<teddy_bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_find(
     node_t* lhs,
@@ -827,7 +823,7 @@ auto node_manager<Data, Degree, Domain>::cache_find(
     return node;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<teddy_bin_op O>
 auto node_manager<Data, Degree, Domain>::cache_put(
     node_t* const result,
@@ -845,13 +841,13 @@ auto node_manager<Data, Degree, Domain>::cache_put(
     opCache_.put(O::get_id(), result, lhs, rhs);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::cache_clear () -> void
 {
     opCache_.clear();
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::is_valid_var_value(
     int32 const index,
     int32 const value
@@ -860,7 +856,7 @@ auto node_manager<Data, Degree, Domain>::is_valid_var_value(
     return value < domains_[index];
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::run_deferred() -> void
 {
     if (gcReorderDeferred_)
@@ -871,7 +867,7 @@ auto node_manager<Data, Degree, Domain>::run_deferred() -> void
     }
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_pre(
     node_t* const rootNode,
@@ -904,7 +900,7 @@ auto node_manager<Data, Degree, Domain>::traverse_pre(
     this->traverse_no_op(rootNode);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_post(
     node_t* const rootNode,
@@ -936,7 +932,7 @@ auto node_manager<Data, Degree, Domain>::traverse_post(
     this->traverse_no_op(rootNode);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<node_op<node<Data, Degree>> NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_level(
     node_t* const rootNode,
@@ -982,14 +978,14 @@ auto node_manager<Data, Degree, Domain>::traverse_level(
     this->traverse_no_op(rootNode);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::dec_ref_count(node_t* const node)
     -> void
 {
     node->dec_ref_count();
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::is_redundant(
     int32 const index,
     son_container const& sons
@@ -1005,7 +1001,7 @@ auto node_manager<Data, Degree, Domain>::is_redundant(
     return true;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
 {
     #ifdef LIBTEDDY_VERBOSE
@@ -1023,14 +1019,14 @@ auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
     }
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::adjust_caches() -> void
 {
     auto const newCapacity = cacheRatio_ * static_cast<double>(nodeCount_);
     opCache_.grow_capacity(static_cast<int64>(newCapacity));
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<class... Args>
 auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
     -> node_t*
@@ -1080,7 +1076,7 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
     return pool_.create(std::forward<Args>(args)...);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::delete_node(node_t* const n) -> void
 {
     assert(not n->is_marked());
@@ -1089,7 +1085,7 @@ auto node_manager<Data, Degree, Domain>::delete_node(node_t* const n) -> void
     pool_.destroy(n);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::traverse_no_op(node_t* const rootNode
 ) const -> void
 {
@@ -1113,7 +1109,7 @@ auto node_manager<Data, Degree, Domain>::traverse_no_op(node_t* const rootNode
     step(step, rootNode);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 template<class ForEachNode>
 auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
     std::ostream& ost,
@@ -1233,13 +1229,13 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
     ost << "}" << '\n';
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::deferr_gc_reorder() -> void
 {
     gcReorderDeferred_ = true;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::check_distinct(
     std::vector<int32> const& ints
 ) -> bool
@@ -1261,13 +1257,13 @@ auto node_manager<Data, Degree, Domain>::check_distinct(
     return true;
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::can_be_gced(node_t* const node) -> bool
 {
     return node->get_ref_count() == 0 && not node->is_marked();
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     -> void
 {
@@ -1344,7 +1340,7 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     );
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const node)
     -> void
 {
@@ -1385,7 +1381,7 @@ auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const node)
     this->delete_node(node);
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
     int32 const index
 ) -> void
@@ -1411,7 +1407,7 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
     --indexToLevel_[as_uindex(nextIndex)];
 }
 
-template<class Data, degree Degree, domain Domain>
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::sift_variables() -> void
 {
     using count_pair = struct

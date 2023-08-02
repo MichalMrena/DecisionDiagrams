@@ -55,11 +55,7 @@ struct is_mixed<mixed>
 };
 } // namespace degrees
 
-// TODO tento koncept netreba
-template<class T>
-concept degree = degrees::is_mixed<T>::value || degrees::is_fixed<T>::value;
-
-template<class Data, degree Degree>
+template<class Data, class Degree>
 class node
 {
 public:
@@ -115,7 +111,9 @@ public:
     [[nodiscard]] auto get_value () const -> int32;
 
 private:
-    // TODO: c++20, constructors not necessary
+    // P0960R3 constructors not necessary
+    // >=g++10, >=clang++16 ...
+    //                   ^^ :(
 
     struct internal
     {
@@ -160,9 +158,9 @@ private:
     uint32 bits_;
 };
 
-template<class Data, degree D>
+template<class Data, class Degree>
 template<int32 N>
-auto node<Data, D>::make_son_container(
+auto node<Data, Degree>::make_son_container(
     [[maybe_unused]] int32 const domain,
     [[maybe_unused]] degrees::fixed<N> const degree
 ) -> std::array<node*, as_usize(N)>
@@ -170,8 +168,8 @@ auto node<Data, D>::make_son_container(
     return std::array<node*, as_usize(N)>();
 }
 
-template<class Data, degree D>
-auto node<Data, D>::make_son_container(
+template<class Data, class Degree>
+auto node<Data, Degree>::make_son_container(
     int32 const domain,
     [[maybe_unused]] degrees::mixed const degreeTag
 ) -> std::unique_ptr<node*[]>
@@ -181,7 +179,7 @@ auto node<Data, D>::make_son_container(
     return std::make_unique<node*[]>(as_usize(domain));
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 node<Data, Degree>::node(int32 const value) :
     union_ {},
     next_ {nullptr},
@@ -190,7 +188,7 @@ node<Data, Degree>::node(int32 const value) :
     ::new (this->union_terminal()) terminal(value);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 node<Data, Degree>::node(int32 const index, son_container&& sons) :
     union_ {},
     next_ {nullptr},
@@ -199,7 +197,7 @@ node<Data, Degree>::node(int32 const index, son_container&& sons) :
     ::new (this->union_internal()) internal(std::move(sons), index);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 node<Data, Degree>::~node()
 requires(degrees::is_mixed<Degree>::value)
 {
@@ -209,7 +207,7 @@ requires(degrees::is_mixed<Degree>::value)
     }
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 template<class Foo>
 requires(not utils::is_void<Data>::value)
 auto node<Data, Degree>::data() -> utils::second_t<Foo, Data>&
@@ -218,7 +216,7 @@ auto node<Data, Degree>::data() -> utils::second_t<Foo, Data>&
     return data_.member_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 template<class Foo>
 requires(not utils::is_void<Data>::value)
 auto node<Data, Degree>::data() const -> utils::second_t<Foo, Data> const&
@@ -227,31 +225,31 @@ auto node<Data, Degree>::data() const -> utils::second_t<Foo, Data> const&
     return data_.member_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::get_next() const -> node*
 {
     return next_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::set_next(node* const next) -> void
 {
     next_ = next;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::get_sons() const -> son_container const&
 {
     return this->union_internal()->sons_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::get_son(int32 const sonOrder) const -> node*
 {
     return (this->union_internal()->sons_)[as_uindex(sonOrder)];
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::set_sons(son_container sons) -> void
 {
     using std::swap;
@@ -262,127 +260,127 @@ auto node<Data, Degree>::set_sons(son_container sons) -> void
     // this->union_internal()->sons_ = sons;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::get_value() const -> int32
 {
     return this->union_terminal()->value_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::is_internal() const -> bool
 {
     return this->is_used() && not this->is_terminal();
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::is_terminal() const -> bool
 {
     return this->is_used() && (bits_ & LeafM);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::is_used() const -> bool
 {
     return static_cast<bool>(bits_ & UsedM);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::set_unused() -> void
 {
     bits_ &= ~UsedM;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::is_marked() const -> bool
 {
     return static_cast<bool>(bits_ & MarkM);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::toggle_marked() -> void
 {
     bits_ ^= MarkM;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::set_marked() -> void
 {
     bits_ |= MarkM;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::set_notmarked() -> void
 {
     bits_ &= ~MarkM;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::get_ref_count() const -> int32
 {
     return static_cast<int32>(bits_ & RefsM);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::inc_ref_count() -> void
 {
     assert(this->get_ref_count() < static_cast<int32>(RefsMax));
     ++bits_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::dec_ref_count() -> void
 {
     assert(this->get_ref_count() > 0);
     --bits_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::get_index() const -> int32
 {
     return this->union_internal()->index_;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::set_index(int32 const index) -> void
 {
     this->union_internal()->index_ = index;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::union_internal() -> internal*
 {
     assert(this->is_internal());
     return reinterpret_cast<internal*>(&union_);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::union_internal() const -> internal const*
 {
     assert(this->is_internal());
     return reinterpret_cast<internal const*>(&union_);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::union_terminal() -> terminal*
 {
     assert(this->is_terminal());
     return reinterpret_cast<terminal*>(&union_);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::union_terminal() const -> terminal const*
 {
     assert(this->is_terminal());
     return reinterpret_cast<terminal const*>(&union_);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::union_internal_unsafe() -> internal*
 {
     return reinterpret_cast<internal*>(&union_);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto node<Data, Degree>::is_or_was_internal() const -> bool
 {
     return not static_cast<bool>(bits_ & LeafM);

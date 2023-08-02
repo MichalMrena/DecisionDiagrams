@@ -122,7 +122,7 @@ struct var_change
  *  Base class for reliability managers. Defines all functions for
  *  reliability analysis.
  */
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 class reliability_manager : public diagram_manager<double, Degree, Domain>
 {
 public:
@@ -496,7 +496,7 @@ private:
     auto to_mnf (diagram_t const& diagram) -> diagram_t;
 };
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_probabilities(
     Ps const& probs,
@@ -543,7 +543,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
     );
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_probability(
     int32 const state,
@@ -554,7 +554,7 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
     return this->calculate_ntp({state}, probs, diagram);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::get_probability(int32 const state
 ) const -> double
 {
@@ -562,7 +562,7 @@ auto reliability_manager<Degree, Domain>::get_probability(int32 const state
     return terminalNode ? terminalNode->data() : 0.0;
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_availability(
@@ -573,7 +573,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
     return this->calculate_availability(1, probs, diagram);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_availability(
     int32 const state,
@@ -594,7 +594,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
     return this->calculate_ntp(states, probs, diagram);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<class Foo>
 auto reliability_manager<Degree, Domain>::get_availability() const
     -> utils::second_t<Foo, double>
@@ -603,7 +603,7 @@ auto reliability_manager<Degree, Domain>::get_availability() const
     return terminalNode ? terminalNode->data() : 0;
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::get_availability(int32 const state
 ) const -> double
 {
@@ -620,7 +620,7 @@ auto reliability_manager<Degree, Domain>::get_availability(int32 const state
     return result;
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
@@ -631,7 +631,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
     return this->calculate_unavailability(1, probs, diagram);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
     int32 const state,
@@ -652,7 +652,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
     return this->calculate_ntp(states, probs, diagram);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<class Foo>
 auto reliability_manager<Degree, Domain>::get_unavailability()
     -> utils::second_t<Foo, double>
@@ -660,7 +660,7 @@ auto reliability_manager<Degree, Domain>::get_unavailability()
     return this->get_unavailability(1);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
     -> double
 {
@@ -677,7 +677,7 @@ auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
     return result;
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::state_frequency(
     diagram_t const& diagram,
     int32 state
@@ -690,7 +690,7 @@ auto reliability_manager<Degree, Domain>::state_frequency(
          / static_cast<double>(domainSize);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<class FChange>
 auto reliability_manager<Degree, Domain>::dpld(
     var_change varChange,
@@ -701,7 +701,7 @@ auto reliability_manager<Degree, Domain>::dpld(
     return this->apply_dpld_new(diagram, varChange, fChange);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::to_dpld_e(
     int32 const varFrom,
     int32 const varIndex,
@@ -783,7 +783,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
     return diagram_t(step(step, root));
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::structural_importance(
     diagram_t const& dpld
 ) -> double
@@ -795,7 +795,7 @@ auto reliability_manager<Degree, Domain>::structural_importance(
          / static_cast<double>(domainSize);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::birnbaum_importance(
     Ps const& probs,
@@ -805,7 +805,7 @@ auto reliability_manager<Degree, Domain>::birnbaum_importance(
     return this->calculate_probability(1, probs, dpld);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::fussell_vesely_importance(
     Ps const& probs,
@@ -826,7 +826,7 @@ auto reliability_manager<Degree, Domain>::fussell_vesely_importance(
     return nominator / unavailability;
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<out_var_values Vars>
 auto reliability_manager<Degree, Domain>::mcvs(
     diagram_t const& diagram,
@@ -838,7 +838,7 @@ auto reliability_manager<Degree, Domain>::mcvs(
     return cuts;
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<out_var_values Vars>
 auto reliability_manager<Degree, Domain>::mpvs(
     diagram_t const& diagram,
@@ -850,7 +850,7 @@ auto reliability_manager<Degree, Domain>::mpvs(
     return cuts;
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<out_var_values Vars, std::output_iterator<Vars> Out>
 auto reliability_manager<Degree, Domain>::mcvs_g(
     diagram_t const& diagram,
@@ -877,7 +877,7 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
     this->template satisfy_all_g<Vars, Out>(1, conj, out);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<out_var_values Vars, std::output_iterator<Vars> Out>
 auto reliability_manager<Degree, Domain>::mpvs_g(
     diagram_t const& diagram,
@@ -904,7 +904,7 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
     this->template satisfy_all_g<Vars, Out>(1, conj, out);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<class F>
 auto reliability_manager<Degree, Domain>::apply_dpld_new(
     diagram_t const& diagram,
@@ -1014,7 +1014,7 @@ auto reliability_manager<Degree, Domain>::apply_dpld_new(
     return diagram_t(newRoot);
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 template<component_probabilities Ps>
 auto reliability_manager<Degree, Domain>::calculate_ntp(
     std::vector<int32> const& selectedValues,
@@ -1062,7 +1062,7 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
     return diagram.unsafe_get_root()->data();
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
     -> diagram_t
 {
@@ -1111,7 +1111,7 @@ auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
     return diagram_t(step(step, diagram.unsafe_get_root()));
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 reliability_manager<Degree, Domain>::reliability_manager(
     int32 const varCount,
     int64 const nodePoolSize,
@@ -1129,7 +1129,7 @@ requires(domains::is_fixed<Domain>::value)
 {
 }
 
-template<degree Degree, domain Domain>
+template<class Degree, class Domain>
 reliability_manager<Degree, Domain>::reliability_manager(
     int32 const varCount,
     int64 const nodePoolSize,

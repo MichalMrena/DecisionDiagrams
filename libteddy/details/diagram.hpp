@@ -18,7 +18,7 @@ namespace teddy
  *  it is a cheap value type. Multiple diagrams can point to a same node
  *  i.e. represent the same function.
  */
-template<class Data, degree Degree>
+template<class Data, class Degree>
 class diagram
 {
 public:
@@ -98,7 +98,7 @@ private:
  *  \param lhs First diagram.
  *  \param rhs Second diagram.
  */
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto swap (diagram<Data, Degree>& lhs, diagram<Data, Degree>& rhs) -> void
 {
     lhs.swap(rhs);
@@ -110,7 +110,7 @@ auto swap (diagram<Data, Degree>& lhs, diagram<Data, Degree>& rhs) -> void
  *  \param rhs Second diagram.
  *  \return true iif diagrams represent the same function.
  */
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto operator== (
     diagram<Data, Degree> const& lhs,
     diagram<Data, Degree> const& rhs
@@ -125,31 +125,31 @@ auto operator== (
  *  \param rhs Second diagram.
  *  \return true iif diagrams represent the same function.
  */
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto equals (diagram<Data, Degree> lhs, diagram<Data, Degree> rhs) -> bool
 {
     return lhs.equals(rhs);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 diagram<Data, Degree>::diagram(node_t* const root) :
     root_(id_set_notmarked(id_inc_ref_count(root)))
 {
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 diagram<Data, Degree>::diagram(diagram const& other) :
     root_(id_inc_ref_count(other.root_))
 {
 }
 
-template<class Data, degree D>
-diagram<Data, D>::diagram(diagram&& other) noexcept :
+template<class Data, class Degree>
+diagram<Data, Degree>::diagram(diagram&& other) noexcept :
     root_(std::exchange(other.root_, nullptr))
 {
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 diagram<Data, Degree>::~diagram()
 {
     if (root_)
@@ -158,26 +158,26 @@ diagram<Data, Degree>::~diagram()
     }
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto diagram<Data, Degree>::operator= (diagram other) -> diagram&
 {
     other.swap(*this);
     return *this;
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto diagram<Data, Degree>::swap(diagram& other) -> void
 {
     std::swap(root_, other.root_);
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto diagram<Data, Degree>::equals(diagram const& other) const -> bool
 {
     return root_ == other.unsafe_get_root();
 }
 
-template<class Data, degree Degree>
+template<class Data, class Degree>
 auto diagram<Data, Degree>::unsafe_get_root() const -> node_t*
 {
     return root_;
@@ -186,7 +186,7 @@ auto diagram<Data, Degree>::unsafe_get_root() const -> node_t*
 
 namespace std
 {
-template<class Data, teddy::degree Degree>
+template<class Data, class Degree>
 struct hash<teddy::diagram<Data, Degree>>
 {
     [[nodiscard]] auto operator() (teddy::diagram<Data, Degree> const& diagram
@@ -197,7 +197,7 @@ struct hash<teddy::diagram<Data, Degree>>
     }
 };
 
-template<class Data, teddy::degree Degree>
+template<class Data, class Degree>
 struct equal_to<teddy::diagram<Data, Degree>>
 {
     [[nodiscard]] auto operator() (
