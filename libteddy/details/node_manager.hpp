@@ -139,8 +139,10 @@ public:
     [[nodiscard]] auto get_terminal_node (int32 value) const -> node_t*;
     [[nodiscard]] auto make_terminal_node (int32 value) -> node_t*;
     [[nodiscard]] auto make_special_node (int32 value) -> node_t*;
-    [[nodiscard]] auto make_internal_node (int32 index, son_container&& sons)
-        -> node_t*;
+    [[nodiscard]] auto make_internal_node (
+        int32 index,
+        son_container const& sons
+    ) -> node_t*;
     [[nodiscard]] auto get_level (int32 index) const -> int32;
     [[nodiscard]] auto get_level (node_t* node) const -> int32;
     [[nodiscard]] auto get_leaf_level () const -> int32;
@@ -479,7 +481,7 @@ auto node_manager<Data, Degree, Domain>::make_special_node(
 template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_internal_node(
     int32 const index,
-    son_container&& sons
+    son_container const& sons
 ) -> node_t*
 {
     // Each node comming out of here is marked.
@@ -489,6 +491,10 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     if (this->is_redundant(index, sons))
     {
         ret = sons[0];
+        if constexpr (degrees::is_mixed<Degree>::value)
+        {
+            node_t::delete_son_container(sons);
+        }
     }
     else
     {
@@ -497,6 +503,10 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
         if (existing)
         {
             ret = existing;
+            if constexpr (degrees::is_mixed<Degree>::value)
+            {
+                node_t::delete_son_container(sons);
+            }
         }
         else
         {
@@ -1338,6 +1348,11 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
             this->dec_ref_try_gc(oldSon);
         }
     );
+
+    if constexpr (degrees::is_mixed<Degree>::value)
+    {
+        node_t::delete_son_container(oldSons);
+    }
 }
 
 template<class Data, class Degree, class Domain>

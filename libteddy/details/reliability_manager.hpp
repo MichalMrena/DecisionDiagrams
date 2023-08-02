@@ -509,16 +509,16 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
         root,
         [] (auto const n)
         {
-            n->data() = 0.0;
+            n->get_data() = 0.0;
         }
     );
     this->nodes_.for_each_terminal_node(
         [] (auto const n)
         {
-            n->data() = 0.0;
+            n->get_data() = 0.0;
         }
     );
-    root->data() = 1.0;
+    root->get_data() = 1.0;
 
     this->nodes_.traverse_level(
         root,
@@ -532,8 +532,8 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
                     node,
                     [node, nodeIndex, &probs, &sonOrder] (auto const son)
                     {
-                        son->data()
-                            += node->data()
+                        son->get_data()
+                            += node->get_data()
                              * probs[as_uindex(nodeIndex)][as_uindex(sonOrder)];
                         ++sonOrder;
                     }
@@ -559,7 +559,7 @@ auto reliability_manager<Degree, Domain>::get_probability(int32 const state
 ) const -> double
 {
     auto const terminalNode = this->nodes_.get_terminal_node(state);
-    return terminalNode ? terminalNode->data() : 0.0;
+    return terminalNode ? terminalNode->get_data() : 0.0;
 }
 
 template<class Degree, class Domain>
@@ -600,7 +600,7 @@ auto reliability_manager<Degree, Domain>::get_availability() const
     -> utils::second_t<Foo, double>
 {
     auto const terminalNode = this->nodes_.get_terminal_node(1);
-    return terminalNode ? terminalNode->data() : 0;
+    return terminalNode ? terminalNode->get_data() : 0;
 }
 
 template<class Degree, class Domain>
@@ -613,7 +613,7 @@ auto reliability_manager<Degree, Domain>::get_availability(int32 const state
         {
             if (node->get_value() >= state)
             {
-                result += node->data();
+                result += node->get_data();
             }
         }
     );
@@ -664,13 +664,13 @@ template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
     -> double
 {
-    auto result = .0;
+    double result = .0;
     this->nodes_.for_each_terminal_node(
-        [state, &result] (auto const node)
+        [state, &result] (node_t* const node)
         {
             if (node->get_value() < state)
             {
-                result += node->data();
+                result += node->get_data();
             }
         }
     );
@@ -1023,9 +1023,9 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
 ) -> double
 {
     this->nodes_.for_each_terminal_node(
-        [] (auto const n)
+        [] (node_t* const n)
         {
-            n->data() = 0.0;
+            n->get_data() = 0.0;
         }
     );
 
@@ -1034,7 +1034,7 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
         auto const terminalNode = this->nodes_.get_terminal_node(selectedValue);
         if (terminalNode)
         {
-            terminalNode->data() = 1.0;
+            terminalNode->get_data() = 1.0;
         }
     }
 
@@ -1044,14 +1044,14 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
         {
             if (not node->is_terminal())
             {
-                node->data()         = 0.0;
+                node->get_data()     = 0.0;
                 auto const nodeIndex = node->get_index();
                 this->nodes_.for_each_son(
                     node,
                     [=, sonState = 0, &probs] (node_t* const son) mutable
                     {
-                        node->data()
-                            += son->data()
+                        node->get_data()
+                            += son->get_data()
                              * probs[as_uindex(nodeIndex)][as_uindex(sonState)];
                         ++sonState;
                     }
@@ -1059,7 +1059,7 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
             }
         }
     );
-    return diagram.unsafe_get_root()->data();
+    return diagram.unsafe_get_root()->get_data();
 }
 
 template<class Degree, class Domain>

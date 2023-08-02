@@ -4,11 +4,8 @@
 #include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
-    #include <array>
 #include <cassert>
-    #include <memory>
 #include <new>
-    #include <utility>
 
 namespace teddy
 {
@@ -23,11 +20,6 @@ struct fixed
 {
     static_assert(N > 1);
     static constexpr int32 value = N;
-
-    auto constexpr operator() ()
-    {
-        return N;
-    }
 };
 
 template<class T>
@@ -56,59 +48,94 @@ struct is_mixed<mixed>
 } // namespace degrees
 
 template<class Data, class Degree>
+class node;
+
+template<class Data, class Degree>
+struct node_ptr_array
+{
+    node<Data, Degree>* sons_[Degree::value];
+
+    auto operator[](int64 const index) -> node<Data, Degree>*&
+    {
+        return sons_[index];
+    }
+
+    auto operator[](int64 const index) const -> node<Data, Degree>* const&
+    {
+        return sons_[index];
+    }
+};
+
+template<class Data, class Degree>
 class node
 {
 public:
     template<int32 N>
-    static auto make_son_container (int32 domain, degrees::fixed<N> degreeTag)
-        -> std::array<node*, as_usize(N)>;
+    static auto make_son_container (
+        int32,
+        degrees::fixed<N>
+    ) -> node_ptr_array<Data, Degree>
+    {
+        return node_ptr_array<Data, Degree>();
+    }
 
-    static auto make_son_container (int32 domain, degrees::mixed degreeTag)
-        -> std::unique_ptr<node*[]>;
+    static auto make_son_container (
+        int32 const domain,
+        degrees::mixed
+    ) -> node**
+    {
+        return static_cast<node**>(
+            ::operator new (as_usize(domain) * sizeof(node*))
+        );
+    }
+
+    static auto delete_son_container (node** sons) -> void
+    {
+        ::operator delete (sons);
+    }
 
 public:
     using son_container = decltype(make_son_container(int32(), Degree()));
 
 public:
     explicit node(int32 value);
-    node(int32 index, son_container&& sons);
+    node(int32 index, son_container sons);
     ~node() = default;
     ~node() requires(degrees::is_mixed<Degree>::value);
 
+    node()                       = delete;
     node(node const&)            = delete;
     node(node&&)                 = delete;
     auto operator= (node const&) = delete;
     auto operator= (node&&)      = delete;
 
-    // notice: Making it a dummy template and making the return type
-    //         dependent on the template makes it SFINE.
     template<class Foo = void>
     requires(not utils::is_void<Data>::value)
-    auto data () -> utils::second_t<Foo, Data>&;
+    auto get_data () -> utils::second_t<Foo, Data>&;
 
     template<class Foo = void>
     requires(not utils::is_void<Data>::value)
-    auto data () const -> utils::second_t<Foo, Data> const&;
+    auto get_data () const -> utils::second_t<Foo, Data> const&;
 
-    [[nodiscard]] auto get_next () const -> node*;
-    auto set_next (node* next) -> void;
     [[nodiscard]] auto is_internal () const -> bool;
     [[nodiscard]] auto is_terminal () const -> bool;
     [[nodiscard]] auto is_used () const -> bool;
-    auto set_unused () -> void;
     [[nodiscard]] auto is_marked () const -> bool;
-    auto toggle_marked () -> void;
-    auto set_marked () -> void;
-    auto set_notmarked () -> void;
+    [[nodiscard]] auto get_next () const -> node*;
     [[nodiscard]] auto get_ref_count () const -> int32;
-    auto inc_ref_count () -> void;
-    auto dec_ref_count () -> void;
     [[nodiscard]] auto get_index () const -> int32;
-    auto set_index (int32 index) -> void;
     [[nodiscard]] auto get_sons () const -> son_container const&;
     [[nodiscard]] auto get_son (int32 sonOrder) const -> node*;
-    auto set_sons (son_container sons) -> void;
     [[nodiscard]] auto get_value () const -> int32;
+    auto set_next (node* next) -> void;
+    auto set_unused () -> void;
+    auto set_marked () -> void;
+    auto set_notmarked () -> void;
+    auto set_index (int32 index) -> void;
+    auto set_sons (son_container const& sons) -> void;
+    auto toggle_marked () -> void;
+    auto inc_ref_count () -> void;
+    auto dec_ref_count () -> void;
 
 private:
     // P0960R3 constructors not necessary
@@ -121,7 +148,7 @@ private:
         int32 index_;
 
         internal(son_container sons, int32 index) :
-            sons_(std::move(sons)),
+            sons_(sons),
             index_(index)
         {
         }
@@ -131,17 +158,18 @@ private:
     {
         int32 value_;
 
-        terminal(int32 const value) : value_ {value}
+        terminal(int32 const value) :
+            value_(value)
         {
         }
     };
 
 private:
-    [[nodiscard]] auto union_internal () -> internal*;
-    [[nodiscard]] auto union_internal () const -> internal const*;
-    [[nodiscard]] auto union_terminal () -> terminal*;
-    [[nodiscard]] auto union_terminal () const -> terminal const*;
-    [[nodiscard]] auto union_internal_unsafe () -> internal*;
+    [[nodiscard]] auto as_internal () -> internal*;
+    [[nodiscard]] auto as_internal () const -> internal const*;
+    [[nodiscard]] auto as_terminal () -> terminal*;
+    [[nodiscard]] auto as_terminal () const -> terminal const*;
+    [[nodiscard]] auto as_internal_unsafe () -> internal*;
     [[nodiscard]] auto is_or_was_internal () const -> bool;
 
 private:
@@ -159,58 +187,40 @@ private:
 };
 
 template<class Data, class Degree>
-template<int32 N>
-auto node<Data, Degree>::make_son_container(
-    [[maybe_unused]] int32 const domain,
-    [[maybe_unused]] degrees::fixed<N> const degree
-) -> std::array<node*, as_usize(N)>
-{
-    return std::array<node*, as_usize(N)>();
-}
-
-template<class Data, class Degree>
-auto node<Data, Degree>::make_son_container(
-    int32 const domain,
-    [[maybe_unused]] degrees::mixed const degreeTag
-) -> std::unique_ptr<node*[]>
-{
-    // Not supported yet.
-    // return std::make_unique_for_overwrite<node*[]>(domain);
-    return std::make_unique<node*[]>(as_usize(domain));
-}
-
-template<class Data, class Degree>
 node<Data, Degree>::node(int32 const value) :
     union_ {},
     next_ {nullptr},
     bits_ {LeafM | UsedM}
 {
-    ::new (this->union_terminal()) terminal(value);
+    ::new (this->as_terminal()) terminal(value);
 }
 
 template<class Data, class Degree>
-node<Data, Degree>::node(int32 const index, son_container&& sons) :
+node<Data, Degree>::node(int32 const index, son_container sons) :
     union_ {},
     next_ {nullptr},
     bits_ {UsedM}
 {
-    ::new (this->union_internal()) internal(std::move(sons), index);
+    ::new (this->as_internal()) internal(sons, index);
 }
 
 template<class Data, class Degree>
 node<Data, Degree>::~node()
 requires(degrees::is_mixed<Degree>::value)
 {
-    if (this->is_or_was_internal())
+    if constexpr (degrees::is_mixed<Degree>::value)
     {
-        this->union_internal_unsafe()->~internal();
+        if (this->is_or_was_internal())
+        {
+            ::operator delete (this->as_internal_unsafe()->sons_);
+        }
     }
 }
 
 template<class Data, class Degree>
 template<class Foo>
 requires(not utils::is_void<Data>::value)
-auto node<Data, Degree>::data() -> utils::second_t<Foo, Data>&
+auto node<Data, Degree>::get_data() -> utils::second_t<Foo, Data>&
 {
     assert(this->is_used());
     return data_.member_;
@@ -219,7 +229,7 @@ auto node<Data, Degree>::data() -> utils::second_t<Foo, Data>&
 template<class Data, class Degree>
 template<class Foo>
 requires(not utils::is_void<Data>::value)
-auto node<Data, Degree>::data() const -> utils::second_t<Foo, Data> const&
+auto node<Data, Degree>::get_data() const -> utils::second_t<Foo, Data> const&
 {
     assert(this->is_used());
     return data_.member_;
@@ -240,30 +250,30 @@ auto node<Data, Degree>::set_next(node* const next) -> void
 template<class Data, class Degree>
 auto node<Data, Degree>::get_sons() const -> son_container const&
 {
-    return this->union_internal()->sons_;
+    return this->as_internal()->sons_;
 }
 
 template<class Data, class Degree>
 auto node<Data, Degree>::get_son(int32 const sonOrder) const -> node*
 {
-    return (this->union_internal()->sons_)[as_uindex(sonOrder)];
+    return (this->as_internal()->sons_)[as_uindex(sonOrder)];
 }
 
 template<class Data, class Degree>
-auto node<Data, Degree>::set_sons(son_container sons) -> void
+auto node<Data, Degree>::set_sons(son_container const& sons) -> void
 {
-    using std::swap;
-    swap(this->union_internal()->sons_, sons);
+    if constexpr (degrees::is_mixed<Degree>::value)
+    {
+        ::operator delete (this->as_internal()->sons_);
+    }
 
-    // if constexpr (mixed)
-    // delete old sons
-    // this->union_internal()->sons_ = sons;
+    this->as_internal()->sons_ = sons;
 }
 
 template<class Data, class Degree>
 auto node<Data, Degree>::get_value() const -> int32
 {
-    return this->union_terminal()->value_;
+    return this->as_terminal()->value_;
 }
 
 template<class Data, class Degree>
@@ -337,45 +347,45 @@ auto node<Data, Degree>::dec_ref_count() -> void
 template<class Data, class Degree>
 auto node<Data, Degree>::get_index() const -> int32
 {
-    return this->union_internal()->index_;
+    return this->as_internal()->index_;
 }
 
 template<class Data, class Degree>
 auto node<Data, Degree>::set_index(int32 const index) -> void
 {
-    this->union_internal()->index_ = index;
+    this->as_internal()->index_ = index;
 }
 
 template<class Data, class Degree>
-auto node<Data, Degree>::union_internal() -> internal*
+auto node<Data, Degree>::as_internal() -> internal*
 {
     assert(this->is_internal());
     return reinterpret_cast<internal*>(&union_);
 }
 
 template<class Data, class Degree>
-auto node<Data, Degree>::union_internal() const -> internal const*
+auto node<Data, Degree>::as_internal() const -> internal const*
 {
     assert(this->is_internal());
     return reinterpret_cast<internal const*>(&union_);
 }
 
 template<class Data, class Degree>
-auto node<Data, Degree>::union_terminal() -> terminal*
+auto node<Data, Degree>::as_terminal() -> terminal*
 {
     assert(this->is_terminal());
     return reinterpret_cast<terminal*>(&union_);
 }
 
 template<class Data, class Degree>
-auto node<Data, Degree>::union_terminal() const -> terminal const*
+auto node<Data, Degree>::as_terminal() const -> terminal const*
 {
     assert(this->is_terminal());
     return reinterpret_cast<terminal const*>(&union_);
 }
 
 template<class Data, class Degree>
-auto node<Data, Degree>::union_internal_unsafe() -> internal*
+auto node<Data, Degree>::as_internal_unsafe() -> internal*
 {
     return reinterpret_cast<internal*>(&union_);
 }

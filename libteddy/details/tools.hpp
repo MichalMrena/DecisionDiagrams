@@ -205,6 +205,18 @@ template<>
 struct optional_member<void>
 {
 };
+
+/**
+ *  \brief Exchages value of \p var to \p newVal and returns the old value
+ *  Simplified implementation of std::exchange
+ */
+template<class T, class U = T>
+auto exchange(T& var, U newVal) noexcept -> T
+{
+    auto oldVal = var;
+    var = newVal;
+    return oldVal;
+}
 } // namespace teddy::utils
 
 

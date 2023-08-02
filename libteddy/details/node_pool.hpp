@@ -4,10 +4,10 @@
 #include <libteddy/details/config.hpp>
 #include <libteddy/details/debug.hpp>
 #include <libteddy/details/node.hpp>
+#include <libteddy/details/tools.hpp>
 
 #include <cassert>
 #include <new>
-#include <utility>
 #include <vector>
 
 namespace teddy
@@ -20,11 +20,12 @@ public:
 
 public:
     node_pool(int64 mainPoolSize, int64 overflowPoolSize);
-    node_pool(node_pool const&) = delete;
     node_pool(node_pool&& other) noexcept;
     ~node_pool();
 
-    auto operator= (node_pool other) -> node_pool&;
+    node_pool(node_pool const&)       = delete;
+    auto operator= (node_pool const&) = delete;
+    auto operator= (node_pool&&)      = delete;
 
     [[nodiscard]] auto get_available_node_count () const -> int64;
 
@@ -39,9 +40,6 @@ public:
 
 private:
     auto get_current_pool () const -> node_t*;
-    auto get_current_pool_end () const -> node_t*;
-
-    auto swap (node_pool& other) -> void;
 
     [[nodiscard]] static auto allocate_pool (int64 size) -> node_t*;
     static auto deallocate_pool (node_t* poolPtr) -> void;
@@ -82,14 +80,14 @@ node_pool<Data, Degree>::node_pool(
 
 template<class Data, class Degree>
 node_pool<Data, Degree>::node_pool(node_pool&& other) noexcept :
-    mainPool_(std::exchange(other.mainPool_, nullptr)),
-    overflowPools_(std::move(other.overflowPools_)),
-    freeNodeList_(std::exchange(other.freeNodeList_, nullptr)),
-    currentPoolIndex_(other.currentPoolIndex_),
-    nextPoolNodeIndex_(other.nextPoolNodeIndex_),
-    mainPoolSize_(other.mainPoolSize_),
-    overflowPoolSize_(other.overflowPoolSize_),
-    availableNodes_(other.availableNodes_)
+    mainPool_(utils::exchange(other.mainPool_, nullptr)),
+    overflowPools_(static_cast<std::vector<node_t*>&&>(other.overflowPools_)),
+    freeNodeList_(utils::exchange(other.freeNodeList_, nullptr)),
+    currentPoolIndex_(utils::exchange(other.currentPoolIndex_, -1)),
+    nextPoolNodeIndex_(utils::exchange(other.nextPoolNodeIndex_, -1)),
+    mainPoolSize_(utils::exchange(other.mainPoolSize_, -1)),
+    overflowPoolSize_(utils::exchange(other.overflowPoolSize_, -1)),
+    availableNodes_(utils::exchange(other.availableNodes_, -1))
 {
 }
 
@@ -108,7 +106,7 @@ node_pool<Data, Degree>::~node_pool()
         // Destroy other fully used pools
         for (int64 i = 0; i < currentPoolIndex_; ++i)
         {
-            auto const pool = overflowPools_[as_uindex(i)];
+            node_t* const pool = overflowPools_[as_uindex(i)];
             for (int64 k = 0; k < overflowPoolSize_; ++k)
             {
                 (pool + k)->~node_t();
@@ -118,19 +116,12 @@ node_pool<Data, Degree>::~node_pool()
     }
 
     // Destroy current partially used pool (main or overflow)
-    auto const pool = this->get_current_pool();
+    node_t* const pool = this->get_current_pool();
     for (int64 k = 0; k < nextPoolNodeIndex_; ++k)
     {
         (pool + k)->~node_t();
     }
     deallocate_pool(pool);
-}
-
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::operator= (node_pool other) -> node_pool&
-{
-    this->swap(other);
-    return *this;
 }
 
 template<class Data, class Degree>
@@ -165,9 +156,7 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
         ++nextPoolNodeIndex_;
     }
 
-    return static_cast<node_t*>(
-        ::new (node) node_t(std::forward<Args>(args)...)
-    );
+    return static_cast<node_t*>(::new (node) node_t (args...));
 }
 
 template<class Data, class Degree>
@@ -201,28 +190,6 @@ auto node_pool<Data, Degree>::get_current_pool() const -> node_t*
     return overflowPools_.empty()
              ? mainPool_
              : overflowPools_[as_uindex(currentPoolIndex_)];
-}
-
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::get_current_pool_end() const -> node_t*
-{
-    return overflowPools_.empty()
-             ? mainPool_ + mainPoolSize_
-             : overflowPools_[as_uindex(currentPoolIndex_)] + overflowPoolSize_;
-}
-
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::swap(node_pool& other) -> void
-{
-    using std::swap;
-    swap(mainPool_, other.mainPool_);
-    swap(overflowPools_, other.overflowPools_);
-    swap(currentPoolIndex_, other.currentPoolIndex_);
-    swap(freeNodeList_, other.freeNodeList_);
-    swap(nextPoolNodeIndex_, other.nextPoolNodeIndex_);
-    swap(availableNodes_, other.availableNodes_);
-    swap(mainPoolSize_, other.mainPoolSize_);
-    swap(overflowPoolSize_, other.overflowPoolSize_);
 }
 
 template<class Data, class Degree>

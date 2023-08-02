@@ -178,10 +178,10 @@ auto test_compare_eval (
 }
 
 using Fixtures = boost::mpl::vector<
-    // teddy::tests::bdd_fixture,
-    // teddy::tests::mdd_fixture,
-    teddy::tests::imdd_fixture>;
-    // teddy::tests::ifmdd_fixture>;
+    teddy::tests::bdd_fixture,
+    teddy::tests::mdd_fixture,
+    teddy::tests::imdd_fixture,
+    teddy::tests::ifmdd_fixture>;
 
 BOOST_AUTO_TEST_SUITE(core_test)
 

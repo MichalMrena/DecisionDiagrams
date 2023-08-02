@@ -1280,7 +1280,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
             // Simply return reference to the data member.
             return [] (auto const n) mutable -> decltype(auto)
             {
-                return (n->data());
+                return (n->get_data());
             };
         }
         else
