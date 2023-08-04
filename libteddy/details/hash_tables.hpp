@@ -7,8 +7,6 @@
 #include <libteddy/details/tools.hpp>
 
 #include <functional>
-#include <iterator> // TODO tmp
-#include <utility>
 #include <vector>
 
 namespace teddy
@@ -37,12 +35,7 @@ template<class BucketIt, class Data, class Degree>
 class unique_table_iterator
 {
 public:
-    using node_t            = node<Data, Degree>;
-    using difference_type   = std::ptrdiff_t;
-    using value_type        = node_t*;
-    using pointer           = node_t*;
-    using reference         = node_t*;
-    using iterator_category = std::forward_iterator_tag;
+    using node_t = node<Data, Degree>;
 
 public:
     unique_table_iterator(BucketIt first, BucketIt last);
@@ -50,8 +43,7 @@ public:
 public:
     auto operator++ () -> unique_table_iterator&;
     auto operator++ (int) -> unique_table_iterator;
-    auto operator* () const -> reference;
-    auto operator->() const -> pointer;
+    auto operator* () const -> node_t*;
     auto operator== (unique_table_iterator const& other) const -> bool;
     auto operator!= (unique_table_iterator const& other) const -> bool;
     auto get_bucket () const -> BucketIt;
@@ -334,8 +326,8 @@ apply_cache<Data, Degree>::apply_cache(int64 const capacity) :
 
 template<class Data, class Degree>
 apply_cache<Data, Degree>::apply_cache(apply_cache&& other) noexcept :
-    entries_(std::move(other.entries_)),
-    size_(std::exchange(other.size_, 0))
+    entries_(static_cast<std::vector<cache_entry>&&>(other.entries_)),
+    size_(utils::exchange(other.size_, 0))
 {
 }
 
@@ -440,7 +432,9 @@ auto apply_cache<Data, Degree>::rehash(int64 const newCapacity) -> void
     );
     #endif
 
-    auto const oldEntries = std::vector<cache_entry>(std::move(entries_));
+    auto const oldEntries = std::vector<cache_entry>(
+        static_cast<std::vector<cache_entry>&&>(entries_)
+    );
     entries_              = std::vector<cache_entry>(as_usize(newCapacity));
     size_                 = 0;
     for (cache_entry const& entry : oldEntries)
@@ -492,13 +486,7 @@ auto unique_table_iterator<BucketIt, Data, Degree>::operator++ (int)
 }
 
 template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::operator* () const -> reference
-{
-    return node_;
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::operator->() const -> reference
+auto unique_table_iterator<BucketIt, Data, Degree>::operator* () const -> node_t*
 {
     return node_;
 }
@@ -547,8 +535,8 @@ unique_table<Data, Degree>::unique_table(int64 capacity) :
 
 template<class Data, class Degree>
 unique_table<Data, Degree>::unique_table(unique_table&& other) noexcept :
-    buckets_(std::move(other.buckets_)),
-    size_(std::exchange(other.size_, 0))
+    buckets_(static_cast<std::vector<node_t*>&&>(other.buckets_)),
+    size_(utils::exchange(other.size_, 0))
 {
     other.buckets_.resize(as_usize(table_base::get_gte_capacity(0)), nullptr);
 }
@@ -628,7 +616,7 @@ auto unique_table<Data, Degree>::erase(node_t* const node, int32 const domain)
 {
     auto const hash  = node_hash(node->get_sons(), domain);
     auto const index = static_cast<std::ptrdiff_t>(hash % buckets_.size());
-    auto tableIt = iterator(std::begin(buckets_) + index, std::end(buckets_));
+    auto tableIt = iterator(buckets_.begin() + index, buckets_.end());
     while (*tableIt != node)
     {
         ++tableIt;
@@ -663,25 +651,25 @@ auto unique_table<Data, Degree>::clear() -> void
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::begin() -> iterator
 {
-    return iterator(std::begin(buckets_), std::end(buckets_));
+    return iterator(buckets_.begin(), buckets_.end());
 }
 
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::end() -> iterator
 {
-    return iterator(std::end(buckets_), std::end(buckets_));
+    return iterator(buckets_.end(), buckets_.end());
 }
 
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::begin() const -> const_iterator
 {
-    return const_iterator(std::begin(buckets_), std::end(buckets_));
+    return const_iterator(buckets_.begin(), buckets_.end());
 }
 
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::end() const -> const_iterator
 {
-    return const_iterator(std::end(buckets_), std::end(buckets_));
+    return const_iterator(buckets_.end(), buckets_.end());
 }
 
 template<class Data, class Degree>
@@ -704,7 +692,9 @@ auto unique_table<Data, Degree>::rehash(int64 const newCapacity, int32 const dom
     );
     #endif
 
-    auto const oldBuckets = std::vector<node_t*>(std::move(buckets_));
+    auto const oldBuckets = std::vector<node_t*>(
+        static_cast<std::vector<node_t*>&&>(buckets_)
+    );
     buckets_ = std::vector<node_t*>(as_usize(newCapacity), nullptr);
     for (auto bucket : oldBuckets)
     {

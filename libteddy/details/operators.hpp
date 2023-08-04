@@ -4,8 +4,6 @@
 #include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
-#include <concepts>
-
 namespace teddy
 {
 namespace details
@@ -458,10 +456,10 @@ template<class Operation>
 concept teddy_bin_op = requires() {
                            {
                                Operation::get_id()
-                           } -> std::same_as<int32>;
+                           } -> utils::same_as<int32>;
                            {
                                Operation::is_commutative()
-                           } -> std::same_as<bool>;
+                           } -> utils::same_as<bool>;
                        };
 } // namespace teddy
 

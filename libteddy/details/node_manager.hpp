@@ -10,8 +10,7 @@
 #include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
-#include <algorithm>
-#include <array>
+    #include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstdint>
@@ -19,7 +18,7 @@
 #include <ostream>
 #include <string>
 #include <type_traits>
-#include <utility>
+    #include <utility>
 #include <vector>
 
 namespace teddy
@@ -75,16 +74,6 @@ struct is_mixed<mixed>
     static constexpr bool value = true;
 };
 } // namespace domains
-
-template<class F>
-concept int_to_int = requires(F function, int32 value) {
-                         {
-                             function(value)
-                         } -> std::convertible_to<int32>;
-                     };
-
-template<class F, class Node>
-concept node_op = requires(F function, Node* node) { function(node); };
 
 template<class Data, class Degree, class Domain>
 class node_manager
@@ -143,6 +132,7 @@ public:
         int32 index,
         son_container const& sons
     ) -> node_t*;
+    [[nodiscard]] auto make_son_container (int32 domain) -> son_container;
     [[nodiscard]] auto get_level (int32 index) const -> int32;
     [[nodiscard]] auto get_level (node_t* node) const -> int32;
     [[nodiscard]] auto get_leaf_level () const -> int32;
@@ -163,23 +153,23 @@ public:
     [[nodiscard]] auto domain_product (int32 levelFrom, int32 levelTo) const
         -> int64;
 
-    template<utils::i_gen Generator>
+    template<class Generator>
     auto make_sons (int32 index, Generator&& generator) -> son_container;
 
-    template<node_op<node<Data, Degree>> NodeOp>
+    template<class NodeOp>
     auto for_each_son (node_t* node, NodeOp&& operation) const -> void;
 
-    template<node_op<node<Data, Degree>> NodeOp>
+    template<class NodeOp>
     auto for_each_son (
         int32 index,
         son_container const& sons,
         NodeOp&& operation
     ) const -> void;
 
-    template<node_op<node<Data, Degree>> NodeOp>
+    template<class NodeOp>
     auto for_each_node (NodeOp&& operation) const -> void;
 
-    template<node_op<node<Data, Degree>> NodeOp>
+    template<class NodeOp>
     auto for_each_terminal_node (NodeOp&& operation) const -> void;
 
     template<teddy_bin_op O>
@@ -190,14 +180,14 @@ public:
 
     auto cache_clear () -> void;
 
-    template<node_op<node<Data, Degree>> NodeOp>
-    auto traverse_pre (node_t* rootNode, NodeOp&& nodeOp) const -> void;
+    template<class NodeOp>
+    auto traverse_pre (node_t* rootNode, NodeOp operation) const -> void;
 
-    template<node_op<node<Data, Degree>> NodeOp>
-    auto traverse_post (node_t* rootNode, NodeOp&& nodeOp) const -> void;
+    template<class NodeOp>
+    auto traverse_post (node_t* rootNode, NodeOp operation) const -> void;
 
-    template<node_op<node<Data, Degree>> NodeOp>
-    auto traverse_level (node_t* rootNode, NodeOp&& nodeOp) const -> void;
+    template<class NodeOp>
+    auto traverse_level (node_t* rootNode, NodeOp operation) const -> void;
 
     [[nodiscard]] auto is_valid_var_value (int32 index, int32 value) const
         -> bool;
@@ -209,6 +199,12 @@ public:
     auto sift_variables () -> void;
 
 private:
+    template<class NodeOp>
+    auto traverse_pre_impl (node_t* node, NodeOp operation) const -> void;
+
+    template<class NodeOp>
+    auto traverse_post_impl (node_t* node, NodeOp operation) const -> void;
+
     [[nodiscard]] auto is_redundant (int32 index, son_container const& sons)
         const -> bool;
 
@@ -222,8 +218,6 @@ private:
     template<class... Args>
     [[nodiscard]] auto make_new_node (Args&&... args) -> node_t*;
     auto delete_node (node_t* node) -> void;
-
-    auto traverse_no_op (node_t* rootNode) const -> void;
 
     template<class ForEachNode>
     auto to_dot_graph_common (std::ostream& ost, ForEachNode&& forEach) const
@@ -479,6 +473,13 @@ auto node_manager<Data, Degree, Domain>::make_special_node(
 }
 
 template<class Data, class Degree, class Domain>
+auto node_manager<Data, Degree, Domain>::make_son_container
+    (int32 const domain) -> son_container
+{
+    return node_t::make_son_container(domain, Degree());
+}
+
+template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_internal_node(
     int32 const index,
     son_container const& sons
@@ -578,10 +579,10 @@ template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_node_count(node_t* const node
 ) const -> int64
 {
-    auto count = int64(0);
+    int64 count = 0;
     this->traverse_pre(
         node,
-        [&count] (auto const)
+        [&count] (node_t*)
         {
             ++count;
         }
@@ -612,9 +613,9 @@ template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_domains() const
     -> std::vector<int32>
 {
-    auto domains = std::vector<int32>();
+    std::vector<int32> domains;
     domains.reserve(as_usize(varCount_));
-    for (auto k = 0; k < this->get_var_count(); ++k)
+    for (int32 k = 0; k < varCount_; ++k)
     {
         domains.push_back(domains_[k]);
     }
@@ -728,8 +729,8 @@ auto node_manager<Data, Degree, Domain>::domain_product(
     }
     else
     {
-        auto product = int64(1);
-        for (auto level = levelFrom; level < levelTo; ++level)
+        int64 product = 1;
+        for (int32 level = levelFrom; level < levelTo; ++level)
         {
             product *= domains_[levelToIndex_[as_uindex(level)]];
         }
@@ -738,7 +739,7 @@ auto node_manager<Data, Degree, Domain>::domain_product(
 }
 
 template<class Data, class Degree, class Domain>
-template<utils::i_gen F>
+template<class F>
 auto node_manager<Data, Degree, Domain>::make_sons(
     int32 const index,
     F&& generator
@@ -753,7 +754,7 @@ auto node_manager<Data, Degree, Domain>::make_sons(
 }
 
 template<class Data, class Degree, class Domain>
-template<node_op<node<Data, Degree>> NodeOp>
+template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
     node_t* const node,
     NodeOp&& operation
@@ -767,7 +768,7 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
 }
 
 template<class Data, class Degree, class Domain>
-template<node_op<node<Data, Degree>> NodeOp>
+template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
     int32 const index,
     son_container const& sons,
@@ -781,7 +782,7 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
 }
 
 template<class Data, class Degree, class Domain>
-template<node_op<node<Data, Degree>> NodeOp>
+template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation) const
     -> void
 {
@@ -797,7 +798,7 @@ auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation) const
 }
 
 template<class Data, class Degree, class Domain>
-template<node_op<node<Data, Degree>> NodeOp>
+template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_terminal_node(
     NodeOp&& operation
 ) const -> void
@@ -878,75 +879,80 @@ auto node_manager<Data, Degree, Domain>::run_deferred() -> void
 }
 
 template<class Data, class Degree, class Domain>
-template<node_op<node<Data, Degree>> NodeOp>
+template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_pre(
     node_t* const rootNode,
-    NodeOp&& nodeOp
+    NodeOp const operation
 ) const -> void
 {
-    auto const step
-        = [this] (auto const& self, node_t* const node, auto const& operation)
-        -> void
-    {
-        node->toggle_marked();
-        operation(node);
-        if (node->is_internal())
-        {
-            this->for_each_son(
-                node,
-                [&self, node, &operation] (auto const son) -> void
-                {
-                    if (node->is_marked() != son->is_marked())
-                    {
-                        self(self, son, operation);
-                    }
-                }
-            );
-        }
-    };
-
-    step(step, rootNode, nodeOp);
-    // Second traverse to reset marks.
-    this->traverse_no_op(rootNode);
+    this->traverse_pre_impl(rootNode, operation);
+    this->traverse_pre_impl(rootNode, [](node_t*){});
+    // Second traverse to reset marks
 }
 
 template<class Data, class Degree, class Domain>
-template<node_op<node<Data, Degree>> NodeOp>
+template<class NodeOp>
+auto node_manager<Data, Degree, Domain>::traverse_pre_impl(
+    node_t* const node,
+    NodeOp const operation
+) const -> void
+{
+    node->toggle_marked();
+    operation(node);
+    if (node->is_internal())
+    {
+        int32 const nodeDomain = this->get_domain(node);
+        for (int32 k = 0; k < nodeDomain; ++k)
+        {
+            node_t* const son = node->get_son(k);
+            if (node->is_marked() != son->is_marked())
+            {
+                this->traverse_pre_impl(son, operation);
+            }
+        }
+    }
+}
+
+template<class Data, class Degree, class Domain>
+template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_post(
     node_t* const rootNode,
-    NodeOp&& nodeOp
+    NodeOp operation
 ) const -> void
 {
-    auto const step
-        = [this] (auto const& self, node_t* const node, auto& operation) -> void
-    {
-        node->toggle_marked();
-        if (node->is_internal())
-        {
-            this->for_each_son(
-                node,
-                [&self, node, &operation] (auto const son)
-                {
-                    if (node->is_marked() != son->is_marked())
-                    {
-                        self(self, son, operation);
-                    }
-                }
-            );
-        }
-        operation(node);
-    };
-
-    step(step, rootNode, nodeOp);
+    this->traverse_post_impl(rootNode, operation);
+    this->traverse_post_impl(rootNode, [](node_t*){});
     // Second traverse to reset marks.
-    this->traverse_no_op(rootNode);
 }
 
 template<class Data, class Degree, class Domain>
-template<node_op<node<Data, Degree>> NodeOp>
+template<class NodeOp>
+auto node_manager<Data, Degree, Domain>::traverse_post_impl(
+    node_t* const node,
+    NodeOp operation
+) const -> void
+{
+    node->toggle_marked();
+    if (node->is_internal())
+    {
+        int32 const nodeDomain = this->get_domain(node);
+        for (int32 k = 0; k < nodeDomain; ++k)
+        {
+            node_t* const son = node->get_son(k);
+            if (node->is_marked() != son->is_marked())
+            {
+                this->traverse_post_impl(son, operation);
+            }
+        }
+    }
+    operation(node);
+}
+
+template<class Data, class Degree, class Domain>
+template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::traverse_level(
     node_t* const rootNode,
-    NodeOp&& nodeOp
+    NodeOp operation
 ) const -> void
 {
     std::vector<std::vector<node_t*>> buckets(as_usize(varCount_) + 1);
@@ -959,7 +965,7 @@ auto node_manager<Data, Degree, Domain>::traverse_level(
     {
         for (node_t* const node : *bucketIt)
         {
-            nodeOp(node);
+            operation(node);
             if (node->is_internal())
             {
                 int32 const domain = this->get_domain(node);
@@ -985,7 +991,7 @@ auto node_manager<Data, Degree, Domain>::traverse_level(
     }
 
     // Second traverse to reset marks.
-    this->traverse_no_op(rootNode);
+    this->traverse_pre_impl(rootNode, [](node_t*){});
 }
 
 template<class Data, class Degree, class Domain>
@@ -1093,30 +1099,6 @@ auto node_manager<Data, Degree, Domain>::delete_node(node_t* const n) -> void
     --nodeCount_;
     n->set_unused();
     pool_.destroy(n);
-}
-
-template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::traverse_no_op(node_t* const rootNode
-) const -> void
-{
-    auto const step = [this] (auto const self, node_t* const node) -> void
-    {
-        node->toggle_marked();
-        if (node->is_internal())
-        {
-            this->for_each_son(
-                node,
-                [self, node] (auto const son) -> void
-                {
-                    if (node->is_marked() != son->is_marked())
-                    {
-                        self(self, son);
-                    }
-                }
-            );
-        }
-    };
-    step(step, rootNode);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1277,77 +1259,67 @@ template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     -> void
 {
-    auto const mkmatrix = [] (
-        [[maybe_unused]] auto const nRow,
-        [[maybe_unused]] auto const nCol
-    )
+    using node_matrix = std::conditional_t<
+        degrees::is_fixed<Degree>::value,
+        node_t*[Degree::value][Degree::value],
+        std::vector<std::vector<node_t*>>
+    >;
+
+    int32 const nodeIndex  = node->get_index();
+    int32 const nextIndex  = this->get_index(1 + this->get_level(node));
+    int32 const nodeDomain = this->get_domain(nodeIndex);
+    int32 const nextDomain = this->get_domain(nextIndex);
+    son_container oldSons = this->make_son_container(nodeDomain);
+    for (int32 k = 0; k < nodeDomain; ++k)
     {
-        if constexpr (degrees::is_fixed<Degree>::value)
-        {
-            auto constexpr Deg = Degree::value;
-            return std::array<std::array<node_t*, Deg>, Deg> {};
-        }
-        else
-        {
-            auto const row = std::vector<node_t*>(as_usize(nCol), nullptr);
-            return std::vector<std::vector<node_t*>>(as_usize(nRow), row);
-        }
-    };
+        oldSons[k] = node->get_son(k);
+    }
 
-    auto const nodeIndex  = node->get_index();
-    auto const nextIndex  = this->get_index(1 + this->get_level(node));
-    auto const nodeDomain = this->get_domain(nodeIndex);
-    auto const sonDomain  = this->get_domain(nextIndex);
-    auto const oldSons    = this->make_sons(
-        nodeIndex,
-        [node] (auto const sonOrder)
-        {
-            return node->get_son(sonOrder);
-        }
-    );
+    node_matrix cofactorMatrix;
+    if constexpr (degrees::is_mixed<Degree>::value)
+    {
+        cofactorMatrix.resize(
+            as_usize(nodeDomain),
+            std::vector<node_t*>(as_usize(nextDomain))
+        );
+    }
 
-    auto cofactorMatrix = mkmatrix(nodeDomain, sonDomain);
     for (auto nk = 0; nk < nodeDomain; ++nk)
     {
-        auto const son = node->get_son(nk);
-        for (auto sk = 0; sk < sonDomain; ++sk)
+        node_t* const son = node->get_son(nk);
+        for (auto sk = 0; sk < nextDomain; ++sk)
         {
-            auto const justUseSon
+            bool const justUseSon
                 = son->is_terminal() || son->get_index() != nextIndex;
             cofactorMatrix[as_uindex(nk)][as_uindex(sk)]
                 = justUseSon ? son : son->get_son(sk);
         }
     }
 
+    son_container outerSons = this->make_son_container(nextDomain);
+    for (int32 outerK = 0; outerK < nextDomain; ++outerK)
+    {
+        son_container innerSons = this->make_son_container(nodeDomain);
+        for (int32 innerK = 0; innerK < nodeDomain; ++innerK)
+        {
+            innerSons[innerK] = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
+        }
+        outerSons[outerK] = this->make_internal_node(nodeIndex, innerSons);
+    }
+
     node->set_index(nextIndex);
-    auto newSons = this->make_sons(
-        nextIndex,
-        [&, this] (int32 const outerOrder)
-        {
-            return this->make_internal_node(
-                nodeIndex,
-                this->make_sons(
-                    nodeIndex,
-                    [&] (int32 const innerOrder)
-                    {
-                        return cofactorMatrix[as_uindex(innerOrder)]
-                                             [as_uindex(outerOrder)];
-                    }
-                )
-            );
-        }
-    );
-    node->set_sons(std::move(newSons));
-    this->for_each_son(node, id_inc_ref_count<Data, Degree>);
-    this->for_each_son(node, id_set_notmarked<Data, Degree>);
-    this->for_each_son(
-        nodeIndex,
-        oldSons,
-        [this] (auto const oldSon)
-        {
-            this->dec_ref_try_gc(oldSon);
-        }
-    );
+    node->set_sons(outerSons);
+
+    for (int32 k = 0; k < nextDomain; ++k)
+    {
+        node->get_son(k)->inc_ref_count();
+        node->get_son(k)->set_notmarked();
+    }
+
+    for (int32 k = 0; k < nodeDomain; ++k)
+    {
+        this->dec_ref_try_gc(oldSons[k]);
+    }
 
     if constexpr (degrees::is_mixed<Degree>::value)
     {
@@ -1368,13 +1340,11 @@ auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const node)
 
     if (node->is_internal())
     {
-        this->for_each_son(
-            node,
-            [this] (node_t* const son)
-            {
-                this->dec_ref_try_gc(son);
-            }
-        );
+        int32 const nodeDomain = this->get_domain(node);
+        for (int32 k = 0; k < nodeDomain; ++k)
+        {
+            this->dec_ref_try_gc(node->get_son(k));
+        }
 
         uniqueTables_[as_uindex(node->get_index())].erase(
             node,
@@ -1434,14 +1404,12 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
     // Sorts indices by number of nodes with given index descending.
     auto const determine_sift_order = [this] ()
     {
-        auto const varCount = this->get_var_count();
-        auto counts         = utils::fill_vector(
-            varCount,
-            [this] (int32 const index)
-            {
-                return count_pair {index, this->get_node_count(index)};
-            }
-        );
+        std::vector<count_pair> counts;
+        counts.reserve(as_usize(varCount_));
+        for (int32 index = 0; index < varCount_; ++index)
+        {
+            counts.push_back(count_pair {index, this->get_node_count(index)});
+        }
         std::sort(
             begin(counts),
             end(counts),

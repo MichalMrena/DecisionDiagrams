@@ -6,7 +6,6 @@
 
 #include <cstddef>
 #include <functional>
-#include <utility>
 
 namespace teddy
 {
@@ -145,7 +144,7 @@ diagram<Data, Degree>::diagram(diagram const& other) :
 
 template<class Data, class Degree>
 diagram<Data, Degree>::diagram(diagram&& other) noexcept :
-    root_(std::exchange(other.root_, nullptr))
+    root_(utils::exchange(other.root_, nullptr))
 {
 }
 
@@ -168,7 +167,7 @@ auto diagram<Data, Degree>::operator= (diagram other) -> diagram&
 template<class Data, class Degree>
 auto diagram<Data, Degree>::swap(diagram& other) -> void
 {
-    std::swap(root_, other.root_);
+    utils::swap(root_, other.root_);
 }
 
 template<class Data, class Degree>

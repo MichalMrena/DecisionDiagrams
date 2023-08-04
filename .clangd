@@ -6,6 +6,3 @@ InlayHints:
 
 Diagnostics:
   UnusedIncludes: Strict
-  ClangTidy:
-    Add: clang-analyzer-*
-    Add: modernize-*

@@ -13,6 +13,8 @@ namespace degrees
 {
 struct mixed
 {
+    // Dummy value to make life easier
+    static constexpr int32 value = 1;
 };
 
 template<int32 N>

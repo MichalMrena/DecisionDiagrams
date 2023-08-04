@@ -37,7 +37,7 @@ struct bdd_fixture :
     fixture_base<bdd_manager_settings, minmax_expression_settings>
 {
 private:
-    static auto constexpr VarCount  = 15;
+    static auto constexpr VarCount  = 20;
     static auto constexpr NodeCount = 5'000;
     static auto constexpr TermCount = 20;
     static auto constexpr TermSize  = 5;

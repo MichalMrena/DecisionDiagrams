@@ -3,19 +3,16 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 
 namespace teddy
 {
-using int32                         = std::int32_t;
-using int64                         = std::int64_t;
-using uint32                        = std::uint32_t;
-using uint64                        = std::uint64_t;
+using int32  = std::int32_t;
+using int64  = std::int64_t;
+using uint32 = std::uint32_t;
+using uint64 = std::uint64_t;
 
-
-// TODO -1, -2 and no <limits> ?
-inline constexpr auto Undefined     = (std::numeric_limits<int32>::max)();
-inline constexpr auto Nondetermined = (std::numeric_limits<int32>::max)() - 1;
+inline constexpr int32 Undefined     = -1;
+inline constexpr int32 Nondetermined = -2;
 
 [[nodiscard]] inline auto constexpr as_uindex(int32 const index)
 {
@@ -39,7 +36,7 @@ inline constexpr auto Nondetermined = (std::numeric_limits<int32>::max)() - 1;
 
 [[nodiscard]] inline auto constexpr special_to_index(int32 const val) -> int32
 {
-    return (std::numeric_limits<int32>::max)() - val;
+    return -1 * val - 1;
 }
 
 [[nodiscard]] inline auto constexpr is_special(int32 const val) -> bool

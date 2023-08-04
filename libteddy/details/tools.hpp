@@ -7,22 +7,28 @@
 #include <concepts>
 #include <functional>
 #include <optional>
-#include <ranges>
 #include <string_view>
-#include <tuple>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 namespace teddy::utils
 {
-template<class Gen>
-concept i_gen
-    = requires(Gen generator, int32 index) { std::invoke(generator, index); };
-
 template<class T>
 concept is_std_vector = std::
     same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
+
+template<class Gen>
+auto fill_vector (int64 const n, Gen generator)
+{
+    using T   = decltype(std::invoke(generator, int32 {}));
+    auto data = std::vector<T>();
+    data.reserve(as_usize(n));
+    for (auto i = int32 {0}; i < n; ++i)
+    {
+        data.emplace_back(std::invoke(generator, i));
+    }
+    return data;
+}
 
 /**
  *  \brief Identity function
@@ -58,49 +64,13 @@ auto constexpr no_op = [] (auto const&...)
 {
 };
 
-template<i_gen Gen>
-auto fill_vector (int64 const n, Gen generator)
-{
-    using T   = decltype(std::invoke(generator, int32 {}));
-    auto data = std::vector<T>();
-    data.reserve(as_usize(n));
-    for (auto i = int32 {0}; i < n; ++i)
-    {
-        data.emplace_back(std::invoke(generator, i));
-    }
-    return data;
-}
-
-template<std::input_iterator I, std::sentinel_for<I> S, class F>
-auto fmap (I first, S last, F mapper)
-{
-    using U     = decltype(std::invoke(mapper, *first));
-    auto result = std::vector<U>();
-    if constexpr (std::random_access_iterator<I>)
-    {
-        result.reserve(as_usize(std::distance(first, last)));
-    }
-    while (first != last)
-    {
-        result.emplace_back(std::invoke(mapper, *first));
-        ++first;
-    }
-    return result;
-}
-
-template<std::ranges::input_range Range, class F>
-auto fmap (Range&& input, F mapper)
-{
-    return fmap(std::ranges::begin(input), std::ranges::end(input), mapper);
-}
-
 /**
- *  \brief Exponentiation for integers
+ *  \brief Exponentiation by squaring
  */
-template<class Base, std::integral Exponent>
-auto constexpr int_pow(Base base, Exponent exponent) -> Base
+template<class Base>
+auto constexpr int_pow(Base base, int32 exponent) -> Base
 {
-    auto result = Base {1};
+    Base result = 1;
 
     for (;;)
     {
@@ -157,18 +127,6 @@ auto hash_combine (Ts const&... args) -> std::size_t
 }
 
 /**
- *  \brief Function object for tuple hash
- */
-struct tuple_hash
-{
-    template<class... Ts>
-    auto operator() (std::tuple<Ts...> const& tuple) const noexcept
-    {
-        return std::apply(hash_combine<Ts...>, tuple);
-    }
-};
-
-/**
  *  \brief Checks if any of the arguments is true
  *  \param args boolean arguments
  *  \return true if any of the arguments is true
@@ -177,6 +135,57 @@ template<class... Args>
 auto any (Args... args)
 {
     return (args || ...);
+}
+
+/**
+ *  \brief The min function
+ */
+template<class T>
+constexpr auto min(T lhs, T rhs) -> T
+{
+    return lhs < rhs ? lhs : rhs;
+}
+
+/**
+ *  \brief The min function for parameter packs
+ */
+template<class X>
+constexpr auto pack_min (X x) -> X
+{
+    return x;
+}
+
+/**
+ *  \brief The min function for parameter packs
+ */
+template<class X, class... Xs>
+constexpr auto pack_min (X x, Xs... xs) -> X
+{
+    return min(x, pack_min(xs...));
+}
+
+/**
+ *  \brief Exchages value of \p var to \p newVal and returns the old value
+ *  Simplified implementation of std::exchange
+ */
+template<class T, class U = T>
+auto exchange(T& var, U newVal) noexcept -> T
+{
+    auto oldVal = var;
+    var = newVal;
+    return oldVal;
+}
+
+/**
+ *  \brief Swaps values in \p first and \p second
+ *  Simplified implementation of std::swap
+ */
+template<typename T>
+constexpr auto swap(T& first, T& second) noexcept -> void
+{
+	auto tmp = first;
+	first = second;
+	second = tmp;
 }
 
 // TODO remove type_traits
@@ -195,6 +204,21 @@ struct is_void<void>
     static constexpr bool value = true;
 };
 
+template<class T, class U>
+struct is_same
+{
+    static constexpr bool value = false;
+};
+
+template<class T>
+struct is_same<T, T>
+{
+    static constexpr bool value = true;
+};
+
+template<class T, class U>
+concept same_as = std::is_same<T, U>::value;
+
 template<class T>
 struct optional_member
 {
@@ -205,18 +229,6 @@ template<>
 struct optional_member<void>
 {
 };
-
-/**
- *  \brief Exchages value of \p var to \p newVal and returns the old value
- *  Simplified implementation of std::exchange
- */
-template<class T, class U = T>
-auto exchange(T& var, U newVal) noexcept -> T
-{
-    auto oldVal = var;
-    var = newVal;
-    return oldVal;
-}
 } // namespace teddy::utils
 
 
