@@ -429,11 +429,6 @@ template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_terminal_node(int32 const value)
     -> node_t*
 {
-    if (is_special(value))
-    {
-        return this->make_special_node(value);
-    }
-
     if constexpr (domains::is_fixed<Domain>::value)
     {
         assert(value < Domain::value);
@@ -660,6 +655,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         }
     }
 
+    // TODO make terminals live forever
     for (auto& node : terminals_)
     {
         if (node && can_be_gced(node))

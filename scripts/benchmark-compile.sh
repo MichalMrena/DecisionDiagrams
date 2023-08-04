@@ -8,3 +8,6 @@ for TARGET in "libteddy-example-1" "libteddy-example-2"; do
     echo "Executable size: ${EXEC_SIZE} kiB"
     echo ""
 done
+
+echo -e "\e[32mSource stats:\e[0m:"
+cloc ./libteddy

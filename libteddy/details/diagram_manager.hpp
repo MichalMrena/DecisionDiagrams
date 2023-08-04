@@ -1208,16 +1208,16 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl (
     {
         int32 const lhsLevel = nodes_.get_level(lhs);
         int32 const rhsLevel = nodes_.get_level(rhs);
-        int32 const minLevel = utils::min(lhsLevel, rhsLevel);
-        int32 const topIndex = nodes_.get_index(minLevel);
+        int32 const topLevel = utils::min(lhsLevel, rhsLevel);
+        int32 const topIndex = nodes_.get_index(topLevel);
         int32 const domain   = nodes_.get_domain(topIndex);
         son_container sons   = nodes_.make_son_container(domain);
         for (int32 k = 0; k < domain; ++k)
         {
             sons[k] = this->apply_impl(
                 operation,
-                lhsLevel == minLevel ? lhs->get_son(k) : lhs,
-                rhsLevel == minLevel ? rhs->get_son(k) : rhs
+                lhsLevel == topLevel ? lhs->get_son(k) : lhs,
+                rhsLevel == topLevel ? rhs->get_son(k) : rhs
             );
         }
         result = nodes_.make_internal_node(topIndex, sons);

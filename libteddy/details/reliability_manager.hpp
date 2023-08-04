@@ -3,13 +3,13 @@
 
 #include <libteddy/details/diagram_manager.hpp>
 
-#include <array>
 #include <concepts>
-#include <iostream>
-#include <tuple>
 #include <unordered_map>
-#include <utility>
 #include <vector>
+    #include <tuple>
+    #include <utility>
+#include "libteddy/details/tools.hpp"
+#include "libteddy/details/types.hpp"
 
 namespace teddy
 {
@@ -478,14 +478,59 @@ protected:
 
 private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
+    using son_conainer = typename node_t::son_container;
 
-    template<class F>
-    auto apply_dpld_new (
-        diagram_t const& diagram,
+    // TODO not nice
+
+    struct dpld_cache_entry
+    {
+        node_t* lhs_;
+        node_t* rhs_;
+    };
+
+    struct cache_entry_hash
+    {
+        auto operator()(dpld_cache_entry const& entry) const
+        {
+            return utils::hash_combine(entry.lhs_, entry.rhs_);
+        }
+    };
+
+    struct cache_entry_equals
+    {
+        auto operator()(
+            dpld_cache_entry const& lhs,
+            dpld_cache_entry const& rhs
+        ) const
+        {
+            return lhs.lhs_ == rhs.lhs_ && lhs.rhs_ == rhs.rhs_;
+        }
+    };
+
+    using dpld_cache = std::unordered_map<
+        dpld_cache_entry,
+        node_t*,
+        cache_entry_hash,
+        cache_entry_equals
+    >;
+
+    template<class FChange>
+    auto dpld_impl (
+        dpld_cache& cache,
         var_change varChange,
-        F fChange
-    ) -> diagram_t;
+        FChange fChange,
+        node_t* lhs,
+        node_t* rhs
+    ) -> node_t*;
 
+    auto to_dpld_e_impl (
+        std::unordered_map<node_t*, node_t*>& memo,
+        int32 varFrom,
+        int32 varIndex,
+        node_t* node
+    ) -> node_t*;
+
+    // TODO impl suffix
     template<component_probabilities Ps>
     auto calculate_ntp (
         std::vector<int32> const& selected,
@@ -698,7 +743,93 @@ auto reliability_manager<Degree, Domain>::dpld(
     diagram_t const& diagram
 ) -> diagram_t
 {
-    return this->apply_dpld_new(diagram, varChange, fChange);
+    // TODO vector cache?
+    dpld_cache cache;
+    node_t* const oldRoot = diagram.unsafe_get_root();
+    node_t* lhsRoot = oldRoot;
+    node_t* rhsRoot = oldRoot;
+    if (not oldRoot->is_terminal() && oldRoot->get_index() == varChange.index_)
+    {
+        lhsRoot = oldRoot->get_son(varChange.from_);
+        rhsRoot = oldRoot->get_son(varChange.to_);
+    }
+    node_t* const newRoot = this->dpld_impl(
+        cache,
+        varChange,
+        fChange,
+        lhsRoot,
+        rhsRoot
+    );
+    this->nodes_.run_deferred();
+    return diagram_t(newRoot);
+}
+
+template<class Degree, class Domain>
+template<class FChange>
+auto reliability_manager<Degree, Domain>::dpld_impl (
+    dpld_cache& cache,
+    var_change varChange,
+    FChange fChange,
+    node_t* const lhs,
+    node_t* const rhs
+) -> node_t*
+{
+    constexpr auto get_son = [](
+        node_t* const node,
+        int32 const k,
+        int32 const varIndex,
+        int32 const varValue
+    )
+    {
+        auto const son = node->get_son(k);
+        return son->is_internal() && son->get_index() == varIndex
+            ? son->get_son(varValue)
+            : son;
+    };
+
+    auto const cached = cache.find(dpld_cache_entry(lhs, rhs));
+    if (cached != cache.end())
+    {
+        return cached->second;
+    }
+
+    node_t* result = nullptr;
+
+    if (lhs->is_terminal() && rhs->is_terminal())
+    {
+        result = this->nodes_.make_terminal_node(
+            static_cast<int32>(fChange(lhs->get_value(), rhs->get_value()))
+        );
+    }
+    else
+    {
+        int32 const lhsLevel = this->nodes_.get_level(lhs);
+        int32 const rhsLevel = this->nodes_.get_level(rhs);
+        int32 const topLevel = utils::min(lhsLevel, rhsLevel);
+        int32 const topIndex = this->nodes_.get_index(topLevel);
+        int32 const domain   = this->nodes_.get_domain(topIndex);
+        son_conainer sons    = this->nodes_.make_son_container(domain);
+        for (int32 k = 0; k < domain; ++k)
+        {
+            node_t* const fst = lhsLevel == topLevel
+                ? get_son(lhs, k, varChange.index_, varChange.from_)
+                : lhs;
+
+            node_t* const snd = rhsLevel == topLevel
+                ? get_son(rhs, k, varChange.index_, varChange.to_)
+                : rhs;
+            sons[k] = this->dpld_impl(cache, varChange, fChange, fst, snd);
+        }
+
+        result = this->nodes_.make_internal_node(topIndex, sons);
+    }
+
+    cache.emplace(
+        dpld_cache_entry(lhs, rhs),
+        result
+    );
+
+    return result;
 }
 
 template<class Degree, class Domain>
@@ -708,79 +839,88 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
     diagram_t const& dpld
 ) -> diagram_t
 {
-    auto const root      = dpld.unsafe_get_root();
-    auto const rootLevel = this->nodes_.get_level(root);
-    auto const varLevel  = this->nodes_.get_level(varIndex);
+    node_t* const root    = dpld.unsafe_get_root();
+    int32 const rootLevel = this->nodes_.get_level(root);
+    int32 const varLevel  = this->nodes_.get_level(varIndex);
+    node_t* newRoot       = nullptr;
 
     if (varLevel < rootLevel)
     {
-        auto sons = this->nodes_.make_sons(
-            varIndex,
-            [this, varFrom, root] (int32 const sonOrder)
-            {
-                return sonOrder == varFrom
-                         ? root
-                         : this->nodes_.make_terminal_node(Undefined);
-            }
-        );
-        auto const newRoot
-            = this->nodes_.make_internal_node(varIndex, std::move(sons));
+        int32 const varDomain = this->nodes_.get_domain(varIndex);
+        son_conainer sons     = this->nodes_.make_son_container(varDomain);
+        for (int32 k = 0; k < varDomain; ++k)
+        {
+            sons[k] = k == varFrom
+                ? root
+                : this->nodes_.make_special_node(Undefined);
+        }
+        newRoot = this->nodes_.make_internal_node(varIndex, sons);
         return diagram_t(newRoot);
     }
-
-    auto memo       = std::unordered_map<node_t*, node_t*>();
-    auto const step = [=, this, &memo] (auto const& self, node_t* const n)
+    else
     {
-        if (n->is_terminal())
-        {
-            return n;
-        }
+        std::unordered_map<node_t*, node_t*> memo;
+        newRoot = this->to_dpld_e_impl(memo, varFrom, varIndex, root);
+    }
 
-        auto const memoIt = memo.find(n);
-        if (memoIt != end(memo))
-        {
-            return memoIt->second;
-        }
+    // TODO run at other places too
+    // TODO add per to benchmark scripts
+    this->nodes_.run_deferred();
+    return diagram_t(newRoot);
+}
 
-        auto const nodeLevel = this->nodes_.get_level(n);
-        auto const nodeIndex = n->get_index();
-        auto sons            = this->nodes_.make_sons(
-            nodeIndex,
-            [=, this, &self] (int32 const sonOrder)
+template<class Degree, class Domain>
+auto reliability_manager<Degree, Domain>::to_dpld_e_impl (
+    std::unordered_map<node_t*, node_t*>& memo,
+    int32 const varFrom,
+    int32 const varIndex,
+    node_t* const node
+) -> node_t*
+{
+    if (node->is_terminal())
+    {
+        return node;
+    }
+
+    auto const memoIt = memo.find(node);
+    if (memoIt != memo.end())
+    {
+        return memoIt->second;
+    }
+
+    int32 const varDomain  = this->nodes_.get_domain(varIndex);
+    int32 const varLevel   = this->nodes_.get_level(varIndex);
+    int32 const nodeLevel  = this->nodes_.get_level(node);
+    int32 const nodeIndex  = this->nodes_.get_index(nodeLevel);
+    int32 const nodeDomain = this->nodes_.get_domain(nodeIndex);
+    son_conainer sons      = this->nodes_.make_son_container(nodeDomain);
+    for (int32 k = 0; k < nodeDomain; ++k)
+    {
+        node_t* const son    = node->get_son(k);
+        int32 const sonLevel = this->nodes_.get_level(son);
+        if (varLevel > nodeLevel && varLevel < sonLevel)
+        {
+            // A new node goes in between the current node and its k-th son.
+            // Transformation does not need to continue.
+            son_conainer newSons = this->nodes_.make_son_container(varDomain);
+            for (int32 l = 0; l < varDomain; ++l)
             {
-                auto const son      = n->get_son(sonOrder);
-                auto const sonLevel = this->nodes_.get_level(son);
-                if (varLevel > nodeLevel && varLevel < sonLevel)
-                {
-                    // A new node goes in between the current node
-                    // and its k th son.
-                    // Transformation does not need to continue.
-                    auto newNodeSons = this->nodes_.make_sons(
-                        varIndex,
-                        [this, varFrom, son] (int32 const newSonOrder)
-                        {
-                            return newSonOrder == varFrom
-                                                ? son
-                                                : this->nodes_.make_terminal_node(Undefined
-                                     );
-                        }
-                    );
-                    return this->nodes_.make_internal_node(
-                        varIndex,
-                        std::move(newNodeSons)
-                    );
-                }
-
-                // A new node will be inserted somewhere deeper.
-                return self(self, son);
+                newSons[l] = l == varFrom
+                    ? son
+                    : this->nodes_.make_special_node(Undefined);
             }
-        );
-        auto const transformedNode
-            = this->nodes_.make_internal_node(nodeIndex, std::move(sons));
-        memo.emplace(n, transformedNode);
-        return transformedNode;
-    };
-    return diagram_t(step(step, root));
+            sons[k] = this->nodes_.make_internal_node(varIndex, newSons);
+        }
+        else
+        {
+            // A new node will be inserted somewhere deeper.
+            sons[k] = this->to_dpld_e_impl(memo, varFrom, varIndex, son);
+        }
+
+    }
+    node_t* const newNode = this->nodes_.make_internal_node(nodeIndex, sons);
+    memo.emplace(node, newNode);
+    return newNode;
 }
 
 template<class Degree, class Domain>
@@ -902,116 +1042,6 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 
     auto const conj = this->template tree_fold<ops::PI_CONJ>(dpldes);
     this->template satisfy_all_g<Vars, Out>(1, conj, out);
-}
-
-template<class Degree, class Domain>
-template<class F>
-auto reliability_manager<Degree, Domain>::apply_dpld_new(
-    diagram_t const& diagram,
-    var_change varChange,
-    F fChange
-) -> diagram_t
-{
-    auto cache = std::unordered_map<
-        std::tuple<node_t*, node_t*>,
-        node_t*,
-        utils::tuple_hash
-    >();
-
-    auto const get_node_value = [] (node_t* const node)
-    {
-        return node->is_terminal() ? node->get_value() : Nondetermined;
-    };
-
-    auto const get_lhs_son = [varChange](node_t* const node, int32 const sonOrder)
-    {
-        auto const son = node->get_son(sonOrder);
-        return son->is_internal() && son->get_index() == varChange.index_
-            ? son->get_son(varChange.from_)
-            : son;
-    };
-
-    auto const get_rhs_son = [varChange](node_t* const node, int32 const sonOrder)
-    {
-        auto const son = node->get_son(sonOrder);
-        return son->is_internal() && son->get_index() == varChange.index_
-            ? son->get_son(varChange.to_)
-            : son;
-    };
-
-    auto const step = [
-        this,
-        &cache,
-        fChange,
-        get_node_value,
-        get_lhs_son,
-        get_rhs_son
-    ] (
-        auto const& self,
-        node_t* const lhs,
-        node_t* const rhs
-    ) -> node_t*
-    {
-        auto const cached = cache.find(std::make_tuple(lhs, rhs));
-        if (cached != end(cache))
-        {
-            return cached->second;
-        }
-
-        auto const lhsVal = get_node_value(lhs);
-        auto const rhsVal = get_node_value(rhs);
-        auto const opVal = lhsVal == Nondetermined || rhsVal == Nondetermined
-            ? Nondetermined
-            : static_cast<int32>(fChange(lhsVal, rhsVal));
-        auto result = static_cast<node_t*>(nullptr);
-
-        if (opVal != Nondetermined)
-        {
-            result = this->nodes_.make_terminal_node(opVal);
-        }
-        else
-        {
-            auto const lhsLevel = this->nodes_.get_level(lhs);
-            auto const rhsLevel = this->nodes_.get_level(rhs);
-            auto const topLevel = std::min(lhsLevel, rhsLevel);
-            auto const topNode  = topLevel == lhsLevel ? lhs : rhs;
-            auto const topIndex = topNode->get_index();
-            auto sons           = this->nodes_.make_sons(
-                topIndex,
-                [=, &self] (int32 const sonOrder)
-                {
-                    auto const fst = lhsLevel == topLevel
-                        ? get_lhs_son(lhs, sonOrder)
-                        : lhs;
-
-                    auto const snd = rhsLevel == topLevel
-                        ? get_rhs_son(rhs, sonOrder)
-                        : rhs;
-
-                    return self(self, fst, snd);
-                }
-            );
-
-            result = this->nodes_.make_internal_node(topIndex, std::move(sons));
-        }
-
-        cache.emplace(
-            std::piecewise_construct,
-            std::make_tuple(lhs, rhs),
-            std::make_tuple(result)
-        );
-        return result;
-    };
-
-    auto const oldRoot = diagram.unsafe_get_root();
-    auto const lhsRoot = oldRoot->get_index() == varChange.index_
-        ? oldRoot->get_son(varChange.from_)
-        : oldRoot;
-    auto const rhsRoot = oldRoot->get_index() == varChange.index_
-        ? oldRoot->get_son(varChange.to_)
-        : oldRoot;
-    auto const newRoot = step(step, lhsRoot, rhsRoot);
-    return diagram_t(newRoot);
 }
 
 template<class Degree, class Domain>
