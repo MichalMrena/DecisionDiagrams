@@ -150,7 +150,9 @@ auto calculate_mcvs (truth_table const& table, int32 state)
 {
     auto constexpr PiConj = [] (auto const lhs, auto const rhs)
     {
-        return std::min({lhs, rhs, Undefined});
+        return lhs == Undefined && rhs == Undefined
+            ? Undefined
+            : std::min(lhs, rhs);
     };
 
     auto dplds = std::vector<truth_table>();
@@ -178,7 +180,9 @@ auto calculate_mpvs (truth_table const& table, int32 state)
 {
     auto constexpr PiConj = [] (auto const lhs, auto const rhs)
     {
-        return std::min({lhs, rhs, Undefined});
+        return lhs == Undefined && rhs == Undefined
+            ? Undefined
+            : std::min(lhs, rhs);
     };
 
     auto dplds = std::vector<truth_table>();

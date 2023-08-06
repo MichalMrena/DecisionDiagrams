@@ -514,6 +514,14 @@ private:
         cache_entry_equals
     >;
 
+private:
+    auto to_mnf (diagram_t const& diagram) -> diagram_t;
+
+    auto to_mnf_impl (
+        std::unordered_map<node_t*, node_t*>& memo,
+        node_t* node
+    ) -> node_t*;
+
     template<class FChange>
     auto dpld_impl (
         dpld_cache& cache,
@@ -537,8 +545,6 @@ private:
         Ps const& probs,
         diagram_t const& diagram
     ) -> double;
-
-    auto to_mnf (diagram_t const& diagram) -> diagram_t;
 };
 
 template<class Degree, class Domain>
@@ -1092,6 +1098,18 @@ auto reliability_manager<Degree, Domain>::calculate_ntp(
     return diagram.unsafe_get_root()->get_data();
 }
 
+// TODO fix pi_conj !!!
+
+// template<class Degree, class Domain>
+// auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
+//     -> diagram_t
+// {
+//     std::unordered_map<node_t*, node_t*> memo;
+//     node_t* const newRoot = this->to_mnf_impl(memo, diagram.unsafe_get_root());
+//     this->nodes_.run_deferred();
+//     return diagram_t(newRoot);
+// }
+
 template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
     -> diagram_t
@@ -1139,6 +1157,59 @@ auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
     };
 
     return diagram_t(step(step, diagram.unsafe_get_root()));
+}
+
+template<class Degree, class Domain>
+auto reliability_manager<Degree, Domain>::to_mnf_impl (
+    std::unordered_map<node_t*, node_t*>& memo,
+    node_t* node
+) -> node_t*
+{
+    if (node->is_terminal())
+    {
+        return node;
+    }
+
+    auto const memoIt = memo.find(node);
+    if (memoIt != memo.end())
+    {
+        return memoIt->second;
+    }
+
+    int32 const nodeIndex = node->get_index();
+    int32 const domain    = this->nodes_.get_domain(nodeIndex);
+    son_conainer sons     = this->nodes_.make_son_container(domain);
+    for (int32 k = 0; k < domain; ++k)
+    {
+        node_t* const son = node->get_son(k);
+        sons[k] = this->to_mnf_impl(memo, son);
+    }
+
+    for (int32 k = domain - 1; k > 0; --k)
+    {
+        node_t* const son = sons[k];
+        if (son->is_terminal() && son->get_value() == 1)
+        {
+            for (int32 l = 0; l < k; ++l)
+            {
+                sons[l] = son;
+            }
+            break;
+        }
+    }
+
+    for (int32 k = domain - 2; k >= 0; --k)
+    {
+        node_t* const son = sons[k];
+        if (son->is_terminal() && son->get_value() == 0)
+        {
+            sons[k] = sons[k];
+        }
+    }
+
+    node_t* const newNode = this->nodes_.make_internal_node(nodeIndex, sons);
+    memo.emplace(node, newNode);
+    return newNode;
 }
 
 template<class Degree, class Domain>
