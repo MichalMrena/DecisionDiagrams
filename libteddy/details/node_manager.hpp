@@ -434,6 +434,11 @@ auto node_manager<Data, Degree, Domain>::make_terminal_node(int32 const value)
         assert(value < Domain::value);
     }
 
+    if (is_special(value))
+    {
+        return this->make_special_node(value);
+    }
+
     if (value >= ssize(terminals_))
     {
         terminals_.resize(as_usize(value + 1), nullptr);

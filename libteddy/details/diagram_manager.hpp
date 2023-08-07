@@ -1844,13 +1844,13 @@ auto diagram_manager<Data, Degree, Domain>::clear_cache() -> void
 
 namespace detail
 {
-inline auto default_or_fwd (std::vector<int32>& indices)
+inline auto default_or_fwd (int32 const varCount, std::vector<int32>& indices)
 {
     if (indices.empty())
     {
         std::vector<int32> defaultIndices;
-        defaultIndices.reserve(size(indices));
-        for (int32 index = 0; index < ssize(indices); ++index)
+        defaultIndices.reserve(as_usize(varCount));
+        for (int32 index = 0; index < varCount; ++index)
         {
             defaultIndices.push_back(index);
         }
@@ -1878,7 +1878,7 @@ requires(domains::is_fixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        detail::default_or_fwd(order)
+        detail::default_or_fwd(varCount, order)
     )
 {
 }
@@ -1897,7 +1897,7 @@ requires(domains::is_mixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        detail::default_or_fwd(order),
+        detail::default_or_fwd(varCount, order),
         static_cast<domains::mixed&&>(domain)
     )
 {

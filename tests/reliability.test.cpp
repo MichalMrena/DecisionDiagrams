@@ -175,270 +175,270 @@ public:
 constexpr auto FloatingTolerance = 0.00000001;
 
 using Fixtures                   = boost::mpl::vector<
-    teddy::tests::bss_fixture>;
-    // teddy::tests::mss_fixture<3>,
-    // teddy::tests::imss_fixture<3>,
-    // teddy::tests::ifmss_fixture<3>>;
+    teddy::tests::bss_fixture,
+    teddy::tests::mss_fixture<3>,
+    teddy::tests::imss_fixture<3>,
+    teddy::tests::ifmss_fixture<3>>;
 
 BOOST_AUTO_TEST_SUITE(reliability_test)
 
-// BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
-// {
-//     auto const expr
-//         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-//     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-//     auto const diagram = make_diagram(expr, manager);
-//     auto const probs   = make_probabilities(manager, Fixture::rng_);
-//     auto const domains = manager.get_domains();
-//     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-//     auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
-//     auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const probs   = make_probabilities(manager, Fixture::rng_);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+    auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
+    auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         expected[as_uindex(j)] = probability(table, probs, j);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        expected[as_uindex(j)] = probability(table, probs, j);
+    }
 
-//     manager.calculate_probabilities(probs, diagram);
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         actual[as_uindex(j)] = manager.get_probability(j);
-//     }
+    manager.calculate_probabilities(probs, diagram);
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        actual[as_uindex(j)] = manager.get_probability(j);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         BOOST_TEST(
-//             actual[as_uindex(j)] == expected[as_uindex(j)],
-//             boost::test_tools::tolerance(FloatingTolerance)
-//         );
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        BOOST_TEST(
+            actual[as_uindex(j)] == expected[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         actual[as_uindex(j)] = manager.calculate_probability(j, probs, diagram);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        actual[as_uindex(j)] = manager.calculate_probability(j, probs, diagram);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         BOOST_TEST(
-//             actual[as_uindex(j)] == expected[as_uindex(j)],
-//             boost::test_tools::tolerance(FloatingTolerance)
-//         );
-//     }
-// }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        BOOST_TEST(
+            actual[as_uindex(j)] == expected[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
+}
 
-// BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
-// {
-//     auto const expr
-//         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-//     auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
-//     auto diagram  = make_diagram(expr, manager);
-//     auto probs    = make_probabilities(manager, Fixture::rng_);
-//     auto domains  = manager.get_domains();
-//     auto table    = tsl::truth_table(make_vector(expr, domains), domains);
-//     auto expected = std::vector<double>(as_uindex(Fixture::stateCount_));
-//     auto actual   = std::vector<double>(as_uindex(Fixture::stateCount_));
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram  = make_diagram(expr, manager);
+    auto probs    = make_probabilities(manager, Fixture::rng_);
+    auto domains  = manager.get_domains();
+    auto table    = tsl::truth_table(make_vector(expr, domains), domains);
+    auto expected = std::vector<double>(as_uindex(Fixture::stateCount_));
+    auto actual   = std::vector<double>(as_uindex(Fixture::stateCount_));
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         expected[as_uindex(j)] = availability(table, probs, j);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        expected[as_uindex(j)] = availability(table, probs, j);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         actual[as_uindex(j)]
-//             = manager.calculate_availability(j, probs, diagram);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        actual[as_uindex(j)]
+            = manager.calculate_availability(j, probs, diagram);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         BOOST_TEST(
-//             actual[as_uindex(j)] == expected[as_uindex(j)],
-//             boost::test_tools::tolerance(FloatingTolerance)
-//         );
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        BOOST_TEST(
+            actual[as_uindex(j)] == expected[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
 
-//     manager.calculate_probabilities(probs, diagram);
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         actual[as_uindex(j)] = manager.get_availability(j);
-//     }
+    manager.calculate_probabilities(probs, diagram);
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        actual[as_uindex(j)] = manager.get_availability(j);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         BOOST_TEST(
-//             actual[as_uindex(j)] == expected[as_uindex(j)],
-//             boost::test_tools::tolerance(FloatingTolerance)
-//         );
-//     }
-// }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        BOOST_TEST(
+            actual[as_uindex(j)] == expected[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
+}
 
-// BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
-// {
-//     auto const expr
-//         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-//     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-//     auto const diagram = make_diagram(expr, manager);
-//     auto const probs   = make_probabilities(manager, Fixture::rng_);
-//     auto const domains = manager.get_domains();
-//     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-//     auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
-//     auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const probs   = make_probabilities(manager, Fixture::rng_);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+    auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
+    auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         expected[as_uindex(j)] = unavailability(table, probs, j);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        expected[as_uindex(j)] = unavailability(table, probs, j);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         actual[as_uindex(j)]
-//             = manager.calculate_unavailability(j, probs, diagram);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        actual[as_uindex(j)]
+            = manager.calculate_unavailability(j, probs, diagram);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         BOOST_TEST(
-//             expected[as_uindex(j)] == actual[as_uindex(j)],
-//             boost::test_tools::tolerance(FloatingTolerance)
-//         );
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        BOOST_TEST(
+            expected[as_uindex(j)] == actual[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
 
-//     manager.calculate_probabilities(probs, diagram);
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         actual[as_uindex(j)] = manager.get_unavailability(j);
-//     }
+    manager.calculate_probabilities(probs, diagram);
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        actual[as_uindex(j)] = manager.get_unavailability(j);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         BOOST_TEST(
-//             actual[as_uindex(j)] == expected[as_uindex(j)],
-//             boost::test_tools::tolerance(FloatingTolerance)
-//         );
-//     }
-// }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        BOOST_TEST(
+            actual[as_uindex(j)] == expected[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
+}
 
-// BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
-// {
-//     auto const expr
-//         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-//     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-//     auto const diagram = make_diagram(expr, manager);
-//     auto const domains = manager.get_domains();
-//     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-//     auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
-//     auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+    auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
+    auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         expected[as_uindex(j)] = state_frequency(table, j);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        expected[as_uindex(j)] = state_frequency(table, j);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         actual[as_uindex(j)] = manager.state_frequency(diagram, j);
-//     }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        actual[as_uindex(j)] = manager.state_frequency(diagram, j);
+    }
 
-//     for (auto j = 0; j < Fixture::stateCount_; ++j)
-//     {
-//         BOOST_TEST(
-//             actual[as_uindex(j)] == expected[as_uindex(j)],
-//             boost::test_tools::tolerance(FloatingTolerance)
-//         );
-//     }
-// }
+    for (auto j = 0; j < Fixture::stateCount_; ++j)
+    {
+        BOOST_TEST(
+            actual[as_uindex(j)] == expected[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+    }
+}
 
-// BOOST_FIXTURE_TEST_CASE_TEMPLATE(
-//     structural_importances,
-//     Fixture,
-//     Fixtures,
-//     Fixture
-// )
-// {
-//     auto const expr
-//         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-//     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-//     auto const diagram = make_diagram(expr, manager);
-//     auto const domains = manager.get_domains();
-//     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    structural_importances,
+    Fixture,
+    Fixtures,
+    Fixture
+)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-//     for (auto systemState = 1; systemState < Fixture::stateCount_;
-//          ++systemState)
-//     {
-//         for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
-//         {
-//             for (auto varVal = 1; varVal < domains[as_uindex(varIndex)];
-//                  ++varVal)
-//             {
-//                 auto const tableDpld = tsl::dpld(
-//                     table,
-//                     {varIndex, varVal, varVal - 1},
-//                     tsl::type_3_decrease(systemState)
-//                 );
-//                 auto const diagramDpld = manager.dpld(
-//                     {varIndex, varVal, varVal - 1},
-//                     dpld::type_3_decrease(systemState),
-//                     diagram
-//                 );
-//                 auto const expected
-//                     = tsl::structural_importance(tableDpld, varIndex);
-//                 auto const actual = manager.structural_importance(diagramDpld);
-//                 BOOST_TEST(
-//                     expected == actual,
-//                     boost::test_tools::tolerance(FloatingTolerance)
-//                 );
-//             }
-//         }
-//     }
-// }
+    for (auto systemState = 1; systemState < Fixture::stateCount_;
+         ++systemState)
+    {
+        for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+        {
+            for (auto varVal = 1; varVal < domains[as_uindex(varIndex)];
+                 ++varVal)
+            {
+                auto const tableDpld = tsl::dpld(
+                    table,
+                    {varIndex, varVal, varVal - 1},
+                    tsl::type_3_decrease(systemState)
+                );
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, varVal, varVal - 1},
+                    dpld::type_3_decrease(systemState),
+                    diagram
+                );
+                auto const expected
+                    = tsl::structural_importance(tableDpld, varIndex);
+                auto const actual = manager.structural_importance(diagramDpld);
+                BOOST_TEST(
+                    expected == actual,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
+    }
+}
 
-// BOOST_FIXTURE_TEST_CASE_TEMPLATE(
-//     birnbaum_importances,
-//     Fixture,
-//     Fixtures,
-//     Fixture
-// )
-// {
-//     auto const expr
-//         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-//     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-//     auto const diagram = make_diagram(expr, manager);
-//     auto const probs   = make_probabilities(manager, Fixture::rng_);
-//     auto const domains = manager.get_domains();
-//     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    birnbaum_importances,
+    Fixture,
+    Fixtures,
+    Fixture
+)
+{
+    auto const expr
+        = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const probs   = make_probabilities(manager, Fixture::rng_);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-//     for (auto systemState = 1; systemState < Fixture::stateCount_;
-//          ++systemState)
-//     {
-//         for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
-//         {
-//             for (auto varVal = 1;
-//                  varVal < manager.get_domains()[as_uindex(varIndex)];
-//                  ++varVal)
-//             {
-//                 auto const tableDpld = tsl::dpld(
-//                     table,
-//                     {varIndex, varVal, varVal - 1},
-//                     tsl::type_3_decrease(systemState)
-//                 );
-//                 auto const diagramDpld = manager.dpld(
-//                     {varIndex, varVal, varVal - 1},
-//                     dpld::type_3_decrease(systemState),
-//                     diagram
-//                 );
-//                 auto const expected
-//                     = tsl::birnbaum_importance(tableDpld, probs);
-//                 auto const actual
-//                     = manager.birnbaum_importance(probs, diagramDpld);
-//                 BOOST_TEST(
-//                     expected == actual,
-//                     boost::test_tools::tolerance(FloatingTolerance)
-//                 );
-//             }
-//         }
-//     }
-// }
+    for (auto systemState = 1; systemState < Fixture::stateCount_;
+         ++systemState)
+    {
+        for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
+        {
+            for (auto varVal = 1;
+                 varVal < manager.get_domains()[as_uindex(varIndex)];
+                 ++varVal)
+            {
+                auto const tableDpld = tsl::dpld(
+                    table,
+                    {varIndex, varVal, varVal - 1},
+                    tsl::type_3_decrease(systemState)
+                );
+                auto const diagramDpld = manager.dpld(
+                    {varIndex, varVal, varVal - 1},
+                    dpld::type_3_decrease(systemState),
+                    diagram
+                );
+                auto const expected
+                    = tsl::birnbaum_importance(tableDpld, probs);
+                auto const actual
+                    = manager.birnbaum_importance(probs, diagramDpld);
+                BOOST_TEST(
+                    expected == actual,
+                    boost::test_tools::tolerance(FloatingTolerance)
+                );
+            }
+        }
+    }
+}
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     fussell_vesely_importances,

@@ -538,12 +538,11 @@ private:
         node_t* node
     ) -> node_t*;
 
-    // TODO impl suffix
     template<component_probabilities Ps>
-    auto calculate_ntp (
+    auto calculate_ntps_impl (
         std::vector<int32> const& selected,
         Ps const& probs,
-        diagram_t const& diagram
+        node_t* root
     ) -> double;
 };
 
@@ -602,7 +601,7 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
     diagram_t const& diagram
 ) -> double
 {
-    return this->calculate_ntp({state}, probs, diagram);
+    return this->calculate_ntps_impl({state}, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -642,7 +641,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
             }
         }
     );
-    return this->calculate_ntp(states, probs, diagram);
+    return this->calculate_ntps_impl(states, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -700,7 +699,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
             }
         }
     );
-    return this->calculate_ntp(states, probs, diagram);
+    return this->calculate_ntps_impl(states, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -1052,112 +1051,108 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 
 template<class Degree, class Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::calculate_ntp(
+auto reliability_manager<Degree, Domain>::calculate_ntps_impl(
     std::vector<int32> const& selectedValues,
     Ps const& probs,
-    diagram_t const& diagram
+    node_t* const root
 ) -> double
 {
     this->nodes_.for_each_terminal_node(
-        [] (node_t* const n)
+        [] (node_t* const node)
         {
-            n->get_data() = 0.0;
+            node->get_data() = 0.0;
         }
     );
 
-    for (auto const selectedValue : selectedValues)
+    for (int32 const selectedValue : selectedValues)
     {
-        auto const terminalNode = this->nodes_.get_terminal_node(selectedValue);
-        if (terminalNode)
+        node_t* const node = this->nodes_.get_terminal_node(selectedValue);
+        if (node)
         {
-            terminalNode->get_data() = 1.0;
+            node->get_data() = 1.0;
         }
     }
 
     this->nodes_.traverse_post(
-        diagram.unsafe_get_root(),
+        root,
         [this, &probs] (node_t* const node) mutable
         {
             if (not node->is_terminal())
             {
-                node->get_data()     = 0.0;
-                auto const nodeIndex = node->get_index();
-                this->nodes_.for_each_son(
-                    node,
-                    [=, sonState = 0, &probs] (node_t* const son) mutable
-                    {
-                        node->get_data()
+                node->get_data()      = 0.0;
+                int32 const nodeIndex = node->get_index();
+                int32 const domain    = this->nodes_.get_domain(nodeIndex);
+                for (int32 k = 0; k < domain; ++k)
+                {
+                    node_t* const son = node->get_son(k);
+                    node->get_data()
                             += son->get_data()
-                             * probs[as_uindex(nodeIndex)][as_uindex(sonState)];
-                        ++sonState;
-                    }
-                );
+                             * probs[as_uindex(nodeIndex)][as_uindex(k)];
+                }
             }
         }
     );
-    return diagram.unsafe_get_root()->get_data();
+    return root->get_data();
 }
-
-// TODO fix pi_conj !!!
-
-// template<class Degree, class Domain>
-// auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
-//     -> diagram_t
-// {
-//     std::unordered_map<node_t*, node_t*> memo;
-//     node_t* const newRoot = this->to_mnf_impl(memo, diagram.unsafe_get_root());
-//     this->nodes_.run_deferred();
-//     return diagram_t(newRoot);
-// }
 
 template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
     -> diagram_t
 {
-    auto const step = [this] (auto& self, node_t* const node)
-    {
-        if (node->is_terminal())
-        {
-            return node;
-        }
-
-        auto const index  = node->get_index();
-        auto const domain = this->nodes_.get_domain(index);
-        auto newSons      = this->nodes_.make_sons(
-            index,
-            [&self, node] (int32 const sonOrder)
-            {
-                return self(self, node->get_son(sonOrder));
-            }
-        );
-
-        for (auto sonOrder = domain - 1; sonOrder > 0; --sonOrder)
-        {
-            auto const son = newSons[as_uindex(sonOrder)];
-            if (son->is_terminal() && son->get_value() == 1)
-            {
-                for (auto k = 0; k < sonOrder; ++k)
-                {
-                    newSons[as_uindex(k)] = son;
-                }
-                break;
-            }
-        }
-
-        for (auto sonOrder = domain - 2; sonOrder >= 0; --sonOrder)
-        {
-            auto const son = newSons[as_uindex(sonOrder)];
-            if (son->is_terminal() && son->get_value() == 0)
-            {
-                newSons[as_uindex(sonOrder)] = newSons[as_uindex(sonOrder + 1)];
-            }
-        }
-
-        return this->nodes_.make_internal_node(index, std::move(newSons));
-    };
-
-    return diagram_t(step(step, diagram.unsafe_get_root()));
+    std::unordered_map<node_t*, node_t*> memo;
+    node_t* const newRoot = this->to_mnf_impl(memo, diagram.unsafe_get_root());
+    this->nodes_.run_deferred();
+    return diagram_t(newRoot);
 }
+
+// template<class Degree, class Domain>
+// auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
+//     -> diagram_t
+// {
+//     auto const step = [this] (auto& self, node_t* const node)
+//     {
+//         if (node->is_terminal())
+//         {
+//             return node;
+//         }
+
+//         auto const index  = node->get_index();
+//         auto const domain = this->nodes_.get_domain(index);
+//         auto newSons      = this->nodes_.make_sons(
+//             index,
+//             [&self, node] (int32 const sonOrder)
+//             {
+//                 return self(self, node->get_son(sonOrder));
+//             }
+//         );
+
+//         for (auto sonOrder = domain - 1; sonOrder > 0; --sonOrder)
+//         {
+//             auto const son = newSons[as_uindex(sonOrder)];
+//             if (son->is_terminal() && son->get_value() == 1)
+//             {
+//                 for (auto k = 0; k < sonOrder; ++k)
+//                 {
+//                     newSons[as_uindex(k)] = son;
+//                 }
+//                 break;
+//             }
+//         }
+
+//         for (auto sonOrder = domain - 2; sonOrder >= 0; --sonOrder)
+//         {
+//             auto const son = newSons[as_uindex(sonOrder)];
+//             if (son->is_terminal() && son->get_value() == 0)
+//             {
+//                 newSons[as_uindex(sonOrder)] = newSons[as_uindex(sonOrder + 1)];
+//             }
+//         }
+
+//         return this->nodes_.make_internal_node(index, std::move(newSons));
+//     };
+
+//     return diagram_t(step(step, diagram.unsafe_get_root()));
+// }
 
 template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::to_mnf_impl (
@@ -1203,7 +1198,7 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl (
         node_t* const son = sons[k];
         if (son->is_terminal() && son->get_value() == 0)
         {
-            sons[k] = sons[k];
+            sons[k] = sons[k + 1];
         }
     }
 

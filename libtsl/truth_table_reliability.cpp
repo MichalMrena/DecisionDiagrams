@@ -7,6 +7,7 @@
 #include <functional>
 #include <numeric>
 #include <ranges>
+#include "libtsl/types.hpp"
 
 namespace teddy::tsl
 {
@@ -150,9 +151,7 @@ auto calculate_mcvs (truth_table const& table, int32 state)
 {
     auto constexpr PiConj = [] (auto const lhs, auto const rhs)
     {
-        return lhs == Undefined && rhs == Undefined
-            ? Undefined
-            : std::min(lhs, rhs);
+        return std::min({lhs, rhs, Undefined});
     };
 
     auto dplds = std::vector<truth_table>();
@@ -180,9 +179,7 @@ auto calculate_mpvs (truth_table const& table, int32 state)
 {
     auto constexpr PiConj = [] (auto const lhs, auto const rhs)
     {
-        return lhs == Undefined && rhs == Undefined
-            ? Undefined
-            : std::min(lhs, rhs);
+        return std::min({lhs, rhs, Undefined});
     };
 
     auto dplds = std::vector<truth_table>();
