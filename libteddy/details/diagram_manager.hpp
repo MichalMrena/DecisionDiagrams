@@ -14,7 +14,6 @@
     #include <iterator>
 #include <optional>
     #include <ranges>
-#include <type_traits>
 #include <vector>
 
 namespace teddy
@@ -894,7 +893,7 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
 {
     if (0 == this->get_var_count())
     {
-        assert(first != last && std::next(first) == last);
+        assert(first != last && ++I(first) == last);
         return diagram_t(nodes_.make_terminal_node(*first));
     }
 
@@ -906,7 +905,7 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
         [[maybe_unused]] auto const count
             = nodes_.domain_product(0, lastLevel + 1);
         [[maybe_unused]] auto const dist
-            = static_cast<int64>(std::distance(first, last));
+            = static_cast<int64>(last - first);
         assert(dist > 0 && dist == count);
     }
 
@@ -1070,7 +1069,7 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
 
     auto const& plaLines     = file.get_lines();
     auto const lineCount     = file.get_line_count();
-    auto const functionCount = file.function_count();
+    auto const functionCount = file.get_function_count();
 
     // Create a diagram for each function.
     auto functionDiagrams = std::vector<diagram_t>();
@@ -1389,9 +1388,8 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
         assert(value < Domain::value);
     }
 
-    auto constexpr CanUseDataMember
-        = std::is_floating_point_v<Data> || std::is_integral_v<Data>;
-    using T = std::conditional_t<CanUseDataMember, Data, int64>;
+    auto constexpr CanUseDataMember = not utils::is_void<Data>::value;
+    using T = utils::type_if<CanUseDataMember, Data, int64>::type;
 
     // A function that returns reference to
     // the data associated with given node.

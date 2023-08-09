@@ -3,9 +3,7 @@
 
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_manager.hpp>
-
-#include <cstddef>
-#include <functional>
+#include <libteddy/details/tools.hpp>
 
 namespace teddy
 {
@@ -191,8 +189,7 @@ struct hash<teddy::diagram<Data, Degree>>
     [[nodiscard]] auto operator() (teddy::diagram<Data, Degree> const& diagram
     ) const noexcept -> std::size_t
     {
-        return std::hash<decltype(diagram.unsafe_get_root())>(
-        )(diagram.unsafe_get_root());
+        return ::teddy::utils::do_hash(diagram.unsafe_get_root());
     }
 };
 

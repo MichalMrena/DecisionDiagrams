@@ -10,15 +10,11 @@
 #include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
-    #include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstdint>
-#include <functional>
 #include <ostream>
 #include <string>
-#include <type_traits>
-    #include <utility>
 #include <vector>
 
 namespace teddy
@@ -29,7 +25,10 @@ struct mixed
 {
     std::vector<int32> domains_;
 
-    mixed(std::vector<int32> domains) : domains_(std::move(domains)) {};
+    mixed(std::vector<int32> domains) :
+        domains_(static_cast<std::vector<int32>&&>(domains))
+    {
+    };
 
     auto operator[] (int32 const index) const
     {
@@ -290,7 +289,7 @@ requires(domains::is_fixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(order),
+        static_cast<std::vector<int32>&&>(order),
         {}
     )
 {
@@ -311,8 +310,8 @@ requires(domains::is_mixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(order),
-        std::move(domains)
+        static_cast<std::vector<int32>&&>(order),
+        static_cast<domains::mixed&&>(domains)
     )
 {
 }
@@ -334,8 +333,8 @@ node_manager<Data, Degree, Domain>::node_manager(
     terminals_(),
     specials_(),
     indexToLevel_(as_usize(varCount)),
-    levelToIndex_(std::move(order)),
-    domains_(std::move(domains)),
+    levelToIndex_(static_cast<std::vector<int32>&&>(order)),
+    domains_(static_cast<Domain&&>(domains)),
     varCount_(varCount),
     nodeCount_(0),
     adjustmentNodeCount_(DEFAULT_FIRST_TABLE_ADJUSTMENT),
@@ -511,7 +510,7 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
         }
         else
         {
-            ret = this->make_new_node(index, std::move(sons));
+            ret = this->make_new_node(index, sons);
             table.insert(ret, hash);
             this->for_each_son(ret, id_inc_ref_count<Data, Degree>);
         }
@@ -822,9 +821,9 @@ auto node_manager<Data, Degree, Domain>::cache_find(
 {
     if constexpr (O::is_commutative())
     {
-        if (std::less<node_t*>()(rhs, lhs))
+        if (rhs < lhs)
         {
-            std::swap(lhs, rhs);
+            utils::swap(lhs, rhs);
         }
     }
     auto const node = opCache_.find(O::get_id(), lhs, rhs);
@@ -845,9 +844,9 @@ auto node_manager<Data, Degree, Domain>::cache_put(
 {
     if constexpr (O::is_commutative())
     {
-        if (std::less<node_t*>()(rhs, lhs))
+        if (rhs < lhs)
         {
-            std::swap(lhs, rhs);
+            utils::swap(lhs, rhs);
         }
     }
     opCache_.put(O::get_id(), result, lhs, rhs);
@@ -1090,7 +1089,7 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
     }
 
     ++nodeCount_;
-    return pool_.create(std::forward<Args>(args)...);
+    return pool_.create(args...);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1237,9 +1236,10 @@ auto node_manager<Data, Degree, Domain>::check_distinct(
     {
         return true;
     }
-    auto const maxElem = *std::max_element(begin(ints), end(ints));
-    auto bitset        = std::vector<bool>(as_usize(maxElem + 1), false);
-    for (auto const checkInt : ints)
+
+    int32 const maxElem = *utils::max_elem(ints.begin(), ints.end());
+    std::vector<bool> bitset(as_usize(maxElem + 1), false);
+    for (int32 const checkInt : ints)
     {
         if (bitset[as_uindex(checkInt)])
         {
@@ -1260,11 +1260,11 @@ template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     -> void
 {
-    using node_matrix = std::conditional_t<
+    using node_matrix = utils::type_if<
         degrees::is_fixed<Degree>::value,
         node_t*[Degree::value][Degree::value],
         std::vector<std::vector<node_t*>>
-    >;
+    >::type;
 
     int32 const nodeIndex  = node->get_index();
     int32 const nextIndex  = this->get_index(1 + this->get_level(node));
@@ -1374,21 +1374,25 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
 {
     auto const level     = this->get_level(index);
     auto const nextIndex = this->get_index(1 + level);
-    auto tmpTable
-        = unique_table<Data, Degree>(std::move(uniqueTables_[as_uindex(index)])
-        );
+    unique_table<Data, Degree> tmpTable(
+        static_cast<unique_table<Data, Degree>&&>(
+            uniqueTables_[as_uindex(index)]
+        )
+    );
     for (auto const node : tmpTable)
     {
         this->swap_node_with_next(node);
     }
     uniqueTables_[as_uindex(index)].adjust_capacity(domains_[index]);
     uniqueTables_[as_uindex(nextIndex)].merge(
-        std::move(tmpTable),
+        static_cast<unique_table<Data, Degree>&&>(tmpTable),
         domains_[nextIndex]
     );
 
-    using std::swap;
-    swap(levelToIndex_[as_uindex(level)], levelToIndex_[as_uindex(1 + level)]);
+    utils::swap(
+        levelToIndex_[as_uindex(level)],
+        levelToIndex_[as_uindex(1 + level)]
+    );
     ++indexToLevel_[as_uindex(index)];
     --indexToLevel_[as_uindex(nextIndex)];
 }
@@ -1411,9 +1415,8 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
         {
             counts.push_back(count_pair {index, this->get_node_count(index)});
         }
-        std::sort(
-            begin(counts),
-            end(counts),
+        utils::sort(
+            counts,
             [] (count_pair const& lhs, count_pair const& rhs)
             {
                 return lhs.count_ > rhs.count_;

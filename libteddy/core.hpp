@@ -187,7 +187,12 @@ inline bdd_manager::bdd_manager(
     int64 const nodePoolSize,
     std::vector<int32> order
 ) :
-    bdd_manager(varCount, nodePoolSize, nodePoolSize / 2, std::move(order))
+    bdd_manager(
+        varCount,
+        nodePoolSize,
+        nodePoolSize / 2,
+        static_cast<std::vector<int32>&&>(order)
+    )
 {
 }
 
@@ -201,7 +206,7 @@ inline bdd_manager::bdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(order)
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -212,7 +217,12 @@ mdd_manager<M>::mdd_manager(
     int64 const nodePoolSize,
     std::vector<int32> order
 ) :
-    mdd_manager(varCount, nodePoolSize, nodePoolSize / 2, std::move(order))
+    mdd_manager(
+        varCount,
+        nodePoolSize,
+        nodePoolSize / 2,
+        static_cast<std::vector<int32>&&>(order)
+    )
 {
 }
 
@@ -227,7 +237,7 @@ mdd_manager<M>::mdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(order)
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -242,8 +252,8 @@ inline imdd_manager::imdd_manager(
         varCount,
         nodePoolSize,
         nodePoolSize / 2,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -259,8 +269,8 @@ inline imdd_manager::imdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -276,8 +286,8 @@ ifmdd_manager<M>::ifmdd_manager(
         varCount,
         nodePoolSize,
         nodePoolSize / 2,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -294,8 +304,8 @@ ifmdd_manager<PMax>::ifmdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }

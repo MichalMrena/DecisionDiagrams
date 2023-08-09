@@ -5,7 +5,7 @@
 
 #include <charconv>
 #include <concepts>
-#include <functional>
+#include <cstddef>
 #include <optional>
 #include <string_view>
 #include <type_traits>
@@ -20,12 +20,12 @@ concept is_std_vector = std::
 template<class Gen>
 auto fill_vector (int64 const n, Gen generator)
 {
-    using T   = decltype(std::invoke(generator, int32 {}));
+    using T   = decltype(generator(int32{}));
     auto data = std::vector<T>();
     data.reserve(as_usize(n));
     for (auto i = int32 {0}; i < n; ++i)
     {
-        data.emplace_back(std::invoke(generator, i));
+        data.emplace_back(generator(i));
     }
     return data;
 }
@@ -36,32 +36,6 @@ auto fill_vector (int64 const n, Gen generator)
 auto constexpr identity = [] (auto const arg)
 {
     return arg;
-};
-
-/**
- *  \brief Checks if argument is not zerp
- */
-auto constexpr not_zero = [] (auto const arg)
-{
-    return arg != 0;
-};
-
-/**
- *  \brief Creates constant function
- */
-auto constexpr constant = [] (auto const arg)
-{
-    return [arg] (auto)
-    {
-        return arg;
-    };
-};
-
-/**
- *  \brief Eats everything, does nothing
- */
-auto constexpr no_op = [] (auto const&...)
-{
 };
 
 /**
@@ -110,6 +84,22 @@ auto parse (std::string_view const input) -> std::optional<Num>
 }
 
 /**
+ *  \brief Hash for pointers
+ */
+inline auto do_hash (void* const p) -> std::size_t
+{
+    return reinterpret_cast<std::size_t>(p) >> 4;
+}
+
+/**
+ *  \brief Hash for int
+ */
+inline auto do_hash (int32 const x) -> std::size_t
+{
+    return static_cast<std::size_t>(x);
+}
+
+/**
  *  \brief Computes hash of the \p args
  */
 template<class... Ts>
@@ -119,8 +109,7 @@ auto hash_combine (Ts const&... args) -> std::size_t
     std::size_t seed = 0;
     auto combine = [&seed] (auto const& elem)
     {
-        auto hasher = std::hash<std::remove_cvref_t<decltype(elem)>>();
-        seed ^= hasher(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= do_hash(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     };
     (combine(args), ...);
     return seed;
@@ -165,6 +154,61 @@ constexpr auto pack_min (X x, Xs... xs) -> X
 }
 
 /**
+ *  \brief Maximum of a range
+ *  Implementation of std::max_element
+ */
+template<class It>
+auto max_elem (It first, It const last) -> It
+{
+    It maxIt = first;
+    while (first != last)
+    {
+        if (*first > *maxIt)
+        {
+            maxIt = first;
+        }
+        ++first;
+    }
+    return maxIt;
+}
+
+/**
+ *  \brief Finds the first element satisfying \p test
+ *  Implementation of std::find_if
+ */
+template<class It, class Predicate>
+auto find_if (It first, It const last, Predicate test) -> It
+{
+    while (first != last)
+    {
+        if (test(*first))
+        {
+            return first;
+        }
+        ++first;
+    }
+    return first;
+}
+
+/**
+ *  \brief Finds the first element not satisfying \p test
+ *  Implementation of std::find_if_not
+ */
+template<class It, class Predicate>
+auto find_if_not (It first, It const last, Predicate test) -> It
+{
+    while (first != last)
+    {
+        if (not test(*first))
+        {
+            return first;
+        }
+        ++first;
+    }
+    return first;
+}
+
+/**
  *  \brief Exchages value of \p var to \p newVal and returns the old value
  *  Simplified implementation of std::exchange
  */
@@ -188,9 +232,62 @@ constexpr auto swap(T& first, T& second) noexcept -> void
 	second = tmp;
 }
 
-// TODO remove type_traits
-template<class X, class T>
-using second_t = std::conditional_t<false, X, T>;
+/**
+ *  \brief Simple heapsort for vectors
+ */
+template<class T, class Compare>
+auto sort(std::vector<T>& xs, Compare cmp) -> void
+{
+    if (xs.empty())
+    {
+        return;
+    }
+
+    auto const sift_down = [&xs, cmp](uint32 parent, uint32 const size)
+    {
+        uint32 left = 2 * parent + 1;
+        uint32 right = left + 1;
+        while (left < size)
+        {
+            uint32 swap = parent;
+            if (cmp(xs[swap], xs[left]))
+            {
+                swap = left;
+            }
+
+            if (right < size && cmp(xs[swap], xs[right]))
+            {
+                swap = right;
+            }
+
+            if (swap == parent)
+            {
+                break;
+            }
+
+            utils::swap(xs[parent], xs[swap]);
+            parent = swap;
+            left = 2 * parent + 1;
+            right = left + 1;
+        }
+    };
+
+    uint32 const size = static_cast<uint32>(xs.size());
+
+    // make-heap
+    for (uint32 i = size / 2 + 1; i > 0;)
+    {
+        --i;
+        sift_down(i, size);
+    }
+
+    // pop-heap
+    for (uint32 last = size - 1; last > 0; --last)
+    {
+        utils::swap(xs[last], xs[0]);
+        sift_down(0, last);
+    }
+}
 
 template<class T>
 struct is_void
@@ -218,6 +315,37 @@ struct is_same<T, T>
 
 template<class T, class U>
 concept same_as = std::is_same<T, U>::value;
+
+/**
+ *  \brief Provides member typedef based on the value of \p B
+ *  Implementation of \c std::conditional
+ */
+template<bool B, class T, class F>
+struct type_if;
+
+/**
+ *  \brief Specialization for B = true
+ */
+template<class T, class F>
+struct type_if<true, T, F>
+{
+    using type = T;
+};
+
+/**
+ *  \brief Specialization for B = false
+ */
+template<class T, class F>
+struct type_if<false, T, F>
+{
+    using type = F;
+};
+
+/**
+ *  \brief Helper for SFINE functions
+ */
+template<class X, class T>
+using second_t = type_if<false, X, T>::type;
 
 template<class T>
 struct optional_member

@@ -6,7 +6,6 @@
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/tools.hpp>
 
-#include <functional>
 #include <vector>
 
 namespace teddy
@@ -745,9 +744,10 @@ auto unique_table<Data, Degree>::node_hash(son_container const& sons, int32 cons
     -> hash_t
 {
     auto result = hash_t(0);
+    // TODO utils
     for (auto k = 0; k < domain; ++k)
     {
-        auto const hash = std::hash<node_t*>()(sons[as_uindex(k)]);
+        auto const hash = utils::do_hash(sons[as_uindex(k)]);
         result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
     }
     return result;
@@ -760,7 +760,7 @@ auto unique_table<Data, Degree>::node_equals(
     int32 const domain
 ) -> bool
 {
-    for (auto k = 0; k < domain; ++k)
+    for (int32 k = 0; k < domain; ++k)
     {
         if (node->get_son(k) != sons[as_uindex(k)])
         {

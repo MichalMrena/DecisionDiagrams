@@ -319,7 +319,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators, Fixture, Fixtures, Fixture)
     auto const one  = manager.constant(1);
     auto const sup
         = manager.constant(std::ranges::max(manager.get_domains()) - 1);
-    auto const boolValDiagram = manager.transform(diagram, utils::not_zero);
+    auto const boolValDiagram = manager.transform(diagram, [](int32 const val)
+    {
+        return val != 0;
+    });
 
     BOOST_REQUIRE_MESSAGE(
         manager.template apply<AND>(boolValDiagram, zero).equals(zero),

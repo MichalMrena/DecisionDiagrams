@@ -5,14 +5,12 @@
 #include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
-#include <algorithm>
 #include <cassert>
 #include <cctype>
 #include <cstdint>
 #include <fstream>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -24,7 +22,7 @@ namespace teddy
 class bool_cube
 {
 public:
-    inline static constexpr auto DontCare = std::uint8_t(0b11);
+    static constexpr std::uint8_t DontCare = 0b11;
 
 public:
     bool_cube(int32 size);
@@ -76,13 +74,13 @@ public:
      *  \brief Returns number of variables in the file
      *  \return Number of variables
      */
-    [[nodiscard]] auto variable_count () const -> int32;
+    [[nodiscard]] auto get_variable_count () const -> int32;
 
     /**
      *  \brief Returns number of functions in the file
      *  \return Number of functions
      */
-    [[nodiscard]] auto function_count () const -> int32;
+    [[nodiscard]] auto get_function_count () const -> int32;
 
     /**
      *  \brief Returns number of lines in the file
@@ -161,8 +159,8 @@ inline auto bool_cube::size() const -> int32
 
 inline auto bool_cube::get(int32 const i) const -> int32
 {
-    auto const byteIndex  = i / 4;
-    auto const uByteIndex = as_uindex(byteIndex);
+    int32 const byteIndex  = i / 4;
+    std::size_t const uByteIndex = as_uindex(byteIndex);
 
     assert(byteIndex >= 0 && byteIndex < ssize(values_));
 
@@ -182,8 +180,8 @@ inline auto bool_cube::get(int32 const i) const -> int32
 
 inline auto bool_cube::set(int32 const index, int32 const value) -> void
 {
-    auto const byteIndex  = index / 4;
-    auto const uByteIndex = as_uindex(byteIndex);
+    int32 const byteIndex  = index / 4;
+    std::size_t const uByteIndex = as_uindex(byteIndex);
 
     assert((byteIndex >= 0 && byteIndex < ssize(values_)));
     assert(value == 0 || value == 1 || value == DontCare);
@@ -210,22 +208,16 @@ inline auto bool_cube::set(int32 const index, int32 const value) -> void
 inline auto pla_file::load_file(std::string const& path)
     -> std::optional<pla_file>
 {
-    // Utils:
-    auto constexpr is_space = [] (auto const character)
+    auto constexpr to_words = [] (std::string const& str)
     {
-        return static_cast<bool>(std::isspace(character));
-    };
-
-    auto constexpr to_words = [is_space] (auto const str)
-    {
-        auto words       = std::vector<std::string>();
-        auto strIt       = begin(str);
-        auto const endIt = end(str);
+        std::vector<std::string> words;
+        auto strIt       = str.begin();
+        auto const endIt = str.end();
 
         while (strIt != endIt)
         {
-            auto const wordBegin = std::find_if_not(strIt, endIt, is_space);
-            auto const wordEnd   = std::find_if(wordBegin, endIt, is_space);
+            auto const wordBegin = utils::find_if_not(strIt, endIt, ::isspace);
+            auto const wordEnd   = utils::find_if(wordBegin, endIt, ::isspace);
             if (wordBegin != wordEnd)
             {
                 words.emplace_back(wordBegin, wordEnd);
@@ -248,9 +240,8 @@ inline auto pla_file::load_file(std::string const& path)
     while (std::getline(ifst, line))
     {
         // Skip leading spaces.
-        auto const first
-            = std::find_if_not(std::begin(line), std::end(line), is_space);
-        auto const last = std::end(line);
+        auto const first = utils::find_if_not(line.begin(), line.end(), ::isspace);
+        auto const last = line.end();
         if (first == last)
         {
             // Skip empty line.
@@ -270,29 +261,32 @@ inline auto pla_file::load_file(std::string const& path)
         }
 
         // Split into (key, val) pair on the first space.
-        auto const keyLast  = std::find_if(first, last, is_space);
+        auto const keyLast  = utils::find_if(first, last, ::isspace);
         auto const valFirst = keyLast == last
-                                ? last
-                                : std::find_if_not(keyLast + 1, last, is_space);
-        auto key            = std::string(first, keyLast);
+            ? last
+            : utils::find_if_not(keyLast + 1, last, ::isspace);
+        std::string key(first, keyLast);
         if (valFirst != last)
         {
             auto valLast = last;
-            while (is_space(*(valLast - 1)))
+            while (::isspace(*(valLast - 1)))
             {
                 --valLast;
             }
-            auto val = std::string(valFirst, valLast);
-            options.emplace(std::move(key), std::move(val));
+            std::string val(valFirst, valLast);
+            options.emplace(
+                static_cast<std::string&&>(key),
+                static_cast<std::string&&>(val)
+            );
         }
         else
         {
-            options.emplace(std::move(key), std::string());
+            options.emplace(static_cast<std::string&&>(key), std::string());
         }
     }
 
     // Parse header.
-    auto const optionsEnd  = std::end(options);
+    auto const optionsEnd  = options.end();
     auto const varCountIt  = options.find(".i");
     auto const fCountIt    = options.find(".o");
     auto const lineCountIt = options.find(".p");
@@ -302,9 +296,9 @@ inline auto pla_file::load_file(std::string const& path)
         return std::nullopt;
     }
 
-    auto const varCount  = utils::parse<int32>(varCountIt->second);
-    auto const fCount    = utils::parse<int32>(fCountIt->second);
-    auto const lineCount = utils::parse<int64>(lineCountIt->second);
+    std::optional<int32> varCount  = utils::parse<int32>(varCountIt->second);
+    std::optional<int32> fCount    = utils::parse<int32>(fCountIt->second);
+    std::optional<int32> lineCount = utils::parse<int64>(lineCountIt->second);
 
     if (not varCount || not fCount || not lineCount)
     {
@@ -312,13 +306,12 @@ inline auto pla_file::load_file(std::string const& path)
     }
 
     // Read data.
-    auto lines = std::vector<pla_file::pla_line>();
+    std::vector<pla_file::pla_line> lines;
     lines.reserve(as_usize(*lineCount));
     do
     {
-        auto const first
-            = std::find_if_not(std::begin(line), std::end(line), is_space);
-        auto const last = std::end(line);
+        auto const first = utils::find_if_not(line.begin(), line.end(), ::isspace);
+        auto const last = line.end();
         if (first == last)
         {
             // Skip empty line.
@@ -332,15 +325,15 @@ inline auto pla_file::load_file(std::string const& path)
         }
 
         // Split on the first space.
-        auto const varsLast = std::find_if(first, last, is_space);
+        auto const varsLast = utils::find_if(first, last, ::isspace);
         if (varsLast == last)
         {
             return std::nullopt;
         }
-        auto const fsFirst = std::find_if_not(varsLast + 1, last, is_space);
-        auto const fsLast  = std::find_if(fsFirst, last, is_space);
-        auto const varsStr = std::string(first, varsLast);
-        auto const fStr    = std::string(fsFirst, fsLast);
+        auto const fsFirst = utils::find_if_not(varsLast + 1, last, ::isspace);
+        auto const fsLast  = utils::find_if(fsFirst, last, ::isspace);
+        std::string const varsStr(first, varsLast);
+        std::string const fStr(fsFirst, fsLast);
 
         if (ssize(varsStr) != *varCount || ssize(fStr) != *fCount)
         {
@@ -348,7 +341,7 @@ inline auto pla_file::load_file(std::string const& path)
         }
 
         // Parse variables into cube.
-        auto variables = bool_cube(*varCount);
+        bool_cube variables(*varCount);
         for (auto i = 0; i < *varCount; ++i)
         {
             switch (varsStr[as_uindex(i)])
@@ -369,7 +362,7 @@ inline auto pla_file::load_file(std::string const& path)
         }
 
         // Parse functions into cube.
-        auto functions = bool_cube(*fCount);
+        bool_cube functions(*fCount);
         for (auto i = 0; i < *fCount; ++i)
         {
             switch (fStr[as_uindex(i)])
@@ -389,23 +382,29 @@ inline auto pla_file::load_file(std::string const& path)
             }
         }
 
-        lines.push_back({std::move(variables), std::move(functions)});
+        lines.push_back(pla_file::pla_line {variables, functions});
 
     } while (std::getline(ifst, line));
 
     // Read labels.
     auto const inLbIt = options.find(".ilb");
     auto const ouLbIt = options.find(".ob");
-    auto inputLabels  = inLbIt != std::end(options) ? to_words(inLbIt->second)
-                                                    : std::vector<std::string>();
-    auto outputLabels = ouLbIt != std::end(options)
-                          ? to_words(ouLbIt->second)
-                          : std::vector<std::string>();
+    std::vector<std::string> inputLabels;
+    if (inLbIt != options.end())
+    {
+        inputLabels = to_words(inLbIt->second);
+    }
+
+    std::vector<std::string> outputLabels;
+    if (ouLbIt != options.end())
+    {
+        outputLabels = to_words(ouLbIt->second);
+    }
 
     return pla_file(
-        std::move(lines),
-        std::move(inputLabels),
-        std::move(outputLabels)
+        static_cast<std::vector<pla_file::pla_line>&&>(lines),
+        static_cast<std::vector<std::string>&&>(inputLabels),
+        static_cast<std::vector<std::string>&&>(outputLabels)
     );
 }
 
@@ -414,18 +413,18 @@ inline pla_file::pla_file(
     std::vector<std::string> inputLabels,
     std::vector<std::string> outputLabels
 ) :
-    lines_(std::move(lines)),
-    inputLabels_(std::move(inputLabels)),
-    outputLabels_(std::move(outputLabels))
+    lines_(static_cast<std::vector<pla_file::pla_line>&&>(lines)),
+    inputLabels_(static_cast<std::vector<std::string>&&>(inputLabels)),
+    outputLabels_(static_cast<std::vector<std::string>&&>(outputLabels))
 {
 }
 
-inline auto pla_file::variable_count() const -> int32
+inline auto pla_file::get_variable_count() const -> int32
 {
     return lines_.front().cube_.size();
 }
 
-inline auto pla_file::function_count() const -> int32
+inline auto pla_file::get_function_count() const -> int32
 {
     return lines_.front().fVals_.size();
 }
