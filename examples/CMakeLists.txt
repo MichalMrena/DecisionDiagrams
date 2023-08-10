@@ -31,3 +31,20 @@ target_compile_options(
 target_link_options(
     libteddy-example-2 PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
+
+# N-Queens
+add_executable(
+    libteddy-example-n-queens n_queens.cpp
+)
+
+target_link_libraries(
+    libteddy-example-n-queens PRIVATE teddy
+)
+
+target_compile_options(
+    libteddy-example-n-queens PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+)
+
+target_link_options(
+    libteddy-example-n-queens PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+)
