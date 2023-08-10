@@ -489,7 +489,7 @@ private:
     {
         auto operator()(dpld_cache_entry const& entry) const
         {
-            return utils::hash_combine(entry.lhs_, entry.rhs_);
+            return utils::pack_hash(entry.lhs_, entry.rhs_);
         }
     };
 

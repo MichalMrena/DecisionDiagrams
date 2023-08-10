@@ -337,11 +337,12 @@ auto apply_cache<Data, Degree>::find(
     node_t* const rhs
 ) -> node_t*
 {
-    auto const hash = utils::hash_combine(opId, lhs, rhs);
-    auto const index = hash % size(entries_);
-    auto& entry = entries_[index];
-    auto const matches
-        = entry.opId_ == opId && entry.lhs_ == lhs && entry.rhs_ == rhs;
+    std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
+    std::size_t const index = hash % size(entries_);
+    cache_entry& entry      = entries_[index];
+    bool const matches      = entry.opId_ == opId &&
+                              entry.lhs_ == lhs &&
+                              entry.rhs_ == rhs;
     return matches ? entry.result_ : nullptr;
 }
 
@@ -353,9 +354,9 @@ auto apply_cache<Data, Degree>::put(
     node_t* const rhs
 ) -> void
 {
-    auto const hash  = utils::hash_combine(opId, lhs, rhs);
-    auto const index = hash % size(entries_);
-    auto& entry      = entries_[index];
+    std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
+    std::size_t const index = hash % size(entries_);
+    cache_entry& entry      = entries_[index];
     if (not entry.result_)
     {
         ++size_;
@@ -378,13 +379,13 @@ auto apply_cache<Data, Degree>::grow_capacity(int64 const aproxCapacity) -> void
 template<class Data, class Degree>
 auto apply_cache<Data, Degree>::remove_unused() -> void
 {
-    for (auto& entry : entries_)
+    for (cache_entry& entry : entries_)
     {
         if (entry.result_)
         {
-            auto const used = entry.lhs_->is_used() && entry.rhs_->is_used()
+            bool const isUsed = entry.lhs_->is_used() && entry.rhs_->is_used()
                            && entry.result_->is_used();
-            if (not used)
+            if (not isUsed)
             {
                 entry = cache_entry {};
                 --size_;
@@ -397,7 +398,7 @@ template<class Data, class Degree>
 auto apply_cache<Data, Degree>::clear() -> void
 {
     size_ = 0;
-    for (auto& entry : entries_)
+    for (cache_entry& entry : entries_)
     {
         entry = cache_entry {};
     }
@@ -431,11 +432,11 @@ auto apply_cache<Data, Degree>::rehash(int64 const newCapacity) -> void
     );
     #endif
 
-    auto const oldEntries = std::vector<cache_entry>(
+    std::vector<cache_entry> const oldEntries(
         static_cast<std::vector<cache_entry>&&>(entries_)
     );
-    entries_              = std::vector<cache_entry>(as_usize(newCapacity));
-    size_                 = 0;
+    entries_ = std::vector<cache_entry>(as_usize(newCapacity));
+    size_    = 0;
     for (cache_entry const& entry : oldEntries)
     {
         if (entry.result_)
@@ -544,9 +545,9 @@ template<class Data, class Degree>
 auto unique_table<Data, Degree>::find(son_container const& sons, int32 const domain) const
     -> result_of_find
 {
-    auto const hash  = node_hash(sons, domain);
-    auto const index = hash % buckets_.size();
-    auto current     = buckets_[index];
+    std::size_t const hash  = node_hash(sons, domain);
+    std::size_t const index = hash % buckets_.size();
+    node_t* current         = buckets_[index];
     while (current)
     {
         if (node_equals(current, sons, domain))
@@ -568,7 +569,7 @@ auto unique_table<Data, Degree>::merge(unique_table other, int32 const domain)
     auto otherIt     = other.begin();
     while (otherIt != endIt)
     {
-        auto const node = *otherIt;
+        node_t* const node = *otherIt;
         ++otherIt;
         node->set_next(nullptr);
         this->insert_impl(node, node_hash(node->get_sons(), domain));
@@ -588,7 +589,7 @@ auto unique_table<Data, Degree>::erase(iterator const nodeIt) -> iterator
 {
     auto nextIt         = ++iterator(nodeIt);
     auto const bucketIt = nodeIt.get_bucket();
-    auto const node     = *nodeIt;
+    node_t* const node  = *nodeIt;
 
     if (*bucketIt == node)
     {
@@ -596,7 +597,7 @@ auto unique_table<Data, Degree>::erase(iterator const nodeIt) -> iterator
     }
     else
     {
-        auto prev = *bucketIt;
+        node_t* prev = *bucketIt;
         while (prev->get_next() != node)
         {
             prev = prev->get_next();
@@ -613,8 +614,8 @@ template<class Data, class Degree>
 auto unique_table<Data, Degree>::erase(node_t* const node, int32 const domain)
     -> iterator
 {
-    auto const hash  = node_hash(node->get_sons(), domain);
-    auto const index = static_cast<std::ptrdiff_t>(hash % buckets_.size());
+    std::size_t const hash     = node_hash(node->get_sons(), domain);
+    std::ptrdiff_t const index = static_cast<std::ptrdiff_t>(hash % buckets_.size());
     auto tableIt = iterator(buckets_.begin() + index, buckets_.end());
     while (*tableIt != node)
     {
@@ -626,8 +627,8 @@ auto unique_table<Data, Degree>::erase(node_t* const node, int32 const domain)
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::adjust_capacity(int32 const domain) -> void
 {
-    auto const aproxCapacity = 4 * (size_ / 3);
-    auto const newCapacity   = table_base::get_gte_capacity(aproxCapacity);
+    int64 const aproxCapacity = 4 * (size_ / 3);
+    int64 const newCapacity   = table_base::get_gte_capacity(aproxCapacity);
     this->rehash(newCapacity, domain);
 }
 
@@ -691,16 +692,16 @@ auto unique_table<Data, Degree>::rehash(int64 const newCapacity, int32 const dom
     );
     #endif
 
-    auto const oldBuckets = std::vector<node_t*>(
+    std::vector<node_t*> const oldBuckets(
         static_cast<std::vector<node_t*>&&>(buckets_)
     );
     buckets_ = std::vector<node_t*>(as_usize(newCapacity), nullptr);
-    for (auto bucket : oldBuckets)
+    for (node_t* bucket : oldBuckets)
     {
         while (bucket)
         {
-            auto const next = bucket->get_next();
-            auto const hash = node_hash(bucket->get_sons(), domain);
+            node_t* const next     = bucket->get_next();
+            std::size_t const hash = node_hash(bucket->get_sons(), domain);
             bucket->set_next(nullptr);
             this->insert_impl(bucket, hash);
             bucket = next;
@@ -729,8 +730,8 @@ template<class Data, class Degree>
 auto unique_table<Data, Degree>::insert_impl(node_t* const node, hash_t const hash)
     -> node_t*
 {
-    auto const index  = hash % buckets_.size();
-    auto const bucket = buckets_[index];
+    std::size_t const index = hash % buckets_.size();
+    node_t* const bucket    = buckets_[index];
     if (bucket)
     {
         node->set_next(bucket);
@@ -743,12 +744,10 @@ template<class Data, class Degree>
 auto unique_table<Data, Degree>::node_hash(son_container const& sons, int32 const domain)
     -> hash_t
 {
-    auto result = hash_t(0);
-    // TODO utils
-    for (auto k = 0; k < domain; ++k)
+    hash_t result = 0;
+    for (int32 k = 0; k < domain; ++k)
     {
-        auto const hash = utils::do_hash(sons[as_uindex(k)]);
-        result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
+        utils::add_hash(result, sons[as_uindex(k)]);
     }
     return result;
 }

@@ -183,15 +183,19 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
         match {
             [&] (random_order_tag)
             {
-                auto indices
-                    = utils::fill_vector(settings.varcount_, utils::identity);
+                auto indices = utils::fill_vector(
+                    settings.varcount_,
+                    [](int32 x){ return x; }
+                );
                 std::ranges::shuffle(indices, rng);
                 return indices;
             },
             [&] (default_order_tag)
             {
-                auto indices
-                    = utils::fill_vector(settings.varcount_, utils::identity);
+                auto indices = utils::fill_vector(
+                    settings.varcount_,
+                    [](int32 x){ return x; }
+                );
                 return indices;
             },
             [] (given_order_tag const& indices)

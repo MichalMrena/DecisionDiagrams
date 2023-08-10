@@ -1251,7 +1251,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl (
     Node... nodes
 ) -> node_t*
 {
-    std::size_t const hash = utils::hash_combine(nodes...);
+    std::size_t const hash = utils::pack_hash(nodes...);
     std::size_t const cacheIndex = hash % cache.size();
     node_pack<sizeof...(Node)>& cachePack = cache[cacheIndex];
     if (pack_equals(cachePack, nodes...))
@@ -1748,7 +1748,10 @@ template<class Data, class Degree, class Domain>
 auto diagram_manager<Data, Degree, Domain>::reduce(diagram_t const& diagram)
     -> diagram_t
 {
-    return this->transform(diagram, utils::identity);
+    return this->transform(diagram, [](int32 const val)
+    {
+        return val;
+    });
 }
 
 template<class Data, class Degree, class Domain>

@@ -14,8 +14,10 @@
 namespace teddy::utils
 {
 template<class T>
-concept is_std_vector = std::
-    same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
+concept is_std_vector = std::same_as<
+    T,
+    std::vector<typename T::value_type, typename T::allocator_type>
+>;
 
 template<class Gen>
 auto fill_vector (int64 const n, Gen generator)
@@ -29,14 +31,6 @@ auto fill_vector (int64 const n, Gen generator)
     }
     return data;
 }
-
-/**
- *  \brief Identity function
- */
-auto constexpr identity = [] (auto const arg)
-{
-    return arg;
-};
 
 /**
  *  \brief Exponentiation by squaring
@@ -100,19 +94,24 @@ inline auto do_hash (int32 const x) -> std::size_t
 }
 
 /**
+ *  \brief Hashes \p elem and combines the result with \p hash
+ */
+template<class T>
+auto add_hash (std::size_t& hash, T const& elem) -> void
+{
+    // see boost::hash_combine
+    hash ^= do_hash(elem) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+}
+
+/**
  *  \brief Computes hash of the \p args
  */
 template<class... Ts>
-auto hash_combine (Ts const&... args) -> std::size_t
+auto pack_hash (Ts const&... args) -> std::size_t
 {
-    // see boost::hash_combine
-    std::size_t seed = 0;
-    auto combine = [&seed] (auto const& elem)
-    {
-        seed ^= do_hash(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    };
-    (combine(args), ...);
-    return seed;
+    std::size_t result = 0;
+    (add_hash(result, args), ...);
+    return result;
 }
 
 /**
