@@ -1,13 +1,9 @@
 #include <libtsl/truth_table_reliability.hpp>
 
-#include <fmt/color.h>
-#include <fmt/ranges.h>
-
 #include <algorithm>
 #include <functional>
 #include <numeric>
 #include <ranges>
-#include "libtsl/types.hpp"
 
 namespace teddy::tsl
 {
@@ -132,8 +128,6 @@ auto fussell_vesely_importance (
                     auto const vectorProbability
                         = vector_probability(elem, probabilities);
                     result += vectorProbability;
-                    // fmt::print("{} -> {}\n", fmt::join(elem, ""),
-                    // vectorProbability);
                     break;
                 }
             }
