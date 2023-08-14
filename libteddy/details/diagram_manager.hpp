@@ -1194,13 +1194,16 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl (
         return cached;
     }
 
+    // cmove?
     int32 const lhsVal = lhs->is_terminal() ? lhs->get_value() : Nondetermined;
     int32 const rhsVal = rhs->is_terminal() ? rhs->get_value() : Nondetermined;
     int32 const opVal = operation(lhsVal, rhsVal);
     node_t* result = nullptr;
+    // ak by bol dolu return, toto moze ist nizsie
 
     if (opVal != Nondetermined)
     {
+        // return?
         result = nodes_.make_terminal_node(opVal);
     }
     else
@@ -1215,6 +1218,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl (
         {
             sons[k] = this->apply_impl(
                 operation,
+                // cmove?
                 lhsLevel == topLevel ? lhs->get_son(k) : lhs,
                 rhsLevel == topLevel ? rhs->get_son(k) : rhs
             );

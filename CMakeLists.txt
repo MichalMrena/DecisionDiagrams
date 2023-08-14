@@ -111,6 +111,7 @@ option(LIBTEDDY_USE_SANITIZERS    "Enable asan and ubsan" OFF)
 option(LIBTEDDY_BUILD_TESTS       "Build tests"           OFF)
 option(LIBTEDDY_BUILD_EXAMPLES    "Build examples"        OFF)
 option(LIBTEDDY_BUILD_EXPERIMENTS "Build experiments"     OFF)
+option(LIBTEDDY_USE_MOLD          "Use Mold linker"       ON)
 
 ## Common compile and link options for subprojects
 string(
@@ -127,6 +128,18 @@ string(
     JOIN ";" LIBTEDDY_LINK_OPTIONS
         ""
 )
+
+## Use Mold linker if requested
+if(LIBTEDDY_USE_MOLD)
+    message(
+        "=== Using Mold linker"
+    )
+
+    string(
+        JOIN ";" LIBTEDDY_LINK_OPTIONS
+            "-fuse-ld=mold"
+    )
+endif()
 
 ## Use libc++ if requested and compiling with clang
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_LIBCXX)
@@ -146,7 +159,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_LIBCXX)
     )
 endif()
 
-## Enable sanitizers for Debug build
+## Enable sanitizers for Debug build if requested
 if(LIBTEDDY_USE_SANITIZERS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message(
         "=== Asan a Ubsan enabled for Debug build"
