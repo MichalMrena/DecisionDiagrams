@@ -239,7 +239,7 @@ private:
 private:
     apply_cache<Data, Degree> opCache_;
     node_pool<Data, Degree> pool_;
-    std::vector<unique_table<Data, Degree>> uniqueTables_;
+    std::vector<open_unique_table<Data, Degree>> uniqueTables_;
     std::vector<node_t*> terminals_;
     std::vector<node_t*> specials_;
     std::vector<int32> indexToLevel_;
@@ -380,16 +380,19 @@ node_manager<Data, Degree, Domain>::node_manager(
 
     for (int32 i = 0; i <= static_cast<int32>(c); ++i)
     {
+        int32 const domain = this->get_domain(i);
         auto const x = static_cast<double>(i);
-        uniqueTables_.emplace_back(static_cast<int64>(fc * x / c));
+        uniqueTables_.emplace_back(static_cast<int64>(fc * x / c), domain);
     }
 
     for (auto i = static_cast<int32>(c) + 1; i < varCount_; ++i)
     {
+        int32 const domain = this->get_domain(i);
         auto const n = static_cast<double>(varCount) - 1;
         auto const x = static_cast<double>(i);
         uniqueTables_.emplace_back(
-            static_cast<int64>((fc * x) / (c - n) - (fc * n) / (c - n))
+            static_cast<int64>((fc * x) / (c - n) - (fc * n) / (c - n)),
+            domain
         );
     }
 }
@@ -488,6 +491,7 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     // Later on it must become son of someone or root of a diagram.
     auto ret = static_cast<node_t*>(nullptr);
 
+// TODO early return
     if (this->is_redundant(index, sons))
     {
         ret = sons[0];
@@ -499,10 +503,11 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     else
     {
         auto& table                 = uniqueTables_[as_uindex(index)];
-        auto const [existing, hash] = table.find(sons, domains_[index]);
-        if (existing)
+        // auto const [existing, hash] = table.find(sons, domains_[index]);
+        node_t** const position = table.find(sons);
+        if (*position)
         {
-            ret = existing;
+            ret = *position;
             if constexpr (degrees::is_mixed<Degree>::value)
             {
                 node_t::delete_son_container(sons);
@@ -511,7 +516,7 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
         else
         {
             ret = this->make_new_node(index, sons);
-            table.insert(ret, hash);
+            table.insert(ret, position);
             this->for_each_son(ret, id_inc_ref_count<Data, Degree>);
         }
 
@@ -571,7 +576,7 @@ auto node_manager<Data, Degree, Domain>::get_node_count(int32 const index) const
     -> int64
 {
     assert(index < this->get_var_count());
-    return uniqueTables_[as_uindex(index)].size();
+    return uniqueTables_[as_uindex(index)].get_size();
 }
 
 template<class Data, class Degree, class Domain>
@@ -638,25 +643,34 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 
     for (int32 level = 0; level < this->get_var_count(); ++level)
     {
-        auto const index = levelToIndex_[as_uindex(level)];
-        auto& table      = uniqueTables_[as_uindex(index)];
-        auto const endIt = table.end();
-        auto tableIt     = table.begin();
+        int32 const index = levelToIndex_[as_uindex(level)];
+        open_unique_table<Data, Degree>& table = uniqueTables_[as_uindex(index)];
 
-        while (tableIt != endIt)
+        for (int64 i = 0; i < table.get_capacity(); ++i)
         {
-            auto const node = *tableIt;
-            if (can_be_gced(node))
+            node_t* const node = table.get_ith(i);
+            if (node && can_be_gced(node))
             {
-                this->for_each_son(node, dec_ref_count);
-                tableIt = table.erase(tableIt);
-                this->delete_node(node);
-            }
-            else
-            {
-                ++tableIt;
+                table.erase_ith(i);
             }
         }
+        // auto const endIt = table.end();
+        // auto tableIt     = table.begin();
+
+        // while (tableIt != endIt)
+        // {
+        //     auto const node = *tableIt;
+        //     if (can_be_gced(node))
+        //     {
+        //         this->for_each_son(node, dec_ref_count);
+        //         tableIt = table.erase(tableIt);
+        //         this->delete_node(node);
+        //     }
+        //     else
+        //     {
+        //         ++tableIt;
+        //     }
+        // }
     }
 
     // TODO make terminals live forever
@@ -1029,10 +1043,10 @@ auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
     );
     #endif
 
-    for (int32 i = 0; i < ssize(uniqueTables_); ++i)
-    {
-        uniqueTables_[as_uindex(i)].adjust_capacity(domains_[i]);
-    }
+    // for (int32 i = 0; i < ssize(uniqueTables_); ++i)
+    // {
+    //     uniqueTables_[as_uindex(i)].adjust_capacity(domains_[i]);
+    // }
 }
 
 template<class Data, class Degree, class Domain>
@@ -1347,10 +1361,7 @@ auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const node)
             this->dec_ref_try_gc(node->get_son(k));
         }
 
-        uniqueTables_[as_uindex(node->get_index())].erase(
-            node,
-            domains_[node->get_index()]
-        );
+        uniqueTables_[as_uindex(node->get_index())].erase(node);
     }
     else
     {
@@ -1372,21 +1383,22 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
     int32 const index
 ) -> void
 {
-    auto const level     = this->get_level(index);
-    auto const nextIndex = this->get_index(1 + level);
-    unique_table<Data, Degree> tmpTable(
-        static_cast<unique_table<Data, Degree>&&>(
-            uniqueTables_[as_uindex(index)]
-        )
-    );
-    for (auto const node : tmpTable)
+    int32 const level     = this->get_level(index);
+    int32 const nextIndex = this->get_index(level + 1);
+
+    open_unique_table<Data, Degree> tmpTable(uniqueTables_[as_uindex(index)]);
+    uniqueTables_[as_uindex(index)].clear();
+    for (int32 i = 0; i < tmpTable.get_capacity(); ++i)
     {
-        this->swap_node_with_next(node);
+        node_t* const node = tmpTable.get_ith(i);
+        if (node)
+        {
+            this->swap_node_with_next(node);
+        }
     }
-    uniqueTables_[as_uindex(index)].adjust_capacity(domains_[index]);
+
     uniqueTables_[as_uindex(nextIndex)].merge(
-        static_cast<unique_table<Data, Degree>&&>(tmpTable),
-        domains_[nextIndex]
+        static_cast<open_unique_table<Data, Degree>&&>(tmpTable)
     );
 
     utils::swap(

@@ -126,7 +126,7 @@ public:
     [[nodiscard]] auto get_next () const -> node*;
     [[nodiscard]] auto get_ref_count () const -> int32;
     [[nodiscard]] auto get_index () const -> int32;
-    [[nodiscard]] auto get_sons () const -> son_container const&;
+    [[nodiscard]] auto get_sons () const -> son_container const&; // TODO return node**
     [[nodiscard]] auto get_son (int32 sonOrder) const -> node*;
     [[nodiscard]] auto get_value () const -> int32;
     auto set_next (node* next) -> void;

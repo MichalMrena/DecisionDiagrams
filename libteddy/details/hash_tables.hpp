@@ -6,7 +6,12 @@
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/tools.hpp>
 
-#include <vector>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+    #include <vector>
+    #include <new>
+#include "libteddy/details/types.hpp"
 
 namespace teddy
 {
@@ -24,7 +29,7 @@ private:
         325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289};
 
 public:
-    static auto get_gte_capacity (int64 capacity) -> int64;
+    static auto get_gte_capacity (int64 desiredCapacity) -> int64;
 };
 
 /**
@@ -298,6 +303,136 @@ private:
 private:
     std::vector<cache_entry> entries_;
     int64 size_;
+};
+
+/**
+ *  \brief naive implementation of open addressing hash map
+ */
+template<class Data, class Degree>
+class open_unique_table
+{
+public:
+    using node_t = node<Data, Degree>;
+    using son_container = typename node_t::son_container;
+
+    // TODO use just node_t** for sons (std::span before it was cool)
+
+public:
+    open_unique_table(int64 capacity, int32 domain);
+
+    open_unique_table(const open_unique_table& other);
+
+    open_unique_table(open_unique_table&& other) noexcept;
+
+    ~open_unique_table();
+
+    auto operator= (open_unique_table const&)   = delete;
+    auto operator= (open_unique_table&&)        = delete;
+
+    /**
+     *  \brief Tries to find internal node
+     *  \param sons Sons of the wanted node
+     *  \return Pointer to a memory place where a pointer to the node is located
+     *          or where the nullptr is located if there is no such node
+     */
+    [[nodiscard]] auto find (son_container const& sons) const -> node_t**;
+
+    /**
+     *  \brief Inserts \p node using pre-computed \p hash
+     *  \param node Node to be inserted
+     *  \param position Position at which the node should be inserted
+     */
+    auto insert (node_t* node, node_t** position) -> void;
+
+    /**
+     *  \brief Adds all nodes from \p other into this table.
+     *  Adjusts capacity if necessary.
+     *  \param other Table to merge into this one
+     */
+    auto merge (open_unique_table other) -> void;
+
+    /**
+     *  \brief TODO
+     */
+    auto erase (node_t* node) -> void;
+
+    /**
+     *  \brief TODO
+     */
+    auto erase_ith (int64 i) -> void;
+
+    /**
+     *  \return Number of nodes in the table.
+     */
+    [[nodiscard]] auto get_size () const -> int64;
+
+    /**
+     *  \brief TODO
+     */
+    [[nodiscard]] auto get_capacity () const -> int64;
+
+    /**
+     *  \brief TODO
+     */
+    [[nodiscard]] auto get_ith (int64 i) const -> node_t*;
+
+    /**
+     *  \brief Clears the table.
+     */
+    auto clear () -> void;
+
+private:
+    /**
+     *  \brief TODO
+     */
+    auto probe_next (int64 i) const -> int64;
+
+    /**
+     *  \brief TODO treba hash?
+     */
+    auto insert_impl (node_t* node) -> void;
+
+    /**
+     *  \brief TODO
+     */
+    auto rehash(int64 newCapacity) -> void;
+
+    /**
+     *  \brief TODO
+     */
+    auto calculate_index (node_t* node) const -> int64;
+
+    /**
+     *  \brief TODO
+     */
+    auto calculate_index (son_container const& sons) const -> int64;
+
+    /**
+     *  \brief TODO
+     */
+    auto node_hash (node_t* node) const -> std::size_t;
+
+    /**
+     *  \brief Computes hash value of a node with \p sons .
+     *  \param sons Sons of the node.
+     *  \return Hash value of the node.
+     */
+    auto node_hash (son_container const& sons) const -> std::size_t;
+
+    /**
+     *  \brief Compares two nodes for equality
+     *  (whether they have the same sons).
+     *  \param node First node.
+     *  \param sons Sons of the second node.
+     *  \return True if the nodes are equal, false otherwise.
+     */
+    auto node_equals (node_t* node, son_container const& sons) const -> bool;
+
+private:
+    int32 domain_;
+    int64 size_;
+    int64 capacity_;
+    node_t** data_;
 };
 
 // table_base definitions:
@@ -768,6 +903,293 @@ auto unique_table<Data, Degree>::node_equals(
     }
     return true;
 }
+
+// open_unique_table definitions:
+template<class Data, class Degree>
+open_unique_table<Data, Degree>::open_unique_table(
+    int64 const capacity,
+    int32 const domain
+) :
+    domain_(domain),
+    size_(0),
+    capacity_(table_base::get_gte_capacity(capacity)),
+    data_(
+        static_cast<node_t**>(
+            std::calloc(static_cast<std::size_t>(capacity_), sizeof(node_t*))
+        )
+    )
+{
+}
+
+template<class Data, class Degree>
+open_unique_table<Data, Degree>::open_unique_table (
+    open_unique_table const& other
+) :
+    domain_(other.domain_),
+    size_(other.size_),
+    capacity_(other.capacity_),
+    data_(
+        static_cast<node_t**>(
+            std::malloc(as_usize(capacity_) * sizeof(node_t*))
+        )
+    )
+{
+    std::memcpy(data_, other.data_, as_usize(capacity_) * sizeof(node_t*));
+}
+
+template<class Data, class Degree>
+open_unique_table<Data, Degree>::open_unique_table(
+    open_unique_table&& other
+) noexcept :
+    domain_(other.domain_),
+    size_(utils::exchange(other.size_, 0)),
+    capacity_(other.capacity_),
+    data_(utils::exchange(other.data_, nullptr))
+{
+}
+
+template<class Data, class Degree>
+open_unique_table<Data, Degree>::~open_unique_table()
+{
+    std::free(data_);
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::find(
+    son_container const& sons
+) const -> node_t**
+{
+    int64 index = this->calculate_index(sons);
+
+    for (;;)
+    {
+        if (not data_[index] ||
+            node_equals(data_[index], sons))
+        {
+            return data_ + index;
+        }
+
+        index = this->probe_next(index);
+    }
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::insert(
+    node_t* const node,
+    node_t** const position
+) -> void
+{
+    *position = node;
+    ++size_;
+
+    auto const loadFactor = static_cast<double>(size_)
+                          / static_cast<double>(capacity_);
+    if (loadFactor > 0.75)
+    {
+        this->rehash(table_base::get_gte_capacity(capacity_ + 1));
+    }
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::merge(open_unique_table other) -> void
+{
+    size_ += other.size_;
+    int64 const newCapacity = 4 * (size_ / 3);
+    if (newCapacity > capacity_)
+    {
+        this->rehash(newCapacity);
+    }
+    for (int64 i = 0; i < other.capacity_; ++i)
+    {
+        node_t* const node = other.data_[i];
+        if (node)
+        {
+            this->insert_impl(node);
+        }
+    }
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::erase (node_t* const node) -> void
+{
+    this->erase_ith(this->calculate_index(node));
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::erase_ith(int64 i) -> void
+{
+    int64 j = i;
+    for (;;)
+    {
+        j = this->probe_next(j);
+        if (not data_[j])
+        {
+            return;
+        }
+        int64 const k = this->calculate_index(data_[j]);
+        if (i <= j)
+        {
+            if (i < k && k <= j)
+            {
+                continue;
+            }
+        }
+        else
+        {
+            if (i < k || k <= j)
+            {
+                continue;
+            }
+        }
+        data_[i] = utils::exchange(data_[j], nullptr);
+        i = j;
+    }
+
+    // mark slot[i] as unoccupied
+    // j := i
+    // loop
+    //     j := (j + 1) modulo num_slots
+    //     if slot[j] is unoccupied
+    //         exit loop
+    //     k := hash(slot[j].key) modulo num_slots
+    //     // determine if k lies cyclically in (i,j]
+    //     // i ≤ j: |    i..k..j    |
+    //     // i > j: |.k..j     i....| or |....j     i..k.|
+    //     if i ≤ j
+    //         if (i < k) and (k ≤ j)
+    //             continue loop
+    //     else
+    //         if (i < k) or (k ≤ j)
+    //             continue loop
+    //     slot[i] := slot[j]
+    //     mark slot[i] as occupied
+    //     mark slot[j] as unoccupied
+    //     i := j
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::get_size () const -> int64
+{
+    return size_;
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::get_capacity () const -> int64
+{
+    return capacity_;
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::get_ith (int64 const i) const -> node_t*
+{
+    return data_[i];
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::clear () -> void
+{
+    size_ = 0;
+    std::memset(data_, 0, as_usize(capacity_) * sizeof(node_t*));
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::probe_next (
+    int64 const i
+) const -> int64
+{
+    return static_cast<int64>(
+        static_cast<std::size_t>(i + 1) % static_cast<std::size_t>(capacity_)
+    );
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::insert_impl (node_t* const node) -> void
+{
+    int64 index = this->calculate_index(node);
+    while (data_[index])
+    {
+        index = this->probe_next(index);
+    }
+    data_[index] = node;
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::rehash (int64 const newCapacity) -> void
+{
+    int64 const oldCapacity = capacity_;
+    node_t** const oldData = data_;
+    data_ = static_cast<node_t**>(
+        std::calloc(as_usize(newCapacity), sizeof(node_t*))
+    );
+    capacity_ = newCapacity;
+    for (int64 i = 0; i < oldCapacity; ++i)
+    {
+        node_t* const node = oldData[i];
+        if (node)
+        {
+            this->insert_impl(node);
+        }
+    }
+    std::free(oldData);
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::calculate_index (
+    node_t* const node
+) const -> int64
+{
+    std::size_t const hash = this->node_hash(node);
+    std::size_t const index = hash % static_cast<std::size_t>(capacity_);
+    return static_cast<int64>(index);
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::calculate_index (
+    son_container const& sons
+) const -> int64
+{
+    std::size_t const hash = this->node_hash(sons);
+    std::size_t const index = hash % static_cast<std::size_t>(capacity_);
+    return static_cast<int64>(index);
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::node_hash (
+    node_t* const node
+) const -> std::size_t
+{
+    return this->node_hash(node->get_sons());
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::node_hash (
+    son_container const& sons
+) const -> std::size_t
+{
+    std::size_t result = 0;
+    for (int32 k = 0; k < domain_; ++k)
+    {
+        utils::add_hash(result, sons[as_uindex(k)]);
+    }
+    return result;
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::node_equals (
+    node_t* const node,
+    son_container const& sons
+) const -> bool
+{
+    for (int32 k = 0; k < domain_; ++k)
+    {
+        if (node->get_son(k) != sons[k])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace teddy
 
 #endif
