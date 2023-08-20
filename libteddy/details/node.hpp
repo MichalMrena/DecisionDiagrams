@@ -166,6 +166,14 @@ private:
         }
     };
 
+    /**
+     *  TODO use this state when the node is not in unique table
+     */
+    struct unused
+    {
+        node* next_;
+    };
+
 private:
     [[nodiscard]] auto as_internal () -> internal*;
     [[nodiscard]] auto as_internal () const -> internal const*;
