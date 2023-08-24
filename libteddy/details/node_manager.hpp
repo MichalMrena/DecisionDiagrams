@@ -152,9 +152,6 @@ public:
     [[nodiscard]] auto domain_product (int32 levelFrom, int32 levelTo) const
         -> int64;
 
-    template<class Generator>
-    auto make_sons (int32 index, Generator&& generator) -> son_container;
-
     template<class NodeOp>
     auto for_each_son (node_t* node, NodeOp&& operation) const -> void;
 
@@ -638,7 +635,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 
     for (int32 level = 0; level < this->get_var_count(); ++level)
     {
-        auto const index = levelToIndex_[as_uindex(level)];
+        int32 const index = levelToIndex_[as_uindex(level)];
         auto& table      = uniqueTables_[as_uindex(index)];
         auto const endIt = table.end();
         auto tableIt     = table.begin();
@@ -660,7 +657,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
     }
 
     // TODO make terminals live forever
-    for (auto& node : terminals_)
+    for (node_t* const node : terminals_)
     {
         if (node && can_be_gced(node))
         {
@@ -669,7 +666,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         }
     }
 
-    for (auto& node : specials_)
+    for (node_t* const node : specials_)
     {
         if (node && can_be_gced(node))
         {
@@ -739,29 +736,14 @@ auto node_manager<Data, Degree, Domain>::domain_product(
 }
 
 template<class Data, class Degree, class Domain>
-template<class F>
-auto node_manager<Data, Degree, Domain>::make_sons(
-    int32 const index,
-    F&& generator
-) -> son_container
-{
-    auto sons = node_t::make_son_container(domains_[index], Degree());
-    for (auto k = 0; k < domains_[index]; ++k)
-    {
-        sons[as_uindex(k)] = generator(k);
-    }
-    return sons;
-}
-
-template<class Data, class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
     node_t* const node,
     NodeOp&& operation
 ) const -> void
 {
-    auto const index = node->get_index();
-    for (auto k = 0; k < domains_[index]; ++k)
+    int32 const index = node->get_index();
+    for (int32 k = 0; k < domains_[index]; ++k)
     {
         operation(node->get_son(k));
     }
@@ -788,7 +770,7 @@ auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation) const
 {
     for (auto const& table : uniqueTables_)
     {
-        for (auto const node : table)
+        for (node_t* const node : table)
         {
             operation(node);
         }
@@ -803,7 +785,7 @@ auto node_manager<Data, Degree, Domain>::for_each_terminal_node(
     NodeOp&& operation
 ) const -> void
 {
-    for (auto const node : terminals_)
+    for (node_t* const node : terminals_)
     {
         if (node)
         {
@@ -826,7 +808,7 @@ auto node_manager<Data, Degree, Domain>::cache_find(
             utils::swap(lhs, rhs);
         }
     }
-    auto const node = opCache_.find(O::get_id(), lhs, rhs);
+    node_t* const node = opCache_.find(O::get_id(), lhs, rhs);
     if (node)
     {
         id_set_marked(node);
@@ -1108,16 +1090,16 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
     ForEachNode&& forEach
 ) const -> void
 {
-    auto const make_label = [] (auto const n)
+    auto const make_label = [] (node_t* const node)
     {
-        if (n->is_terminal())
+        if (node->is_terminal())
         {
             using namespace std::literals::string_literals;
-            auto const val = n->get_value();
+            int32 const val = node->get_value();
             return val == Undefined ? "*"s : std::to_string(val);
         }
 
-        return "x" + std::to_string(n->get_index());
+        return "x" + std::to_string(node->get_index());
     };
 
     auto const get_id_str = [] (node_t* const n)
@@ -1141,41 +1123,41 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
     };
 
     auto const levelCount = as_usize(1 + this->get_var_count());
-    auto labels           = std::vector<std::string>();
-    auto rankGroups       = std::vector<std::vector<std::string>>(levelCount);
-    auto arcs             = std::vector<std::string>();
-    auto squareShapes     = std::vector<std::string>();
+    std::vector<std::string> labels;
+    std::vector<std::vector<std::string>> rankGroups(levelCount);
+    std::vector<std::string> arcs;
+    std::vector<std::string> squareShapes;
 
     forEach(
-        [&, this] (auto const n)
+        [&, this] (node_t* const node)
         {
             // Create label.
-            auto const level = this->get_level(n);
+            int32 const level = this->get_level(node);
             labels.emplace_back(
-                get_id_str(n) + R"( [label = ")" + make_label(n)
-                + R"(", tooltip = ")" + std::to_string(n->get_ref_count())
+                get_id_str(node) + R"( [label = ")" + make_label(node)
+                + R"(", tooltip = ")" + std::to_string(node->get_ref_count())
                 + R"("];)"
             );
 
-            if (n->is_terminal())
+            if (node->is_terminal())
             {
-                squareShapes.emplace_back(get_id_str(n));
-                rankGroups.back().emplace_back(get_id_str(n) + ";");
+                squareShapes.emplace_back(get_id_str(node));
+                rankGroups.back().emplace_back(get_id_str(node) + ";");
                 return;
             }
 
             // Add to same level.
-            rankGroups[as_uindex(level)].emplace_back(get_id_str(n) + ";");
+            rankGroups[as_uindex(level)].emplace_back(get_id_str(node) + ";");
 
             // Add arcs.
             this->for_each_son(
-                n,
-                [&, sonOrder = 0] (auto const son) mutable
+                node,
+                [&, sonOrder = 0] (node_t* const son) mutable
                 {
                     if constexpr (std::is_same_v<Degree, degrees::fixed<2>>)
                     {
                         arcs.emplace_back(
-                            get_id_str(n) + " -> " + get_id_str(son)
+                            get_id_str(node) + " -> " + get_id_str(son)
                             + " [style = "
                             + (0 == sonOrder ? "dashed" : "solid") + "];"
                         );
@@ -1183,7 +1165,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
                     else
                     {
                         arcs.emplace_back(
-                            get_id_str(n) + " -> " + get_id_str(son)
+                            get_id_str(node) + " -> " + get_id_str(son)
                             + R"( [label = )" + std::to_string(sonOrder) + "];"
                         );
                     }
@@ -1208,7 +1190,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
     output_range(ost, arcs, "\n    ");
     ost << "\n\n";
 
-    for (auto const& ranks : rankGroups)
+    for (std::vector<std::string> const& ranks : rankGroups)
     {
         if (not ranks.empty())
         {

@@ -27,6 +27,7 @@ public:
     static auto get_gte_capacity (int64 capacity) -> int64;
 };
 
+// TODO simplify, BucketIt = node_t**
 /**
  *  \brief Iterator for the unique table.
  */
