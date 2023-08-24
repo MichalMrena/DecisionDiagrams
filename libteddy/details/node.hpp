@@ -182,6 +182,8 @@ private:
     static constexpr uint32 RefsMax = RefsM + 1;
 
 private:
+    // TODO: use union
+
     alignas(internal) char union_[sizeof(internal)];
     [[no_unique_address]] utils::optional_member<Data> data_;
     node* next_;
