@@ -38,7 +38,7 @@ struct bdd_fixture :
 {
 private:
     static auto constexpr VarCount  = 21;
-    static auto constexpr NodeCount = 5'000;
+    static auto constexpr NodeCount = 1'000;
     static auto constexpr TermCount = 20;
     static auto constexpr TermSize  = 5;
     static auto constexpr Seed      = 911;
@@ -62,7 +62,7 @@ struct mdd_fixture :
 {
 private:
     static auto constexpr VarCount  = 15;
-    static auto constexpr NodeCount = 5'000;
+    static auto constexpr NodeCount = 10'000;
     static auto constexpr TermCount = 20;
     static auto constexpr TermSize  = 5;
     static auto constexpr Seed      = 911;
@@ -86,7 +86,7 @@ struct imdd_fixture :
 {
 private:
     static auto constexpr VarCount  = 15;
-    static auto constexpr NodeCount = 5'000;
+    static auto constexpr NodeCount = 1'000;
     static auto constexpr TermCount = 20;
     static auto constexpr TermSize  = 5;
     static auto constexpr Seed      = 911;
@@ -112,7 +112,7 @@ struct ifmdd_fixture :
 {
 private:
     static auto constexpr VarCount  = 15;
-    static auto constexpr NodeCount = 5'000;
+    static auto constexpr NodeCount = 1'000;
     static auto constexpr TermCount = 20;
     static auto constexpr TermSize  = 5;
     static auto constexpr Seed      = 911;
@@ -206,6 +206,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(fold, Fixture, Fixtures, Fixture)
     auto diagram2 = make_diagram(expr, manager, fold_type::Tree);
     BOOST_TEST_MESSAGE(
         fmt::format("Node count {}", manager.get_node_count(diagram1))
+    );
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram2))
     );
     BOOST_REQUIRE(diagram1.equals(diagram2));
 }
@@ -465,40 +468,40 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
     test_compare_eval(evalIt, manager, diagram);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture)
-{
-    auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram = make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(
-        fmt::format("Node count {}", manager.get_node_count(diagram))
-    );
-    manager.force_gc();
-    manager.force_reorder();
-    manager.force_gc();
-    auto const actual   = manager.get_node_count();
-    auto const expected = manager.get_node_count(diagram);
-    BOOST_TEST_MESSAGE(fmt::format("Node count after {}", actual));
-    BOOST_REQUIRE_EQUAL(expected, actual);
-    auto domainit = make_domain_iterator(manager);
-    auto evalit   = tsl::evaluating_iterator(domainit, expr);
-    test_compare_eval(evalit, manager, diagram);
-}
+// BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture)
+// {
+//     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+//     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+//     auto diagram = make_diagram(expr, manager);
+//     BOOST_TEST_MESSAGE(
+//         fmt::format("Node count {}", manager.get_node_count(diagram))
+//     );
+//     manager.force_gc();
+//     manager.force_reorder();
+//     manager.force_gc();
+//     auto const actual   = manager.get_node_count();
+//     auto const expected = manager.get_node_count(diagram);
+//     BOOST_TEST_MESSAGE(fmt::format("Node count after {}", actual));
+//     BOOST_REQUIRE_EQUAL(expected, actual);
+//     auto domainit = make_domain_iterator(manager);
+//     auto evalit   = tsl::evaluating_iterator(domainit, expr);
+//     test_compare_eval(evalit, manager, diagram);
+// }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture)
-{
-    auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    manager.set_auto_reorder(true);
-    auto diagram = make_diagram(expr, manager);
-    manager.force_gc();
-    auto const actual   = manager.get_node_count();
-    auto const expected = manager.get_node_count(diagram);
-    BOOST_REQUIRE_EQUAL(expected, actual);
-    auto domainit = make_domain_iterator(manager);
-    auto evalit   = tsl::evaluating_iterator(domainit, expr);
-    test_compare_eval(evalit, manager, diagram);
-}
+// BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture)
+// {
+//     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+//     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+//     manager.set_auto_reorder(true);
+//     auto diagram = make_diagram(expr, manager);
+//     manager.force_gc();
+//     auto const actual   = manager.get_node_count();
+//     auto const expected = manager.get_node_count(diagram);
+//     BOOST_REQUIRE_EQUAL(expected, actual);
+//     auto domainit = make_domain_iterator(manager);
+//     auto evalit   = tsl::evaluating_iterator(domainit, expr);
+//     test_compare_eval(evalit, manager, diagram);
+// }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
 {

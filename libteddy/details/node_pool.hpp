@@ -71,9 +71,9 @@ node_pool<Data, Degree>::node_pool(
 {
     #ifdef LIBTEDDY_VERBOSE
     debug::out(
-        "node_pool: Allocating initial pool with size ",
+        "node_pool::node_pool\tAllocating initial pool with size ",
         mainPoolSize_,
-        ".\n"
+        "\n"
     );
     #endif
 }

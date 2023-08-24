@@ -488,6 +488,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
                     expected == actual,
                     boost::test_tools::tolerance(FloatingTolerance)
                 );
+                BOOST_TEST_MESSAGE(
+                    fmt::format("FVI j={}, i={}, s={}", systemState, varIndex, varVal)
+                );
             }
         }
     }

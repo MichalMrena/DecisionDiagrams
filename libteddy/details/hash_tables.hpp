@@ -33,202 +33,6 @@ public:
 };
 
 /**
- *  \brief Iterator for the unique table.
- */
-template<class BucketIt, class Data, class Degree>
-class unique_table_iterator
-{
-public:
-    using node_t = node<Data, Degree>;
-
-public:
-    unique_table_iterator(BucketIt first, BucketIt last);
-
-public:
-    auto operator++ () -> unique_table_iterator&;
-    auto operator++ (int) -> unique_table_iterator;
-    auto operator* () const -> node_t*;
-    auto operator== (unique_table_iterator const& other) const -> bool;
-    auto operator!= (unique_table_iterator const& other) const -> bool;
-    auto get_bucket () const -> BucketIt;
-
-private:
-    auto find_first () -> node_t*;
-    auto move_next () -> node_t*;
-
-private:
-    BucketIt bucketIt_;
-    BucketIt lastBucketIt_;
-    node_t* node_;
-};
-
-/**
- *  \brief Table of unique nodes.
- */
-template<class Data, class Degree>
-class unique_table
-{
-public:
-    using node_t           = node<Data, Degree>;
-    using son_container    = typename node_t::son_container;
-    using hash_t           = std::size_t;
-    using bucket_iterator  = typename std::vector<node_t*>::iterator;
-    using cbucket_iterator = typename std::vector<node_t*>::const_iterator;
-    using iterator         = unique_table_iterator<bucket_iterator, Data, Degree>;
-    using const_iterator   = unique_table_iterator<cbucket_iterator, Data, Degree>;
-
-public:
-    struct result_of_find
-    {
-        node_t* node_;
-        hash_t  hash_;
-    };
-
-public:
-    /**
-     *  \brief Initializes empty table
-     *  \param capacity Initial capacity
-     */
-    unique_table(int64 capacity);
-
-    /**
-     *  \brief Move constructs tbale from \p other
-     */
-    unique_table(unique_table&& other) noexcept;
-
-    ~unique_table()                      = default;
-    unique_table(unique_table const&)    = delete;
-    auto operator= (unique_table const&) = delete;
-    auto operator= (unique_table&&)      = delete;
-
-public:
-    /**
-     *  \brief Tries to find internal node
-     *  \param sons Sons of the wanted node
-     *  \param domain Number of sons
-     *  \return Pointer to the found node, nullptr if not found.
-     *          Hash of the node that can be used in insertion.
-     */
-    auto find (son_container const& sons, int32 domain) const -> result_of_find;
-
-    /**
-     *  \brief Adds all nodes from \p other into this table.
-     *  Adjusts capacity if necessary.
-     *  \param other Table to merge into this one
-     *  \param domain Number of sons in this and \p other
-     */
-    auto merge (unique_table other, int32 domain) -> void;
-
-    /**
-     *  \brief Inserts \p node using pre-computed \p hash
-     *  \param node Node to be inserted
-     *  \param hash Hash value of \p node
-     */
-    auto insert (node_t* node, hash_t hash) -> void;
-
-    /**
-     *  \brief Erases node pointed to by \p it
-     *  \param nodeIt Iterator to the node to be deleted
-     *  \return Iterator to the next node
-     */
-    auto erase (iterator nodeIt) -> iterator;
-
-    /**
-     *  \brief Erases \p node .
-     *  \param node Node to be erased.
-     *  \param domain Number of sons.
-     *  \return Iterator to the next node.
-     */
-    auto erase (node_t* node, int32 domain) -> iterator;
-
-    /**
-     *  \brief Adjusts capacity of the table (number of buckets).
-     *  \param domain Number of sons.
-     */
-    auto adjust_capacity (int32 domain) -> void;
-
-    /**
-     *  \return Number of nodes in the table.
-     */
-    [[nodiscard]] auto size () const -> int64;
-
-    /**
-     *  \brief Clears the table.
-     */
-    auto clear () -> void;
-
-    /**
-     *  \return Begin iterator.
-     */
-    auto begin () -> iterator;
-
-    /**
-     *  \return End iterator.
-     */
-    auto end () -> iterator;
-
-    /**
-     *  \return Const begin iterator.
-     */
-    auto begin () const -> const_iterator;
-
-    /**
-     *  \return Const end iterator.
-     */
-    auto end () const -> const_iterator;
-
-private:
-    /**
-     *  \brief Adjusts capacity of the table (number of buckets).
-     *  Does nothing if actual capacity is >= \p newCapacity .
-     *  \param newCapacity New capacity.
-     *  \param domain Number of sons.
-     */
-    auto rehash (int64 newCapacity, int32 domain) -> void;
-
-    /**
-     *  \return Current capacity.
-     */
-    [[nodiscard]] auto get_capacity () const -> int64;
-
-    /**
-     *  \return Current load factor.
-     */
-    [[nodiscard]] auto get_load_factor () const -> double;
-
-    /**
-     *  \brief Inserts \p node using pre-computed \p hash .
-     *  Does NOT increase size.
-     *  \param node Node to be inserted.
-     *  \param hash Hash value of \p node .
-     */
-    auto insert_impl (node_t* node, hash_t hash) -> node_t*;
-
-    /**
-     *  \brief Computes hash value of a node with \p sons .
-     *  \param sons Sons of the node.
-     *  \param domain Number of sons.
-     *  \return Hash value of the node.
-     */
-    static auto node_hash (son_container const& sons, int32 domain) -> hash_t;
-
-    /**
-     *  \brief Compares two nodes for equality
-     *  (whether they have the same sons).
-     *  \param node First node.
-     *  \param sons Sons of the second node.
-     *  \param domain Number of sons.
-     *  \return True if the nodes are equal, false otherwise.
-     */
-    static auto node_equals (node_t* node, son_container const& sons, int32 domain)
-        -> bool;
-
-private:
-    std::vector<node_t*> buckets_;
-    int64 size_;
-};
-
-/**
  *  \brief Cache for the apply opertaion.
  */
 template<class Data, class Degree>
@@ -318,6 +122,13 @@ public:
     // TODO use just node_t** for sons (std::span before it was cool)
 
 public:
+    struct result_of_find
+    {
+        node_t* node_;
+        std::size_t hash_;
+    };
+
+public:
     open_unique_table(int64 capacity, int32 domain);
 
     open_unique_table(const open_unique_table& other);
@@ -340,7 +151,7 @@ public:
     /**
      *  \brief Inserts \p node using pre-computed \p hash
      *  \param node Node to be inserted
-     *  \param position Position at which the node should be inserted
+     *  \param position Position for the insertion
      */
     auto insert (node_t* node, node_t** position) -> void;
 
@@ -381,6 +192,11 @@ public:
      */
     auto clear () -> void;
 
+    /**
+     *  \brief TODO
+     */
+    auto rehash_after_erasures () -> void;
+
 private:
     /**
      *  \brief TODO
@@ -396,6 +212,11 @@ private:
      *  \brief TODO
      */
     auto rehash(int64 newCapacity) -> void;
+
+    /**
+     *  \brief TODO
+     */
+    auto calculate_index (std::size_t hash) const -> int64;
 
     /**
      *  \brief TODO
@@ -429,6 +250,10 @@ private:
     auto node_equals (node_t* node, son_container const& sons) const -> bool;
 
 private:
+    static constexpr double LOAD_THRESHOLD = 0.60;
+
+private:
+    bool didRehash_;
     int32 domain_;
     int64 size_;
     int64 capacity_;
@@ -585,337 +410,20 @@ auto apply_cache<Data, Degree>::rehash(int64 const newCapacity) -> void
     #endif
 }
 
-// unique_table_iterator definitions:
-
-template<class BucketIt, class Data, class Degree>
-unique_table_iterator<BucketIt, Data, Degree>::unique_table_iterator(
-    BucketIt const first,
-    BucketIt const last
-) :
-    bucketIt_(first),
-    lastBucketIt_(last),
-    node_(this->move_next())
-{
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::operator++ ()
-    -> unique_table_iterator&
-{
-    node_ = node_->get_next();
-    if (not node_)
-    {
-        ++bucketIt_;
-        node_ = this->move_next();
-    }
-    return *this;
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::operator++ (int)
-    -> unique_table_iterator
-{
-    auto const tmp = *this;
-    ++(*this);
-    return tmp;
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::operator* () const -> node_t*
-{
-    return node_;
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::operator== (
-    unique_table_iterator const& other
-) const -> bool
-{
-    return bucketIt_ == other.bucketIt_ && lastBucketIt_ == other.lastBucketIt_
-        && node_ == other.node_;
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::operator!= (
-    unique_table_iterator const& other
-) const -> bool
-{
-    return ! (*this == other);
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::get_bucket() const -> BucketIt
-{
-    return bucketIt_;
-}
-
-template<class BucketIt, class Data, class Degree>
-auto unique_table_iterator<BucketIt, Data, Degree>::move_next() -> node_t*
-{
-    while (bucketIt_ != lastBucketIt_ && not *bucketIt_)
-    {
-        ++bucketIt_;
-    }
-    return bucketIt_ != lastBucketIt_ ? *bucketIt_ : nullptr;
-}
-
-// unique_table definitions:
-
-template<class Data, class Degree>
-unique_table<Data, Degree>::unique_table(int64 capacity) :
-    buckets_(as_usize(table_base::get_gte_capacity(capacity)), nullptr),
-    size_(0)
-{
-}
-
-template<class Data, class Degree>
-unique_table<Data, Degree>::unique_table(unique_table&& other) noexcept :
-    buckets_(static_cast<std::vector<node_t*>&&>(other.buckets_)),
-    size_(utils::exchange(other.size_, 0))
-{
-    other.buckets_.resize(as_usize(table_base::get_gte_capacity(0)), nullptr);
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::find(son_container const& sons, int32 const domain) const
-    -> result_of_find
-{
-    std::size_t const hash  = node_hash(sons, domain);
-    std::size_t const index = hash % buckets_.size();
-    node_t* current         = buckets_[index];
-    while (current)
-    {
-        if (node_equals(current, sons, domain))
-        {
-            return {current, hash};
-        }
-        current = current->get_next();
-    }
-    return {nullptr, hash};
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::merge(unique_table other, int32 const domain)
-    -> void
-{
-    size_ += other.size();
-    this->adjust_capacity(domain);
-    auto const endIt = other.end();
-    auto otherIt     = other.begin();
-    while (otherIt != endIt)
-    {
-        node_t* const node = *otherIt;
-        ++otherIt;
-        node->set_next(nullptr);
-        this->insert_impl(node, node_hash(node->get_sons(), domain));
-    }
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::insert(node_t* const node, hash_t const hash)
-    -> void
-{
-    this->insert_impl(node, hash);
-    ++size_;
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::erase(iterator const nodeIt) -> iterator
-{
-    auto nextIt         = ++iterator(nodeIt);
-    auto const bucketIt = nodeIt.get_bucket();
-    node_t* const node  = *nodeIt;
-
-    if (*bucketIt == node)
-    {
-        *bucketIt = node->get_next();
-    }
-    else
-    {
-        node_t* prev = *bucketIt;
-        while (prev->get_next() != node)
-        {
-            prev = prev->get_next();
-        }
-        prev->set_next(node->get_next());
-    }
-
-    --size_;
-    node->set_next(nullptr);
-    return nextIt;
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::erase(node_t* const node, int32 const domain)
-    -> iterator
-{
-    std::size_t const hash     = node_hash(node->get_sons(), domain);
-    std::ptrdiff_t const index = static_cast<std::ptrdiff_t>(hash % buckets_.size());
-    auto tableIt = iterator(buckets_.begin() + index, buckets_.end());
-    while (*tableIt != node)
-    {
-        ++tableIt;
-    }
-    return this->erase(tableIt);
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::adjust_capacity(int32 const domain) -> void
-{
-    int64 const aproxCapacity = 4 * (size_ / 3);
-    int64 const newCapacity   = table_base::get_gte_capacity(aproxCapacity);
-    this->rehash(newCapacity, domain);
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::size() const -> int64
-{
-    return size_;
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::clear() -> void
-{
-    size_ = 0;
-    for (node_t*& bucket : buckets_)
-    {
-        bucket = nullptr;
-    }
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::begin() -> iterator
-{
-    return iterator(buckets_.begin(), buckets_.end());
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::end() -> iterator
-{
-    return iterator(buckets_.end(), buckets_.end());
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::begin() const -> const_iterator
-{
-    return const_iterator(buckets_.begin(), buckets_.end());
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::end() const -> const_iterator
-{
-    return const_iterator(buckets_.end(), buckets_.end());
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::rehash(int64 const newCapacity, int32 const domain)
-    -> void
-{
-    if (ssize(buckets_) >= newCapacity)
-    {
-        return;
-    }
-
-    #ifdef LIBTEDDY_VERBOSE
-    debug::out(
-        "  unique_table: Load factor is ",
-        this->get_load_factor(),
-        ". Capacity is ",
-        this->get_capacity(),
-        " should be ",
-        newCapacity
-    );
-    #endif
-
-    std::vector<node_t*> const oldBuckets(
-        static_cast<std::vector<node_t*>&&>(buckets_)
-    );
-    buckets_ = std::vector<node_t*>(as_usize(newCapacity), nullptr);
-    for (node_t* bucket : oldBuckets)
-    {
-        while (bucket)
-        {
-            node_t* const next     = bucket->get_next();
-            std::size_t const hash = node_hash(bucket->get_sons(), domain);
-            bucket->set_next(nullptr);
-            this->insert_impl(bucket, hash);
-            bucket = next;
-        }
-    };
-
-    #ifdef LIBTEDDY_VERBOSE
-    debug::out(". New load factor is ", this->get_load_factor(), ".\n");
-    #endif
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::get_capacity() const -> int64
-{
-    return static_cast<int64>(buckets_.size());
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::get_load_factor() const -> double
-{
-    return static_cast<double>(size_)
-         / static_cast<double>(this->get_capacity());
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::insert_impl(node_t* const node, hash_t const hash)
-    -> node_t*
-{
-    std::size_t const index = hash % buckets_.size();
-    node_t* const bucket    = buckets_[index];
-    if (bucket)
-    {
-        node->set_next(bucket);
-    }
-    buckets_[index] = node;
-    return node;
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::node_hash(son_container const& sons, int32 const domain)
-    -> hash_t
-{
-    hash_t result = 0;
-    for (int32 k = 0; k < domain; ++k)
-    {
-        utils::add_hash(result, sons[as_uindex(k)]);
-    }
-    return result;
-}
-
-template<class Data, class Degree>
-auto unique_table<Data, Degree>::node_equals(
-    node_t* const node,
-    son_container const& sons,
-    int32 const domain
-) -> bool
-{
-    for (int32 k = 0; k < domain; ++k)
-    {
-        if (node->get_son(k) != sons[as_uindex(k)])
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 // open_unique_table definitions:
+
 template<class Data, class Degree>
 open_unique_table<Data, Degree>::open_unique_table(
     int64 const capacity,
     int32 const domain
 ) :
+    didRehash_(false),
     domain_(domain),
     size_(0),
     capacity_(table_base::get_gte_capacity(capacity)),
     data_(
         static_cast<node_t**>(
-            std::calloc(static_cast<std::size_t>(capacity_), sizeof(node_t*))
+            std::calloc(as_usize(capacity_), sizeof(node_t*))
         )
     )
 {
@@ -925,6 +433,7 @@ template<class Data, class Degree>
 open_unique_table<Data, Degree>::open_unique_table (
     open_unique_table const& other
 ) :
+    didRehash_(other.didRehash_),
     domain_(other.domain_),
     size_(other.size_),
     capacity_(other.capacity_),
@@ -941,6 +450,7 @@ template<class Data, class Degree>
 open_unique_table<Data, Degree>::open_unique_table(
     open_unique_table&& other
 ) noexcept :
+    didRehash_(other.didRehash_),
     domain_(other.domain_),
     size_(utils::exchange(other.size_, 0)),
     capacity_(other.capacity_),
@@ -960,17 +470,11 @@ auto open_unique_table<Data, Degree>::find(
 ) const -> node_t**
 {
     int64 index = this->calculate_index(sons);
-
-    for (;;)
+    while (data_[index] && not node_equals(data_[index], sons))
     {
-        if (not data_[index] ||
-            node_equals(data_[index], sons))
-        {
-            return data_ + index;
-        }
-
         index = this->probe_next(index);
     }
+    return data_ + index;
 }
 
 template<class Data, class Degree>
@@ -979,12 +483,34 @@ auto open_unique_table<Data, Degree>::insert(
     node_t** const position
 ) -> void
 {
-    *position = node;
+    /**
+     *  Insert is only called after a prior call to find. In most cases,
+     *  the position found by find can be just used directly.
+     *  Only in an unlikely case when rehashing took place in between
+     *  the calls---due to the gc rehash---we need to find the position again
+     *  since it was invalidated in the rehash operation.
+     */
+
+    if (not didRehash_)
+    {
+        *position = node;
+    }
+    else [[unlikely]]
+    {
+        didRehash_ = false;
+        int64 index = this->calculate_index(node);
+        while (data_[index])
+        {
+            index = this->probe_next(index);
+        }
+        data_[index] = node;
+    }
+
     ++size_;
 
     auto const loadFactor = static_cast<double>(size_)
                           / static_cast<double>(capacity_);
-    if (loadFactor > 0.75)
+    if (loadFactor > LOAD_THRESHOLD)
     {
         this->rehash(table_base::get_gte_capacity(capacity_ + 1));
     }
@@ -994,11 +520,18 @@ template<class Data, class Degree>
 auto open_unique_table<Data, Degree>::merge(open_unique_table other) -> void
 {
     size_ += other.size_;
-    int64 const newCapacity = 4 * (size_ / 3);
+
+    // The new capacity should be slightly below LOAD_THRESHOLD so that the next
+    // insertion won't immediately rehash. 100 is just a magic number.
+    int64 const newCapacity = static_cast<int64>(
+        static_cast<double>(size_) / LOAD_THRESHOLD + 100
+    );
+
     if (newCapacity > capacity_)
     {
         this->rehash(newCapacity);
     }
+
     for (int64 i = 0; i < other.capacity_; ++i)
     {
         node_t* const node = other.data_[i];
@@ -1018,53 +551,8 @@ auto open_unique_table<Data, Degree>::erase (node_t* const node) -> void
 template<class Data, class Degree>
 auto open_unique_table<Data, Degree>::erase_ith(int64 i) -> void
 {
-    int64 j = i;
-    for (;;)
-    {
-        j = this->probe_next(j);
-        if (not data_[j])
-        {
-            return;
-        }
-        int64 const k = this->calculate_index(data_[j]);
-        if (i <= j)
-        {
-            if (i < k && k <= j)
-            {
-                continue;
-            }
-        }
-        else
-        {
-            if (i < k || k <= j)
-            {
-                continue;
-            }
-        }
-        data_[i] = utils::exchange(data_[j], nullptr);
-        i = j;
-    }
-
-    // mark slot[i] as unoccupied
-    // j := i
-    // loop
-    //     j := (j + 1) modulo num_slots
-    //     if slot[j] is unoccupied
-    //         exit loop
-    //     k := hash(slot[j].key) modulo num_slots
-    //     // determine if k lies cyclically in (i,j]
-    //     // i ≤ j: |    i..k..j    |
-    //     // i > j: |.k..j     i....| or |....j     i..k.|
-    //     if i ≤ j
-    //         if (i < k) and (k ≤ j)
-    //             continue loop
-    //     else
-    //         if (i < k) or (k ≤ j)
-    //             continue loop
-    //     slot[i] := slot[j]
-    //     mark slot[i] as occupied
-    //     mark slot[j] as unoccupied
-    //     i := j
+    data_[i] = nullptr;
+    --size_;
 }
 
 template<class Data, class Degree>
@@ -1093,6 +581,13 @@ auto open_unique_table<Data, Degree>::clear () -> void
 }
 
 template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::rehash_after_erasures () -> void
+{
+    this->rehash(capacity_);
+    didRehash_ = true;
+}
+
+template<class Data, class Degree>
 auto open_unique_table<Data, Degree>::probe_next (
     int64 const i
 ) const -> int64
@@ -1118,10 +613,10 @@ auto open_unique_table<Data, Degree>::rehash (int64 const newCapacity) -> void
 {
     int64 const oldCapacity = capacity_;
     node_t** const oldData = data_;
+    capacity_ = newCapacity;
     data_ = static_cast<node_t**>(
         std::calloc(as_usize(newCapacity), sizeof(node_t*))
     );
-    capacity_ = newCapacity;
     for (int64 i = 0; i < oldCapacity; ++i)
     {
         node_t* const node = oldData[i];
@@ -1131,6 +626,24 @@ auto open_unique_table<Data, Degree>::rehash (int64 const newCapacity) -> void
         }
     }
     std::free(oldData);
+
+    #ifdef LIBTEDDY_VERBOSE
+    debug::out(
+        "unique_table::rehash\tfrom ",
+        oldCapacity,
+        " to ",
+        newCapacity,
+        "\n"
+    );
+    #endif
+}
+
+template<class Data, class Degree>
+auto open_unique_table<Data, Degree>::calculate_index (
+    std::size_t const hash
+) const -> int64
+{
+    return static_cast<int64>(hash % static_cast<std::size_t>(capacity_));
 }
 
 template<class Data, class Degree>

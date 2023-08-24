@@ -454,6 +454,8 @@ auto node_manager<Data, Degree, Domain>::make_terminal_node(int32 const value)
     return id_set_marked(terminals_[as_uindex(value)]);
 }
 
+// TODO make this private, public api should only have one factory
+// methods for creating terminals
 template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_special_node(
     [[maybe_unused]] int32 const value
@@ -489,42 +491,39 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
 {
     // Each node comming out of here is marked.
     // Later on it must become son of someone or root of a diagram.
-    auto ret = static_cast<node_t*>(nullptr);
+    // TODO get rid of the marking somehow...
 
-// TODO early return
+// New node would be redundant:
     if (this->is_redundant(index, sons))
     {
-        ret = sons[0];
+        node_t* const son = sons[0];
         if constexpr (degrees::is_mixed<Degree>::value)
         {
             node_t::delete_son_container(sons);
         }
+        return id_set_marked(son);
     }
-    else
+
+// New node would not be unique:
+    open_unique_table<Data, Degree>& table = uniqueTables_[as_uindex(index)];
+    node_t** const position = table.find(sons);
+    if (*position)
     {
-        auto& table                 = uniqueTables_[as_uindex(index)];
-        // auto const [existing, hash] = table.find(sons, domains_[index]);
-        node_t** const position = table.find(sons);
-        if (*position)
+        node_t* const existingNode = *position;
+        if constexpr (degrees::is_mixed<Degree>::value)
         {
-            ret = *position;
-            if constexpr (degrees::is_mixed<Degree>::value)
-            {
-                node_t::delete_son_container(sons);
-            }
+            node_t::delete_son_container(sons);
         }
-        else
-        {
-            ret = this->make_new_node(index, sons);
-            table.insert(ret, position);
-            this->for_each_son(ret, id_inc_ref_count<Data, Degree>);
-        }
-
-        // It is now safe to unmark them since they certainly have ref.
-        this->for_each_son(ret, id_set_notmarked<Data, Degree>);
+        this->for_each_son(existingNode, id_set_notmarked<Data, Degree>);
+        return id_set_marked(existingNode);
     }
 
-    return id_set_marked(ret);
+// New node is unique and must be created:
+    node_t* const newNode = this->make_new_node(index, sons);
+    table.insert(newNode, position);
+    this->for_each_son(newNode, id_inc_ref_count<Data, Degree>);
+    this->for_each_son(newNode, id_set_notmarked<Data, Degree>);
+    return id_set_marked(newNode);
 }
 
 template<class Data, class Degree, class Domain>
@@ -637,7 +636,7 @@ template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 {
     #ifdef LIBTEDDY_VERBOSE
-    debug::out("node_manager: Collecting garbage. ");
+    debug::out("node_manager::collect_garbage\tgc begin\n");
     int64 const before = nodeCount_;
     #endif
 
@@ -646,34 +645,26 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         int32 const index = levelToIndex_[as_uindex(level)];
         open_unique_table<Data, Degree>& table = uniqueTables_[as_uindex(index)];
 
+        int64 sizeBefore = table.get_size();
         for (int64 i = 0; i < table.get_capacity(); ++i)
         {
             node_t* const node = table.get_ith(i);
             if (node && can_be_gced(node))
             {
                 table.erase_ith(i);
+                this->for_each_son(node, dec_ref_count);
+                this->delete_node(node);
             }
         }
-        // auto const endIt = table.end();
-        // auto tableIt     = table.begin();
 
-        // while (tableIt != endIt)
-        // {
-        //     auto const node = *tableIt;
-        //     if (can_be_gced(node))
-        //     {
-        //         this->for_each_son(node, dec_ref_count);
-        //         tableIt = table.erase(tableIt);
-        //         this->delete_node(node);
-        //     }
-        //     else
-        //     {
-        //         ++tableIt;
-        //     }
-        // }
+        if (sizeBefore != table.get_size())
+        {
+            table.rehash_after_erasures();
+        }
     }
 
     // TODO make terminals live forever
+    // TODO remove auto
     for (auto& node : terminals_)
     {
         if (node && can_be_gced(node))
@@ -694,6 +685,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 
     #ifdef LIBTEDDY_VERBOSE
     debug::out(
+        "node_manager::collect_garbage\t",
         before - nodeCount_,
         " nodes collected.",
         " Now there are ",
@@ -1034,14 +1026,14 @@ auto node_manager<Data, Degree, Domain>::is_redundant(
 template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
 {
-    #ifdef LIBTEDDY_VERBOSE
-    debug::out(
-        "node_manager: Adjusting unique tables.",
-        " Node count is ",
-        nodeCount_,
-        ".\n"
-    );
-    #endif
+    // #ifdef LIBTEDDY_VERBOSE
+    // debug::out(
+    //     "node_manager: Adjusting unique tables.",
+    //     " Node count is ",
+    //     nodeCount_,
+    //     ".\n"
+    // );
+    // #endif
 
     // for (int32 i = 0; i < ssize(uniqueTables_); ++i)
     // {
@@ -1331,6 +1323,7 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
         node->get_son(k)->set_notmarked();
     }
 
+    // TODO: check rehash_after_erasure... possibly call safe_erase that does the rearanging
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         this->dec_ref_try_gc(oldSons[k]);
