@@ -6,6 +6,7 @@
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/tools.hpp>
 
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
@@ -118,7 +119,7 @@ public:
     [[nodiscard]] auto find (son_container const& sons) const -> result_of_find;
 
     /**
-     *  \brief Adds all nodes from \p other into this table.
+     *  \brief Adds all nodes from \p other into this table
      *  Adjusts capacity if necessary.
      *  \param other Table to merge into this one
      *  \param domain Number of sons in this and \p other
@@ -140,14 +141,14 @@ public:
     auto erase (iterator nodeIt) -> iterator;
 
     /**
-     *  \brief Erases \p node .
-     *  \param node Node to be erased.
-     *  \return Iterator to the next node.
+     *  \brief Erases \p node
+     *  \param node Node to be erased
+     *  \return Iterator to the next node
      */
     auto erase (node_t* node) -> iterator;
 
     /**
-     *  \brief Adjusts capacity of the table (number of buckets).
+     *  \brief Adjusts capacity of the table (number of buckets)
      */
     auto adjust_capacity () -> void;
 
@@ -183,11 +184,6 @@ public:
 
 private:
     /**
-     *  \brief TODO
-     */
-    [[nodiscard]] auto calculate_index (son_container const& sons) -> int64;
-
-    /**
      *  \brief Adjusts capacity of the table (number of buckets).
      *  Does nothing if actual capacity is >= \p newCapacity .
      *  \param newCapacity New capacity.
@@ -208,7 +204,10 @@ private:
     auto insert_impl (node_t* node, std::size_t hash) -> node_t*;
 
     /**
-     *  \brief TODO
+     *  \brief Erases \p node
+     *  \param bucket Bucket containing \p node
+     *  \param node Node to be erased
+     *  \return Iterator to the next node
      */
     auto erase_impl (node_t** bucket, node_t* node) -> iterator;
 
@@ -229,23 +228,23 @@ private:
     [[nodiscard]] auto node_equals (node_t* node, son_container const& sons) const -> bool;
 
     /**
-     *  \brief TODO
+     *  \brief Allocates \p count nullptr initialized buckets
      */
-    [[nodiscard]] auto callocate_buckets (int64 const count) -> node_t**;
+    [[nodiscard]] auto callocate_buckets (int64 count) -> node_t**;
 
     /**
-     *  \brief TODO
+     *  \brief Allocates \p count uninitialized buckets
      */
-    [[nodiscard]] auto mallocate_buckets (int64 const count) -> node_t**;
+    [[nodiscard]] auto mallocate_buckets (int64 count) -> node_t**;
 
 private:
     static constexpr double LOAD_THRESHOLD = 0.75;
 
 private:
-    node_t** buckets_;
+    int32 domain_;
     int64 size_;
     int64 capacity_;
-    int32 domain_;
+    node_t** buckets_;
 };
 
 /**
@@ -491,6 +490,18 @@ unique_table_iterator<Data, Degree>::unique_table_iterator(
 }
 
 template<class Data, class Degree>
+unique_table_iterator<Data, Degree>::unique_table_iterator(
+    node_t** const bucket,
+    node_t** const lastBucket,
+    node_t* const node
+) :
+    bucket_(bucket),
+    lastBucket_(lastBucket),
+    node_(node)
+{
+}
+
+template<class Data, class Degree>
 auto unique_table_iterator<Data, Degree>::operator++ ()
     -> unique_table_iterator&
 {
@@ -558,30 +569,40 @@ unique_table<Data, Degree>::unique_table(
     int64 const capacity,
     int32 const domain
 ) :
-    buckets_(callocate_buckets(table_base::get_gte_capacity(capacity))),
+    domain_(domain),
     size_(0),
-    capacity_(capacity),
-    domain_(domain)
+    capacity_(table_base::get_gte_capacity(capacity)),
+    buckets_(callocate_buckets(capacity_))
 {
 }
 
 template<class Data, class Degree>
 unique_table<Data, Degree>::unique_table(unique_table const& other) :
-    buckets_(mallocate_buckets(other.capacity_)),
+    domain_(other.domain_),
     size_(other.size_),
     capacity_(other.capacity_),
-    domain_(other.domain_)
+    buckets_(mallocate_buckets(other.capacity_))
 {
-    std::memcpy(buckets_, other.buckets_, capacity_ * sizeof(node_t*));
+    std::memcpy(
+        buckets_,
+        other.buckets_,
+        static_cast<std::size_t>(capacity_) * sizeof(node_t*)
+    );
 }
 
 template<class Data, class Degree>
 unique_table<Data, Degree>::unique_table(unique_table&& other) noexcept :
-    buckets_(utils::exchange(other.buckets_, nullptr)),
+    domain_(other.domain_),
     size_(utils::exchange(other.size_, 0)),
     capacity_(other.capacity_),
-    domain_(other.domain_)
+    buckets_(utils::exchange(other.buckets_, nullptr))
 {
+}
+
+template<class Data, class Degree>
+unique_table<Data, Degree>::~unique_table ()
+{
+    std::free(buckets_);
 }
 
 template<class Data, class Degree>
@@ -608,10 +629,14 @@ auto unique_table<Data, Degree>::find(
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::merge(unique_table other) -> void
 {
-    size_ += other.size();
+    size_ += other.size_;
     this->adjust_capacity();
-    for (node_t* const otherNode : other)
+    auto it = other.begin();
+    auto const end = other.end();
+    while (it != end)
     {
+        node_t* const otherNode = *it;
+        ++it;
         otherNode->set_next(nullptr);
         std::size_t const hash = this->node_hash(otherNode->get_sons());
         this->insert_impl(otherNode, hash);
@@ -639,8 +664,11 @@ auto unique_table<Data, Degree>::erase(iterator const nodeIt) -> iterator
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::erase(node_t* const node) -> iterator
 {
-    int64 const index = this->calculate_index(node->get_sons());
-    return this->erase_impl(buckets_[index], node);
+    std::size_t const hash = this->node_hash(node->get_sons());
+    int64 const index = static_cast<int64>(
+        hash % static_cast<std::size_t>(capacity_)
+    );
+    return this->erase_impl(buckets_ + index, node);
 }
 
 template<class Data, class Degree>
@@ -666,7 +694,11 @@ template<class Data, class Degree>
 auto unique_table<Data, Degree>::clear() -> void
 {
     size_ = 0;
-    std::memset(buckets_, 0, capacity_ * sizeof(node_t*));
+    std::memset(
+        buckets_,
+        0,
+        static_cast<std::size_t>(capacity_) * sizeof(node_t*)
+    );
 }
 
 template<class Data, class Degree>
@@ -713,14 +745,14 @@ auto unique_table<Data, Degree>::rehash(int64 const newCapacity) -> void
     capacity_ = newCapacity;
     for (int64 i = 0; i < oldCapacity; ++i)
     {
-        node_t** bucket = oldBuckets[i];
-        while (bucket)
+        node_t* node = oldBuckets[i];
+        while (node)
         {
-            node_t* const next = bucket->get_next();
-            std::size_t const hash = this->node_hash(bucket->get_sons());
-            bucket->set_next(nullptr);
-            this->insert_impl(bucket, hash);
-            bucket = next;
+            node_t* const next = node->get_next();
+            std::size_t const hash = this->node_hash(node->get_sons());
+            node->set_next(nullptr);
+            this->insert_impl(node, hash);
+            node = next;
         }
     };
 
@@ -808,6 +840,27 @@ auto unique_table<Data, Degree>::node_equals(
     }
     return true;
 }
+
+template<class Data, class Degree>
+auto unique_table<Data, Degree>::callocate_buckets (
+    int64 const count
+) -> node_t**
+{
+    return static_cast<node_t**>(
+        std::calloc(static_cast<std::size_t>(count), sizeof(node_t*))
+    );
+}
+
+template<class Data, class Degree>
+auto unique_table<Data, Degree>::mallocate_buckets (
+    int64 const count
+) -> node_t**
+{
+    return static_cast<node_t**>(
+        std::malloc(static_cast<std::size_t>(count) * sizeof(node_t*))
+    );
+}
+
 } // namespace teddy
 
 #endif

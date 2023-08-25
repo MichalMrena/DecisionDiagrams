@@ -378,7 +378,10 @@ node_manager<Data, Degree, Domain>::node_manager(
     for (int32 i = 0; i <= static_cast<int32>(c); ++i)
     {
         auto const x = static_cast<double>(i);
-        uniqueTables_.emplace_back(static_cast<int64>(fc * x / c));
+        uniqueTables_.emplace_back(
+            static_cast<int64>(fc * x / c),
+            this->get_domain(i)
+        );
     }
 
     for (auto i = static_cast<int32>(c) + 1; i < varCount_; ++i)
@@ -386,7 +389,8 @@ node_manager<Data, Degree, Domain>::node_manager(
         auto const n = static_cast<double>(varCount) - 1;
         auto const x = static_cast<double>(i);
         uniqueTables_.emplace_back(
-            static_cast<int64>((fc * x) / (c - n) - (fc * n) / (c - n))
+            static_cast<int64>((fc * x) / (c - n) - (fc * n) / (c - n)),
+            this->get_domain(i)
         );
     }
 }
@@ -496,7 +500,7 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     else
     {
         auto& table                 = uniqueTables_[as_uindex(index)];
-        auto const [existing, hash] = table.find(sons, domains_[index]);
+        auto const [existing, hash] = table.find(sons);
         if (existing)
         {
             ret = existing;
@@ -568,7 +572,7 @@ auto node_manager<Data, Degree, Domain>::get_node_count(int32 const index) const
     -> int64
 {
     assert(index < this->get_var_count());
-    return uniqueTables_[as_uindex(index)].size();
+    return uniqueTables_[as_uindex(index)].get_size();
 }
 
 template<class Data, class Degree, class Domain>
@@ -656,8 +660,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         }
     }
 
-    // TODO make terminals live forever
-    for (node_t* const node : terminals_)
+    for (node_t*& node : terminals_)
     {
         if (node && can_be_gced(node))
         {
@@ -666,7 +669,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         }
     }
 
-    for (node_t* const node : specials_)
+    for (node_t*& node : specials_)
     {
         if (node && can_be_gced(node))
         {
@@ -1004,16 +1007,16 @@ auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
 {
     #ifdef LIBTEDDY_VERBOSE
     debug::out(
-        "node_manager: Adjusting unique tables.",
+        "node_manager::adjust_tables\tAdjusting unique tables.",
         " Node count is ",
         nodeCount_,
-        ".\n"
+        "\n"
     );
     #endif
 
     for (int32 i = 0; i < ssize(uniqueTables_); ++i)
     {
-        uniqueTables_[as_uindex(i)].adjust_capacity(domains_[i]);
+        uniqueTables_[as_uindex(i)].adjust_capacity();
     }
 }
 
@@ -1329,10 +1332,7 @@ auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const node)
             this->dec_ref_try_gc(node->get_son(k));
         }
 
-        uniqueTables_[as_uindex(node->get_index())].erase(
-            node,
-            domains_[node->get_index()]
-        );
+        uniqueTables_[as_uindex(node->get_index())].erase(node);
     }
     else
     {
@@ -1356,19 +1356,15 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
 {
     auto const level     = this->get_level(index);
     auto const nextIndex = this->get_index(1 + level);
-    unique_table<Data, Degree> tmpTable(
-        static_cast<unique_table<Data, Degree>&&>(
-            uniqueTables_[as_uindex(index)]
-        )
-    );
-    for (auto const node : tmpTable)
+    unique_table<Data, Degree> tmpTable(uniqueTables_[as_uindex(index)]);
+    uniqueTables_[as_uindex(index)].clear();
+    for (node_t* const node : tmpTable)
     {
         this->swap_node_with_next(node);
     }
-    uniqueTables_[as_uindex(index)].adjust_capacity(domains_[index]);
+    uniqueTables_[as_uindex(index)].adjust_capacity();
     uniqueTables_[as_uindex(nextIndex)].merge(
-        static_cast<unique_table<Data, Degree>&&>(tmpTable),
-        domains_[nextIndex]
+        static_cast<unique_table<Data, Degree>&&>(tmpTable)
     );
 
     utils::swap(
