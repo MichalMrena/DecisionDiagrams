@@ -946,7 +946,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
     }
 }
 
-const tsl::system_description system1 = tsl::system_description
+tsl::system_description const system1 = tsl::system_description
 {
     .systemId_ = 1,
     .stateCount_ = 2,
@@ -1018,7 +1018,7 @@ const tsl::system_description system1 = tsl::system_description
     .floatingTolerance_ = 0.00001
 };
 
-const std::array<tsl::system_description, 1> systems {system1};
+std::array<tsl::system_description, 1> const systems {system1};
 
 BOOST_DATA_TEST_CASE(system_test, systems, system)
 {

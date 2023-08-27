@@ -7,8 +7,8 @@
 #include <libteddy/details/tools.hpp>
 
 #include <cassert>
-    #include <new> // TODO switch to cstdlib, but keep this for placement new
-    #include <vector> // TODO use custom linked list
+#include <new>    // TODO switch to cstdlib, but keep this for placement new
+#include <vector> // TODO use custom linked list
 
 namespace teddy
 {
@@ -69,13 +69,13 @@ node_pool<Data, Degree>::node_pool(
     overflowPoolSize_(overflowPoolSize),
     availableNodes_(mainPoolSize)
 {
-    #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
     debug::out(
-        "node_pool: Allocating initial pool with size ",
+        "node_pool::node_pool\tAllocating initial pool with size ",
         mainPoolSize_,
-        ".\n"
+        "\n"
     );
-    #endif
+#endif
 }
 
 template<class Data, class Degree>
@@ -156,7 +156,7 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
         ++nextPoolNodeIndex_;
     }
 
-    return static_cast<node_t*>(::new (node) node_t (args...));
+    return static_cast<node_t*>(::new (node) node_t(args...));
 }
 
 template<class Data, class Degree>
@@ -170,13 +170,13 @@ auto node_pool<Data, Degree>::destroy(node_t* const node) -> void
 template<class Data, class Degree>
 auto node_pool<Data, Degree>::grow() -> void
 {
-    #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
     debug::out(
         "node_pool::grow\tallocating overflow pool with size ",
         overflowPoolSize_,
         "\n"
     );
-    #endif
+#endif
 
     overflowPools_.push_back(allocate_pool(overflowPoolSize_));
     currentPoolIndex_  = ssize(overflowPools_) - 1;
@@ -195,8 +195,7 @@ auto node_pool<Data, Degree>::get_current_pool() const -> node_t*
 template<class Data, class Degree>
 auto node_pool<Data, Degree>::allocate_pool(int64 const size) -> node_t*
 {
-    return static_cast<node_t*>(
-        ::operator new (as_usize(size) * sizeof(node_t))
+    return static_cast<node_t*>(::operator new (as_usize(size) * sizeof(node_t))
     );
 }
 

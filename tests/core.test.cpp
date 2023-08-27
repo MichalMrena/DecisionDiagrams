@@ -27,7 +27,7 @@ struct fixture_base
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
     std::mt19937_64 rng_;
-    int32 maxValue_{};
+    int32 maxValue_ {};
 };
 
 /**
@@ -99,7 +99,8 @@ public:
                  random_domains_tag()}}},
             minmax_expression_settings {VarCount, TermCount, TermSize},
             {std::mt19937_64(Seed)},
-            3}
+            3
+    }
     {
     }
 };
@@ -258,21 +259,18 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::maxValue_; ++j)
     {
-        auto const vars = manager.template satisfy_one<std::vector<int32>>(j, diagram);
+        auto const vars
+            = manager.template satisfy_one<std::vector<int32>>(j, diagram);
         BOOST_REQUIRE(vars.has_value());
         BOOST_REQUIRE_EQUAL(j, manager.evaluate(diagram, *vars));
     }
 
     auto const justOne = manager.constant(1);
-    auto const nullOpt = manager.template satisfy_one<std::vector<int32>>(
-        0,
-        justOne
-    );
+    auto const nullOpt
+        = manager.template satisfy_one<std::vector<int32>>(0, justOne);
 
-    auto const notNullOpt = manager.template satisfy_one<std::vector<int32>>(
-        1,
-        justOne
-    );
+    auto const notNullOpt
+        = manager.template satisfy_one<std::vector<int32>>(1, justOne);
 
     BOOST_REQUIRE(not nullOpt.has_value());
     BOOST_REQUIRE(notNullOpt.has_value());
@@ -319,10 +317,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators, Fixture, Fixtures, Fixture)
     auto const one  = manager.constant(1);
     auto const sup
         = manager.constant(std::ranges::max(manager.get_domains()) - 1);
-    auto const boolValDiagram = manager.transform(diagram, [](int32 const val)
-    {
-        return val != 0;
-    });
+    auto const boolValDiagram = manager.transform(
+        diagram,
+        [] (int32 const val)
+        {
+            return val != 0;
+        }
+    );
 
     BOOST_REQUIRE_MESSAGE(
         manager.template apply<AND>(boolValDiagram, zero).equals(zero),

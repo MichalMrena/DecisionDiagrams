@@ -227,7 +227,8 @@ public:
      *  \return System availability.
      */
     template<class Foo = void>
-    [[nodiscard]] auto get_availability () const -> utils::second_t<Foo, double>;
+    [[nodiscard]] auto get_availability () const
+        -> utils::second_t<Foo, double>;
 
     /**
      *  \brief Returns system availability with
@@ -487,7 +488,7 @@ private:
 
     struct cache_entry_hash
     {
-        auto operator()(dpld_cache_entry const& entry) const
+        auto operator() (dpld_cache_entry const& entry) const
         {
             return utils::pack_hash(entry.lhs_, entry.rhs_);
         }
@@ -495,7 +496,7 @@ private:
 
     struct cache_entry_equals
     {
-        auto operator()(
+        auto operator() (
             dpld_cache_entry const& lhs,
             dpld_cache_entry const& rhs
         ) const
@@ -508,16 +509,13 @@ private:
         dpld_cache_entry,
         node_t*,
         cache_entry_hash,
-        cache_entry_equals
-    >;
+        cache_entry_equals>;
 
 private:
     auto to_mnf (diagram_t const& diagram) -> diagram_t;
 
-    auto to_mnf_impl (
-        std::unordered_map<node_t*, node_t*>& memo,
-        node_t* node
-    ) -> node_t*;
+    auto to_mnf_impl (std::unordered_map<node_t*, node_t*>& memo, node_t* node)
+        -> node_t*;
 
     template<class FChange>
     auto dpld_impl (
@@ -543,10 +541,7 @@ private:
     ) -> double;
 
     template<component_probabilities Ps>
-    auto calculate_ntps_level_impl (
-        Ps const& probs,
-        node_t* root
-    ) -> void;
+    auto calculate_ntps_level_impl (Ps const& probs, node_t* root) -> void;
 };
 
 template<class Degree, class Domain>
@@ -567,11 +562,8 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
     diagram_t const& diagram
 ) -> double
 {
-    return this->calculate_ntps_post_impl(
-        {state},
-        probs,
-        diagram.unsafe_get_root()
-    );
+    return this
+        ->calculate_ntps_post_impl({state}, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -611,11 +603,8 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
             }
         }
     );
-    return this->calculate_ntps_post_impl(
-        states,
-        probs,
-        diagram.unsafe_get_root()
-    );
+    return this
+        ->calculate_ntps_post_impl(states, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -673,11 +662,8 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
             }
         }
     );
-    return this->calculate_ntps_post_impl(
-        states,
-        probs,
-        diagram.unsafe_get_root()
-    );
+    return this
+        ->calculate_ntps_post_impl(states, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -729,27 +715,22 @@ auto reliability_manager<Degree, Domain>::dpld(
     // TODO vector cache?
     dpld_cache cache;
     node_t* const oldRoot = diagram.unsafe_get_root();
-    node_t* lhsRoot = oldRoot;
-    node_t* rhsRoot = oldRoot;
+    node_t* lhsRoot       = oldRoot;
+    node_t* rhsRoot       = oldRoot;
     if (not oldRoot->is_terminal() && oldRoot->get_index() == varChange.index_)
     {
         lhsRoot = oldRoot->get_son(varChange.from_);
         rhsRoot = oldRoot->get_son(varChange.to_);
     }
-    node_t* const newRoot = this->dpld_impl(
-        cache,
-        varChange,
-        fChange,
-        lhsRoot,
-        rhsRoot
-    );
+    node_t* const newRoot
+        = this->dpld_impl(cache, varChange, fChange, lhsRoot, rhsRoot);
     this->nodes_.run_deferred();
     return diagram_t(newRoot);
 }
 
 template<class Degree, class Domain>
 template<class FChange>
-auto reliability_manager<Degree, Domain>::dpld_impl (
+auto reliability_manager<Degree, Domain>::dpld_impl(
     dpld_cache& cache,
     var_change varChange,
     FChange fChange,
@@ -757,17 +738,15 @@ auto reliability_manager<Degree, Domain>::dpld_impl (
     node_t* const rhs
 ) -> node_t*
 {
-    constexpr auto get_son = [](
-        node_t* const node,
-        int32 const k,
-        int32 const varIndex,
-        int32 const varValue
-    )
+    constexpr auto get_son = [] (node_t* const node,
+                                 int32 const k,
+                                 int32 const varIndex,
+                                 int32 const varValue)
     {
         auto const son = node->get_son(k);
         return son->is_internal() && son->get_index() == varIndex
-            ? son->get_son(varValue)
-            : son;
+                 ? son->get_son(varValue)
+                 : son;
     };
 
     auto const cached = cache.find(dpld_cache_entry(lhs, rhs));
@@ -794,23 +773,22 @@ auto reliability_manager<Degree, Domain>::dpld_impl (
         son_conainer sons    = this->nodes_.make_son_container(domain);
         for (int32 k = 0; k < domain; ++k)
         {
-            node_t* const fst = lhsLevel == topLevel
-                ? get_son(lhs, k, varChange.index_, varChange.from_)
-                : lhs;
+            node_t* const fst
+                = lhsLevel == topLevel
+                    ? get_son(lhs, k, varChange.index_, varChange.from_)
+                    : lhs;
 
-            node_t* const snd = rhsLevel == topLevel
-                ? get_son(rhs, k, varChange.index_, varChange.to_)
-                : rhs;
+            node_t* const snd
+                = rhsLevel == topLevel
+                    ? get_son(rhs, k, varChange.index_, varChange.to_)
+                    : rhs;
             sons[k] = this->dpld_impl(cache, varChange, fChange, fst, snd);
         }
 
         result = this->nodes_.make_internal_node(topIndex, sons);
     }
 
-    cache.emplace(
-        dpld_cache_entry(lhs, rhs),
-        result
-    );
+    cache.emplace(dpld_cache_entry(lhs, rhs), result);
 
     return result;
 }
@@ -833,9 +811,8 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
         son_conainer sons     = this->nodes_.make_son_container(varDomain);
         for (int32 k = 0; k < varDomain; ++k)
         {
-            sons[k] = k == varFrom
-                ? root
-                : this->nodes_.make_special_node(Undefined);
+            sons[k] = k == varFrom ? root
+                                   : this->nodes_.make_special_node(Undefined);
         }
         newRoot = this->nodes_.make_internal_node(varIndex, sons);
         return diagram_t(newRoot);
@@ -853,7 +830,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
 }
 
 template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::to_dpld_e_impl (
+auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
     std::unordered_map<node_t*, node_t*>& memo,
     int32 const varFrom,
     int32 const varIndex,
@@ -889,8 +866,8 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl (
             for (int32 l = 0; l < varDomain; ++l)
             {
                 newSons[l] = l == varFrom
-                    ? son
-                    : this->nodes_.make_special_node(Undefined);
+                               ? son
+                               : this->nodes_.make_special_node(Undefined);
             }
             sons[k] = this->nodes_.make_internal_node(varIndex, newSons);
         }
@@ -899,7 +876,6 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl (
             // A new node will be inserted somewhere deeper.
             sons[k] = this->to_dpld_e_impl(memo, varFrom, varIndex, son);
         }
-
     }
     node_t* const newNode = this->nodes_.make_internal_node(nodeIndex, sons);
     memo.emplace(node, newNode);
@@ -990,11 +966,8 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
         for (int32 varFrom = 0; varFrom < varDomain - 1; ++varFrom)
         {
             var_change varChange {varIndex, varFrom, varFrom + 1};
-            diagram_t const dpld = this->dpld(
-                varChange,
-                dpld::type_3_increase(state),
-                diagram
-            );
+            diagram_t const dpld
+                = this->dpld(varChange, dpld::type_3_increase(state), diagram);
             dpldes.push_back(this->to_dpld_e(varFrom, varIndex, dpld));
         }
     }
@@ -1020,11 +993,8 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
         for (int32 varFrom = 1; varFrom < varDomain; ++varFrom)
         {
             var_change varChange {varIndex, varFrom, varFrom - 1};
-            diagram_t const dpld = this->dpld(
-                varChange,
-                dpld::type_3_decrease(state),
-                diagram
-            );
+            diagram_t const dpld
+                = this->dpld(varChange, dpld::type_3_decrease(state), diagram);
             dpldes.push_back(this->to_dpld_e(varFrom, varIndex, dpld));
         }
     }
@@ -1070,8 +1040,8 @@ auto reliability_manager<Degree, Domain>::calculate_ntps_post_impl(
                 {
                     node_t* const son = node->get_son(k);
                     node->get_data()
-                            += son->get_data()
-                             * probs[as_uindex(nodeIndex)][as_uindex(k)];
+                        += son->get_data()
+                         * probs[as_uindex(nodeIndex)][as_uindex(k)];
                 }
             }
         }
@@ -1081,10 +1051,10 @@ auto reliability_manager<Degree, Domain>::calculate_ntps_post_impl(
 
 template<class Degree, class Domain>
 template<component_probabilities Ps>
-auto reliability_manager<Degree, Domain>::calculate_ntps_level_impl (
-        Ps const& probs,
-        node_t* const root
-    ) -> void
+auto reliability_manager<Degree, Domain>::calculate_ntps_level_impl(
+    Ps const& probs,
+    node_t* const root
+) -> void
 {
     this->nodes_.traverse_pre(
         root,
@@ -1113,8 +1083,8 @@ auto reliability_manager<Degree, Domain>::calculate_ntps_level_impl (
                 {
                     node_t* const son = node->get_son(k);
                     son->get_data()
-                            += node->get_data()
-                             * probs[as_uindex(nodeIndex)][as_uindex(k)];
+                        += node->get_data()
+                         * probs[as_uindex(nodeIndex)][as_uindex(k)];
                 }
             }
         }
@@ -1132,7 +1102,7 @@ auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
 }
 
 template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::to_mnf_impl (
+auto reliability_manager<Degree, Domain>::to_mnf_impl(
     std::unordered_map<node_t*, node_t*>& memo,
     node_t* node
 ) -> node_t*
@@ -1154,7 +1124,7 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl (
     for (int32 k = 0; k < domain; ++k)
     {
         node_t* const son = node->get_son(k);
-        sons[k] = this->to_mnf_impl(memo, son);
+        sons[k]           = this->to_mnf_impl(memo, son);
     }
 
     for (int32 k = domain - 1; k > 0; --k)

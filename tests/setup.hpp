@@ -185,7 +185,10 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
             {
                 auto indices = utils::fill_vector(
                     settings.varcount_,
-                    [](int32 x){ return x; }
+                    [] (int32 x)
+                    {
+                        return x;
+                    }
                 );
                 std::ranges::shuffle(indices, rng);
                 return indices;
@@ -194,7 +197,10 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
             {
                 auto indices = utils::fill_vector(
                     settings.varcount_,
-                    [](int32 x){ return x; }
+                    [] (int32 x)
+                    {
+                        return x;
+                    }
                 );
                 return indices;
             },

@@ -159,7 +159,7 @@ inline auto bool_cube::size() const -> int32
 
 inline auto bool_cube::get(int32 const i) const -> int32
 {
-    int32 const byteIndex  = i / 4;
+    int32 const byteIndex        = i / 4;
     std::size_t const uByteIndex = as_uindex(byteIndex);
 
     assert(byteIndex >= 0 && byteIndex < ssize(values_));
@@ -180,7 +180,7 @@ inline auto bool_cube::get(int32 const i) const -> int32
 
 inline auto bool_cube::set(int32 const index, int32 const value) -> void
 {
-    int32 const byteIndex  = index / 4;
+    int32 const byteIndex        = index / 4;
     std::size_t const uByteIndex = as_uindex(byteIndex);
 
     assert((byteIndex >= 0 && byteIndex < ssize(values_)));
@@ -240,7 +240,8 @@ inline auto pla_file::load_file(std::string const& path)
     while (std::getline(ifst, line))
     {
         // Skip leading spaces.
-        auto const first = utils::find_if_not(line.begin(), line.end(), ::isspace);
+        auto const first
+            = utils::find_if_not(line.begin(), line.end(), ::isspace);
         auto const last = line.end();
         if (first == last)
         {
@@ -261,10 +262,11 @@ inline auto pla_file::load_file(std::string const& path)
         }
 
         // Split into (key, val) pair on the first space.
-        auto const keyLast  = utils::find_if(first, last, ::isspace);
-        auto const valFirst = keyLast == last
-            ? last
-            : utils::find_if_not(keyLast + 1, last, ::isspace);
+        auto const keyLast = utils::find_if(first, last, ::isspace);
+        auto const valFirst
+            = keyLast == last
+                ? last
+                : utils::find_if_not(keyLast + 1, last, ::isspace);
         std::string key(first, keyLast);
         if (valFirst != last)
         {
@@ -310,7 +312,8 @@ inline auto pla_file::load_file(std::string const& path)
     lines.reserve(as_usize(*lineCount));
     do
     {
-        auto const first = utils::find_if_not(line.begin(), line.end(), ::isspace);
+        auto const first
+            = utils::find_if_not(line.begin(), line.end(), ::isspace);
         auto const last = line.end();
         if (first == last)
         {

@@ -14,15 +14,13 @@
 namespace teddy::utils
 {
 template<class T>
-concept is_std_vector = std::same_as<
-    T,
-    std::vector<typename T::value_type, typename T::allocator_type>
->;
+concept is_std_vector = std::
+    same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
 
 template<class Gen>
 auto fill_vector (int64 const n, Gen generator)
 {
-    using T   = decltype(generator(int32{}));
+    using T   = decltype(generator(int32 {}));
     auto data = std::vector<T>();
     data.reserve(as_usize(n));
     for (auto i = int32 {0}; i < n; ++i)
@@ -129,7 +127,7 @@ auto any (Args... args)
  *  \brief The min function
  */
 template<class T>
-constexpr auto min(T lhs, T rhs) -> T
+constexpr auto min (T lhs, T rhs) -> T
 {
     return lhs < rhs ? lhs : rhs;
 }
@@ -212,10 +210,10 @@ auto find_if_not (It first, It const last, Predicate test) -> It
  *  Simplified implementation of std::exchange
  */
 template<class T, class U = T>
-auto exchange(T& var, U newVal) noexcept -> T
+auto exchange (T& var, U newVal) noexcept -> T
 {
     auto oldVal = var;
-    var = newVal;
+    var         = newVal;
     return oldVal;
 }
 
@@ -224,27 +222,27 @@ auto exchange(T& var, U newVal) noexcept -> T
  *  Simplified implementation of std::swap
  */
 template<typename T>
-constexpr auto swap(T& first, T& second) noexcept -> void
+constexpr auto swap (T& first, T& second) noexcept -> void
 {
-	auto tmp = first;
-	first = second;
-	second = tmp;
+    auto tmp = first;
+    first    = second;
+    second   = tmp;
 }
 
 /**
  *  \brief Simple heapsort for vectors
  */
 template<class T, class Compare>
-auto sort(std::vector<T>& xs, Compare cmp) -> void
+auto sort (std::vector<T>& xs, Compare cmp) -> void
 {
     if (xs.empty())
     {
         return;
     }
 
-    auto const sift_down = [&xs, cmp](uint32 parent, uint32 const size)
+    auto const sift_down = [&xs, cmp] (uint32 parent, uint32 const size)
     {
-        uint32 left = 2 * parent + 1;
+        uint32 left  = 2 * parent + 1;
         uint32 right = left + 1;
         while (left < size)
         {
@@ -266,8 +264,8 @@ auto sort(std::vector<T>& xs, Compare cmp) -> void
 
             utils::swap(xs[parent], xs[swap]);
             parent = swap;
-            left = 2 * parent + 1;
-            right = left + 1;
+            left   = 2 * parent + 1;
+            right  = left + 1;
         }
     };
 
@@ -357,6 +355,5 @@ struct optional_member<void>
 {
 };
 } // namespace teddy::utils
-
 
 #endif

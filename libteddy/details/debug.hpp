@@ -3,9 +3,9 @@
 
 #include <libteddy/details/config.hpp>
 #ifdef LIBTEDDY_VERBOSE
-#include <iostream>
+#    include <libteddy/details/types.hpp>
 
-#include <libteddy/details/types.hpp>
+#    include <iostream>
 
 namespace teddy::debug
 {

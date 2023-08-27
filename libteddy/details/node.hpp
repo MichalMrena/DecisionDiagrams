@@ -57,12 +57,12 @@ struct node_ptr_array
 {
     node<Data, Degree>* sons_[Degree::value];
 
-    auto operator[](int64 const index) -> node<Data, Degree>*&
+    auto operator[] (int64 const index) -> node<Data, Degree>*&
     {
         return sons_[index];
     }
 
-    auto operator[](int64 const index) const -> node<Data, Degree>* const&
+    auto operator[] (int64 const index) const -> node<Data, Degree>* const&
     {
         return sons_[index];
     }
@@ -73,18 +73,14 @@ class node
 {
 public:
     template<int32 N>
-    static auto make_son_container (
-        int32,
-        degrees::fixed<N>
-    ) -> node_ptr_array<Data, Degree>
+    static auto make_son_container (int32, degrees::fixed<N>)
+        -> node_ptr_array<Data, Degree>
     {
         return node_ptr_array<Data, Degree>();
     }
 
-    static auto make_son_container (
-        int32 const domain,
-        degrees::mixed
-    ) -> node**
+    static auto make_son_container (int32 const domain, degrees::mixed)
+        -> node**
     {
         return static_cast<node**>(
             ::operator new (as_usize(domain) * sizeof(node*))
@@ -103,7 +99,8 @@ public:
     explicit node(int32 value);
     node(int32 index, son_container sons);
     ~node() = default;
-    ~node() requires(degrees::is_mixed<Degree>::value);
+    ~node()
+    requires(degrees::is_mixed<Degree>::value);
 
     node()                       = delete;
     node(node const&)            = delete;
@@ -149,9 +146,7 @@ private:
         son_container sons_;
         int32 index_;
 
-        internal(son_container sons, int32 index) :
-            sons_(sons),
-            index_(index)
+        internal(son_container sons, int32 index) : sons_(sons), index_(index)
         {
         }
     };
@@ -160,8 +155,7 @@ private:
     {
         int32 value_;
 
-        terminal(int32 const value) :
-            value_(value)
+        terminal(int32 const value) : value_(value)
         {
         }
     };

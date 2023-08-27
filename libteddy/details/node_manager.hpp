@@ -26,9 +26,7 @@ struct mixed
     std::vector<int32> domains_;
 
     mixed(std::vector<int32> domains) :
-        domains_(static_cast<std::vector<int32>&&>(domains))
-    {
-    };
+        domains_(static_cast<std::vector<int32>&&>(domains)) {};
 
     auto operator[] (int32 const index) const
     {
@@ -230,8 +228,8 @@ private:
 
 private:
     static constexpr int32 DEFAULT_FIRST_TABLE_ADJUSTMENT = 230;
-    static constexpr double DEFAULT_CACHE_RATIO = 1.0;
-    static constexpr double DEFAULT_GC_RATIO = 0.20;
+    static constexpr double DEFAULT_CACHE_RATIO           = 1.0;
+    static constexpr double DEFAULT_GC_RATIO              = 0.20;
 
 private:
     apply_cache<Data, Degree> opCache_;
@@ -252,21 +250,24 @@ private:
 };
 
 template<class Data, class Degree>
-auto id_inc_ref_count (node<Data, Degree>* const node) -> ::teddy::node<Data, Degree>*
+auto id_inc_ref_count (node<Data, Degree>* const node)
+    -> ::teddy::node<Data, Degree>*
 {
     node->inc_ref_count();
     return node;
 }
 
 template<class Data, class Degree>
-auto id_set_marked (node<Data, Degree>* const node) -> ::teddy::node<Data, Degree>*
+auto id_set_marked (node<Data, Degree>* const node)
+    -> ::teddy::node<Data, Degree>*
 {
     node->set_marked();
     return node;
 }
 
 template<class Data, class Degree>
-auto id_set_notmarked (node<Data, Degree>* const node) -> ::teddy::node<Data, Degree>*
+auto id_set_notmarked (node<Data, Degree>* const node)
+    -> ::teddy::node<Data, Degree>*
 {
     node->set_notmarked();
     return node;
@@ -323,8 +324,8 @@ node_manager<Data, Degree, Domain>::node_manager(
     Domain domains
 ) :
     opCache_(static_cast<int64>(
-        DEFAULT_CACHE_RATIO * static_cast<double>(nodePoolSize))
-    ),
+        DEFAULT_CACHE_RATIO * static_cast<double>(nodePoolSize)
+    )),
     pool_(nodePoolSize, overflowNodePoolSize),
     uniqueTables_(),
     terminals_(),
@@ -473,8 +474,8 @@ auto node_manager<Data, Degree, Domain>::make_special_node(
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::make_son_container
-    (int32 const domain) -> son_container
+auto node_manager<Data, Degree, Domain>::make_son_container(int32 const domain)
+    -> son_container
 {
     return node_t::make_son_container(domain, Degree());
 }
@@ -632,17 +633,17 @@ auto node_manager<Data, Degree, Domain>::force_gc() -> void
 template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 {
-    #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
     debug::out("node_manager: Collecting garbage. ");
     int64 const before = nodeCount_;
-    #endif
+#endif
 
     for (int32 level = 0; level < this->get_var_count(); ++level)
     {
         int32 const index = levelToIndex_[as_uindex(level)];
-        auto& table      = uniqueTables_[as_uindex(index)];
-        auto const endIt = table.end();
-        auto tableIt     = table.begin();
+        auto& table       = uniqueTables_[as_uindex(index)];
+        auto const endIt  = table.end();
+        auto tableIt      = table.begin();
 
         while (tableIt != endIt)
         {
@@ -678,7 +679,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         }
     }
 
-    #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
     debug::out(
         before - nodeCount_,
         " nodes collected.",
@@ -686,7 +687,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         nodeCount_,
         " unique nodes.\n"
     );
-    #endif
+#endif
 }
 
 template<class Data, class Degree, class Domain>
@@ -799,10 +800,8 @@ auto node_manager<Data, Degree, Domain>::for_each_terminal_node(
 
 template<class Data, class Degree, class Domain>
 template<teddy_bin_op O>
-auto node_manager<Data, Degree, Domain>::cache_find(
-    node_t* lhs,
-    node_t* rhs
-) -> node_t*
+auto node_manager<Data, Degree, Domain>::cache_find(node_t* lhs, node_t* rhs)
+    -> node_t*
 {
     if constexpr (O::is_commutative())
     {
@@ -838,7 +837,7 @@ auto node_manager<Data, Degree, Domain>::cache_put(
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::cache_clear () -> void
+auto node_manager<Data, Degree, Domain>::cache_clear() -> void
 {
     opCache_.clear();
 }
@@ -871,7 +870,12 @@ auto node_manager<Data, Degree, Domain>::traverse_pre(
 ) const -> void
 {
     this->traverse_pre_impl(rootNode, operation);
-    this->traverse_pre_impl(rootNode, [](node_t*){});
+    this->traverse_pre_impl(
+        rootNode,
+        [] (node_t*)
+        {
+        }
+    );
     // Second traverse to reset marks
 }
 
@@ -906,7 +910,12 @@ auto node_manager<Data, Degree, Domain>::traverse_post(
 ) const -> void
 {
     this->traverse_post_impl(rootNode, operation);
-    this->traverse_post_impl(rootNode, [](node_t*){});
+    this->traverse_post_impl(
+        rootNode,
+        [] (node_t*)
+        {
+        }
+    );
     // Second traverse to reset marks.
 }
 
@@ -942,7 +951,7 @@ auto node_manager<Data, Degree, Domain>::traverse_level(
 {
     std::vector<std::vector<node_t*>> buckets(as_usize(varCount_) + 1);
     auto const endBucketIt = end(buckets);
-    auto bucketIt = begin(buckets) + this->get_level(rootNode);
+    auto bucketIt          = begin(buckets) + this->get_level(rootNode);
     (*bucketIt).push_back(rootNode);
     rootNode->toggle_marked();
 
@@ -970,13 +979,16 @@ auto node_manager<Data, Degree, Domain>::traverse_level(
         do
         {
             ++bucketIt;
-        }
-        while (bucketIt != endBucketIt && (*bucketIt).empty());
-
+        } while (bucketIt != endBucketIt && (*bucketIt).empty());
     }
 
     // Second traverse to reset marks.
-    this->traverse_pre_impl(rootNode, [](node_t*){});
+    this->traverse_pre_impl(
+        rootNode,
+        [] (node_t*)
+        {
+        }
+    );
 }
 
 template<class Data, class Degree, class Domain>
@@ -1005,14 +1017,14 @@ auto node_manager<Data, Degree, Domain>::is_redundant(
 template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::adjust_tables() -> void
 {
-    #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
     debug::out(
         "node_manager::adjust_tables\tAdjusting unique tables.",
         " Node count is ",
         nodeCount_,
         "\n"
     );
-    #endif
+#endif
 
     for (int32 i = 0; i < ssize(uniqueTables_); ++i)
     {
@@ -1247,15 +1259,14 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
 {
     using node_matrix = utils::type_if<
         degrees::is_fixed<Degree>::value,
-        node_t*[Degree::value][Degree::value],
-        std::vector<std::vector<node_t*>>
-    >::type;
+        node_t * [Degree::value][Degree::value],
+        std::vector<std::vector<node_t*>>>::type;
 
     int32 const nodeIndex  = node->get_index();
     int32 const nextIndex  = this->get_index(1 + this->get_level(node));
     int32 const nodeDomain = this->get_domain(nodeIndex);
     int32 const nextDomain = this->get_domain(nextIndex);
-    son_container oldSons = this->make_son_container(nodeDomain);
+    son_container oldSons  = this->make_son_container(nodeDomain);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         oldSons[k] = node->get_son(k);
@@ -1288,7 +1299,8 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
         son_container innerSons = this->make_son_container(nodeDomain);
         for (int32 innerK = 0; innerK < nodeDomain; ++innerK)
         {
-            innerSons[innerK] = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
+            innerSons[innerK]
+                = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
         }
         outerSons[outerK] = this->make_internal_node(nodeIndex, innerSons);
     }
@@ -1458,13 +1470,13 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
         }
     };
 
-    #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
     debug::out(
         "node_manager: Sifting variables. Node count before ",
         nodeCount_,
         ".\n"
     );
-    #endif
+#endif
 
     auto const siftOrder = determine_sift_order();
     for (auto const pair : siftOrder)
@@ -1472,13 +1484,13 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
         place_variable(pair.index_);
     }
 
-    #ifdef LIBTEDDY_VERBOSE
+#ifdef LIBTEDDY_VERBOSE
     debug::out(
         "node_manager: Done sifting. Node count after ",
         nodeCount_,
         ".\n"
     );
-    #endif
+#endif
 
     gcReorderDeferred_ = false;
 }

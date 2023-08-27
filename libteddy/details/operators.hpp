@@ -454,13 +454,13 @@ struct IMPLIES : details::operation_base<details::implies_t>
 
 template<class Operation>
 concept teddy_bin_op = requires() {
-                           {
-                               Operation::get_id()
-                           } -> utils::same_as<int32>;
-                           {
-                               Operation::is_commutative()
-                           } -> utils::same_as<bool>;
-                       };
+    {
+        Operation::get_id()
+    } -> utils::same_as<int32>;
+    {
+        Operation::is_commutative()
+    } -> utils::same_as<bool>;
+};
 } // namespace teddy
 
 #endif
