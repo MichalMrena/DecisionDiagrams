@@ -6,11 +6,9 @@
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/tools.hpp>
 
-#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
-    #include <vector>
 
 namespace teddy
 {
@@ -153,53 +151,53 @@ public:
     auto adjust_capacity () -> void;
 
     /**
-     *  \return Number of nodes in the table.
+     *  \return Number of nodes in the table
      */
     [[nodiscard]] auto get_size () const -> int64;
 
     /**
-     *  \brief Clears the table.
+     *  \brief Clears the table
      */
     auto clear () -> void;
 
     /**
-     *  \return Begin iterator.
+     *  \return Begin iterator
      */
     [[nodiscard]] auto begin () -> iterator;
 
     /**
-     *  \return End iterator.
+     *  \return End iterator
      */
     [[nodiscard]] auto end () -> iterator;
 
     /**
-     *  \return Const begin iterator.
+     *  \return Const begin iterator
      */
     [[nodiscard]] auto begin () const -> iterator;
 
     /**
-     *  \return Const end iterator.
+     *  \return Const end iterator
      */
     [[nodiscard]] auto end () const -> iterator;
 
 private:
     /**
-     *  \brief Adjusts capacity of the table (number of buckets).
-     *  Does nothing if actual capacity is >= \p newCapacity .
-     *  \param newCapacity New capacity.
+     *  \brief Adjusts capacity of the table (number of buckets)
+     *  Does nothing if actual capacity is >= \p newCapacity
+     *  \param newCapacity New capacity
      */
     auto rehash (int64 newCapacity) -> void;
 
     /**
-     *  \return Current load factor.
+     *  \return Current load factor
      */
     [[nodiscard]] auto get_load_factor () const -> double;
 
     /**
-     *  \brief Inserts \p node using pre-computed \p hash .
-     *  Does NOT increase size.
-     *  \param node Node to be inserted.
-     *  \param hash Hash value of \p node .
+     *  \brief Inserts \p node using pre-computed \p hash
+     *  Does NOT increase size
+     *  \param node Node to be inserted
+     *  \param hash Hash value of \p node
      */
     auto insert_impl (node_t* node, std::size_t hash) -> node_t*;
 
@@ -212,9 +210,9 @@ private:
     auto erase_impl (node_t** bucket, node_t* node) -> iterator;
 
     /**
-     *  \brief Computes hash value of a node with \p sons .
-     *  \param sons Sons of the node.
-     *  \return Hash value of the node.
+     *  \brief Computes hash value of a node with \p sons
+     *  \param sons Sons of the node
+     *  \return Hash value of the node
      */
     [[nodiscard]] auto node_hash (son_container const& sons) const -> std::size_t;
 
@@ -259,16 +257,16 @@ public:
 public:
     struct cache_entry
     {
-        int32 opId_ {};
-        node_t* lhs_ {nullptr};
-        node_t* rhs_ {nullptr};
-        node_t* result_ {nullptr};
+        int32 opId_;
+        node_t* lhs_;
+        node_t* rhs_;
+        node_t* result_;
     };
 
 public:
     apply_cache(int64 capacity);
     apply_cache(apply_cache&& other) noexcept;
-    ~apply_cache()                      = default;
+    ~apply_cache();
 
     apply_cache(apply_cache const&)     = delete;
     auto operator= (apply_cache const&) = delete;
@@ -312,18 +310,27 @@ public:
     auto clear () -> void;
 
 private:
-    static constexpr double LoadThreshold = 0.75;
-
-private:
-    [[nodiscard]] auto get_capacity () const -> int64;
+    /**
+     *  \return Current load factor
+     */
     [[nodiscard]] auto get_load_factor () const -> double;
+
+    /**
+     *  \brief Adjusts capacity of the table (number of entries)
+     *  Does nothing if actual capacity is >= \p newCapacity
+     *  \param newCapacity New capacity
+     */
     auto rehash (int64 newCapacity) -> void;
 
+    /**
+     *  \brief Allocates \p count nullptr initialized entries
+     */
+    [[nodiscard]] static auto callocate_entries (int64 count) -> cache_entry*;
+
 private:
-    // TODO cache_entry* entries_;
-    std::vector<cache_entry> entries_;
     int64 size_;
     int64 capacity_;
+    cache_entry* entries_;
 };
 
 // table_base definitions:
@@ -338,142 +345,6 @@ inline auto table_base::get_gte_capacity(int64 const desiredCapacity) -> int64
         }
     }
     return Capacities[std::size(Capacities) - 1];
-}
-
-// apply_cache definitions:
-
-template<class Data, class Degree>
-apply_cache<Data, Degree>::apply_cache(int64 const capacity) :
-    entries_(as_usize(table_base::get_gte_capacity(capacity))),
-    size_(0)
-{
-}
-
-template<class Data, class Degree>
-apply_cache<Data, Degree>::apply_cache(apply_cache&& other) noexcept :
-    entries_(static_cast<std::vector<cache_entry>&&>(other.entries_)),
-    size_(utils::exchange(other.size_, 0))
-{
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::find(
-    int32 const opId,
-    node_t* const lhs,
-    node_t* const rhs
-) -> node_t*
-{
-    std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
-    std::size_t const index = hash % size(entries_);
-    cache_entry& entry      = entries_[index];
-    bool const matches      = entry.opId_ == opId &&
-                              entry.lhs_ == lhs &&
-                              entry.rhs_ == rhs;
-    return matches ? entry.result_ : nullptr;
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::put(
-    int32 const opId,
-    node_t* const result,
-    node_t* const lhs,
-    node_t* const rhs
-) -> void
-{
-    std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
-    std::size_t const index = hash % size(entries_);
-    cache_entry& entry      = entries_[index];
-    if (not entry.result_)
-    {
-        ++size_;
-    }
-    entry.opId_   = opId;
-    entry.lhs_    = lhs;
-    entry.rhs_    = rhs;
-    entry.result_ = result;
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::grow_capacity(int64 const aproxCapacity) -> void
-{
-    if (this->get_capacity() < aproxCapacity)
-    {
-        this->rehash(table_base::get_gte_capacity(aproxCapacity));
-    }
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::remove_unused() -> void
-{
-    for (cache_entry& entry : entries_)
-    {
-        if (entry.result_)
-        {
-            bool const isUsed = entry.lhs_->is_used() && entry.rhs_->is_used()
-                           && entry.result_->is_used();
-            if (not isUsed)
-            {
-                entry = cache_entry {};
-                --size_;
-            }
-        }
-    }
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::clear() -> void
-{
-    size_ = 0;
-    for (cache_entry& entry : entries_)
-    {
-        entry = cache_entry {};
-    }
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::get_capacity() const -> int64
-{
-    return ssize(entries_);
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::get_load_factor() const -> double
-{
-    return static_cast<double>(size_)
-         / static_cast<double>(this->get_capacity());
-}
-
-template<class Data, class Degree>
-auto apply_cache<Data, Degree>::rehash(int64 const newCapacity) -> void
-{
-    #ifdef LIBTEDDY_VERBOSE
-    debug::out(
-        "apply_cache: Load factor is ",
-        this->get_load_factor(),
-        ". Capacity is ",
-        this->get_capacity(),
-        " should be ",
-        newCapacity,
-        "."
-    );
-    #endif
-
-    std::vector<cache_entry> const oldEntries(
-        static_cast<std::vector<cache_entry>&&>(entries_)
-    );
-    entries_ = std::vector<cache_entry>(as_usize(newCapacity));
-    size_    = 0;
-    for (cache_entry const& entry : oldEntries)
-    {
-        if (entry.result_)
-        {
-            this->put(entry.opId_, entry.result_, entry.lhs_, entry.rhs_);
-        }
-    }
-
-    #ifdef LIBTEDDY_VERBOSE
-    debug::out(" New load factor is ", this->get_load_factor(), ".\n");
-    #endif
 }
 
 // unique_table_iterator definitions:
@@ -733,7 +604,7 @@ auto unique_table<Data, Degree>::rehash(int64 const newCapacity) -> void
         "  unique_table::rehash\tload before ",
         this->get_load_factor(),
         " capacity is ",
-        this->get_capacity(),
+        capacity_,
         " should be ",
         newCapacity
     );
@@ -858,6 +729,158 @@ auto unique_table<Data, Degree>::mallocate_buckets (
 {
     return static_cast<node_t**>(
         std::malloc(static_cast<std::size_t>(count) * sizeof(node_t*))
+    );
+}
+
+// apply_cache definitions:
+
+template<class Data, class Degree>
+apply_cache<Data, Degree>::apply_cache(int64 const capacity) :
+    size_(0),
+    capacity_(table_base::get_gte_capacity(capacity)),
+    entries_(callocate_entries(capacity_))
+{
+}
+
+template<class Data, class Degree>
+apply_cache<Data, Degree>::apply_cache(apply_cache&& other) noexcept :
+    size_(utils::exchange(other.size_, 0)),
+    capacity_(other.capacity_),
+    entries_(utils::exchange(other.entries_, nullptr))
+{
+}
+
+template<class Data, class Degree>
+apply_cache<Data, Degree>::~apply_cache ()
+{
+    std::free(entries_);
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::find(
+    int32 const opId,
+    node_t* const lhs,
+    node_t* const rhs
+) -> node_t*
+{
+    std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
+    std::size_t const index = hash % static_cast<std::size_t>(capacity_);
+    cache_entry& entry      = entries_[index];
+    bool const matches      = entry.opId_ == opId &&
+                              entry.lhs_ == lhs &&
+                              entry.rhs_ == rhs;
+    return matches ? entry.result_ : nullptr;
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::put(
+    int32 const opId,
+    node_t* const result,
+    node_t* const lhs,
+    node_t* const rhs
+) -> void
+{
+    std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
+    std::size_t const index = hash % static_cast<std::size_t>(capacity_);
+    cache_entry& entry      = entries_[index];
+    if (not entry.result_)
+    {
+        ++size_;
+    }
+    entry.opId_   = opId;
+    entry.lhs_    = lhs;
+    entry.rhs_    = rhs;
+    entry.result_ = result;
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::grow_capacity(int64 const aproxCapacity) -> void
+{
+    int64 const newCapacity = table_base::get_gte_capacity(aproxCapacity);
+    if (newCapacity > capacity_)
+    {
+        this->rehash(newCapacity);
+    }
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::remove_unused() -> void
+{
+    for (int64 i = 0; i < capacity_; ++i)
+    {
+        cache_entry& entry = entries_[i];
+        if (entry.result_)
+        {
+            bool const isUsed = entry.lhs_->is_used() &&
+                                entry.rhs_->is_used() &&
+                                entry.result_->is_used();
+            if (not isUsed)
+            {
+                entry = cache_entry {};
+                --size_;
+            }
+        }
+    }
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::clear() -> void
+{
+    size_ = 0;
+    std::memset(
+        entries_,
+        0,
+        static_cast<std::size_t>(capacity_) * sizeof(cache_entry)
+    );
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::get_load_factor() const -> double
+{
+    return static_cast<double>(size_)
+         / static_cast<double>(capacity_);
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::rehash(int64 const newCapacity) -> void
+{
+    #ifdef LIBTEDDY_VERBOSE
+    debug::out(
+        "apply_cache::rehash\tload is ",
+        this->get_load_factor(),
+        ", capacity is ",
+        capacity_,
+        " should be ",
+        newCapacity
+    );
+    #endif
+
+    cache_entry* const oldEntries = entries_;
+    int64 const oldCapacity = capacity_;
+    entries_  = callocate_entries(newCapacity);
+    capacity_ = newCapacity;
+    size_     = 0;
+    for (int64 i = 0; i < oldCapacity; ++i)
+    {
+        cache_entry const& entry = oldEntries[i];
+        if (entry.result_)
+        {
+            this->put(entry.opId_, entry.result_, entry.lhs_, entry.rhs_);
+        }
+    }
+
+    #ifdef LIBTEDDY_VERBOSE
+    debug::out(" new load is ", this->get_load_factor(), "\n");
+    #endif
+}
+
+template<class Data, class Degree>
+auto apply_cache<Data, Degree>::callocate_entries (
+    int64 const count
+) -> cache_entry*
+{
+    return static_cast<cache_entry*>(
+        std::calloc(static_cast<std::size_t>(count), sizeof(cache_entry))
     );
 }
 

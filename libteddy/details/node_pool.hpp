@@ -7,8 +7,8 @@
 #include <libteddy/details/tools.hpp>
 
 #include <cassert>
-#include <new>
-#include <vector>
+    #include <new> // TODO switch to cstdlib, but keep this for placement new
+    #include <vector> // TODO use custom linked list
 
 namespace teddy
 {
@@ -172,9 +172,9 @@ auto node_pool<Data, Degree>::grow() -> void
 {
     #ifdef LIBTEDDY_VERBOSE
     debug::out(
-        "node_pool: Allocating overflow pool with size ",
+        "node_pool::grow\tallocating overflow pool with size ",
         overflowPoolSize_,
-        ".\n"
+        "\n"
     );
     #endif
 
