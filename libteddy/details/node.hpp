@@ -5,7 +5,7 @@
 #include <libteddy/details/types.hpp>
 
 #include <cassert>
-#include <new>
+#include <cstdlib>
 
 namespace teddy
 {
@@ -13,7 +13,9 @@ namespace degrees
 {
 struct mixed
 {
-    // Dummy value to make life easier
+    /*
+     * Just a dummy value to avoid pointelss ifs
+     */
     static constexpr int32 value = 1;
 };
 
@@ -83,13 +85,13 @@ public:
         -> node**
     {
         return static_cast<node**>(
-            ::operator new (as_usize(domain) * sizeof(node*))
+            std::malloc(as_usize(domain) * sizeof(node*))
         );
     }
 
     static auto delete_son_container (node** sons) -> void
     {
-        ::operator delete (sons);
+        std::free(sons);
     }
 
 public:
@@ -137,35 +139,18 @@ public:
     auto dec_ref_count () -> void;
 
 private:
-    // P0960R3 constructors not necessary
-    // >=g++10, >=clang++16 ...
-    //                   ^^ :(
-
     struct internal
     {
         son_container sons_;
         int32 index_;
-
-        internal(son_container sons, int32 index) : sons_(sons), index_(index)
-        {
-        }
     };
 
     struct terminal
     {
         int32 value_;
-
-        terminal(int32 const value) : value_(value)
-        {
-        }
     };
 
 private:
-    [[nodiscard]] auto as_internal () -> internal*;
-    [[nodiscard]] auto as_internal () const -> internal const*;
-    [[nodiscard]] auto as_terminal () -> terminal*;
-    [[nodiscard]] auto as_terminal () const -> terminal const*;
-    [[nodiscard]] auto as_internal_unsafe () -> internal*;
     [[nodiscard]] auto is_or_was_internal () const -> bool;
 
 private:
@@ -176,30 +161,36 @@ private:
     static constexpr uint32 RefsMax = RefsM + 1;
 
 private:
-    // TODO: use union
-
-    alignas(internal) char union_[sizeof(internal)];
+    union
+    {
+        internal internal_;
+        terminal terminal_;
+    };
     [[no_unique_address]] utils::optional_member<Data> data_;
     node* next_;
+    /*
+     *  1b  -> is marked flag   (highest bit)
+     *  1b  -> is used flag
+     *  1b  -> is leaf flag
+     *  29b -> reference count  (lowest bits)
+     */
     uint32 bits_;
 };
 
 template<class Data, class Degree>
 node<Data, Degree>::node(int32 const value) :
-    union_ {},
+    terminal_ {value},
     next_ {nullptr},
     bits_ {LeafM | UsedM}
 {
-    ::new (this->as_terminal()) terminal(value);
 }
 
 template<class Data, class Degree>
 node<Data, Degree>::node(int32 const index, son_container sons) :
-    union_ {},
+    internal_ {sons, index},
     next_ {nullptr},
     bits_ {UsedM}
 {
-    ::new (this->as_internal()) internal(sons, index);
 }
 
 template<class Data, class Degree>
@@ -210,7 +201,7 @@ requires(degrees::is_mixed<Degree>::value)
     {
         if (this->is_or_was_internal())
         {
-            ::operator delete (this->as_internal_unsafe()->sons_);
+            std::free(internal_.sons_);
         }
     }
 }
@@ -248,30 +239,33 @@ auto node<Data, Degree>::set_next(node* const next) -> void
 template<class Data, class Degree>
 auto node<Data, Degree>::get_sons() const -> son_container const&
 {
-    return this->as_internal()->sons_;
+    assert(this->is_internal());
+    return internal_.sons_;
 }
 
 template<class Data, class Degree>
 auto node<Data, Degree>::get_son(int32 const sonOrder) const -> node*
 {
-    return (this->as_internal()->sons_)[as_uindex(sonOrder)];
+    assert(this->is_internal());
+    return internal_.sons_[sonOrder];
 }
 
 template<class Data, class Degree>
 auto node<Data, Degree>::set_sons(son_container const& sons) -> void
 {
+    assert(this->is_internal());
     if constexpr (degrees::is_mixed<Degree>::value)
     {
-        ::operator delete (this->as_internal()->sons_);
+        std::free(internal_.sons_);
     }
-
-    this->as_internal()->sons_ = sons;
+    internal_.sons_ = sons;
 }
 
 template<class Data, class Degree>
 auto node<Data, Degree>::get_value() const -> int32
 {
-    return this->as_terminal()->value_;
+    assert(this->is_terminal());
+    return terminal_.value_;
 }
 
 template<class Data, class Degree>
@@ -345,47 +339,15 @@ auto node<Data, Degree>::dec_ref_count() -> void
 template<class Data, class Degree>
 auto node<Data, Degree>::get_index() const -> int32
 {
-    return this->as_internal()->index_;
+    assert(this->is_internal());
+    return internal_.index_;
 }
 
 template<class Data, class Degree>
 auto node<Data, Degree>::set_index(int32 const index) -> void
 {
-    this->as_internal()->index_ = index;
-}
-
-template<class Data, class Degree>
-auto node<Data, Degree>::as_internal() -> internal*
-{
     assert(this->is_internal());
-    return reinterpret_cast<internal*>(&union_);
-}
-
-template<class Data, class Degree>
-auto node<Data, Degree>::as_internal() const -> internal const*
-{
-    assert(this->is_internal());
-    return reinterpret_cast<internal const*>(&union_);
-}
-
-template<class Data, class Degree>
-auto node<Data, Degree>::as_terminal() -> terminal*
-{
-    assert(this->is_terminal());
-    return reinterpret_cast<terminal*>(&union_);
-}
-
-template<class Data, class Degree>
-auto node<Data, Degree>::as_terminal() const -> terminal const*
-{
-    assert(this->is_terminal());
-    return reinterpret_cast<terminal const*>(&union_);
-}
-
-template<class Data, class Degree>
-auto node<Data, Degree>::as_internal_unsafe() -> internal*
-{
-    return reinterpret_cast<internal*>(&union_);
+    internal_.index_ = index;
 }
 
 template<class Data, class Degree>
