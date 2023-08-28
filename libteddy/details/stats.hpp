@@ -25,6 +25,7 @@ struct teddy_stats
         std::chrono::nanoseconds total_ {std::chrono::nanoseconds::zero()};
     };
 
+    int64 applyStepCalls_ {0};
     int64 maxUniqueNodes_ {0};
     int64 maxAllocatedNodes_ {0};
     query_frequency uniqueTableQueries_;
@@ -70,7 +71,10 @@ inline auto dump_stats () -> void
               << "  total = " << stats.collectGarbage_.total_.count() << "ns\n"
               << "Make node"
               << "\n"
-              << "  total = " << stats.makeNode_.total_.count() << "ns\n";
+              << "  total = " << stats.makeNode_.total_.count() << "ns\n"
+              << "Apply step"
+              << "\n"
+              << "  calls = " << stats.applyStepCalls_ << "\n";
 }
 } // namespace teddy
 

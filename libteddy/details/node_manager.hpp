@@ -87,7 +87,7 @@ public:
     node_manager(
         int32 varCount,
         int64 nodePoolSize,
-        int64 overflowNodePoolSize,
+        int64 extraNodePoolSize,
         std::vector<int32> order
     )
     requires(domains::is_fixed<Domain>::value);
@@ -95,7 +95,7 @@ public:
     node_manager(
         int32 varCount,
         int64 nodePoolSize,
-        int64 overflowNodePoolSize,
+        int64 extraNodePoolSize,
         std::vector<int32> order,
         domains::mixed domains
     )
@@ -116,7 +116,7 @@ private:
         common_init_tag initTag,
         int32 varCount,
         int64 nodePoolSize,
-        int64 overflowNodePoolSize,
+        int64 extraNodePoolSize,
         std::vector<int32> order,
         Domain domains
     );
@@ -124,7 +124,6 @@ private:
 public:
     [[nodiscard]] auto get_terminal_node (int32 value) const -> node_t*;
     [[nodiscard]] auto make_terminal_node (int32 value) -> node_t*;
-    [[nodiscard]] auto make_special_node (int32 value) -> node_t*;
     [[nodiscard]] auto make_internal_node (
         int32 index,
         son_container const& sons
@@ -209,6 +208,8 @@ private:
     auto swap_node_with_next (node_t* node) -> void;
     auto dec_ref_try_gc (node_t* node) -> void;
 
+    [[nodiscard]] auto make_special_node (int32 value) -> node_t*;
+
     template<class... Args>
     [[nodiscard]] auto make_new_node (Args&&... args) -> node_t*;
     auto delete_node (node_t* node) -> void;
@@ -277,7 +278,7 @@ template<class Data, class Degree, class Domain>
 node_manager<Data, Degree, Domain>::node_manager(
     int32 const varCount,
     int64 const nodePoolSize,
-    int64 const overflowNodePoolSize,
+    int64 const extraNodePoolSize,
     std::vector<int32> order
 )
 requires(domains::is_fixed<Domain>::value)
@@ -286,7 +287,7 @@ requires(domains::is_fixed<Domain>::value)
         common_init_tag(),
         varCount,
         nodePoolSize,
-        overflowNodePoolSize,
+        extraNodePoolSize,
         static_cast<std::vector<int32>&&>(order),
         {}
     )
@@ -297,7 +298,7 @@ template<class Data, class Degree, class Domain>
 node_manager<Data, Degree, Domain>::node_manager(
     int32 const varCount,
     int64 const nodePoolSize,
-    int64 const overflowNodePoolSize,
+    int64 const extraNodePoolSize,
     std::vector<int32> order,
     domains::mixed domains
 )
@@ -307,7 +308,7 @@ requires(domains::is_mixed<Domain>::value)
         common_init_tag(),
         varCount,
         nodePoolSize,
-        overflowNodePoolSize,
+        extraNodePoolSize,
         static_cast<std::vector<int32>&&>(order),
         static_cast<domains::mixed&&>(domains)
     )
@@ -319,14 +320,14 @@ node_manager<Data, Degree, Domain>::node_manager(
     [[maybe_unused]] common_init_tag initTag,
     int32 const varCount,
     int64 const nodePoolSize,
-    int64 const overflowNodePoolSize,
+    int64 const extraNodePoolSize,
     std::vector<int32> order,
     Domain domains
 ) :
     opCache_(static_cast<int64>(
         DEFAULT_CACHE_RATIO * static_cast<double>(nodePoolSize)
     )),
-    pool_(nodePoolSize, overflowNodePoolSize),
+    pool_(nodePoolSize, extraNodePoolSize),
     uniqueTables_(),
     terminals_(),
     specials_(),
@@ -486,42 +487,37 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     son_container const& sons
 ) -> node_t*
 {
-    // Each node comming out of here is marked.
-    // Later on it must become son of someone or root of a diagram.
-    auto ret = static_cast<node_t*>(nullptr);
-
+// redundant node:
     if (this->is_redundant(index, sons))
     {
-        ret = sons[0];
+        node_t* const son = sons[0];
         if constexpr (degrees::is_mixed<Degree>::value)
         {
             node_t::delete_son_container(sons);
         }
+        return son;
     }
-    else
+
+// duplicate node:
+    unique_table<Data, Degree>& table = uniqueTables_[as_uindex(index)];
+    auto const [existing, hash] = table.find(sons);
+    if (existing)
     {
-        auto& table                 = uniqueTables_[as_uindex(index)];
-        auto const [existing, hash] = table.find(sons);
-        if (existing)
+        if constexpr (degrees::is_mixed<Degree>::value)
         {
-            ret = existing;
-            if constexpr (degrees::is_mixed<Degree>::value)
-            {
-                node_t::delete_son_container(sons);
-            }
+            node_t::delete_son_container(sons);
         }
-        else
-        {
-            ret = this->make_new_node(index, sons);
-            table.insert(ret, hash);
-            this->for_each_son(ret, id_inc_ref_count<Data, Degree>);
-        }
-
-        // It is now safe to unmark them since they certainly have ref.
-        this->for_each_son(ret, id_set_notmarked<Data, Degree>);
+        this->for_each_son(existing, id_set_notmarked<Data, Degree>);
+        return id_set_marked(existing);
     }
 
-    return id_set_marked(ret);
+// new unique node:
+    node_t* const newNode = this->make_new_node(index, sons);
+    table.insert(newNode, hash);
+    this->for_each_son(newNode, id_inc_ref_count<Data, Degree>);
+    this->for_each_son(newNode, id_set_notmarked<Data, Degree>);
+
+    return id_set_marked(newNode);
 }
 
 template<class Data, class Degree, class Domain>
@@ -542,7 +538,7 @@ auto node_manager<Data, Degree, Domain>::get_level(node_t* const node) const
 template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::get_leaf_level() const -> int32
 {
-    return static_cast<int32>(this->get_var_count());
+    return this->get_var_count();
 }
 
 template<class Data, class Degree, class Domain>
@@ -634,7 +630,7 @@ template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 {
 #ifdef LIBTEDDY_VERBOSE
-    debug::out("node_manager: Collecting garbage. ");
+    debug::out("node_manager::collect_garbage, ");
     int64 const before = nodeCount_;
 #endif
 
@@ -647,7 +643,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 
         while (tableIt != endIt)
         {
-            auto const node = *tableIt;
+            node_t* const node = *tableIt;
             if (can_be_gced(node))
             {
                 this->for_each_son(node, dec_ref_count);
@@ -685,7 +681,7 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
         " nodes collected.",
         " Now there are ",
         nodeCount_,
-        " unique nodes.\n"
+        " unique nodes\n"
     );
 #endif
 }
@@ -761,7 +757,7 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
     NodeOp&& operation
 ) const -> void
 {
-    for (auto k = 0; k < domains_[index]; ++k)
+    for (int32 k = 0; k < domains_[index]; ++k)
     {
         operation(sons[as_uindex(k)]);
     }
@@ -772,7 +768,7 @@ template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation) const
     -> void
 {
-    for (auto const& table : uniqueTables_)
+    for (unique_table<Data, Degree> const& table : uniqueTables_)
     {
         for (node_t* const node : table)
         {
@@ -857,7 +853,7 @@ auto node_manager<Data, Degree, Domain>::run_deferred() -> void
     if (gcReorderDeferred_)
     {
         this->collect_garbage();
-        opCache_.clear(); // TODO why not remove_unused?
+        opCache_.clear();
         this->sift_variables();
     }
 }
@@ -1064,7 +1060,7 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
         if (pool_.get_available_node_count() == 0)
         {
             auto const growThreshold = static_cast<int64>(
-                gcRatio_ * static_cast<double>(pool_.get_main_pool_size())
+                gcRatio_ * static_cast<double>(nodeCount_)
             );
 
             this->force_gc();
@@ -1082,7 +1078,9 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
         // adjust cache and table sizes.
         this->adjust_tables();
         this->adjust_caches();
-        adjustmentNodeCount_ *= 2;
+        adjustmentNodeCount_ = 2 * adjustmentNodeCount_ / 1;
+        //                     ^                          ^
+        // Possible optimization point here
     }
 
     ++nodeCount_;
@@ -1366,8 +1364,8 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
     int32 const index
 ) -> void
 {
-    auto const level     = this->get_level(index);
-    auto const nextIndex = this->get_index(1 + level);
+    int32 const level     = this->get_level(index);
+    int32 const nextIndex = this->get_index(1 + level);
     unique_table<Data, Degree> tmpTable(uniqueTables_[as_uindex(index)]);
     uniqueTables_[as_uindex(index)].clear();
     for (node_t* const node : tmpTable)
@@ -1424,8 +1422,8 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
     // Moves variable one level up.
     auto const move_var_up = [this] (auto const index)
     {
-        auto const level     = this->get_level(index);
-        auto const prevIndex = this->get_index(level - 1);
+        int32 const level     = this->get_level(index);
+        int32 const prevIndex = this->get_index(level - 1);
         this->swap_variable_with_next(prevIndex);
     };
 
@@ -1433,10 +1431,10 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
     // In the end, restores position with lowest total number of nodes.
     auto const place_variable = [&, this] (auto const index)
     {
-        auto const lastInternalLevel = this->get_var_count() - 1;
-        auto currentLevel            = this->get_level(index);
-        auto optimalLevel            = currentLevel;
-        auto optimalCount            = nodeCount_;
+        int32 const lastInternalLevel = this->get_var_count() - 1;
+        int32 currentLevel            = this->get_level(index);
+        int32 optimalLevel            = currentLevel;
+        int64 optimalCount            = nodeCount_;
 
         // Sift down.
         while (currentLevel != lastInternalLevel)

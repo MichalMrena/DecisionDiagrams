@@ -15,6 +15,7 @@
 #include <optional>
 #include <ranges>
 #include <vector>
+#include "libteddy/details/stats.hpp"
 
 namespace teddy
 {
@@ -769,13 +770,13 @@ protected:
      *
      *  \param varCount Number of variables.
      *  \param nodePoolSize Number of nodes that is pre-allocated.
-     *  \param overflowNodePoolSize Size of the additional node pools.
+     *  \param extraNodePoolSize Size of the additional node pools.
      *  \param order Order of variables.
      */
     diagram_manager(
         int32 varCount,
         int64 nodePoolSize,
-        int64 overflowNodePoolSize,
+        int64 extraNodePoolSize,
         std::vector<int32> order
     )
     requires(domains::is_fixed<Domain>::value);
@@ -788,14 +789,14 @@ protected:
      *
      *  \param varCount Number of variables.
      *  \param nodePoolSize Number of nodes that is pre-allocated.
-     *  \param overflowNodePoolSize Size of the additional node pools.
+     *  \param extraNodePoolSize Size of the additional node pools.
      *  \param ds Domains of varibales.
      *  \param order Order of variables.
      */
     diagram_manager(
         int32 varCount,
         int64 nodePoolSize,
-        int64 overflowNodePoolSize,
+        int64 extraNodePoolSize,
         domains::mixed domain,
         std::vector<int32> order
     )
@@ -888,12 +889,12 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
         return diagram_t(nodes_.make_terminal_node(*first));
     }
 
-    auto const lastLevel = static_cast<int32>(this->get_var_count() - 1);
-    auto const lastIndex = nodes_.get_index(lastLevel);
+    int32 const lastLevel = this->get_var_count() - 1;
+    int32 const lastIndex = nodes_.get_index(lastLevel);
 
     if constexpr (std::random_access_iterator<I>)
     {
-        [[maybe_unused]] auto const count
+        [[maybe_unused]] int64 const count
             = nodes_.domain_product(0, lastLevel + 1);
         [[maybe_unused]] auto const dist = static_cast<int64>(last - first);
         assert(dist > 0 && dist == count);
@@ -905,12 +906,12 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
         int32 level;
     };
 
-    auto stack              = std::vector<stack_frame>();
+    std::vector<stack_frame> stack;
     auto const shrink_stack = [this, &stack] ()
     {
         for (;;)
         {
-            auto const currentLevel = stack.back().level;
+            int32 const currentLevel = stack.back().level;
             if (0 == currentLevel)
             {
                 break;
@@ -918,14 +919,14 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
 
             auto const endId = rend(stack);
             auto stackIt     = rbegin(stack);
-            auto count       = 0;
+            int64 count      = 0;
             while (stackIt != endId and stackIt->level == currentLevel)
             {
                 ++stackIt;
                 ++count;
             }
-            auto const newIndex  = nodes_.get_index(currentLevel - 1);
-            auto const newDomain = nodes_.get_domain(newIndex);
+            int32 const newIndex  = nodes_.get_index(currentLevel - 1);
+            int32 const newDomain = nodes_.get_domain(newIndex);
 
             if (count < newDomain)
             {
@@ -1026,9 +1027,9 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
 {
     auto const product = [this] (auto const& cube)
     {
-        auto variables = std::vector<diagram_t>();
+        std::vector<diagram_t> variables;
         variables.reserve(cube.size());
-        for (auto i = 0; i < cube.size(); ++i)
+        for (int32 i = 0; i < cube.size(); ++i)
         {
             if (cube.get(i) == 1)
             {
@@ -1058,19 +1059,19 @@ auto diagram_manager<Data, Degree, Domain>::from_pla(
         }
     };
 
-    auto const& plaLines     = file.get_lines();
-    auto const lineCount     = file.get_line_count();
-    auto const functionCount = file.get_function_count();
+    auto const& plaLines      = file.get_lines();
+    int64 const lineCount     = file.get_line_count();
+    int64 const functionCount = file.get_function_count();
 
     // Create a diagram for each function.
-    auto functionDiagrams = std::vector<diagram_t>();
+    std::vector<diagram_t> functionDiagrams;
     functionDiagrams.reserve(functionCount);
-    for (auto fi = 0; fi < functionCount; ++fi)
+    for (int32 fi = 0; fi < functionCount; ++fi)
     {
         // First create a diagram for each product.
-        auto products = std::vector<diagram_t>();
+        std::vector<diagram_t> products;
         // products.reserve(lineCount);
-        for (auto li = 0; li < lineCount; ++li)
+        for (int32 li = 0; li < lineCount; ++li)
         {
             // We are doing SOP so we are only interested
             // in functions with value 1.
@@ -1101,7 +1102,9 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
 {
     int64 constexpr CacheCapacity = 100'000;
     std::vector<node_pack<2>> cache(as_usize(CacheCapacity));
-    return diagram_t(this->from_expression_tree_impl(cache, root));
+    node_t* newRoot = this->from_expression_tree_impl(cache, root);
+    nodes_.run_deferred();
+    return diagram_t(newRoot);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1177,44 +1180,43 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
     node_t* const rhs
 ) -> node_t*
 {
+    #ifdef LIBTEDDY_COLLECT_STATS
+    ++stats::get_stats().applyStepCalls_;
+    #endif
+
     node_t* const cached = nodes_.template cache_find<Op>(lhs, rhs);
     if (cached)
     {
         return cached;
     }
 
-    // cmove?
     int32 const lhsVal = lhs->is_terminal() ? lhs->get_value() : Nondetermined;
     int32 const rhsVal = rhs->is_terminal() ? rhs->get_value() : Nondetermined;
     int32 const opVal  = operation(lhsVal, rhsVal);
-    node_t* result     = nullptr;
-    // ak by bol dolu return, toto moze ist nizsie
 
     if (opVal != Nondetermined)
     {
-        // return?
-        result = nodes_.make_terminal_node(opVal);
-    }
-    else
-    {
-        int32 const lhsLevel = nodes_.get_level(lhs);
-        int32 const rhsLevel = nodes_.get_level(rhs);
-        int32 const topLevel = utils::min(lhsLevel, rhsLevel);
-        int32 const topIndex = nodes_.get_index(topLevel);
-        int32 const domain   = nodes_.get_domain(topIndex);
-        son_container sons   = nodes_.make_son_container(domain);
-        for (int32 k = 0; k < domain; ++k)
-        {
-            sons[k] = this->apply_impl(
-                operation,
-                // cmove?
-                lhsLevel == topLevel ? lhs->get_son(k) : lhs,
-                rhsLevel == topLevel ? rhs->get_son(k) : rhs
-            );
-        }
-        result = nodes_.make_internal_node(topIndex, sons);
+        node_t* const result = nodes_.make_terminal_node(opVal);
+        nodes_.template cache_put<Op>(result, lhs, rhs);
+        return result;
     }
 
+    int32 const lhsLevel = nodes_.get_level(lhs);
+    int32 const rhsLevel = nodes_.get_level(rhs);
+    int32 const topLevel = utils::min(lhsLevel, rhsLevel);
+    int32 const topIndex = nodes_.get_index(topLevel);
+    int32 const domain   = nodes_.get_domain(topIndex);
+    son_container sons   = nodes_.make_son_container(domain);
+    for (int32 k = 0; k < domain; ++k)
+    {
+        sons[k] = this->apply_impl(
+            operation,
+            lhsLevel == topLevel ? lhs->get_son(k) : lhs,
+            rhsLevel == topLevel ? rhs->get_son(k) : rhs
+        );
+    }
+
+    node_t* const result = nodes_.make_internal_node(topIndex, sons);
     nodes_.template cache_put<Op>(result, lhs, rhs);
     return result;
 }
@@ -1856,7 +1858,7 @@ template<class Data, class Degree, class Domain>
 diagram_manager<Data, Degree, Domain>::diagram_manager(
     int32 const varCount,
     int64 const nodePoolSize,
-    int64 const overflowNodePoolSize,
+    int64 const extraNodePoolSize,
     std::vector<int32> order
 )
 requires(domains::is_fixed<Domain>::value)
@@ -1864,7 +1866,7 @@ requires(domains::is_fixed<Domain>::value)
     nodes_(
         varCount,
         nodePoolSize,
-        overflowNodePoolSize,
+        extraNodePoolSize,
         detail::default_or_fwd(varCount, order)
     )
 {
@@ -1874,7 +1876,7 @@ template<class Data, class Degree, class Domain>
 diagram_manager<Data, Degree, Domain>::diagram_manager(
     int32 const varCount,
     int64 const nodePoolSize,
-    int64 const overflowNodePoolSize,
+    int64 const extraNodePoolSize,
     domains::mixed domain,
     std::vector<int32> order
 )
@@ -1883,7 +1885,7 @@ requires(domains::is_mixed<Domain>::value)
     nodes_(
         varCount,
         nodePoolSize,
-        overflowNodePoolSize,
+        extraNodePoolSize,
         detail::default_or_fwd(varCount, order),
         static_cast<domains::mixed&&>(domain)
     )

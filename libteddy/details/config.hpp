@@ -15,6 +15,6 @@
  *  Enables collection of statistics.
  *  They can be viewed using teddy::dump_stats().
  */
-#define LIBTEDDY_COLLECT_STATS
+// #define LIBTEDDY_COLLECT_STATS
 
 #endif

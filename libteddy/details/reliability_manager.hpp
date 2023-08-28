@@ -812,7 +812,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
         for (int32 k = 0; k < varDomain; ++k)
         {
             sons[k] = k == varFrom ? root
-                                   : this->nodes_.make_special_node(Undefined);
+                                   : this->nodes_.make_terminal_node(Undefined);
         }
         newRoot = this->nodes_.make_internal_node(varIndex, sons);
         return diagram_t(newRoot);
@@ -867,7 +867,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
             {
                 newSons[l] = l == varFrom
                                ? son
-                               : this->nodes_.make_special_node(Undefined);
+                               : this->nodes_.make_terminal_node(Undefined);
             }
             sons[k] = this->nodes_.make_internal_node(varIndex, newSons);
         }

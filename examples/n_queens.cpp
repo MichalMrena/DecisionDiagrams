@@ -4,6 +4,7 @@
 #include <iostream>
 #include <optional>
 #include <vector>
+#include "libteddy/details/stats.hpp"
 
 /**
  *  Implementation of the N-Queen problem adapted from Sylvan:
@@ -136,6 +137,12 @@ void solve(int const n)
         }
         result = manager.apply<AND>(result, tmp);
     }
+
+    #ifdef LIBTEDDY_COLLECT_STATS
+    std::cout << "===\n";
+    teddy::dump_stats();
+    std::cout << "===\n";
+    #endif
 
     std::cout << "bdd node-count:      "
               << manager.get_node_count(result)

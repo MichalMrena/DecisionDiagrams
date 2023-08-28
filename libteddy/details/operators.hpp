@@ -228,8 +228,18 @@ struct NOT
 {
 };
 
-struct AND : details::operation_base<details::logical_and_t, 0>
+struct AND
 {
+    [[nodiscard]] auto constexpr operator() (
+        int32 const l,
+        int32 const r
+    ) const noexcept -> int32
+    {
+        int32 const mi = utils::min(l, r);
+        int32 const ma = utils::max(l, r);
+        return mi == 0 ? mi : ma;
+    }
+
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
         return 1;

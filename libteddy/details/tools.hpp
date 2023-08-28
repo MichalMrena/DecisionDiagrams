@@ -133,6 +133,15 @@ constexpr auto min (T lhs, T rhs) -> T
 }
 
 /**
+ *  \brief The max function
+ */
+template<class T>
+constexpr auto max (T lhs, T rhs) -> T
+{
+    return lhs > rhs ? lhs : rhs;
+}
+
+/**
  *  \brief The min function for parameter packs
  */
 template<class X>
