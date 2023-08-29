@@ -304,7 +304,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
     }
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators, Fixture, Fixtures, Fixture)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture)
 {
     using namespace teddy::ops;
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
@@ -425,6 +425,11 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators, Fixture, Fixtures, Fixture)
             .equals(boolValDiagram),
         "MAX neutral"
     );
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_2, Fixture, Fixtures, Fixture)
+{
+    // TODO test all operators
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)

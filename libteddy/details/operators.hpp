@@ -28,24 +28,6 @@ struct multiplies_mod_t
     }
 };
 
-struct logical_and_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return (args && ...);
-    }
-};
-
-struct logical_or_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return (args || ...);
-    }
-};
-
 struct logical_nand_t
 {
     template<class... Args>
@@ -61,15 +43,6 @@ struct logical_nor_t
     auto constexpr operator() (Args... args) const noexcept
     {
         return not (args || ...);
-    }
-};
-
-struct logical_xor_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return (args != ...);
     }
 };
 
@@ -193,6 +166,7 @@ struct pi_conj_t
     }
 };
 
+// TODO ideally get rid of this...
 template<class BinOp, int32 AbsorbingVal = Undefined>
 struct operation_base
 {
@@ -216,6 +190,33 @@ struct operation_base
         return static_cast<int32>(BinOp()(args...));
     }
 };
+
+template<class Op>
+struct make_nary
+{
+    template<class... Ts>
+    [[nodiscard]]
+    auto constexpr operator() (int32 const t, Ts... ts) const -> int32
+    {
+        Op const& op = static_cast<Op const&>(*this);
+        return op(t, op(ts...));
+    }
+};
+
+template<int32 Id, bool IsCommutative>
+struct operation_info
+{
+    [[nodiscard]] static auto constexpr get_id () -> int32
+    {
+        return Id;
+    }
+
+    [[nodiscard]] static auto constexpr is_commutative () -> bool
+    {
+        return IsCommutative;
+    }
+};
+
 } // namespace details
 
 /**
@@ -224,58 +225,44 @@ struct operation_base
  */
 namespace ops
 {
-struct NOT
+struct AND : details::make_nary<AND>, details::operation_info<1, true>
 {
-};
-
-struct AND
-{
-    [[nodiscard]] auto constexpr operator() (
-        int32 const l,
-        int32 const r
-    ) const noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
         int32 const mi = utils::min(l, r);
         int32 const ma = utils::max(l, r);
         return mi == 0 ? mi : ma;
     }
-
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
-    {
-        return 1;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
-    }
+    using details::make_nary<AND>::operator();
 };
 
-struct OR : details::operation_base<details::logical_or_t, 1>
+struct OR : details::make_nary<OR>, details::operation_info<2, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 2;
+        int const mi = utils::min(l, r);
+        int const ma = utils::max(l, r);
+        return mi == 0 ? ma : mi;
     }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
-    }
+    using details::make_nary<OR>::operator();
 };
 
-struct XOR : details::operation_base<details::logical_xor_t>
+struct XOR : details::make_nary<XOR>, details::operation_info<3, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 3;
+        int const xi = l ^ r;
+        int const ma = utils::max(l, r);
+        return ma == Nondetermined ? ma : xi;
     }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
-    }
+    using details::make_nary<XOR>::operator();
 };
+
+
+
 
 struct PI_CONJ : details::operation_base<details::pi_conj_t, 0>
 {
