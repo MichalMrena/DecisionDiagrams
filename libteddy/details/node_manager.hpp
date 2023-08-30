@@ -23,6 +23,11 @@ namespace domains
 {
 struct mixed
 {
+    /*
+     * Just a dummy value to simplify ifs, this one should be never used
+     */
+    static constexpr int32 value = 1;
+
     std::vector<int32> domains_;
 
     mixed(std::vector<int32> domains) :

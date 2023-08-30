@@ -262,11 +262,13 @@ public:
      *  +-------------------+---------------------------------------+
      *  | Binary operation  |           Description                 |
      *  +-------------------+---------------------------------------+
-     *  | AND               | Logical and. ^                        |
-     *  | OR                | Logical or. ^                         |
-     *  | XOR               | Logical xor. ^                        |
-     *  | NAND              | Logical nand. ^                       |
-     *  | NOR               | Logical nor. ^                        |
+     *  | AND               | Logical and. ^ $                      |
+     *  | OR                | Logical or. ^ $                       |
+     *  | XOR               | Logical xor. ^ $                      |
+     *  | NAND              | Logical nand. ^ $                     |
+     *  | NOR               | Logical nor. ^ $                      |
+     *  | XNOR              | Logical xnor. ^ $                     |
+     *  | IMPLIES           | Logical implication. ^ $              |
      *  | EQUAL_TO          | Equal to relation. ^                  |
      *  | NOT_EQUAL_TO      | Not equal to relation. ^              |
      *  | LESS              | Less than relation. ^                 |
@@ -275,10 +277,11 @@ public:
      *  | GREATER_EQUAL     | Greater than or equal relation. ^     |
      *  | MIN               | Minimum of two values.                |
      *  | MAX               | Maximum of two values.                |
-     *  | PLUS              | Modular addition: (a + b) mod P.      |
-     *  | MULTIPLIES        | Modular multiplication: (a * b) mod P |
+     *  | PLUS<M>           | Modular addition: (a + b) mod M.      |
+     *  | MULTIPLIES<M>     | Modular multiplication: (a * b) mod M.|
      *  +-------------------+---------------------------------------+
      *  ^ 0 is false and 1 is true
+     *  $ assumes that arguments are 0 or 1
      *
      *  // Examples:
      *  manager.apply<teddy::ops::AND>(bdd1, bdd2);
@@ -1176,7 +1179,7 @@ auto diagram_manager<Data, Degree, Domain>::apply(
         utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
         ops::MAXB<Domain::value>,
         Op
-    >;
+    >::type;
 
     node_t* const newRoot = this->apply_impl(
         OpType(),
@@ -1249,7 +1252,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram)
         utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
         ops::MAXB<Domain::value>,
         Op
-    >;
+    >::type;
 
     // TODO capacity
     std::vector<node_pack<sizeof...(Diagram)>, node_t*> cache(100'000);

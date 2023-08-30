@@ -14,7 +14,7 @@ namespace degrees
 struct mixed
 {
     /*
-     * Just a dummy value to avoid pointelss ifs
+     * Just a dummy value to simplify ifs, this one should be never used
      */
     static constexpr int32 value = 1;
 };

@@ -8,171 +8,6 @@ namespace teddy
 {
 namespace details
 {
-template<int32 M>
-struct plus_mod_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return (args + ...) % M;
-    }
-};
-
-template<int32 M>
-struct multiplies_mod_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return (args * ...) % M;
-    }
-};
-
-struct implies_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return not lhs || rhs;
-    }
-};
-
-struct equal_to_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return (args == ...);
-    }
-};
-
-struct not_equal_to_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return (args != ...);
-    }
-};
-
-struct less_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return lhs < rhs;
-    }
-};
-
-struct less_equal_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return lhs <= rhs;
-    }
-};
-
-struct greater_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return lhs > rhs;
-    }
-};
-
-struct greater_equal_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return lhs >= rhs;
-    }
-};
-
-struct min_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return lhs < rhs ? lhs : rhs;
-    }
-};
-
-struct max_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return lhs > rhs ? lhs : rhs;
-    }
-};
-
-struct minimum_t
-{
-    template<class X>
-    auto constexpr operator() (X arg) const noexcept
-    {
-        return arg;
-    }
-
-    template<class X, class... Xs>
-    auto constexpr operator() (X arg, Xs... args) const noexcept
-    {
-        return min_t()(arg, minimum_t()(args...));
-    }
-};
-
-struct maximum_t
-{
-    template<class X>
-    auto constexpr operator() (X arg) const noexcept
-    {
-        return arg;
-    }
-
-    template<class X, class... Xs>
-    auto constexpr operator() (X arg, Xs... args) const noexcept
-    {
-        return max_t()(arg, maximum_t()(args...));
-    }
-};
-
-struct pi_conj_t
-{
-    template<class T>
-    auto constexpr operator() (T const lhs, T const rhs) const noexcept
-    {
-        return minimum_t()(lhs, rhs, Undefined);
-    }
-};
-
-// TODO ideally get rid of this...
-template<class BinOp, int32 AbsorbingVal = Undefined>
-struct operation_base
-{
-    template<class... Args>
-    [[nodiscard]] constexpr auto operator() (Args... args) const noexcept
-        -> int32
-    {
-        if constexpr (AbsorbingVal != Undefined)
-        {
-            if (utils::any((args == AbsorbingVal)...))
-            {
-                return AbsorbingVal;
-            }
-        }
-
-        if (utils::any((args == Nondetermined)...))
-        {
-            return Nondetermined;
-        }
-
-        return static_cast<int32>(BinOp()(args...));
-    }
-};
-
 template<class Op>
 struct make_nary
 {
@@ -203,7 +38,7 @@ struct operation_info
 
 /**
  *  \namespace ops
- *  \brief Contains definision of all binary operations for \c apply function
+ *  \brief Contains definitions of all binary operations for \c apply function
  */
 namespace ops
 {
@@ -288,7 +123,7 @@ struct XNOR : details::make_nary<XNOR>, details::operation_info<7, true>
     auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
         int32 const ma = utils::max(l, r);
-        int32 const ne = static_cast<int32>(l != r);
+        int32 const ne = static_cast<int32>(l == r);
         return ma == Nondetermined ? ma : ne;
     }
     using details::make_nary<XNOR>::operator();
@@ -402,7 +237,7 @@ struct MAXB : details::make_nary<MAXB<M>>, details::operation_info<16, true>
 
 
 template<int32 M>
-struct PLUS : details::operation_info<17, true>
+struct PLUS : details::make_nary<PLUS<M>>, details::operation_info<17, true>
 {
     [[nodiscard]]
     auto constexpr operator() (int32 const l, int32 const r) const -> int32
@@ -413,30 +248,28 @@ struct PLUS : details::operation_info<17, true>
     }
 };
 
-template<int32 P>
-struct MULTIPLIES : details::operation_base<details::multiplies_mod_t<P>, 0>
+template<int32 M>
+struct MULTIPLIES : details::make_nary<MULTIPLIES<M>>, details::operation_info<18, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 18;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
+        int32 const mi = utils::min(l, r);
+        int32 const ma = utils::max(l, r);
+        int32 const ml = (l * r) % M;
+        return mi == 0 ? 0 : ma == Nondetermined ? Nondetermined : ml;
     }
 };
 
-struct IMPLIES : details::operation_base<details::implies_t>
+struct IMPLIES : details::operation_info<19, false>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 19;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return false;
+        int32 const mi = utils::min(l, r);
+        int32 const ma = utils::max(l, r);
+        int32 const im = static_cast<int32>(not l || r);
+        return mi == 0 ? 0 : ma == Nondetermined ? Nondetermined : im;
     }
 };
 } // namespace ops
