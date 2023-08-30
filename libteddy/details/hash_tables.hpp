@@ -659,22 +659,21 @@ auto unique_table<Data, Degree>::erase_impl(
 {
     iterator retIt(bucket, buckets_ + capacity_, node);
     ++retIt;
+    --size_;
 
     if (*bucket == node)
     {
         *bucket = node->get_next();
-    }
-    else
-    {
-        node_t* prev = *bucket;
-        while (prev->get_next() != node)
-        {
-            prev = prev->get_next();
-        }
-        prev->set_next(node->get_next());
+        node->set_next(nullptr);
+        return retIt;
     }
 
-    --size_;
+    node_t* prev = *bucket;
+    while (prev->get_next() != node)
+    {
+        prev = prev->get_next();
+    }
+    prev->set_next(node->get_next());
     node->set_next(nullptr);
     return retIt;
 }

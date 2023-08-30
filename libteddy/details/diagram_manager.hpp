@@ -5,6 +5,7 @@
 #include <libteddy/details/node_manager.hpp>
 #include <libteddy/details/operators.hpp>
 #include <libteddy/details/pla_file.hpp>
+#include <libteddy/details/stats.hpp>
 #include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
@@ -15,7 +16,6 @@
 #include <optional>
 #include <ranges>
 #include <vector>
-#include "libteddy/details/stats.hpp"
 
 namespace teddy
 {
@@ -298,6 +298,8 @@ public:
      */
     template<teddy_bin_op Op, class... Diagram>
     auto apply_n (Diagram const&... diagrams) -> diagram_t;
+
+    // TODO apply_own
 
     /**
      *  \brief Merges diagams in the range using the \c apply function
@@ -1166,8 +1168,21 @@ auto diagram_manager<Data, Degree, Domain>::apply(
     diagram_t const& rhs
 ) -> diagram_t
 {
-    node_t* const newRoot
-        = this->apply_impl(Op(), lhs.unsafe_get_root(), rhs.unsafe_get_root());
+    /*
+     * Use bounded MAX if the max value is known.
+     * This should perform better since it can short-circuit.
+     */
+    using OpType = utils::type_if<
+        utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
+        ops::MAXB<Domain::value>,
+        Op
+    >;
+
+    node_t* const newRoot = this->apply_impl(
+        OpType(),
+        lhs.unsafe_get_root(),
+        rhs.unsafe_get_root()
+    );
     nodes_.run_deferred();
     return diagram_t(newRoot);
 }
@@ -1226,10 +1241,23 @@ template<teddy_bin_op Op, class... Diagram>
 auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram)
     -> diagram_t
 {
+    /*
+     * Use bounded MAX if the max value is known.
+     * This should perform better since it can short-circuit.
+     */
+    using OpType = utils::type_if<
+        utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
+        ops::MAXB<Domain::value>,
+        Op
+    >;
+
     // TODO capacity
     std::vector<node_pack<sizeof...(Diagram)>, node_t*> cache(100'000);
-    node_t* const newRoot
-        = this->apply_n_impl(cache, Op(), diagram.unsafe_get_root()...);
+    node_t* const newRoot = this->apply_n_impl(
+        cache,
+        OpType(),
+        diagram.unsafe_get_root()...
+    );
     nodes_.run_deferred();
     return diagram_t(newRoot);
 }

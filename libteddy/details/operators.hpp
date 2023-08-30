@@ -28,24 +28,6 @@ struct multiplies_mod_t
     }
 };
 
-struct logical_nand_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return not (args && ...);
-    }
-};
-
-struct logical_nor_t
-{
-    template<class... Args>
-    auto constexpr operator() (Args... args) const noexcept
-    {
-        return not (args || ...);
-    }
-};
-
 struct implies_t
 {
     template<class T>
@@ -261,163 +243,173 @@ struct XOR : details::make_nary<XOR>, details::operation_info<3, true>
     using details::make_nary<XOR>::operator();
 };
 
-
-
-
-struct PI_CONJ : details::operation_base<details::pi_conj_t, 0>
+struct PI_CONJ : details::make_nary<PI_CONJ>, details::operation_info<4, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 4;
+        int32 const mi = utils::min(l, r);
+        int32 const ma = utils::max(l, r);
+        return mi == 0 ? mi : ma == Undefined ? mi : ma;
     }
+    using details::make_nary<PI_CONJ>::operator();
+};
 
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
+struct NAND : details::make_nary<NAND>, details::operation_info<5, true>
+{
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return true;
+        int32 const mi = utils::min(l, r);
+        int32 const ma = utils::max(l, r);
+        return ma == Nondetermined ? ma : 1 - mi;
+    }
+    using details::make_nary<NAND>::operator();
+};
+
+struct NOR : details::make_nary<NOR>, details::operation_info<6, true>
+{
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
+    {
+        // This assumes that l,r is from {0,1,N} where N has 0 at lowest bit.
+
+        int32 const mi  = utils::min(l, r);
+        int32 const ma  = utils::max(l, r);
+        int32 const ema = utils::max(l | r, 1);
+        return (mi & 1) | (ma & 1) ? 0 : ema;
+    }
+    using details::make_nary<NOR>::operator();
+};
+
+struct XNOR : details::make_nary<XNOR>, details::operation_info<7, true>
+{
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
+    {
+        int32 const ma = utils::max(l, r);
+        int32 const ne = static_cast<int32>(l != r);
+        return ma == Nondetermined ? ma : ne;
+    }
+    using details::make_nary<XNOR>::operator();
+};
+
+struct EQUAL_TO : details::make_nary<EQUAL_TO>, details::operation_info<8, true>
+{
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
+    {
+        int32 const ma = utils::max(l, r);
+        int32 const eq = static_cast<int32>(l == r);
+        return ma == Nondetermined ? ma : eq;
+    }
+    using details::make_nary<EQUAL_TO>::operator();
+};
+
+struct NOT_EQUAL_TO : details::make_nary<NOT_EQUAL_TO>, details::operation_info<9, true>
+{
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
+    {
+        int32 const ma = utils::max(l, r);
+        int32 const ne = static_cast<int32>(l != r);
+        return ma == Nondetermined ? ma : ne;
+    }
+    using details::make_nary<NOT_EQUAL_TO>::operator();
+};
+
+struct LESS : details::operation_info<10, false>
+{
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
+    {
+        int32 const ma = utils::max(l, r);
+        int32 const le = static_cast<int32>(l < r);
+        return ma == Nondetermined ? ma : le;
     }
 };
 
-struct NAND : details::operation_base<details::logical_nand_t>
+struct LESS_EQUAL : details::operation_info<11, false>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 5;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
+        int32 const ma = utils::max(l, r);
+        int32 const le = static_cast<int32>(l <= r);
+        return ma == Nondetermined ? ma : le;
     }
 };
 
-struct NOR : details::operation_base<details::logical_nor_t>
+struct GREATER : details::operation_info<12, false>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 6;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
+        int32 const ma = utils::max(l, r);
+        int32 const ge = static_cast<int32>(l > r);
+        return ma == Nondetermined ? ma : ge;
     }
 };
 
-struct EQUAL_TO : details::operation_base<details::equal_to_t>
+struct GREATER_EQUAL : details::operation_info<13, false>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 7;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
+        int32 const ma = utils::max(l, r);
+        int32 const ge = static_cast<int32>(l >= r);
+        return ma == Nondetermined ? ma : ge;
     }
 };
 
-struct NOT_EQUAL_TO : details::operation_base<details::not_equal_to_t>
+struct MIN : details::make_nary<MIN>, details::operation_info<14, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 8;
+        int32 const mi = utils::min(l, r);
+        int32 const ma = utils::max(l, r);
+        return mi == 0 || ma != Nondetermined ? mi : ma;
     }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
-    }
+    using details::make_nary<MIN>::operator();
 };
 
-struct LESS : details::operation_base<details::less_t>
+struct MAX : details::make_nary<MAX>, details::operation_info<15, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 9;
+        return utils::max(l, r);
     }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return false;
-    }
+    using details::make_nary<MAX>::operator();
 };
 
-struct LESS_EQUAL : details::operation_base<details::less_equal_t>
+/**
+ *  \brief Same as \c MAX but short-circuits for \p M -- should be faster
+ *  \tparam M maximum of the domain of possible values
+ */
+template<int32 M>
+struct MAXB : details::make_nary<MAXB<M>>, details::operation_info<16, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 10;
+        int32 const ma = utils::max(l, r);
+        return l == M || r == M ? M : ma;
     }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return false;
-    }
+    using details::make_nary<MAXB>::operator();
 };
 
-struct GREATER : details::operation_base<details::greater_t>
+
+template<int32 M>
+struct PLUS : details::operation_info<17, true>
 {
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
+    [[nodiscard]]
+    auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        return 11;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return false;
-    }
-};
-
-struct GREATER_EQUAL : details::operation_base<details::greater_equal_t>
-{
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
-    {
-        return 12;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return false;
-    }
-};
-
-struct MIN : details::operation_base<details::minimum_t, 0>
-{
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
-    {
-        return 13;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
-    }
-};
-
-struct MAX : details::operation_base<details::maximum_t>
-{
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
-    {
-        return 14;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
-    }
-};
-
-template<int32 P>
-struct PLUS : details::operation_base<details::plus_mod_t<P>>
-{
-    [[nodiscard]] static auto constexpr get_id() noexcept -> int32
-    {
-        return 15;
-    }
-
-    [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
-    {
-        return true;
+        int32 const ma = utils::max(l, r);
+        int32 const pl = (l + r) % M;
+        return ma == Nondetermined ? ma : pl;
     }
 };
 
@@ -426,7 +418,7 @@ struct MULTIPLIES : details::operation_base<details::multiplies_mod_t<P>, 0>
 {
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
-        return 16;
+        return 18;
     }
 
     [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
@@ -439,7 +431,7 @@ struct IMPLIES : details::operation_base<details::implies_t>
 {
     [[nodiscard]] static auto constexpr get_id() noexcept -> int32
     {
-        return 17;
+        return 19;
     }
 
     [[nodiscard]] static auto constexpr is_commutative() noexcept -> bool
