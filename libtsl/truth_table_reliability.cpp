@@ -9,6 +9,36 @@ namespace teddy::tsl
 {
 auto probability (
     truth_table const& table,
+    std::vector<double> const& probabilities
+) -> double
+{
+    auto totalprob = 0.0;
+
+    domain_for_each(
+        table,
+        [&table,
+         &totalprob,
+         &probabilities] (auto const val, auto const& elem)
+        {
+            if (val == 1)
+            {
+                auto localprob = 1.0;
+                for (auto i = 0; i < table.get_var_count(); ++i)
+                {
+                    localprob *= elem[as_uindex(i)] == 1
+                        ? probabilities[as_uindex(i)]
+                        : 1 - probabilities[as_uindex(i)];
+                }
+                totalprob += localprob;
+            }
+        }
+    );
+
+    return totalprob;
+}
+
+auto probability (
+    truth_table const& table,
     std::vector<std::vector<double>> const& probabilities,
     int32 systemState
 ) -> double

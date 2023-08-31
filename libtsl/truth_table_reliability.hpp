@@ -18,6 +18,17 @@ struct var_change
 };
 
 /**
+ *  \brief Calculates probability of BSS state \p 1
+ *  \param table truth table of structure function
+ *  \param probabilities component state probabilities
+ *  \return system state probability
+ */
+auto probability (
+    truth_table const& table,
+    std::vector<double> const& probabilities
+) -> double;
+
+/**
  *  \brief Calculates probability of system state \p val
  *  \param table truth table of structure function
  *  \param probabilities component state probabilities

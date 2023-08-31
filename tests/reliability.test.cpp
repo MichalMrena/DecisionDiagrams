@@ -182,6 +182,46 @@ using Fixtures                   = boost::mpl::vector<
 
 BOOST_AUTO_TEST_SUITE(reliability_test)
 
+BOOST_FIXTURE_TEST_CASE(probabilities_bss, teddy::tests::bss_fixture)
+{
+    auto const expr    = make_expression(expressionSettings_, rng_);
+    auto manager       = make_manager(managerSettings_, rng_);
+    auto const diagram = make_diagram(expr, manager);
+    auto const probVec = make_prob_vector(manager, rng_);
+    auto const domains = manager.get_domains();
+    auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
+    auto expected      = std::vector<double>(as_uindex(stateCount_));
+    auto actual        = std::vector<double>(as_uindex(stateCount_));
+
+    expected[1] = probability(table, probVec);
+    expected[0] = 1 - expected[1];
+
+    manager.calculate_probabilities(probVec, diagram);
+    actual[0] = manager.get_probability(0);
+    actual[1] = manager.get_probability(1);
+
+    BOOST_TEST(
+        actual[0] == expected[0],
+        boost::test_tools::tolerance(FloatingTolerance)
+    );
+    BOOST_TEST(
+        actual[1] == expected[1],
+        boost::test_tools::tolerance(FloatingTolerance)
+    );
+
+    actual[1] = manager.calculate_probability(probVec, diagram);
+    actual[0] = 1 - actual[1];
+
+    BOOST_TEST(
+        actual[0] == expected[0],
+        boost::test_tools::tolerance(FloatingTolerance)
+    );
+    BOOST_TEST(
+        actual[1] == expected[1],
+        boost::test_tools::tolerance(FloatingTolerance)
+    );
+}
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
 {
     auto const expr

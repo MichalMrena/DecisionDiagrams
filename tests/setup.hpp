@@ -7,12 +7,14 @@
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
 
+#include <algorithm>
 #include <functional>
 #include <iterator>
 #include <numeric>
 #include <random>
 #include <variant>
 #include <vector>
+#include "libteddy/details/diagram_manager.hpp"
 
 namespace teddy::tests
 {
@@ -456,10 +458,29 @@ auto make_expression (
 }
 
 /**
- *  \brief Makes random component state probabilities
+ *  \brief Makes random component state probabilities vector
  */
 template<class Dat, class Deg, class Dom>
-auto make_probabilities (
+auto make_prob_vector (
+    diagram_manager<Dat, Deg, Dom> const& manager,
+    std::mt19937_64& rng
+) -> std::vector<double>
+{
+    auto const domains = manager.get_domains();
+    auto probs = std::vector<double>(as_usize(manager.get_var_count()));
+    for (auto i = 0; i < ssize(probs); ++i)
+    {
+        auto dist = std::uniform_real_distribution<double>(.0, 1.0);
+        probs[as_uindex(i)] = dist(rng);
+    }
+    return probs;
+}
+
+/**
+ *  \brief Makes random component state probabilities matrix
+ */
+template<class Dat, class Deg, class Dom>
+auto make_prob_matrix (
     diagram_manager<Dat, Deg, Dom> const& manager,
     std::mt19937_64& rng
 ) -> std::vector<std::vector<double>>
@@ -487,6 +508,15 @@ auto make_probabilities (
         }
     }
     return probs;
+}
+
+template<class Dat, class Deg, class Dom>
+auto make_probabilities (
+    diagram_manager<Dat, Deg, Dom> const& manager,
+    std::mt19937_64& rng
+) -> std::vector<std::vector<double>>
+{
+    return make_prob_matrix(manager, rng);
 }
 
 inline auto make_vector (

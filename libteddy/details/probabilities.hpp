@@ -1,0 +1,217 @@
+#ifndef LIBTEDDY_PROBABILITIES_HPP
+#define LIBTEDDY_PROBABILITIES_HPP
+
+#include <libteddy/details/types.hpp>
+
+#include <cassert>
+#include <cmath>
+#include <functional>
+
+namespace teddy::probs
+{
+    /**
+     *  \brief Vector of probabilities for BSS
+     */
+    template<class Probabilities>
+    concept prob_vector
+        = requires(Probabilities probs, int32 index) {
+            {
+                probs[index]
+            } -> std::convertible_to<double>;
+        };
+
+    /**
+     *  \brief Matrix of probabilities for BSS and MSS
+     */
+    template<class Probabilities>
+    concept prob_matrix
+        = requires(Probabilities probs, int32 index, int32 value) {
+            {
+                probs[index][value]
+            } -> std::convertible_to<double>;
+        };
+
+    /**
+     *  \brief TODO
+     */
+    template<class Vector>
+    class prob_vector_wrap_proxy
+    {
+    public:
+        prob_vector_wrap_proxy(Vector const& vec, std::size_t const index) :
+            index_(index),
+            vec_(&vec)
+        {
+        }
+
+        auto operator[](std::size_t const value) const -> double
+        {
+            assert(value == 1 || value == 0);
+            double const prob = (*vec_)[index_];
+            return value == 1 ? prob : 1 - prob;
+        }
+
+    private:
+        std::size_t index_;
+        Vector const* vec_;
+    };
+
+    /**
+     *  \brief TODO
+     */
+    template<class Vector>
+    class prob_vector_wrap
+    {
+    public:
+        prob_vector_wrap(Vector const& vec) :
+            vec_(&vec)
+        {
+        }
+
+        auto operator[](std::size_t const index) const
+        {
+            return prob_vector_wrap_proxy<Vector>(*vec_, index);
+        }
+
+    private:
+        Vector const* vec_;
+    };
+
+    /**
+     *  \brief Base class for probability distributions.
+     *  Just holds time member that is common for all.
+     */
+    class dist_base
+    {
+    public:
+        auto set_t (double const t) -> void
+        {
+            t_ = t;
+        }
+
+    protected:
+        double t_ {0};
+    };
+
+    /**
+     *  \brief Exponential distribution
+     */
+    class exponential : public dist_base
+    {
+    public:
+        exponential(double const rate) :
+            rate_(rate)
+        {
+        }
+
+        [[nodiscard]]
+        operator double() const
+        {
+            return (*this)(dist_base::t_);
+        }
+
+        [[nodiscard]]
+        auto operator()(double const t) const -> double
+        {
+            return rate_ * std::exp(-rate_ * t);
+        }
+
+    private:
+        double rate_;
+    };
+
+    /**
+     *  \brief Weibull distribution
+     */
+    class weibull : public dist_base
+    {
+    public:
+        weibull(double const scale, double const shape) :
+            scale_(scale),
+            shape_(shape)
+        {
+        }
+
+        [[nodiscard]]
+        operator double() const
+        {
+            return (*this)(dist_base::t_);
+        }
+
+        [[nodiscard]]
+        auto operator()(double const t) const -> double
+        {
+            return (shape_ / scale_) *
+                   std::pow(t / scale_, shape_ - 1) *
+                   std::exp(-std::pow(t / scale_, shape_));
+        }
+
+    private:
+        double scale_;
+        double shape_;
+    };
+
+    /**
+     *  \brief TODO
+     */
+    class custom_dist : public dist_base
+    {
+    public:
+        custom_dist(std::function<double(double)> dist) :
+            dist_(dist)
+        {
+        }
+
+        [[nodiscard]]
+        operator double() const
+        {
+            return (*this)(dist_base::t_);
+        }
+
+        [[nodiscard]]
+        auto operator()(double const t) const -> double
+        {
+            return dist_(t);
+        }
+
+    private:
+        std::function<double(double)> dist_;
+    };
+
+    template<class T>
+    concept dist_vector = requires(T t, std::size_t i)
+    {
+        t[i].set_t(3.14);
+    };
+
+    template<class T>
+    concept dist_matrix = requires(T t, std::size_t i)
+    {
+        t[i][i].set_t(3.14);
+    };
+
+    template<dist_vector Ps>
+    auto at_time(Ps& distVector, double const t) -> Ps&
+    {
+        for (auto& dist : distVector)
+        {
+            dist.set_t(t);
+        }
+        return distVector;
+    }
+
+    template<dist_matrix Ps>
+    auto at_time(Ps& distMatrix, double const t) -> Ps&
+    {
+        for (auto& dists : distMatrix)
+        {
+            for (auto& dist : dists)
+            {
+                dist.set_t(t);
+            }
+        }
+        return distMatrix;
+    }
+}
+
+#endif

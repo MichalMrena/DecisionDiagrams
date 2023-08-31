@@ -236,7 +236,6 @@ struct MAXB : details::make_nary<MAXB<M>>, details::operation_info<16, true>
     using details::make_nary<MAXB>::operator();
 };
 
-
 template<int32 M>
 struct PLUS : details::make_nary<PLUS<M>>, details::operation_info<17, true>
 {

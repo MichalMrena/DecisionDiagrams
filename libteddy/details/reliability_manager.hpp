@@ -2,10 +2,12 @@
 #define LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 
 #include <libteddy/details/diagram_manager.hpp>
+#include <libteddy/details/probabilities.hpp>
 
 #include <concepts>
 #include <iterator>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 namespace teddy
@@ -13,14 +15,7 @@ namespace teddy
 template<class Degree>
 concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
 
-template<class Probabilities>
-concept component_probabilities
-    = requires(Probabilities probs, int32 index, int32 value) {
-          {
-              probs[index][value]
-          } -> std::convertible_to<double>;
-      };
-
+// TODO move to sep. header
 namespace dpld
 {
 /**
@@ -128,35 +123,67 @@ public:
 
 public:
     /**
-     *  \brief Calculates probabilities of all system states
+     *  \brief Calculates probabilities of system states 0 and 1
      *
-     *  When used as \c probs[i][k] parameter \p probs must return probability
-     *  that i-th component is in state k.
+     *  \p probs[i] must return probability that i-th component is in state 1
      *  After a call to this method you can acces individual system
      *  state probabilities using \c get_probability method.
      *
      *  \tparam Type that holds component state probabilities
-     *  \param probs Componenet state probabilities
+     *  \param probs vector of component state probabilities
      *  \param diagram Structure function
      */
-    template<component_probabilities Ps>
+    template<probs::prob_vector Ps>
+    requires(is_bss<Degree>)
     auto calculate_probabilities (Ps const& probs, diagram_t const& diagram)
         -> void;
 
     /**
+     *  \brief Calculates probabilities of all system states
+     *
+     *  \p probs[i][k] must return probability that i-th component is in state k
+     *  After a call to this method you can acces individual system
+     *  state probabilities using \c get_probability method.
+     *
+     *  \tparam Type that holds component state probabilities
+     *  \param probs matrix of component state probabilities
+     *  \param diagram Structure function
+     */
+    template<probs::prob_matrix Ps>
+    auto calculate_probabilities (Ps const& probs, diagram_t const& diagram)
+        -> void;
+
+    /**
+     *  \brief Calculates and returns probability of system state 1
+     *
+     *  \p probs[i] must return probability that i-th component is in state 1
+     *
+     *  \tparam Type that holds component state probabilities
+     *  \param probs vector of component state probabilities
+     *  \param diagram Structure function
+     *  \return Probability that system described by \p diagram is in
+     *  state 1 given probabilities \p probs
+     */
+    template<probs::prob_vector Ps>
+    requires(is_bss<Degree>)
+    auto calculate_probability (
+        Ps const& probs,
+        diagram_t const& diagram
+    ) -> double;
+
+    /**
      *  \brief Calculates and returns probability of a system state \p state
      *
-     *  When used as \c probs[i][k] parameter \p probs must return probability
-     *  that i-th component is in state k.
+     *  \p probs[i][k] must return probability that i-th component is in state k
      *
      *  \tparam Type that holds component state probabilities
      *  \param state System state
-     *  \param probs Component state probabilities
+     *  \param probs matrix of component state probabilities
      *  \param diagram Structure function
      *  \return Probability that system described by \p diagran is in
      *  state \p state given probabilities \p probs
      */
-    template<component_probabilities Ps>
+    template<probs::prob_matrix Ps>
     auto calculate_probability (
         int32 state,
         Ps const& probs,
@@ -170,9 +197,9 @@ public:
      *  funtion otherwise the result is undefined. This is a bit
      *  unfortunate but the idea is that probabilities are calculated
      *  once using \c calculate_probabilities and later accessed using
-     *  \c get_probability .
+     *  \c get_probability
      *
-     *  \param state System state.
+     *  \param state System state
      *  \return Probability of a system state \p state
      */
     [[nodiscard]] auto get_probability (int32 state) const -> double;
@@ -180,16 +207,15 @@ public:
     /**
      *  \brief Calculates and returns availability of a BSS.
      *
-     *  When used as \c ps[i][k] parameter \p ps must return probability
-     *  that i-th component is in state k.
+     *  \p probs[i] must return probability that i-th component is in state 1
      *
      *  \tparam Component state probabilities
      *  \tparam Foo Dummy parameter to enable SFINE
-     *  \param probs Component state probabilities
+     *  \param probs vector of component state probabilities
      *  \param diagram Structure function
      *  \return System availability
      */
-    template<component_probabilities Ps, class Foo = void>
+    template<probs::prob_vector Ps, class Foo = void>
     requires(is_bss<Degree>)
     auto calculate_availability (Ps const& probs, diagram_t const& diagram)
         -> utils::second_t<Foo, double>;
@@ -198,16 +224,15 @@ public:
      *  \brief Calculates and returns system availability with
      *  respect to the system state \p state
      *
-     *  When used as \c probs[i][k] parameter \p probs must return probability
-     *  that i-th component is in state k.
+     *  \p probs[i][k] must return probability that i-th component is in state k
      *
      *  \tparam Component state probabilities
      *  \param state System state
-     *  \param probs Component state probabilities
+     *  \param probs matrix of component state probabilities
      *  \param diagram Structure function
      *  \return System availability with respect to the system state \p state
      */
-    template<component_probabilities Ps>
+    template<probs::prob_matrix Ps>
     auto calculate_availability (
         int32 state,
         Ps const& probs,
@@ -215,20 +240,20 @@ public:
     ) -> double;
 
     /**
-     *  \brief Returns availability of a BSS.
+     *  \brief Returns availability of a BSS
      *
      *  Call to \c calculate_probabilities must proceed call to this
      *  funtion otherwise the result is undefined. This is a bit
      *  unfortunate but the idea is that probabilities are calculated
      *  once using \c calculate_probabilities and availability and
      *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability .
+     *  and \c get_unavailability
      *
-     *  \return System availability.
+     *  \return System availability
      */
     template<class Foo = void>
-    [[nodiscard]] auto get_availability () const
-        -> utils::second_t<Foo, double>;
+    requires(is_bss<Degree>)
+    [[nodiscard]] auto get_availability () const -> utils::second_t<Foo, double>;
 
     /**
      *  \brief Returns system availability with
@@ -247,18 +272,17 @@ public:
     [[nodiscard]] auto get_availability (int32 state) const -> double;
 
     /**
-     *  \brief Calculates and returns unavailability of a BSS.
+     *  \brief Calculates and returns unavailability of a BSS
      *
-     *  When used as \c probs[i][k] parameter \p probs must return probability
-     *  that i-th component is in state k
+     *  \p probs[i] must return probability that i-th component is in state 1
      *
      *  \tparam Component state probabilities
      *  \tparam Foo Dummy parameter to enable SFINE
-     *  \param probs Component state probabilities
+     *  \param probs vector of component state probabilities
      *  \param diagran Structure function
      *  \return System unavailtability
      */
-    template<component_probabilities Ps, class Foo = void>
+    template<probs::prob_matrix Ps, class Foo = void>
     requires(is_bss<Degree>)
     auto calculate_unavailability (Ps const& probs, diagram_t const& diagram)
         -> utils::second_t<Foo, double>;
@@ -267,16 +291,15 @@ public:
      *  \brief Calculates and returns system availability with
      *  respect to the system state \p state
      *
-     *  When used as \c probs[i][k] parameter \p probs must return probability
-     *  that i-th component is in state k
+     *  \p probs[i][k] must return probability that i-th component is in state k
      *
      *  \tparam Component state probabilities
      *  \param state System state
-     *  \param probs Component state probabilities
+     *  \param probs matrix of component state probabilities
      *  \param diagram Structure function
      *  \return System availability with respect to the system state \p state
      */
-    template<component_probabilities Ps>
+    template<probs::prob_matrix Ps>
     auto calculate_unavailability (
         int32 state,
         Ps const& probs,
@@ -284,18 +307,19 @@ public:
     ) -> double;
 
     /**
-     *  \brief Returns system unavailability of a BSS.
+     *  \brief Returns system unavailability of a BSS
      *
      *  Call to \c calculate_probabilities must proceed call to this
      *  funtion otherwise the result is undefined. This is a bit
      *  unfortunate but the idea is that probabilities are calculated
      *  once using \c calculate_probabilities and availability and
      *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability .
+     *  and \c get_unavailability
      *
      *  \return System availability
      */
     template<class Foo = void>
+    requires(is_bss<Degree>)
     auto get_unavailability () -> utils::second_t<Foo, double>;
 
     /**
@@ -365,7 +389,7 @@ public:
      *  \param dpld Direct Partial Boolean Derivative of any type
      *  \return Birnbaum importance of the component
      */
-    template<component_probabilities Ps>
+    template<probs::prob_matrix Ps>
     auto birnbaum_importance (Ps const& probs, diagram_t const& dpld) -> double;
 
     /**
@@ -381,7 +405,7 @@ public:
      *  \param componentIndex Component index
      *  \return Fussell-Vesely of the component
      */
-    template<component_probabilities Ps>
+    template<probs::prob_matrix Ps>
     auto fussell_vesely_importance (
         Ps const& probs,
         diagram_t const& dpld,
@@ -533,19 +557,30 @@ private:
         node_t* node
     ) -> node_t*;
 
-    template<component_probabilities Ps>
+    template<probs::prob_matrix Ps>
     auto calculate_ntps_post_impl (
         std::vector<int32> const& selected,
         Ps const& probs,
         node_t* root
     ) -> double;
 
-    template<component_probabilities Ps>
+    template<probs::prob_matrix Ps>
     auto calculate_ntps_level_impl (Ps const& probs, node_t* root) -> void;
 };
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_vector Ps>
+requires(is_bss<Degree>)
+auto reliability_manager<Degree, Domain>::calculate_probabilities(
+    Ps const& probs,
+    diagram_t const& diagram
+) -> void
+{
+    this->calculate_probabilities(probs::prob_vector_wrap(probs), diagram);
+}
+
+template<class Degree, class Domain>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::calculate_probabilities(
     Ps const& probs,
     diagram_t const& diagram
@@ -555,7 +590,22 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_vector Ps>
+requires(is_bss<Degree>)
+auto reliability_manager<Degree, Domain>::calculate_probability(
+    Ps const& probs,
+    diagram_t const& diagram
+) -> double
+{
+    return this->calculate_probability(
+        1,
+        probs::prob_vector_wrap(probs),
+        diagram
+    );
+}
+
+template<class Degree, class Domain>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::calculate_probability(
     int32 const state,
     Ps const& probs,
@@ -575,18 +625,22 @@ auto reliability_manager<Degree, Domain>::get_probability(int32 const state
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps, class Foo>
+template<probs::prob_vector Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_availability(
     Ps const& probs,
     diagram_t const& diagram
 ) -> utils::second_t<Foo, double>
 {
-    return this->calculate_availability(1, probs, diagram);
+    return this->calculate_availability(
+        1,
+        probs::prob_vector_wrap_proxy(probs),
+        diagram
+    );
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::calculate_availability(
     int32 const state,
     Ps const& probs,
@@ -609,6 +663,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 
 template<class Degree, class Domain>
 template<class Foo>
+requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::get_availability() const
     -> utils::second_t<Foo, double>
 {
@@ -634,7 +689,7 @@ auto reliability_manager<Degree, Domain>::get_availability(int32 const state
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps, class Foo>
+template<probs::prob_matrix Ps, class Foo>
 requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
     Ps const& probs,
@@ -645,7 +700,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
     int32 const state,
     Ps const& probs,
@@ -668,6 +723,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
 
 template<class Degree, class Domain>
 template<class Foo>
+requires(is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::get_unavailability()
     -> utils::second_t<Foo, double>
 {
@@ -895,7 +951,7 @@ auto reliability_manager<Degree, Domain>::structural_importance(
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::birnbaum_importance(
     Ps const& probs,
     diagram_t const& dpld
@@ -905,7 +961,7 @@ auto reliability_manager<Degree, Domain>::birnbaum_importance(
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::fussell_vesely_importance(
     Ps const& probs,
     diagram_t const& dpld,
@@ -1004,7 +1060,7 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::calculate_ntps_post_impl(
     std::vector<int32> const& selectedValues,
     Ps const& probs,
@@ -1050,7 +1106,7 @@ auto reliability_manager<Degree, Domain>::calculate_ntps_post_impl(
 }
 
 template<class Degree, class Domain>
-template<component_probabilities Ps>
+template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::calculate_ntps_level_impl(
     Ps const& probs,
     node_t* const root
