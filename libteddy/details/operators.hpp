@@ -193,7 +193,8 @@ struct GREATER_EQUAL : details::operation_info<13, false>
     {
         int32 const ma = utils::max(l, r);
         int32 const ge = static_cast<int32>(l >= r);
-        return ma == Nondetermined ? ma : ge;
+        // return l == 0 ? 1 : ma == Nondetermined ? Nondetermined : ge;
+        return ma == Nondetermined ? Nondetermined : ge;
     }
 };
 
@@ -230,7 +231,7 @@ struct MAXB : details::make_nary<MAXB<M>>, details::operation_info<16, true>
     auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
         int32 const ma = utils::max(l, r);
-        return l == M || r == M ? M : ma;
+        return l == M - 1 || r == M - 1 ? M - 1 : ma;
     }
     using details::make_nary<MAXB>::operator();
 };
@@ -266,10 +267,9 @@ struct IMPLIES : details::operation_info<19, false>
     [[nodiscard]]
     auto constexpr operator() (int32 const l, int32 const r) const -> int32
     {
-        int32 const mi = utils::min(l, r);
         int32 const ma = utils::max(l, r);
         int32 const im = static_cast<int32>(not l || r);
-        return mi == 0 ? 0 : ma == Nondetermined ? Nondetermined : im;
+        return l == 0 ? 1 : ma == Nondetermined ? Nondetermined : im;
     }
 };
 } // namespace ops
