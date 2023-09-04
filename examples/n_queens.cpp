@@ -184,8 +184,10 @@ int main(int argc, char** argv)
     {
         auto const elapsed = solve(n);
         Durations.push_back(elapsed);
+        std::cout << elapsed.count() << "\n";
     }
 
+    std::cout << "---\n";
     auto total = std::reduce(Durations.begin(), Durations.end());
     total /= repCount;
     std::cout << total << "\n";
