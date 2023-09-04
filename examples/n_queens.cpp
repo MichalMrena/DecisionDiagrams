@@ -4,7 +4,6 @@
 #include <iostream>
 #include <optional>
 #include <vector>
-#include "libteddy/details/stats.hpp"
 
 /**
  *  Implementation of the N-Queen problem adapted from Sylvan:

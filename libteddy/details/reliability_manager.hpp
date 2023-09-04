@@ -576,7 +576,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
     diagram_t const& diagram
 ) -> void
 {
-    this->calculate_probabilities(probs::prob_vector_wrap(probs), diagram);
+    this->calculate_probabilities(probs::details::prob_vector_wrap(probs), diagram);
 }
 
 template<class Degree, class Domain>
@@ -599,7 +599,7 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
 {
     return this->calculate_probability(
         1,
-        probs::prob_vector_wrap(probs),
+        probs::details::prob_vector_wrap(probs),
         diagram
     );
 }
@@ -634,7 +634,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 {
     return this->calculate_availability(
         1,
-        probs::prob_vector_wrap_proxy(probs),
+        probs::details::prob_vector_wrap(probs),
         diagram
     );
 }

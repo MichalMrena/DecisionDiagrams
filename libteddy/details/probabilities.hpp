@@ -5,34 +5,16 @@
 
 #include <cassert>
 #include <cmath>
+#include <concepts>
 #include <functional>
+#include <variant>
 
 namespace teddy::probs
 {
+namespace details
+{
     /**
-     *  \brief Vector of probabilities for BSS
-     */
-    template<class Probabilities>
-    concept prob_vector
-        = requires(Probabilities probs, int32 index) {
-            {
-                probs[index]
-            } -> std::convertible_to<double>;
-        };
-
-    /**
-     *  \brief Matrix of probabilities for BSS and MSS
-     */
-    template<class Probabilities>
-    concept prob_matrix
-        = requires(Probabilities probs, int32 index, int32 value) {
-            {
-                probs[index][value]
-            } -> std::convertible_to<double>;
-        };
-
-    /**
-     *  \brief TODO
+     *  \brief Helper for vector wrap
      */
     template<class Vector>
     class prob_vector_wrap_proxy
@@ -57,7 +39,7 @@ namespace teddy::probs
     };
 
     /**
-     *  \brief TODO
+     *  \brief Wraps prob. vector so that it can be used as matrix
      */
     template<class Vector>
     class prob_vector_wrap
@@ -92,11 +74,34 @@ namespace teddy::probs
     protected:
         double t_ {0};
     };
+} // namespace details
+
+    /**
+     *  \brief Vector of probabilities for BSS
+     */
+    template<class Probabilities>
+    concept prob_vector
+        = requires(Probabilities probs, int32 index) {
+            {
+                probs[index]
+            } -> std::convertible_to<double>;
+        };
+
+    /**
+     *  \brief Matrix of probabilities for BSS and MSS
+     */
+    template<class Probabilities>
+    concept prob_matrix
+        = requires(Probabilities probs, int32 index, int32 value) {
+            {
+                probs[index][value]
+            } -> std::convertible_to<double>;
+        };
 
     /**
      *  \brief Exponential distribution
      */
-    class exponential : public dist_base
+    class exponential : public details::dist_base
     {
     public:
         exponential(double const rate) :
@@ -123,7 +128,7 @@ namespace teddy::probs
     /**
      *  \brief Weibull distribution
      */
-    class weibull : public dist_base
+    class weibull : public details::dist_base
     {
     public:
         weibull(double const scale, double const shape) :
@@ -152,9 +157,36 @@ namespace teddy::probs
     };
 
     /**
-     *  \brief TODO
+     *  \brief Probability independent of time
      */
-    class custom_dist : public dist_base
+    class constant : public details::dist_base
+    {
+    public:
+        constant(double const value) :
+            value_(value)
+        {
+        }
+
+        [[nodiscard]]
+        operator double() const
+        {
+            return value_;
+        }
+
+        [[nodiscard]]
+        auto operator()(double const) const -> double
+        {
+            return value_;
+        }
+
+    private:
+        double value_;
+    };
+
+    /**
+     *  \brief User-defined distribution
+     */
+    class custom_dist : public details::dist_base
     {
     public:
         custom_dist(std::function<double(double)> dist) :
@@ -178,15 +210,66 @@ namespace teddy::probs
         std::function<double(double)> dist_;
     };
 
+    using dist_variant = std::variant<
+        exponential,
+        weibull,
+        custom_dist
+    >;
+
+    /**
+     *  \brief "Interface" for distributions that manages variant access
+     */
+    class prob_dist
+    {
+    public:
+        prob_dist(dist_variant dist) :
+            dist_(dist)
+        {
+        }
+
+        auto set_t (double const t) -> void
+        {
+            std::visit(
+                [t](auto& d){ d.set_t(t); },
+                dist_
+            );
+        }
+
+        [[nodiscard]]
+        operator double() const
+        {
+            return std::visit(
+                [](auto const& dist) -> double { return dist; },
+                dist_
+            );
+        }
+
+        [[nodiscard]]
+        auto operator()(double const t) const -> double
+        {
+            return std::visit(
+                [t](auto const& dist) -> double { return dist(t); },
+                dist_
+            );
+        }
+
+    private:
+        dist_variant dist_;
+    };
+
     template<class T>
     concept dist_vector = requires(T t, std::size_t i)
     {
+        { t[i] } -> std::convertible_to<prob_dist>;
+
         t[i].set_t(3.14);
     };
 
     template<class T>
     concept dist_matrix = requires(T t, std::size_t i)
     {
+        { t[i][i] } -> std::convertible_to<prob_dist>;
+
         t[i][i].set_t(3.14);
     };
 
