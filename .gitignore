@@ -5,6 +5,9 @@
 build
 compile_commands.json
 doxygen/doc
+data*
+nohup*
+results*
 
 # Devenv
 .devenv*
