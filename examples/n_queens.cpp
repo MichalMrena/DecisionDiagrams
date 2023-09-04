@@ -188,5 +188,5 @@ int main(int argc, char** argv)
 
     auto total = std::reduce(Durations.begin(), Durations.end());
     total /= repCount;
-    std::cout << total << "\n";
+    std::cout << total.count() << "ms" << "\n";
 }

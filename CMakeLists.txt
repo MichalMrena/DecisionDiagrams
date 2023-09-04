@@ -111,7 +111,7 @@ option(LIBTEDDY_USE_SANITIZERS    "Enable asan and ubsan" OFF)
 option(LIBTEDDY_BUILD_TESTS       "Build tests"           OFF)
 option(LIBTEDDY_BUILD_EXAMPLES    "Build examples"        OFF)
 option(LIBTEDDY_BUILD_EXPERIMENTS "Build experiments"     OFF)
-option(LIBTEDDY_USE_MOLD          "Use Mold linker"       ON)
+option(LIBTEDDY_USE_MOLD          "Use Mold linker"       OFF)
 
 ## Common compile and link options for subprojects
 string(
