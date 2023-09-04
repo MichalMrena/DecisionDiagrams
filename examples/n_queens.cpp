@@ -2,15 +2,17 @@
 #include <libteddy/details/tools.hpp>
 #include <chrono>
 #include <iostream>
+#include <numeric>
 #include <optional>
 #include <vector>
-#include "libteddy/details/stats.hpp"
+
+std::vector<std::chrono::milliseconds> Durations;
 
 /**
  *  Implementation of the N-Queen problem adapted from Sylvan:
  *  https://github.com/utwente-fmt/sylvan/blob/master/examples/nqueens.c
  */
-void solve(int const n)
+auto solve(int const n)
 {
     teddy::bdd_manager manager(n*n, 1'000'000);
     manager.set_cache_ratio(2);
@@ -26,6 +28,8 @@ void solve(int const n)
     }
 
     bdd_t result = manager.constant(1);
+
+    const auto before = std::chrono::high_resolution_clock::now();
 
     // rows
     for (int i = 0; i < n; ++i)
@@ -138,25 +142,25 @@ void solve(int const n)
         result = manager.apply<AND>(result, tmp);
     }
 
+    const auto after = std::chrono::high_resolution_clock::now();
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        after - before
+    );
+
     #ifdef LIBTEDDY_COLLECT_STATS
     std::cout << "===\n";
     teddy::dump_stats();
     std::cout << "===\n";
     #endif
 
-    std::cout << "bdd node-count:      "
-              << manager.get_node_count(result)
-              << "\n";
-    std::cout << "number of solutions: "
-              << manager.satisfy_count(1, result)
-              << "\n";
+    return elapsed;
 }
 
 int main(int argc, char** argv)
 {
-    if (argc < 2)
+    if (argc < 3)
     {
-        std::cerr << "Please specify the number of queens.\n";
+        std::cerr << "Please specify [nqueen] [nreplication]\n";
         return 1;
     }
 
@@ -168,12 +172,21 @@ int main(int argc, char** argv)
     }
     const int n = *nOpt;
 
-    const auto before = std::chrono::high_resolution_clock::now();
-    solve(n);
-    const auto after = std::chrono::high_resolution_clock::now();
-    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-        after - before
-    );
-    std::cout << "elapsed time:        " << elapsed.count() << "ms" << "\n";
+    const std::optional<int> rOpt = teddy::utils::parse<int>(argv[2]);
+    if (not nOpt)
+    {
+        std::cerr << "Please specify the number of queens.\n";
+        return 1;
+    }
+    const int repCount = *rOpt;
 
+    for (int i = 0; i < repCount; ++i)
+    {
+        auto const elapsed = solve(n);
+        Durations.push_back(elapsed);
+    }
+
+    auto total = std::reduce(Durations.begin(), Durations.end());
+    total /= repCount;
+    std::cout << total << "\n";
 }
