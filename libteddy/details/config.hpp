@@ -17,4 +17,10 @@
  */
 // #define LIBTEDDY_COLLECT_STATS
 
+/**
+ *  Enables symbolic probabilistic evaluation
+ *  See the documentation for dependencies
+ */
+#define LIBTEDDY_SYMBOLIC_RELIABILITY
+
 #endif
