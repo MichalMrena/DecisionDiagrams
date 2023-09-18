@@ -2,6 +2,7 @@
 #define LIBTEDDY_PROBABILITIES_HPP
 
 #include <libteddy/details/types.hpp>
+#include <libteddy/details/config.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -295,6 +296,13 @@ namespace details
         }
         return distMatrix;
     }
+
+#ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
+namespace symbolic
+{
+    
+}
+#endif
 }
 
 #endif
