@@ -52,6 +52,36 @@ target_link_libraries(
 )
 ```
 
+## TODO symbolic
+asd
+
+TODO install `pkg-config` ...
+
+Build and install CLN from source.
+```sh
+curl https://www.ginac.de/CLN/cln-1.3.6.tar.bz2 --output cln-1.3.6.tar.bz2
+tar -xvjf cln-1.3.6.tar.bz2
+rm cln-1.3.6.tar.bz2
+cd cln-1.3.6
+./configure
+make
+make check # optional
+sudo make install
+```
+
+Build and install GiNaC from source.
+```sh
+curl https://www.ginac.de/ginac-1.8.7.tar.bz2 --output ginac-1.8.7.tar.bz2
+tar -xvjf ginac-1.8.7.tar.bz2
+rm ginac-1.8.7.tar.bz2
+cd ginac-1.8.7
+# You may try just using ./configure, but in my case it was unable to find cln
+CLN_LIBS="-L/usr/local/lib -lcln -lgmp" CLN_CFLAGS="-I/usr/local/include" ./configure
+make
+make check # optional
+sudo make install
+```
+
 ## Compiling
 TeDDy uses features from `C++20` so you may need to set your compiler to this version of the C++ language by using the `-std=c++20` flag for `clang++` and `g++` and `/std:c++20` for MSVC. If you are using `cmake` it should handle this for you. We tested it on Linux with `g++ 10.0.0`, `clang++ (libc++) 13.0.0`, `clang++ (libstdc++) 11.0.0`, and on Windows with `MSVC 19.31.31107`.  
 
