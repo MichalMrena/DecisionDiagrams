@@ -65,3 +65,20 @@ target_compile_options(
 target_link_options(
     example-time-reliability PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
+
+# AST experiment
+add_executable(
+    example-ast experiment.cpp
+)
+
+target_link_libraries(
+    example-ast PRIVATE teddy
+)
+
+target_compile_options(
+    example-ast PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+)
+
+target_link_options(
+    example-ast PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+)

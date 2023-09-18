@@ -1255,7 +1255,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram)
     >::type;
 
     // TODO capacity
-    std::vector<node_pack<sizeof...(Diagram)>, node_t*> cache(100'000);
+    std::vector<node_pack<sizeof...(Diagram)>> cache(100'000);
     node_t* const newRoot = this->apply_n_impl(
         cache,
         OpType(),
