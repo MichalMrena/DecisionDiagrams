@@ -5,8 +5,10 @@
 #include <libteddy/details/probabilities.hpp>
 
 #include <concepts>
+#include <ginac/ex.h>
 #include <iterator>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -340,6 +342,17 @@ public:
     [[nodiscard]] auto get_unavailability (int32 state) -> double;
 
     /**
+     *  \brief TODO
+     */
+    template<class Ps>
+    auto symbolic_availability (
+        int32 state,
+        Ps const& probs,
+        diagram_t const& diagram
+    ) -> symprobs::expression;
+
+    // TODO calculate_state_frequency
+    /**
      *  \brief Returns system state frequency of state \p state
      *  \param diagram Structure function
      *  \param state System state
@@ -503,6 +516,7 @@ private:
     using son_conainer = typename node_t::son_container;
 
     // TODO not nice
+    // same problem as n-ary apply, we will see...
 
     struct dpld_cache_entry
     {
@@ -745,6 +759,56 @@ auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
         }
     );
     return result;
+}
+
+/**
+ *  \brief TODO
+ */
+template<class Degree, class Domain>
+template<class Ps>
+auto reliability_manager<Degree, Domain>::symbolic_availability (
+    int32 state,
+    Ps const& probs,
+    diagram_t const& diagram
+) -> symprobs::expression
+{
+    // TODO store it in the nodes
+    std::unordered_map<node_t*, GiNaC::ex> exprMap;
+
+    this->nodes_.for_each_terminal_node(
+        [&exprMap, state] (node_t* const node)
+        {
+            GiNaC::ex val(
+                static_cast<double>(
+                    static_cast<int32>(node->get_value() >= state)
+                )
+            );
+            exprMap.emplace(std::make_pair(node, val));
+        }
+    );
+
+    node_t* const root = diagram.unsafe_get_root();
+    this->nodes_.traverse_post(
+        root,
+        [this, &probs, &exprMap] (node_t* const node) mutable
+        {
+            if (not node->is_terminal())
+            {
+                auto [it, isIn] = exprMap.emplace(std::make_pair(node, GiNaC::ex(0.0)));
+                assert(isIn);
+                GiNaC::ex& expr = it->second;
+                int32 const nodeIndex = node->get_index();
+                int32 const domain    = this->nodes_.get_domain(nodeIndex);
+                for (int32 k = 0; k < domain; ++k)
+                {
+                    node_t* const son = node->get_son(k);
+                    expr += exprMap.find(son)->second
+                          * probs[as_uindex(nodeIndex)][as_uindex(k)].as_underlying_unsafe();
+                }
+            }
+        }
+    );
+    return symprobs::expression(exprMap.find(root)->second);
 }
 
 template<class Degree, class Domain>

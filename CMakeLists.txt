@@ -27,6 +27,11 @@ project(
 
 # TeDDy library target
 
+### Requires CLN and GiNaC, see README
+option(LIBTEDDY_SYMBOLIC_RELIABILITY "Enable symbolic expressions" ON)
+option(LIBTEDDY_VERBOSE              "Enable verbose output"       OFF)
+option(LIBTEDDY_COLLECT_STATS        "Enable stat collection"      OFF)
+
 add_library(
     teddy INTERFACE
 )
@@ -52,6 +57,34 @@ set_target_properties(
         CXX_STANDARD_REQUIRED YES
         CXX_EXTENSIONS        NO
 )
+
+if(LIBTEDDY_SYMBOLIC_RELIABILITY)
+    target_compile_definitions(
+        teddy INTERFACE LIBTEDDY_SYMBOLIC_RELIABILITY
+    )
+
+    string(
+        JOIN ";" LIBTEDDY_LINK_OPTIONS
+            "-lginac"
+            "-lcln"
+    )
+
+    target_link_options(
+        teddy INTERFACE ${LIBTEDDY_LINK_OPTIONS}
+    )
+endif()
+
+if(LIBTEDDY_VERBOSE)
+    target_compile_definitions(
+        teddy INTERFACE LIBTEDDY_VERBOSE
+    )
+endif()
+
+if(LIBTEDDY_COLLECT_STATS)
+    target_compile_definitions(
+        teddy INTERFACE LIBTEDDY_COLLECT_STATS
+    )
+endif()
 
 # TeDDy library install
 
@@ -108,10 +141,10 @@ install(
 ## Options to enable subprojects and build parameters
 option(LIBTEDDY_USE_LIBCXX        "Use libc++"            OFF)
 option(LIBTEDDY_USE_SANITIZERS    "Enable asan and ubsan" OFF)
+option(LIBTEDDY_USE_MOLD          "Use Mold linker"       OFF)
 option(LIBTEDDY_BUILD_TESTS       "Build tests"           OFF)
 option(LIBTEDDY_BUILD_EXAMPLES    "Build examples"        OFF)
 option(LIBTEDDY_BUILD_EXPERIMENTS "Build experiments"     OFF)
-option(LIBTEDDY_USE_MOLD          "Use Mold linker"       ON)
 
 ## Common compile and link options for subprojects
 string(
@@ -142,7 +175,7 @@ if(LIBTEDDY_USE_MOLD)
 endif()
 
 ## Use libc++ if requested and compiling with clang
-if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_LIBCXX)
+if(LIBTEDDY_USE_LIBCXX AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     message(
         "=== Using libc++ and libc++abi"
     )
@@ -159,10 +192,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND LIBTEDDY_USE_LIBCXX)
     )
 endif()
 
-## Enable sanitizers for Debug build if requested
+## Enable asan and ubsan if requested
 if(LIBTEDDY_USE_SANITIZERS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message(
-        "=== Asan a Ubsan enabled for Debug build"
+        "=== Asan a Ubsan enabled"
     )
 
     string(

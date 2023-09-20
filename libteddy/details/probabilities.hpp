@@ -8,11 +8,15 @@
 #include <cmath>
 #include <concepts>
 #include <functional>
+#include <ginac/ex.h>
+#include <ostream>
 #include <variant>
 
-namespace teddy::probs
-{
-namespace details
+#ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
+#include <ginac/ginac.h>
+#endif
+
+namespace teddy::probs::details
 {
     /**
      *  \brief Helper for vector wrap
@@ -77,6 +81,8 @@ namespace details
     };
 } // namespace details
 
+namespace teddy::probs
+{
     /**
      *  \brief Vector of probabilities for BSS
      */
@@ -297,12 +303,83 @@ namespace details
         return distMatrix;
     }
 
+}
+
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
-namespace symbolic
+namespace teddy::symprobs::details
 {
-    
+    GiNaC::symbol& time_symbol()
+    {
+        static GiNaC::realsymbol t("t");
+        return t;
+    }
+}
+
+namespace teddy::symprobs
+{
+    /**
+     *  \brief Wrapper around third-party-library-specific expression type
+     */
+    class expression
+    {
+    public:
+        expression(GiNaC::ex ex) :
+            ex_(ex)
+        {
+        }
+
+        auto evaluate(double const t) const -> double
+        {
+            GiNaC::ex result = GiNaC::evalf(ex_.subs(details::time_symbol() == t));
+            return GiNaC::ex_to<GiNaC::numeric>(result).to_double();
+        }
+
+        auto as_underlying_unsafe () const -> GiNaC::ex
+        {
+            return ex_;
+        }
+
+        auto to_latex (std::ostream& ost) const -> void
+        {
+            ost << GiNaC::latex << ex_ << GiNaC::dflt;
+        }
+
+        // TODO
+        auto to_matlab (std::ostream& ost) const -> void
+        {
+            ost << ex_;
+        }
+
+    private:
+        GiNaC::ex ex_;
+    };
+
+    /**
+     *  \brief Exponential distribution
+     */
+    expression exponential(double const rate)
+    {
+        return {rate * GiNaC::exp(-rate * details::time_symbol())};
+    }
+
+    /**
+     *  \brief Weibull distribution
+     */
+    expression weibull(double const shape, double const scale)
+    {
+        return {(shape / scale) *
+               GiNaC::pow(details::time_symbol() / scale, shape - 1) *
+               GiNaC::exp(-GiNaC::pow(details::time_symbol() / scale, shape))};
+    }
+
+    /**
+     *  \brief 1 - some other distribution
+     */
+    expression complement(expression const& other)
+    {
+        return GiNaC::ex(1) - other.as_underlying_unsafe();
+    }
 }
 #endif
-}
 
 #endif
