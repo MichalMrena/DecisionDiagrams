@@ -1,29 +1,9 @@
 #include <libteddy/reliability.hpp>
 #include <libtsl/expressions.hpp>
+#include <libtsl/generators.hpp>
 #include <nanobench/nanobench.h>
 #include <iostream>
 #include <random>
-#include "libteddy/core.hpp"
-#include "libteddy/details/operators.hpp"
-#include "libteddy/details/reliability_manager.hpp"
-
-template<class Dat, class Deg, class Dom>
-auto make_diagram (
-    teddy::tsl::minmax_expr const& expr,
-    teddy::diagram_manager<Dat, Deg, Dom>& manager
-)
-{
-    using diagram_t = typename teddy::diagram_manager<Dat, Deg, Dom>::diagram_t;
-    auto termDs     = std::vector<diagram_t>();
-    for (auto const& eTerm : expr.terms_)
-    {
-        auto vars = manager.variables(eTerm);
-        termDs.emplace_back(manager.template left_fold<teddy::ops::MIN>(
-            vars
-        ));
-    }
-    return manager.template tree_fold<teddy::ops::MAX>(termDs);
-}
 
 auto dpld_naive(auto& manager, auto const& diagram, int const index)
 {
@@ -43,8 +23,7 @@ auto dpld_naive(auto& manager, auto const& diagram, int const index)
 auto main() -> int
 {
     auto constexpr StateCount = 3;
-    // auto constexpr VarCount  = 50;
-    auto constexpr VarCount   = 30;
+    auto constexpr VarCount   = 15;
     auto constexpr TermCount  = 35;
     auto constexpr TermSize   = 7;
     auto constexpr Seed       = 18'234;
@@ -56,7 +35,7 @@ auto main() -> int
         TermSize
     );
     auto manager = teddy::mss_manager<StateCount>(VarCount, 1'000'000);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = teddy::tsl::make_diagram(expr, manager);
     std::cout << manager.get_node_count(diagram) << "\n";
 
     ankerl::nanobench::Bench bench;

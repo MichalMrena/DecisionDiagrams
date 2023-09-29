@@ -1,9 +1,8 @@
 #ifndef LIBTEDDY_TSL_ITERATORS_HPP
 #define LIBTEDDY_TSL_ITERATORS_HPP
 
+#include <libteddy/details/types.hpp>
 #include <vector>
-
-#include "expressions.hpp"
 
 namespace teddy::tsl
 {
