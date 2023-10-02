@@ -5,7 +5,7 @@
 #include <iostream>
 #include <random>
 
-auto dpld_naive(auto& manager, auto const& diagram, int const index)
+auto dpld_type3_naive(auto& manager, auto const& diagram, int const index)
 {
     auto const lhsCofactor = manager.get_cofactor(diagram, index, 0);
     auto const rhsCofactor = manager.get_cofactor(diagram, index, 1);
@@ -18,6 +18,13 @@ auto dpld_naive(auto& manager, auto const& diagram, int const index)
         return val >= 1;
     });
     return manager.template apply<teddy::ops::AND>(lhs, rhs);
+}
+
+auto dpld_type2_naive(auto& manager, auto const& diagram, int const index)
+{
+    auto const lhs = manager.get_cofactor(diagram, index, 0);
+    auto const rhs = manager.get_cofactor(diagram, index, 1);
+    return manager.template apply<teddy::ops::GREATER>(lhs, rhs);
 }
 
 auto main() -> int
@@ -55,29 +62,19 @@ auto main() -> int
     // }
 
     bench.title("DPLDs");
-    bench.warmup(100);
+    bench.warmup(5);
     bench.relative(true);
-    bench.runWithBeforeHook(
-        "dpld-new",
-        [&manager, &diagram]()
-        {
-            for (auto i = 0; i < VarCount; ++i)
-            {
-                manager.dpld({i, 0, 1}, teddy::dpld::type_3_increase(1), diagram);
-            }
-        },
-        [&manager]()
-        {
-            manager.clear_cache();
-        }
-    );
+    bench.epochs(10);
+    bench.minEpochIterations(10);
     bench.runWithBeforeHook(
         "dpld-old",
         [&manager, &diagram]()
         {
             for (auto i = 0; i < VarCount; ++i)
             {
-                dpld_naive(manager, diagram, i);
+                ankerl::nanobench::doNotOptimizeAway(
+                    dpld_type3_naive(manager, diagram, i)
+                );
             }
         },
         [&manager]()
@@ -85,5 +82,35 @@ auto main() -> int
             manager.clear_cache();
         }
     );
-    bench.render(ankerl::nanobench::templates::csv(), std::cout);
+    bench.runWithBeforeHook(
+        "dpld-new",
+        [&manager, &diagram]()
+        {
+            for (auto i = 0; i < VarCount; ++i)
+            {
+                ankerl::nanobench::doNotOptimizeAway(
+                    manager.dpld(
+                        {i, 0, 1},
+                        teddy::dpld::type_3_increase(1),
+                        diagram
+                    )
+                );
+            }
+        },
+        [&manager]()
+        {
+            manager.clear_cache();
+        }
+    );
+    auto results = bench.results();
+    for (auto const& result : results)
+    {
+        for (int i = 0; i < result.size(); ++i)
+        {
+            std::cout << result.get(i, ankerl::nanobench::Result::Measure::elapsed) << "\t";
+            std::cout << result.get(i, ankerl::nanobench::Result::Measure::iterations) << "\t";
+        }
+        std::cout << "\n";
+    }
+    // bench.render(ankerl::nanobench::templates::csv(), std::cout);
 }

@@ -8,20 +8,18 @@ namespace teddy::tsl
 {
     template<class Dat, class Deg, class Dom>
     auto make_diagram (
-        teddy::tsl::minmax_expr const& expr,
-        teddy::diagram_manager<Dat, Deg, Dom>& manager
+        minmax_expr const& expr,
+        diagram_manager<Dat, Deg, Dom>& manager
     )
     {
-        using mdd = typename teddy::diagram_manager<Dat, Deg, Dom>::diagram_t;
-        auto termDs     = std::vector<mdd>();
+        using mdd = typename diagram_manager<Dat, Deg, Dom>::diagram_t;
+        std::vector<mdd> terms;
         for (auto const& eTerm : expr.terms_)
         {
             auto vars = manager.variables(eTerm);
-            termDs.emplace_back(manager.template left_fold<teddy::ops::MIN>(
-                vars
-            ));
+            terms.push_back(manager.template left_fold<ops::MIN>(vars));
         }
-        return manager.template tree_fold<teddy::ops::MAX>(termDs);
+        return manager.template tree_fold<ops::MAX>(terms);
     }
 }
 
