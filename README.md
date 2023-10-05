@@ -317,3 +317,6 @@ Mrena, M., Kvassay, M., &#38; Czapp, S. (2022). **Single and Series of Multi-val
 
 Mrena, M., &#38; Kvassay, M. (2022). **Comparison of Single MDD and Series of MDDs in the Representation of Structure Function of Series-Parallel MSS.** *2022 IEEE 16th International Scientific Conference on Informatics (Informatics)*, 225–230. https://doi.org/10.1109/INFORMATICS57926.2022.10083458
 &nbsp;  
+
+Mrena, M., &#38; Kvassay, M. (2023). **Experimental Survey of Algorithms for the Calculation of Node Traversal Probabilities in Multi-valued Decision Diagrams.** *In: van Gulijk, C., Zaitseva, E., Kvassay, M. (eds) Reliability Engineering and Computational Intelligence for Complex Systems. Studies in Systems, Decision and Control, vol 496. Springer, Cham.* https://doi.org/10.1007/978-3-031-40997-4_1
+&nbsp;  
