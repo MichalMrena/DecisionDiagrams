@@ -21,6 +21,15 @@ namespace teddy::tsl
         }
         return manager.template tree_fold<ops::MAX>(terms);
     }
+
+    template<class Dat, class Deg, class Dom>
+    auto make_diagram (
+        std::unique_ptr<tsl::expr_node> const& expr,
+        diagram_manager<Dat, Deg, Dom>& manager
+    )
+    {
+        return manager.from_expression_tree(*expr);
+    }
 }
 
 #endif

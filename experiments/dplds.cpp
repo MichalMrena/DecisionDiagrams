@@ -1,6 +1,9 @@
 #include <libteddy/reliability.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
+#include <libtsl/utilities.hpp>
+#include <algorithm>
+#include <chrono>
 #include <nanobench/nanobench.h>
 #include <iostream>
 #include <random>
@@ -24,93 +27,141 @@ auto dpld_type2_naive(auto& manager, auto const& diagram, int const index)
 {
     auto const lhs = manager.get_cofactor(diagram, index, 0);
     auto const rhs = manager.get_cofactor(diagram, index, 1);
-    return manager.template apply<teddy::ops::GREATER>(lhs, rhs);
+    return manager.template apply<teddy::ops::LESS>(lhs, rhs);
 }
+
+char const* unit_str(std::chrono::nanoseconds) { return "ns"; }
+char const* unit_str(std::chrono::microseconds){ return "µs"; }
+char const* unit_str(std::chrono::milliseconds){ return "ms"; }
 
 auto main() -> int
 {
-    auto constexpr StateCount = 3;
-    auto constexpr VarCount   = 15;
-    auto constexpr TermCount  = 35;
-    auto constexpr TermSize   = 7;
-    auto constexpr Seed       = 18'234;
-    auto exprRng    = std::mt19937_64(Seed);
-    auto const expr = teddy::tsl::make_minmax_expression(
-        exprRng,
-        VarCount,
-        TermCount,
-        TermSize
-    );
-    auto manager = teddy::mss_manager<StateCount>(VarCount, 1'000'000);
-    auto const diagram = teddy::tsl::make_diagram(expr, manager);
-    std::cout << manager.get_node_count(diagram) << "\n";
+    namespace ch = std::chrono;
+    using time_unit = ch::nanoseconds;
 
-    ankerl::nanobench::Bench bench;
 
-    // for (auto i = 0; i < VarCount; ++i)
-    // {
-    //     auto const d1 = manager.dpld({i, 0, 1}, teddy::dpld::type_3_increase(1), diagram);
-    //     auto const d2 = dpld_naive(manager, diagram, i);
-    //     if (d1.equals(d2))
-    //     {
-    //         std::cout << "ok" << "\n";
-    //     }
-    //     else
-    //     {
-    //         std::cout << "!!! not good" << "\n";
-    //     }
-    // }
+    char const* const Sep         = "\t";
+    char const* const Eol         = "\n";
+    int constexpr DiagramCount    = 10;
+    int constexpr ReplCount       = 10;
+    int constexpr StateCount      = 3;
+    int constexpr DerivativeCount = 10;
+    int constexpr DerivativeType  = 3;
+    int constexpr Seed            = 18'234;
+    // int constexpr VarCount        = 1'000;
+    int constexpr VarCount        = 20;
+    int constexpr TermCount       = 35;
+    int constexpr TermSize        = 7;
 
-    bench.title("DPLDs");
-    bench.warmup(5);
-    bench.relative(true);
-    bench.epochs(10);
-    bench.minEpochIterations(10);
-    bench.runWithBeforeHook(
-        "dpld-old",
-        [&manager, &diagram]()
-        {
-            for (auto i = 0; i < VarCount; ++i)
-            {
-                ankerl::nanobench::doNotOptimizeAway(
-                    dpld_type3_naive(manager, diagram, i)
-                );
-            }
-        },
-        [&manager]()
-        {
-            manager.clear_cache();
-        }
-    );
-    bench.runWithBeforeHook(
-        "dpld-new",
-        [&manager, &diagram]()
-        {
-            for (auto i = 0; i < VarCount; ++i)
-            {
-                ankerl::nanobench::doNotOptimizeAway(
-                    manager.dpld(
-                        {i, 0, 1},
-                        teddy::dpld::type_3_increase(1),
-                        diagram
-                    )
-                );
-            }
-        },
-        [&manager]()
-        {
-            manager.clear_cache();
-        }
-    );
-    auto results = bench.results();
-    for (auto const& result : results)
+    std::mt19937_64 exprRng(Seed);
+    auto indices = teddy::tsl::fill_vector(VarCount, teddy::tsl::Identity);
+    std::shuffle(indices.begin(), indices.end(), exprRng);
+
+    std::cout << "diagram-id"  << Sep
+              << "node-count[" << unit_str(time_unit()) << "]" << Sep
+              << "naive-dpld[" << unit_str(time_unit()) << "]" << Sep
+              << "new-dpld"    << Sep
+              << "relative"    << Eol;
+
+    for (int diagramId = 0; diagramId < DiagramCount; ++diagramId)
     {
-        for (int i = 0; i < result.size(); ++i)
+        auto const expr = teddy::tsl::make_minmax_expression(
+            exprRng,
+            VarCount,
+            TermCount,
+            TermSize
+        );
+        // auto const expr = teddy::tsl::make_expression_tree(
+        //     VarCount,
+        //     exprRng,
+        //     exprRng
+        // );
+        teddy::mss_manager<StateCount> manager(VarCount, 1'000'000);
+        auto const diagram = teddy::tsl::make_diagram(expr, manager);
+        auto const nodeCount = manager.get_node_count(diagram);
+        for (int repl = 0; repl < ReplCount; ++repl)
         {
-            std::cout << result.get(i, ankerl::nanobench::Result::Measure::elapsed) << "\t";
-            std::cout << result.get(i, ankerl::nanobench::Result::Measure::iterations) << "\t";
+            std::cout << diagramId << Sep
+                      << nodeCount << Sep;
+
+            time_unit timeNaive = time_unit::zero();
+            time_unit timeNew   = time_unit::zero();
+
+            // naive
+            {
+                auto const start = ch::high_resolution_clock::now();
+                for (int i = 0; i < DerivativeCount; ++i)
+                {
+                    if constexpr (DerivativeType == 3)
+                    {
+                        ankerl::nanobench::doNotOptimizeAway(
+                            dpld_type3_naive(
+                                manager,
+                                diagram,
+                                indices[(size_t)i]
+                            )
+                        );
+                    }
+
+                    if constexpr (DerivativeType == 2)
+                    {
+                        ankerl::nanobench::doNotOptimizeAway(
+                            dpld_type2_naive(
+                                manager,
+                                diagram,
+                                indices[(size_t)i]
+                            )
+                        );
+                    }
+                }
+                auto const end = ch::high_resolution_clock::now();
+                auto const elapsed = ch::duration_cast<time_unit>(
+                    end - start
+                );
+                timeNaive = elapsed;
+                std::cout << elapsed.count() << Sep;
+            }
+
+            manager.clear_cache();
+
+            // new
+            {
+                auto const start = ch::high_resolution_clock::now();
+                for (int i = 0; i < DerivativeCount; ++i)
+                {
+                    if constexpr (DerivativeType == 3)
+                    {
+                        ankerl::nanobench::doNotOptimizeAway(
+                            manager.dpld(
+                                {indices[(size_t)i], 0, 1},
+                                teddy::dpld::type_3_increase(1),
+                                diagram
+                            )
+                        );
+                    }
+
+                    if constexpr (DerivativeType == 2)
+                    {
+                        ankerl::nanobench::doNotOptimizeAway(
+                            manager.dpld(
+                                {indices[(size_t)i], 0, 1},
+                                teddy::dpld::type_2_increase(),
+                                diagram
+                            )
+                        );
+                    }
+                }
+                auto const end = ch::high_resolution_clock::now();
+                auto const elapsed = ch::duration_cast<time_unit>(
+                    end - start
+                );
+                timeNew = elapsed;
+                std::cout << elapsed.count() << Sep;
+            }
+            double const relDiff =
+                static_cast<double>(std::min(timeNaive, timeNew).count()) /
+                static_cast<double>(std::max(timeNaive, timeNew).count());
+            std::cout << relDiff << Eol;
         }
-        std::cout << "\n";
     }
-    // bench.render(ankerl::nanobench::templates::csv(), std::cout);
 }
