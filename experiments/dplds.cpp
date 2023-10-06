@@ -39,7 +39,6 @@ auto main() -> int
     namespace ch = std::chrono;
     using time_unit = ch::nanoseconds;
 
-
     char const* const Sep         = "\t";
     char const* const Eol         = "\n";
     int constexpr DiagramCount    = 10;
@@ -58,9 +57,9 @@ auto main() -> int
     std::shuffle(indices.begin(), indices.end(), exprRng);
 
     std::cout << "diagram-id"  << Sep
-              << "node-count[" << unit_str(time_unit()) << "]" << Sep
+              << "node-count"  << Sep
               << "naive-dpld[" << unit_str(time_unit()) << "]" << Sep
-              << "new-dpld"    << Sep
+              << "new-dpld["   << unit_str(time_unit()) << "]" << Sep
               << "relative"    << Eol;
 
     for (int diagramId = 0; diagramId < DiagramCount; ++diagramId)
