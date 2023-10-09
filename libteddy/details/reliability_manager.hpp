@@ -265,6 +265,7 @@ public:
      */
     [[nodiscard]] auto get_unavailability (int32 state) -> double;
 
+#ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
     // TODO cmp post a level verzie
 
     /**
@@ -296,7 +297,7 @@ public:
         Ps const& probs,
         diagram_t const& diagram
     ) -> symprobs::expression;
-
+#endif
     // TODO calculate_state_frequency
     /**
      *  \brief Returns system state frequency of state \p state
@@ -710,6 +711,8 @@ auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
     return result;
 }
 
+#ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
+
 /**
  *  \brief TODO
  */
@@ -759,6 +762,8 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
     );
     return symprobs::expression(exprMap.find(root)->second);
 }
+
+#endif
 
 template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::state_frequency(

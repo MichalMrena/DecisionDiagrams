@@ -144,6 +144,8 @@ inline auto make_time_probability_vector (
     return probs;
 }
 
+#ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
+
 inline auto make_time_symprobability_vector (
     int32 const varCount,
     std::ranlux48& rng
@@ -185,6 +187,8 @@ inline auto make_time_symprobability_vector (
 
     return probs;
 }
+
+#endif
 } // namespace teddy::tsl
 
 #endif
