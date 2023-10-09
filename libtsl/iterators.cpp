@@ -17,13 +17,7 @@ domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({})
 domain_iterator::domain_iterator(std::vector<int32> domains) :
     domain_iterator(
         domains,
-        utils::fill_vector(
-            ssize(domains),
-            [] (auto x)
-            {
-                return x;
-            }
-        ),
+        utils::fill_vector(ssize(domains), [] (auto x) { return x; }),
         {}
     )
 {
@@ -55,10 +49,7 @@ domain_iterator::domain_iterator(
                     return std::ranges::end(fixed)
                         == std::ranges::find_if(
                                fixed,
-                               [i] (auto const p)
-                               {
-                                   return p.first == i;
-                               }
+                               [i] (auto const p) { return p.first == i; }
                         );
                 }
             );

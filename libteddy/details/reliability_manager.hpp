@@ -2,10 +2,12 @@
 #define LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 
 #include <libteddy/details/diagram_manager.hpp>
+#include <libteddy/details/dplds.hpp>
 #include <libteddy/details/probabilities.hpp>
 
-#include <concepts>
 #include <ginac/ex.h>
+
+#include <concepts>
 #include <iterator>
 #include <unordered_map>
 #include <utility>
@@ -14,89 +16,11 @@
 
 namespace teddy
 {
+namespace details
+{
 template<class Degree>
 concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
-
-// TODO move to sep. header
-namespace dpld
-{
-/**
- *  \brief Returns lambda that can be used in basic \c dpld
- */
-inline static auto constexpr basic = [] (int32 const fFrom, int32 const fTo)
-{
-    return [=] (int32 const lhs, int32 const rhs)
-    {
-        return lhs == fFrom && rhs == fTo;
-    };
-};
-
-/**
- *  \brief Returns lambda that can be used in \c dpld of type 1
- */
-inline static auto constexpr type_1_decrease = [] (int32 const state)
-{
-    return [state] (int32 const lhs, int32 const rhs)
-    {
-        return lhs == state && rhs < state;
-    };
-};
-
-/**
- *  \brief Returns lambda that can be used in \c dpld of type 1
- */
-inline static auto constexpr type_1_increase = [] (int32 const state)
-{
-    return [state] (int32 const lhs, int32 const rhs)
-    {
-        return lhs == state && rhs > state;
-    };
-};
-
-/**
- *  \brief Returns lambda that can be used in \c dpld of type 2
- */
-inline static auto constexpr type_2_decrease = [] ()
-{
-    return [] (int32 const lhs, int32 const rhs)
-    {
-        return lhs > rhs;
-    };
-};
-
-/**
- *  \brief Returns lambda that can be used in \c dpld of type 2
- */
-inline static auto constexpr type_2_increase = [] ()
-{
-    return [] (int32 const lhs, int32 const rhs)
-    {
-        return lhs < rhs;
-    };
-};
-
-/**
- *  \brief Returns lambda that can be used in \c dpld of type 3
- */
-inline static auto constexpr type_3_decrease = [] (int32 const state)
-{
-    return [state] (int32 const lhs, int32 const rhs)
-    {
-        return lhs >= state && rhs < state;
-    };
-};
-
-/**
- *  \brief Returns lambda that can be used in \c dpld of type 3
- */
-inline static auto constexpr type_3_increase = [] (int32 const state)
-{
-    return [state] (int32 const lhs, int32 const rhs)
-    {
-        return lhs < state && rhs >= state;
-    };
-};
-} // namespace dpld
+}
 
 /**
  *  \struct var_change
@@ -122,6 +46,9 @@ class reliability_manager : public diagram_manager<double, Degree, Domain>
 public:
     using diagram_t =
         typename diagram_manager<double, Degree, Domain>::diagram_t;
+    // TODO                          ^^^^^^
+    //                          details::bytes<max(sizeof(double),
+    //                          sizeof(expr))>
 
 public:
     /**
@@ -136,7 +63,7 @@ public:
      *  \param diagram Structure function
      */
     template<probs::prob_vector Ps>
-    requires(is_bss<Degree>)
+    requires(details::is_bss<Degree>)
     auto calculate_probabilities (Ps const& probs, diagram_t const& diagram)
         -> void;
 
@@ -167,11 +94,9 @@ public:
      *  state 1 given probabilities \p probs
      */
     template<probs::prob_vector Ps>
-    requires(is_bss<Degree>)
-    auto calculate_probability (
-        Ps const& probs,
-        diagram_t const& diagram
-    ) -> double;
+    requires(details::is_bss<Degree>)
+    auto calculate_probability (Ps const& probs, diagram_t const& diagram)
+        -> double;
 
     /**
      *  \brief Calculates and returns probability of a system state \p state
@@ -218,7 +143,7 @@ public:
      *  \return System availability
      */
     template<probs::prob_vector Ps, class Foo = void>
-    requires(is_bss<Degree>)
+    requires(details::is_bss<Degree>)
     auto calculate_availability (Ps const& probs, diagram_t const& diagram)
         -> utils::second_t<Foo, double>;
 
@@ -254,8 +179,9 @@ public:
      *  \return System availability
      */
     template<class Foo = void>
-    requires(is_bss<Degree>)
-    [[nodiscard]] auto get_availability () const -> utils::second_t<Foo, double>;
+    requires(details::is_bss<Degree>)
+    [[nodiscard]] auto get_availability () const
+        -> utils::second_t<Foo, double>;
 
     /**
      *  \brief Returns system availability with
@@ -285,7 +211,7 @@ public:
      *  \return System unavailtability
      */
     template<probs::prob_matrix Ps, class Foo = void>
-    requires(is_bss<Degree>)
+    requires(details::is_bss<Degree>)
     auto calculate_unavailability (Ps const& probs, diagram_t const& diagram)
         -> utils::second_t<Foo, double>;
 
@@ -321,7 +247,7 @@ public:
      *  \return System availability
      */
     template<class Foo = void>
-    requires(is_bss<Degree>)
+    requires(details::is_bss<Degree>)
     auto get_unavailability () -> utils::second_t<Foo, double>;
 
     /**
@@ -341,11 +267,33 @@ public:
      */
     [[nodiscard]] auto get_unavailability (int32 state) -> double;
 
+    // TODO cmp post a level verzie
+
+    /**
+     *  \brief TODO
+     */
+    template<class Ps>
+    auto symbolic_probability (
+        int32 state,
+        Ps const& probs,
+        diagram_t const& diagram
+    ) -> symprobs::expression;
+
     /**
      *  \brief TODO
      */
     template<class Ps>
     auto symbolic_availability (
+        int32 state,
+        Ps const& probs,
+        diagram_t const& diagram
+    ) -> symprobs::expression;
+
+    /**
+     *  \brief TODO
+     */
+    template<class Ps>
+    auto unsymbolic_availability (
         int32 state,
         Ps const& probs,
         diagram_t const& diagram
@@ -584,13 +532,16 @@ private:
 
 template<class Degree, class Domain>
 template<probs::prob_vector Ps>
-requires(is_bss<Degree>)
+requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_probabilities(
     Ps const& probs,
     diagram_t const& diagram
 ) -> void
 {
-    this->calculate_probabilities(probs::details::prob_vector_wrap(probs), diagram);
+    this->calculate_probabilities(
+        probs::details::prob_vector_wrap(probs),
+        diagram
+    );
 }
 
 template<class Degree, class Domain>
@@ -605,7 +556,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
 
 template<class Degree, class Domain>
 template<probs::prob_vector Ps>
-requires(is_bss<Degree>)
+requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_probability(
     Ps const& probs,
     diagram_t const& diagram
@@ -640,7 +591,7 @@ auto reliability_manager<Degree, Domain>::get_probability(int32 const state
 
 template<class Degree, class Domain>
 template<probs::prob_vector Ps, class Foo>
-requires(is_bss<Degree>)
+requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_availability(
     Ps const& probs,
     diagram_t const& diagram
@@ -677,7 +628,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 
 template<class Degree, class Domain>
 template<class Foo>
-requires(is_bss<Degree>)
+requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::get_availability() const
     -> utils::second_t<Foo, double>
 {
@@ -704,7 +655,7 @@ auto reliability_manager<Degree, Domain>::get_availability(int32 const state
 
 template<class Degree, class Domain>
 template<probs::prob_matrix Ps, class Foo>
-requires(is_bss<Degree>)
+requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
     Ps const& probs,
     diagram_t const& diagram
@@ -737,7 +688,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
 
 template<class Degree, class Domain>
 template<class Foo>
-requires(is_bss<Degree>)
+requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::get_unavailability()
     -> utils::second_t<Foo, double>
 {
@@ -766,7 +717,7 @@ auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
  */
 template<class Degree, class Domain>
 template<class Ps>
-auto reliability_manager<Degree, Domain>::symbolic_availability (
+auto reliability_manager<Degree, Domain>::symbolic_availability(
     int32 state,
     Ps const& probs,
     diagram_t const& diagram
@@ -778,11 +729,9 @@ auto reliability_manager<Degree, Domain>::symbolic_availability (
     this->nodes_.for_each_terminal_node(
         [&exprMap, state] (node_t* const node)
         {
-            GiNaC::ex val(
-                static_cast<double>(
-                    static_cast<int32>(node->get_value() >= state)
-                )
-            );
+            GiNaC::ex val(static_cast<double>(
+                static_cast<int32>(node->get_value() >= state)
+            ));
             exprMap.emplace(std::make_pair(node, val));
         }
     );
@@ -794,16 +743,18 @@ auto reliability_manager<Degree, Domain>::symbolic_availability (
         {
             if (not node->is_terminal())
             {
-                auto [it, isIn] = exprMap.emplace(std::make_pair(node, GiNaC::ex(0.0)));
+                auto [it, isIn]
+                    = exprMap.emplace(std::make_pair(node, GiNaC::ex(0.0)));
                 assert(isIn);
-                GiNaC::ex& expr = it->second;
+                GiNaC::ex& expr       = it->second;
                 int32 const nodeIndex = node->get_index();
                 int32 const domain    = this->nodes_.get_domain(nodeIndex);
                 for (int32 k = 0; k < domain; ++k)
                 {
                     node_t* const son = node->get_son(k);
                     expr += exprMap.find(son)->second
-                          * probs[as_uindex(nodeIndex)][as_uindex(k)].as_underlying_unsafe();
+                          * probs[as_uindex(nodeIndex)][as_uindex(k)]
+                                .as_underlying_unsafe();
                 }
             }
         }
@@ -1131,12 +1082,8 @@ auto reliability_manager<Degree, Domain>::calculate_ntps_post_impl(
     node_t* const root
 ) -> double
 {
-    this->nodes_.for_each_terminal_node(
-        [] (node_t* const node)
-        {
-            node->get_data() = 0.0;
-        }
-    );
+    this->nodes_.for_each_terminal_node([] (node_t* const node)
+                                        { node->get_data() = 0.0; });
 
     for (int32 const selectedValue : selectedValues)
     {
@@ -1178,17 +1125,10 @@ auto reliability_manager<Degree, Domain>::calculate_ntps_level_impl(
 {
     this->nodes_.traverse_pre(
         root,
-        [] (node_t* const node)
-        {
-            node->get_data() = 0.0;
-        }
+        [] (node_t* const node) { node->get_data() = 0.0; }
     );
-    this->nodes_.for_each_terminal_node(
-        [] (node_t* const node)
-        {
-            node->get_data() = 0.0;
-        }
-    );
+    this->nodes_.for_each_terminal_node([] (node_t* const node)
+                                        { node->get_data() = 0.0; });
     root->get_data() = 1.0;
 
     this->nodes_.traverse_level(

@@ -9,7 +9,7 @@ namespace teddy::tsl
 // minmax_expr:
 
 auto make_minmax_expression (
-    std::mt19937_64& indexRng,
+    std::ranlux48& indexRng,
     int32 const varCount,
     int32 const termCount,
     int32 const termSize

@@ -16,9 +16,7 @@ auto probability (
 
     domain_for_each(
         table,
-        [&table,
-         &totalprob,
-         &probabilities] (auto const val, auto const& elem)
+        [&table, &totalprob, &probabilities] (auto const val, auto const& elem)
         {
             if (val == 1)
             {
@@ -26,8 +24,8 @@ auto probability (
                 for (auto i = 0; i < table.get_var_count(); ++i)
                 {
                     localprob *= elem[as_uindex(i)] == 1
-                        ? probabilities[as_uindex(i)]
-                        : 1 - probabilities[as_uindex(i)];
+                                   ? probabilities[as_uindex(i)]
+                                   : 1 - probabilities[as_uindex(i)];
                 }
                 totalprob += localprob;
             }
@@ -140,9 +138,7 @@ auto fussell_vesely_importance (
     auto relevantMcvs  = std::ranges::views::filter(
         allMcvs,
         [componentIndex, componetnState] (std::vector<int32> const& mcv)
-        {
-            return mcv[as_uindex(componentIndex)] == componetnState - 1;
-        }
+        { return mcv[as_uindex(componentIndex)] == componetnState - 1; }
     );
 
     auto result = .0;
@@ -173,8 +169,7 @@ auto fussell_vesely_importance (
 auto calculate_mcvs (truth_table const& table, int32 state)
     -> std::vector<std::vector<int32>>
 {
-    auto constexpr PiConj = [] (auto const lhs, auto const rhs)
-    {
+    auto constexpr PiConj = [] (auto const lhs, auto const rhs) {
         return std::min({lhs, rhs, Undefined});
     };
 
@@ -201,8 +196,7 @@ auto calculate_mcvs (truth_table const& table, int32 state)
 auto calculate_mpvs (truth_table const& table, int32 state)
     -> std::vector<std::vector<int32>>
 {
-    auto constexpr PiConj = [] (auto const lhs, auto const rhs)
-    {
+    auto constexpr PiConj = [] (auto const lhs, auto const rhs) {
         return std::min({lhs, rhs, Undefined});
     };
 

@@ -21,53 +21,53 @@ namespace teddy
 {
 template<class Vars>
 concept in_var_values = requires(Vars values, int32 index) {
-    {
-        values[index]
-    } -> std::convertible_to<int32>;
-};
+                            {
+                                values[index]
+                            } -> std::convertible_to<int32>;
+                        };
 
 template<class Vars>
 concept out_var_values = requires(Vars values, int32 index, int32 value) {
-    values[index] = value;
-};
+                             values[index] = value;
+                         };
 
 template<class Node>
 concept expression_node = requires(Node node, int32 value) {
-    {
-        node.is_variable()
-    } -> std::same_as<bool>;
-    {
-        node.is_constant()
-    } -> std::same_as<bool>;
-    {
-        node.is_operation()
-    } -> std::same_as<bool>;
-    {
-        node.get_index()
-    } -> std::same_as<int32>;
-    {
-        node.get_value()
-    } -> std::same_as<int32>;
-    {
-        node.evaluate(value, value)
-    } -> std::same_as<int32>;
-    {
-        node.get_left()
-    } -> std::same_as<Node const&>;
-    {
-        node.get_right()
-    } -> std::same_as<Node const&>;
-};
+                              {
+                                  node.is_variable()
+                              } -> std::same_as<bool>;
+                              {
+                                  node.is_constant()
+                              } -> std::same_as<bool>;
+                              {
+                                  node.is_operation()
+                              } -> std::same_as<bool>;
+                              {
+                                  node.get_index()
+                              } -> std::same_as<int32>;
+                              {
+                                  node.get_value()
+                              } -> std::same_as<int32>;
+                              {
+                                  node.evaluate(value, value)
+                              } -> std::same_as<int32>;
+                              {
+                                  node.get_left()
+                              } -> std::same_as<Node const&>;
+                              {
+                                  node.get_right()
+                              } -> std::same_as<Node const&>;
+                          };
 
 template<class Degree>
 concept is_bdd = std::same_as<degrees::fixed<2>, Degree>;
 
 template<class F>
 concept int_to_int = requires(F function, int32 value) {
-    {
-        function(value)
-    } -> std::convertible_to<int32>;
-};
+                         {
+                             function(value)
+                         } -> std::convertible_to<int32>;
+                     };
 
 enum class fold_type
 {
@@ -1178,8 +1178,7 @@ auto diagram_manager<Data, Degree, Domain>::apply(
     using OpType = utils::type_if<
         utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
         ops::MAXB<Domain::value>,
-        Op
-    >::type;
+        Op>::type;
 
     node_t* const newRoot = this->apply_impl(
         OpType(),
@@ -1198,9 +1197,9 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
     node_t* const rhs
 ) -> node_t*
 {
-    #ifdef LIBTEDDY_COLLECT_STATS
+#ifdef LIBTEDDY_COLLECT_STATS
     ++stats::get_stats().applyStepCalls_;
-    #endif
+#endif
 
     node_t* const cached = nodes_.template cache_find<Op>(lhs, rhs);
     if (cached)
@@ -1251,16 +1250,12 @@ auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram)
     using OpType = utils::type_if<
         utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
         ops::MAXB<Domain::value>,
-        Op
-    >::type;
+        Op>::type;
 
     // TODO capacity
     std::vector<node_pack<sizeof...(Diagram)>, node_t*> cache(100'000);
-    node_t* const newRoot = this->apply_n_impl(
-        cache,
-        OpType(),
-        diagram.unsafe_get_root()...
-    );
+    node_t* const newRoot
+        = this->apply_n_impl(cache, OpType(), diagram.unsafe_get_root()...);
     nodes_.run_deferred();
     return diagram_t(newRoot);
 }
@@ -1420,9 +1415,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
         {
             // Simply return reference to the data member.
             return [] (node_t* const node) mutable -> decltype(auto)
-            {
-                return (node->get_data());
-            };
+            { return (node->get_data()); };
         }
         else
         {
@@ -1718,10 +1711,7 @@ auto diagram_manager<Data, Degree, Domain>::negate(diagram_t const& diagram)
 {
     return this->transform(
         diagram,
-        [] (int32 const value)
-        {
-            return 1 - value;
-        }
+        [] (int32 const value) { return 1 - value; }
     );
 }
 
@@ -1766,13 +1756,7 @@ template<class Data, class Degree, class Domain>
 auto diagram_manager<Data, Degree, Domain>::reduce(diagram_t const& diagram)
     -> diagram_t
 {
-    return this->transform(
-        diagram,
-        [] (int32 const val)
-        {
-            return val;
-        }
-    );
+    return this->transform(diagram, [] (int32 const val) { return val; });
 }
 
 template<class Data, class Degree, class Domain>

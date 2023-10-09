@@ -22,7 +22,7 @@ struct minmax_expr
  *  \brief Makes random minmax expression.
  */
 auto make_minmax_expression (
-    std::mt19937_64& indexRng,
+    std::ranlux48& indexRng,
     int32 varCount,
     int32 termCount,
     int32 termSize

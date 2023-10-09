@@ -52,7 +52,7 @@ auto main() -> int
     int constexpr TermCount       = 35;
     int constexpr TermSize        = 7;
 
-    std::mt19937_64 exprRng(Seed);
+    std::ranlux48 exprRng(Seed);
     auto indices = teddy::tsl::fill_vector(VarCount, teddy::tsl::Identity);
     std::shuffle(indices.begin(), indices.end(), exprRng);
 

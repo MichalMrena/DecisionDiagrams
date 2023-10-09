@@ -2,6 +2,7 @@
 #define LIBTEDDY_TSL_ITERATORS_HPP
 
 #include <libteddy/details/types.hpp>
+
 #include <vector>
 
 namespace teddy::tsl

@@ -14,6 +14,7 @@
 #include <random>
 #include <variant>
 #include <vector>
+
 #include "libteddy/details/diagram_manager.hpp"
 
 namespace teddy::tests
@@ -187,10 +188,7 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
             {
                 auto indices = utils::fill_vector(
                     settings.varcount_,
-                    [] (int32 x)
-                    {
-                        return x;
-                    }
+                    [] (int32 x) { return x; }
                 );
                 std::ranges::shuffle(indices, rng);
                 return indices;
@@ -199,17 +197,11 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
             {
                 auto indices = utils::fill_vector(
                     settings.varcount_,
-                    [] (int32 x)
-                    {
-                        return x;
-                    }
+                    [] (int32 x) { return x; }
                 );
                 return indices;
             },
-            [] (given_order_tag const& indices)
-            {
-                return indices.order_;
-            }},
+            [] (given_order_tag const& indices) { return indices.order_; }},
         settings.order_
     );
 }
@@ -230,16 +222,10 @@ auto make_domains (
                 auto dist = std::uniform_int_distribution<int32>(2, M);
                 return utils::fill_vector(
                     settings.varcount_,
-                    [&rng, &dist] (auto)
-                    {
-                        return dist(rng);
-                    }
+                    [&rng, &dist] (auto) { return dist(rng); }
                 );
             },
-            [] (given_domains_tag const& tag)
-            {
-                return tag.domains_;
-            }},
+            [] (given_domains_tag const& tag) { return tag.domains_; }},
         settings.domains_
     );
 }
@@ -402,17 +388,17 @@ auto make_diagram (
     return max_fold(termDs);
 }
 
-/**
- *  \brief Makes diagram representing \p expr .
- */
-template<class Dat, class Deg, class Dom>
-auto make_diagram (
-    std::unique_ptr<tsl::expr_node> const& expr,
-    diagram_manager<Dat, Deg, Dom>& manager
-)
-{
-    return manager.from_expression_tree(*expr);
-}
+// /**
+//  *  \brief Makes diagram representing \p expr .
+//  */
+// template<class Dat, class Deg, class Dom>
+// auto make_diagram (
+//     std::unique_ptr<tsl::expr_node> const& expr,
+//     diagram_manager<Dat, Deg, Dom>& manager
+// )
+// {
+//     return manager.from_expression_tree(*expr);
+// }
 
 /**
  *  \brief Makes minmax expression with given settings.
@@ -457,6 +443,7 @@ auto make_expression (
     );
 }
 
+// TODO moved to libtsl
 /**
  *  \brief Makes random component state probabilities vector
  */
@@ -467,15 +454,16 @@ auto make_prob_vector (
 ) -> std::vector<double>
 {
     auto const domains = manager.get_domains();
-    auto probs = std::vector<double>(as_usize(manager.get_var_count()));
+    auto probs         = std::vector<double>(as_usize(manager.get_var_count()));
     for (auto i = 0; i < ssize(probs); ++i)
     {
-        auto dist = std::uniform_real_distribution<double>(.0, 1.0);
+        auto dist           = std::uniform_real_distribution<double>(.0, 1.0);
         probs[as_uindex(i)] = dist(rng);
     }
     return probs;
 }
 
+// TODO moved to libtsl
 /**
  *  \brief Makes random component state probabilities matrix
  */
