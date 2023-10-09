@@ -5,8 +5,6 @@
 #include <libteddy/details/dplds.hpp>
 #include <libteddy/details/probabilities.hpp>
 
-#include <ginac/ex.h>
-
 #include <concepts>
 #include <iterator>
 #include <unordered_map>
