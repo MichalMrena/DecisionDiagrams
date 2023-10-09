@@ -58,6 +58,11 @@ struct bytes
 {
     char bytes_[Count];
 };
+
+template<>
+struct bytes<0>
+{
+};
 } // namespace details
 
 template<class Data, class Degree>
@@ -80,6 +85,8 @@ struct node_ptr_array
 };
 
 template<class Data, class Degree>
+//             ^^^^
+//             byte count, byte align
 class node
 {
 public:

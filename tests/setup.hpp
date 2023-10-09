@@ -6,6 +6,7 @@
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
+#include <libtsl/utilities.hpp>
 
 #include <algorithm>
 #include <functional>
@@ -184,7 +185,7 @@ inline auto make_order (manager_settings const& settings, std::ranlux48& rng)
         match {
             [&] (random_order_tag)
             {
-                auto indices = utils::fill_vector(
+                auto indices = tsl::fill_vector(
                     settings.varcount_,
                     [] (int32 x) { return x; }
                 );
@@ -193,7 +194,7 @@ inline auto make_order (manager_settings const& settings, std::ranlux48& rng)
             },
             [&] (default_order_tag)
             {
-                auto indices = utils::fill_vector(
+                auto indices = tsl::fill_vector(
                     settings.varcount_,
                     [] (int32 x) { return x; }
                 );
@@ -218,7 +219,7 @@ auto make_domains (
             [&] (random_domains_tag)
             {
                 auto dist = std::uniform_int_distribution<int32>(2, M);
-                return utils::fill_vector(
+                return tsl::fill_vector(
                     settings.varcount_,
                     [&rng, &dist] (auto) { return dist(rng); }
                 );
