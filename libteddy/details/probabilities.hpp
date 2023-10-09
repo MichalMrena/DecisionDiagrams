@@ -4,8 +4,6 @@
 #include <libteddy/details/config.hpp>
 #include <libteddy/details/types.hpp>
 
-#include <ginac/ex.h>
-
 #include <array>
 #include <cassert>
 #include <cmath>
