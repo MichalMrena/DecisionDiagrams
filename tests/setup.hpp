@@ -15,8 +15,6 @@
 #include <variant>
 #include <vector>
 
-#include "libteddy/details/diagram_manager.hpp"
-
 namespace teddy::tests
 {
 /**
@@ -179,7 +177,7 @@ struct match : Ts...
 template<class... Ts>
 match(Ts...) -> match<Ts...>;
 
-inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
+inline auto make_order (manager_settings const& settings, std::ranlux48& rng)
     -> std::vector<int32>
 {
     return std::visit(
@@ -212,7 +210,7 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
 template<int32 M>
 auto make_domains (
     nonhomogeneous_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<int32>
 {
     return std::visit(
@@ -235,7 +233,7 @@ auto make_domains (
  */
 inline auto make_manager (
     bdd_manager_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> bdd_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -247,7 +245,7 @@ inline auto make_manager (
 template<int32 M>
 auto make_manager (
     mdd_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> mdd_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -259,7 +257,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     imdd_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> imdd_manager
 {
     return {
@@ -275,7 +273,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     ifmdd_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> ifmdd_manager<M>
 {
     return {
@@ -290,7 +288,7 @@ auto make_manager (
  */
 inline auto make_manager (
     bss_manager_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> bss_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -302,7 +300,7 @@ inline auto make_manager (
 template<int32 M>
 auto make_manager (
     mss_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> mss_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -314,7 +312,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     imss_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> imss_manager
 {
     return imss_manager(
@@ -331,7 +329,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     ifmss_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> ifmss_manager<M>
 {
     return ifmss_manager<M>(
@@ -348,7 +346,7 @@ auto make_manager (
 template<class Man, class Expr>
 auto make_manager (
     test_settings<Man, Expr> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 )
 {
     return make_manager(settings.manager_, rng);
@@ -405,7 +403,7 @@ auto make_diagram (
  */
 inline auto make_expression (
     minmax_expression_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> tsl::minmax_expr
 {
     return tsl::make_minmax_expression(
@@ -421,7 +419,7 @@ inline auto make_expression (
  */
 inline auto make_expression (
     expression_tree_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::unique_ptr<tsl::expr_node>
 {
     return tsl::make_expression_tree(settings.varcount_, rng, rng);
@@ -433,7 +431,7 @@ inline auto make_expression (
 template<class Man, class Expr>
 auto make_expression (
     test_settings<Man, Expr> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 )
 {
     return make_expression(
@@ -450,7 +448,7 @@ auto make_expression (
 template<class Dat, class Deg, class Dom>
 auto make_prob_vector (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<double>
 {
     auto const domains = manager.get_domains();
@@ -470,7 +468,7 @@ auto make_prob_vector (
 template<class Dat, class Deg, class Dom>
 auto make_prob_matrix (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<std::vector<double>>
 {
     auto const domains = manager.get_domains();
@@ -501,7 +499,7 @@ auto make_prob_matrix (
 template<class Dat, class Deg, class Dom>
 auto make_probabilities (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<std::vector<double>>
 {
     return make_prob_matrix(manager, rng);

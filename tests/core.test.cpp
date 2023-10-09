@@ -29,7 +29,7 @@ struct fixture_base
 {
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
-    std::mt19937_64 rng_;
+    std::ranlux48 rng_;
     int32 maxValue_ {};
 };
 
@@ -51,7 +51,7 @@ public:
         fixture_base<bdd_manager_settings, minmax_expression_settings> {
             {bdd_manager_settings {VarCount, NodeCount, random_order_tag()}},
             {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             2}
     {
     }
@@ -75,7 +75,7 @@ public:
         fixture_base<mdd_manager_settings<3>, minmax_expression_settings> {
             {mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()}},
             {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             3}
     {
     }
@@ -101,7 +101,7 @@ public:
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             minmax_expression_settings {VarCount, TermCount, TermSize},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             3
     }
     {
@@ -128,7 +128,7 @@ public:
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             3}
     {
     }
