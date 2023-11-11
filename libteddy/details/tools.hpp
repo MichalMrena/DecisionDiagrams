@@ -193,7 +193,7 @@ auto find_if (It first, It const last, Predicate test) -> It
         }
         ++first;
     }
-    return first;
+    return last;
 }
 
 /**
@@ -211,7 +211,7 @@ auto find_if_not (It first, It const last, Predicate test) -> It
         }
         ++first;
     }
-    return first;
+    return last;
 }
 
 /**
