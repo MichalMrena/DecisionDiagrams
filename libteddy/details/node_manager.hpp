@@ -725,7 +725,11 @@ auto node_manager<Data, Degree, Domain>::domain_product(
     int32 const levelTo
 ) const -> int64
 {
-    if constexpr (domains::is_fixed<Domain>::value)
+    if constexpr (domains::is_fixed<Domain>::value && Degree::value == 2)
+    {
+        return int64(1) << (levelTo - levelFrom);
+    }
+    else if constexpr (domains::is_fixed<Domain>::value)
     {
         return utils::int_pow(Domain::value, levelTo - levelFrom);
     }
