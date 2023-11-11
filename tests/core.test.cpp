@@ -738,8 +738,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
     auto const value2 = int32 {1};
     auto const intermediateDiagram
         = manager.get_cofactor(diagram, index1, value1);
-    auto const cofactoredDiagram
+    auto const cofactoredDiagram1
         = manager.get_cofactor(intermediateDiagram, index2, value2);
+    auto const cofactoredDiagram2
+        = manager.get_cofactor(diagram, {{index1, value1}, {index2, value2}});
 
     auto domainIt = tsl::domain_iterator(
         manager.get_domains(),
@@ -747,7 +749,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
         {std::make_pair(index1, value1), std::make_pair(index2, value2)}
     );
     auto evalIt = tsl::evaluating_iterator(domainIt, expr);
-    test_compare_eval(evalIt, manager, diagram);
+    test_compare_eval(evalIt, manager, cofactoredDiagram1);
+    test_compare_eval(evalIt, manager, cofactoredDiagram2);
+    BOOST_REQUIRE(cofactoredDiagram1.equals(cofactoredDiagram2));
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture)

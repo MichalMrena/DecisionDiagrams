@@ -75,6 +75,12 @@ enum class fold_type
     Tree
 };
 
+struct var_cofactor
+{
+    int32 index_;
+    int32 value_;
+};
+
 /**
  *  \class diagram_manager
  *  \brief Base class for all diagram managers that generically
@@ -497,8 +503,16 @@ public:
      *  \param varValue Value to which the \p i th varibale should be fixed
      *  \return Diagram representing cofactor of the function
      */
-    auto get_cofactor (diagram_t const& diagram, int32 varIndex, int32 varValue)
-        -> diagram_t;
+    auto get_cofactor (
+        diagram_t const& diagram,
+        int32 varIndex,
+        int32 varValue
+    ) -> diagram_t;
+
+    auto get_cofactor (
+        diagram_t const& diagram,
+        std::vector<var_cofactor> const& vars
+    ) -> diagram_t;
 
     /**
      *  \brief Transforms values of the function
@@ -751,6 +765,13 @@ private:
         int32 varIndex,
         int32 varValue,
         node_t* node
+    ) -> node_t*;
+
+    auto get_cofactor_impl (
+        std::unordered_map<node_t*, node_t*>& memo,
+        std::vector<var_cofactor> const& vars,
+        node_t* node,
+        int32 toCofactor
     ) -> node_t*;
 
     template<class F>
@@ -1421,7 +1442,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
             // Simply return reference to the data member.
             return [] (node_t* const node) mutable -> decltype(auto)
             {
-                return (node->get_data());
+                return *reinterpret_cast<int64*>((&node->get_data()));
             };
         }
         else
@@ -1459,7 +1480,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
                     int32 const sonLevel = nodes_.get_level(son);
                     int64 const diff
                         = nodes_.domain_product(nodeLevel + 1, sonLevel);
-                    data(node) += data(son) * static_cast<T>(diff);
+                    data(node) += data(son) * static_cast<int64>(diff);
                 }
             }
         }
@@ -1626,6 +1647,42 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor(
 }
 
 template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::get_cofactor(
+    diagram_t const& diagram,
+    std::vector<var_cofactor> const& vars
+) -> diagram_t
+{
+    node_t* root = diagram.unsafe_get_root();
+    if (root->is_terminal())
+    {
+        return diagram;
+    }
+
+    auto const it = utils::find_if(vars.begin(), vars.end(),
+        [root](var_cofactor var)
+    {
+        return var.index_ == root->get_index();
+    });
+
+    int32 toCofactor = static_cast<int32>(vars.size());
+    if (it != vars.end())
+    {
+        root = root->get_son(it->value_);
+        --toCofactor;
+    }
+
+    std::unordered_map<node_t*, node_t*> memo;
+    diagram_t result = diagram_t(this->get_cofactor_impl(
+        memo,
+        vars,
+        root,
+        toCofactor
+    ));
+    nodes_.run_deferred();
+    return result;
+}
+
+template<class Data, class Degree, class Domain>
 auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
     std::unordered_map<node_t*, node_t*>& memo,
     int32 const varIndex,
@@ -1659,6 +1716,63 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
     }
 
     node_t* const newNode = nodes_.make_internal_node(nodeIndex, sons);
+    memo.emplace(node, newNode);
+    return newNode;
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
+    std::unordered_map<node_t*, node_t*>& memo,
+    std::vector<var_cofactor> const& vars,
+    node_t* const node,
+    int32 const toCofactor
+) -> node_t*
+{
+    if (toCofactor == 0)
+    {
+        return node;
+    }
+
+    auto const memoIt = memo.find(node);
+    if (memoIt != memo.end())
+    {
+        return memoIt->second;
+    }
+
+    if (node->is_terminal())
+    {
+        return node;
+    }
+
+    int32 const nodeIndex = node->get_index();
+    auto const it = utils::find_if(vars.begin(), vars.end(),
+        [nodeIndex](var_cofactor var)
+    {
+        return var.index_ == nodeIndex;
+    });
+
+    node_t* newNode = nullptr;
+    if (it != vars.end())
+    {
+        newNode = this->get_cofactor_impl(
+            memo,
+            vars,
+            node->get_son(it->value_),
+            toCofactor - 1
+        );
+    }
+    else
+    {
+        int32 const nodeDomain = nodes_.get_domain(node);
+        son_container sons     = nodes_.make_son_container(nodeDomain);
+        for (int32 k = 0; k < nodeDomain; ++k)
+        {
+            node_t* const oldSon = node->get_son(k);
+            sons[k] = this->get_cofactor_impl(memo, vars, oldSon, toCofactor);
+        }
+        newNode = nodes_.make_internal_node(nodeIndex, sons);
+    }
+
     memo.emplace(node, newNode);
     return newNode;
 }
