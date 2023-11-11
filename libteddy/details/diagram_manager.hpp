@@ -1435,7 +1435,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
         if constexpr (CanUseDataMember)
         {
             // Simply return reference to the data member.
-            return [] (node_t* const node) mutable -> decltype(auto)
+            return [] (node_t* const node) mutable -> T&
             { return (node->get_data()); };
         }
         else
@@ -1473,7 +1473,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
                     int32 const sonLevel = nodes_.get_level(son);
                     int64 const diff
                         = nodes_.domain_product(nodeLevel + 1, sonLevel);
-                    data(node) += data(son) * static_cast<int64>(diff);
+                    data(node) += data(son) * static_cast<T>(diff);
                 }
             }
         }
