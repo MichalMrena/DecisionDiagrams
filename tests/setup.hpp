@@ -6,6 +6,7 @@
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>
+#include <libtsl/utilities.hpp>
 
 #include <algorithm>
 #include <functional>
@@ -14,7 +15,6 @@
 #include <random>
 #include <variant>
 #include <vector>
-#include "libteddy/details/diagram_manager.hpp"
 
 namespace teddy::tests
 {
@@ -178,38 +178,29 @@ struct match : Ts...
 template<class... Ts>
 match(Ts...) -> match<Ts...>;
 
-inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
+inline auto make_order (manager_settings const& settings, std::ranlux48& rng)
     -> std::vector<int32>
 {
     return std::visit(
         match {
             [&] (random_order_tag)
             {
-                auto indices = utils::fill_vector(
+                auto indices = tsl::fill_vector(
                     settings.varcount_,
-                    [] (int32 x)
-                    {
-                        return x;
-                    }
+                    [] (int32 x) { return x; }
                 );
                 std::ranges::shuffle(indices, rng);
                 return indices;
             },
             [&] (default_order_tag)
             {
-                auto indices = utils::fill_vector(
+                auto indices = tsl::fill_vector(
                     settings.varcount_,
-                    [] (int32 x)
-                    {
-                        return x;
-                    }
+                    [] (int32 x) { return x; }
                 );
                 return indices;
             },
-            [] (given_order_tag const& indices)
-            {
-                return indices.order_;
-            }},
+            [] (given_order_tag const& indices) { return indices.order_; }},
         settings.order_
     );
 }
@@ -220,7 +211,7 @@ inline auto make_order (manager_settings const& settings, std::mt19937_64& rng)
 template<int32 M>
 auto make_domains (
     nonhomogeneous_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<int32>
 {
     return std::visit(
@@ -228,18 +219,12 @@ auto make_domains (
             [&] (random_domains_tag)
             {
                 auto dist = std::uniform_int_distribution<int32>(2, M);
-                return utils::fill_vector(
+                return tsl::fill_vector(
                     settings.varcount_,
-                    [&rng, &dist] (auto)
-                    {
-                        return dist(rng);
-                    }
+                    [&rng, &dist] (auto) { return dist(rng); }
                 );
             },
-            [] (given_domains_tag const& tag)
-            {
-                return tag.domains_;
-            }},
+            [] (given_domains_tag const& tag) { return tag.domains_; }},
         settings.domains_
     );
 }
@@ -249,7 +234,7 @@ auto make_domains (
  */
 inline auto make_manager (
     bdd_manager_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> bdd_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -261,7 +246,7 @@ inline auto make_manager (
 template<int32 M>
 auto make_manager (
     mdd_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> mdd_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -273,7 +258,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     imdd_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> imdd_manager
 {
     return {
@@ -289,7 +274,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     ifmdd_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> ifmdd_manager<M>
 {
     return {
@@ -304,7 +289,7 @@ auto make_manager (
  */
 inline auto make_manager (
     bss_manager_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> bss_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -316,7 +301,7 @@ inline auto make_manager (
 template<int32 M>
 auto make_manager (
     mss_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> mss_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -328,7 +313,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     imss_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> imss_manager
 {
     return imss_manager(
@@ -345,7 +330,7 @@ auto make_manager (
 template<int32 M>
 auto make_manager (
     ifmss_manager_settings<M> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> ifmss_manager<M>
 {
     return ifmss_manager<M>(
@@ -362,7 +347,7 @@ auto make_manager (
 template<class Man, class Expr>
 auto make_manager (
     test_settings<Man, Expr> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 )
 {
     return make_manager(settings.manager_, rng);
@@ -402,24 +387,24 @@ auto make_diagram (
     return max_fold(termDs);
 }
 
-/**
- *  \brief Makes diagram representing \p expr .
- */
-template<class Dat, class Deg, class Dom>
-auto make_diagram (
-    std::unique_ptr<tsl::expr_node> const& expr,
-    diagram_manager<Dat, Deg, Dom>& manager
-)
-{
-    return manager.from_expression_tree(*expr);
-}
+// /**
+//  *  \brief Makes diagram representing \p expr .
+//  */
+// template<class Dat, class Deg, class Dom>
+// auto make_diagram (
+//     std::unique_ptr<tsl::expr_node> const& expr,
+//     diagram_manager<Dat, Deg, Dom>& manager
+// )
+// {
+//     return manager.from_expression_tree(*expr);
+// }
 
 /**
  *  \brief Makes minmax expression with given settings.
  */
 inline auto make_expression (
     minmax_expression_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> tsl::minmax_expr
 {
     return tsl::make_minmax_expression(
@@ -435,7 +420,7 @@ inline auto make_expression (
  */
 inline auto make_expression (
     expression_tree_settings const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::unique_ptr<tsl::expr_node>
 {
     return tsl::make_expression_tree(settings.varcount_, rng, rng);
@@ -447,7 +432,7 @@ inline auto make_expression (
 template<class Man, class Expr>
 auto make_expression (
     test_settings<Man, Expr> const& settings,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 )
 {
     return make_expression(
@@ -457,32 +442,34 @@ auto make_expression (
     );
 }
 
+// TODO moved to libtsl
 /**
  *  \brief Makes random component state probabilities vector
  */
 template<class Dat, class Deg, class Dom>
 auto make_prob_vector (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<double>
 {
     auto const domains = manager.get_domains();
-    auto probs = std::vector<double>(as_usize(manager.get_var_count()));
+    auto probs         = std::vector<double>(as_usize(manager.get_var_count()));
     for (auto i = 0; i < ssize(probs); ++i)
     {
-        auto dist = std::uniform_real_distribution<double>(.0, 1.0);
+        auto dist           = std::uniform_real_distribution<double>(.0, 1.0);
         probs[as_uindex(i)] = dist(rng);
     }
     return probs;
 }
 
+// TODO moved to libtsl
 /**
  *  \brief Makes random component state probabilities matrix
  */
 template<class Dat, class Deg, class Dom>
 auto make_prob_matrix (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<std::vector<double>>
 {
     auto const domains = manager.get_domains();
@@ -513,7 +500,7 @@ auto make_prob_matrix (
 template<class Dat, class Deg, class Dom>
 auto make_probabilities (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::mt19937_64& rng
+    std::ranlux48& rng
 ) -> std::vector<std::vector<double>>
 {
     return make_prob_matrix(manager, rng);

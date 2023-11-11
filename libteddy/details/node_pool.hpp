@@ -52,19 +52,15 @@ private:
      *  \param next Next pool in the linked list
      *  \return New pool
      */
-    [[nodiscard]] static auto allocate_pool (
-        int64 size,
-        pool_item* next
-    ) -> pool_item*;
+    [[nodiscard]] static auto allocate_pool (int64 size, pool_item* next)
+        -> pool_item*;
 
     /**
      *  \brief Destroys all nodes up to last node and deallocates the pool
      *  \return Pointer to the next pool
      */
-    static auto deallocate_pool (
-        pool_item* poolPtr,
-        node_t* lastNode
-    ) -> pool_item*;
+    static auto deallocate_pool (pool_item* poolPtr, node_t* lastNode)
+        -> pool_item*;
 
 private:
     pool_item* pools_;
@@ -121,7 +117,7 @@ node_pool<Data, Degree>::~node_pool()
     while (pools_ && pools_->next_)
     {
         node_t* const lastNode = pools_->pool_ + extraPoolSize_;
-        pools_ = deallocate_pool(pools_, lastNode);
+        pools_                 = deallocate_pool(pools_, lastNode);
     }
 
     /**
@@ -130,7 +126,7 @@ node_pool<Data, Degree>::~node_pool()
     if (pools_)
     {
         node_t* const lastNode = pools_->pool_ + mainPoolSize_;
-        pools_ = deallocate_pool(pools_, lastNode);
+        pools_                 = deallocate_pool(pools_, lastNode);
     }
 }
 
@@ -188,7 +184,7 @@ auto node_pool<Data, Degree>::grow() -> void
     );
 #endif
 
-    pools_ = allocate_pool(extraPoolSize_, pools_);
+    pools_        = allocate_pool(extraPoolSize_, pools_);
     nextPoolNode_ = pools_->pool_;
     availableNodeCount_ += extraPoolSize_;
 }
@@ -199,15 +195,13 @@ auto node_pool<Data, Degree>::allocate_pool(
     pool_item* const next
 ) -> pool_item*
 {
-    return new pool_item
-    {
+    return new pool_item {
         static_cast<node_t*>(std::malloc(as_usize(size) * sizeof(node_t))),
-        next
-    };
+        next};
 }
 
 template<class Data, class Degree>
-auto node_pool<Data, Degree>::deallocate_pool (
+auto node_pool<Data, Degree>::deallocate_pool(
     pool_item* const pool,
     node_t* const lastNode
 ) -> pool_item*

@@ -51,6 +51,20 @@ struct is_mixed<mixed>
 };
 } // namespace degrees
 
+namespace details
+{
+template<std::size_t Count>
+struct bytes
+{
+    char bytes_[Count];
+};
+
+template<>
+struct bytes<0>
+{
+};
+} // namespace details
+
 template<class Data, class Degree>
 class node;
 
@@ -71,6 +85,8 @@ struct node_ptr_array
 };
 
 template<class Data, class Degree>
+//             ^^^^
+//             byte count, byte align
 class node
 {
 public:
@@ -84,8 +100,7 @@ public:
     static auto make_son_container (int32 const domain, degrees::mixed)
         -> node**
     {
-        return static_cast<node**>(
-            std::malloc(as_usize(domain) * sizeof(node*))
+        return static_cast<node**>(std::malloc(as_usize(domain) * sizeof(node*))
         );
     }
 
@@ -110,6 +125,9 @@ public:
     auto operator= (node const&) = delete;
     auto operator= (node&&)      = delete;
 
+    // TODO get_data_as<double>() -> double&
+    //      get_data_as<expr>() -> expr&
+    // asi uz nebude treba Foo
     template<class Foo = void>
     requires(not utils::is_void<Data>::value)
     auto get_data () -> utils::second_t<Foo, Data>&;
@@ -166,6 +184,7 @@ private:
         internal internal_;
         terminal terminal_;
     };
+
     [[no_unique_address]] utils::optional_member<Data> data_;
     node* next_;
     /*

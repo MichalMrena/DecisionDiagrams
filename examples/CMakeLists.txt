@@ -49,19 +49,21 @@ target_link_options(
     example-n-queens PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
 
-# Time reliability
-add_executable(
-    example-time-reliability time_reliability.cpp
-)
+if(LIBTEDDY_SYMBOLIC_RELIABILITY)
+    # Time reliability
+    add_executable(
+        example-time-reliability time_reliability.cpp
+    )
 
-target_link_libraries(
-    example-time-reliability PRIVATE teddy
-)
+    target_link_libraries(
+        example-time-reliability PRIVATE teddy
+    )
 
-target_compile_options(
-    example-time-reliability PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
-)
+    target_compile_options(
+        example-time-reliability PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+    )
 
-target_link_options(
-    example-time-reliability PRIVATE ${LIBTEDDY_LINK_OPTIONS}
-)
+    target_link_options(
+        example-time-reliability PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+    )
+endif()

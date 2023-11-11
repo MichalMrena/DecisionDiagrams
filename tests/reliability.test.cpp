@@ -1,6 +1,7 @@
 #include <libteddy/core.hpp>
 
 #include <libtsl/expressions.hpp>
+#include <libtsl/generators.hpp>
 #include <libtsl/iterators.hpp>
 #include <libtsl/system_description.hpp>
 #include <libtsl/truth_table.hpp>
@@ -73,7 +74,7 @@ struct fixture_base
 {
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
-    std::mt19937_64 rng_;
+    std::ranlux48 rng_;
     int32 stateCount_ {};
 };
 
@@ -93,7 +94,7 @@ public:
         fixture_base<bss_manager_settings, expression_tree_settings> {
             {bss_manager_settings {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             2}
     {
     }
@@ -116,7 +117,7 @@ public:
         fixture_base<mss_manager_settings<M>, expression_tree_settings> {
             {mss_manager_settings<M> {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             M}
     {
     }
@@ -141,7 +142,7 @@ public:
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             M}
     {
     }
@@ -166,7 +167,7 @@ public:
                 {{VarCount, NodeCount, random_order_tag()},
                  random_domains_tag()}}},
             {expression_tree_settings {VarCount}},
-            {std::mt19937_64(Seed)},
+            {std::ranlux48(Seed)},
             M}
     {
     }
@@ -186,15 +187,15 @@ BOOST_FIXTURE_TEST_CASE(probabilities_bss, teddy::tests::bss_fixture)
 {
     auto const expr    = make_expression(expressionSettings_, rng_);
     auto manager       = make_manager(managerSettings_, rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const probVec = make_prob_vector(manager, rng_);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
     auto expected      = std::vector<double>(as_uindex(stateCount_));
     auto actual        = std::vector<double>(as_uindex(stateCount_));
 
-    expected[1] = probability(table, probVec);
-    expected[0] = 1 - expected[1];
+    expected[1]        = probability(table, probVec);
+    expected[0]        = 1 - expected[1];
 
     manager.calculate_probabilities(probVec, diagram);
     actual[0] = manager.get_probability(0);
@@ -227,7 +228,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const probs   = make_probabilities(manager, Fixture::rng_);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -272,7 +273,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram  = make_diagram(expr, manager);
+    auto diagram  = tsl::make_diagram(expr, manager);
     auto probs    = make_probabilities(manager, Fixture::rng_);
     auto domains  = manager.get_domains();
     auto table    = tsl::truth_table(make_vector(expr, domains), domains);
@@ -318,7 +319,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const probs   = make_probabilities(manager, Fixture::rng_);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -364,7 +365,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
     auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
@@ -399,7 +400,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
@@ -443,7 +444,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const probs   = make_probabilities(manager, Fixture::rng_);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -490,7 +491,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const probs   = make_probabilities(manager, Fixture::rng_);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -538,7 +539,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
@@ -556,7 +557,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
@@ -636,7 +637,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
@@ -757,7 +758,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
@@ -870,7 +871,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
     auto const expr
         = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto const diagram = make_diagram(expr, manager);
+    auto const diagram = tsl::make_diagram(expr, manager);
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 

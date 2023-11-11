@@ -492,7 +492,7 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     son_container const& sons
 ) -> node_t*
 {
-// redundant node:
+    // redundant node:
     if (this->is_redundant(index, sons))
     {
         node_t* const son = sons[0];
@@ -503,9 +503,9 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
         return son;
     }
 
-// duplicate node:
+    // duplicate node:
     unique_table<Data, Degree>& table = uniqueTables_[as_uindex(index)];
-    auto const [existing, hash] = table.find(sons);
+    auto const [existing, hash]       = table.find(sons);
     if (existing)
     {
         if constexpr (degrees::is_mixed<Degree>::value)
@@ -516,7 +516,7 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
         return id_set_marked(existing);
     }
 
-// new unique node:
+    // new unique node:
     node_t* const newNode = this->make_new_node(index, sons);
     table.insert(newNode, hash);
     this->for_each_son(newNode, id_inc_ref_count<Data, Degree>);
@@ -582,13 +582,7 @@ auto node_manager<Data, Degree, Domain>::get_node_count(node_t* const node
 ) const -> int64
 {
     int64 count = 0;
-    this->traverse_pre(
-        node,
-        [&count] (node_t*)
-        {
-            ++count;
-        }
-    );
+    this->traverse_pre(node, [&count] (node_t*) { ++count; });
     return count;
 }
 
@@ -697,10 +691,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& ost) const
 {
     this->to_dot_graph_common(
         ost,
-        [this] (auto const& operation)
-        {
-            this->for_each_node(operation);
-        }
+        [this] (auto const& operation) { this->for_each_node(operation); }
     );
 }
 
@@ -713,9 +704,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph(
     this->to_dot_graph_common(
         ost,
         [this, node] (auto const& operation)
-        {
-            this->traverse_pre(node, operation);
-        }
+        { this->traverse_pre(node, operation); }
     );
 }
 
@@ -875,12 +864,7 @@ auto node_manager<Data, Degree, Domain>::traverse_pre(
 ) const -> void
 {
     this->traverse_pre_impl(rootNode, operation);
-    this->traverse_pre_impl(
-        rootNode,
-        [] (node_t*)
-        {
-        }
-    );
+    this->traverse_pre_impl(rootNode, [] (node_t*) {});
     // Second traverse to reset marks
 }
 
@@ -915,12 +899,7 @@ auto node_manager<Data, Degree, Domain>::traverse_post(
 ) const -> void
 {
     this->traverse_post_impl(rootNode, operation);
-    this->traverse_post_impl(
-        rootNode,
-        [] (node_t*)
-        {
-        }
-    );
+    this->traverse_post_impl(rootNode, [] (node_t*) {});
     // Second traverse to reset marks.
 }
 
@@ -988,12 +967,7 @@ auto node_manager<Data, Degree, Domain>::traverse_level(
     }
 
     // Second traverse to reset marks.
-    this->traverse_pre_impl(
-        rootNode,
-        [] (node_t*)
-        {
-        }
-    );
+    this->traverse_pre_impl(rootNode, [] (node_t*) {});
 }
 
 template<class Data, class Degree, class Domain>
@@ -1125,9 +1099,7 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
     };
 
     auto const get_id_str = [] (node_t* const n)
-    {
-        return std::to_string(reinterpret_cast<uint64>(n));
-    };
+    { return std::to_string(reinterpret_cast<uint64>(n)); };
 
     auto const output_range = [] (auto& ostr, auto const& range, auto const sep)
     {
@@ -1415,18 +1387,14 @@ auto node_manager<Data, Degree, Domain>::sift_variables() -> void
         utils::sort(
             counts,
             [] (count_pair const& lhs, count_pair const& rhs)
-            {
-                return lhs.count_ > rhs.count_;
-            }
+            { return lhs.count_ > rhs.count_; }
         );
         return counts;
     };
 
     // Moves variable one level down.
-    auto const move_var_down = [this] (auto const index)
-    {
-        this->swap_variable_with_next(index);
-    };
+    auto const move_var_down
+        = [this] (auto const index) { this->swap_variable_with_next(index); };
 
     // Moves variable one level up.
     auto const move_var_up = [this] (auto const index)

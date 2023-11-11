@@ -13,23 +13,6 @@
 
 namespace teddy::utils
 {
-template<class T>
-concept is_std_vector = std::
-    same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
-
-template<class Gen>
-auto fill_vector (int64 const n, Gen generator)
-{
-    using T   = decltype(generator(int32 {}));
-    auto data = std::vector<T>();
-    data.reserve(as_usize(n));
-    for (auto i = int32 {0}; i < n; ++i)
-    {
-        data.emplace_back(generator(i));
-    }
-    return data;
-}
-
 /**
  *  \brief Exponentiation by squaring
  */
@@ -322,6 +305,12 @@ struct is_same<T, T>
 template<class T, class U>
 concept same_as = std::is_same<T, U>::value;
 
+template<class T>
+concept is_std_vector = same_as<
+    T,
+    std::vector<typename T::value_type, typename T::allocator_type>
+>;
+
 /**
  *  \brief Provides member typedef based on the value of \p B
  *  Implementation of \c std::conditional
@@ -353,6 +342,7 @@ struct type_if<false, T, F>
 template<class X, class T>
 using second_t = type_if<false, X, T>::type;
 
+// TODO asi nebude treba
 template<class T>
 struct optional_member
 {
