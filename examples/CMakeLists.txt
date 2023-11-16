@@ -32,6 +32,23 @@ target_link_options(
     example-2 PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
 
+# Soft-X-example
+add_executable(
+    soft-x soft_x_example.cpp
+)
+
+target_link_libraries(
+    soft-x PRIVATE teddy
+)
+
+target_compile_options(
+    soft-x PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+)
+
+target_link_options(
+    soft-x PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+)
+
 # N-Queens
 add_executable(
     example-n-queens n_queens.cpp

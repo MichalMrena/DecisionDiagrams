@@ -2,7 +2,6 @@
 #include <array>
 #include <iostream>
 #include <vector>
-#include "libteddy/details/reliability_manager.hpp"
 
 int main()
 {

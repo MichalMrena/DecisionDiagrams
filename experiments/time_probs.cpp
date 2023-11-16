@@ -16,11 +16,11 @@ auto main() -> int
     namespace ch = std::chrono;
     using time_unit = ch::nanoseconds;
 
-    char const* const Sep         = ";";
+    char const* const Sep         = "\t";
     char const* const Eol         = "\n";
     int constexpr DiagramCount    = 10;
-    int constexpr ReplCount       = 10;
-    int constexpr TimePointCount  = 1;
+    int constexpr ReplCount       = 1;
+    int constexpr TimePointCount  = 10;
     // int constexpr StateCount      = 2;
     int constexpr Seed            = 5343584;
     // int constexpr VarCount        = 1'000;
@@ -84,7 +84,7 @@ auto main() -> int
                 );
                 timeBasic = elapsed;
                 std::cout << 0 << Sep; // no init here
-                std::cout << elapsed.count() << Sep;
+                std::cout << timeBasic.count() << Sep;
             }
 
             // symbolic
@@ -122,7 +122,7 @@ auto main() -> int
                 );
                 timeSymbolic = elapsed;
                 std::cout << timeMkExpr.count() << Sep;
-                std::cout << elapsed.count()    << Eol;
+                std::cout << timeSymbolic.count()    << Eol;
             }
         }
     }
