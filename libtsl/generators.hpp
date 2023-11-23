@@ -3,6 +3,7 @@
 
 #include <libteddy/core.hpp>
 #include <libteddy/details/probabilities.hpp>
+#include <libteddy/details/symbolic_probabilities.hpp>
 
 #include <libtsl/expressions.hpp>
 
@@ -111,20 +112,20 @@ inline auto make_time_probability_vector (
     auto const mkExponential = [] (std::ranlux48& gen) -> probs::prob_dist
     {
         std::uniform_real_distribution<double> distRate(0.5, 1.5);
-        return probs::prob_dist(probs::exponential(distRate(gen)));
+        return probs::exponential(distRate(gen));
     };
 
     auto const mkWeibull = [] (std::ranlux48& gen) -> probs::prob_dist
     {
         std::uniform_real_distribution<double> distShape(0.5, 1.0);
         std::uniform_real_distribution<double> distScale(0.9, 1.0);
-        return probs::prob_dist(probs::weibull(distScale(gen), distShape(gen)));
+        return probs::weibull(distScale(gen), distShape(gen));
     };
 
     auto const mkConstant = [] (std::ranlux48& gen) -> probs::prob_dist
     {
         std::uniform_real_distribution<double> distProb(0.2, 1.0);
-        return probs::prob_dist(probs::constant(distProb(gen)));
+        return probs::constant(distProb(gen));
     };
 
     std::vector<probs::prob_dist (*)(std::ranlux48&)> distGenerators(

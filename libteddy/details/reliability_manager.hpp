@@ -4,6 +4,7 @@
 #include <libteddy/details/diagram_manager.hpp>
 #include <libteddy/details/dplds.hpp>
 #include <libteddy/details/probabilities.hpp>
+#include <libteddy/details/symbolic_probabilities.hpp>
 
 #include <concepts>
 #include <iterator>
@@ -538,7 +539,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
 ) -> void
 {
     this->calculate_probabilities(
-        probs::details::prob_vector_wrap(probs),
+        probs::details::vector_to_matrix_wrap(probs),
         diagram
     );
 }
@@ -563,7 +564,7 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
 {
     return this->calculate_probability(
         1,
-        probs::details::prob_vector_wrap(probs),
+        probs::details::vector_to_matrix_wrap(probs),
         diagram
     );
 }
@@ -598,7 +599,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 {
     return this->calculate_availability(
         1,
-        probs::details::prob_vector_wrap(probs),
+        probs::details::vector_to_matrix_wrap(probs),
         diagram
     );
 }

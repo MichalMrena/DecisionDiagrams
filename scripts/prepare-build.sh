@@ -25,7 +25,7 @@ cmake -DCMAKE_CXX_COMPILER=$COMPILER     \
 
 # Generate debug Makefile
 cd ../debug
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1  \
+cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
       -DCMAKE_CXX_COMPILER=$COMPILER     \
       -DCMAKE_BUILD_TYPE=Debug           \
       -DLIBTEDDY_USE_SANITIZERS=ON       \

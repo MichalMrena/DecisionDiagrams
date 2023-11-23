@@ -13,20 +13,22 @@
 #include <variant>
 #include <vector>
 
-#ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
-#    include <ginac/ginac.h>
-#endif
-
-namespace teddy::probs::details
+namespace teddy::probs
+{
+namespace details
 {
 /**
  *  \brief Helper for vector wrap
+ *
+ *  Returns probability that the component is in state 1 p_{i,1} from \p vec
+ *  or in case we need the probability that it is in state 0 it calculates
+ *  it as `1 - p_{i,1}`.
  */
 template<class Vector>
-class prob_vector_wrap_proxy
+class vector_to_matrix_proxy
 {
 public:
-    prob_vector_wrap_proxy(Vector const& vec, std::size_t const index) :
+    vector_to_matrix_proxy(Vector const& vec, std::size_t const index) :
         index_(index),
         vec_(&vec)
     {
@@ -46,18 +48,24 @@ private:
 
 /**
  *  \brief Wraps prob. vector so that it can be used as matrix
+ *
+ *  Algorithms working with probability require matrix \c ps such that
+ *  \c ps[i][s] returns probability that \c i th component is in state \c s
+ *  Since for BSS we only need to know probabilities that the component
+ *  is in state 1 (p1) we can "fake" the matrix by wrapping the vector and
+ *  calculating p0 as 1-p1
  */
 template<class Vector>
-class prob_vector_wrap
+class vector_to_matrix_wrap
 {
 public:
-    prob_vector_wrap(Vector const& vec) : vec_(&vec)
+    vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
     {
     }
 
     auto operator[] (std::size_t const index) const
     {
-        return prob_vector_wrap_proxy<Vector>(*vec_, index);
+        return vector_to_matrix_proxy<Vector>(*vec_, index);
     }
 
 private:
@@ -65,57 +73,36 @@ private:
 };
 
 /**
- *  \brief Base class for probability distributions.
- *  Just holds time member that is common for all.
+ *  \brief Mixin that adds "memory" to any \c ProbDist
+ *
+ *  If asked (by calling \c cache_eval_at ), remembers computed value
  */
-class dist_base
+template<class ProbDist>
+class make_cached
 {
 public:
-    auto set_t (double const t) -> void
+    auto cache_eval_at (double const t) -> void
     {
-        t_ = t;
+        value_ = (*static_cast<ProbDist*>(this))(t);
     }
 
-protected:
-    double t_ {0};
+    auto get_cached_value () const -> double
+    {
+        return value_;
+    }
+
+private:
+    double value_;
 };
-} // namespace teddy::probs::details
-
-namespace teddy::probs
-{
-/**
- *  \brief Vector of probabilities for BSS
- */
-template<class Probabilities>
-concept prob_vector = requires(Probabilities probs, int32 index) {
-                          {
-                              probs[index]
-                          } -> std::convertible_to<double>;
-                      };
-
-/**
- *  \brief Matrix of probabilities for BSS and MSS
- */
-template<class Probabilities>
-concept prob_matrix = requires(Probabilities probs, int32 index, int32 value) {
-                          {
-                              probs[index][value]
-                          } -> std::convertible_to<double>;
-                      };
 
 /**
  *  \brief Exponential distribution
  */
-class exponential : public details::dist_base
+class exponential : public make_cached<exponential>
 {
 public:
     exponential(double const rate) : rate_(rate)
     {
-    }
-
-    [[nodiscard]] operator double () const
-    {
-        return (*this)(dist_base::t_);
     }
 
     [[nodiscard]] auto operator() (double const t) const -> double
@@ -130,18 +117,13 @@ private:
 /**
  *  \brief Weibull distribution
  */
-class weibull : public details::dist_base
+class weibull : public make_cached<weibull>
 {
 public:
     weibull(double const scale, double const shape) :
         scale_(scale),
         shape_(shape)
     {
-    }
-
-    [[nodiscard]] operator double () const
-    {
-        return (*this)(dist_base::t_);
     }
 
     [[nodiscard]] auto operator() (double const t) const -> double
@@ -158,16 +140,11 @@ private:
 /**
  *  \brief Probability independent of time
  */
-class constant : public details::dist_base
+class constant : public make_cached<constant>
 {
 public:
     constant(double const value) : value_(value)
     {
-    }
-
-    [[nodiscard]] operator double () const
-    {
-        return value_;
     }
 
     [[nodiscard]] auto operator() (double const) const -> double
@@ -182,16 +159,11 @@ private:
 /**
  *  \brief User-defined distribution
  */
-class custom_dist : public details::dist_base
+class custom_dist : public make_cached<custom_dist>
 {
 public:
-    custom_dist(std::function<double(double)> dist) : dist_(dist)
+    custom_dist(std::function<double(double)> dist) : dist_(std::move(dist))
     {
-    }
-
-    [[nodiscard]] operator double () const
-    {
-        return (*this)(dist_base::t_);
     }
 
     [[nodiscard]] auto operator() (double const t) const -> double
@@ -202,11 +174,17 @@ public:
 private:
     std::function<double(double)> dist_;
 };
+} // namespace details
 
-using dist_variant = std::variant<exponential, weibull, constant, custom_dist>;
+using dist_variant = std::variant<
+    details::exponential,
+    details::weibull,
+    details::constant,
+    details::custom_dist
+>;
 
 /**
- *  \brief "Interface" for distributions that manages variant access
+ *  \brief "Interface" for distributions, manages variant access
  */
 class prob_dist
 {
@@ -215,15 +193,15 @@ public:
     {
     }
 
-    auto set_t (double const t) -> void
+    auto cache_eval_at (double const t) -> void
     {
-        std::visit([t] (auto& d) { d.set_t(t); }, dist_);
+        std::visit([t] (auto& d) { d.cache_eval_at(t); }, dist_);
     }
 
     [[nodiscard]] operator double () const
     {
         return std::visit(
-            [] (auto const& dist) -> double { return dist; },
+            [] (auto const& dist) -> double { return dist.get_cached_value(); },
             dist_
         );
     }
@@ -240,144 +218,110 @@ private:
     dist_variant dist_;
 };
 
+/**
+ *  \brief Creates instance of Exponential distribution
+ */
+inline auto exponential (double const rate) -> prob_dist
+{
+    return prob_dist(details::exponential(rate));
+}
+
+/**
+ *  \brief Creates instance of Weibull distribution
+ */
+inline auto weibull (double const scale, double const shape) -> prob_dist
+{
+    return prob_dist(details::weibull(scale, shape));
+}
+
+/**
+ *  \brief Creates instance of Constant disrtibution
+ */
+inline auto constant (double prob) -> prob_dist
+{
+    return prob_dist(details::constant(prob));
+}
+
+/**
+ *  \brief Creates instance of Constant disrtibution
+ */
+inline auto custom (std::function<double(double)> dist) -> prob_dist
+{
+    return prob_dist(details::custom_dist(std::move(dist)));
+}
+
+/**
+ *  \brief Vector of time-independent probabilities (just for BSS)
+ */
+template<class Probabilities>
+concept prob_vector = requires(Probabilities probs, int32 index) {
+                          {
+                              probs[index]
+                          } -> std::convertible_to<double>;
+                      };
+
+/**
+ *  \brief Matrix of time-independent probabilities
+ */
+template<class Probabilities>
+concept prob_matrix = requires(Probabilities probs, int32 index, int32 value) {
+                          {
+                              probs[index][value]
+                          } -> std::convertible_to<double>;
+                      };
+
+/**
+ *  \brief Vector of time-dependent probabilities (distributions) (just for BSS)
+ */
 template<class T>
 concept dist_vector = requires(T t, std::size_t i) {
                           {
                               t[i]
                           } -> std::convertible_to<prob_dist>;
 
-                          t[i].set_t(3.14);
+                          t[i].cache_eval_at(3.14);
                       };
 
+/**
+ *  \brief Matrix of time-dependent probabilities (distributions)
+ */
 template<class T>
 concept dist_matrix = requires(T t, std::size_t i) {
                           {
                               t[i][i]
                           } -> std::convertible_to<prob_dist>;
 
-                          t[i][i].set_t(3.14);
+                          t[i][i].cache_eval_at(3.14);
                       };
 
+/**
+ *  \brief Evaluates each dist in \p distVector at time \p t
+ */
 template<dist_vector Ps>
-auto at_time (Ps& distVector, double const t) -> Ps&
+auto eval_at (Ps& distVector, double const t) -> Ps&
 {
     for (auto& dist : distVector)
     {
-        dist.set_t(t);
+        dist.cache_eval_at(t);
     }
     return distVector;
 }
 
+/**
+ *  \brief Evaluates each dist in \p distMatrix at time \p t
+ */
 template<dist_matrix Ps>
-auto at_time (Ps& distMatrix, double const t) -> Ps&
+auto eval_at (Ps& distMatrix, double const t) -> Ps&
 {
     for (auto& dists : distMatrix)
     {
         for (auto& dist : dists)
         {
-            dist.set_t(t);
+            dist.cache_eval_at(t);
         }
     }
     return distMatrix;
 }
 } // namespace teddy::probs
-
-#ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
-namespace teddy::symprobs::details
-{
-inline GiNaC::symbol& time_symbol ()
-{
-    static GiNaC::realsymbol t("t");
-    return t;
-}
-} // namespace teddy::symprobs::details
-
-namespace teddy::symprobs
-{
-/**
- *  \brief Wrapper around third-party-library-specific expression type
- */
-class expression
-{
-public:
-    expression(GiNaC::ex ex) : ex_(ex)
-    {
-    }
-
-    auto evaluate (double const t) const -> double
-    {
-        GiNaC::ex result = GiNaC::evalf(ex_.subs(details::time_symbol() == t));
-        return GiNaC::ex_to<GiNaC::numeric>(result).to_double();
-    }
-
-    auto as_underlying_unsafe () const -> GiNaC::ex
-    {
-        return ex_;
-    }
-
-    auto to_latex (std::ostream& ost) const -> void
-    {
-        ost << GiNaC::latex << ex_ << GiNaC::dflt;
-    }
-
-    // TODO
-    auto to_matlab (std::ostream& ost) const -> void
-    {
-        ost << ex_;
-    }
-
-private:
-    GiNaC::ex ex_;
-};
-
-/**
- *  \brief Exponential distribution
- */
-inline auto exponential (double const rate) -> expression
-{
-    return {rate * GiNaC::exp(-rate * details::time_symbol())};
-}
-
-/**
- *  \brief Weibull distribution
- */
-inline auto weibull (double const shape, double const scale) -> expression
-{
-    return {
-        (shape / scale) * GiNaC::pow(details::time_symbol() / scale, shape - 1)
-        * GiNaC::exp(-GiNaC::pow(details::time_symbol() / scale, shape))};
-}
-
-/**
- *  \brief Probability independent of time
- */
-inline auto constant (double prob) -> expression
-{
-    return GiNaC::ex(prob);
-}
-
-/**
- *  \brief 1 - some other distribution
- */
-inline auto complement (expression const& other) -> expression
-{
-    return GiNaC::ex(1) - other.as_underlying_unsafe();
-}
-
-/**
- *  \brief Transforms vector of probabilities to matrix of probabilities
- */
-template<class Ps> // TODO concept?
-auto as_matrix (Ps const& probs) -> std::vector<std::array<expression, 2>>
-{
-    std::vector<std::array<expression, 2>> matrix;
-    for (expression const& expr : probs)
-    {
-        matrix.push_back(std::array {complement(expr), expr});
-    }
-    return matrix;
-}
-} // namespace teddy::symprobs
-#endif
 
 #endif

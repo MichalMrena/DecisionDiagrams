@@ -35,7 +35,7 @@ int main()
 
     for (double t = 0.1; t < 10; t += 1)
     {
-        double const A = manager.calculate_availability(tp::at_time(ps, t), f);
+        double const A = manager.calculate_availability(tp::eval_at(ps, t), f);
         std::cout << std::fixed << std::setprecision(7);
         std::cout << "t  = " << t                 << "\t"
                   << "A1 = " << A                 << "\t"
