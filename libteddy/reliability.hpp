@@ -175,7 +175,7 @@ inline bss_manager::bss_manager(
         componentCount,
         nodePoolSize,
         nodePoolSize / 2,
-        std::move(order)
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -190,7 +190,7 @@ inline bss_manager::bss_manager(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(order)
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -205,7 +205,7 @@ mss_manager<M>::mss_manager(
         componentCount,
         nodePoolSize,
         nodePoolSize / 2,
-        std::move(order)
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -221,7 +221,7 @@ mss_manager<M>::mss_manager(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(order)
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -236,8 +236,8 @@ inline imss_manager::imss_manager(
         componentCount,
         nodePoolSize,
         nodePoolSize / 2,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -253,8 +253,8 @@ inline imss_manager::imss_manager(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -270,8 +270,8 @@ ifmss_manager<M>::ifmss_manager(
         componentCount,
         nodePoolSize,
         nodePoolSize / 2,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }
@@ -288,8 +288,8 @@ ifmss_manager<M>::ifmss_manager(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,
-        std::move(domains),
-        std::move(order)
+        static_cast<std::vector<int32>&&>(domains),
+        static_cast<std::vector<int32>&&>(order)
     )
 {
 }

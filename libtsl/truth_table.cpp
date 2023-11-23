@@ -17,12 +17,7 @@ truth_table::truth_table(
     offset_(as_usize(this->get_var_count())),
     maxValue_(std::ranges::max(
         vector_
-        | std::ranges::views::filter(
-            [] (auto val)
-            {
-                return val != Undefined;
-            }
-        )
+        | std::ranges::views::filter([] (auto val) { return val != Undefined; })
     ))
 {
     assert(

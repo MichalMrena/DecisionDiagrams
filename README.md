@@ -3,19 +3,16 @@
 TeDDy is a C++ library for the creation and manipulation of decision diagrams. It is being developed at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), the [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).  
 This text assumes that the reader is familiar with decision diagrams to some extent. Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDDs) and their generalization Multi-Valued Decision Diagrams (MDDs).
 
----
 # Contents
   * [How to install](#how-to-install)
   * [How to use](#how-to-use)
   * [Publications and citation](#publications-and-citation)
 
----
-
 # How to install
 TeDDY is a header-only library. There are two principal ways to use it in your project.
 
 ## Copy the files
-The simplest way is to download the library (using `git clone`, [one of the releases](https://github.com/MichalMrena/DecisionDiagrams/releases), or [download as zip](https://github.com/MichalMrena/DecisionDiagrams/archive/refs/heads/master.zip)) and place the [libteddy](./libteddy/) directory somewhere where your compiler can see it e.g., directly in your project.
+The simplest way is to download the library (using `git clone`, [one of the releases](https://github.com/MichalMrena/DecisionDiagrams/releases), or [download as zip](https://github.com/MichalMrena/DecisionDiagrams/archive/refs/heads/master.zip)) and place the [libteddy](./libteddy/) directory somewhere where your compiler can see it e.g., directly in your project.  
 
 ## Using cmake
 You can install the library using standard procedure.  
@@ -61,9 +58,9 @@ TeDDy uses features from `C++20` so you may need to set your compiler to this ve
 ## Compiling and running examples
 You can compile and run examples from the root directory:
 ```sh
-cmake -DLIBTEDDY_BUILD_EXAMPLES=true -S . -B build
+cmake -DLIBTEDDY_BUILD_EXAMPLES=ON -S . -B build
 cmake --build build -j4
-./build/examples/libteddy-example-1
+./build/examples/readme
 ```
 
 ## Compiling and running tests
@@ -77,13 +74,14 @@ You can install them using your distribution package manager. For **Boost.Test**
 If no such package exists for your OS, follow the [Getting started](https://www.boost.org/doc/libs/1_82_0/more/getting_started/index.html) section of the Boost website.  
 For **fmt** search for:
 - `fmt-devel` (dnf, xbps),
-- `libfmt-dev` (apt).  
+- `libfmt-dev` (apt),
+- (or similar for other package managers).  
 
 If no such package exists for your OS, follow the [documentation](https://fmt.dev/latest/usage.html) for alternative means of installation.
 
 After installing **Boost.Test** and **fmt**, you can compile and run the tests using cmake in the following way from the root directory:
 ```sh
-cmake -DCMAKE_BUILD_TYPE=Release -DLIBTEDDY_BUILD_TESTS=true -S . -B build
+cmake -DCMAKE_BUILD_TYPE=Release -DLIBTEDDY_BUILD_TESTS=ON -S . -B build
 cmake --build build -j4
 cmake --build build -t test
 ```
@@ -124,19 +122,19 @@ int main()
     teddy::bdd_manager manager(4, 1'000);
 
     // Alias for the type of the diagram, or you can just use auto.
-    using diagram_t = teddy::bdd_manager::diagram_t;
+    using bdd_t = teddy::bdd_manager::diagram_t;
 
     // Create diagram for a single variable (indices start at 0).
-    diagram_t x0 = manager.variable(0);
-    diagram_t x1 = manager.variable(1);
+    bdd_t x0 = manager.variable(0);
+    bdd_t x1 = manager.variable(1);
 
     // operator() serves the same purpose as .variable call.
     // It is convenient to create a reference to the manager with name x.
     teddy::bdd_manager& x = manager;
-    diagram_t x2 = x(2);
+    bdd_t x2 = x(2);
 
     // Diagrams for multiple variables can be created at once.
-    std::vector<diagram_t> xs = manager.variables({0, 1, 2, 3});
+    std::vector<bdd_t> xs = manager.variables({0, 1, 2, 3});
 
     // diagram_t is cheap handle type, multiple diagrams can point
     // to the same node, to test whether they do use .equals.
@@ -147,9 +145,9 @@ int main()
     // Finally, to create a diagram for the function:
     // f(x) = (x0 and x1) or (x2 and x3)
     // we use the apply function.
-    diagram_t f1 = manager.apply<AND>(xs[0], xs[1]);
-    diagram_t f2 = manager.apply<AND>(xs[2], xs[3]);
-    diagram_t f  = manager.apply<OR>(f1, f2);
+    bdd_t f1 = manager.apply<AND>(xs[0], xs[1]);
+    bdd_t f2 = manager.apply<AND>(xs[2], xs[3]);
+    bdd_t f  = manager.apply<OR>(f1, f2);
 
     // Now that we have diagram for the funtion f, we can test its properties
     // e.g., evaluate it for give variable assignment.
@@ -186,7 +184,8 @@ As with diagram manipulation, the reliability analysis functions are accessible 
   
 Note that each reliability manager is a child class of the corresponding diagram manager, hence, the advantages and disadvantages of the base managers apply. All reliability managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html).
 
-The usage of reliability managers is analogous to diagram managers. Many of the reliability functions have a parameter that represents component state probabilities. The parameter does not have a specific type but instead uses a template. The reason is that probabilities can be stored in different combinations of containers such as `std::vector` or `std::array`. The type holding the probabilities must satisfy that if `ps` is the name of the parameter then the expression `ps[i][k]` returns the probability that the `i`-th component is in the state `k`. The following example shows the basic usage of the reliability manager:
+The usage of reliability managers is analogous to diagram managers. Many of the reliability functions have a parameter that represents component state probabilities. The parameter does not have a specific type but instead uses a template. The reason is that probabilities can be stored in different combinations of containers such as `std::vector` or `std::array`. The type holding the probabilities must satisfy that if `ps` is the name of the parameter then the expression `ps[i][k]` returns the probability that the `i`-th component is in the state `k`. The following example shows the basic usage of the reliability manager:  
+
 ```C++
 #include <libteddy/reliability.hpp>
 #include <array>
@@ -210,8 +209,8 @@ int main()
     teddy::ifmss_manager<3> manager(4, 1'000, domains);
 
     // Alias for the type of the diagram, or you can just use auto.
-    using diagram_t = teddy::ifmss_manager<3>::diagram_t;
-    diagram_t sf = manager.from_vector(vector);
+    using mdd_t = teddy::ifmss_manager<3>::diagram_t;
+    mdd_t sf = manager.from_vector(vector);
 
     // We can use different combinations of std::vector, std::array or similar containers.
     // We chose vector of arrays here to hold component state probabilities.
@@ -241,7 +240,7 @@ int main()
 
     // To calculate Structural Importance we first need to calculate
     // the derivative.
-    diagram_t dpbd = manager.dpld({2, 1, 0}, teddy::dpld::type_3_decrease(1), sf);
+    mdd_t dpbd = manager.dpld({2, 1, 0}, teddy::dpld::type_3_decrease(1), sf);
 
     // Now, to calculate the Structural Importance of the second component,
     // we use the derivative.
@@ -280,4 +279,7 @@ Mrena, M., Kvassay, M., &#38; Czapp, S. (2022). **Single and Series of Multi-val
 &nbsp;  
 
 Mrena, M., &#38; Kvassay, M. (2022). **Comparison of Single MDD and Series of MDDs in the Representation of Structure Function of Series-Parallel MSS.** *2022 IEEE 16th International Scientific Conference on Informatics (Informatics)*, 225–230. https://doi.org/10.1109/INFORMATICS57926.2022.10083458
+&nbsp;  
+
+Mrena, M., &#38; Kvassay, M. (2023). **Experimental Survey of Algorithms for the Calculation of Node Traversal Probabilities in Multi-valued Decision Diagrams.** *In: van Gulijk, C., Zaitseva, E., Kvassay, M. (eds) Reliability Engineering and Computational Intelligence for Complex Systems. Studies in Systems, Decision and Control, vol 496. Springer, Cham.* https://doi.org/10.1007/978-3-031-40997-4_1
 &nbsp;  

@@ -5,3 +5,14 @@
 build
 compile_commands.json
 doxygen/doc
+
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+

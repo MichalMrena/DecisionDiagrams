@@ -5,101 +5,21 @@
 
 #include <charconv>
 #include <concepts>
-#include <functional>
+#include <cstddef>
 #include <optional>
-#include <ranges>
 #include <string_view>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 namespace teddy::utils
 {
-template<class Gen>
-concept i_gen
-    = requires(Gen generator, int32 index) { std::invoke(generator, index); };
-
-template<class T>
-concept is_std_vector = std::
-    same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
-
 /**
- *  \brief Identity function
+ *  \brief Exponentiation by squaring
  */
-auto constexpr identity = [] (auto const arg)
+template<class Base>
+auto constexpr int_pow(Base base, int32 exponent) -> Base
 {
-    return arg;
-};
-
-/**
- *  \brief Checks if argument is not zerp
- */
-auto constexpr not_zero = [] (auto const arg)
-{
-    return arg != 0;
-};
-
-/**
- *  \brief Creates constant function
- */
-auto constexpr constant = [] (auto const arg)
-{
-    return [arg] (auto)
-    {
-        return arg;
-    };
-};
-
-/**
- *  \brief Eats everything, does nothing
- */
-auto constexpr no_op = [] (auto const&...)
-{
-};
-
-template<i_gen Gen>
-auto fill_vector (int64 const n, Gen generator)
-{
-    using T   = decltype(std::invoke(generator, int32 {}));
-    auto data = std::vector<T>();
-    data.reserve(as_usize(n));
-    for (auto i = int32 {0}; i < n; ++i)
-    {
-        data.emplace_back(std::invoke(generator, i));
-    }
-    return data;
-}
-
-template<std::input_iterator I, std::sentinel_for<I> S, class F>
-auto fmap (I first, S last, F mapper)
-{
-    using U     = decltype(std::invoke(mapper, *first));
-    auto result = std::vector<U>();
-    if constexpr (std::random_access_iterator<I>)
-    {
-        result.reserve(as_usize(std::distance(first, last)));
-    }
-    while (first != last)
-    {
-        result.emplace_back(std::invoke(mapper, *first));
-        ++first;
-    }
-    return result;
-}
-
-template<std::ranges::input_range Range, class F>
-auto fmap (Range&& input, F mapper)
-{
-    return fmap(std::ranges::begin(input), std::ranges::end(input), mapper);
-}
-
-/**
- *  \brief Exponentiation for integers
- */
-template<class Base, std::integral Exponent>
-auto constexpr int_pow(Base base, Exponent exponent) -> Base
-{
-    auto result = Base {1};
+    Base result = 1;
 
     for (;;)
     {
@@ -139,31 +59,41 @@ auto parse (std::string_view const input) -> std::optional<Num>
 }
 
 /**
- *  \brief Function object for tuple hash
+ *  \brief Hash for pointers
  */
-struct tuple_hash
+inline auto do_hash (void* const p) -> std::size_t
 {
-    template<class... Ts>
-    auto operator() (std::tuple<Ts...> const& tuple) const noexcept
-    {
-        // see boost::hash_combine
-        auto seed         = std::size_t {0};
-        auto hash_combine = [&seed] (auto const& elem)
-        {
-            auto hasher = std::hash<std::remove_cvref_t<decltype(elem)>>();
-            seed ^= hasher(elem) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-            return std::tuple<>();
-        };
-        std::apply(
-            [&] (auto const&... elems)
-            {
-                return (hash_combine(elems), ...);
-            },
-            tuple
-        );
-        return seed;
-    }
-};
+    return reinterpret_cast<std::size_t>(p) >> 4;
+}
+
+/**
+ *  \brief Hash for int
+ */
+inline auto do_hash (int32 const x) -> std::size_t
+{
+    return static_cast<std::size_t>(x);
+}
+
+/**
+ *  \brief Hashes \p elem and combines the result with \p hash
+ */
+template<class T>
+auto add_hash (std::size_t& hash, T const& elem) -> void
+{
+    // see boost::hash_combine
+    hash ^= do_hash(elem) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+}
+
+/**
+ *  \brief Computes hash of the \p args
+ */
+template<class... Ts>
+auto pack_hash (Ts const&... args) -> std::size_t
+{
+    std::size_t result = 0;
+    (add_hash(result, args), ...);
+    return result;
+}
 
 /**
  *  \brief Checks if any of the arguments is true
@@ -175,11 +105,244 @@ auto any (Args... args)
 {
     return (args || ...);
 }
-} // namespace teddy::utils
 
+/**
+ *  \brief The min function
+ */
+template<class T>
+constexpr auto min (T lhs, T rhs) -> T
+{
+    return lhs < rhs ? lhs : rhs;
+}
+
+/**
+ *  \brief The max function
+ */
+template<class T>
+constexpr auto max (T lhs, T rhs) -> T
+{
+    return lhs > rhs ? lhs : rhs;
+}
+
+/**
+ *  \brief The min function for parameter packs
+ */
+template<class X>
+constexpr auto pack_min (X x) -> X
+{
+    return x;
+}
+
+/**
+ *  \brief The min function for parameter packs
+ */
+template<class X, class... Xs>
+constexpr auto pack_min (X x, Xs... xs) -> X
+{
+    return min(x, pack_min(xs...));
+}
+
+/**
+ *  \brief Maximum of a range
+ *  Implementation of std::max_element
+ */
+template<class It>
+auto max_elem (It first, It const last) -> It
+{
+    It maxIt = first;
+    while (first != last)
+    {
+        if (*first > *maxIt)
+        {
+            maxIt = first;
+        }
+        ++first;
+    }
+    return maxIt;
+}
+
+/**
+ *  \brief Finds the first element satisfying \p test
+ *  Implementation of std::find_if
+ */
+template<class It, class Predicate>
+auto find_if (It first, It const last, Predicate test) -> It
+{
+    while (first != last)
+    {
+        if (test(*first))
+        {
+            return first;
+        }
+        ++first;
+    }
+    return last;
+}
+
+/**
+ *  \brief Finds the first element not satisfying \p test
+ *  Implementation of std::find_if_not
+ */
+template<class It, class Predicate>
+auto find_if_not (It first, It const last, Predicate test) -> It
+{
+    while (first != last)
+    {
+        if (not test(*first))
+        {
+            return first;
+        }
+        ++first;
+    }
+    return last;
+}
+
+/**
+ *  \brief Exchages value of \p var to \p newVal and returns the old value
+ *  Simplified implementation of std::exchange
+ */
+template<class T, class U = T>
+auto exchange (T& var, U newVal) noexcept -> T
+{
+    auto oldVal = var;
+    var         = newVal;
+    return oldVal;
+}
+
+/**
+ *  \brief Swaps values in \p first and \p second
+ *  Simplified implementation of std::swap
+ */
+template<typename T>
+constexpr auto swap (T& first, T& second) noexcept -> void
+{
+    auto tmp = first;
+    first    = second;
+    second   = tmp;
+}
+
+/**
+ *  \brief Simple heapsort for vectors
+ */
+template<class T, class Compare>
+auto sort (std::vector<T>& xs, Compare cmp) -> void
+{
+    if (xs.empty())
+    {
+        return;
+    }
+
+    auto const sift_down = [&xs, cmp] (uint32 parent, uint32 const size)
+    {
+        uint32 left  = 2 * parent + 1;
+        uint32 right = left + 1;
+        while (left < size)
+        {
+            uint32 swap = parent;
+            if (cmp(xs[swap], xs[left]))
+            {
+                swap = left;
+            }
+
+            if (right < size && cmp(xs[swap], xs[right]))
+            {
+                swap = right;
+            }
+
+            if (swap == parent)
+            {
+                break;
+            }
+
+            utils::swap(xs[parent], xs[swap]);
+            parent = swap;
+            left   = 2 * parent + 1;
+            right  = left + 1;
+        }
+    };
+
+    uint32 const size = static_cast<uint32>(xs.size());
+
+    // make-heap
+    for (uint32 i = size / 2 + 1; i > 0;)
+    {
+        --i;
+        sift_down(i, size);
+    }
+
+    // pop-heap
+    for (uint32 last = size - 1; last > 0; --last)
+    {
+        utils::swap(xs[last], xs[0]);
+        sift_down(0, last);
+    }
+}
+
+template<class T>
+struct is_void
+{
+    static constexpr bool value = false;
+};
+
+template<>
+struct is_void<void>
+{
+    static constexpr bool value = true;
+};
+
+template<class T, class U>
+struct is_same
+{
+    static constexpr bool value = false;
+};
+
+template<class T>
+struct is_same<T, T>
+{
+    static constexpr bool value = true;
+};
+
+template<class T, class U>
+concept same_as = std::is_same<T, U>::value;
+
+template<class T>
+concept is_std_vector = same_as<
+    T,
+    std::vector<typename T::value_type, typename T::allocator_type>
+>;
+
+/**
+ *  \brief Provides member typedef based on the value of \p B
+ *  Implementation of \c std::conditional
+ */
+template<bool B, class T, class F>
+struct type_if;
+
+/**
+ *  \brief Specialization for B = true
+ */
+template<class T, class F>
+struct type_if<true, T, F>
+{
+    using type = T;
+};
+
+/**
+ *  \brief Specialization for B = false
+ */
+template<class T, class F>
+struct type_if<false, T, F>
+{
+    using type = F;
+};
+
+/**
+ *  \brief Helper for SFINE functions
+ */
 template<class X, class T>
-using second_t = std::conditional_t<false, X, T>;
+using second_t = type_if<false, X, T>::type;
 
+// TODO asi nebude treba
 template<class T>
 struct optional_member
 {
@@ -190,5 +353,6 @@ template<>
 struct optional_member<void>
 {
 };
+} // namespace teddy::utils
 
 #endif

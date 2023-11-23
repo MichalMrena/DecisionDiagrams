@@ -1,10 +1,11 @@
 #include "iterators.hpp"
+#include "expressions.hpp"
+#include "utilities.hpp"
 
 #include <libteddy/details/tools.hpp>
 
 #include <algorithm>
 
-#include "expressions.hpp"
 
 namespace teddy::tsl
 {
@@ -17,7 +18,7 @@ domain_iterator::domain_iterator() : domains_({}), indices_({}), varVals_({})
 domain_iterator::domain_iterator(std::vector<int32> domains) :
     domain_iterator(
         domains,
-        utils::fill_vector(ssize(domains), utils::identity),
+        fill_vector(ssize(domains), [] (auto x) { return x; }),
         {}
     )
 {
@@ -49,10 +50,7 @@ domain_iterator::domain_iterator(
                     return std::ranges::end(fixed)
                         == std::ranges::find_if(
                                fixed,
-                               [i] (auto const p)
-                               {
-                                   return p.first == i;
-                               }
+                               [i] (auto const p) { return p.first == i; }
                         );
                 }
             );

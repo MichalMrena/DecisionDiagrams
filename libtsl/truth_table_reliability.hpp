@@ -18,6 +18,17 @@ struct var_change
 };
 
 /**
+ *  \brief Calculates probability of BSS state \p 1
+ *  \param table truth table of structure function
+ *  \param probabilities component state probabilities
+ *  \return system state probability
+ */
+auto probability (
+    truth_table const& table,
+    std::vector<double> const& probabilities
+) -> double;
+
+/**
  *  \brief Calculates probability of system state \p val
  *  \param table truth table of structure function
  *  \param probabilities component state probabilities
@@ -106,9 +117,7 @@ auto fussell_vesely_importance (
 inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
 {
     return [=] (auto const lhs, auto const rhs)
-    {
-        return lhs == ffrom && rhs == fto;
-    };
+    { return lhs == ffrom && rhs == fto; };
 };
 
 /**
@@ -117,9 +126,7 @@ inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
 inline static auto constexpr type_1_decrease = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
-    {
-        return lhs == val && rhs < val;
-    };
+    { return lhs == val && rhs < val; };
 };
 
 /**
@@ -128,32 +135,20 @@ inline static auto constexpr type_1_decrease = [] (auto const val)
 inline static auto constexpr type_1_increase = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
-    {
-        return lhs == val && rhs > val;
-    };
+    { return lhs == val && rhs > val; };
 };
 
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 2
  */
 inline static auto constexpr type_2_decrease = [] ()
-{
-    return [] (auto const lhs, auto const rhs)
-    {
-        return lhs > rhs;
-    };
-};
+{ return [] (auto const lhs, auto const rhs) { return lhs > rhs; }; };
 
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 2
  */
 inline static auto constexpr type_2_increase = [] ()
-{
-    return [] (auto const lhs, auto const rhs)
-    {
-        return lhs < rhs;
-    };
-};
+{ return [] (auto const lhs, auto const rhs) { return lhs < rhs; }; };
 
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 3
@@ -161,9 +156,7 @@ inline static auto constexpr type_2_increase = [] ()
 inline static auto constexpr type_3_decrease = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
-    {
-        return lhs >= val && rhs < val;
-    };
+    { return lhs >= val && rhs < val; };
 };
 
 /**
@@ -172,9 +165,7 @@ inline static auto constexpr type_3_decrease = [] (auto const val)
 inline static auto constexpr type_3_increase = [] (auto const val)
 {
     return [val] (auto const lhs, auto const rhs)
-    {
-        return lhs < val && rhs >= val;
-    };
+    { return lhs < val && rhs >= val; };
 };
 
 /**

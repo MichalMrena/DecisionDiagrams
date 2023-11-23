@@ -1,8 +1,5 @@
 #include <libtsl/truth_table_reliability.hpp>
 
-#include <fmt/color.h>
-#include <fmt/ranges.h>
-
 #include <algorithm>
 #include <functional>
 #include <numeric>
@@ -10,6 +7,34 @@
 
 namespace teddy::tsl
 {
+auto probability (
+    truth_table const& table,
+    std::vector<double> const& probabilities
+) -> double
+{
+    auto totalprob = 0.0;
+
+    domain_for_each(
+        table,
+        [&table, &totalprob, &probabilities] (auto const val, auto const& elem)
+        {
+            if (val == 1)
+            {
+                auto localprob = 1.0;
+                for (auto i = 0; i < table.get_var_count(); ++i)
+                {
+                    localprob *= elem[as_uindex(i)] == 1
+                                   ? probabilities[as_uindex(i)]
+                                   : 1 - probabilities[as_uindex(i)];
+                }
+                totalprob += localprob;
+            }
+        }
+    );
+
+    return totalprob;
+}
+
 auto probability (
     truth_table const& table,
     std::vector<std::vector<double>> const& probabilities,
@@ -113,9 +138,7 @@ auto fussell_vesely_importance (
     auto relevantMcvs  = std::ranges::views::filter(
         allMcvs,
         [componentIndex, componetnState] (std::vector<int32> const& mcv)
-        {
-            return mcv[as_uindex(componentIndex)] == componetnState - 1;
-        }
+        { return mcv[as_uindex(componentIndex)] == componetnState - 1; }
     );
 
     auto result = .0;
@@ -131,8 +154,6 @@ auto fussell_vesely_importance (
                     auto const vectorProbability
                         = vector_probability(elem, probabilities);
                     result += vectorProbability;
-                    // fmt::print("{} -> {}\n", fmt::join(elem, ""),
-                    // vectorProbability);
                     break;
                 }
             }
@@ -148,8 +169,7 @@ auto fussell_vesely_importance (
 auto calculate_mcvs (truth_table const& table, int32 state)
     -> std::vector<std::vector<int32>>
 {
-    auto constexpr PiConj = [] (auto const lhs, auto const rhs)
-    {
+    auto constexpr PiConj = [] (auto const lhs, auto const rhs) {
         return std::min({lhs, rhs, Undefined});
     };
 
@@ -176,8 +196,7 @@ auto calculate_mcvs (truth_table const& table, int32 state)
 auto calculate_mpvs (truth_table const& table, int32 state)
     -> std::vector<std::vector<int32>>
 {
-    auto constexpr PiConj = [] (auto const lhs, auto const rhs)
-    {
+    auto constexpr PiConj = [] (auto const lhs, auto const rhs) {
         return std::min({lhs, rhs, Undefined});
     };
 

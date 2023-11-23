@@ -16,15 +16,13 @@ AllowShortEnumsOnASingleLine: false
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: None
-AllowShortLambdasOnASingleLine: None
+AllowShortLambdasOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: Yes
-AttributeMacros:
-  - __capability
 BinPackArguments: false
 BinPackParameters: false
 BitFieldColonSpacing: Both
@@ -55,7 +53,6 @@ BreakInheritanceList: AfterColon
 BreakConstructorInitializers: AfterColon
 BreakStringLiterals: true
 ColumnLimit:     80
-CommentPragmas:  '^ IWYU pragma:'
 CompactNamespaces: false
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
@@ -82,12 +79,14 @@ IncludeCategories:
     Priority:        3
   - Regex:           '^<(fmt)/'
     Priority:        4
-  - Regex:           '<.+>'
+  - Regex:           '^<(ginac)/'
     Priority:        5
-  - Regex:           '".+"'
+  - Regex:           '<.+>'
     Priority:        6
-  - Regex:           '.*'
+  - Regex:           '".+"'
     Priority:        7
+  - Regex:           '.*'
+    Priority:        8
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false

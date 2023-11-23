@@ -32,24 +32,12 @@ target_link_options(
     PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
 
-target_compile_features(
-    libteddy-test
-    PRIVATE cxx_std_20
-)
-
-set_target_properties(
-    libteddy-test
-    PROPERTIES
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS        NO
-)
-
 add_test(
-    NAME teddy-test-core
+    NAME    teddy-test-core
     COMMAND libteddy-test --run_test=core_test
 )
 
 add_test(
-    NAME teddy-test-reliability
+    NAME    teddy-test-reliability
     COMMAND libteddy-test --run_test=reliability_test
 )

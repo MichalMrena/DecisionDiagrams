@@ -1,23 +1,20 @@
 #ifndef LIBTEDDY_DETAILS_DEBUG_HPP
 #define LIBTEDDY_DETAILS_DEBUG_HPP
 
+#include <libteddy/details/config.hpp>
 #ifdef LIBTEDDY_VERBOSE
+#    include <libteddy/details/types.hpp>
+
 #    include <iostream>
-#endif
-
-#include <libteddy/details/types.hpp>
-
-#include <cassert>
 
 namespace teddy::debug
 {
 template<class... Ts>
 auto out ([[maybe_unused]] Ts... str)
 {
-#ifdef LIBTEDDY_VERBOSE
     ((std::cout << str), ...);
-#endif
 }
 } // namespace teddy::debug
 
-#endif
+#endif // LIBTEDDY_VERBOSE
+#endif // LIBTEDDY_DETAILS_DEBUG_HPP
