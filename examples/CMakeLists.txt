@@ -1,40 +1,59 @@
-# Example 1
+# Readme
 add_executable(
-    example-1 example_1.cpp
+    readme readme.cpp
 )
 
 target_link_libraries(
-    example-1 PRIVATE teddy
+    readme PRIVATE teddy
 )
 
 target_compile_options(
-    example-1 PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+    readme PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
 )
 
 target_link_options(
-    example-1 PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+    readme PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
 
-# Example 2
+# N-Queens
 add_executable(
-    example-2 example_2.cpp
+    n-queens n_queens.cpp
 )
 
 target_link_libraries(
-    example-2 PRIVATE teddy
+    n-queens PRIVATE teddy
 )
 
 target_compile_options(
-    example-2 PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+    n-queens PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
 )
 
 target_link_options(
-    example-2 PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+    n-queens PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
+
+if(LIBTEDDY_SYMBOLIC_RELIABILITY)
+    # Time reliability
+    add_executable(
+        time-reliability time_reliability.cpp
+    )
+
+    target_link_libraries(
+        time-reliability PRIVATE teddy
+    )
+
+    target_compile_options(
+        time-reliability PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+    )
+
+    target_link_options(
+        time-reliability PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+    )
+endif()
 
 # Soft-X-example
 add_executable(
-    soft-x soft_x_example.cpp
+    soft-x soft_x.cpp
 )
 
 target_link_libraries(
@@ -48,39 +67,3 @@ target_compile_options(
 target_link_options(
     soft-x PRIVATE ${LIBTEDDY_LINK_OPTIONS}
 )
-
-# N-Queens
-add_executable(
-    example-n-queens n_queens.cpp
-)
-
-target_link_libraries(
-    example-n-queens PRIVATE teddy
-)
-
-target_compile_options(
-    example-n-queens PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
-)
-
-target_link_options(
-    example-n-queens PRIVATE ${LIBTEDDY_LINK_OPTIONS}
-)
-
-if(LIBTEDDY_SYMBOLIC_RELIABILITY)
-    # Time reliability
-    add_executable(
-        example-time-reliability time_reliability.cpp
-    )
-
-    target_link_libraries(
-        example-time-reliability PRIVATE teddy
-    )
-
-    target_compile_options(
-        example-time-reliability PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
-    )
-
-    target_link_options(
-        example-time-reliability PRIVATE ${LIBTEDDY_LINK_OPTIONS}
-    )
-endif()

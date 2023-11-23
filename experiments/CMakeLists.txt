@@ -24,7 +24,6 @@ target_link_options(
 )
 
 # time-probs
-
 if(LIBTEDDY_SYMBOLIC_RELIABILITY)
     add_executable(
         time-probs nanobench.cpp time_probs.cpp

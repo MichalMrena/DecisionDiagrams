@@ -25,7 +25,7 @@
  *  Enables symbolic probabilistic evaluation
  *  See the documentation for dependencies
  *
- *  This option is in here just for the sake of completness, it should
+ *  This option is here just for the sake of completness, it should
  *  only be set in the root CMakeLists.txt since it adds
  *  some additional linking flags
  */

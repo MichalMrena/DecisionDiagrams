@@ -28,7 +28,7 @@ project(
 # TeDDy library target
 
 ### Requires CLN and GiNaC, see README
-option(LIBTEDDY_SYMBOLIC_RELIABILITY "Enable symbolic expressions" ON)
+option(LIBTEDDY_SYMBOLIC_RELIABILITY "Enable symbolic expressions" OFF)
 option(LIBTEDDY_VERBOSE              "Enable verbose output"       OFF)
 option(LIBTEDDY_COLLECT_STATS        "Enable stat collection"      OFF)
 
