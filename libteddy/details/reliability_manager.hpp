@@ -538,10 +538,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
     diagram_t const& diagram
 ) -> void
 {
-    this->calculate_probabilities(
-        probs::details::vector_to_matrix_wrap(probs),
-        diagram
-    );
+    this->calculate_probabilities(symprobs::to_matrix(probs), diagram);
 }
 
 template<class Degree, class Domain>
@@ -725,15 +722,19 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
     diagram_t const& diagram
 ) -> symprobs::expression
 {
+    using symprobs::details::operator+;
+    using symprobs::details::operator+=;
+    using symprobs::details::operator*;
+
     // TODO store it in the nodes
-    std::unordered_map<node_t*, GiNaC::ex> exprMap;
+    std::unordered_map<node_t*, symprobs::expression> exprMap;
 
     this->nodes_.for_each_terminal_node(
         [&exprMap, state] (node_t* const node)
         {
-            GiNaC::ex val(static_cast<double>(
+            symprobs::expression val(
                 static_cast<int32>(node->get_value() >= state)
-            ));
+            );
             exprMap.emplace(std::make_pair(node, val));
         }
     );
@@ -745,23 +746,24 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
         {
             if (not node->is_terminal())
             {
-                auto [it, isIn]
-                    = exprMap.emplace(std::make_pair(node, GiNaC::ex(0.0)));
+                auto [it, isIn] = exprMap.emplace(
+                    std::make_pair(node, symprobs::expression(0.0))
+                );
                 assert(isIn);
-                GiNaC::ex& expr       = it->second;
+                symprobs::expression& expr = it->second;
                 int32 const nodeIndex = node->get_index();
                 int32 const domain    = this->nodes_.get_domain(nodeIndex);
                 for (int32 k = 0; k < domain; ++k)
                 {
                     node_t* const son = node->get_son(k);
                     expr += exprMap.find(son)->second
-                          * probs[as_uindex(nodeIndex)][as_uindex(k)]
-                                .as_underlying_unsafe();
+                          * probs[as_uindex(nodeIndex)][as_uindex(k)];
                 }
             }
         }
     );
-    return symprobs::expression(exprMap.find(root)->second);
+
+    return exprMap.find(root)->second;
 }
 
 #endif

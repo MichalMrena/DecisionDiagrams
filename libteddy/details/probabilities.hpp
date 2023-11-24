@@ -243,7 +243,7 @@ inline auto constant (double prob) -> prob_dist
 }
 
 /**
- *  \brief Creates instance of Constant disrtibution
+ *  \brief Creates instance of Custom disrtibution
  */
 inline auto custom (std::function<double(double)> dist) -> prob_dist
 {
@@ -293,6 +293,15 @@ concept dist_matrix = requires(T t, std::size_t i) {
 
                           t[i][i].cache_eval_at(3.14);
                       };
+
+/**
+ *  \brief Wraps \p distVector so that it can be viewed as n x 2 matrix
+ */
+template<dist_vector Ps>
+auto as_matrix (Ps& distVector)
+{
+    return details::vector_to_matrix_wrap<Ps>(distVector);
+}
 
 /**
  *  \brief Evaluates each dist in \p distVector at time \p t

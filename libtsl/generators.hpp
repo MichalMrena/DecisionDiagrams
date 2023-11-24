@@ -118,8 +118,7 @@ inline auto make_time_probability_vector (
     auto const mkWeibull = [] (std::ranlux48& gen) -> probs::prob_dist
     {
         std::uniform_real_distribution<double> distShape(0.5, 1.0);
-        std::uniform_real_distribution<double> distScale(0.9, 1.0);
-        return probs::weibull(distScale(gen), distShape(gen));
+        return probs::weibull(1.0, distShape(gen));
     };
 
     auto const mkConstant = [] (std::ranlux48& gen) -> probs::prob_dist
