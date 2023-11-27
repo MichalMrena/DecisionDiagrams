@@ -76,25 +76,37 @@ private:
 
 namespace details
 {
-    auto operator+ (expression const& lhs, expression const& rhs) -> expression
+    inline auto operator+ (
+        expression const& lhs,
+        expression const& rhs
+    ) -> expression
     {
         auto result = lhs.as_underlying_unsafe() + rhs.as_underlying_unsafe();
         return expression(result);
     }
 
-    auto operator* (expression const& lhs, expression const& rhs) -> expression
+    inline auto operator* (
+        expression const& lhs,
+        expression const& rhs
+    ) -> expression
     {
         auto result = lhs.as_underlying_unsafe() * rhs.as_underlying_unsafe();
         return expression(result);
     }
 
-    auto operator+= (expression& lhs, expression const& rhs) -> expression&
+    inline auto operator+= (
+        expression& lhs,
+        expression const& rhs
+    ) -> expression&
     {
         lhs.as_underlying_unsafe() += rhs.as_underlying_unsafe();
         return lhs;
     }
 
-    auto operator*= (expression& lhs, expression const& rhs) -> expression&
+    inline auto operator*= (
+        expression& lhs,
+        expression const& rhs
+    ) -> expression&
     {
         lhs.as_underlying_unsafe() *= rhs.as_underlying_unsafe();
         return lhs;

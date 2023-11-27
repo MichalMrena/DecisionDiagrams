@@ -44,33 +44,26 @@ class SPDiagramGenerator
 public:
     SPDiagramGenerator(
         size_t const seed,
-        int const varCount,
-        int const termCount,
-        int const termSize
+        int const varCount
     ) :
         rng_(seed),
-        varCount_(varCount),
-        termCount_(termCount),
-        termSize_(termSize)
+        varCount_(varCount)
     {
     }
 
     auto operator() (teddy::bss_manager& manager)
     {
-        auto const SPExpr = teddy::tsl::make_minmax_expression(
-            rng_,
+        auto const SPExpr = teddy::tsl::make_expression_tree(
             varCount_,
-            termCount_,
-            termSize_
+            rng_,
+            rng_
         );
-        return teddy::tsl::make_diagram(SPExpr, manager);
+        return teddy::tsl::make_diagram(*SPExpr, manager);
     }
 
 private:
     std::ranlux48 rng_;
     int varCount_;
-    int termCount_;
-    int termSize_;
 };
 
 class PLADiagramGenerator
@@ -212,12 +205,27 @@ private:
     teddy::pla_file file_;
 };
 
+int get_node_count (GiNaC::ex ex)
+{
+    int count = 1;
+    size_t n = ex.nops();
+    if (n)
+    {
+        for (size_t i = 0; i < n; i++)
+        {
+            count += get_node_count(ex.op(i));
+        }
+    }
+    return count;
+}
+
 template<class DiagramGenerator>
 auto evalute_system (
     int const diagramCount,
     int const replicationCount,
     int const timePointCount,
     int const varCount,
+    bool const printHeader,
     DiagramGenerator& gen
 ) -> void
 {
@@ -231,19 +239,25 @@ auto evalute_system (
 
     // Time parameters
     double const TimeZero  = 1;
-    double const TimeDelta = 1;
+    double const TimeDelta = 0.01;
 
     int constexpr ProbsSeed = 5343584;
     std::ranlux48 probRng1(ProbsSeed);
     std::ranlux48 probRng2(ProbsSeed);
 
-    std::cout << "diagram-id"       << Sep
-              << "replication-id"   << Sep
-              << "node-count"       << Sep
-              << "basic-prob-init[" << unit_str(time_unit()) << "]" << Sep
-              << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
-              << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
-              << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+    if (printHeader)
+    {
+        std::cout << "diagram-id"       << Sep
+                  << "replication-id"   << Sep
+                  << "variable-count"   << Sep
+                  << "diagram-nodes"    << Sep
+                  << "time-pt-count"    << Sep
+                  << "basic-prob-init[" << unit_str(time_unit()) << "]" << Sep
+                  << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
+                  << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
+                  << "tree-nodes"       << Sep
+                  << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+    }
 
     for (int diagramId = 0; diagramId < diagramCount; ++diagramId)
     {
@@ -258,8 +272,14 @@ auto evalute_system (
             // ; replication-id
             std::cout << repl << Sep;
 
+            // ; variable-count
+            std::cout << varCount << Sep;
+
             // ; node-count
             std::cout << nodeCount << Sep;
+
+            // ; time-pt-count
+            std::cout << timePointCount << Sep;
 
             // Basic approach
             {
@@ -312,6 +332,10 @@ auto evalute_system (
                 // ; sym-prob-init
                 std::cout << duration_as<time_unit>(timeSymbolicInit) << Sep;
 
+                // ; tree-nodes
+                auto expr = Aexpr.as_underlying_unsafe();
+                std::cout << get_node_count(expr) << Sep;
+
                 tick(timeSymbolicEval);
                 double t = TimeZero;
                 for (int i = 0; i < timePointCount; ++i)
@@ -338,42 +362,54 @@ enum class SystemType
 
 auto main() -> int
 {
-    SystemType const systemType = SystemType::PLA;
-    int constexpr ReplicationCount = 10;
+    SystemType const SystemType = SystemType::SERIES_PARALLEL;
+    int constexpr ReplicationCount = 1;
     int constexpr TimePointCount   = 10;
+    auto const TimePointCounts = {10, 100, 1000, 10'000};
 
-    if (systemType == SystemType::FIXED)
+    if (SystemType == SystemType::FIXED)
     {
         int constexpr DiagramCount = 1;
         int constexpr VarCount     = 10;
         FixedDiagramGenerator gen;
-        evalute_system(
-            DiagramCount,
-            ReplicationCount,
-            TimePointCount,
-            VarCount,
-            gen
-        );
+        bool printHeader = true;
+        for (int const timePointCount : TimePointCounts)
+        {
+            evalute_system(
+                DiagramCount,
+                ReplicationCount,
+                timePointCount,
+                VarCount,
+                printHeader,
+                gen
+            );
+            printHeader = false;
+        }
     }
 
-    if (systemType == SystemType::SERIES_PARALLEL)
+    if (SystemType == SystemType::SERIES_PARALLEL)
     {
         int constexpr DiagramCount = 10;
         int constexpr ExprSeed     = 5343584;
-        int constexpr VarCount     = 20;
-        int constexpr TermCount    = 35;
-        int constexpr TermSize     = 7;
-        SPDiagramGenerator gen(ExprSeed, VarCount, TermCount, TermSize);
-        evalute_system(
-            DiagramCount,
-            ReplicationCount,
-            TimePointCount,
-            VarCount,
-            gen
-        );
+        // auto const VarCounts = {500, 1'000, 1'500, 2'000, 2'500};
+        auto const VarCounts = {10, 20, 30, 30, 40};
+        bool printHeader = true;
+        for (int const varCount : VarCounts)
+        {
+            SPDiagramGenerator gen(ExprSeed, varCount);
+            evalute_system(
+                DiagramCount,
+                ReplicationCount,
+                TimePointCount,
+                varCount,
+                printHeader,
+                gen
+            );
+            printHeader = false;
+        }
     }
 
-    if (systemType == SystemType::PLA)
+    if (SystemType == SystemType::PLA)
     {
         auto const path = "/home/michal/data/IWLS93/pla/con1.pla";
         auto fileOpt = teddy::pla_file::load_file(path);
@@ -393,6 +429,7 @@ auto main() -> int
             ReplicationCount,
             TimePointCount,
             varCount,
+            true,
             gen
         );
     }

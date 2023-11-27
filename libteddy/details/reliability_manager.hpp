@@ -538,7 +538,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
     diagram_t const& diagram
 ) -> void
 {
-    this->calculate_probabilities(symprobs::to_matrix(probs), diagram);
+    this->calculate_probabilities(probs::as_matrix(probs), diagram);
 }
 
 template<class Degree, class Domain>

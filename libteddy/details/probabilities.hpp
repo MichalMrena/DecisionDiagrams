@@ -192,11 +192,28 @@ public:
     {
     }
 
+    /**
+     *  \brief Evaluates distribution at time \p t and stores the value
+     */
     auto cache_eval_at (double const t) -> void
     {
         std::visit([t] (auto& d) { d.cache_eval_at(t); }, dist_);
     }
 
+    /**
+     *  \brief Returns value stored by the last call of \c cache_val_at
+     */
+    auto get_cached_value () const -> double
+    {
+        return std::visit(
+            [] (auto& d) -> double { return d.get_cached_value(); },
+            dist_
+        );
+    }
+
+    /**
+     *  \brief Conversion to double -- the same value as \c get_cached_value
+     */
     [[nodiscard]] operator double () const
     {
         return std::visit(
@@ -205,6 +222,9 @@ public:
         );
     }
 
+    /**
+     *  \brief Evaluates distribution at time \p t
+     */
     [[nodiscard]] auto operator() (double const t) const -> double
     {
         return std::visit(
@@ -296,10 +316,25 @@ concept dist_matrix = requires(T t, std::size_t i) {
 /**
  *  \brief Wraps \p distVector so that it can be viewed as n x 2 matrix
  */
-template<dist_vector Ps>
+template<class Ps>
+requires(prob_vector<Ps> || dist_vector<Ps>)
 auto as_matrix (Ps& distVector)
 {
     return details::vector_to_matrix_wrap<Ps>(distVector);
+}
+
+/**
+ *  \brief Transforms \p vec into n x 2 matrix
+ */
+template<prob_vector Ps>
+auto to_matrix (Ps const& vector) -> std::vector<std::array<double, 2>>
+{
+    std::vector<std::array<double, 2>> matrix;
+    for (double const p : vector)
+    {
+        matrix.push_back(std::array {1 - p, p});
+    }
+    return matrix;
 }
 
 /**

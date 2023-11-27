@@ -111,24 +111,25 @@ inline auto make_time_probability_vector (
 
     auto const mkExponential = [] (std::ranlux48& gen) -> probs::prob_dist
     {
-        std::uniform_real_distribution<double> distRate(0.5, 1.5);
+        std::uniform_real_distribution<double> distRate(0.2, 1.0);
         return probs::exponential(distRate(gen));
     };
 
-    auto const mkWeibull = [] (std::ranlux48& gen) -> probs::prob_dist
-    {
-        std::uniform_real_distribution<double> distShape(0.5, 1.0);
-        return probs::weibull(1.0, distShape(gen));
-    };
+    // auto const mkWeibull = [] (std::ranlux48& gen) -> probs::prob_dist
+    // {
+    //     std::uniform_real_distribution<double> distShape(0.5, 1.0);
+    //     return probs::weibull(1.0, distShape(gen));
+    // };
 
-    auto const mkConstant = [] (std::ranlux48& gen) -> probs::prob_dist
-    {
-        std::uniform_real_distribution<double> distProb(0.2, 1.0);
-        return probs::constant(distProb(gen));
-    };
+    // auto const mkConstant = [] (std::ranlux48& gen) -> probs::prob_dist
+    // {
+    //     std::uniform_real_distribution<double> distProb(0.2, 1.0);
+    //     return probs::constant(distProb(gen));
+    // };
 
     std::vector<probs::prob_dist (*)(std::ranlux48&)> distGenerators(
-        {+mkExponential, +mkWeibull, +mkConstant}
+        // {+mkExponential, +mkWeibull, +mkConstant}
+        {+mkExponential}
     );
 
     std::uniform_int_distribution<std::size_t> distGen(
@@ -155,24 +156,25 @@ inline auto make_time_symprobability_vector (
 
     auto const mkExponential = [] (std::ranlux48& gen) -> symprobs::expression
     {
-        std::uniform_real_distribution<double> distRate(0.5, 1.5);
+        std::uniform_real_distribution<double> distRate(0.2, 1.0);
         return symprobs::exponential(distRate(gen));
     };
 
-    auto const mkWeibull = [] (std::ranlux48& gen) -> symprobs::expression
-    {
-        std::uniform_real_distribution<double> distShape(0.5, 1.0);
-        return symprobs::weibull(1.0, distShape(gen));
-    };
+    // auto const mkWeibull = [] (std::ranlux48& gen) -> symprobs::expression
+    // {
+    //     std::uniform_real_distribution<double> distShape(0.5, 1.0);
+    //     return symprobs::weibull(1.0, distShape(gen));
+    // };
 
-    auto const mkConstant = [] (std::ranlux48& gen) -> symprobs::expression
-    {
-        std::uniform_real_distribution<double> distProb(0.2, 1.0);
-        return symprobs::constant(distProb(gen));
-    };
+    // auto const mkConstant = [] (std::ranlux48& gen) -> symprobs::expression
+    // {
+    //     std::uniform_real_distribution<double> distProb(0.2, 1.0);
+    //     return symprobs::constant(distProb(gen));
+    // };
 
     std::vector<symprobs::expression (*)(std::ranlux48&)> distGenerators(
-        {+mkExponential, +mkWeibull, +mkConstant}
+        // {+mkExponential, +mkWeibull, +mkConstant}
+        {+mkExponential}
     );
 
     std::uniform_int_distribution<std::size_t> distGen(
