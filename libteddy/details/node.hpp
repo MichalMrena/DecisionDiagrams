@@ -11,58 +11,78 @@ namespace teddy
 {
 namespace degrees
 {
-struct mixed
-{
-    /*
-     * Just a dummy value to simplify ifs, this one should be never used
-     */
-    static constexpr int32 value = 1;
-};
+    /**
+    *  \brief Marks that different nodes can have different number of sons
+    */
+    struct mixed
+    {
+        // Just a dummy value to simplify ifs, this one should be never used
+        static constexpr int32 value = 1;
+    };
 
-template<int32 N>
-struct fixed
-{
-    static_assert(N > 1);
-    static constexpr int32 value = N;
-};
+    /**
+    *  \brief Marks that all node has the same number of sons
+    */
+    template<int32 N>
+    struct fixed
+    {
+        static_assert(N > 1);
+        static constexpr int32 value = N;
+    };
 
-template<class T>
-struct is_fixed
-{
-    static constexpr bool value = false;
-};
+    /**
+    *  \brief Trait that checks if a degree (T) is fixed
+    */
+    template<class T>
+    struct is_fixed
+    {
+    };
 
-template<int32 N>
-struct is_fixed<fixed<N>>
-{
-    static constexpr bool value = true;
-};
+    template<>
+    struct is_fixed<mixed>
+    {
+        static constexpr bool value = false;
+    };
 
-template<class T>
-struct is_mixed
-{
-    static constexpr bool value = false;
-};
+    template<int32 N>
+    struct is_fixed<fixed<N>>
+    {
+        static constexpr bool value = true;
+    };
 
-template<>
-struct is_mixed<mixed>
-{
-    static constexpr bool value = true;
-};
+    /**
+    *  \brief Trait that checks if a degree (T) is mixed
+    */
+    template<class T>
+    struct is_mixed
+    {
+    };
+
+    template<int32 N>
+    struct is_mixed<fixed<N>>
+    {
+        static constexpr bool value = false;
+    };
+
+    template<>
+    struct is_mixed<mixed>
+    {
+        static constexpr bool value = true;
+    };
 } // namespace degrees
 
 namespace details
 {
-template<std::size_t Count>
-struct bytes
-{
-    char bytes_[Count];
-};
+    template<std::size_t Count>
+    struct bytes
+    {
+        char bytes_[Count];
+    };
 
-template<>
-struct bytes<0>
-{
-};
+    template<>
+    struct bytes<0>
+    {
+    };
 } // namespace details
 
 template<class Data, class Degree>
