@@ -88,21 +88,68 @@ namespace details
 template<class Data, class Degree>
 class node;
 
+// TODO move to sons namespace
 template<class Data, class Degree>
-struct node_ptr_array
+class fixed_sons
 {
-    node<Data, Degree>* sons_[Degree::value];
+public:
+    using node_t = node<Data, Degree>;
 
-    auto operator[] (int64 const index) -> node<Data, Degree>*&
+    auto operator[] (int64 const index) -> node_t*&
     {
         return sons_[index];
     }
 
-    auto operator[] (int64 const index) const -> node<Data, Degree>* const&
+    auto operator[] (int64 const index) const -> node_t* const&
     {
         return sons_[index];
     }
+
+private:
+    node_t* sons_[Degree::value];
 };
+
+namespace sons
+{
+    template<class Data, class Degree>
+    class mixed_sons
+    {
+    public:
+        using node_t = node<Data, Degree>;
+
+        mixed_sons(int32 const domain) :
+            sons_(static_cast<node_t**>(
+                std::malloc(as_usize(domain) * sizeof(node_t*)))
+            )
+        {
+        }
+
+        mixed_sons(const mixed_sons&) = delete;
+
+        mixed_sons(mixed_sons&& other) :
+            sons_(utils::exchange(other, nullptr))
+        {
+        }
+
+        ~mixed_sons()
+        {
+            std::free(sons_);
+        }
+
+        auto operator[] (int64 const index) -> node_t*&
+        {
+            return sons_[index];
+        }
+
+        auto operator[] (int64 const index) const -> node_t* const&
+        {
+            return sons_[index];
+        }
+
+    private:
+        node_t** sons_;
+    };
+} // namespace sons
 
 template<class Data, class Degree>
 //             ^^^^
@@ -112,11 +159,12 @@ class node
 public:
     template<int32 N>
     static auto make_son_container (int32, degrees::fixed<N>)
-        -> node_ptr_array<Data, Degree>
+        -> fixed_sons<Data, Degree>
     {
-        return node_ptr_array<Data, Degree>();
+        return fixed_sons<Data, Degree>();
     }
 
+    // TODO use mixed_sons raii
     static auto make_son_container (int32 const domain, degrees::mixed)
         -> node**
     {
@@ -124,6 +172,7 @@ public:
         );
     }
 
+    // TODO this wont be necessary
     static auto delete_son_container (node** sons) -> void
     {
         std::free(sons);
@@ -133,11 +182,25 @@ public:
     using son_container = decltype(make_son_container(int32(), Degree()));
 
 public:
+    /**
+     *  \brief Constructs node as terminal
+     */
     explicit node(int32 value);
+
+    /**
+     *  \brief Constructs node as internal
+     */
     node(int32 index, son_container sons);
+
+    /**
+     *  \brief Trivial destructor of sons are fixed
+     */
     ~node() = default;
-    ~node()
-    requires(degrees::is_mixed<Degree>::value);
+
+    /**
+     *  \brief Non-Trivial destructor of sons are mixed
+     */
+    ~node() requires(degrees::is_mixed<Degree>::value);
 
     node()                       = delete;
     node(node const&)            = delete;
@@ -238,6 +301,7 @@ requires(degrees::is_mixed<Degree>::value)
 {
     if constexpr (degrees::is_mixed<Degree>::value)
     {
+        // TODO just call mixed_sons destructor
         if (this->is_or_was_internal())
         {
             std::free(internal_.sons_);
