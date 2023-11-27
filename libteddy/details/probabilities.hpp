@@ -7,7 +7,6 @@
 #include <array>
 #include <cassert>
 #include <cmath>
-#include <concepts>
 #include <functional>
 #include <ostream>
 #include <variant>
@@ -20,7 +19,7 @@ namespace details
 /**
  *  \brief Helper for vector wrap
  *
- *  Returns probability that the component is in state 1 p_{i,1} from \p vec
+ *  Returns probability that the component is in state 1 `p_{i,1}` from \p vec
  *  or in case we need the probability that it is in state 0 it calculates
  *  it as `1 - p_{i,1}`.
  */
@@ -322,6 +321,9 @@ auto eval_at (Ps& distVector, double const t) -> Ps&
 template<dist_matrix Ps>
 auto eval_at (Ps& distMatrix, double const t) -> Ps&
 {
+    // TODO if constexpr RowIterable (in case it is compact matrix)
+    // TODO if constexpr MatrixIterable
+
     for (auto& dists : distMatrix)
     {
         for (auto& dist : dists)

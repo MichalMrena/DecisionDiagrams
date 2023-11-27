@@ -193,12 +193,12 @@ public:
     node(int32 index, son_container sons);
 
     /**
-     *  \brief Trivial destructor of sons are fixed
+     *  \brief Trivial destructor if sons are fixed
      */
     ~node() = default;
 
     /**
-     *  \brief Non-Trivial destructor of sons are mixed
+     *  \brief Non-Trivial destructor if sons are mixed
      */
     ~node() requires(degrees::is_mixed<Degree>::value);
 
