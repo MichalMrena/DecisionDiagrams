@@ -114,6 +114,25 @@ private:
 };
 
 /**
+ *  \brief Exponential distribution
+ */
+class complemented_exponential : public make_cached<exponential>
+{
+public:
+    complemented_exponential(double const rate) : rate_(rate)
+    {
+    }
+
+    [[nodiscard]] auto operator() (double const t) const -> double
+    {
+        return 1 - rate_ * std::exp(-rate_ * t);
+    }
+
+private:
+    double rate_;
+};
+
+/**
  *  \brief Weibull distribution
  */
 class weibull : public make_cached<weibull>
@@ -177,6 +196,7 @@ private:
 
 using dist_variant = std::variant<
     details::exponential,
+    details::complemented_exponential,
     details::weibull,
     details::constant,
     details::custom_dist
@@ -243,6 +263,14 @@ private:
 inline auto exponential (double const rate) -> prob_dist
 {
     return prob_dist(details::exponential(rate));
+}
+
+/**
+ *  \brief Creates instance of Complemented Exponential distribution
+ */
+inline auto complemented_exponential (double const rate) -> prob_dist
+{
+    return prob_dist(details::complemented_exponential(rate));
 }
 
 /**

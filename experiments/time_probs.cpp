@@ -9,6 +9,26 @@
 
 #include "utils.hpp"
 
+inline auto make_time_probability_matrix (
+    int const varCount,
+    std::ranlux48& rng
+) -> std::vector<std::array<teddy::probs::prob_dist, 2>>
+{
+    std::vector<std::array<teddy::probs::prob_dist, 2>> probs;
+
+    for (int i = 0; i < varCount; ++i)
+    {
+        std::uniform_real_distribution<double> distRate(0.2, 1.0);
+        double const rate = distRate(rng);
+        probs.push_back({
+            teddy::probs::complemented_exponential(rate),
+            teddy::probs::exponential(rate)
+        });
+    }
+
+    return probs;
+}
+
 //                +------+
 //              +-|  x1  |-+
 //              | +------+ | +------+
@@ -24,18 +44,57 @@
 //              +------+ +------+ | +------+ |
 //                                +-|  x7  |-+
 //                                  +------+
+
+//           +------+
+//         +-|  x0  |-+
+//         | +------+ |
+//     +---+          +----+
+//     |   | +------+ |    |
+//     |   +-|  x1  |-+    |
+//     |     +------+      |
+//   o-+                   |-o
+//     | +------+ +------+ |
+//     +-|  x2  |-|  x3  |-+
+//       +------+ +------+
 struct FixedDiagramGenerator
 {
     auto operator() (teddy::bss_manager& m)
     {
         using namespace teddy::ops;
-        auto& x    = m;
-        auto fst   = x(0);
-        auto snd_1 = m.apply_n<AND>(m.apply<OR>(x(1), x(2)), x(3));
-        auto snd_2 = m.apply_n<AND>(x(4), x(5), m.apply<OR>(x(6), x(7)));
-        auto snd   = m.apply<OR>(snd_1, snd_2);
-        auto thd   = m.apply<OR>(x(8), x(9));
-        return m.apply_n<AND>(fst, snd, thd);
+        auto& x     = m;
+        auto top    = m.apply<OR>(x(0), x(1));
+        auto bottom = m.apply<AND>(x(2), x(3));
+        return m.apply<OR>(top, bottom);
+    }
+};
+
+struct FixedProbsGenerator
+{
+    auto operator() (std::ranlux48&, int const)
+    {
+        using namespace teddy::probs;
+        return std::vector<std::array<prob_dist, 2>>
+        {
+            {exponential(1 / 25.359), complemented_exponential(1 / 25.359)},
+            {exponential(1 /  6.246), complemented_exponential(1 /  6.246)},
+            {exponential(1 /  4.764), complemented_exponential(1 /  4.764)},
+            {exponential(1 / 44.360), complemented_exponential(1 / 44.360)},
+        };
+    }
+};
+
+struct FixedSymprobsGenerator
+{
+    auto operator() (std::ranlux48&, int const)
+    {
+        using namespace teddy::symprobs;
+        return std::vector<std::array<expression, 2>>
+        {
+            {exponential(1 / 25.359), complement(exponential(1 / 25.359))},
+            {exponential(1 /  6.246), complement(exponential(1 /  6.246))},
+            {exponential(1 /  4.764), complement(exponential(1 /  4.764))},
+            {exponential(1 / 44.360), complement(exponential(1 / 44.360))},
+        };
     }
 };
 
@@ -205,6 +264,24 @@ private:
     teddy::pla_file file_;
 };
 
+struct RandomProbsGenerator
+{
+    auto operator() (std::ranlux48& rng, int const varCount)
+    {
+        return make_time_probability_matrix(varCount, rng);
+    }
+};
+
+struct RandomSymprobsGenerator
+{
+    auto operator() (std::ranlux48& rng, int const varCount)
+    {
+        return teddy::symprobs::as_matrix(
+            teddy::tsl::make_time_symprobability_vector(varCount, rng)
+        );
+    }
+};
+
 int get_node_count (GiNaC::ex ex)
 {
     int count = 1;
@@ -219,14 +296,16 @@ int get_node_count (GiNaC::ex ex)
     return count;
 }
 
-template<class DiagramGenerator>
+template<class DiagramGenerator, class ProbsGenerator, class SymprobsGenerator>
 auto evalute_system (
     int const diagramCount,
     int const replicationCount,
     int const timePointCount,
     int const varCount,
     bool const printHeader,
-    DiagramGenerator& gen
+    DiagramGenerator& diagramGen,
+    ProbsGenerator& probsGen,
+    SymprobsGenerator& symprobsGen
 ) -> void
 {
     using namespace teddy::utils;
@@ -262,7 +341,7 @@ auto evalute_system (
     for (int diagramId = 0; diagramId < diagramCount; ++diagramId)
     {
         teddy::bss_manager manager(varCount, 1'000'000);
-        bdd_t diagram = gen(manager);
+        bdd_t diagram = diagramGen(manager);
         long long const nodeCount = manager.get_node_count(diagram);
         for (int repl = 0; repl < replicationCount; ++repl)
         {
@@ -283,10 +362,7 @@ auto evalute_system (
 
             // Basic approach
             {
-                auto probs = teddy::tsl::make_time_probability_vector(
-                    varCount,
-                    probRng1
-                );
+                auto probs = probsGen(probRng1, varCount);
 
                 duration_measurement timeBasic;
                 tick(timeBasic);
@@ -294,6 +370,7 @@ auto evalute_system (
                 for (int i = 0; i < timePointCount; ++i)
                 {
                     double const A = manager.calculate_availability(
+                        1,
                         teddy::probs::eval_at(probs, t),
                         diagram
                     );
@@ -311,12 +388,7 @@ auto evalute_system (
 
             // Symbolic approach
             {
-                auto probs = teddy::symprobs::to_matrix(
-                    teddy::tsl::make_time_symprobability_vector(
-                        varCount,
-                        probRng2
-                    )
-                );
+                auto symprobs = symprobsGen(probRng2, varCount);
 
                 duration_measurement timeSymbolicInit;
                 duration_measurement timeSymbolicEval;
@@ -324,10 +396,14 @@ auto evalute_system (
                 teddy::symprobs::expression Aexpr =
                     manager.symbolic_availability(
                         1,
-                        probs,
+                        symprobs,
                         diagram
                     );
                 tock(timeSymbolicInit);
+
+                std::cout << "===";
+                Aexpr.to_matlab(std::cout);
+                std::cout << "===";
 
                 // ; sym-prob-init
                 std::cout << duration_as<time_unit>(timeSymbolicInit) << Sep;
@@ -362,17 +438,19 @@ enum class SystemType
 
 auto main() -> int
 {
-    SystemType const SystemType = SystemType::SERIES_PARALLEL;
-    int constexpr ReplicationCount = 1;
-    int constexpr TimePointCount   = 10;
-    auto const TimePointCounts = {10, 100, 1000, 10'000};
+    SystemType const SystemType = SystemType::FIXED;
 
     if (SystemType == SystemType::FIXED)
     {
-        int constexpr DiagramCount = 1;
-        int constexpr VarCount     = 10;
-        FixedDiagramGenerator gen;
-        bool printHeader = true;
+        int const ReplicationCount = 1;
+        int const DiagramCount     = 1;
+        int const VarCount         = 4;
+        // auto const TimePointCounts = {10, 100, 1000, 10'000};
+        auto const TimePointCounts = {10};
+        bool printHeader           = true;
+        FixedDiagramGenerator diagramGen;
+        FixedProbsGenerator probsGen;
+        FixedSymprobsGenerator symprobsGen;
         for (int const timePointCount : TimePointCounts)
         {
             evalute_system(
@@ -381,7 +459,9 @@ auto main() -> int
                 timePointCount,
                 VarCount,
                 printHeader,
-                gen
+                diagramGen,
+                probsGen,
+                symprobsGen
             );
             printHeader = false;
         }
@@ -389,21 +469,26 @@ auto main() -> int
 
     if (SystemType == SystemType::SERIES_PARALLEL)
     {
-        int constexpr DiagramCount = 10;
-        int constexpr ExprSeed     = 5343584;
-        // auto const VarCounts = {500, 1'000, 1'500, 2'000, 2'500};
-        auto const VarCounts = {10, 20, 30, 30, 40};
-        bool printHeader = true;
+        int const ReplicationCount = 10;
+        int const DiagramCount     = 20;
+        int const ExprSeed         = 5343584;
+        int const TimePointCount   = 10;
+        auto const VarCounts       = {10, 20, 30, 40};
+        bool printHeader           = true;
+        RandomProbsGenerator probsGen;
+        RandomSymprobsGenerator symprobsGen;
         for (int const varCount : VarCounts)
         {
-            SPDiagramGenerator gen(ExprSeed, varCount);
+            SPDiagramGenerator diagram(ExprSeed, varCount);
             evalute_system(
                 DiagramCount,
                 ReplicationCount,
                 TimePointCount,
                 varCount,
                 printHeader,
-                gen
+                diagram,
+                probsGen,
+                symprobsGen
             );
             printHeader = false;
         }
@@ -418,19 +503,25 @@ auto main() -> int
             std::cerr << "Failed to load PLA file.\n";
             return 1;
         }
-        int constexpr DiagramCount = 1;
-        int const inputCount    = fileOpt->get_variable_count();
-        int const lineCount     = (int)fileOpt->get_line_count();
-        int const functionCount = fileOpt->get_function_count();
-        int const varCount      = inputCount + lineCount + functionCount;
-        PLADiagramGenerator gen(*fileOpt);
+        int const ReplicationCount = 10;
+        int const DiagramCount     = 1;
+        int const TimePointCount   = 10;
+        int const inputCount       = fileOpt->get_variable_count();
+        int const lineCount        = (int)fileOpt->get_line_count();
+        int const functionCount    = fileOpt->get_function_count();
+        int const varCount         = inputCount + lineCount + functionCount;
+        PLADiagramGenerator diagramGen(*fileOpt);
+        RandomProbsGenerator probsGen;
+        RandomSymprobsGenerator symprobsGen;
         evalute_system(
             DiagramCount,
             ReplicationCount,
             TimePointCount,
             varCount,
             true,
-            gen
+            diagramGen,
+            probsGen,
+            symprobsGen
         );
     }
 }
