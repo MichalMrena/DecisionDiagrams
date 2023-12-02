@@ -4,10 +4,37 @@
 #include <libtsl/generators.hpp>
 #include <libtsl/utilities.hpp>
 #include <nanobench/nanobench.h>
+#include <bitset>
+#include <iomanip>
 #include <iostream>
+#include <filesystem>
 #include <random>
 
 #include "utils.hpp"
+
+// CVS parameters
+char const* const Sep = "\t";
+char const* const Eol = "\n";
+
+// Types
+using time_unit = std::chrono::nanoseconds;
+using bdd_t = teddy::bss_manager::diagram_t;
+
+template<class F>
+void for_each_bdd_vars(long long const varCount, F f)
+{
+    assert(varCount < 32);
+    unsigned long long const Bound = 1ULL << varCount;
+    for (unsigned long long vars = 0; vars < Bound; ++vars)
+    {
+        f(std::bitset<32>(vars));
+    }
+}
+
+auto div (auto const nom, auto const denom) -> double
+{
+    return static_cast<double>(nom) / static_cast<double>(denom);
+}
 
 inline auto make_time_probability_matrix (
     int const varCount,
@@ -141,7 +168,6 @@ public:
         long long const functionCount = file_.get_function_count();
 
         using namespace teddy::ops;
-        using bdd_t = teddy::bss_manager::diagram_t;
         using std::size_t;
 
         std::vector<bdd_t> inputs;
@@ -276,7 +302,7 @@ struct RandomSymprobsGenerator
 {
     auto operator() (std::ranlux48& rng, int const varCount)
     {
-        return teddy::symprobs::as_matrix(
+        return teddy::symprobs::to_matrix(
             teddy::tsl::make_time_symprobability_vector(varCount, rng)
         );
     }
@@ -309,12 +335,6 @@ auto evalute_system (
 ) -> void
 {
     using namespace teddy::utils;
-    using time_unit = std::chrono::nanoseconds;
-    using bdd_t = teddy::bss_manager::diagram_t;
-
-    // CVS parameters
-    char const* const Sep = "\t";
-    char const* const Eol = "\n";
 
     // Time parameters
     double const TimeZero  = 1;
@@ -436,92 +456,298 @@ enum class SystemType
     PLA
 };
 
+auto print_header () -> void
+{
+    using namespace teddy::utils;
+    std::cout << "diagram-id"       << Sep
+              << "replication-id"   << Sep
+              << "variable-count"   << Sep
+              << "diagram-nodes"    << Sep
+              << "time-pt-count"    << Sep
+              << "basic-prob-init[" << unit_str(time_unit()) << "]" << Sep
+              << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
+              << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
+              << "tree-nodes"       << Sep
+              << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+}
+
+auto analyze_pla (
+    std::string const& path,
+    bool const printHeader,
+    std::ranlux48& probRng1,
+    std::ranlux48& probRng2,
+    int const replicationCount,
+    int const timePointCount
+) -> void
+{
+    using namespace teddy::utils;
+
+    auto fileOpt = teddy::pla_file::load_file(path);
+    if (not fileOpt)
+    {
+        std::cerr << "Failed to load PLA file -- " << path << "\n";
+        std::exit(1);
+    }
+
+    double const TimeZero      = 1;
+    double const TimeDelta     = 0.01;
+    int const inputCount       = fileOpt->get_variable_count();
+    int const lineCount        = (int)fileOpt->get_line_count();
+    int const functionCount    = fileOpt->get_function_count();
+    int const varCount         = inputCount + lineCount + functionCount;
+
+    PLADiagramGenerator diagramGen(*fileOpt);
+    RandomProbsGenerator probsGen;
+    RandomSymprobsGenerator symprobsGen;
+
+    if (printHeader)
+    {
+        std::cout
+            << "pla-file"         << Sep
+            << "replication-id"   << Sep
+            << "variable-count"   << Sep
+            << "time-pt-count"    << Sep
+            << "diagram-nodes"    << Sep
+            << "tree-nodes"       << Sep
+            << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
+            << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
+            << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+    }
+
+    std::ios_base::fmtflags const outFlags = std::cout.flags();
+
+    teddy::bss_manager manager(varCount, 1'000'000);
+    bdd_t diagram = diagramGen(manager);
+    for (int repl = 0; repl < replicationCount; ++repl)
+    {
+        // ; pla-file
+        std::cout << std::filesystem::path(path).stem() << Sep;
+
+        // ; replication-id
+        std::cout << repl << Sep;
+
+        // ; variable-count
+        std::cout << varCount << Sep;
+
+        // ; time-pt-count
+        std::cout << timePointCount << Sep;
+
+        duration_measurement timeBasic;
+        duration_measurement timeSymbolicInit;
+        duration_measurement timeSymbolicEval;
+
+        long long diagramNodeCount = 0;
+        long long exprNodeCount    = 0;
+
+        auto probs    = probsGen(probRng1, varCount);
+        auto symprobs = symprobsGen(probRng2, varCount);
+
+        for_each_bdd_vars(inputCount, [&](auto const& vars)
+        {
+            std::vector<teddy::var_cofactor> cofactoredVars;
+            cofactoredVars.reserve(1LL << inputCount);
+            for (int i = 0; i < inputCount; ++i)
+            {
+                cofactoredVars.push_back({i, vars[(size_t)i]});
+            }
+            bdd_t sf = manager.get_cofactor(diagram, cofactoredVars);
+
+            diagramNodeCount += manager.get_node_count(sf);
+
+            // Basic approach
+            {
+                tick(timeBasic);
+                double t = TimeZero;
+                for (int i = 0; i < timePointCount; ++i)
+                {
+                    double const A = manager.calculate_availability(
+                        1,
+                        teddy::probs::eval_at(probs, t),
+                        sf
+                    );
+                    ankerl::nanobench::doNotOptimizeAway(A);
+                    t += TimeDelta;
+                }
+                tock(timeBasic);
+            }
+
+            // Symbolic approach
+            {
+                tick(timeSymbolicInit);
+                teddy::symprobs::expression Aexpr =
+                    manager.symbolic_availability(
+                        1,
+                        symprobs,
+                        sf
+                    );
+                tock(timeSymbolicInit);
+
+                exprNodeCount += get_node_count(Aexpr.as_underlying_unsafe());
+
+                tick(timeSymbolicEval);
+                double t = TimeZero;
+                for (int i = 0; i < timePointCount; ++i)
+                {
+                    double const A = Aexpr.evaluate(t);
+                    ankerl::nanobench::doNotOptimizeAway(A);
+                    t += TimeDelta;
+                }
+                tock(timeSymbolicEval);
+            }
+        });
+
+        long long const denom = 1 << inputCount;
+
+        // Four places for counts
+        std::cout << std::fixed;
+        std::cout << std::setprecision(4);
+
+        // ; diagram-nodes
+        std::cout << div(diagramNodeCount, denom) << Sep;
+
+        // ; tree-nodes
+        std::cout << div(exprNodeCount, denom) << Sep;
+
+        // No places for durations
+        std::cout << std::setprecision(0);
+
+        // ; basic-prob-eval
+        std::cout << div(duration_as<time_unit>(timeBasic), denom) << Sep;
+
+        // ; sym-prob-init
+        std::cout << div(duration_as<time_unit>(timeSymbolicInit), denom) << Sep;
+
+        // ; sym-prob-eval
+        std::cout << div(duration_as<time_unit>(timeSymbolicEval), denom) << Eol;
+
+        // Reset flags
+        std::cout.flags(outFlags);
+    }
+}
+
+auto run_analyze_pla () -> void
+{
+    auto const files =
+    {
+        "/home/michal/data/IWLS93/pla/con1.pla",
+        "/home/michal/data/IWLS93/pla/xor5.pla",
+        "/home/michal/data/IWLS93/pla/rd53.pla",
+        "/home/michal/data/IWLS93/pla/squar5.pla",
+        "/home/michal/data/IWLS93/pla/sqrt8.pla",
+    };
+
+    int const ReplicationCount = 1;
+    int const ProbsSeed        = 5343584;
+    auto const TimePoinCounts  = {10, 100, 1'000, 10'000};
+    std::ranlux48 probRng1(ProbsSeed);
+    std::ranlux48 probRng2(ProbsSeed);
+
+    bool printHeader = true;
+    for (auto const& file : files)
+    {
+        for (int const timePointCount : TimePoinCounts)
+        {
+            analyze_pla(
+                file,
+                printHeader,
+                probRng1,
+                probRng2,
+                ReplicationCount,
+                timePointCount
+            );
+            printHeader = false;
+        }
+    }
+}
+
 auto main() -> int
 {
-    SystemType const SystemType = SystemType::FIXED;
+    run_analyze_pla();
 
-    if (SystemType == SystemType::FIXED)
-    {
-        int const ReplicationCount = 1;
-        int const DiagramCount     = 1;
-        int const VarCount         = 4;
-        // auto const TimePointCounts = {10, 100, 1000, 10'000};
-        auto const TimePointCounts = {10};
-        bool printHeader           = true;
-        FixedDiagramGenerator diagramGen;
-        FixedProbsGenerator probsGen;
-        FixedSymprobsGenerator symprobsGen;
-        for (int const timePointCount : TimePointCounts)
-        {
-            evalute_system(
-                DiagramCount,
-                ReplicationCount,
-                timePointCount,
-                VarCount,
-                printHeader,
-                diagramGen,
-                probsGen,
-                symprobsGen
-            );
-            printHeader = false;
-        }
-    }
+    // SystemType const SystemType = SystemType::FIXED;
 
-    if (SystemType == SystemType::SERIES_PARALLEL)
-    {
-        int const ReplicationCount = 10;
-        int const DiagramCount     = 20;
-        int const ExprSeed         = 5343584;
-        int const TimePointCount   = 10;
-        auto const VarCounts       = {10, 20, 30, 40};
-        bool printHeader           = true;
-        RandomProbsGenerator probsGen;
-        RandomSymprobsGenerator symprobsGen;
-        for (int const varCount : VarCounts)
-        {
-            SPDiagramGenerator diagram(ExprSeed, varCount);
-            evalute_system(
-                DiagramCount,
-                ReplicationCount,
-                TimePointCount,
-                varCount,
-                printHeader,
-                diagram,
-                probsGen,
-                symprobsGen
-            );
-            printHeader = false;
-        }
-    }
+    // if (SystemType == SystemType::FIXED)
+    // {
+    //     int const ReplicationCount = 1;
+    //     int const DiagramCount     = 1;
+    //     int const VarCount         = 4;
+    //     // auto const TimePointCounts = {10, 100, 1000, 10'000};
+    //     auto const TimePointCounts = {10};
+    //     bool printHeader           = true;
+    //     FixedDiagramGenerator diagramGen;
+    //     FixedProbsGenerator probsGen;
+    //     FixedSymprobsGenerator symprobsGen;
+    //     for (int const timePointCount : TimePointCounts)
+    //     {
+    //         evalute_system(
+    //             DiagramCount,
+    //             ReplicationCount,
+    //             timePointCount,
+    //             VarCount,
+    //             printHeader,
+    //             diagramGen,
+    //             probsGen,
+    //             symprobsGen
+    //         );
+    //         printHeader = false;
+    //     }
+    // }
 
-    if (SystemType == SystemType::PLA)
-    {
-        auto const path = "/home/michal/data/IWLS93/pla/con1.pla";
-        auto fileOpt = teddy::pla_file::load_file(path);
-        if (not fileOpt)
-        {
-            std::cerr << "Failed to load PLA file.\n";
-            return 1;
-        }
-        int const ReplicationCount = 10;
-        int const DiagramCount     = 1;
-        int const TimePointCount   = 10;
-        int const inputCount       = fileOpt->get_variable_count();
-        int const lineCount        = (int)fileOpt->get_line_count();
-        int const functionCount    = fileOpt->get_function_count();
-        int const varCount         = inputCount + lineCount + functionCount;
-        PLADiagramGenerator diagramGen(*fileOpt);
-        RandomProbsGenerator probsGen;
-        RandomSymprobsGenerator symprobsGen;
-        evalute_system(
-            DiagramCount,
-            ReplicationCount,
-            TimePointCount,
-            varCount,
-            true,
-            diagramGen,
-            probsGen,
-            symprobsGen
-        );
-    }
+    // if (SystemType == SystemType::SERIES_PARALLEL)
+    // {
+    //     int const ReplicationCount = 10;
+    //     int const DiagramCount     = 20;
+    //     int const ExprSeed         = 5343584;
+    //     int const TimePointCount   = 10;
+    //     auto const VarCounts       = {10, 20, 30, 40};
+    //     bool printHeader           = true;
+    //     RandomProbsGenerator probsGen;
+    //     RandomSymprobsGenerator symprobsGen;
+    //     for (int const varCount : VarCounts)
+    //     {
+    //         SPDiagramGenerator diagram(ExprSeed, varCount);
+    //         evalute_system(
+    //             DiagramCount,
+    //             ReplicationCount,
+    //             TimePointCount,
+    //             varCount,
+    //             printHeader,
+    //             diagram,
+    //             probsGen,
+    //             symprobsGen
+    //         );
+    //         printHeader = false;
+    //     }
+    // }
+
+    // if (SystemType == SystemType::PLA)
+    // {
+    //     auto const path = "/home/michal/data/IWLS93/pla/con1.pla";
+    //     auto fileOpt = teddy::pla_file::load_file(path);
+    //     if (not fileOpt)
+    //     {
+    //         std::cerr << "Failed to load PLA file.\n";
+    //         return 1;
+    //     }
+    //     int const ReplicationCount = 10;
+    //     int const DiagramCount     = 1;
+    //     int const TimePointCount   = 10;
+    //     int const inputCount       = fileOpt->get_variable_count();
+    //     int const lineCount        = (int)fileOpt->get_line_count();
+    //     int const functionCount    = fileOpt->get_function_count();
+    //     int const varCount         = inputCount + lineCount + functionCount;
+    //     PLADiagramGenerator diagramGen(*fileOpt);
+    //     RandomProbsGenerator probsGen;
+    //     RandomSymprobsGenerator symprobsGen;
+    //     evalute_system(
+    //         DiagramCount,
+    //         ReplicationCount,
+    //         TimePointCount,
+    //         varCount,
+    //         true,
+    //         diagramGen,
+    //         probsGen,
+    //         symprobsGen
+    //     );
+    // }
 }
