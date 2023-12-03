@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <random>
 
+#include "libteddy/details/symbolic_probabilities.hpp"
 #include "utils.hpp"
 
 // CVS parameters
@@ -456,19 +457,138 @@ enum class SystemType
     PLA
 };
 
-auto print_header () -> void
+auto analyze_fixed (
+    int const replicationCount,
+    int const timePointCount,
+    bool const printHeader
+) -> void
 {
+    using namespace teddy;
+    using namespace teddy::ops;
     using namespace teddy::utils;
-    std::cout << "diagram-id"       << Sep
-              << "replication-id"   << Sep
-              << "variable-count"   << Sep
-              << "diagram-nodes"    << Sep
-              << "time-pt-count"    << Sep
-              << "basic-prob-init[" << unit_str(time_unit()) << "]" << Sep
-              << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
-              << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
-              << "tree-nodes"       << Sep
-              << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+    teddy::bss_manager manager(4, 1'000);
+
+    auto& x      = manager;
+    bdd_t top    = manager.apply<OR>(x(0), x(1));
+    bdd_t bottom = manager.apply<AND>(x(2), x(3));
+    bdd_t sf     = manager.apply<OR>(top, bottom);
+
+    std::vector<std::array<probs::prob_dist, 2>> probs
+    {
+        {probs::exponential(1 / 25.359), probs::complemented_exponential(1 / 25.359)},
+        {probs::exponential(1 /  6.246), probs::complemented_exponential(1 /  6.246)},
+        {probs::exponential(1 /  4.764), probs::complemented_exponential(1 /  4.764)},
+        {probs::exponential(1 / 44.360), probs::complemented_exponential(1 / 44.360)},
+    };
+
+    std::vector<std::array<symprobs::expression, 2>> symprobs
+    {
+        {symprobs::exponential(1 / 25.359), complement(symprobs::exponential(1 / 25.359))},
+        {symprobs::exponential(1 /  6.246), complement(symprobs::exponential(1 /  6.246))},
+        {symprobs::exponential(1 /  4.764), complement(symprobs::exponential(1 /  4.764))},
+        {symprobs::exponential(1 / 44.360), complement(symprobs::exponential(1 / 44.360))},
+    };
+
+    symprobs::expression expr = manager.symbolic_availability(1, symprobs, sf);
+
+    if (printHeader)
+    {
+        // Dot graph representation
+        std::cout << "DOT:" << "\n";
+        manager.to_dot_graph(std::cout, sf);
+        std::cout << "\n";
+
+        // Dot graph representation
+        std::cout << "Expression:" << "\n";
+        expr.to_matlab(std::cout);
+        std::cout << "\n";
+
+        // CSV header
+        std::cout << "replication-id"   << Sep
+                  << "variable-count"   << Sep
+                  << "diagram-nodes"    << Sep
+                  << "tree-nodes"       << Sep
+                  << "time-pt-count"    << Sep
+                  << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
+                  << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
+                  << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+    }
+
+    // Time parameters
+    double const TimeZero  = 1;
+    double const TimeDelta = 0.01;
+
+    long long const diagramNodes = manager.get_node_count(sf);
+    long long const treeNodes    = get_node_count(expr.as_underlying_unsafe());
+    for (int repl = 0; repl < replicationCount; ++repl)
+    {
+        // ; replication-id
+        std::cout << repl << Sep;
+
+        // ; variable-count
+        std::cout << manager.get_var_count() << Sep;
+
+        // ; diagram-nodes
+        std::cout << diagramNodes << Sep;
+
+        // ; tree-nodes
+        std::cout << treeNodes << Sep;
+
+        // ; time-pt-count
+        std::cout << timePointCount << Sep;
+
+        // Basic approach
+        {
+            duration_measurement timeBasic;
+            tick(timeBasic);
+            double t = TimeZero;
+            for (int i = 0; i < timePointCount; ++i)
+            {
+                double const A = manager.calculate_availability(
+                    1,
+                    teddy::probs::eval_at(probs, t),
+                    sf
+                );
+                ankerl::nanobench::doNotOptimizeAway(A);
+                t += TimeDelta;
+            }
+            tock(timeBasic);
+
+            // ; basic-prob-eval
+            std::cout << duration_as<time_unit>(timeBasic) << Sep;
+        }
+
+        // Symbolic approach
+        {
+            duration_measurement timeSymbolicInit;
+            duration_measurement timeSymbolicEval;
+            tick(timeSymbolicInit);
+            teddy::symprobs::expression Aexpr =
+                manager.symbolic_availability(
+                    1,
+                    symprobs,
+                    sf
+                );
+            tock(timeSymbolicInit);
+
+            // ; sym-prob-init
+            std::cout << duration_as<time_unit>(timeSymbolicInit) << Sep;
+
+            tick(timeSymbolicEval);
+            double t = TimeZero;
+            for (int i = 0; i < timePointCount; ++i)
+            {
+                double const A = Aexpr.evaluate(t);
+                ankerl::nanobench::doNotOptimizeAway(A);
+                t += TimeDelta;
+            }
+            tock(timeSymbolicEval);
+
+            // ; sym-prob-eval
+            std::cout << duration_as<time_unit>(timeSymbolicEval) << Eol;
+        }
+    }
+
 }
 
 auto analyze_pla (
@@ -625,6 +745,18 @@ auto analyze_pla (
     }
 }
 
+auto run_analyze_fixed () -> void
+{
+    int const ReplicationCount = 1;
+    auto const TimePoinCounts  = {10, 100, 1'000, 10'000};
+    bool printHeader = true;
+    for (int const timePointCount : TimePoinCounts)
+    {
+        analyze_fixed(ReplicationCount, timePointCount, printHeader);
+        printHeader = false;
+    }
+}
+
 auto run_analyze_pla () -> void
 {
     auto const files =
@@ -662,7 +794,8 @@ auto run_analyze_pla () -> void
 
 auto main() -> int
 {
-    run_analyze_pla();
+    // run_analyze_pla();
+    run_analyze_fixed();
 
     // SystemType const SystemType = SystemType::FIXED;
 
