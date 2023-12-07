@@ -106,7 +106,7 @@ public:
 
     [[nodiscard]] auto operator() (double const t) const -> double
     {
-        return rate_ * std::exp(-rate_ * t);
+        return 1 - std::exp(-rate_ * t);
     }
 
 private:
@@ -125,7 +125,7 @@ public:
 
     [[nodiscard]] auto operator() (double const t) const -> double
     {
-        return 1 - rate_ * std::exp(-rate_ * t);
+        return std::exp(-rate_ * t);
     }
 
 private:
@@ -144,10 +144,12 @@ public:
     {
     }
 
+    // TODO to CDF, Rausand 15
     [[nodiscard]] auto operator() (double const t) const -> double
     {
-        return (shape_ / scale_) * std::pow(t / scale_, shape_ - 1)
-             * std::exp(-std::pow(t / scale_, shape_));
+        // return (shape_ / scale_) * std::pow(t / scale_, shape_ - 1)
+        //      * std::exp(-std::pow(t / scale_, shape_));
+        return 1 - std::exp(-std::pow(t / scale_, shape_));
     }
 
 private:

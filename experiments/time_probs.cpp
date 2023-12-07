@@ -457,6 +457,40 @@ enum class SystemType
     PLA
 };
 
+auto describe_fixed () -> void
+{
+    using namespace teddy;
+    using namespace teddy::ops;
+    teddy::bss_manager manager(4, 1'000);
+
+    auto& x      = manager;
+    bdd_t top    = manager.apply<OR>(x(0), x(1));
+    bdd_t bottom = manager.apply<AND>(x(2), x(3));
+    bdd_t sf     = manager.apply<OR>(top, bottom);
+
+    GiNaC::realsymbol p1("p_1");
+    GiNaC::realsymbol p2("p_2");
+    GiNaC::realsymbol p3("p_3");
+    GiNaC::realsymbol p4("p_4");
+
+    GiNaC::realsymbol q1("q_1");
+    GiNaC::realsymbol q2("q_2");
+    GiNaC::realsymbol q3("q_3");
+    GiNaC::realsymbol q4("q_4");
+
+    std::vector<std::array<symprobs::expression, 2>> symprobs
+    {
+        {symprobs::expression(q1), symprobs::expression(p1)},
+        {symprobs::expression(q2), symprobs::expression(p2)},
+        {symprobs::expression(q3), symprobs::expression(p3)},
+        {symprobs::expression(q4), symprobs::expression(p4)},
+    };
+
+    symprobs::expression expr = manager.symbolic_availability(1, symprobs, sf);
+
+    expr.to_latex(std::cout);
+}
+
 auto analyze_fixed (
     int const replicationCount,
     int const timePointCount,
@@ -475,18 +509,18 @@ auto analyze_fixed (
 
     std::vector<std::array<probs::prob_dist, 2>> probs
     {
-        {probs::exponential(1 / 25.359), probs::complemented_exponential(1 / 25.359)},
-        {probs::exponential(1 /  6.246), probs::complemented_exponential(1 /  6.246)},
-        {probs::exponential(1 /  4.764), probs::complemented_exponential(1 /  4.764)},
-        {probs::exponential(1 / 44.360), probs::complemented_exponential(1 / 44.360)},
+        {probs::exponential((double)1 / 25'359), probs::complemented_exponential((double)1 / 25'359)},
+        {probs::exponential((double)1 /  6'246), probs::complemented_exponential((double)1 /  6'246)},
+        {probs::exponential((double)1 /  4'764), probs::complemented_exponential((double)1 /  4'764)},
+        {probs::exponential((double)1 / 44'360), probs::complemented_exponential((double)1 / 44'360)},
     };
 
     std::vector<std::array<symprobs::expression, 2>> symprobs
     {
-        {symprobs::exponential(1 / 25.359), complement(symprobs::exponential(1 / 25.359))},
-        {symprobs::exponential(1 /  6.246), complement(symprobs::exponential(1 /  6.246))},
-        {symprobs::exponential(1 /  4.764), complement(symprobs::exponential(1 /  4.764))},
-        {symprobs::exponential(1 / 44.360), complement(symprobs::exponential(1 / 44.360))},
+        {symprobs::exponential((double)1 / 25'359), complement(symprobs::exponential((double)1 / 25'359))},
+        {symprobs::exponential((double)1 /  6'246), complement(symprobs::exponential((double)1 /  6'246))},
+        {symprobs::exponential((double)1 /  4'764), complement(symprobs::exponential((double)1 /  4'764))},
+        {symprobs::exponential((double)1 / 44'360), complement(symprobs::exponential((double)1 / 44'360))},
     };
 
     symprobs::expression expr = manager.symbolic_availability(1, symprobs, sf);
@@ -747,7 +781,7 @@ auto analyze_pla (
 
 auto run_analyze_fixed () -> void
 {
-    int const ReplicationCount = 1;
+    int const ReplicationCount = 100;
     auto const TimePoinCounts  = {10, 100, 1'000, 10'000};
     bool printHeader = true;
     for (int const timePointCount : TimePoinCounts)
@@ -768,7 +802,7 @@ auto run_analyze_pla () -> void
         "/home/michal/data/IWLS93/pla/sqrt8.pla",
     };
 
-    int const ReplicationCount = 1;
+    int const ReplicationCount = 100;
     int const ProbsSeed        = 5343584;
     auto const TimePoinCounts  = {10, 100, 1'000, 10'000};
     std::ranlux48 probRng1(ProbsSeed);
@@ -794,8 +828,9 @@ auto run_analyze_pla () -> void
 
 auto main() -> int
 {
-    // run_analyze_pla();
-    run_analyze_fixed();
+     run_analyze_pla();
+//    run_analyze_fixed();
+    // describe_fixed();
 
     // SystemType const SystemType = SystemType::FIXED;
 

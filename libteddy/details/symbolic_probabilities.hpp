@@ -12,6 +12,9 @@ namespace teddy::symprobs
 {
 namespace details
 {
+/**
+ *  \brief All expressions need to share a single instance of the symbol
+ */
 inline GiNaC::symbol& time_symbol ()
 {
     static GiNaC::realsymbol t("t");
@@ -25,27 +28,28 @@ inline GiNaC::symbol& time_symbol ()
 class expression
 {
 public:
-    expression(int32 const val) :
+    explicit expression(int32 const val) :
         ex_(val)
     {
     }
 
-    expression(int64 const val) :
+    explicit expression(int64 const val) :
         ex_(val)
     {
     }
 
-    expression(double const val) :
+    explicit expression(double const val) :
         ex_(val)
     {
     }
 
-    expression(GiNaC::ex ex) : ex_(ex)
+    explicit expression(GiNaC::ex ex) : ex_(ex)
     {
     }
 
     auto evaluate (double const t) const -> double
     {
+        // TODO visitor?
         GiNaC::ex result = GiNaC::evalf(ex_.subs(details::time_symbol() == t));
         return GiNaC::ex_to<GiNaC::numeric>(result).to_double();
     }
@@ -114,29 +118,44 @@ namespace details
 } // namespace details
 
 /**
- *  \brief Creates instance of Exponential distribution
+ *  \brief Creates CDF expression of Exponential distribution
  */
 inline auto exponential (double const rate) -> expression
 {
-    return {rate * GiNaC::exp(-rate * details::time_symbol())};
+    auto& t = details::time_symbol();
+    return expression(
+        GiNaC::ex(1) - GiNaC::exp(-rate * t)
+    );
 }
 
 /**
- *  \brief Creates instance of Weibull distribution
+ *  \brief Creates CDF expression of Weibull distribution
  */
 inline auto weibull (double const scale, double const shape) -> expression
 {
-    return {
-        (shape / scale) * GiNaC::pow(details::time_symbol() / scale, shape - 1)
-        * GiNaC::exp(-GiNaC::pow(details::time_symbol() / scale, shape))};
+    auto& t = details::time_symbol();
+    return expression(
+        GiNaC::ex(1) - GiNaC::exp(-GiNaC::pow(t / scale, shape))
+    );
 }
 
 /**
- *  \brief Creates instance of Constant disrtibution
+ *  \brief Creates CDF expression of Normal distribution
+ */
+inline auto normal (double mean, double var) -> expression
+{
+    // TODO
+    return expression(-1);
+}
+
+/**
+ *  \brief Creates instance of Constant distribution
  */
 inline auto constant (double prob) -> expression
 {
-    return GiNaC::ex(prob);
+    return expression(
+        GiNaC::ex(prob)
+    );
 }
 
 /**
@@ -144,7 +163,9 @@ inline auto constant (double prob) -> expression
  */
 inline auto complement (expression const& other) -> expression
 {
-    return GiNaC::ex(1) - other.as_underlying_unsafe();
+    return expression(
+        GiNaC::ex(1) - other.as_underlying_unsafe()
+    );
 }
 
 /**
