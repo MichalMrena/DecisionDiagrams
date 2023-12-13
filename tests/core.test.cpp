@@ -12,11 +12,6 @@
 
 #include <fmt/core.h>
 
-#include <concepts>
-#include <cstddef>
-
-#include "libteddy/details/operators.hpp"
-#include "libteddy/details/types.hpp"
 #include "setup.hpp"
 
 namespace teddy::tests
@@ -49,10 +44,10 @@ private:
 public:
     bdd_fixture() :
         fixture_base<bdd_manager_settings, minmax_expression_settings> {
-            {bdd_manager_settings {VarCount, NodeCount, random_order_tag()}},
-            {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::ranlux48(Seed)},
-            2}
+            .managerSettings_ = bdd_manager_settings {VarCount, NodeCount, random_order_tag()},
+            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
+            .rng_ = std::ranlux48(Seed),
+            .maxValue_ = 2}
     {
     }
 };
