@@ -7,7 +7,6 @@
 #include <array>
 #include <cassert>
 #include <cmath>
-#include <concepts>
 #include <functional>
 #include <ostream>
 #include <variant>
@@ -20,7 +19,7 @@ namespace details
 /**
  *  \brief Helper for vector wrap
  *
- *  Returns probability that the component is in state 1 p_{i,1} from \p vec
+ *  Returns probability that the component is in state 1 `p_{i,1}` from \p vec
  *  or in case we need the probability that it is in state 0 it calculates
  *  it as `1 - p_{i,1}`.
  */
@@ -107,7 +106,26 @@ public:
 
     [[nodiscard]] auto operator() (double const t) const -> double
     {
-        return rate_ * std::exp(-rate_ * t);
+        return 1 - std::exp(-rate_ * t);
+    }
+
+private:
+    double rate_;
+};
+
+/**
+ *  \brief Exponential distribution
+ */
+class complemented_exponential : public make_cached<exponential>
+{
+public:
+    complemented_exponential(double const rate) : rate_(rate)
+    {
+    }
+
+    [[nodiscard]] auto operator() (double const t) const -> double
+    {
+        return std::exp(-rate_ * t);
     }
 
 private:
@@ -126,10 +144,12 @@ public:
     {
     }
 
+    // TODO to CDF, Rausand 15
     [[nodiscard]] auto operator() (double const t) const -> double
     {
-        return (shape_ / scale_) * std::pow(t / scale_, shape_ - 1)
-             * std::exp(-std::pow(t / scale_, shape_));
+        // return (shape_ / scale_) * std::pow(t / scale_, shape_ - 1)
+        //      * std::exp(-std::pow(t / scale_, shape_));
+        return 1 - std::exp(-std::pow(t / scale_, shape_));
     }
 
 private:
@@ -178,6 +198,7 @@ private:
 
 using dist_variant = std::variant<
     details::exponential,
+    details::complemented_exponential,
     details::weibull,
     details::constant,
     details::custom_dist
@@ -193,11 +214,28 @@ public:
     {
     }
 
+    /**
+     *  \brief Evaluates distribution at time \p t and stores the value
+     */
     auto cache_eval_at (double const t) -> void
     {
         std::visit([t] (auto& d) { d.cache_eval_at(t); }, dist_);
     }
 
+    /**
+     *  \brief Returns value stored by the last call of \c cache_val_at
+     */
+    auto get_cached_value () const -> double
+    {
+        return std::visit(
+            [] (auto& d) -> double { return d.get_cached_value(); },
+            dist_
+        );
+    }
+
+    /**
+     *  \brief Conversion to double -- the same value as \c get_cached_value
+     */
     [[nodiscard]] operator double () const
     {
         return std::visit(
@@ -206,6 +244,9 @@ public:
         );
     }
 
+    /**
+     *  \brief Evaluates distribution at time \p t
+     */
     [[nodiscard]] auto operator() (double const t) const -> double
     {
         return std::visit(
@@ -224,6 +265,14 @@ private:
 inline auto exponential (double const rate) -> prob_dist
 {
     return prob_dist(details::exponential(rate));
+}
+
+/**
+ *  \brief Creates instance of Complemented Exponential distribution
+ */
+inline auto complemented_exponential (double const rate) -> prob_dist
+{
+    return prob_dist(details::complemented_exponential(rate));
 }
 
 /**
@@ -297,10 +346,25 @@ concept dist_matrix = requires(T t, std::size_t i) {
 /**
  *  \brief Wraps \p distVector so that it can be viewed as n x 2 matrix
  */
-template<dist_vector Ps>
+template<class Ps>
+requires(prob_vector<Ps> || dist_vector<Ps>)
 auto as_matrix (Ps& distVector)
 {
     return details::vector_to_matrix_wrap<Ps>(distVector);
+}
+
+/**
+ *  \brief Transforms \p vec into n x 2 matrix
+ */
+template<prob_vector Ps>
+auto to_matrix (Ps const& vector) -> std::vector<std::array<double, 2>>
+{
+    std::vector<std::array<double, 2>> matrix;
+    for (double const p : vector)
+    {
+        matrix.push_back(std::array {1 - p, p});
+    }
+    return matrix;
 }
 
 /**
@@ -322,6 +386,9 @@ auto eval_at (Ps& distVector, double const t) -> Ps&
 template<dist_matrix Ps>
 auto eval_at (Ps& distMatrix, double const t) -> Ps&
 {
+    // TODO if constexpr RowIterable (in case it is compact matrix)
+    // TODO if constexpr MatrixIterable
+
     for (auto& dists : distMatrix)
     {
         for (auto& dist : dists)

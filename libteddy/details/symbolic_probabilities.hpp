@@ -3,6 +3,7 @@
 
 #include <libteddy/details/config.hpp>
 #include <libteddy/details/types.hpp>
+#include <cassert>
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
 #include <ginac/ginac.h>
@@ -11,6 +12,9 @@ namespace teddy::symprobs
 {
 namespace details
 {
+/**
+ *  \brief All expressions need to share a single instance of the symbol
+ */
 inline GiNaC::symbol& time_symbol ()
 {
     static GiNaC::realsymbol t("t");
@@ -24,27 +28,28 @@ inline GiNaC::symbol& time_symbol ()
 class expression
 {
 public:
-    expression(int32 const val) :
+    explicit expression(int32 const val) :
         ex_(val)
     {
     }
 
-    expression(int64 const val) :
+    explicit expression(int64 const val) :
         ex_(val)
     {
     }
 
-    expression(double const val) :
+    explicit expression(double const val) :
         ex_(val)
     {
     }
 
-    expression(GiNaC::ex ex) : ex_(ex)
+    explicit expression(GiNaC::ex ex) : ex_(ex)
     {
     }
 
     auto evaluate (double const t) const -> double
     {
+        // TODO visitor?
         GiNaC::ex result = GiNaC::evalf(ex_.subs(details::time_symbol() == t));
         return GiNaC::ex_to<GiNaC::numeric>(result).to_double();
     }
@@ -75,25 +80,37 @@ private:
 
 namespace details
 {
-    auto operator+ (expression const& lhs, expression const& rhs) -> expression
+    inline auto operator+ (
+        expression const& lhs,
+        expression const& rhs
+    ) -> expression
     {
         auto result = lhs.as_underlying_unsafe() + rhs.as_underlying_unsafe();
         return expression(result);
     }
 
-    auto operator* (expression const& lhs, expression const& rhs) -> expression
+    inline auto operator* (
+        expression const& lhs,
+        expression const& rhs
+    ) -> expression
     {
         auto result = lhs.as_underlying_unsafe() * rhs.as_underlying_unsafe();
         return expression(result);
     }
 
-    auto operator+= (expression& lhs, expression const& rhs) -> expression&
+    inline auto operator+= (
+        expression& lhs,
+        expression const& rhs
+    ) -> expression&
     {
         lhs.as_underlying_unsafe() += rhs.as_underlying_unsafe();
         return lhs;
     }
 
-    auto operator*= (expression& lhs, expression const& rhs) -> expression&
+    inline auto operator*= (
+        expression& lhs,
+        expression const& rhs
+    ) -> expression&
     {
         lhs.as_underlying_unsafe() *= rhs.as_underlying_unsafe();
         return lhs;
@@ -101,29 +118,44 @@ namespace details
 } // namespace details
 
 /**
- *  \brief Creates instance of Exponential distribution
+ *  \brief Creates CDF expression of Exponential distribution
  */
 inline auto exponential (double const rate) -> expression
 {
-    return {rate * GiNaC::exp(-rate * details::time_symbol())};
+    auto& t = details::time_symbol();
+    return expression(
+        GiNaC::ex(1) - GiNaC::exp(-rate * t)
+    );
 }
 
 /**
- *  \brief Creates instance of Weibull distribution
+ *  \brief Creates CDF expression of Weibull distribution
  */
 inline auto weibull (double const scale, double const shape) -> expression
 {
-    return {
-        (shape / scale) * GiNaC::pow(details::time_symbol() / scale, shape - 1)
-        * GiNaC::exp(-GiNaC::pow(details::time_symbol() / scale, shape))};
+    auto& t = details::time_symbol();
+    return expression(
+        GiNaC::ex(1) - GiNaC::exp(-GiNaC::pow(t / scale, shape))
+    );
 }
 
 /**
- *  \brief Creates instance of Constant disrtibution
+ *  \brief Creates CDF expression of Normal distribution
+ */
+inline auto normal (double mean, double var) -> expression
+{
+    // TODO
+    return expression(-1);
+}
+
+/**
+ *  \brief Creates instance of Constant distribution
  */
 inline auto constant (double prob) -> expression
 {
-    return GiNaC::ex(prob);
+    return expression(
+        GiNaC::ex(prob)
+    );
 }
 
 /**
@@ -131,7 +163,9 @@ inline auto constant (double prob) -> expression
  */
 inline auto complement (expression const& other) -> expression
 {
-    return GiNaC::ex(1) - other.as_underlying_unsafe();
+    return expression(
+        GiNaC::ex(1) - other.as_underlying_unsafe()
+    );
 }
 
 /**
@@ -154,13 +188,71 @@ concept symprob_matrix = requires(Probabilities probs, int32 index, int32 value)
                           } -> std::convertible_to<expression>;
                       };
 
+namespace details
+{
+/**
+ *  \brief Helper for vector wrap
+ *
+ *  Returns expression of probability that the component is in state 1 `p_{i,1}`
+ *  from \p vec or in case we need the probability that it is in state 0
+ *  it calculates it as `1 - p_{i,1}`.
+ */
+template<class Vector>
+class vector_to_matrix_proxy
+{
+public:
+    vector_to_matrix_proxy(Vector const& vec, std::size_t const index) :
+        index_(index),
+        vec_(&vec)
+    {
+    }
+
+    auto operator[] (std::size_t const value) const
+    {
+        assert(value == 1 || value == 0);
+        expression expr = (*vec_)[index_];
+        return value == 1 ? expr : complement(expr);
+    }
+
+private:
+    std::size_t index_;
+    Vector const* vec_;
+};
+
+/**
+ *  \brief Wraps prob. vector so that it can be used as matrix
+ *
+ *  Algorithms working with probability require matrix \c ps such that
+ *  \c ps[i][s] expression of probability that component \c i is in state \c s
+ *  Since for BSS we only need to know probabilities that the component
+ *  is in state 1 (p1) we can "fake" the matrix by wrapping the vector and
+ *  calculating p0 as 1-p1
+ */
+template<class Vector>
+class vector_to_matrix_wrap
+{
+public:
+    vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
+    {
+    }
+
+    auto operator[] (std::size_t const index) const
+    {
+        return vector_to_matrix_proxy<Vector>(*vec_, index);
+    }
+
+private:
+    Vector const* vec_;
+};
+} // namespace details
+
 /**
  *  \brief Wraps \p distVector so that it can be viewed as n x 2 matrix
  */
 template<symprob_vector Ps>
 auto as_matrix (Ps const& distVector)
 {
-    // TODO
+    return details::vector_to_matrix_wrap<Ps>(distVector);
 }
 
 /**
