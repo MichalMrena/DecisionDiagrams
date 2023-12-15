@@ -8,7 +8,6 @@
 #include <cassert>
 #include <cmath>
 #include <functional>
-#include <ostream>
 #include <variant>
 #include <vector>
 
@@ -58,7 +57,7 @@ template<class Vector>
 class vector_to_matrix_wrap
 {
 public:
-    vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
+    explicit vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
     {
     }
 
@@ -100,10 +99,13 @@ private:
 class exponential : public make_cached<exponential>
 {
 public:
-    exponential(double const rate) : rate_(rate)
+    explicit exponential(double const rate) : rate_(rate)
     {
     }
 
+    /**
+     *  \brief Calculates CDF of the distribution at time \p t
+     */
     [[nodiscard]] auto operator() (double const t) const -> double
     {
         return 1 - std::exp(-rate_ * t);
@@ -113,13 +115,14 @@ private:
     double rate_;
 };
 
+// TODO nope
 /**
  *  \brief Exponential distribution
  */
 class complemented_exponential : public make_cached<exponential>
 {
 public:
-    complemented_exponential(double const rate) : rate_(rate)
+    explicit complemented_exponential(double const rate) : rate_(rate)
     {
     }
 
@@ -144,11 +147,11 @@ public:
     {
     }
 
-    // TODO to CDF, Rausand 15
+    /**
+     *  \brief Calculates CDF of the distribution at time \p t
+     */
     [[nodiscard]] auto operator() (double const t) const -> double
     {
-        // return (shape_ / scale_) * std::pow(t / scale_, shape_ - 1)
-        //      * std::exp(-std::pow(t / scale_, shape_));
         return 1 - std::exp(-std::pow(t / scale_, shape_));
     }
 
@@ -163,10 +166,13 @@ private:
 class constant : public make_cached<constant>
 {
 public:
-    constant(double const value) : value_(value)
+    explicit constant(double const value) : value_(value)
     {
     }
 
+    /**
+     *  \brief Calculates CDF of the distribution at time \p t
+     */
     [[nodiscard]] auto operator() (double const) const -> double
     {
         return value_;
@@ -174,6 +180,29 @@ public:
 
 private:
     double value_;
+};
+
+/**
+ *  \brief Continuous uniform distribution
+ */
+class uniform : public make_cached<uniform>
+{
+public:
+    uniform(double const a, double const b) : a_(a), b_(b)
+    {
+    }
+
+    /**
+     *  \brief Calculates CDF of the distribution at time \p t
+     */
+    [[nodiscard]] auto operator() (double const t) const -> double
+    {
+        return t < a_ ? 0.0 : t > b_ ? 1.0 : (t - a_) / (b_ - a_);
+    }
+
+private:
+    double a_;
+    double b_;
 };
 
 /**
@@ -200,17 +229,20 @@ using dist_variant = std::variant<
     details::exponential,
     details::complemented_exponential,
     details::weibull,
+    details::uniform,
     details::constant,
-    details::custom_dist
->;
+    details::custom_dist>;
 
 /**
- *  \brief "Interface" for distributions, manages variant access
+ *  \brief Interface for distributions, manages variant access
+ *
+ *  Wraps std::variant of above-defined distributions and uses std::visit
+ *  to invoke given operation on the variant
  */
 class prob_dist
 {
 public:
-    prob_dist(dist_variant dist) : dist_(dist)
+    explicit prob_dist(dist_variant dist) : dist_(dist)
     {
     }
 
@@ -223,7 +255,7 @@ public:
     }
 
     /**
-     *  \brief Returns value stored by the last call of \c cache_val_at
+     *  \brief Returns value stored by the last call of \c cache_eval_at
      */
     auto get_cached_value () const -> double
     {
@@ -284,6 +316,14 @@ inline auto weibull (double const scale, double const shape) -> prob_dist
 }
 
 /**
+ *  \brief Creates instance of Uniform disrtibution
+ */
+inline auto uniform (double const a, double const b) -> prob_dist
+{
+    return prob_dist(details::uniform(a, b));
+}
+
+/**
  *  \brief Creates instance of Constant disrtibution
  */
 inline auto constant (double prob) -> prob_dist
@@ -304,44 +344,34 @@ inline auto custom (std::function<double(double)> dist) -> prob_dist
  */
 template<class Probabilities>
 concept prob_vector = requires(Probabilities probs, int32 index) {
-                          {
-                              probs[index]
-                          } -> std::convertible_to<double>;
-                      };
+    { probs[index] } -> std::convertible_to<double>;
+};
 
 /**
  *  \brief Matrix of time-independent probabilities
  */
 template<class Probabilities>
 concept prob_matrix = requires(Probabilities probs, int32 index, int32 value) {
-                          {
-                              probs[index][value]
-                          } -> std::convertible_to<double>;
-                      };
+    { probs[index][value] } -> std::convertible_to<double>;
+};
 
 /**
  *  \brief Vector of time-dependent probabilities (distributions) (just for BSS)
  */
 template<class T>
-concept dist_vector = requires(T t, std::size_t i) {
-                          {
-                              t[i]
-                          } -> std::convertible_to<prob_dist>;
-
-                          t[i].cache_eval_at(3.14);
-                      };
+concept dist_vector = requires(T vec, std::size_t i, double t) {
+    { vec[i] } -> std::convertible_to<prob_dist>;
+    vec[i].cache_eval_at(t);
+};
 
 /**
  *  \brief Matrix of time-dependent probabilities (distributions)
  */
 template<class T>
-concept dist_matrix = requires(T t, std::size_t i) {
-                          {
-                              t[i][i]
-                          } -> std::convertible_to<prob_dist>;
-
-                          t[i][i].cache_eval_at(3.14);
-                      };
+concept dist_matrix = requires(T mat, std::size_t i, double t) {
+    { mat[i][i] } -> std::convertible_to<prob_dist>;
+    mat[i][i].cache_eval_at(t);
+};
 
 /**
  *  \brief Wraps \p distVector so that it can be viewed as n x 2 matrix
@@ -354,7 +384,7 @@ auto as_matrix (Ps& distVector)
 }
 
 /**
- *  \brief Transforms \p vec into n x 2 matrix
+ *  \brief Transforms \p vector into n x 2 matrix
  */
 template<prob_vector Ps>
 auto to_matrix (Ps const& vector) -> std::vector<std::array<double, 2>>

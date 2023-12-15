@@ -807,7 +807,7 @@ auto reliability_manager<Degree, Domain>::dpld(
 
 template<class Degree, class Domain>
 template<class FChange>
-auto reliability_manager<Degree, Domain>::dpld_impl(
+auto reliability_manager<Degree, Domain>::dpld_impl( // TODO rename to _step
     dpld_cache& cache,
     var_change varChange,
     FChange fChange,

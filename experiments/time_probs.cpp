@@ -10,7 +10,6 @@
 #include <filesystem>
 #include <random>
 
-#include "libteddy/details/symbolic_probabilities.hpp"
 #include "utils.hpp"
 
 // CVS parameters
@@ -32,7 +31,7 @@ void for_each_bdd_vars(long long const varCount, F f)
     }
 }
 
-auto div (auto const nom, auto const denom) -> double
+auto fdiv (auto const nom, auto const denom) -> double
 {
     return static_cast<double>(nom) / static_cast<double>(denom);
 }
@@ -42,51 +41,36 @@ inline auto make_time_probability_matrix (
     std::ranlux48& rng
 ) -> std::vector<std::array<teddy::probs::prob_dist, 2>>
 {
-    std::vector<std::array<teddy::probs::prob_dist, 2>> probs;
-
+    using namespace teddy::probs;
+    std::vector<std::array<prob_dist, 2>> probs;
     for (int i = 0; i < varCount; ++i)
     {
         std::uniform_real_distribution<double> distRate(0.2, 1.0);
         double const rate = distRate(rng);
         probs.push_back({
-            teddy::probs::complemented_exponential(rate),
-            teddy::probs::exponential(rate)
+            prob_dist(complemented_exponential(rate)),
+            prob_dist(exponential(rate))
         });
     }
-
     return probs;
 }
 
-//                +------+
-//              +-|  x1  |-+
-//              | +------+ | +------+
-//            +-+          +-|  x3  |----------+
-//            | | +------+ | +------+          |   +------+
-//            | +-|  x2  |-+                   | +-|  x8  |-+
-//   +------+ |   +------+                     | | +------+ |
-// o-|  x0  |-+                                +-+          +-o
-//   +------+ |                     +------+   | | +------+ |
-//            |                   +-|  x6  |-+ | +-|  x9  |-+
-//            | +------+ +------+ | +------+ | |   +------+
-//            +-|  x4  |-|  x5  |-+          +-+
-//              +------+ +------+ | +------+ |
-//                                +-|  x7  |-+
-//                                  +------+
-
-//           +------+
-//         +-|  x0  |-+
-//         | +------+ |
-//     +---+          +----+
-//     |   | +------+ |    |
-//     |   +-|  x1  |-+    |
-//     |     +------+      |
-//   o-+                   |-o
-//     | +------+ +------+ |
-//     +-|  x2  |-|  x3  |-+
-//       +------+ +------+
-struct FixedDiagramGenerator
+/**
+ *           +------+
+ *         +-|  x0  |-+
+ *         | +------+ |
+ *     +---+          +----+
+ *     |   | +------+ |    |
+ *     |   +-|  x1  |-+    |
+ *     |     +------+      |
+ *   o-+                   |-o
+ *     | +------+ +------+ |
+ *     +-|  x2  |-|  x3  |-+
+ *       +------+ +------+
+ */
+struct FixedSystem
 {
-    auto operator() (teddy::bss_manager& m)
+    static auto make_bdd (teddy::bss_manager& m)
     {
         using namespace teddy::ops;
         auto& x     = m;
@@ -94,63 +78,63 @@ struct FixedDiagramGenerator
         auto bottom = m.apply<AND>(x(2), x(3));
         return m.apply<OR>(top, bottom);
     }
-};
 
-struct FixedProbsGenerator
-{
-    auto operator() (std::ranlux48&, int const)
+    static auto make_probs ()
     {
         using namespace teddy::probs;
         return std::vector<std::array<prob_dist, 2>>
         {
-            {exponential(1 / 25.359), complemented_exponential(1 / 25.359)},
-            {exponential(1 /  6.246), complemented_exponential(1 /  6.246)},
-            {exponential(1 /  4.764), complemented_exponential(1 /  4.764)},
-            {exponential(1 / 44.360), complemented_exponential(1 / 44.360)},
+        {exponential(1.0 / 25'359.0), complemented_exponential(1.0 / 25'359.0)},
+        {exponential(1.0 /  6'246.0), complemented_exponential(1.0 /  6'246.0)},
+        {exponential(1.0 /  4'764.0), complemented_exponential(1.0 /  4'764.0)},
+        {exponential(1.0 / 44'360.0), complemented_exponential(1.0 / 44'360.0)},
         };
     }
-};
 
-struct FixedSymprobsGenerator
-{
-    auto operator() (std::ranlux48&, int const)
+    static auto make_symprobs ()
     {
         using namespace teddy::symprobs;
         return std::vector<std::array<expression, 2>>
         {
-            {exponential(1 / 25.359), complement(exponential(1 / 25.359))},
-            {exponential(1 /  6.246), complement(exponential(1 /  6.246))},
-            {exponential(1 /  4.764), complement(exponential(1 /  4.764))},
-            {exponential(1 / 44.360), complement(exponential(1 / 44.360))},
+        {exponential(1.0 / 25'359.0), complement(exponential(1.0 / 25'359.0))},
+        {exponential(1.0 /  6'246.0), complement(exponential(1.0 /  6'246.0))},
+        {exponential(1.0 /  4'764.0), complement(exponential(1.0 /  4'764.0))},
+        {exponential(1.0 / 44'360.0), complement(exponential(1.0 / 44'360.0))},
         };
     }
-};
 
-class SPDiagramGenerator
-{
-public:
-    SPDiagramGenerator(
-        size_t const seed,
-        int const varCount
-    ) :
-        rng_(seed),
-        varCount_(varCount)
+    static auto describe ()
     {
-    }
+        using namespace teddy;
+        teddy::bss_manager manager(4, 1'000);
+        bdd_t sf = FixedSystem::make_bdd(manager);
 
-    auto operator() (teddy::bss_manager& manager)
-    {
-        auto const SPExpr = teddy::tsl::make_expression_tree(
-            varCount_,
-            rng_,
-            rng_
+        GiNaC::realsymbol p1("p_1");
+        GiNaC::realsymbol p2("p_2");
+        GiNaC::realsymbol p3("p_3");
+        GiNaC::realsymbol p4("p_4");
+
+        GiNaC::realsymbol q1("q_1");
+        GiNaC::realsymbol q2("q_2");
+        GiNaC::realsymbol q3("q_3");
+        GiNaC::realsymbol q4("q_4");
+
+        std::vector<std::array<symprobs::expression, 2>> symprobs
+        {
+            {symprobs::expression(q1), symprobs::expression(p1)},
+            {symprobs::expression(q2), symprobs::expression(p2)},
+            {symprobs::expression(q3), symprobs::expression(p3)},
+            {symprobs::expression(q4), symprobs::expression(p4)},
+        };
+
+        symprobs::expression expr = manager.symbolic_availability(
+            1,
+            symprobs,
+            sf
         );
-        return teddy::tsl::make_diagram(*SPExpr, manager);
-    }
 
-private:
-    std::ranlux48 rng_;
-    int varCount_;
+        expr.to_latex(std::cout);
+    }
 };
 
 class PLADiagramGenerator
@@ -291,22 +275,40 @@ private:
     teddy::pla_file file_;
 };
 
-struct RandomProbsGenerator
+class RandomProbsGenerator
 {
-    auto operator() (std::ranlux48& rng, int const varCount)
+public:
+    RandomProbsGenerator(std::size_t const seed) :
+        rng_(seed)
     {
-        return make_time_probability_matrix(varCount, rng);
     }
+
+    auto operator() (int const varCount)
+    {
+        return make_time_probability_matrix(varCount, rng_);
+    }
+
+private:
+    std::ranlux48 rng_;
 };
 
-struct RandomSymprobsGenerator
+class RandomSymprobsGenerator
 {
-    auto operator() (std::ranlux48& rng, int const varCount)
+public:
+    RandomSymprobsGenerator(std::size_t const seed) :
+        rng_(seed)
+    {
+    }
+
+    auto operator() (int const varCount)
     {
         return teddy::symprobs::to_matrix(
-            teddy::tsl::make_time_symprobability_vector(varCount, rng)
+            teddy::tsl::make_time_symprobability_vector(varCount, rng_)
         );
     }
+
+private:
+    std::ranlux48 rng_;
 };
 
 int get_node_count (GiNaC::ex ex)
@@ -322,140 +324,6 @@ int get_node_count (GiNaC::ex ex)
     }
     return count;
 }
-
-template<class DiagramGenerator, class ProbsGenerator, class SymprobsGenerator>
-auto evalute_system (
-    int const diagramCount,
-    int const replicationCount,
-    int const timePointCount,
-    int const varCount,
-    bool const printHeader,
-    DiagramGenerator& diagramGen,
-    ProbsGenerator& probsGen,
-    SymprobsGenerator& symprobsGen
-) -> void
-{
-    using namespace teddy::utils;
-
-    // Time parameters
-    double const TimeZero  = 1;
-    double const TimeDelta = 0.01;
-
-    int constexpr ProbsSeed = 5343584;
-    std::ranlux48 probRng1(ProbsSeed);
-    std::ranlux48 probRng2(ProbsSeed);
-
-    if (printHeader)
-    {
-        std::cout << "diagram-id"       << Sep
-                  << "replication-id"   << Sep
-                  << "variable-count"   << Sep
-                  << "diagram-nodes"    << Sep
-                  << "time-pt-count"    << Sep
-                  << "basic-prob-init[" << unit_str(time_unit()) << "]" << Sep
-                  << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
-                  << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
-                  << "tree-nodes"       << Sep
-                  << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
-    }
-
-    for (int diagramId = 0; diagramId < diagramCount; ++diagramId)
-    {
-        teddy::bss_manager manager(varCount, 1'000'000);
-        bdd_t diagram = diagramGen(manager);
-        long long const nodeCount = manager.get_node_count(diagram);
-        for (int repl = 0; repl < replicationCount; ++repl)
-        {
-            // ; diagram-id
-            std::cout << diagramId << Sep;
-
-            // ; replication-id
-            std::cout << repl << Sep;
-
-            // ; variable-count
-            std::cout << varCount << Sep;
-
-            // ; node-count
-            std::cout << nodeCount << Sep;
-
-            // ; time-pt-count
-            std::cout << timePointCount << Sep;
-
-            // Basic approach
-            {
-                auto probs = probsGen(probRng1, varCount);
-
-                duration_measurement timeBasic;
-                tick(timeBasic);
-                double t = TimeZero;
-                for (int i = 0; i < timePointCount; ++i)
-                {
-                    double const A = manager.calculate_availability(
-                        1,
-                        teddy::probs::eval_at(probs, t),
-                        diagram
-                    );
-                    ankerl::nanobench::doNotOptimizeAway(A);
-                    t += TimeDelta;
-                }
-                tock(timeBasic);
-
-                // ; basic-prob-init
-                std::cout << 0 << Sep;
-
-                // ; basic-prob-eval
-                std::cout << duration_as<time_unit>(timeBasic) << Sep;
-            }
-
-            // Symbolic approach
-            {
-                auto symprobs = symprobsGen(probRng2, varCount);
-
-                duration_measurement timeSymbolicInit;
-                duration_measurement timeSymbolicEval;
-                tick(timeSymbolicInit);
-                teddy::symprobs::expression Aexpr =
-                    manager.symbolic_availability(
-                        1,
-                        symprobs,
-                        diagram
-                    );
-                tock(timeSymbolicInit);
-
-                std::cout << "===";
-                Aexpr.to_matlab(std::cout);
-                std::cout << "===";
-
-                // ; sym-prob-init
-                std::cout << duration_as<time_unit>(timeSymbolicInit) << Sep;
-
-                // ; tree-nodes
-                auto expr = Aexpr.as_underlying_unsafe();
-                std::cout << get_node_count(expr) << Sep;
-
-                tick(timeSymbolicEval);
-                double t = TimeZero;
-                for (int i = 0; i < timePointCount; ++i)
-                {
-                    double const A = Aexpr.evaluate(t);
-                    ankerl::nanobench::doNotOptimizeAway(A);
-                    t += TimeDelta;
-                }
-                tock(timeSymbolicEval);
-
-                // ; sym-prob-eval
-                std::cout << duration_as<time_unit>(timeSymbolicEval) << Eol;
-            }
-        }
-    }
-}
-
-enum class SystemType
-{
-    FIXED,
-    SERIES_PARALLEL,
-    PLA
-};
 
 auto describe_fixed () -> void
 {
@@ -501,38 +369,19 @@ auto analyze_fixed (
     using namespace teddy::ops;
     using namespace teddy::utils;
     teddy::bss_manager manager(4, 1'000);
-
-    auto& x      = manager;
-    bdd_t top    = manager.apply<OR>(x(0), x(1));
-    bdd_t bottom = manager.apply<AND>(x(2), x(3));
-    bdd_t sf     = manager.apply<OR>(top, bottom);
-
-    std::vector<std::array<probs::prob_dist, 2>> probs
-    {
-        {probs::exponential((double)1 / 25'359), probs::complemented_exponential((double)1 / 25'359)},
-        {probs::exponential((double)1 /  6'246), probs::complemented_exponential((double)1 /  6'246)},
-        {probs::exponential((double)1 /  4'764), probs::complemented_exponential((double)1 /  4'764)},
-        {probs::exponential((double)1 / 44'360), probs::complemented_exponential((double)1 / 44'360)},
-    };
-
-    std::vector<std::array<symprobs::expression, 2>> symprobs
-    {
-        {symprobs::exponential((double)1 / 25'359), complement(symprobs::exponential((double)1 / 25'359))},
-        {symprobs::exponential((double)1 /  6'246), complement(symprobs::exponential((double)1 /  6'246))},
-        {symprobs::exponential((double)1 /  4'764), complement(symprobs::exponential((double)1 /  4'764))},
-        {symprobs::exponential((double)1 / 44'360), complement(symprobs::exponential((double)1 / 44'360))},
-    };
-
-    symprobs::expression expr = manager.symbolic_availability(1, symprobs, sf);
+    bdd_t sf      = FixedSystem::make_bdd(manager);
+    auto probs    = FixedSystem::make_probs();
+    auto symprobs = FixedSystem::make_symprobs();
+    auto expr     = manager.symbolic_availability(1, symprobs, sf);
 
     if (printHeader)
     {
-        // Dot graph representation
+        // Structure function BDD
         std::cout << "DOT:" << "\n";
         manager.to_dot_graph(std::cout, sf);
         std::cout << "\n";
 
-        // Dot graph representation
+        // Reliability expression
         std::cout << "Expression:" << "\n";
         expr.to_matlab(std::cout);
         std::cout << "\n";
@@ -623,6 +472,125 @@ auto analyze_fixed (
         }
     }
 
+}
+
+auto analyze_random_sp (
+    int const diagramCount,
+    int const replicationCount,
+    int const timePointCount,
+    int const varCount,
+    bool const printHeader,
+    std::ranlux48& exprRng,
+    std::ranlux48& probRng1,
+    std::ranlux48& probRng2
+) -> void
+{
+    using namespace teddy::utils;
+
+    // Time parameters
+    double const TimeZero  = 1;
+    double const TimeDelta = 0.01;
+
+    if (printHeader)
+    {
+        std::cout << "diagram-id"       << Sep
+                  << "replication-id"   << Sep
+                  << "variable-count"   << Sep
+                  << "diagram-nodes"    << Sep
+                  << "time-pt-count"    << Sep
+                  << "basic-prob-init[" << unit_str(time_unit()) << "]" << Sep
+                  << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
+                  << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
+                  << "tree-nodes"       << Sep
+                  << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+    }
+
+    for (int diagramId = 0; diagramId < diagramCount; ++diagramId)
+    {
+        teddy::bss_manager manager(varCount, 1'000'000);
+        auto expr = teddy::tsl::make_expression_tree(varCount, exprRng, exprRng);
+        bdd_t diagram = teddy::tsl::make_diagram(*expr, manager);
+        long long const nodeCount = manager.get_node_count(diagram);
+        for (int repl = 0; repl < replicationCount; ++repl)
+        {
+            // ; diagram-id
+            std::cout << diagramId << Sep;
+
+            // ; replication-id
+            std::cout << repl << Sep;
+
+            // ; variable-count
+            std::cout << varCount << Sep;
+
+            // ; node-count
+            std::cout << nodeCount << Sep;
+
+            // ; time-pt-count
+            std::cout << timePointCount << Sep;
+
+            // Basic approach
+            auto probs = make_time_probability_matrix(varCount, probRng1);
+
+            duration_measurement timeBasic;
+            tick(timeBasic);
+            double t = TimeZero;
+            for (int i = 0; i < timePointCount; ++i)
+            {
+                double const A = manager.calculate_availability(
+                    1,
+                    teddy::probs::eval_at(probs, t),
+                    diagram
+                );
+                ankerl::nanobench::doNotOptimizeAway(A);
+                t += TimeDelta;
+            }
+            tock(timeBasic);
+
+            // ; basic-prob-init
+            std::cout << 0 << Sep;
+
+            // ; basic-prob-eval
+            std::cout << duration_as<time_unit>(timeBasic) << Sep;
+
+            // Symbolic approach
+            auto symprobs = teddy::symprobs::to_matrix(
+                teddy::tsl::make_time_symprobability_vector(
+                    varCount,
+                    probRng2
+                )
+            );
+
+            duration_measurement timeSymbolicInit;
+            duration_measurement timeSymbolicEval;
+            tick(timeSymbolicInit);
+            teddy::symprobs::expression Aexpr =
+                manager.symbolic_availability(
+                    1,
+                    symprobs,
+                    diagram
+                );
+            tock(timeSymbolicInit);
+
+            // ; sym-prob-init
+            std::cout << duration_as<time_unit>(timeSymbolicInit) << Sep;
+
+            // ; tree-nodes
+            std::cout << get_node_count(Aexpr.as_underlying_unsafe()) << Sep;
+
+            tick(timeSymbolicEval);
+            t = TimeZero;
+            for (int i = 0; i < timePointCount; ++i)
+            {
+                double const A = Aexpr.evaluate(t);
+                ankerl::nanobench::doNotOptimizeAway(A);
+                t += TimeDelta;
+            }
+            tock(timeSymbolicEval);
+
+            // ; sym-prob-eval
+            std::cout << duration_as<time_unit>(timeSymbolicEval) << Eol;
+        }
+    }
 }
 
 auto analyze_pla (
@@ -757,22 +725,22 @@ auto analyze_pla (
         std::cout << std::setprecision(4);
 
         // ; diagram-nodes
-        std::cout << div(diagramNodeCount, denom) << Sep;
+        std::cout << fdiv(diagramNodeCount, denom) << Sep;
 
         // ; tree-nodes
-        std::cout << div(exprNodeCount, denom) << Sep;
+        std::cout << fdiv(exprNodeCount, denom) << Sep;
 
         // No places for durations
         std::cout << std::setprecision(0);
 
         // ; basic-prob-eval
-        std::cout << div(duration_as<time_unit>(timeBasic), denom) << Sep;
+        std::cout << fdiv(duration_as<time_unit>(timeBasic), denom) << Sep;
 
         // ; sym-prob-init
-        std::cout << div(duration_as<time_unit>(timeSymbolicInit), denom) << Sep;
+        std::cout << fdiv(duration_as<time_unit>(timeSymbolicInit), denom) << Sep;
 
         // ; sym-prob-eval
-        std::cout << div(duration_as<time_unit>(timeSymbolicEval), denom) << Eol;
+        std::cout << fdiv(duration_as<time_unit>(timeSymbolicEval), denom) << Eol;
 
         // Reset flags
         std::cout.flags(outFlags);
@@ -787,6 +755,32 @@ auto run_analyze_fixed () -> void
     for (int const timePointCount : TimePoinCounts)
     {
         analyze_fixed(ReplicationCount, timePointCount, printHeader);
+        printHeader = false;
+    }
+}
+
+auto run_analyzed_random_sp () -> void
+{
+    int const DiagramCount = 10;
+    int const ReplicationCount = 10;
+    int const TimePointCount = 10;
+    auto const VarCounts = {10, 20, 30, 40};
+    std::ranlux48 exprRng(144);
+    std::ranlux48 probRng1(314);
+    std::ranlux48 probRng2(278);
+    bool printHeader = true;
+    for (int const varCount : VarCounts)
+    {
+        analyze_random_sp(
+            DiagramCount,
+            ReplicationCount,
+            TimePointCount,
+            varCount,
+            printHeader,
+            exprRng,
+            probRng1,
+            probRng2
+        );
         printHeader = false;
     }
 }

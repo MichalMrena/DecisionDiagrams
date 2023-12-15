@@ -142,7 +142,7 @@ inline auto weibull (double const scale, double const shape) -> expression
 /**
  *  \brief Creates CDF expression of Normal distribution
  */
-inline auto normal (double mean, double var) -> expression
+inline auto normal ([[maybe_unused]] double mean, [[maybe_unused]] double var) -> expression
 {
     // TODO
     return expression(-1);

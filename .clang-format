@@ -12,6 +12,7 @@ AlignOperands: AlignAfterOperator
 AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortCompoundRequirementOnASingleLine: true
 AllowShortEnumsOnASingleLine: false
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
@@ -45,7 +46,7 @@ BraceWrapping:
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: All
-BreakBeforeConceptDeclarations: true
+BreakBeforeConceptDeclarations: Always
 BreakBeforeBraces: Allman
 BreakBeforeInheritanceComma: false
 BreakBeforeTernaryOperators: true
@@ -59,13 +60,13 @@ ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
 DeriveLineEnding: true
 DerivePointerAlignment: false
-QualifierAlignment: Right
-DisableFormat:   false
+QualifierAlignment: Custom
+QualifierOrder: ['inline', 'static', 'type', 'constexpr', 'const', 'volatile']
+DisableFormat: false
 EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: LogicalBlock
 ExperimentalAutoDetectBinPacking: false
 PackConstructorInitializers: CurrentLine
-# QualifierOrder: ['inline', 'static', 'type', 'constexpr', 'const', 'volatile']
 BasedOnStyle:    ''
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
 FixNamespaceComments: true
@@ -116,9 +117,9 @@ PointerAlignment: Left
 PPIndentWidth: -1
 ReferenceAlignment: Pointer
 ReflowComments:  true
-# RemoveSemicolon: true
+RemoveSemicolon: true
 RequiresClausePosition: OwnLine
-# RequiresExpressionIndentation: OuterScope
+RequiresExpressionIndentation: OuterScope
 SeparateDefinitionBlocks: Always
 ShortNamespaceLines: 1
 SortIncludes: CaseInsensitive

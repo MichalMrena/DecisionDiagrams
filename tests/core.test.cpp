@@ -68,10 +68,10 @@ private:
 public:
     mdd_fixture() :
         fixture_base<mdd_manager_settings<3>, minmax_expression_settings> {
-            {mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()}},
-            {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::ranlux48(Seed)},
-            3}
+            .managerSettings_ = mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()},
+            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
+            .rng_ = std::ranlux48(Seed),
+            .maxValue_ = 3}
     {
     }
 };
@@ -92,13 +92,10 @@ private:
 public:
     imdd_fixture() :
         fixture_base<imdd_manager_settings<3>, minmax_expression_settings> {
-            {imdd_manager_settings<3> {
-                {{VarCount, NodeCount, random_order_tag()},
-                 random_domains_tag()}}},
-            minmax_expression_settings {VarCount, TermCount, TermSize},
-            {std::ranlux48(Seed)},
-            3
-    }
+            .managerSettings_ = imdd_manager_settings<3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}},
+            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
+            .rng_ = std::ranlux48(Seed),
+            .maxValue_ = 3}
     {
     }
 };
@@ -119,12 +116,10 @@ private:
 public:
     ifmdd_fixture() :
         fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings> {
-            {ifmdd_manager_settings<3> {
-                {{VarCount, NodeCount, random_order_tag()},
-                 random_domains_tag()}}},
-            {minmax_expression_settings {VarCount, TermCount, TermSize}},
-            {std::ranlux48(Seed)},
-            3}
+            .managerSettings_ = ifmdd_manager_settings<3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}},
+            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
+            .rng_ = std::ranlux48(Seed),
+            .maxValue_ = 3}
     {
     }
 };
