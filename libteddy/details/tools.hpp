@@ -3,12 +3,10 @@
 
 #include <libteddy/details/types.hpp>
 
-#include <charconv>
-#include <concepts>
+    #include <charconv>
+    #include <optional>
+    #include <string_view>
 #include <cstddef>
-#include <optional>
-#include <string_view>
-#include <type_traits>
 #include <vector>
 
 namespace teddy::utils
@@ -96,21 +94,10 @@ auto pack_hash (Ts const&... args) -> std::size_t
 }
 
 /**
- *  \brief Checks if any of the arguments is true
- *  \param args boolean arguments
- *  \return true if any of the arguments is true
- */
-template<class... Args>
-auto any (Args... args)
-{
-    return (args || ...);
-}
-
-/**
  *  \brief The min function
  */
 template<class T>
-constexpr auto min (T lhs, T rhs) -> T
+auto constexpr min (T lhs, T rhs) -> T
 {
     return lhs < rhs ? lhs : rhs;
 }
@@ -119,7 +106,7 @@ constexpr auto min (T lhs, T rhs) -> T
  *  \brief The max function
  */
 template<class T>
-constexpr auto max (T lhs, T rhs) -> T
+auto constexpr max (T lhs, T rhs) -> T
 {
     return lhs > rhs ? lhs : rhs;
 }
@@ -128,7 +115,7 @@ constexpr auto max (T lhs, T rhs) -> T
  *  \brief The min function for parameter packs
  */
 template<class X>
-constexpr auto pack_min (X x) -> X
+auto constexpr pack_min (X x) -> X
 {
     return x;
 }
@@ -137,7 +124,7 @@ constexpr auto pack_min (X x) -> X
  *  \brief The min function for parameter packs
  */
 template<class X, class... Xs>
-constexpr auto pack_min (X x, Xs... xs) -> X
+auto constexpr pack_min (X x, Xs... xs) -> X
 {
     return min(x, pack_min(xs...));
 }
@@ -147,7 +134,7 @@ constexpr auto pack_min (X x, Xs... xs) -> X
  *  Implementation of std::max_element
  */
 template<class It>
-auto max_elem (It first, It const last) -> It
+auto constexpr max_elem (It first, It const last) -> It
 {
     It maxIt = first;
     while (first != last)
@@ -161,12 +148,13 @@ auto max_elem (It first, It const last) -> It
     return maxIt;
 }
 
+// TODO move to pla input
 /**
  *  \brief Finds the first element satisfying \p test
  *  Implementation of std::find_if
  */
 template<class It, class Predicate>
-auto find_if (It first, It const last, Predicate test) -> It
+auto constexpr find_if (It first, It const last, Predicate test) -> It
 {
     while (first != last)
     {
@@ -179,12 +167,13 @@ auto find_if (It first, It const last, Predicate test) -> It
     return last;
 }
 
+// TODO move to pla input
 /**
  *  \brief Finds the first element not satisfying \p test
  *  Implementation of std::find_if_not
  */
 template<class It, class Predicate>
-auto find_if_not (It first, It const last, Predicate test) -> It
+auto constexpr find_if_not (It first, It const last, Predicate test) -> It
 {
     while (first != last)
     {
@@ -202,7 +191,7 @@ auto find_if_not (It first, It const last, Predicate test) -> It
  *  Simplified implementation of std::exchange
  */
 template<class T, class U = T>
-auto exchange (T& var, U newVal) noexcept -> T
+auto constexpr exchange (T& var, U newVal) noexcept -> T
 {
     auto oldVal = var;
     var         = newVal;
@@ -214,7 +203,7 @@ auto exchange (T& var, U newVal) noexcept -> T
  *  Simplified implementation of std::swap
  */
 template<typename T>
-constexpr auto swap (T& first, T& second) noexcept -> void
+auto constexpr swap (T& first, T& second) noexcept -> void
 {
     auto tmp = first;
     first    = second;
@@ -278,6 +267,7 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
     }
 }
 
+// TODO this wont be necessary when we sort out node data and caches...
 template<class T>
 struct is_void
 {
@@ -303,7 +293,7 @@ struct is_same<T, T>
 };
 
 template<class T, class U>
-concept same_as = std::is_same<T, U>::value;
+concept same_as = is_same<T, U>::value;
 
 template<class T>
 concept is_std_vector = same_as<
@@ -342,17 +332,44 @@ struct type_if<false, T, F>
 template<class X, class T>
 using second_t = type_if<false, X, T>::type;
 
-// TODO asi nebude treba
+/**
+ *  \brief Implementation of \c std::remove_reference
+ */
 template<class T>
-struct optional_member
+struct remove_reference
 {
-    T member_;
+    using type = T;
 };
 
-template<>
-struct optional_member<void>
+/**
+ *  \brief Specialization for lvalue ref
+ */
+template<class T>
+struct remove_reference<T&>
 {
+    using type = T;
 };
+
+/**
+ *  \brief Specialization for rvalue ref
+ */
+template<class T>
+struct remove_reference<T&&>
+{
+    using type = T;
+};
+
+    // TODO asi nebude treba
+    template<class T>
+    struct optional_member
+    {
+        T member_;
+    };
+
+    template<>
+    struct optional_member<void>
+    {
+    };
 } // namespace teddy::utils
 
 #endif
