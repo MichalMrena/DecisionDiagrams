@@ -88,29 +88,34 @@ namespace details
 template<class Data, class Degree>
 class node;
 
-// TODO move to sons namespace
-template<class Data, class Degree>
-class fixed_sons
-{
-public:
-    using node_t = node<Data, Degree>;
-
-    auto operator[] (int64 const index) -> node_t*&
-    {
-        return sons_[index];
-    }
-
-    auto operator[] (int64 const index) const -> node_t* const&
-    {
-        return sons_[index];
-    }
-
-private:
-    node_t* sons_[Degree::value];
-};
-
 namespace sons
 {
+    /**
+     *  \brief Wrapper around statically allocated array of node pointers
+     */
+    template<class Data, class Degree>
+    class fixed_sons
+    {
+    public:
+        using node_t = node<Data, Degree>;
+
+        auto operator[] (int64 const index) -> node_t*&
+        {
+            return sons_[index];
+        }
+
+        auto operator[] (int64 const index) const -> node_t* const&
+        {
+            return sons_[index];
+        }
+
+    private:
+        node_t* sons_[Degree::value];
+    };
+
+    /**
+     *  \brief RAII wrapper around dynamically allocated array of node pointers
+     */
     template<class Data, class Degree>
     class mixed_sons
     {
@@ -127,13 +132,23 @@ namespace sons
         mixed_sons(const mixed_sons&) = delete;
 
         mixed_sons(mixed_sons&& other) :
-            sons_(utils::exchange(other, nullptr))
+            sons_(utils::exchange(other.sons_, nullptr))
         {
         }
 
         ~mixed_sons()
         {
             std::free(sons_);
+        }
+
+        auto operator= (mixed_sons&& other) -> mixed_sons&
+        {
+            if (this != &other) [[likely]]
+            {
+                std::free(sons_);
+            }
+            sons_ = utils::exchange(other.sons_, nullptr);
+            return *this;
         }
 
         auto operator[] (int64 const index) -> node_t*&
@@ -159,23 +174,15 @@ class node
 public:
     template<int32 N>
     static auto make_son_container (int32, degrees::fixed<N>)
-        -> fixed_sons<Data, Degree>
+        -> sons::fixed_sons<Data, Degree>
     {
-        return fixed_sons<Data, Degree>();
+        return sons::fixed_sons<Data, Degree>();
     }
 
-    // TODO use mixed_sons raii
     static auto make_son_container (int32 const domain, degrees::mixed)
-        -> node**
+        -> sons::mixed_sons<Data, Degree>
     {
-        return static_cast<node**>(std::malloc(as_usize(domain) * sizeof(node*))
-        );
-    }
-
-    // TODO this wont be necessary
-    static auto delete_son_container (node** sons) -> void
-    {
-        std::free(sons);
+        return sons::mixed_sons<Data, Degree>(domain);
     }
 
 public:
@@ -234,7 +241,7 @@ public:
     auto set_marked () -> void;
     auto set_notmarked () -> void;
     auto set_index (int32 index) -> void;
-    auto set_sons (son_container const& sons) -> void;
+    auto set_sons (son_container sons) -> void;
     auto toggle_marked () -> void;
     auto inc_ref_count () -> void;
     auto dec_ref_count () -> void;
@@ -289,7 +296,7 @@ node<Data, Degree>::node(int32 const value) :
 
 template<class Data, class Degree>
 node<Data, Degree>::node(int32 const index, son_container sons) :
-    internal_ {sons, index},
+    internal_ {static_cast<son_container&&>(sons), index},
     next_ {nullptr},
     bits_ {UsedM}
 {
@@ -301,10 +308,9 @@ requires(degrees::is_mixed<Degree>::value)
 {
     if constexpr (degrees::is_mixed<Degree>::value)
     {
-        // TODO just call mixed_sons destructor
         if (this->is_or_was_internal())
         {
-            std::free(internal_.sons_);
+            internal_.sons_.~son_container();
         }
     }
 }
@@ -354,14 +360,10 @@ auto node<Data, Degree>::get_son(int32 const sonOrder) const -> node*
 }
 
 template<class Data, class Degree>
-auto node<Data, Degree>::set_sons(son_container const& sons) -> void
+auto node<Data, Degree>::set_sons(son_container sons) -> void
 {
     assert(this->is_internal());
-    if constexpr (degrees::is_mixed<Degree>::value)
-    {
-        std::free(internal_.sons_);
-    }
-    internal_.sons_ = sons;
+    internal_.sons_ = static_cast<son_container&&>(sons);
 }
 
 template<class Data, class Degree>

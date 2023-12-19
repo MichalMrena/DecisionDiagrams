@@ -965,8 +965,10 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
                 newSons[k]
                     = stack[as_uindex(ssize(stack) - newDomain + k)].node;
             }
-            node_t* const newNode
-                = nodes_.make_internal_node(newIndex, newSons);
+            node_t* const newNode = nodes_.make_internal_node(
+                newIndex,
+                static_cast<son_container&&>(newSons)
+            );
             stack.erase(end(stack) - newDomain, end(stack));
             stack.push_back(stack_frame {newNode, currentLevel - 1});
         }
@@ -980,7 +982,10 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
         {
             sons[k] = nodes_.make_terminal_node(*first++);
         }
-        node_t* const node = nodes_.make_internal_node(lastIndex, sons);
+        node_t* const node = nodes_.make_internal_node(
+            lastIndex,
+            static_cast<son_container&&>(sons)
+        );
         stack.push_back(stack_frame {node, lastLevel});
         shrink_stack();
     }
@@ -1182,7 +1187,10 @@ auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index)
     {
         sons[val] = nodes_.make_terminal_node(val);
     }
-    return nodes_.make_internal_node(index, sons);
+    return nodes_.make_internal_node(
+        index,
+        static_cast<son_container&&>(sons)
+    );
 }
 
 template<class Data, class Degree, class Domain>
@@ -1254,7 +1262,10 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
         );
     }
 
-    node_t* const result = nodes_.make_internal_node(topIndex, sons);
+    node_t* const result = nodes_.make_internal_node(
+        topIndex,
+        static_cast<son_container&&>(sons)
+    );
     nodes_.template cache_put<Op>(result, lhs, rhs);
     return result;
 }
@@ -1321,7 +1332,10 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
                 )...
             );
         }
-        result = nodes_.make_internal_node(topIndex, sons);
+        result = nodes_.make_internal_node(
+            topIndex,
+            static_cast<son_container&&>(sons)
+        );
     }
 
     cachePack = {{nodes...}, result};
@@ -1708,7 +1722,10 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
         sons[k] = this->get_cofactor_impl(memo, varIndex, varValue, oldSon);
     }
 
-    node_t* const newNode = nodes_.make_internal_node(nodeIndex, sons);
+    node_t* const newNode = nodes_.make_internal_node(
+        nodeIndex,
+        static_cast<son_container&&>(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1763,7 +1780,10 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
             node_t* const oldSon = node->get_son(k);
             sons[k] = this->get_cofactor_impl(memo, vars, oldSon, toCofactor);
         }
-        newNode = nodes_.make_internal_node(nodeIndex, sons);
+        newNode = nodes_.make_internal_node(
+            nodeIndex,
+            static_cast<son_container&&>(sons)
+        );
     }
 
     memo.emplace(node, newNode);
@@ -1812,7 +1832,10 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
         node_t* const son = node->get_son(k);
         sons[k]           = this->transform_impl(memo, transformer, son);
     }
-    node_t* const newNode = nodes_.make_internal_node(index, sons);
+    node_t* const newNode = nodes_.make_internal_node(
+        index,
+        static_cast<son_container&&>(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }

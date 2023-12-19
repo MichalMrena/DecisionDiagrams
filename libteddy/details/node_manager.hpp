@@ -131,7 +131,7 @@ public:
     [[nodiscard]] auto make_terminal_node (int32 value) -> node_t*;
     [[nodiscard]] auto make_internal_node (
         int32 index,
-        son_container const& sons
+        son_container sons
     ) -> node_t*;
     [[nodiscard]] auto make_son_container (int32 domain) -> son_container;
     [[nodiscard]] auto get_level (int32 index) const -> int32;
@@ -489,17 +489,13 @@ auto node_manager<Data, Degree, Domain>::make_son_container(int32 const domain)
 template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_internal_node(
     int32 const index,
-    son_container const& sons
+    son_container sons
 ) -> node_t*
 {
     // redundant node:
     if (this->is_redundant(index, sons))
     {
         node_t* const son = sons[0];
-        if constexpr (degrees::is_mixed<Degree>::value)
-        {
-            node_t::delete_son_container(sons);
-        }
         return son;
     }
 
@@ -508,16 +504,15 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     auto const [existing, hash]       = table.find(sons);
     if (existing)
     {
-        if constexpr (degrees::is_mixed<Degree>::value)
-        {
-            node_t::delete_son_container(sons);
-        }
         this->for_each_son(existing, id_set_notmarked<Data, Degree>);
         return id_set_marked(existing);
     }
 
     // new unique node:
-    node_t* const newNode = this->make_new_node(index, sons);
+    node_t* const newNode = this->make_new_node(
+        index,
+        static_cast<son_container&&>(sons)
+    );
     table.insert(newNode, hash);
     this->for_each_son(newNode, id_inc_ref_count<Data, Degree>);
     this->for_each_son(newNode, id_set_notmarked<Data, Degree>);
@@ -1067,7 +1062,7 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
     }
 
     ++nodeCount_;
-    return pool_.create(args...);
+    return pool_.create(static_cast<Args&&>(args)...);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1281,11 +1276,14 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
             innerSons[innerK]
                 = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
         }
-        outerSons[outerK] = this->make_internal_node(nodeIndex, innerSons);
+        outerSons[outerK] = this->make_internal_node(
+            nodeIndex,
+            static_cast<son_container&&>(innerSons)
+        );
     }
 
     node->set_index(nextIndex);
-    node->set_sons(outerSons);
+    node->set_sons(static_cast<son_container&&>(outerSons));
 
     for (int32 k = 0; k < nextDomain; ++k)
     {
@@ -1296,11 +1294,6 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         this->dec_ref_try_gc(oldSons[k]);
-    }
-
-    if constexpr (degrees::is_mixed<Degree>::value)
-    {
-        node_t::delete_son_container(oldSons);
     }
 }
 

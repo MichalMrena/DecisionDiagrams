@@ -862,7 +862,10 @@ auto reliability_manager<Degree, Domain>::dpld_impl( // TODO rename to _step
             sons[k] = this->dpld_impl(cache, varChange, fChange, fst, snd);
         }
 
-        result = this->nodes_.make_internal_node(topIndex, sons);
+        result = this->nodes_.make_internal_node(
+            topIndex,
+            static_cast<son_conainer&&>(sons)
+        );
     }
 
     cache.emplace(dpld_cache_entry(lhs, rhs), result);
@@ -891,7 +894,10 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
             sons[k] = k == varFrom ? root
                                    : this->nodes_.make_terminal_node(Undefined);
         }
-        newRoot = this->nodes_.make_internal_node(varIndex, sons);
+        newRoot = this->nodes_.make_internal_node(
+            varIndex,
+            static_cast<son_conainer&&>(sons)
+        );
         return diagram_t(newRoot);
     }
     else
@@ -946,7 +952,10 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
                                ? son
                                : this->nodes_.make_terminal_node(Undefined);
             }
-            sons[k] = this->nodes_.make_internal_node(varIndex, newSons);
+            sons[k] = this->nodes_.make_internal_node(
+                varIndex,
+                static_cast<son_conainer&&>(newSons)
+            );
         }
         else
         {
@@ -954,7 +963,10 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
             sons[k] = this->to_dpld_e_impl(memo, varFrom, varIndex, son);
         }
     }
-    node_t* const newNode = this->nodes_.make_internal_node(nodeIndex, sons);
+    node_t* const newNode = this->nodes_.make_internal_node(
+        nodeIndex,
+        static_cast<son_conainer&&>(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1215,7 +1227,10 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
         }
     }
 
-    node_t* const newNode = this->nodes_.make_internal_node(nodeIndex, sons);
+    node_t* const newNode = this->nodes_.make_internal_node(
+        nodeIndex,
+        static_cast<son_conainer&&>(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
