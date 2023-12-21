@@ -370,6 +370,20 @@ struct remove_reference<T&&>
     struct optional_member<void>
     {
     };
+
+/**
+ *  \brief Implementation of \c std::move
+ */
+#define TEDDY_MOVE(...) \
+  static_cast<::teddy::utils::remove_reference<decltype(__VA_ARGS__)>::type&&>(\
+    __VA_ARGS__ \
+  )
+
+/**
+ *  \brief Implementation of \c std::forward
+ */
+#define TEDDY_FORWARD(...) \
+  static_cast<decltype(__VA_ARGS__)&&>(__VA_ARGS__)
 } // namespace teddy::utils
 
 #endif

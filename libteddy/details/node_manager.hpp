@@ -31,7 +31,7 @@ struct mixed
     std::vector<int32> domains_;
 
     mixed(std::vector<int32> domains) :
-        domains_(static_cast<std::vector<int32>&&>(domains)) {};
+        domains_(TEDDY_MOVE(domains)) {};
 
     auto operator[] (int32 const index) const
     {
@@ -293,7 +293,7 @@ requires(domains::is_fixed<Domain>::value)
         varCount,
         nodePoolSize,
         extraNodePoolSize,
-        static_cast<std::vector<int32>&&>(order),
+        TEDDY_MOVE(order),
         {}
     )
 {
@@ -314,8 +314,8 @@ requires(domains::is_mixed<Domain>::value)
         varCount,
         nodePoolSize,
         extraNodePoolSize,
-        static_cast<std::vector<int32>&&>(order),
-        static_cast<domains::mixed&&>(domains)
+        TEDDY_MOVE(order),
+        TEDDY_MOVE(domains)
     )
 {
 }
@@ -337,8 +337,8 @@ node_manager<Data, Degree, Domain>::node_manager(
     terminals_(),
     specials_(),
     indexToLevel_(as_usize(varCount)),
-    levelToIndex_(static_cast<std::vector<int32>&&>(order)),
-    domains_(static_cast<Domain&&>(domains)),
+    levelToIndex_(TEDDY_MOVE(order)),
+    domains_(TEDDY_MOVE(domains)),
     varCount_(varCount),
     nodeCount_(0),
     adjustmentNodeCount_(DEFAULT_FIRST_TABLE_ADJUSTMENT),
@@ -509,10 +509,7 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     }
 
     // new unique node:
-    node_t* const newNode = this->make_new_node(
-        index,
-        static_cast<son_container&&>(sons)
-    );
+    node_t* const newNode = this->make_new_node(index, TEDDY_MOVE(sons));
     table.insert(newNode, hash);
     this->for_each_son(newNode, id_inc_ref_count<Data, Degree>);
     this->for_each_son(newNode, id_set_notmarked<Data, Degree>);
@@ -1062,7 +1059,7 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
     }
 
     ++nodeCount_;
-    return pool_.create(static_cast<Args&&>(args)...);
+    return pool_.create(TEDDY_FORWARD(args)...);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1278,12 +1275,12 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
         }
         outerSons[outerK] = this->make_internal_node(
             nodeIndex,
-            static_cast<son_container&&>(innerSons)
+            TEDDY_MOVE(innerSons)
         );
     }
 
     node->set_index(nextIndex);
-    node->set_sons(static_cast<son_container&&>(outerSons));
+    node->set_sons(TEDDY_MOVE(outerSons));
 
     for (int32 k = 0; k < nextDomain; ++k)
     {
@@ -1348,7 +1345,7 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
     }
     uniqueTables_[as_uindex(index)].adjust_capacity();
     uniqueTables_[as_uindex(nextIndex)].merge(
-        static_cast<unique_table<Data, Degree>&&>(tmpTable)
+        TEDDY_MOVE(tmpTable)
     );
 
     utils::swap(

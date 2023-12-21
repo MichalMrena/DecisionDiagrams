@@ -967,7 +967,7 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
             }
             node_t* const newNode = nodes_.make_internal_node(
                 newIndex,
-                static_cast<son_container&&>(newSons)
+                TEDDY_MOVE(newSons)
             );
             stack.erase(end(stack) - newDomain, end(stack));
             stack.push_back(stack_frame {newNode, currentLevel - 1});
@@ -984,7 +984,7 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
         }
         node_t* const node = nodes_.make_internal_node(
             lastIndex,
-            static_cast<son_container&&>(sons)
+            TEDDY_MOVE(sons)
         );
         stack.push_back(stack_frame {node, lastLevel});
         shrink_stack();
@@ -1189,7 +1189,7 @@ auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index)
     }
     return nodes_.make_internal_node(
         index,
-        static_cast<son_container&&>(sons)
+        TEDDY_MOVE(sons)
     );
 }
 
@@ -1264,7 +1264,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
 
     node_t* const result = nodes_.make_internal_node(
         topIndex,
-        static_cast<son_container&&>(sons)
+        TEDDY_MOVE(sons)
     );
     nodes_.template cache_put<Op>(result, lhs, rhs);
     return result;
@@ -1334,7 +1334,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
         }
         result = nodes_.make_internal_node(
             topIndex,
-            static_cast<son_container&&>(sons)
+            TEDDY_MOVE(sons)
         );
     }
 
@@ -1402,11 +1402,11 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
         if (justMoveLast)
         {
             *(first + currentCount - 1)
-                = static_cast<diagram_t&&>(*(first + 2 * (currentCount - 1)));
+                = TEDDY_MOVE(*(first + 2 * (currentCount - 1)));
         }
     }
 
-    return diagram_t(static_cast<diagram_t&&>(*first));
+    return diagram_t(TEDDY_MOVE(*first));
 }
 
 template<class Data, class Degree, class Domain>
@@ -1724,7 +1724,7 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
 
     node_t* const newNode = nodes_.make_internal_node(
         nodeIndex,
-        static_cast<son_container&&>(sons)
+        TEDDY_MOVE(sons)
     );
     memo.emplace(node, newNode);
     return newNode;
@@ -1782,7 +1782,7 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
         }
         newNode = nodes_.make_internal_node(
             nodeIndex,
-            static_cast<son_container&&>(sons)
+            TEDDY_MOVE(sons)
         );
     }
 
@@ -1834,7 +1834,7 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
     }
     node_t* const newNode = nodes_.make_internal_node(
         index,
-        static_cast<son_container&&>(sons)
+        TEDDY_MOVE(sons)
     );
     memo.emplace(node, newNode);
     return newNode;
@@ -2001,7 +2001,7 @@ inline auto default_or_fwd (int32 const varCount, std::vector<int32>& indices)
     }
     else
     {
-        return std::vector<int32>(static_cast<std::vector<int32>&&>(indices));
+        return std::vector<int32>(TEDDY_MOVE(indices));
     }
 }
 } // namespace detail
@@ -2039,7 +2039,7 @@ requires(domains::is_mixed<Domain>::value)
         nodePoolSize,
         extraNodePoolSize,
         detail::default_or_fwd(varCount, order),
-        static_cast<domains::mixed&&>(domain)
+        TEDDY_MOVE(domain)
     )
 {
 }

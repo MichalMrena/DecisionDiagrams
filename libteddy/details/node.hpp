@@ -296,7 +296,7 @@ node<Data, Degree>::node(int32 const value) :
 
 template<class Data, class Degree>
 node<Data, Degree>::node(int32 const index, son_container sons) :
-    internal_ {static_cast<son_container&&>(sons), index},
+    internal_ {TEDDY_MOVE(sons), index},
     next_ {nullptr},
     bits_ {UsedM}
 {
@@ -363,7 +363,7 @@ template<class Data, class Degree>
 auto node<Data, Degree>::set_sons(son_container sons) -> void
 {
     assert(this->is_internal());
-    internal_.sons_ = static_cast<son_container&&>(sons);
+    internal_.sons_ = TEDDY_MOVE(sons);
 }
 
 template<class Data, class Degree>

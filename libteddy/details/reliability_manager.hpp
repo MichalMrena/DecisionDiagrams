@@ -864,7 +864,7 @@ auto reliability_manager<Degree, Domain>::dpld_impl( // TODO rename to _step
 
         result = this->nodes_.make_internal_node(
             topIndex,
-            static_cast<son_conainer&&>(sons)
+            TEDDY_MOVE(sons)
         );
     }
 
@@ -896,7 +896,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
         }
         newRoot = this->nodes_.make_internal_node(
             varIndex,
-            static_cast<son_conainer&&>(sons)
+            TEDDY_MOVE(sons)
         );
         return diagram_t(newRoot);
     }
@@ -954,7 +954,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
             }
             sons[k] = this->nodes_.make_internal_node(
                 varIndex,
-                static_cast<son_conainer&&>(newSons)
+                TEDDY_MOVE(newSons)
             );
         }
         else
@@ -965,7 +965,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
     }
     node_t* const newNode = this->nodes_.make_internal_node(
         nodeIndex,
-        static_cast<son_conainer&&>(sons)
+        TEDDY_MOVE(sons)
     );
     memo.emplace(node, newNode);
     return newNode;
@@ -1229,7 +1229,7 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
 
     node_t* const newNode = this->nodes_.make_internal_node(
         nodeIndex,
-        static_cast<son_conainer&&>(sons)
+        TEDDY_MOVE(sons)
     );
     memo.emplace(node, newNode);
     return newNode;
@@ -1248,7 +1248,7 @@ requires(domains::is_fixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -1267,8 +1267,8 @@ requires(domains::is_mixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<domains::mixed&&>(domain),
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(domain),
+        TEDDY_MOVE(order)
     )
 {
 }

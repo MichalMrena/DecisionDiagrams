@@ -162,7 +162,7 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
     }
 
     return static_cast<node_t*>(
-        ::new (nodePtr) node_t(static_cast<Args&&>(args)...)
+        ::new (nodePtr) node_t(TEDDY_FORWARD(args)...)
     );
 }
 
