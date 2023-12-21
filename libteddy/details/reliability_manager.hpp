@@ -847,7 +847,7 @@ auto reliability_manager<Degree, Domain>::dpld_impl( // TODO rename to _step
         int32 const topLevel = utils::min(lhsLevel, rhsLevel);
         int32 const topIndex = this->nodes_.get_index(topLevel);
         int32 const domain   = this->nodes_.get_domain(topIndex);
-        son_conainer sons    = this->nodes_.make_son_container(domain);
+        son_conainer sons    = node_t::make_son_container(domain);
         for (int32 k = 0; k < domain; ++k)
         {
             node_t* const fst
@@ -888,7 +888,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
     if (varLevel < rootLevel)
     {
         int32 const varDomain = this->nodes_.get_domain(varIndex);
-        son_conainer sons     = this->nodes_.make_son_container(varDomain);
+        son_conainer sons     = node_t::make_son_container(varDomain);
         for (int32 k = 0; k < varDomain; ++k)
         {
             sons[k] = k == varFrom ? root
@@ -936,7 +936,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
     int32 const nodeLevel  = this->nodes_.get_level(node);
     int32 const nodeIndex  = this->nodes_.get_index(nodeLevel);
     int32 const nodeDomain = this->nodes_.get_domain(nodeIndex);
-    son_conainer sons      = this->nodes_.make_son_container(nodeDomain);
+    son_conainer sons      = node_t::make_son_container(nodeDomain);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         node_t* const son    = node->get_son(k);
@@ -945,7 +945,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
         {
             // A new node goes in between the current node and its k-th son.
             // Transformation does not need to continue.
-            son_conainer newSons = this->nodes_.make_son_container(varDomain);
+            son_conainer newSons = node_t::make_son_container(varDomain);
             for (int32 l = 0; l < varDomain; ++l)
             {
                 newSons[l] = l == varFrom
@@ -1198,7 +1198,7 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
 
     int32 const nodeIndex = node->get_index();
     int32 const domain    = this->nodes_.get_domain(nodeIndex);
-    son_conainer sons     = this->nodes_.make_son_container(domain);
+    son_conainer sons     = node_t::make_son_container(domain);
     for (int32 k = 0; k < domain; ++k)
     {
         node_t* const son = node->get_son(k);

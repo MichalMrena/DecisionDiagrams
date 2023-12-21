@@ -45,6 +45,7 @@ BraceWrapping:
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
+BreakAfterAttributes: Leave
 BreakBeforeBinaryOperators: All
 BreakBeforeConceptDeclarations: Always
 BreakBeforeBraces: Allman
@@ -103,7 +104,7 @@ InsertTrailingCommas: None
 KeepEmptyLinesAtTheStartOfBlocks: true
 LambdaBodyIndentation: Signature
 MaxEmptyLinesToKeep: 1
-NamespaceIndentation: None
+NamespaceIndentation: Inner
 PenaltyBreakAssignment: 2
 PenaltyBreakBeforeFirstCallParameter: 19
 PenaltyBreakComment: 300

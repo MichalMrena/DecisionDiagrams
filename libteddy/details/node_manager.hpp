@@ -133,7 +133,6 @@ public:
         int32 index,
         son_container sons
     ) -> node_t*;
-    [[nodiscard]] auto make_son_container (int32 domain) -> son_container;
     [[nodiscard]] auto get_level (int32 index) const -> int32;
     [[nodiscard]] auto get_level (node_t* node) const -> int32;
     [[nodiscard]] auto get_leaf_level () const -> int32;
@@ -477,13 +476,6 @@ auto node_manager<Data, Degree, Domain>::make_special_node(
     }
 
     return id_set_marked(specials_[0]);
-}
-
-template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::make_son_container(int32 const domain)
-    -> son_container
-{
-    return node_t::make_son_container(domain, Degree());
 }
 
 template<class Data, class Degree, class Domain>
