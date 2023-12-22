@@ -1229,7 +1229,7 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     int32 const nextIndex  = this->get_index(1 + this->get_level(node));
     int32 const nodeDomain = this->get_domain(nodeIndex);
     int32 const nextDomain = this->get_domain(nextIndex);
-    son_container oldSons  = this->make_son_container(nodeDomain);
+    son_container oldSons  = node_t::make_son_container(nodeDomain);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         oldSons[k] = node->get_son(k);
@@ -1256,10 +1256,10 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
         }
     }
 
-    son_container outerSons = this->make_son_container(nextDomain);
+    son_container outerSons = node_t::make_son_container(nextDomain);
     for (int32 outerK = 0; outerK < nextDomain; ++outerK)
     {
-        son_container innerSons = this->make_son_container(nodeDomain);
+        son_container innerSons = node_t::make_son_container(nodeDomain);
         for (int32 innerK = 0; innerK < nodeDomain; ++innerK)
         {
             innerSons[innerK]

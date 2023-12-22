@@ -29,6 +29,7 @@ project(
 
 ### Requires CLN and GiNaC, see README
 option(LIBTEDDY_SYMBOLIC_RELIABILITY "Enable symbolic expressions" OFF)
+# TODO pridat option na GMP int -> alias long_t
 option(LIBTEDDY_VERBOSE              "Enable verbose output"       OFF)
 option(LIBTEDDY_COLLECT_STATS        "Enable stat collection"      OFF)
 

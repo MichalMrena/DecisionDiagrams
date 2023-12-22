@@ -191,7 +191,7 @@ class node
 {
 public:
     using son_container
-        = decltype(sons::make_son_container<Data, Degree>(int32(), Degree()));
+        = decltype(sons::make_son_container<Data>(int32(), Degree()));
 
 public:
     /**
@@ -199,7 +199,7 @@ public:
      */
     static auto make_son_container (int32 const domain) -> son_container
     {
-        return sons::make_son_container<Data, Degree>(domain, Degree());
+        return sons::make_son_container<Data>(domain, Degree());
     }
 
 public:
