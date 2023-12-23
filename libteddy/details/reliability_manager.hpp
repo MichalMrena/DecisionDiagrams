@@ -847,7 +847,7 @@ auto reliability_manager<Degree, Domain>::dpld_impl( // TODO rename to _step
         int32 const topLevel = utils::min(lhsLevel, rhsLevel);
         int32 const topIndex = this->nodes_.get_index(topLevel);
         int32 const domain   = this->nodes_.get_domain(topIndex);
-        son_conainer sons    = this->nodes_.make_son_container(domain);
+        son_conainer sons    = node_t::make_son_container(domain);
         for (int32 k = 0; k < domain; ++k)
         {
             node_t* const fst
@@ -862,7 +862,10 @@ auto reliability_manager<Degree, Domain>::dpld_impl( // TODO rename to _step
             sons[k] = this->dpld_impl(cache, varChange, fChange, fst, snd);
         }
 
-        result = this->nodes_.make_internal_node(topIndex, sons);
+        result = this->nodes_.make_internal_node(
+            topIndex,
+            TEDDY_MOVE(sons)
+        );
     }
 
     cache.emplace(dpld_cache_entry(lhs, rhs), result);
@@ -885,13 +888,16 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
     if (varLevel < rootLevel)
     {
         int32 const varDomain = this->nodes_.get_domain(varIndex);
-        son_conainer sons     = this->nodes_.make_son_container(varDomain);
+        son_conainer sons     = node_t::make_son_container(varDomain);
         for (int32 k = 0; k < varDomain; ++k)
         {
             sons[k] = k == varFrom ? root
                                    : this->nodes_.make_terminal_node(Undefined);
         }
-        newRoot = this->nodes_.make_internal_node(varIndex, sons);
+        newRoot = this->nodes_.make_internal_node(
+            varIndex,
+            TEDDY_MOVE(sons)
+        );
         return diagram_t(newRoot);
     }
     else
@@ -930,7 +936,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
     int32 const nodeLevel  = this->nodes_.get_level(node);
     int32 const nodeIndex  = this->nodes_.get_index(nodeLevel);
     int32 const nodeDomain = this->nodes_.get_domain(nodeIndex);
-    son_conainer sons      = this->nodes_.make_son_container(nodeDomain);
+    son_conainer sons      = node_t::make_son_container(nodeDomain);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         node_t* const son    = node->get_son(k);
@@ -939,14 +945,17 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
         {
             // A new node goes in between the current node and its k-th son.
             // Transformation does not need to continue.
-            son_conainer newSons = this->nodes_.make_son_container(varDomain);
+            son_conainer newSons = node_t::make_son_container(varDomain);
             for (int32 l = 0; l < varDomain; ++l)
             {
                 newSons[l] = l == varFrom
                                ? son
                                : this->nodes_.make_terminal_node(Undefined);
             }
-            sons[k] = this->nodes_.make_internal_node(varIndex, newSons);
+            sons[k] = this->nodes_.make_internal_node(
+                varIndex,
+                TEDDY_MOVE(newSons)
+            );
         }
         else
         {
@@ -954,7 +963,10 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
             sons[k] = this->to_dpld_e_impl(memo, varFrom, varIndex, son);
         }
     }
-    node_t* const newNode = this->nodes_.make_internal_node(nodeIndex, sons);
+    node_t* const newNode = this->nodes_.make_internal_node(
+        nodeIndex,
+        TEDDY_MOVE(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1186,7 +1198,7 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
 
     int32 const nodeIndex = node->get_index();
     int32 const domain    = this->nodes_.get_domain(nodeIndex);
-    son_conainer sons     = this->nodes_.make_son_container(domain);
+    son_conainer sons     = node_t::make_son_container(domain);
     for (int32 k = 0; k < domain; ++k)
     {
         node_t* const son = node->get_son(k);
@@ -1215,7 +1227,10 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
         }
     }
 
-    node_t* const newNode = this->nodes_.make_internal_node(nodeIndex, sons);
+    node_t* const newNode = this->nodes_.make_internal_node(
+        nodeIndex,
+        TEDDY_MOVE(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1233,7 +1248,7 @@ requires(domains::is_fixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -1252,8 +1267,8 @@ requires(domains::is_mixed<Domain>::value)
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<domains::mixed&&>(domain),
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(domain),
+        TEDDY_MOVE(order)
     )
 {
 }

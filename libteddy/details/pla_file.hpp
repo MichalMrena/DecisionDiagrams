@@ -276,14 +276,11 @@ inline auto pla_file::load_file(std::string const& path)
                 --valLast;
             }
             std::string val(valFirst, valLast);
-            options.emplace(
-                static_cast<std::string&&>(key),
-                static_cast<std::string&&>(val)
-            );
+            options.emplace(TEDDY_MOVE(key), TEDDY_MOVE(val));
         }
         else
         {
-            options.emplace(static_cast<std::string&&>(key), std::string());
+            options.emplace(TEDDY_MOVE(key), std::string());
         }
     }
 
@@ -405,9 +402,9 @@ inline auto pla_file::load_file(std::string const& path)
     }
 
     return pla_file(
-        static_cast<std::vector<pla_file::pla_line>&&>(lines),
-        static_cast<std::vector<std::string>&&>(inputLabels),
-        static_cast<std::vector<std::string>&&>(outputLabels)
+        TEDDY_MOVE(lines),
+        TEDDY_MOVE(inputLabels),
+        TEDDY_MOVE(outputLabels)
     );
 }
 
@@ -416,9 +413,9 @@ inline pla_file::pla_file(
     std::vector<std::string> inputLabels,
     std::vector<std::string> outputLabels
 ) :
-    lines_(static_cast<std::vector<pla_file::pla_line>&&>(lines)),
-    inputLabels_(static_cast<std::vector<std::string>&&>(inputLabels)),
-    outputLabels_(static_cast<std::vector<std::string>&&>(outputLabels))
+    lines_(TEDDY_MOVE(lines)),
+    inputLabels_(TEDDY_MOVE(inputLabels)),
+    outputLabels_(TEDDY_MOVE(outputLabels))
 {
 }
 

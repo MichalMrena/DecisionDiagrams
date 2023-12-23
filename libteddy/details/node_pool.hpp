@@ -8,7 +8,6 @@
 
 #include <cassert>
 #include <cstdlib>
-#include <new>
 
 namespace teddy
 {
@@ -149,20 +148,22 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
     assert(availableNodeCount_ > 0);
     --availableNodeCount_;
 
-    node_t* node = nullptr;
+    node_t* nodePtr = nullptr;
     if (freeNodes_)
     {
-        node       = freeNodes_;
+        nodePtr       = freeNodes_;
         freeNodes_ = freeNodes_->get_next();
-        node->~node_t();
+        nodePtr->~node_t();
     }
     else
     {
-        node = nextPoolNode_;
+        nodePtr = nextPoolNode_;
         ++nextPoolNode_;
     }
 
-    return static_cast<node_t*>(::new (node) node_t(args...));
+    return static_cast<node_t*>(
+        ::new (nodePtr) node_t(TEDDY_FORWARD(args)...)
+    );
 }
 
 template<class Data, class Degree>

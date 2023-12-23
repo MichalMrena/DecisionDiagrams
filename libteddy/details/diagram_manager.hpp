@@ -859,7 +859,7 @@ requires(is_bdd<Degree>)
 auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index)
     -> utils::second_t<Foo, diagram_t>
 {
-    son_container sons = nodes_.make_son_container(2);
+    son_container sons = node_t::make_son_container(2);
     sons[0]            = nodes_.make_terminal_node(1);
     sons[1]            = nodes_.make_terminal_node(0);
     return diagram_t(nodes_.make_internal_node(index, sons));
@@ -959,14 +959,16 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
                 break;
             }
 
-            son_container newSons = nodes_.make_son_container(newDomain);
+            son_container newSons = node_t::make_son_container(newDomain);
             for (int32 k = 0; k < newDomain; ++k)
             {
                 newSons[k]
                     = stack[as_uindex(ssize(stack) - newDomain + k)].node;
             }
-            node_t* const newNode
-                = nodes_.make_internal_node(newIndex, newSons);
+            node_t* const newNode = nodes_.make_internal_node(
+                newIndex,
+                TEDDY_MOVE(newSons)
+            );
             stack.erase(end(stack) - newDomain, end(stack));
             stack.push_back(stack_frame {newNode, currentLevel - 1});
         }
@@ -975,12 +977,15 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
     while (first != last)
     {
         int32 const lastDomain = nodes_.get_domain(lastIndex);
-        son_container sons     = nodes_.make_son_container(lastDomain);
+        son_container sons     = node_t::make_son_container(lastDomain);
         for (int32 k = 0; k < lastDomain; ++k)
         {
             sons[k] = nodes_.make_terminal_node(*first++);
         }
-        node_t* const node = nodes_.make_internal_node(lastIndex, sons);
+        node_t* const node = nodes_.make_internal_node(
+            lastIndex,
+            TEDDY_MOVE(sons)
+        );
         stack.push_back(stack_frame {node, lastLevel});
         shrink_stack();
     }
@@ -1177,12 +1182,15 @@ auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index)
     -> node_t*
 {
     int32 const varDomain = nodes_.get_domain(index);
-    son_container sons    = nodes_.make_son_container(varDomain);
+    son_container sons    = node_t::make_son_container(varDomain);
     for (int32 val = 0; val < varDomain; ++val)
     {
         sons[val] = nodes_.make_terminal_node(val);
     }
-    return nodes_.make_internal_node(index, sons);
+    return nodes_.make_internal_node(
+        index,
+        TEDDY_MOVE(sons)
+    );
 }
 
 template<class Data, class Degree, class Domain>
@@ -1244,7 +1252,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
     int32 const topLevel = utils::min(lhsLevel, rhsLevel);
     int32 const topIndex = nodes_.get_index(topLevel);
     int32 const domain   = nodes_.get_domain(topIndex);
-    son_container sons   = nodes_.make_son_container(domain);
+    son_container sons   = node_t::make_son_container(domain);
     for (int32 k = 0; k < domain; ++k)
     {
         sons[k] = this->apply_impl(
@@ -1254,7 +1262,10 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
         );
     }
 
-    node_t* const result = nodes_.make_internal_node(topIndex, sons);
+    node_t* const result = nodes_.make_internal_node(
+        topIndex,
+        TEDDY_MOVE(sons)
+    );
     nodes_.template cache_put<Op>(result, lhs, rhs);
     return result;
 }
@@ -1311,7 +1322,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
         int32 const minLevel = utils::pack_min(nodes_.get_level(nodes)...);
         int32 const topIndex = nodes_.get_index(minLevel);
         int32 const domain   = nodes_.get_domain(topIndex);
-        son_container sons   = nodes_.make_son_container(domain);
+        son_container sons   = node_t::make_son_container(domain);
         for (int32 k = 0; k < domain; ++k)
         {
             sons[k] = this->apply_n_impl(
@@ -1321,7 +1332,10 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
                 )...
             );
         }
-        result = nodes_.make_internal_node(topIndex, sons);
+        result = nodes_.make_internal_node(
+            topIndex,
+            TEDDY_MOVE(sons)
+        );
     }
 
     cachePack = {{nodes...}, result};
@@ -1388,11 +1402,11 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
         if (justMoveLast)
         {
             *(first + currentCount - 1)
-                = static_cast<diagram_t&&>(*(first + 2 * (currentCount - 1)));
+                = TEDDY_MOVE(*(first + 2 * (currentCount - 1)));
         }
     }
 
-    return diagram_t(static_cast<diagram_t&&>(*first));
+    return diagram_t(TEDDY_MOVE(*first));
 }
 
 template<class Data, class Degree, class Domain>
@@ -1701,14 +1715,17 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
     }
 
     int32 const nodeDomain = nodes_.get_domain(node);
-    son_container sons     = nodes_.make_son_container(nodeDomain);
+    son_container sons     = node_t::make_son_container(nodeDomain);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         node_t* const oldSon = node->get_son(k);
         sons[k] = this->get_cofactor_impl(memo, varIndex, varValue, oldSon);
     }
 
-    node_t* const newNode = nodes_.make_internal_node(nodeIndex, sons);
+    node_t* const newNode = nodes_.make_internal_node(
+        nodeIndex,
+        TEDDY_MOVE(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1757,13 +1774,16 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
     else
     {
         int32 const nodeDomain = nodes_.get_domain(node);
-        son_container sons     = nodes_.make_son_container(nodeDomain);
+        son_container sons     = node_t::make_son_container(nodeDomain);
         for (int32 k = 0; k < nodeDomain; ++k)
         {
             node_t* const oldSon = node->get_son(k);
             sons[k] = this->get_cofactor_impl(memo, vars, oldSon, toCofactor);
         }
-        newNode = nodes_.make_internal_node(nodeIndex, sons);
+        newNode = nodes_.make_internal_node(
+            nodeIndex,
+            TEDDY_MOVE(sons)
+        );
     }
 
     memo.emplace(node, newNode);
@@ -1806,13 +1826,16 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
 
     int32 const index  = node->get_index();
     int32 const domain = nodes_.get_domain(index);
-    son_container sons = nodes_.make_son_container(domain);
+    son_container sons = node_t::make_son_container(domain);
     for (int32 k = 0; k < domain; ++k)
     {
         node_t* const son = node->get_son(k);
         sons[k]           = this->transform_impl(memo, transformer, son);
     }
-    node_t* const newNode = nodes_.make_internal_node(index, sons);
+    node_t* const newNode = nodes_.make_internal_node(
+        index,
+        TEDDY_MOVE(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1978,7 +2001,7 @@ inline auto default_or_fwd (int32 const varCount, std::vector<int32>& indices)
     }
     else
     {
-        return std::vector<int32>(static_cast<std::vector<int32>&&>(indices));
+        return std::vector<int32>(TEDDY_MOVE(indices));
     }
 }
 } // namespace detail
@@ -2016,7 +2039,7 @@ requires(domains::is_mixed<Domain>::value)
         nodePoolSize,
         extraNodePoolSize,
         detail::default_or_fwd(varCount, order),
-        static_cast<domains::mixed&&>(domain)
+        TEDDY_MOVE(domain)
     )
 {
 }

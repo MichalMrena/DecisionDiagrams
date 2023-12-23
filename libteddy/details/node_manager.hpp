@@ -31,7 +31,7 @@ struct mixed
     std::vector<int32> domains_;
 
     mixed(std::vector<int32> domains) :
-        domains_(static_cast<std::vector<int32>&&>(domains)) {};
+        domains_(TEDDY_MOVE(domains)) {};
 
     auto operator[] (int32 const index) const
     {
@@ -131,9 +131,8 @@ public:
     [[nodiscard]] auto make_terminal_node (int32 value) -> node_t*;
     [[nodiscard]] auto make_internal_node (
         int32 index,
-        son_container const& sons
+        son_container sons
     ) -> node_t*;
-    [[nodiscard]] auto make_son_container (int32 domain) -> son_container;
     [[nodiscard]] auto get_level (int32 index) const -> int32;
     [[nodiscard]] auto get_level (node_t* node) const -> int32;
     [[nodiscard]] auto get_leaf_level () const -> int32;
@@ -293,7 +292,7 @@ requires(domains::is_fixed<Domain>::value)
         varCount,
         nodePoolSize,
         extraNodePoolSize,
-        static_cast<std::vector<int32>&&>(order),
+        TEDDY_MOVE(order),
         {}
     )
 {
@@ -314,8 +313,8 @@ requires(domains::is_mixed<Domain>::value)
         varCount,
         nodePoolSize,
         extraNodePoolSize,
-        static_cast<std::vector<int32>&&>(order),
-        static_cast<domains::mixed&&>(domains)
+        TEDDY_MOVE(order),
+        TEDDY_MOVE(domains)
     )
 {
 }
@@ -337,8 +336,8 @@ node_manager<Data, Degree, Domain>::node_manager(
     terminals_(),
     specials_(),
     indexToLevel_(as_usize(varCount)),
-    levelToIndex_(static_cast<std::vector<int32>&&>(order)),
-    domains_(static_cast<Domain&&>(domains)),
+    levelToIndex_(TEDDY_MOVE(order)),
+    domains_(TEDDY_MOVE(domains)),
     varCount_(varCount),
     nodeCount_(0),
     adjustmentNodeCount_(DEFAULT_FIRST_TABLE_ADJUSTMENT),
@@ -480,26 +479,15 @@ auto node_manager<Data, Degree, Domain>::make_special_node(
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::make_son_container(int32 const domain)
-    -> son_container
-{
-    return node_t::make_son_container(domain, Degree());
-}
-
-template<class Data, class Degree, class Domain>
 auto node_manager<Data, Degree, Domain>::make_internal_node(
     int32 const index,
-    son_container const& sons
+    son_container sons
 ) -> node_t*
 {
     // redundant node:
     if (this->is_redundant(index, sons))
     {
         node_t* const son = sons[0];
-        if constexpr (degrees::is_mixed<Degree>::value)
-        {
-            node_t::delete_son_container(sons);
-        }
         return son;
     }
 
@@ -508,16 +496,12 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
     auto const [existing, hash]       = table.find(sons);
     if (existing)
     {
-        if constexpr (degrees::is_mixed<Degree>::value)
-        {
-            node_t::delete_son_container(sons);
-        }
         this->for_each_son(existing, id_set_notmarked<Data, Degree>);
         return id_set_marked(existing);
     }
 
     // new unique node:
-    node_t* const newNode = this->make_new_node(index, sons);
+    node_t* const newNode = this->make_new_node(index, TEDDY_MOVE(sons));
     table.insert(newNode, hash);
     this->for_each_son(newNode, id_inc_ref_count<Data, Degree>);
     this->for_each_son(newNode, id_set_notmarked<Data, Degree>);
@@ -1067,7 +1051,7 @@ auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
     }
 
     ++nodeCount_;
-    return pool_.create(args...);
+    return pool_.create(TEDDY_FORWARD(args)...);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1245,7 +1229,7 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     int32 const nextIndex  = this->get_index(1 + this->get_level(node));
     int32 const nodeDomain = this->get_domain(nodeIndex);
     int32 const nextDomain = this->get_domain(nextIndex);
-    son_container oldSons  = this->make_son_container(nodeDomain);
+    son_container oldSons  = node_t::make_son_container(nodeDomain);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         oldSons[k] = node->get_son(k);
@@ -1272,20 +1256,23 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
         }
     }
 
-    son_container outerSons = this->make_son_container(nextDomain);
+    son_container outerSons = node_t::make_son_container(nextDomain);
     for (int32 outerK = 0; outerK < nextDomain; ++outerK)
     {
-        son_container innerSons = this->make_son_container(nodeDomain);
+        son_container innerSons = node_t::make_son_container(nodeDomain);
         for (int32 innerK = 0; innerK < nodeDomain; ++innerK)
         {
             innerSons[innerK]
                 = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
         }
-        outerSons[outerK] = this->make_internal_node(nodeIndex, innerSons);
+        outerSons[outerK] = this->make_internal_node(
+            nodeIndex,
+            TEDDY_MOVE(innerSons)
+        );
     }
 
     node->set_index(nextIndex);
-    node->set_sons(outerSons);
+    node->set_sons(TEDDY_MOVE(outerSons));
 
     for (int32 k = 0; k < nextDomain; ++k)
     {
@@ -1296,11 +1283,6 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         this->dec_ref_try_gc(oldSons[k]);
-    }
-
-    if constexpr (degrees::is_mixed<Degree>::value)
-    {
-        node_t::delete_son_container(oldSons);
     }
 }
 
@@ -1355,7 +1337,7 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
     }
     uniqueTables_[as_uindex(index)].adjust_capacity();
     uniqueTables_[as_uindex(nextIndex)].merge(
-        static_cast<unique_table<Data, Degree>&&>(tmpTable)
+        TEDDY_MOVE(tmpTable)
     );
 
     utils::swap(

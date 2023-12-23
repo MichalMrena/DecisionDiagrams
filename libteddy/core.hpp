@@ -191,7 +191,7 @@ inline bdd_manager::bdd_manager(
         varCount,
         nodePoolSize,
         nodePoolSize / 2,
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -206,7 +206,7 @@ inline bdd_manager::bdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -221,7 +221,7 @@ mdd_manager<M>::mdd_manager(
         varCount,
         nodePoolSize,
         nodePoolSize / 2,
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -237,7 +237,7 @@ mdd_manager<M>::mdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -252,8 +252,8 @@ inline imdd_manager::imdd_manager(
         varCount,
         nodePoolSize,
         nodePoolSize / 2,
-        static_cast<std::vector<int32>&&>(domains),
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(domains),
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -269,8 +269,8 @@ inline imdd_manager::imdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<std::vector<int32>&&>(domains),
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(domains),
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -286,8 +286,8 @@ ifmdd_manager<M>::ifmdd_manager(
         varCount,
         nodePoolSize,
         nodePoolSize / 2,
-        static_cast<std::vector<int32>&&>(domains),
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(domains),
+        TEDDY_MOVE(order)
     )
 {
 }
@@ -304,8 +304,8 @@ ifmdd_manager<PMax>::ifmdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        static_cast<std::vector<int32>&&>(domains),
-        static_cast<std::vector<int32>&&>(order)
+        TEDDY_MOVE(domains),
+        TEDDY_MOVE(order)
     )
 {
 }
