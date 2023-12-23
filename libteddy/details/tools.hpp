@@ -3,9 +3,6 @@
 
 #include <libteddy/details/types.hpp>
 
-    #include <charconv>
-    #include <optional>
-    #include <string_view>
 #include <cstddef>
 #include <vector>
 
@@ -37,23 +34,6 @@ auto constexpr int_pow(Base base, int32 exponent) -> Base
     }
 
     return result;
-}
-
-/**
- *  \brief Tries to parse \p input to \p Num
- *  \param input input string
- *  \return optinal result
- */
-template<class Num>
-auto parse (std::string_view const input) -> std::optional<Num>
-{
-    auto ret = Num {};
-    auto result
-        = std::from_chars(input.data(), input.data() + input.size(), ret);
-    return std::errc {} == result.ec
-                && result.ptr == input.data() + input.size()
-             ? std::optional<Num>(ret)
-             : std::nullopt;
 }
 
 /**
@@ -146,44 +126,6 @@ auto constexpr max_elem (It first, It const last) -> It
         ++first;
     }
     return maxIt;
-}
-
-// TODO move to pla input
-/**
- *  \brief Finds the first element satisfying \p test
- *  Implementation of std::find_if
- */
-template<class It, class Predicate>
-auto constexpr find_if (It first, It const last, Predicate test) -> It
-{
-    while (first != last)
-    {
-        if (test(*first))
-        {
-            return first;
-        }
-        ++first;
-    }
-    return last;
-}
-
-// TODO move to pla input
-/**
- *  \brief Finds the first element not satisfying \p test
- *  Implementation of std::find_if_not
- */
-template<class It, class Predicate>
-auto constexpr find_if_not (It first, It const last, Predicate test) -> It
-{
-    while (first != last)
-    {
-        if (not test(*first))
-        {
-            return first;
-        }
-        ++first;
-    }
-    return last;
 }
 
 /**
