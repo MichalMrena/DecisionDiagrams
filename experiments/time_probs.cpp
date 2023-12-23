@@ -10,6 +10,8 @@
 #include <filesystem>
 #include <random>
 
+#include "libteddy/core.hpp"
+#include "libteddy/details/diagram_manager.hpp"
 #include "utils.hpp"
 
 // CVS parameters
@@ -53,6 +55,136 @@ inline auto make_time_probability_matrix (
         });
     }
     return probs;
+}
+
+auto sf_from_pla (
+    teddy::pla_file const& file,
+    teddy::bss_manager& manager
+) -> teddy::bss_manager::diagram_t
+{
+    auto const& plaLines          = file.get_lines();
+    long long const inputCount    = file.get_variable_count();
+    long long const lineCount     = file.get_line_count();
+    long long const functionCount = file.get_function_count();
+
+    using namespace teddy::ops;
+    using std::size_t;
+    // using bdd_t = teddy::bdd_manager::diagram_t;
+
+    std::vector<bdd_t> inputs;
+    std::vector<bdd_t> andGates;
+    std::vector<bdd_t> orGates;
+
+    {
+        int i = 0;
+        // Variables for inputs
+        for (int k = 0; k < inputCount; ++k)
+        {
+            inputs.push_back(manager.variable(i++));
+        }
+
+        // Variables for and gates
+        for (int k = 0; k < lineCount; ++k)
+        {
+            andGates.push_back(manager.variable(i++));
+        }
+
+        // Variables for or gates
+        for (int k = 0; k < functionCount; ++k)
+        {
+            orGates.push_back(manager.variable(i++));
+        }
+    }
+
+    int nextOrVar = 0;
+    bdd_t failedAnd = manager.constant(0);
+    bdd_t failedOr  = manager.constant(1);
+
+    // BDDs for output functions
+    std::vector<bdd_t> functions;
+    // BDDs for output functions including unreliable gates
+    std::vector<bdd_t> functionsRel;
+    functions.reserve(static_cast<size_t>(functionCount));
+    functionsRel.reserve(static_cast<size_t>(functionCount));
+
+    for (int fi = 0; fi < functionCount; ++fi)
+    {
+        int nextAndVar = -1;
+        std::vector<bdd_t> products;
+        std::vector<bdd_t> productsRel;
+        products.reserve(static_cast<size_t>(lineCount));
+        productsRel.reserve(static_cast<size_t>(lineCount));
+
+        for (size_t li = 0; li < static_cast<size_t>(lineCount); ++li)
+        {
+            ++nextAndVar;
+            if (plaLines[li].fVals_.get(fi) != 1)
+            {
+                continue;
+            }
+
+            teddy::bool_cube const& cube = plaLines[li].cube_;
+            bdd_t product = manager.constant(1);
+            for (int i = 0; i < cube.size(); ++i)
+            {
+                if (cube.get(i) == 1)
+                {
+                    product = manager.apply<AND>(
+                        product,
+                        inputs[static_cast<size_t>(i)]
+                    );
+                }
+                else if (cube.get(i) == 0)
+                {
+                    product = manager.apply<AND>(
+                        product,
+                        manager.negate(inputs[static_cast<size_t>(i)])
+                    );
+                }
+            }
+
+            bdd_t productRel = manager.apply<OR>(
+                manager.apply<AND>(andGates[static_cast<size_t>(nextAndVar)], product),
+                manager.apply<AND>(manager.negate(andGates[static_cast<size_t>(nextAndVar)]), failedAnd)
+            );
+
+            products.push_back(product);
+            productsRel.push_back(productRel);
+        }
+
+        if (products.empty())
+        {
+            products.push_back(manager.constant(0));
+        }
+
+        bdd_t sum = manager.constant(0);
+        for (bdd_t const& product : products)
+        {
+            sum = manager.apply<OR>(sum, product);
+        }
+
+        bdd_t sumRel = manager.apply<OR>(
+            manager.apply<AND>(orGates[static_cast<size_t>(nextOrVar)], sum),
+            manager.apply<AND>(manager.negate(orGates[static_cast<size_t>(nextOrVar)]), failedOr)
+        );
+        ++nextOrVar;
+
+        functions.push_back(sum);
+        functionsRel.push_back(sumRel);
+    }
+
+    // BDD for output structure functions
+    std::vector<bdd_t> structureFunctions;
+    structureFunctions.reserve(static_cast<size_t>(functionCount));
+    for (size_t i = 0; i < static_cast<size_t>(functionCount); ++i)
+    {
+        structureFunctions.push_back(
+            manager.apply<EQUAL_TO>(functions[i], functionsRel[i])
+        );
+    }
+
+    bdd_t structureFunction = manager.tree_fold<AND>(structureFunctions);
+    return structureFunction;
 }
 
 /**
@@ -137,226 +269,18 @@ struct FixedSystem
     }
 };
 
-class PLADiagramGenerator
-{
-public:
-    PLADiagramGenerator(teddy::pla_file file) :
-        file_(std::move(file))
-    {
-    }
-
-    auto operator() (teddy::bss_manager& manager)
-    {
-        auto const& plaLines          = file_.get_lines();
-        long long const inputCount    = file_.get_variable_count();
-        long long const lineCount     = file_.get_line_count();
-        long long const functionCount = file_.get_function_count();
-
-        using namespace teddy::ops;
-        using std::size_t;
-
-        std::vector<bdd_t> inputs;
-        std::vector<bdd_t> andGates;
-        std::vector<bdd_t> orGates;
-
-        {
-            int i = 0;
-            // Variables for inputs
-            for (int k = 0; k < inputCount; ++k)
-            {
-                inputs.push_back(manager.variable(i++));
-            }
-
-            // Variables for and gates
-            for (int k = 0; k < lineCount; ++k)
-            {
-                andGates.push_back(manager.variable(i++));
-            }
-
-            // Variables for or gates
-            for (int k = 0; k < functionCount; ++k)
-            {
-                orGates.push_back(manager.variable(i++));
-            }
-        }
-
-        int nextOrVar = 0;
-        bdd_t failedAnd = manager.constant(0);
-        bdd_t failedOr  = manager.constant(1);
-
-        // BDDs for output functions
-        std::vector<bdd_t> functions;
-        // BDDs for output functions including unreliable gates
-        std::vector<bdd_t> functionsRel;
-        functions.reserve(static_cast<size_t>(functionCount));
-        functionsRel.reserve(static_cast<size_t>(functionCount));
-
-        for (int fi = 0; fi < functionCount; ++fi)
-        {
-            int nextAndVar = -1;
-            std::vector<bdd_t> products;
-            std::vector<bdd_t> productsRel;
-            products.reserve(static_cast<size_t>(lineCount));
-            productsRel.reserve(static_cast<size_t>(lineCount));
-
-            for (size_t li = 0; li < static_cast<size_t>(lineCount); ++li)
-            {
-                ++nextAndVar;
-                if (plaLines[li].fVals_.get(fi) != 1)
-                {
-                    continue;
-                }
-
-                teddy::bool_cube const& cube = plaLines[li].cube_;
-                bdd_t product = manager.constant(1);
-                for (int i = 0; i < cube.size(); ++i)
-                {
-                    if (cube.get(i) == 1)
-                    {
-                        product = manager.apply<AND>(
-                            product,
-                            inputs[static_cast<size_t>(i)]
-                        );
-                    }
-                    else if (cube.get(i) == 0)
-                    {
-                        product = manager.apply<AND>(
-                            product,
-                            manager.negate(inputs[static_cast<size_t>(i)])
-                        );
-                    }
-                }
-
-                bdd_t productRel = manager.apply<OR>(
-                    manager.apply<AND>(andGates[static_cast<size_t>(nextAndVar)], product),
-                    manager.apply<AND>(manager.negate(andGates[static_cast<size_t>(nextAndVar)]), failedAnd)
-                );
-
-                products.push_back(product);
-                productsRel.push_back(productRel);
-            }
-
-            if (products.empty())
-            {
-                products.push_back(manager.constant(0));
-            }
-
-            bdd_t sum = manager.constant(0);
-            for (bdd_t const& product : products)
-            {
-                sum = manager.apply<OR>(sum, product);
-            }
-
-            bdd_t sumRel = manager.apply<OR>(
-                manager.apply<AND>(orGates[static_cast<size_t>(nextOrVar)], sum),
-                manager.apply<AND>(manager.negate(orGates[static_cast<size_t>(nextOrVar)]), failedOr)
-            );
-            ++nextOrVar;
-
-            functions.push_back(sum);
-            functionsRel.push_back(sumRel);
-        }
-
-        // BDD for output structure functions
-        std::vector<bdd_t> structureFunctions;
-        structureFunctions.reserve(static_cast<size_t>(functionCount));
-        for (size_t i = 0; i < static_cast<size_t>(functionCount); ++i)
-        {
-            structureFunctions.push_back(
-                manager.apply<EQUAL_TO>(functions[i], functionsRel[i])
-            );
-        }
-
-        bdd_t structureFunction = manager.tree_fold<AND>(structureFunctions);
-        return structureFunction;
-    }
-
-private:
-    teddy::pla_file file_;
-};
-
-class RandomProbsGenerator
-{
-public:
-    RandomProbsGenerator(std::size_t const seed) :
-        rng_(seed)
-    {
-    }
-
-    auto operator() (int const varCount)
-    {
-        return make_time_probability_matrix(varCount, rng_);
-    }
-
-private:
-    std::ranlux48 rng_;
-};
-
-class RandomSymprobsGenerator
-{
-public:
-    RandomSymprobsGenerator(std::size_t const seed) :
-        rng_(seed)
-    {
-    }
-
-    auto operator() (int const varCount)
-    {
-        return teddy::symprobs::to_matrix(
-            teddy::tsl::make_time_symprobability_vector(varCount, rng_)
-        );
-    }
-
-private:
-    std::ranlux48 rng_;
-};
-
 int get_node_count (GiNaC::ex ex)
 {
     int count = 1;
-    size_t n = ex.nops();
+    std::size_t n = ex.nops();
     if (n)
     {
-        for (size_t i = 0; i < n; i++)
+        for (std::size_t i = 0; i < n; i++)
         {
             count += get_node_count(ex.op(i));
         }
     }
     return count;
-}
-
-auto describe_fixed () -> void
-{
-    using namespace teddy;
-    using namespace teddy::ops;
-    teddy::bss_manager manager(4, 1'000);
-
-    auto& x      = manager;
-    bdd_t top    = manager.apply<OR>(x(0), x(1));
-    bdd_t bottom = manager.apply<AND>(x(2), x(3));
-    bdd_t sf     = manager.apply<OR>(top, bottom);
-
-    GiNaC::realsymbol p1("p_1");
-    GiNaC::realsymbol p2("p_2");
-    GiNaC::realsymbol p3("p_3");
-    GiNaC::realsymbol p4("p_4");
-
-    GiNaC::realsymbol q1("q_1");
-    GiNaC::realsymbol q2("q_2");
-    GiNaC::realsymbol q3("q_3");
-    GiNaC::realsymbol q4("q_4");
-
-    std::vector<std::array<symprobs::expression, 2>> symprobs
-    {
-        {symprobs::expression(q1), symprobs::expression(p1)},
-        {symprobs::expression(q2), symprobs::expression(p2)},
-        {symprobs::expression(q3), symprobs::expression(p3)},
-        {symprobs::expression(q4), symprobs::expression(p4)},
-    };
-
-    symprobs::expression expr = manager.symbolic_availability(1, symprobs, sf);
-
-    expr.to_latex(std::cout);
 }
 
 auto analyze_fixed (
@@ -618,10 +542,6 @@ auto analyze_pla (
     int const functionCount    = fileOpt->get_function_count();
     int const varCount         = inputCount + lineCount + functionCount;
 
-    PLADiagramGenerator diagramGen(*fileOpt);
-    RandomProbsGenerator probsGen;
-    RandomSymprobsGenerator symprobsGen;
-
     if (printHeader)
     {
         std::cout
@@ -639,7 +559,7 @@ auto analyze_pla (
     std::ios_base::fmtflags const outFlags = std::cout.flags();
 
     teddy::bss_manager manager(varCount, 1'000'000);
-    bdd_t diagram = diagramGen(manager);
+    bdd_t diagram = sf_from_pla(*fileOpt, manager);
     for (int repl = 0; repl < replicationCount; ++repl)
     {
         // ; pla-file
@@ -661,8 +581,13 @@ auto analyze_pla (
         long long diagramNodeCount = 0;
         long long exprNodeCount    = 0;
 
-        auto probs    = probsGen(probRng1, varCount);
-        auto symprobs = symprobsGen(probRng2, varCount);
+        auto probs = make_time_probability_matrix(varCount, probRng1);
+        auto symprobs = teddy::symprobs::to_matrix(
+                teddy::tsl::make_time_symprobability_vector(
+                    varCount,
+                    probRng2
+                )
+            );
 
         for_each_bdd_vars(inputCount, [&](auto const& vars)
         {
@@ -822,94 +747,8 @@ auto run_analyze_pla () -> void
 
 auto main() -> int
 {
-     run_analyze_pla();
-//    run_analyze_fixed();
-    // describe_fixed();
-
-    // SystemType const SystemType = SystemType::FIXED;
-
-    // if (SystemType == SystemType::FIXED)
-    // {
-    //     int const ReplicationCount = 1;
-    //     int const DiagramCount     = 1;
-    //     int const VarCount         = 4;
-    //     // auto const TimePointCounts = {10, 100, 1000, 10'000};
-    //     auto const TimePointCounts = {10};
-    //     bool printHeader           = true;
-    //     FixedDiagramGenerator diagramGen;
-    //     FixedProbsGenerator probsGen;
-    //     FixedSymprobsGenerator symprobsGen;
-    //     for (int const timePointCount : TimePointCounts)
-    //     {
-    //         evalute_system(
-    //             DiagramCount,
-    //             ReplicationCount,
-    //             timePointCount,
-    //             VarCount,
-    //             printHeader,
-    //             diagramGen,
-    //             probsGen,
-    //             symprobsGen
-    //         );
-    //         printHeader = false;
-    //     }
-    // }
-
-    // if (SystemType == SystemType::SERIES_PARALLEL)
-    // {
-    //     int const ReplicationCount = 10;
-    //     int const DiagramCount     = 20;
-    //     int const ExprSeed         = 5343584;
-    //     int const TimePointCount   = 10;
-    //     auto const VarCounts       = {10, 20, 30, 40};
-    //     bool printHeader           = true;
-    //     RandomProbsGenerator probsGen;
-    //     RandomSymprobsGenerator symprobsGen;
-    //     for (int const varCount : VarCounts)
-    //     {
-    //         SPDiagramGenerator diagram(ExprSeed, varCount);
-    //         evalute_system(
-    //             DiagramCount,
-    //             ReplicationCount,
-    //             TimePointCount,
-    //             varCount,
-    //             printHeader,
-    //             diagram,
-    //             probsGen,
-    //             symprobsGen
-    //         );
-    //         printHeader = false;
-    //     }
-    // }
-
-    // if (SystemType == SystemType::PLA)
-    // {
-    //     auto const path = "/home/michal/data/IWLS93/pla/con1.pla";
-    //     auto fileOpt = teddy::pla_file::load_file(path);
-    //     if (not fileOpt)
-    //     {
-    //         std::cerr << "Failed to load PLA file.\n";
-    //         return 1;
-    //     }
-    //     int const ReplicationCount = 10;
-    //     int const DiagramCount     = 1;
-    //     int const TimePointCount   = 10;
-    //     int const inputCount       = fileOpt->get_variable_count();
-    //     int const lineCount        = (int)fileOpt->get_line_count();
-    //     int const functionCount    = fileOpt->get_function_count();
-    //     int const varCount         = inputCount + lineCount + functionCount;
-    //     PLADiagramGenerator diagramGen(*fileOpt);
-    //     RandomProbsGenerator probsGen;
-    //     RandomSymprobsGenerator symprobsGen;
-    //     evalute_system(
-    //         DiagramCount,
-    //         ReplicationCount,
-    //         TimePointCount,
-    //         varCount,
-    //         true,
-    //         diagramGen,
-    //         probsGen,
-    //         symprobsGen
-    //     );
-    // }
+    FixedSystem::describe();
+    run_analyze_fixed();
+    // run_analyze_pla();
+    // run_analyzed_random_sp();
 }
