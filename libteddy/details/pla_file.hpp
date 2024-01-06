@@ -22,11 +22,11 @@ namespace teddy
 namespace utils
 {
     /**
-    *  \brief Finds the first element satisfying \p test
-    *  Implementation of std::find_if
-    */
+     *  \brief Finds the first element satisfying \p test
+     *  Implementation of std::find_if
+     */
     template<class It, class Predicate>
-    auto constexpr find_if (It first, It const last, Predicate test) -> It
+    auto constexpr find_if(It first, It const last, Predicate test) -> It
     {
         while (first != last)
         {
@@ -39,13 +39,12 @@ namespace utils
         return last;
     }
 
-    // TODO move to pla input
     /**
-    *  \brief Finds the first element not satisfying \p test
-    *  Implementation of std::find_if_not
-    */
+     *  \brief Finds the first element not satisfying \p test
+     *  Implementation of std::find_if_not
+     */
     template<class It, class Predicate>
-    auto constexpr find_if_not (It first, It const last, Predicate test) -> It
+    auto constexpr find_if_not(It first, It const last, Predicate test) -> It
     {
         while (first != last)
         {
@@ -59,30 +58,30 @@ namespace utils
     }
 
     /**
-    *  \brief Tries to parse \p input to \p Num
-    *  \param input input string
-    *  \return optinal result
-    */
+     *  \brief Tries to parse \p input to \p Num
+     *  \param input input string
+     *  \return optinal result
+     */
     template<class Num>
     auto parse (std::string_view const input) -> std::optional<Num>
     {
-        auto ret = Num {};
-        auto result
-            = std::from_chars(input.data(), input.data() + input.size(), ret);
-        return std::errc {} == result.ec
-                    && result.ptr == input.data() + input.size()
-                ? std::optional<Num>(ret)
-                : std::nullopt;
+        Num ret;
+        auto const first  = input.data();
+        auto const last   = input.data() + input.size();
+        auto const result = std::from_chars(first, last, ret);
+        return std::errc {} == result.ec && result.ptr == last
+                 ? std::optional<Num>(ret)
+                 : std::nullopt;
     }
-}
+} // namespace utils
 
 /**
- *  \brief Bool cube.
+ *  \brief Bool cube
  */
 class bool_cube
 {
 public:
-    static constexpr std::uint8_t DontCare = 0b11;
+    static std::uint8_t constexpr DontCare = 0b11;
 
 public:
     bool_cube(int32 size) :
@@ -167,10 +166,8 @@ public:
      *  \return Optional holding instance of \c pla_file or
      *  \c std::nullopt if the loading failed
      */
-    static auto load_file (
-        std::string const& path,
-        bool const verbose = false
-    ) -> std::optional<pla_file>;
+    static auto load_file (std::string const& path, bool const verbose = false)
+        -> std::optional<pla_file>;
 
 public:
     /**
@@ -295,13 +292,11 @@ private:
 
 // pla_file definitions:
 
-inline auto pla_file::load_file(
-    std::string const& path,
-    bool const verbose
-) -> std::optional<pla_file>
+inline auto pla_file::load_file(std::string const& path, bool const verbose)
+    -> std::optional<pla_file>
 {
-    auto const to_words =
-        [] (std::string const& str) -> std::vector<std::string>
+    auto const to_words
+        = [] (std::string const& str) -> std::vector<std::string>
     {
         std::vector<std::string> words;
         auto strIt       = str.begin();
@@ -321,14 +316,19 @@ inline auto pla_file::load_file(
         return words;
     };
 
+    auto const verbose_out = [verbose] (auto const&... args)
+    {
+        if (verbose)
+        {
+            ((std::cout << args), ...);
+        }
+    };
+
     int32 lineNum = 0;
     std::ifstream ifst(path);
     if (not ifst.is_open())
     {
-        if (verbose)
-        {
-            std::cerr << "Failed to open: " << path << "\n";
-        }
+        verbose_out("Failed to open: ", path, "\n");
         return std::nullopt;
     }
 
@@ -356,7 +356,7 @@ inline auto pla_file::load_file(
 
         if (*first != '.')
         {
-            // Not an option.
+            // Not an option. Start parsing cubes.
             break;
         }
 
@@ -385,31 +385,25 @@ inline auto pla_file::load_file(
         }
     }
 
-    // Parse header.
+    // Raw options loaded, now parse them.
     auto const varCountIt  = options.find(".i");
     auto const fCountIt    = options.find(".o");
     auto const lineCountIt = options.find(".p");
     if (varCountIt == options.end())
     {
-        if (verbose)
-        {
-            std::cerr << "Missing input count option .i" << "\n";
-        }
+        verbose_out("Missing input count option .i\n");
         return std::nullopt;
     }
 
     if (fCountIt == options.end())
     {
-        if (verbose)
-        {
-            std::cerr << "Missing function count option .o" << "\n";
-        }
+        verbose_out("Missing function count option .o\n");
         return std::nullopt;
     }
 
     if (lineCountIt == options.end() && verbose)
     {
-        std::cerr << "Missing line count option .p" << "\n";
+        verbose_out("Missing line count option .p\n");
     }
 
     std::optional<int32> varCount  = utils::parse<int32>(varCountIt->second);
@@ -418,23 +412,13 @@ inline auto pla_file::load_file(
 
     if (not varCount)
     {
-        if (verbose)
-        {
-            std::cerr << "Failed to parse input count: "
-                      << varCountIt->second
-                      << "\n";
-        }
+        verbose_out("Failed to parse input count: ", varCountIt->second, "\n");
         return std::nullopt;
     }
 
     if (not fCount)
     {
-        if (verbose)
-        {
-            std::cerr << "Failed to parse output count: "
-                      << fCountIt->second
-                      << "\n";
-        }
+        verbose_out("Failed to parse output count: ", fCountIt->second, "\n");
         return std::nullopt;
     }
 
@@ -443,9 +427,11 @@ inline auto pla_file::load_file(
         lineCount = utils::parse<int32>(fCountIt->second);
         if (not lineCount)
         {
-            std::cerr << "Failed to parse line count: "
-                      << lineCountIt->second
-                      << "\n";
+            verbose_out(
+                "Failed to parse line count: ",
+                lineCountIt->second,
+                "\n"
+            );
         }
     }
 
@@ -484,12 +470,7 @@ inline auto pla_file::load_file(
         auto const varsLast = utils::find_if(first, last, ::isspace);
         if (varsLast == last)
         {
-            if (verbose)
-            {
-                std::cerr << "Missing output values on line "
-                          << (lineNum - 1)
-                          << "\n";
-            }
+            verbose_out("Missing output values on line ", lineNum - 1, "\n");
             return std::nullopt;
         }
         auto const fsFirst = utils::find_if_not(varsLast + 1, last, ::isspace);
@@ -499,23 +480,13 @@ inline auto pla_file::load_file(
 
         if (ssize(varsStr) != *varCount)
         {
-            if (verbose)
-            {
-                std::cerr << "Invalid input count on line "
-                          << (lineNum - 1)
-                          << "\n";
-            }
+            verbose_out("Invalid input count on line ", lineNum - 1, "\n");
             return std::nullopt;
         }
 
         if (ssize(fStr) != *fCount)
         {
-            if (verbose)
-            {
-                std::cerr << "Invalid output count on line "
-                          << (lineNum - 1)
-                          << "\n";
-            }
+            verbose_out("Invalid output count on line ", lineNum - 1, "\n");
             return std::nullopt;
         }
 
@@ -536,14 +507,13 @@ inline auto pla_file::load_file(
                 variables.set(i, bool_cube::DontCare);
                 break;
             default:
-                if (verbose)
-                {
-                    std::cerr << "Invalid cube character '"
-                              << varsStr[as_uindex(i)]
-                              << "' on line "
-                              << lineNum
-                              << "\n";
-                }
+                verbose_out(
+                    "Invalid cube character '",
+                    varsStr[as_uindex(i)],
+                    "' on line ",
+                    lineNum - 1,
+                    "\n"
+                );
                 return std::nullopt;
             }
         }
@@ -565,14 +535,13 @@ inline auto pla_file::load_file(
                 functions.set(i, bool_cube::DontCare);
                 break;
             default:
-                if (verbose)
-                {
-                    std::cerr << "Invalid cube character '"
-                              << varsStr[as_uindex(i)]
-                              << "' on line "
-                              << lineNum
-                              << "\n";
-                }
+                verbose_out(
+                    "Invalid cube character '",
+                    varsStr[as_uindex(i)],
+                    "' on line ",
+                    lineNum - 1,
+                    "\n"
+                );
                 return std::nullopt;
             }
         }
