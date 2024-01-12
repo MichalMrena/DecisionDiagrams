@@ -1413,8 +1413,12 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
         return node->get_son(varValue);
     }
 
-    // TODO ak uz viem ze som pod indexom varIndex mozem rovno return node
-    // cofactorovana premenna tam uz urcite nebude
+    int32 const nodeLevel = nodes_.get_level(nodeIndex);
+    int32 const varLevel  = nodes_.get_level(varIndex);
+    if (nodeLevel > varLevel)
+    {
+        return node;
+    }
 
     int32 const nodeDomain = nodes_.get_domain(node);
     son_container sons     = node_t::make_son_container(nodeDomain);

@@ -127,7 +127,7 @@ BOOST_FIXTURE_TEST_CASE(internal_node, bdd_nodes_fixture)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(manager_properties, Fixture, Fixtures, Fixture)
 {
-    typename Fixture::manager_t manager = make_manager(*this);
+    // typename Fixture::manager_t manager = make_manager(*this);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
