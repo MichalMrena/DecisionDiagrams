@@ -1,4 +1,5 @@
 #include <libteddy/core.hpp>
+#include <libteddy/core_io.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
@@ -19,8 +20,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
-#include <utility>
 #include <vector>
 
 #include "setup.hpp"
@@ -1071,7 +1070,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system)
         InitNodeCount,
         system.domains_
     );
-    auto const diagram = manager.from_vector(system.structureFunction_);
+    auto const diagram = io::from_vector(manager, system.structureFunction_);
 
     // System State Probabilities
     for (auto state = 0; state < system.stateCount_; ++state)

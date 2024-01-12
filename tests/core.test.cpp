@@ -1,4 +1,6 @@
+#include <boost/test/unit_test_suite.hpp>
 #include <libteddy/core.hpp>
+#include <libteddy/core_io.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
@@ -11,6 +13,8 @@
 #include <boost/test/unit_test_log.hpp>
 
 #include <fmt/core.h>
+
+#include <filesystem>
 
 #include "setup.hpp"
 
@@ -177,7 +181,7 @@ using Fixtures = boost::mpl::vector<
     teddy::tests::imdd_fixture,
     teddy::tests::ifmdd_fixture>;
 
-BOOST_AUTO_TEST_SUITE(core_test)
+BOOST_AUTO_TEST_SUITE(core)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture)
 {
@@ -772,40 +776,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture)
     test_compare_eval(evalit, manager, diagram);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
-{
-    auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram = tsl::make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(
-        fmt::format("Node count {}", manager.get_node_count(diagram))
-    );
-    auto domainit = make_domain_iterator(manager);
-    auto evalit   = tsl::evaluating_iterator(domainit, expr);
-    auto evalend  = tsl::evaluating_iterator_sentinel();
-    auto vectord  = manager.from_vector(evalit, evalend);
-    BOOST_REQUIRE_MESSAGE(
-        diagram.equals(vectord),
-        "From-vector created the same diagram"
-    );
-}
-
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(to_vector, Fixture, Fixtures, Fixture)
-{
-    auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
-    auto diagram = tsl::make_diagram(expr, manager);
-    BOOST_TEST_MESSAGE(
-        fmt::format("Node count {}", manager.get_node_count(diagram))
-    );
-    auto vector  = manager.to_vector(diagram);
-    auto vectord = manager.from_vector(vector);
-    BOOST_REQUIRE_MESSAGE(
-        diagram.equals(vectord),
-        "From-vector from to-vectored vector created the same diagram"
-    );
-}
-
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
 {
     auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
@@ -821,4 +791,65 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(core_io)
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
+{
+    auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram = tsl::make_diagram(expr, manager);
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
+    );
+    auto domainit = make_domain_iterator(manager);
+    auto evalit   = tsl::evaluating_iterator(domainit, expr);
+    auto evalend  = tsl::evaluating_iterator_sentinel();
+    auto vectord  = io::from_vector(manager, evalit, evalend);
+    BOOST_REQUIRE_MESSAGE(
+        diagram.equals(vectord),
+        "From-vector created the same diagram"
+    );
+}
+
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(to_vector, Fixture, Fixtures, Fixture)
+{
+    auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
+    auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    auto diagram = tsl::make_diagram(expr, manager);
+    BOOST_TEST_MESSAGE(
+        fmt::format("Node count {}", manager.get_node_count(diagram))
+    );
+    auto vector  = io::to_vector(manager, diagram);
+    auto vectord = io::from_vector(manager, vector);
+    BOOST_REQUIRE_MESSAGE(
+        diagram.equals(vectord),
+        "From-vector from to-vectored vector created the same diagram"
+    );
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(core_io_bdd)
+
+BOOST_AUTO_TEST_CASE(from_pla)
+{
+    auto const path = "/home/michal/data/IWLS93/pla/xor5.pla";
+    if (not std::filesystem::exists(path))
+    {
+        BOOST_TEST_MESSAGE(
+            fmt::format("Missing input file '{}', test is skipped.", path)
+        );
+        return;
+    }
+    std::optional<pla_file> file = pla_file::load_file(path, true);
+    BOOST_REQUIRE_MESSAGE(file.has_value(), "Load simple PLA.");
+    bdd_manager manager(file->get_variable_count(), 1'000);
+    using bdd_t = bdd_manager::diagram_t;
+    std::vector<bdd_t> diagrams = io::from_pla(manager, *file);
+    BOOST_REQUIRE_EQUAL(file->get_function_count(), diagrams.size());
+}
+
+BOOST_AUTO_TEST_SUITE_END()
+
 } // namespace teddy::tests
