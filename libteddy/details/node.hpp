@@ -271,7 +271,7 @@ public:
     [[nodiscard]]
     auto is_internal () const -> bool
     {
-        return this->is_used() && (bits_ & LeafM);
+        return this->is_used() && not this->is_terminal();
     }
 
     [[nodiscard]]
