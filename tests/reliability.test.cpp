@@ -180,7 +180,7 @@ using Fixtures                   = boost::mpl::vector<
     teddy::tests::imss_fixture<3>,
     teddy::tests::ifmss_fixture<3>>;
 
-BOOST_AUTO_TEST_SUITE(reliability_test)
+BOOST_AUTO_TEST_SUITE(reliability)
 
 BOOST_FIXTURE_TEST_CASE(probabilities_bss, teddy::tests::bss_fixture)
 {
@@ -368,7 +368,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
     auto const domains = manager.get_domains();
     auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
     auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
-    auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
+    auto actual1       = std::vector<double>(as_uindex(Fixture::stateCount_));
+    auto actual2       = std::vector<double>(as_uindex(Fixture::stateCount_));
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
@@ -377,13 +378,19 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
-        actual[as_uindex(j)] = manager.state_frequency(diagram, j);
+        actual1[as_uindex(j)] = manager.state_frequency(diagram, j);
+        actual2[as_uindex(j)] = manager.state_frequency_new(diagram, j);
     }
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
         BOOST_TEST(
-            actual[as_uindex(j)] == expected[as_uindex(j)],
+            actual1[as_uindex(j)] == expected[as_uindex(j)],
+            boost::test_tools::tolerance(FloatingTolerance)
+        );
+
+        BOOST_TEST(
+            actual2[as_uindex(j)] == expected[as_uindex(j)],
             boost::test_tools::tolerance(FloatingTolerance)
         );
     }
