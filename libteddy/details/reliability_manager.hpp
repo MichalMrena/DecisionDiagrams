@@ -299,7 +299,6 @@ public:
         diagram_t const& diagram
     ) -> symprobs::expression;
 #endif
-    // TODO calculate_state_frequency
     /**
      *  \brief Returns system state frequency of state \p state
      *  \param diagram Structure function
@@ -307,6 +306,11 @@ public:
      *  \return Frequency of system state \p state
      */
     auto state_frequency (diagram_t const& diagram, int32 state) -> double;
+
+    /**
+     *  \brief TODO
+     */
+    auto state_frequency_new (diagram_t const& diagram, int32 state) -> double;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative
@@ -502,6 +506,12 @@ private:
 
     auto to_mnf_impl (std::unordered_map<node_t*, node_t*>& memo, node_t* node)
         -> node_t*;
+
+    auto state_frequency_new_impl (
+        std::unordered_map<node_t*, double>& memo,
+        node_t* node,
+        int32 state
+    ) -> double;
 
     template<class FChange>
     auto dpld_impl (
@@ -782,6 +792,53 @@ auto reliability_manager<Degree, Domain>::state_frequency(
 }
 
 template<class Degree, class Domain>
+auto reliability_manager<Degree, Domain>::state_frequency_new(
+    diagram_t const& diagram,
+    int32 const state
+) -> double
+{
+    std::unordered_map<node_t*, double> memo;
+    node_t* const root = diagram.unsafe_get_root();
+    return this->state_frequency_new_impl(memo, root, state);
+}
+
+template<class Degree, class Domain>
+auto reliability_manager<Degree, Domain>::state_frequency_new_impl(
+    std::unordered_map<node_t*, double>& memo,
+    node_t* node,
+    int32 state
+) -> double
+{
+    if (node->is_terminal())
+    {
+        return node->get_value() == state ? 1.0 : 0.0;
+    }
+
+    auto const memoIt = memo.find(node);
+    if (memoIt != memo.end())
+    {
+        return memoIt->second;
+    }
+
+    double freq = 0.0;
+    int32 const nodeIndex = node->get_index();
+    int32 const domain = this->nodes_.get_domain(nodeIndex);
+    for (int32 k = 0; k < domain; ++k)
+    {
+        node_t* const son = node->get_son(k);
+        double const sonFreq = this->state_frequency_new_impl(
+            memo,
+            son,
+            state
+        );
+        freq += sonFreq * (1 / static_cast<double>(domain));
+    }
+
+    memo.emplace(node, freq);
+    return freq;
+}
+
+template<class Degree, class Domain>
 template<class FChange>
 auto reliability_manager<Degree, Domain>::dpld(
     var_change varChange,
@@ -807,7 +864,7 @@ auto reliability_manager<Degree, Domain>::dpld(
 
 template<class Degree, class Domain>
 template<class FChange>
-auto reliability_manager<Degree, Domain>::dpld_impl( // TODO rename to _step
+auto reliability_manager<Degree, Domain>::dpld_impl(
     dpld_cache& cache,
     var_change varChange,
     FChange fChange,
