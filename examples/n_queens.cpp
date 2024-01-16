@@ -147,7 +147,7 @@ void solve(int const n)
               << manager.get_node_count(result)
               << "\n";
     std::cout << "number of solutions: "
-              << manager.satisfy_count(1, result)
+              << manager.satisfy_count_old(1, result)
               << "\n";
 }
 

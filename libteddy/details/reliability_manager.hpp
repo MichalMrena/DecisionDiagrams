@@ -787,7 +787,7 @@ auto reliability_manager<Degree, Domain>::state_frequency(
     int32 const indexFrom  = 0;
     int32 const indexTo    = this->get_var_count();
     int64 const domainSize = this->nodes_.domain_product(indexFrom, indexTo);
-    return static_cast<double>(this->satisfy_count(state, diagram))
+    return static_cast<double>(this->satisfy_count_old(state, diagram))
          / static_cast<double>(domainSize);
 }
 
@@ -1036,7 +1036,7 @@ auto reliability_manager<Degree, Domain>::structural_importance(
     int32 const indexFrom  = 0;
     int32 const indexTo    = this->get_var_count();
     int64 const domainSize = this->nodes_.domain_product(indexFrom, indexTo);
-    return static_cast<double>(this->satisfy_count(1, dpld))
+    return static_cast<double>(this->satisfy_count_old(1, dpld))
          / static_cast<double>(domainSize);
 }
 

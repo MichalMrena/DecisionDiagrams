@@ -52,7 +52,7 @@ auto example_basic_usage () -> void
 
     // To calculate number of different variable assignments for which the
     // function evaluates to 1 we can use .satisfy_count.
-    long long sc = manager.satisfy_count(1, f);
+    long long sc = manager.satisfy_count_old(1, f);
 
     // We can also enumerate all variable assignments for which the
     // the function evaluates to 1.

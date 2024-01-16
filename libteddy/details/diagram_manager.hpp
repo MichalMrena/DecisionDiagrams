@@ -1,6 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_DIAGRAM_MANAGER_HPP
 #define LIBTEDDY_DETAILS_DIAGRAM_MANAGER_HPP
 
+#include <libteddy/details/memo.hpp>
 #include <libteddy/details/diagram.hpp>
 #include <libteddy/details/node_manager.hpp>
 #include <libteddy/details/operators.hpp>
@@ -350,6 +351,19 @@ public:
     auto satisfy_count (int32 value, diagram_t const& diagram) -> int64;
 
     /**
+     *  \brief Calculates number of variable assignments for which
+     *  the functions evaluates to certain value
+     *
+     *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
+     *
+     *  \param value Value of the function
+     *  \param diagram Diagram representing the function
+     *  \return Number of different variable assignments for which the
+     *  the function represented by \p d evaluates to \p val
+     */
+    auto satisfy_count_old (int32 value, diagram_t const& diagram) -> int64;
+
+    /**
      *  \brief Finds variable assignment for which diagram evaluates to \p value
      *
      *  Complexity is \c O(|n|) where \c |n| is the number of nodes.
@@ -650,8 +664,10 @@ private:
     }
 
 private:
-    // TODO namiesto mema by sa dali pouzit data,
-    // idealne keby data bolo iba pole bytov a dalo by sa tam ulozit cokolvek
+    template<class ValueType>
+    using node_memo = details::map_memo<ValueType, Data, Degree>;
+
+private:
 
     auto variable_impl (int32 index) -> node_t*;
 
@@ -664,6 +680,12 @@ private:
         Op operation,
         Node... nodes
     ) -> node_t*;
+
+    auto satisfy_count_impl (
+        node_memo<int64>& memo,
+        int32 value,
+        node_t* node
+    ) -> int64;
 
     template<class Vars>
     auto satisfy_one_impl (int32 value, Vars& vars, node_t* node) -> bool;
@@ -1129,6 +1151,55 @@ auto diagram_manager<Data, Degree, Domain>::evaluate(
 
 template<class Data, class Degree, class Domain>
 auto diagram_manager<Data, Degree, Domain>::satisfy_count(
+    int32 const value,
+    diagram_t const& diagram
+) -> int64
+{
+    node_memo<int64> memo;
+    node_t* const root = diagram.unsafe_get_root();
+    memo.init(root, nodes_.get_node_count());
+    int64 const stepResult = this->satisfy_count_impl(memo, value, root);
+    memo.finalize(root);
+    int32 const rootLevel = nodes_.get_level(root);
+    return stepResult * nodes_.domain_product(0, rootLevel);
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
+    node_memo<int64>& memo,
+    int32 const value,
+    node_t* const node
+) -> int64
+{
+    if (node->is_terminal())
+    {
+        return node->get_value() == value ? 1 : 0;
+    }
+
+    int64* memoized = memo.find(node);
+    if (memoized)
+    {
+        return *memoized;
+    }
+
+    int64 result           = 0;
+    int32 const nodeLevel  = nodes_.get_level(node);
+    int32 const nodeDomain = nodes_.get_domain(node);
+    for (int32 k = 0; k < nodeDomain; ++k)
+    {
+        node_t* const son     = node->get_son(k);
+        int32 const sonLevel  = nodes_.get_level(son);
+        int64 const diff      = nodes_.domain_product(nodeLevel + 1, sonLevel);
+        int64 const sonResult = this->satisfy_count_impl(memo, value, son);
+        result += sonResult * diff;
+    }
+
+    memo.put(node, result);
+    return result;
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::satisfy_count_old(
     int32 const value,
     diagram_t const& diagram
 ) -> int64
