@@ -150,6 +150,10 @@ public:
     auto to_dot_graph (std::ostream& ost) const -> void;
     auto to_dot_graph (std::ostream& ost, node_t* node) const -> void;
 
+    /**
+     *  \param levelFrom inclusive
+     *  \param levelTo exclusive
+     */
     [[nodiscard]] auto domain_product (int32 levelFrom, int32 levelTo) const
         -> int64;
 
