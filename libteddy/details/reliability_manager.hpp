@@ -305,12 +305,12 @@ public:
      *  \param state System state
      *  \return Frequency of system state \p state
      */
-    auto state_frequency (diagram_t const& diagram, int32 state) -> double;
+    auto state_frequency_old (diagram_t const& diagram, int32 state) -> double;
 
     /**
      *  \brief TODO
      */
-    auto state_frequency_new (diagram_t const& diagram, int32 state) -> double;
+    auto state_frequency (diagram_t const& diagram, int32 state) -> double;
 
     /**
      *  \brief Calculates Direct Partial Boolean Derivative
@@ -466,6 +466,8 @@ protected:
 private:
     using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
     using son_conainer = typename node_t::son_container;
+    template<class ValueType>
+    using node_memo = details::map_memo<ValueType, double, Degree>;
 
     // TODO not nice
     // same problem as n-ary apply, we will see...
@@ -507,8 +509,8 @@ private:
     auto to_mnf_impl (std::unordered_map<node_t*, node_t*>& memo, node_t* node)
         -> node_t*;
 
-    auto state_frequency_new_impl (
-        std::unordered_map<node_t*, double>& memo,
+    auto state_frequency_impl (
+        node_memo<double>& memo,
         node_t* node,
         int32 state
     ) -> double;
@@ -779,7 +781,7 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
 #endif
 
 template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::state_frequency(
+auto reliability_manager<Degree, Domain>::state_frequency_old(
     diagram_t const& diagram,
     int32 state
 ) -> double
@@ -792,19 +794,22 @@ auto reliability_manager<Degree, Domain>::state_frequency(
 }
 
 template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::state_frequency_new(
+auto reliability_manager<Degree, Domain>::state_frequency(
     diagram_t const& diagram,
     int32 const state
 ) -> double
 {
-    std::unordered_map<node_t*, double> memo;
+    node_memo<double> memo;
     node_t* const root = diagram.unsafe_get_root();
-    return this->state_frequency_new_impl(memo, root, state);
+    memo.init(root, this->get_node_count());
+    double const result = this->state_frequency_impl(memo, root, state);
+    memo.finalize(root);
+    return result;
 }
 
 template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::state_frequency_new_impl(
-    std::unordered_map<node_t*, double>& memo,
+auto reliability_manager<Degree, Domain>::state_frequency_impl(
+    node_memo<double>& memo,
     node_t* node,
     int32 state
 ) -> double
@@ -814,10 +819,10 @@ auto reliability_manager<Degree, Domain>::state_frequency_new_impl(
         return node->get_value() == state ? 1.0 : 0.0;
     }
 
-    auto const memoIt = memo.find(node);
-    if (memoIt != memo.end())
+    double* const memoized = memo.find(node);
+    if (memoized)
     {
-        return memoIt->second;
+        return *memoized;
     }
 
     double freq = 0.0;
@@ -826,7 +831,7 @@ auto reliability_manager<Degree, Domain>::state_frequency_new_impl(
     for (int32 k = 0; k < domain; ++k)
     {
         node_t* const son = node->get_son(k);
-        double const sonFreq = this->state_frequency_new_impl(
+        double const sonFreq = this->state_frequency_impl(
             memo,
             son,
             state
@@ -834,7 +839,7 @@ auto reliability_manager<Degree, Domain>::state_frequency_new_impl(
         freq += sonFreq * (1 / static_cast<double>(domain));
     }
 
-    memo.emplace(node, freq);
+    memo.put(node, freq);
     return freq;
 }
 

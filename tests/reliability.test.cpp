@@ -378,8 +378,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture)
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
     {
-        actual1[as_uindex(j)] = manager.state_frequency(diagram, j);
-        actual2[as_uindex(j)] = manager.state_frequency_new(diagram, j);
+        actual1[as_uindex(j)] = manager.state_frequency_old(diagram, j);
+        actual2[as_uindex(j)] = manager.state_frequency(diagram, j);
     }
 
     for (auto j = 0; j < Fixture::stateCount_; ++j)
