@@ -648,6 +648,8 @@ public:
 protected:
     using node_t        = typename diagram<Data, Degree>::node_t;
     using son_container = typename node_t::son_container;
+    template<class ValueType>
+    using node_memo = details::map_memo<ValueType, Data, Degree>;
 
 private:
     template<int32 Size>
@@ -671,10 +673,6 @@ private:
         }
         return true;
     }
-
-private:
-    template<class ValueType>
-    using node_memo = details::map_memo<ValueType, Data, Degree>;
 
 private:
 
@@ -1190,7 +1188,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
         return node->get_value() == value ? 1 : 0;
     }
 
-    int64* memoized = memo.find(node);
+    int64* const memoized = memo.find(node);
     if (memoized)
     {
         return *memoized;
@@ -1222,7 +1220,11 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln (
     node_memo<double> memo;
     node_t* const root = diagram.unsafe_get_root();
     memo.init(root, this->get_node_count());
-    double const result = this->satisfy_count_ln_impl(memo, root);
+    double result = this->satisfy_count_ln_impl(memo, root);
+    if (result >= 0.0)
+    {
+        result += nodes_.get_level(root);
+    }
     memo.finalize(root);
     return result;
 }
@@ -1242,7 +1244,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl (
         return node->get_value() == 0 ? -1.0 : 0.0;
     }
 
-    double* memoized = memo.find(node);
+    double* const memoized = memo.find(node);
     if (memoized)
     {
         return *memoized;
