@@ -715,7 +715,7 @@ private:
 
     template<class F>
     auto transform_impl (
-        std::unordered_map<node_t*, node_t*>& memo,
+        node_memo<node_t*>& memo,
         F transformer,
         node_t* node
     ) -> node_t*;
@@ -1574,9 +1574,11 @@ auto diagram_manager<Data, Degree, Domain>::transform(
     F transformer
 ) -> diagram_t
 {
-    std::unordered_map<node_t*, node_t*> memo;
-    node_t* const newRoot
-        = this->transform_impl(memo, transformer, diagram.unsafe_get_root());
+    node_memo<node_t*> memo;
+    node_t* const root = diagram.unsafe_get_root();
+    memo.init(root, nodes_.get_node_count());
+    node_t* const newRoot = this->transform_impl(memo, transformer, root);
+    memo.finalize(root);
     nodes_.run_deferred();
     return diagram_t(newRoot);
 }
@@ -1584,21 +1586,21 @@ auto diagram_manager<Data, Degree, Domain>::transform(
 template<class Data, class Degree, class Domain>
 template<class F>
 auto diagram_manager<Data, Degree, Domain>::transform_impl(
-    std::unordered_map<node_t*, node_t*>& memo,
+    node_memo<node_t*>& memo,
     F transformer,
     node_t* node
 ) -> node_t*
 {
-    auto const memoIt = memo.find(node);
-    if (memo.end() != memoIt)
-    {
-        return memoIt->second;
-    }
-
     if (node->is_terminal())
     {
         int32 const newVal = static_cast<int32>(transformer(node->get_value()));
         return nodes_.make_terminal_node(newVal);
+    }
+
+    node_t** const memoized = memo.find(node);
+    if (memoized)
+    {
+        return *memoized;
     }
 
     int32 const index  = node->get_index();
@@ -1613,7 +1615,7 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
         index,
         TEDDY_MOVE(sons)
     );
-    memo.emplace(node, newNode);
+    memo.put(node, newNode);
     return newNode;
 }
 

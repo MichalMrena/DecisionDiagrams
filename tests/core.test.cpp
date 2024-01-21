@@ -790,6 +790,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
     test_compare_eval(evalit, manager, diagram);
 }
 
+// TODO add transform test
+
 BOOST_AUTO_TEST_SUITE_END()
 
 BOOST_AUTO_TEST_SUITE(core_io)
