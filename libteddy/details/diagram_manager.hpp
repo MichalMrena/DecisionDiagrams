@@ -351,6 +351,15 @@ public:
     auto satisfy_count (int32 value, diagram_t const& diagram) -> int64;
 
     /**
+     *  \brief TODO
+     */
+    template<class Foo = void>
+    requires(is_bdd<Degree>)
+    auto satisfy_count_ln (
+        diagram_t const& diagram
+    ) -> utils::second_t<Foo, double>;
+
+    /**
      *  \brief Calculates number of variable assignments for which
      *  the functions evaluates to certain value
      *
@@ -639,6 +648,8 @@ public:
 protected:
     using node_t        = typename diagram<Data, Degree>::node_t;
     using son_container = typename node_t::son_container;
+    template<class ValueType>
+    using node_memo = details::map_memo<ValueType, Data, Degree>;
 
 private:
     template<int32 Size>
@@ -664,10 +675,6 @@ private:
     }
 
 private:
-    template<class ValueType>
-    using node_memo = details::map_memo<ValueType, Data, Degree>;
-
-private:
 
     auto variable_impl (int32 index) -> node_t*;
 
@@ -686,6 +693,11 @@ private:
         int32 value,
         node_t* node
     ) -> int64;
+
+    auto satisfy_count_ln_impl (
+        node_memo<double>& memo,
+        node_t* node
+    ) -> double;
 
     template<class Vars>
     auto satisfy_one_impl (int32 value, Vars& vars, node_t* node) -> bool;
@@ -1176,7 +1188,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
         return node->get_value() == value ? 1 : 0;
     }
 
-    int64* memoized = memo.find(node);
+    int64* const memoized = memo.find(node);
     if (memoized)
     {
         return *memoized;
@@ -1192,6 +1204,86 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
         int64 const diff      = nodes_.domain_product(nodeLevel + 1, sonLevel);
         int64 const sonResult = this->satisfy_count_impl(memo, value, son);
         result += sonResult * diff;
+    }
+
+    memo.put(node, result);
+    return result;
+}
+
+template<class Data, class Degree, class Domain>
+template<class Foo>
+requires(is_bdd<Degree>)
+auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln (
+    diagram_t const& diagram
+) -> utils::second_t<Foo, double>
+{
+    node_memo<double> memo;
+    node_t* const root = diagram.unsafe_get_root();
+    memo.init(root, this->get_node_count());
+    double result = this->satisfy_count_ln_impl(memo, root);
+    if (result >= 0.0)
+    {
+        result += nodes_.get_level(root);
+    }
+    memo.finalize(root);
+    return result;
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl (
+    node_memo<double>& memo,
+    node_t* const node
+) -> double
+{
+    // Implementation from https://sourceforge.net/projects/buddy/
+
+    static double const Ln2 = std::log(2);
+
+    if (node->is_terminal())
+    {
+        return node->get_value() == 0 ? -1.0 : 0.0;
+    }
+
+    double* const memoized = memo.find(node);
+    if (memoized)
+    {
+        return *memoized;
+    }
+
+    node_t* const son0 = node->get_son(0);
+    node_t* const son1 = node->get_son(1);
+    int32 const level  = nodes_.get_level(node);
+    int32 const level0 = nodes_.get_level(son0);
+    int32 const level1 = nodes_.get_level(son1);
+
+    double s1 = this->satisfy_count_ln_impl(memo, son0);
+    if (s1 >= 0)
+    {
+        s1 += level0 - level - 1;
+    }
+
+    double s2 = this->satisfy_count_ln_impl(memo, son1);
+    if (s2 >= 0)
+    {
+        s2 += level1 - level - 1;
+    }
+
+    double result;
+    if (s1 < 0.0)
+    {
+        result = s2;
+    }
+    else if (s2 < 0.0)
+    {
+        result = s1;
+    }
+    else if (s1 < s2)
+    {
+        result = s2 + std::log1p(std::pow(2.0, s1 - s2)) / Ln2;
+    }
+    else
+    {
+        result = s1 + std::log1p(std::pow(2.0, s2 - s1)) / Ln2;
     }
 
     memo.put(node, result);

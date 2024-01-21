@@ -5,10 +5,10 @@
 
 namespace teddy::utils
 {
-    char const* unit_str(std::chrono::nanoseconds) { return "ns"; }
-    char const* unit_str(std::chrono::microseconds){ return "µs"; }
-    char const* unit_str(std::chrono::milliseconds){ return "ms"; }
-    char const* unit_str(std::chrono::seconds)     { return "s";  }
+    inline char const* unit_str(std::chrono::nanoseconds) { return "ns"; }
+    inline char const* unit_str(std::chrono::microseconds){ return "µs"; }
+    inline char const* unit_str(std::chrono::milliseconds){ return "ms"; }
+    inline char const* unit_str(std::chrono::seconds)     { return "s";  }
 
     struct duration_measurement
     {
