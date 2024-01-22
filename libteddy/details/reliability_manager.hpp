@@ -1,6 +1,8 @@
 #ifndef LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 #define LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 
+#include "libteddy/details/node.hpp"
+#include "libteddy/details/types.hpp"
 #include <libteddy/details/diagram_manager.hpp>
 #include <libteddy/details/dplds.hpp>
 #include <libteddy/details/probabilities.hpp>
@@ -10,7 +12,6 @@
 #include <iterator>
 #include <unordered_map>
 #include <utility>
-#include <variant>
 #include <vector>
 
 namespace teddy
@@ -45,57 +46,22 @@ class reliability_manager : public diagram_manager<double, Degree, Domain>
 public:
     using diagram_t =
         typename diagram_manager<double, Degree, Domain>::diagram_t;
-    // TODO                          ^^^^^^
-    //                          details::bytes<max(sizeof(double),
-    //                          sizeof(expr))>
 
 public:
-    /**
-     *  \brief Calculates probabilities of system states 0 and 1
-     *
-     *  \p probs[i] must return probability that i-th component is in state 1
-     *  After a call to this method you can acces individual system
-     *  state probabilities using \c get_probability method.
-     *
-     *  \tparam Type that holds component state probabilities
-     *  \param probs vector of component state probabilities
-     *  \param diagram Structure function
-     */
-    template<probs::prob_vector Ps>
-    requires(details::is_bss<Degree>)
-    auto calculate_probabilities (Ps const& probs, diagram_t const& diagram)
-        -> void;
-
     /**
      *  \brief Calculates probabilities of all system states
      *
      *  \p probs[i][k] must return probability that i-th component is in state k
-     *  After a call to this method you can acces individual system
-     *  state probabilities using \c get_probability method.
+     *  Probability of system state \c j is at \c j -th index in the vector
      *
      *  \tparam Type that holds component state probabilities
      *  \param probs matrix of component state probabilities
      *  \param diagram Structure function
+     *  \return vector of terminal node probabilities
      */
     template<probs::prob_matrix Ps>
     auto calculate_probabilities (Ps const& probs, diagram_t const& diagram)
-        -> void;
-
-    /**
-     *  \brief Calculates and returns probability of system state 1
-     *
-     *  \p probs[i] must return probability that i-th component is in state 1
-     *
-     *  \tparam Type that holds component state probabilities
-     *  \param probs vector of component state probabilities
-     *  \param diagram Structure function
-     *  \return Probability that system described by \p diagram is in
-     *  state 1 given probabilities \p probs
-     */
-    template<probs::prob_vector Ps>
-    requires(details::is_bss<Degree>)
-    auto calculate_probability (Ps const& probs, diagram_t const& diagram)
-        -> double;
+        -> std::vector<double>;
 
     /**
      *  \brief Calculates and returns probability of a system state \p state
@@ -106,7 +72,7 @@ public:
      *  \param state System state
      *  \param probs matrix of component state probabilities
      *  \param diagram Structure function
-     *  \return Probability that system described by \p diagran is in
+     *  \return Probability that system described by \p diagram is in
      *  state \p state given probabilities \p probs
      */
     template<probs::prob_matrix Ps>
@@ -115,20 +81,6 @@ public:
         Ps const& probs,
         diagram_t const& diagram
     ) -> double;
-
-    /**
-     *  \brief Returns probability of given system state.
-     *
-     *  Call to \c calculate_probabilities must proceed call to this
-     *  funtion otherwise the result is undefined. This is a bit
-     *  unfortunate but the idea is that probabilities are calculated
-     *  once using \c calculate_probabilities and later accessed using
-     *  \c get_probability
-     *
-     *  \param state System state
-     *  \return Probability of a system state \p state
-     */
-    [[nodiscard]] auto get_probability (int32 state) const -> double;
 
     /**
      *  \brief Calculates and returns availability of a BSS.
@@ -166,39 +118,6 @@ public:
     ) -> double;
 
     /**
-     *  \brief Returns availability of a BSS
-     *
-     *  Call to \c calculate_probabilities must proceed call to this
-     *  funtion otherwise the result is undefined. This is a bit
-     *  unfortunate but the idea is that probabilities are calculated
-     *  once using \c calculate_probabilities and availability and
-     *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability
-     *
-     *  \return System availability
-     */
-    template<class Foo = void>
-    requires(details::is_bss<Degree>)
-    [[nodiscard]] auto get_availability () const
-        -> utils::second_t<Foo, double>;
-
-    /**
-     *  \brief Returns system availability with
-     *  respect to the system state \p state
-     *
-     *  Call to \c calculate_probabilities must proceed call to this
-     *  funtion otherwise the result is undefined. This is a bit
-     *  unfortunate but the idea is that probabilities are calculated
-     *  once using \c calculate_probabilities and availability and
-     *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability
-     *
-     *  \param state System state
-     *  \return System availability with respect to the system state \p state
-     */
-    [[nodiscard]] auto get_availability (int32 state) const -> double;
-
-    /**
      *  \brief Calculates and returns unavailability of a BSS
      *
      *  \p probs[i] must return probability that i-th component is in state 1
@@ -232,39 +151,6 @@ public:
         Ps const& probs,
         diagram_t const& diagram
     ) -> double;
-
-    /**
-     *  \brief Returns system unavailability of a BSS
-     *
-     *  Call to \c calculate_probabilities must proceed call to this
-     *  funtion otherwise the result is undefined. This is a bit
-     *  unfortunate but the idea is that probabilities are calculated
-     *  once using \c calculate_probabilities and availability and
-     *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability
-     *
-     *  \return System availability
-     */
-    template<class Foo = void>
-    requires(details::is_bss<Degree>)
-    auto get_unavailability () -> utils::second_t<Foo, double>;
-
-    /**
-     *  \brief Returns system unavailability with
-     *  respect to the system state \p state
-     *
-     *  Call to \c calculate_probabilities must proceed call to this
-     *  funtion otherwise the result is undefined. This is a bit
-     *  unfortunate but the idea is that probabilities are calculated
-     *  once using \c calculate_probabilities and availability and
-     *  unavailability are later accessed using \c get_availability
-     *  and \c get_unavailability
-     *
-     *  \param state System state
-     *  \return System unavailability with respect to
-     *  the system state \p state
-     */
-    [[nodiscard]] auto get_unavailability (int32 state) -> double;
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
     // TODO cmp post a level verzie
@@ -546,44 +432,45 @@ private:
         node_t* node
     ) -> double;
 
-    template<probs::prob_matrix Ps>
-    auto calculate_ntps_level_impl (Ps const& probs, node_t* root) -> void;
-};
+    template<class Ps>
+    auto ntps_level (Ps const& probs, node_t* root) -> node_memo<double>;
 
-template<class Degree, class Domain>
-template<probs::prob_vector Ps>
-requires(details::is_bss<Degree>)
-auto reliability_manager<Degree, Domain>::calculate_probabilities(
-    Ps const& probs,
-    diagram_t const& diagram
-) -> void
-{
-    this->calculate_probabilities(probs::as_matrix(probs), diagram);
-}
+    template<class Ps>
+    auto ntps_level_impl (
+        node_memo<double>& memo,
+        Ps const& probs,
+        node_t* root
+    ) -> void;
+};
 
 template<class Degree, class Domain>
 template<probs::prob_matrix Ps>
 auto reliability_manager<Degree, Domain>::calculate_probabilities(
     Ps const& probs,
     diagram_t const& diagram
-) -> void
+) -> std::vector<double>
 {
-    this->calculate_ntps_level_impl(probs, diagram.unsafe_get_root());
-}
+    node_t* const root           = diagram.unsafe_get_root();
+    node_memo<double> const memo = this->ntps_level(probs, root);
+    std::vector<double> result;
 
-template<class Degree, class Domain>
-template<probs::prob_vector Ps>
-requires(details::is_bss<Degree>)
-auto reliability_manager<Degree, Domain>::calculate_probability(
-    Ps const& probs,
-    diagram_t const& diagram
-) -> double
-{
-    return this->calculate_probability(
-        1,
-        probs::details::vector_to_matrix_wrap(probs),
-        diagram
-    );
+    if constexpr (degrees::is_fixed<Degree>::value)
+    {
+        result.resize(Degree::value);
+    }
+
+    this->nodes_.for_each_terminal_node([&memo, &result](node_t* const node)
+    {
+        int32 const value = node->get_value();
+        if (value >= ssize(result))
+        {
+            result.resize(value + 1);
+        }
+        double* const terminalProb = memo.find(node);
+        result[as_uindex(value)] = terminalProb ? *terminalProb : 0.0;
+    });
+
+    return result;
 }
 
 template<class Degree, class Domain>
@@ -595,14 +482,6 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
 ) -> double
 {
     return this->ntps_post({state}, probs, diagram.unsafe_get_root());
-}
-
-template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::get_probability(int32 const state
-) const -> double
-{
-    node_t* const node = this->nodes_.get_terminal_node(state);
-    return node ? node->get_data() : 0.0;
 }
 
 template<class Degree, class Domain>
@@ -642,33 +521,6 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 }
 
 template<class Degree, class Domain>
-template<class Foo>
-requires(details::is_bss<Degree>)
-auto reliability_manager<Degree, Domain>::get_availability() const
-    -> utils::second_t<Foo, double>
-{
-    node_t* const node = this->nodes_.get_terminal_node(1);
-    return node ? node->get_data() : 0;
-}
-
-template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::get_availability(int32 const state
-) const -> double
-{
-    double result = 0;
-    this->nodes_.for_each_terminal_node(
-        [state, &result] (node_t* const node)
-        {
-            if (node->get_value() >= state)
-            {
-                result += node->get_data();
-            }
-        }
-    );
-    return result;
-}
-
-template<class Degree, class Domain>
 template<probs::prob_matrix Ps, class Foo>
 requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
@@ -698,32 +550,6 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
         }
     );
     return this->ntps_post(states, probs, diagram.unsafe_get_root());
-}
-
-template<class Degree, class Domain>
-template<class Foo>
-requires(details::is_bss<Degree>)
-auto reliability_manager<Degree, Domain>::get_unavailability()
-    -> utils::second_t<Foo, double>
-{
-    return this->get_unavailability(1);
-}
-
-template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::get_unavailability(int32 const state)
-    -> double
-{
-    double result = 0;
-    this->nodes_.for_each_terminal_node(
-        [state, &result] (node_t* const node)
-        {
-            if (node->get_value() < state)
-            {
-                result += node->get_data();
-            }
-        }
-    );
-    return result;
 }
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
@@ -804,11 +630,9 @@ auto reliability_manager<Degree, Domain>::state_frequency(
     int32 const state
 ) -> double
 {
-    node_memo<double> memo;
-    node_t* const root = diagram.unsafe_get_root();
-    memo.init(root, this->get_node_count());
-    double const result = this->state_frequency_impl(memo, root, state);
-    memo.finalize(root);
+    node_t* const root     = diagram.unsafe_get_root();
+    node_memo<double> memo = this->template make_node_memo<double>(root) ;
+    double const result    = this->state_frequency_impl(memo, root, state);
     return result;
 }
 
@@ -1167,10 +991,8 @@ auto reliability_manager<Degree, Domain>::ntps_post(
     node_t* const root
 ) -> double
 {
-    node_memo<double> memo;
-    memo.init(root, this->nodes_.get_node_count());
-    double const result = this->ntps_post_impl(memo, values, probs, root);
-    memo.finalize(root);
+    node_memo<double> memo = this->template make_node_memo<double>(root);
+    double const result    = this->ntps_post_impl(memo, values, probs, root);
     return result;
 }
 
@@ -1217,38 +1039,64 @@ auto reliability_manager<Degree, Domain>::ntps_post_impl(
 }
 
 template<class Degree, class Domain>
-template<probs::prob_matrix Ps>
-auto reliability_manager<Degree, Domain>::calculate_ntps_level_impl(
+template<class Ps>
+auto reliability_manager<Degree, Domain>::ntps_level(
+    Ps const& probs,
+    node_t* const root
+) -> node_memo<double>
+{
+    node_memo<double> memo = this->template make_node_memo<double>(root);
+    this->ntps_level_impl(memo, probs, root);
+    return memo;
+}
+
+template<class Degree, class Domain>
+template<class Ps>
+auto reliability_manager<Degree, Domain>::ntps_level_impl(
+    node_memo<double>& memo,
     Ps const& probs,
     node_t* const root
 ) -> void
 {
-    this->nodes_.traverse_pre(
-        root,
-        [] (node_t* const node) { node->get_data() = 0.0; }
-    );
-    this->nodes_.for_each_terminal_node([] (node_t* const node)
-                                        { node->get_data() = 0.0; });
-    root->get_data() = 1.0;
+    int32 const bucketCount = this->get_var_count() + 1;
+    std::vector<std::vector<node_t*>> buckets(as_usize(bucketCount));
+    auto const endBucket = buckets.end();
+    auto bucket          = buckets.begin() + this->get_level(root);
+    bucket->push_back(root);
+    memo.put(root, 1.0);
 
-    this->nodes_.traverse_level(
-        root,
-        [this, &probs] (node_t* const node)
+    while (bucket != endBucket)
+    {
+        for (node_t* const node : *bucket)
         {
-            if (node->is_internal())
+            if (node->is_terminal())
             {
-                int32 const nodeIndex = node->get_index();
-                int32 const domain    = this->nodes_.get_domain(nodeIndex);
-                for (int32 k = 0; k < domain; ++k)
+                continue;
+            }
+
+            double const nodeProb = *memo.find(node);
+            int32 const index     = node->get_index();
+            int32 const domain    = this->get_domain(node);
+            for (int32 k = 0; k < domain; ++k)
+            {
+                node_t* const son = node->get_son(k);
+                double* sonProb   = memo.find(son);
+                if (not sonProb)
                 {
-                    node_t* const son = node->get_son(k);
-                    son->get_data()
-                        += node->get_data()
-                         * probs[as_uindex(nodeIndex)][as_uindex(k)];
+                    sonProb = memo.put(son, 0.0);
+                    int32 const sonLevel = this->get_level(son);
+                    buckets[as_uindex(sonLevel)].push_back(son);
                 }
+
+                *sonProb += nodeProb * probs[as_uindex(index)][as_uindex(k)];
             }
         }
-    );
+
+        do
+        {
+            ++bucket;
+        } while (bucket != endBucket && bucket->empty());
+    }
 }
 
 template<class Degree, class Domain>

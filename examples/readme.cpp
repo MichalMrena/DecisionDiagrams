@@ -1,4 +1,5 @@
 #include <libteddy/core.hpp>
+#include <libteddy/core_io.hpp>
 #include <libteddy/reliability.hpp>
 #include <array>
 #include <cassert>
@@ -77,7 +78,7 @@ auto example_reliability () -> void
 
     // Alias for the type of the diagram, or you can just use auto.
     using mdd_t = teddy::ifmss_manager<3>::diagram_t;
-    mdd_t sf = manager.from_vector(vector);
+    mdd_t sf = teddy::io::from_vector(manager, vector);
 
     // We can use different combinations of std::vector, std::array or similar containers.
     // We chose vector of arrays here to hold component state probabilities.

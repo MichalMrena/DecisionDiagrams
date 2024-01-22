@@ -742,6 +742,10 @@ private:
     auto from_vector (I first, S last) -> diagram_t;
 
 protected:
+    template<class ValueType>
+    auto make_node_memo (node_t* const root) -> node_memo<ValueType>;
+
+protected:
     /**
      *  \brief Initializes diagram manager.
      *
@@ -1167,12 +1171,10 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
     diagram_t const& diagram
 ) -> int64
 {
-    node_memo<int64> memo;
-    node_t* const root = diagram.unsafe_get_root();
-    memo.init(root, nodes_.get_node_count());
+    node_t* const root     = diagram.unsafe_get_root();
+    node_memo<int64> memo  = this->make_node_memo<int64>(root);
     int64 const stepResult = this->satisfy_count_impl(memo, value, root);
-    memo.finalize(root);
-    int32 const rootLevel = nodes_.get_level(root);
+    int32 const rootLevel  = nodes_.get_level(root);
     return stepResult * nodes_.domain_product(0, rootLevel);
 }
 
@@ -1217,15 +1219,13 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln (
     diagram_t const& diagram
 ) -> utils::second_t<Foo, double>
 {
-    node_memo<double> memo;
-    node_t* const root = diagram.unsafe_get_root();
-    memo.init(root, this->get_node_count());
-    double result = this->satisfy_count_ln_impl(memo, root);
+    node_t* const root     = diagram.unsafe_get_root();
+    node_memo<double> memo = this->make_node_memo<double>(root);
+    double result          = this->satisfy_count_ln_impl(memo, root);
     if (result >= 0.0)
     {
         result += nodes_.get_level(root);
     }
-    memo.finalize(root);
     return result;
 }
 
@@ -1666,11 +1666,9 @@ auto diagram_manager<Data, Degree, Domain>::transform(
     F transformer
 ) -> diagram_t
 {
-    node_memo<node_t*> memo;
-    node_t* const root = diagram.unsafe_get_root();
-    memo.init(root, nodes_.get_node_count());
-    node_t* const newRoot = this->transform_impl(memo, transformer, root);
-    memo.finalize(root);
+    node_t* const root      = diagram.unsafe_get_root();
+    node_memo<node_t*> memo = this->make_node_memo<node_t*>(root);
+    node_t* const newRoot   = this->transform_impl(memo, transformer, root);
     nodes_.run_deferred();
     return diagram_t(newRoot);
 }
@@ -1944,6 +1942,16 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
 
     assert(ssize(stack) == 1);
     return diagram_t(stack.back().node);
+}
+
+template<class Data, class Degree, class Domain>
+template<class ValueType>
+auto diagram_manager<Data, Degree, Domain>::make_node_memo(
+    node_t* const
+) -> node_memo<ValueType>
+{
+    // just map memo for now
+    return node_memo<ValueType>(this->get_node_count());
 }
 
 namespace detail

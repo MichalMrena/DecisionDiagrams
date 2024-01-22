@@ -187,6 +187,7 @@ public:
     template<class NodeOp>
     auto traverse_post (node_t* rootNode, NodeOp operation) const -> void;
 
+    // TODO bude toto este treba?
     template<class NodeOp>
     auto traverse_level (node_t* rootNode, NodeOp operation) const -> void;
 

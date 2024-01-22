@@ -3,6 +3,7 @@
 
 #include <libteddy/details/node.hpp>
 #include <libteddy/details/node_manager.hpp>
+#include <libteddy/details/tools.hpp>
 
 #include <unordered_map>
 
@@ -12,32 +13,48 @@ namespace teddy::details
  *  \brief TODO
  */
 template<class ValueType, class Data, class Degree, class Domain>
-class node_memo
+class in_node_memo
 {
 public:
     using node_t = node<Data, Degree>;
 
 public:
-    node_memo (node_manager<Data, Degree, Domain> const& manager) :
+    in_node_memo(
+        node_t* const root,
+        node_manager<Data, Degree, Domain> const& manager
+    ) :
+        root_(root),
         manager_(&manager)
     {
     }
 
-    auto init (node_t* const, int64 const) -> void
+    in_node_memo(in_node_memo&& other) :
+        root_(utils::exchange(other.root_, nullptr)),
+        manager_(utils::exchange(other.manager_, nullptr))
     {
     }
 
-    auto finalize (node_t* const root) -> void
+    ~in_node_memo()
     {
-        this->finalize_impl(root);
+        if (root_)
+        {
+            this->finalize_impl(root_);
+        }
     }
 
     auto find (node_t* const key) -> ValueType*
     {
-        // TODO
+        // TODO if not marked then nullptr
         return nullptr;
     }
 
+    /**
+     *  \brief Puts (key, value) into the memo
+     *  \param key key
+     *  \param value value
+     *  \return Pointer to the place where \p value is stored
+     *          Guaranteed to be valid until next call to \c put
+     */
     auto put (node_t* const key, ValueType const& value) -> void
     {
         // TODO
@@ -52,8 +69,8 @@ private:
             return;
         }
 
-        int32 const nodeDomain = manager_->get_domain(node);
-        for (int32 k = 0; k < nodeDomain; ++k)
+        int32 const domain = manager_->get_domain(node);
+        for (int32 k = 0; k < domain; ++k)
         {
             node_t* const son = node->get_son(k);
             if (node->is_marked() != son->is_marked())
@@ -64,6 +81,7 @@ private:
     }
 
 private:
+    node_t* root_;
     node_manager<Data, Degree, Domain> const* manager_;
 };
 
@@ -77,13 +95,9 @@ public:
     using node_t = node<Data, Degree>;
 
 public:
-    auto init (node_t* const, int64 const /*nodeCount*/) -> void
+    map_memo(int64 const /*nodeCount*/)
     {
         // TODO this one could reserve buckets
-    }
-
-    auto finalize (node_t* const) -> void
-    {
     }
 
     auto find (node_t* const key) -> ValueType*
@@ -92,9 +106,17 @@ public:
         return it != map_.end() ? &(it->second) : nullptr;
     }
 
-    auto put (node_t* const key, ValueType const& value) -> void
+    /**
+     *  \brief Puts (key, value) into the memo
+     *  \param key key
+     *  \param value value
+     *  \return Pointer to the place where \p value is stored
+     *          Guaranteed to be valid until next call to \c put
+     */
+    auto put (node_t* const key, ValueType const& value) -> ValueType*
     {
-        map_.emplace(key, value);
+        auto const pair = map_.emplace(key, value);
+        return &pair->first->second;
     }
 
 private:
