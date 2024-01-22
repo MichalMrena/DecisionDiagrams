@@ -531,11 +531,19 @@ private:
         node_t* node
     ) -> node_t*;
 
-    template<probs::prob_matrix Ps>
-    auto calculate_ntps_post_impl (
+    template<class Ps>
+    auto ntps_post (
         std::vector<int32> const& selected,
         Ps const& probs,
         node_t* root
+    ) -> double;
+
+    template<class Ps>
+    auto ntps_post_impl (
+        node_memo<double>& memo,
+        std::vector<int32> const& selected,
+        Ps const& probs,
+        node_t* node
     ) -> double;
 
     template<probs::prob_matrix Ps>
@@ -586,8 +594,7 @@ auto reliability_manager<Degree, Domain>::calculate_probability(
     diagram_t const& diagram
 ) -> double
 {
-    return this
-        ->calculate_ntps_post_impl({state}, probs, diagram.unsafe_get_root());
+    return this->ntps_post({state}, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -631,8 +638,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
             }
         }
     );
-    return this
-        ->calculate_ntps_post_impl(states, probs, diagram.unsafe_get_root());
+    return this->ntps_post(states, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -691,8 +697,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
             }
         }
     );
-    return this
-        ->calculate_ntps_post_impl(states, probs, diagram.unsafe_get_root());
+    return this->ntps_post(states, probs, diagram.unsafe_get_root());
 }
 
 template<class Degree, class Domain>
@@ -1155,45 +1160,60 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 }
 
 template<class Degree, class Domain>
-template<probs::prob_matrix Ps>
-auto reliability_manager<Degree, Domain>::calculate_ntps_post_impl(
-    std::vector<int32> const& selectedValues,
+template<class Ps>
+auto reliability_manager<Degree, Domain>::ntps_post(
+    std::vector<int32> const& values,
     Ps const& probs,
     node_t* const root
 ) -> double
 {
-    this->nodes_.for_each_terminal_node([] (node_t* const node)
-                                        { node->get_data() = 0.0; });
+    node_memo<double> memo;
+    memo.init(root, this->nodes_.get_node_count());
+    double const result = this->ntps_post_impl(memo, values, probs, root);
+    memo.finalize(root);
+    return result;
+}
 
-    for (int32 const selectedValue : selectedValues)
+template<class Degree, class Domain>
+template<class Ps>
+auto reliability_manager<Degree, Domain>::ntps_post_impl(
+    node_memo<double>& memo,
+    std::vector<int32> const& values,
+    Ps const& probs,
+    node_t* const node
+) -> double
+{
+    if (node->is_terminal())
     {
-        node_t* const node = this->nodes_.get_terminal_node(selectedValue);
-        if (node)
+        int32 const nodeValue = node->get_value();
+        for (int32 const terminalValue : values)
         {
-            node->get_data() = 1.0;
-        }
-    }
-
-    this->nodes_.traverse_post(
-        root,
-        [this, &probs] (node_t* const node) mutable
-        {
-            if (not node->is_terminal())
+            if (nodeValue == terminalValue)
             {
-                node->get_data()      = 0.0;
-                int32 const nodeIndex = node->get_index();
-                int32 const domain    = this->nodes_.get_domain(nodeIndex);
-                for (int32 k = 0; k < domain; ++k)
-                {
-                    node_t* const son = node->get_son(k);
-                    node->get_data()
-                        += son->get_data()
-                         * probs[as_uindex(nodeIndex)][as_uindex(k)];
-                }
+                return 1.0;
             }
         }
-    );
-    return root->get_data();
+        return 0.0;
+    }
+
+    double* const memoized = memo.find(node);
+    if (memoized)
+    {
+        return *memoized;
+    }
+
+    double result      = 0.0;
+    int32 const index  = node->get_index();
+    int32 const domain = this->nodes_.get_domain(index);
+    for (int32 k = 0; k < domain; ++k)
+    {
+        node_t* const son = node->get_son(k);
+        double const sonProb = this->ntps_post_impl(memo, values, probs, son);
+        result += sonProb * probs[as_uindex(index)][as_uindex(k)];
+    }
+
+    memo.put(node, result);
+    return result;
 }
 
 template<class Degree, class Domain>
