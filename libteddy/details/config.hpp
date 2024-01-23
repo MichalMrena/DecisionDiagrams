@@ -31,4 +31,14 @@
  */
 // #define LIBTEDDY_SYMBOLIC_RELIABILITY
 
+/**
+ *  Enables arbitrary precision integer arithmetic
+ *  See the documentation for dependencies
+ *
+ *  This option is here just for the sake of completness, it should
+ *  only be set in the root CMakeLists.txt since it adds
+ *  some additional linking flags
+ */
+// #define LIBTEDDY_ARBITRARY_PRECISION
+
 #endif

@@ -25,12 +25,22 @@ project(
     LANGUAGES   CXX
 )
 
+set(
+    CMAKE_MODULE_PATH
+        ${CMAKE_MODULE_PATH}
+        "${CMAKE_SOURCE_DIR}/cmake/modules"
+)
+
 # TeDDy library target
 
 ### Requires CLN and GiNaC, see README
 option(LIBTEDDY_SYMBOLIC_RELIABILITY "Enable symbolic expressions" OFF)
-# TODO pridat option na GMP int -> alias long_t
+
+### Requires GMP, see README
+option(LIBTEDDY_ARBITRARY_PRECISION  "Enable GMP library"          OFF)
+
 option(LIBTEDDY_VERBOSE              "Enable verbose output"       OFF)
+
 option(LIBTEDDY_COLLECT_STATS        "Enable stat collection"      OFF)
 
 add_library(
@@ -69,10 +79,25 @@ if(LIBTEDDY_SYMBOLIC_RELIABILITY)
             "-lginac"
             "-lcln"
     )
+endif()
 
-    target_link_options(
-        teddy INTERFACE ${LIBTEDDY_LINK_OPTIONS}
+if(LIBTEDDY_ARBITRARY_PRECISION)
+    find_package(
+        GMP REQUIRED
     )
+
+    target_compile_definitions(
+        teddy INTERFACE LIBTEDDY_ARBITRARY_PRECISION
+    )
+
+    target_link_libraries(
+        teddy INTERFACE ${GMP_C_LIBRARIES} ${GMP_CXX_LIBRARIES}
+    )
+
+    # string(
+    #     JOIN ";" LIBTEDDY_LINK_OPTIONS
+    #         "-lgmp"
+    # )
 endif()
 
 if(LIBTEDDY_VERBOSE)
@@ -86,6 +111,10 @@ if(LIBTEDDY_COLLECT_STATS)
         teddy INTERFACE LIBTEDDY_COLLECT_STATS
     )
 endif()
+
+target_link_options(
+    teddy INTERFACE ${LIBTEDDY_LINK_OPTIONS}
+)
 
 # TeDDy library install
 

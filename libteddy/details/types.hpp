@@ -4,12 +4,23 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <libteddy/details/config.hpp>
+
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+#include <gmpxx.h>
+#endif
+
 namespace teddy
 {
 using int32                          = std::int32_t;
 using int64                          = std::int64_t;
 using uint32                         = std::uint32_t;
 using uint64                         = std::uint64_t;
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+using longint                        = mpz_class;
+#else
+using longint                        = std::int64_t;
+#endif
 
 inline constexpr int32 Undefined     = ~(1 << (8 * sizeof(int32) - 1));
 inline constexpr int32 Nondetermined = Undefined - 1;

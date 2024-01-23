@@ -1,8 +1,6 @@
 #ifndef LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 #define LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 
-#include "libteddy/details/node.hpp"
-#include "libteddy/details/types.hpp"
 #include <libteddy/details/diagram_manager.hpp>
 #include <libteddy/details/dplds.hpp>
 #include <libteddy/details/probabilities.hpp>
