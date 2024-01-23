@@ -154,8 +154,10 @@ public:
      *  \param levelFrom inclusive
      *  \param levelTo exclusive
      */
-    [[nodiscard]] auto domain_product (int32 levelFrom, int32 levelTo) const
-        -> int64;
+     template<class Int>
+    [[nodiscard]]
+    auto domain_product (int32 levelFrom, int32 levelTo) const
+        -> Int;
 
     template<class NodeOp>
     auto for_each_son (node_t* node, NodeOp&& operation) const -> void;
@@ -698,22 +700,23 @@ auto node_manager<Data, Degree, Domain>::to_dot_graph(
 }
 
 template<class Data, class Degree, class Domain>
+template<class Int>
 auto node_manager<Data, Degree, Domain>::domain_product(
     int32 const levelFrom,
     int32 const levelTo
-) const -> int64
+) const -> Int
 {
     if constexpr (domains::is_fixed<Domain>::value && Degree::value == 2)
     {
-        return int64(1) << (levelTo - levelFrom);
+        return Int(1) << (levelTo - levelFrom);
     }
     else if constexpr (domains::is_fixed<Domain>::value)
     {
-        return utils::int_pow(Domain::value, levelTo - levelFrom);
+        return utils::int_pow(Int(Domain::value), levelTo - levelFrom);
     }
     else
     {
-        int64 product = 1;
+        Int product = 1;
         for (int32 level = levelFrom; level < levelTo; ++level)
         {
             product *= domains_[levelToIndex_[as_uindex(level)]];

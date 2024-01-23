@@ -1,9 +1,11 @@
+#include <gmpxx.h>
 #include <libteddy/reliability.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
 #include <nanobench/nanobench.h>
 #include <iomanip>
 #include <iostream>
+#include "libteddy/details/types.hpp"
 #include "utils.hpp"
 
 
@@ -66,23 +68,15 @@ auto compare (
         // ; nodeCount
         std::cout << manager.get_node_count(diagram) << Sep;
 
-        if (varCount < 63)
-        {
-            utils::tick(timeNaive);
-            long long const sc = manager.satisfy_count(1, diagram);
-            long long const ds = static_cast<long long>(1) << varCount;
-            double const td1 = static_cast<double>(sc) / static_cast<double>(ds);
-            ankerl::nanobench::doNotOptimizeAway(td1);
-            utils::tock(timeNaive);
+        utils::tick(timeNaive);
+        mpz_class sc  = manager.satisfy_count(1, diagram);
+        mpz_class ds  = teddy::longint(1) << as_usize(varCount);
+        mpf_class td1 = mpf_class(sc) / mpf_class(ds);
+        ankerl::nanobench::doNotOptimizeAway(td1);
+        utils::tock(timeNaive);
 
-            // ; freq-naive
-            std::cout << td1 << Sep;
-        }
-        else
-        {
-            // ; freq-naive
-            std::cout << " - " << Sep;
-        }
+        // ; freq-naive
+        std::cout << td1 << Sep;
 
         utils::tick(timeLogNaive);
         double const lnsc = manager.satisfy_count_ln(diagram);
@@ -116,7 +110,7 @@ auto compare (
 auto main () -> int
 {
     std::ranlux48 rng(59486);
-    int const Replications = 100;
+    int const Replications = 1;
     auto const VarCounts = {10, 30, 60, 80, 90, 100};
     bool printHeader = true;
     for (int const varCount : VarCounts)

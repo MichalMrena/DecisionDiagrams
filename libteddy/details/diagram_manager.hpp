@@ -348,7 +348,7 @@ public:
      *  \return Number of different variable assignments for which the
      *  the function represented by \p d evaluates to \p val
      */
-    auto satisfy_count (int32 value, diagram_t const& diagram) -> int64;
+    auto satisfy_count (int32 value, diagram_t const& diagram) -> longint;
 
     /**
      *  \brief TODO
@@ -688,11 +688,12 @@ private:
         Node... nodes
     ) -> node_t*;
 
+    template<class Int>
     auto satisfy_count_impl (
-        node_memo<int64>& memo,
+        node_memo<Int>& memo,
         int32 value,
         node_t* node
-    ) -> int64;
+    ) -> Int;
 
     auto satisfy_count_ln_impl (
         node_memo<double>& memo,
@@ -1169,42 +1170,54 @@ template<class Data, class Degree, class Domain>
 auto diagram_manager<Data, Degree, Domain>::satisfy_count(
     int32 const value,
     diagram_t const& diagram
-) -> int64
+) -> longint
 {
-    node_t* const root     = diagram.unsafe_get_root();
-    node_memo<int64> memo  = this->make_node_memo<int64>(root);
-    int64 const stepResult = this->satisfy_count_impl(memo, value, root);
-    int32 const rootLevel  = nodes_.get_level(root);
-    return stepResult * nodes_.domain_product(0, rootLevel);
+    node_t* const root = diagram.unsafe_get_root();
+    longint stepResult = 0;
+    if (this->get_var_count() < 63)
+    {
+        node_memo<int64> memo = this->make_node_memo<int64>(root);
+        stepResult = this->satisfy_count_impl<int64>(memo, value, root);
+    }
+    else
+    {
+        node_memo<longint> memo = this->make_node_memo<longint>(root);
+        stepResult = this->satisfy_count_impl<longint>(memo, value, root);
+    }
+    int32 const rootLevel = nodes_.get_level(root);
+    return stepResult * nodes_.template domain_product<longint>(0, rootLevel);
 }
 
 template<class Data, class Degree, class Domain>
+template<class Int>
 auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
-    node_memo<int64>& memo,
+    node_memo<Int>& memo,
     int32 const value,
     node_t* const node
-) -> int64
+) -> Int
 {
     if (node->is_terminal())
     {
         return node->get_value() == value ? 1 : 0;
     }
 
-    int64* const memoized = memo.find(node);
+    Int* const memoized = memo.find(node);
     if (memoized)
     {
         return *memoized;
     }
 
-    int64 result           = 0;
+    Int result             = 0;
     int32 const nodeLevel  = nodes_.get_level(node);
     int32 const nodeDomain = nodes_.get_domain(node);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         node_t* const son     = node->get_son(k);
         int32 const sonLevel  = nodes_.get_level(son);
-        int64 const diff      = nodes_.domain_product(nodeLevel + 1, sonLevel);
-        int64 const sonResult = this->satisfy_count_impl(memo, value, son);
+        Int const diff        = nodes_.template domain_product<Int>(
+            nodeLevel + 1, sonLevel
+        );
+        Int const sonResult   = this->satisfy_count_impl(memo, value, son);
         result += sonResult * diff;
     }
 
