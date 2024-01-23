@@ -128,7 +128,7 @@ public:
      *  \param diagran Structure function
      *  \return System unavailtability
      */
-    template<probs::prob_matrix Ps, class Foo = void>
+    template<probs::prob_vector Ps, class Foo = void>
     requires(details::is_bss<Degree>)
     auto calculate_unavailability (Ps const& probs, diagram_t const& diagram)
         -> utils::second_t<Foo, double>;
@@ -185,16 +185,12 @@ public:
         diagram_t const& diagram
     ) -> symprobs::expression;
 #endif
+
     /**
      *  \brief Returns system state frequency of state \p state
      *  \param diagram Structure function
      *  \param state System state
      *  \return Frequency of system state \p state
-     */
-    auto state_frequency_old (diagram_t const& diagram, int32 state) -> double;
-
-    /**
-     *  \brief TODO
      */
     auto state_frequency (diagram_t const& diagram, int32 state) -> double;
 
@@ -464,9 +460,9 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
         int32 const value = node->get_value();
         if (value >= ssize(result))
         {
-            result.resize(value + 1);
+            result.resize(as_usize(value) + 1);
         }
-        double* const terminalProb = memo.find(node);
+        double const* const terminalProb = memo.find(node);
         result[as_uindex(value)] = terminalProb ? *terminalProb : 0.0;
     });
 
@@ -521,14 +517,18 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 }
 
 template<class Degree, class Domain>
-template<probs::prob_matrix Ps, class Foo>
+template<probs::prob_vector Ps, class Foo>
 requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
     Ps const& probs,
     diagram_t const& diagram
 ) -> utils::second_t<Foo, double>
 {
-    return this->calculate_unavailability(1, probs, diagram);
+    return this->calculate_unavailability(
+        1,
+        probs::details::vector_to_matrix_wrap(probs),
+        diagram
+    );
 }
 
 template<class Degree, class Domain>
@@ -610,19 +610,6 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
 }
 
 #endif
-
-template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::state_frequency_old(
-    diagram_t const& diagram,
-    int32 state
-) -> double
-{
-    int32 const indexFrom  = 0;
-    int32 const indexTo    = this->get_var_count();
-    int64 const domainSize = this->nodes_.domain_product(indexFrom, indexTo);
-    return static_cast<double>(this->satisfy_count_old(state, diagram))
-         / static_cast<double>(domainSize);
-}
 
 template<class Degree, class Domain>
 auto reliability_manager<Degree, Domain>::state_frequency(
@@ -1061,7 +1048,7 @@ auto reliability_manager<Degree, Domain>::ntps_level_impl(
     int32 const bucketCount = this->get_var_count() + 1;
     std::vector<std::vector<node_t*>> buckets(as_usize(bucketCount));
     auto const endBucket = buckets.end();
-    auto bucket          = buckets.begin() + this->get_level(root);
+    auto bucket          = buckets.begin() + this->nodes_.get_level(root);
     bucket->push_back(root);
     memo.put(root, 1.0);
 
@@ -1076,7 +1063,7 @@ auto reliability_manager<Degree, Domain>::ntps_level_impl(
 
             double const nodeProb = *memo.find(node);
             int32 const index     = node->get_index();
-            int32 const domain    = this->get_domain(node);
+            int32 const domain    = this->nodes_.get_domain(node);
             for (int32 k = 0; k < domain; ++k)
             {
                 node_t* const son = node->get_son(k);
@@ -1084,7 +1071,7 @@ auto reliability_manager<Degree, Domain>::ntps_level_impl(
                 if (not sonProb)
                 {
                     sonProb = memo.put(son, 0.0);
-                    int32 const sonLevel = this->get_level(son);
+                    int32 const sonLevel = this->nodes_.get_level(son);
                     buckets[as_uindex(sonLevel)].push_back(son);
                 }
 

@@ -21,13 +21,13 @@ int main() {
     int state            = manager.evaluate(sf, std::array{0,1,2});
     double availability1 = manager.calculate_availability(1, ps, sf);
     double biX1          = manager.birnbaum_importance(ps, dpldX1);
-    double satCount      = manager.state_frequency_old(sf, 1);
+    double sf1           = manager.state_frequency(sf, 1);
     std::vector mcvs     = manager.mcvs<std::array<int, 3>>(sf, 1);
 
     std::cout << "state = " << state << "\n";
     std::cout << "A1    = " << availability1 << "\n";
     std::cout << "BI_x1 = " << biX1 << "\n";
-    std::cout << "SF1   = " << satCount << "\n";
+    std::cout << "SF1   = " << sf1 << "\n";
     std::cout << "MCVs  = ";
     for (auto const& v : mcvs)
     {

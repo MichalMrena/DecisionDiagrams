@@ -42,7 +42,7 @@ public:
         }
     }
 
-    auto find (node_t* const key) -> ValueType*
+    auto find (node_t* const key) const -> ValueType*
     {
         // TODO if not marked then nullptr
         return nullptr;
@@ -106,6 +106,12 @@ public:
         return it != map_.end() ? &(it->second) : nullptr;
     }
 
+    auto find (node_t* const key) const -> ValueType const*
+    {
+        auto const it = map_.find(key);
+        return it != map_.end() ? &(it->second) : nullptr;
+    }
+
     /**
      *  \brief Puts (key, value) into the memo
      *  \param key key
@@ -116,7 +122,7 @@ public:
     auto put (node_t* const key, ValueType const& value) -> ValueType*
     {
         auto const pair = map_.emplace(key, value);
-        return &pair->first->second;
+        return &pair.first->second;
     }
 
 private:
