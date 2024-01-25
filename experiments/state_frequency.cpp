@@ -33,7 +33,6 @@ auto compare (
             << "nodeCount"        << Sep
             << "freq-naive"       << Sep
             << "freq-log-naive"   << Sep
-            << "freq-ours"        << Sep
             << "freq-naive"       << Sep
             << "time-naive["      << utils::unit_str(duration_t()) << "]" << Sep
             << "time-log-naive["  << utils::unit_str(duration_t()) << "]" << Sep
