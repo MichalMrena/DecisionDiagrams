@@ -68,6 +68,7 @@ auto compare (
         // ; nodeCount
         std::cout << manager.get_node_count(diagram) << Sep;
 
+        utils::clear(timeNaive);
         utils::tick(timeNaive);
         mpz_class sc  = manager.satisfy_count(1, diagram);
         mpz_class ds  = teddy::longint(1) << as_usize(varCount);
@@ -78,6 +79,7 @@ auto compare (
         // ; freq-naive
         std::cout << td1 << Sep;
 
+        utils::clear(timeLogNaive);
         utils::tick(timeLogNaive);
         double const lnsc = manager.satisfy_count_ln(diagram);
         double const lnds = static_cast<double>(varCount);
@@ -85,6 +87,7 @@ auto compare (
         ankerl::nanobench::doNotOptimizeAway(td2);
         utils::tock(timeLogNaive);
 
+        utils::clear(timeOurs);
         utils::tick(timeOurs);
         double const td3 = manager.state_frequency(diagram, 1);
         ankerl::nanobench::doNotOptimizeAway(td3);
@@ -110,7 +113,7 @@ auto compare (
 auto main () -> int
 {
     std::ranlux48 rng(59486);
-    int const Replications = 1;
+    int const Replications = 200;
     auto const VarCounts = {10, 30, 60, 80, 90, 100};
     bool printHeader = true;
     for (int const varCount : VarCounts)

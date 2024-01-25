@@ -28,6 +28,11 @@ namespace teddy::utils
         );
     }
 
+    inline auto clear (duration_measurement& stat) -> void
+    {
+        stat.total_ = std::chrono::nanoseconds::zero();
+    }
+
     template<class Duration>
     auto duration_as (duration_measurement const& duration)
     {
