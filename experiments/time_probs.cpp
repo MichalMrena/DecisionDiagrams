@@ -49,7 +49,7 @@ inline auto make_time_probability_matrix (
     {
         std::uniform_real_distribution<double> distRate(0.2, 1.0);
         double const rate = distRate(rng);
-        probs.push_back({
+        probs.push_back(std::array<prob_dist, 2>{
             prob_dist(complemented_exponential(rate)),
             prob_dist(exponential(rate))
         });

@@ -338,8 +338,8 @@ public:
     auto evaluate (diagram_t const& diagram, Vars const& values) const -> int32;
 
     /**
-     *  \brief Calculates number of variable assignments for which
-     *  the functions evaluates to certain value
+     *  \brief Calculates the number of variable assignments for which
+     *  the function evaluates to certain value
      *
      *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
      *
@@ -351,26 +351,20 @@ public:
     auto satisfy_count (int32 value, diagram_t const& diagram) -> longint;
 
     /**
-     *  \brief TODO
+     *  \brief Calculates the logarithm of the number of variable assignments
+     *  for which the function evaluates to certain value
+     *
+     *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
+     *
+     *  \param value Value of the function
+     *  \param diagram Diagram representing the function
+     *  \return Base-2 logarithm of the number of different variable assignments
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
     auto satisfy_count_ln (
         diagram_t const& diagram
     ) -> utils::second_t<Foo, double>;
-
-    /**
-     *  \brief Calculates number of variable assignments for which
-     *  the functions evaluates to certain value
-     *
-     *  Complexity is \c O(|d|) where \c |d| is the number of nodes.
-     *
-     *  \param value Value of the function
-     *  \param diagram Diagram representing the function
-     *  \return Number of different variable assignments for which the
-     *  the function represented by \p d evaluates to \p val
-     */
-    auto satisfy_count_old (int32 value, diagram_t const& diagram) -> int64;
 
     /**
      *  \brief Finds variable assignment for which diagram evaluates to \p value
@@ -1301,76 +1295,6 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl (
 
     memo.put(node, result);
     return result;
-}
-
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::satisfy_count_old(
-    int32 const value,
-    diagram_t const& diagram
-) -> int64
-{
-    if constexpr (domains::is_fixed<Domain>::value)
-    {
-        assert(value < Domain::value);
-    }
-
-    auto constexpr CanUseDataMember = not utils::is_void<Data>::value;
-    using T = utils::type_if<CanUseDataMember, Data, int64>::type;
-
-    // A function that returns reference to
-    // the data associated with given node.
-    auto data = [] ()
-    {
-        if constexpr (CanUseDataMember)
-        {
-            // Simply return reference to the data member.
-            return [] (node_t* const node) mutable -> T&
-            { return (node->get_data()); };
-        }
-        else
-        {
-            // Return reference to the data that is stored in the map.
-            return [map = std::unordered_map<node_t*, T>()] (node_t* const node
-                   ) mutable -> T&
-            {
-                // If there is no value for given key [] creates new pair
-                // and value-initializes the value (0 for primitive types).
-                return map[node];
-            };
-        }
-    }();
-
-    node_t* const root = diagram.unsafe_get_root();
-
-    // Actual satisfy count algorithm.
-    nodes_.traverse_post(
-        root,
-        [this, value, &data] (node_t* const node) mutable
-        {
-            if (node->is_terminal())
-            {
-                data(node) = node->get_value() == value ? 1 : 0;
-            }
-            else
-            {
-                data(node)             = 0;
-                int32 const nodeLevel  = nodes_.get_level(node);
-                int32 const nodeDomain = nodes_.get_domain(node);
-                for (int32 k = 0; k < nodeDomain; ++k)
-                {
-                    node_t* const son    = node->get_son(k);
-                    int32 const sonLevel = nodes_.get_level(son);
-                    int64 const diff
-                        = nodes_.domain_product(nodeLevel + 1, sonLevel);
-                    data(node) += data(son) * static_cast<T>(diff);
-                }
-            }
-        }
-    );
-
-    auto const rootAlpha  = static_cast<int64>(data(root));
-    int32 const rootLevel = nodes_.get_level(root);
-    return rootAlpha * nodes_.domain_product(0, rootLevel);
 }
 
 template<class Data, class Degree, class Domain>

@@ -232,7 +232,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture)
         fmt::format("Node count {}", manager.get_node_count(diagram))
     );
     auto expected = expected_counts(manager, expr);
-    auto actual   = std::vector<int64>(expected.size(), 0);
+    auto actual   = std::vector<teddy::longint>(expected.size(), 0);
 
     for (auto j = 0; j < ssize(actual); ++j)
     {

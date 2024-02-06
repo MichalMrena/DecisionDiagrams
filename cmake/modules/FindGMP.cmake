@@ -3,10 +3,10 @@
 # Tries to find an install of the GNU multiple precision library
 #
 # Once done this will define
-#  GMP_FOUND - BOOL: System has the GMP library installed
-#  GMP_INCLUDE_DIRS - LIST:The GMP include directories
-#  GMP_C_LIBRARIES - LIST:The libraries needed to use GMP via it's C interface
-#  GMP_CXX_LIBRARIES - LIST:The libraries needed to use GMP via it's C++ interface
+#  GMP_FOUND         - BOOL: System has the GMP library installed
+#  GMP_INCLUDE_DIRS  - LIST: The GMP include directories
+#  GMP_C_LIBRARIES   - LIST: The libraries needed to use GMP via it's C interface
+#  GMP_CXX_LIBRARIES - LIST: The libraries needed to use GMP via it's C++ interface
 
 include(FindPackageHandleStandardArgs)
 
@@ -62,6 +62,7 @@ if (GMP_FOUND)
         set_target_properties(
             GMP::GMP PROPERTIES
             INTERFACE_INCLUDE_DIRECTORIES "${GMP_C_INCLUDES}"
-            IMPORTED_LOCATION "${GMP_C_LIBRARIES}")
+            IMPORTED_LOCATION "${GMP_C_LIBRARIES}"
+        )
     endif()
 endif()

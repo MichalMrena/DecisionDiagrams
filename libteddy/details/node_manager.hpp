@@ -154,7 +154,7 @@ public:
      *  \param levelFrom inclusive
      *  \param levelTo exclusive
      */
-     template<class Int>
+     template<class Int = int64>
     [[nodiscard]]
     auto domain_product (int32 levelFrom, int32 levelTo) const
         -> Int;
@@ -708,7 +708,7 @@ auto node_manager<Data, Degree, Domain>::domain_product(
 {
     if constexpr (domains::is_fixed<Domain>::value && Degree::value == 2)
     {
-        return Int(1) << (levelTo - levelFrom);
+        return Int(1) << static_cast<unsigned>(levelTo - levelFrom);
     }
     else if constexpr (domains::is_fixed<Domain>::value)
     {

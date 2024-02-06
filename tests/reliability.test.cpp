@@ -24,6 +24,11 @@
 
 #include "setup.hpp"
 
+auto format_as (mpz_class const x)
+{
+    return x.get_str();
+}
+
 namespace teddy::tests
 {
 namespace details
@@ -560,7 +565,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
                 );
                 auto const diagramDpldExtended
                     = manager.to_dpld_e(varChange.from, varIndex, diagramDpld);
-                auto const oneCount = manager.satisfy_count_old(1, diagramDpld);
+                auto const oneCount = manager.satisfy_count(1, diagramDpld);
 
                 BOOST_TEST_MESSAGE(fmt::format(
                     "Basic dpld f({} -> {}) / x{}({} -> {})",
@@ -654,9 +659,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_1, Fixture, Fixtures, Fixture)
                     diagramDpldIncrease
                 );
                 auto const oneCountDecrease
-                    = manager.satisfy_count_old(1, diagramDpldDecrease);
+                    = manager.satisfy_count(1, diagramDpldDecrease);
                 auto const oneCountIncrease
-                    = manager.satisfy_count_old(1, diagramDpldIncrease);
+                    = manager.satisfy_count(1, diagramDpldIncrease);
 
                 BOOST_TEST_MESSAGE(fmt::format(
                     "idpld_type_1_decrease f({} -> <{}) / x{}({} -> {})",
@@ -772,9 +777,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_2, Fixture, Fixtures, Fixture)
                 diagramDpldIncrease
             );
             auto const oneCountDecrease
-                = manager.satisfy_count_old(1, diagramDpldDecrease);
+                = manager.satisfy_count(1, diagramDpldDecrease);
             auto const oneCountIncrease
-                = manager.satisfy_count_old(1, diagramDpldIncrease);
+                = manager.satisfy_count(1, diagramDpldIncrease);
 
             BOOST_TEST_MESSAGE(fmt::format(
                 "idpld_type_2_decrease f( < ) / x{}({} -> {})",
@@ -888,9 +893,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(integrated_dpld_3, Fixture, Fixtures, Fixture)
                     diagramDpldIncrease
                 );
                 auto const oneCountDecrease
-                    = manager.satisfy_count_old(1, diagramDpldDecrease);
+                    = manager.satisfy_count(1, diagramDpldDecrease);
                 auto const oneCountIncrease
-                    = manager.satisfy_count_old(1, diagramDpldIncrease);
+                    = manager.satisfy_count(1, diagramDpldIncrease);
 
                 BOOST_TEST_MESSAGE(fmt::format(
                     "idpld_type_3_decrease f(>={} -> <{}) / x{}({} -> {})",

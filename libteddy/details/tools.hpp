@@ -110,8 +110,26 @@ auto constexpr pack_min (X x, Xs... xs) -> X
 }
 
 /**
+ *  \brief The max function for parameter packs
+ */
+template<class X>
+auto constexpr pack_max (X x) -> X
+{
+    return x;
+}
+
+/**
+ *  \brief The max function for parameter packs
+ */
+template<class X, class... Xs>
+auto constexpr pack_max (X x, Xs... xs) -> X
+{
+    return max(x, pack_max(xs...));
+}
+
+/**
  *  \brief Maximum of a range
- *  Implementation of std::max_element
+ *  Implementation of \c std::max_element
  */
 template<class It>
 auto constexpr max_elem (It first, It const last) -> It
@@ -130,7 +148,7 @@ auto constexpr max_elem (It first, It const last) -> It
 
 /**
  *  \brief Exchages value of \p var to \p newVal and returns the old value
- *  Simplified implementation of std::exchange
+ *  Simplified implementation of \c std::exchange
  */
 template<class T, class U = T>
 auto constexpr exchange (T& var, U newVal) noexcept -> T
@@ -142,7 +160,7 @@ auto constexpr exchange (T& var, U newVal) noexcept -> T
 
 /**
  *  \brief Swaps values in \p first and \p second
- *  Simplified implementation of std::swap
+ *  Simplified implementation of \c std::swap
  */
 template<typename T>
 auto constexpr swap (T& first, T& second) noexcept -> void
@@ -222,21 +240,33 @@ struct is_void<void>
     static constexpr bool value = true;
 };
 
+/**
+ *  \brief Checks if T and U are the same type
+ */
 template<class T, class U>
 struct is_same
 {
     static constexpr bool value = false;
 };
 
+/**
+ *  \brief Checks if T and U are the same type
+ */
 template<class T>
 struct is_same<T, T>
 {
     static constexpr bool value = true;
 };
 
+/**
+ *  \brief Checks if T and U are the same type
+ */
 template<class T, class U>
 concept same_as = is_same<T, U>::value;
 
+/**
+ *  \brief Checks if T is \c std::vector
+ */
 template<class T>
 concept is_std_vector = same_as<
     T,
@@ -312,6 +342,20 @@ struct remove_reference<T&&>
     struct optional_member<void>
     {
     };
+
+/**
+ *  \brief List of types, provides basic queries
+ */
+template<class... Types>
+struct type_list
+{
+    template<class T>
+    static constexpr bool Contains = (is_same<T, Types>::value || ...);
+
+    static constexpr std::size_t MaxSizeof = utils::pack_max(sizeof(Types)...);
+
+    static constexpr std::size_t MaxAlignof = utils::pack_max(alignof(Types)...);
+};
 
 /**
  *  \brief Implementation of \c std::move

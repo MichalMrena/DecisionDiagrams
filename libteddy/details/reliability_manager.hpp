@@ -852,11 +852,7 @@ auto reliability_manager<Degree, Domain>::structural_importance(
     diagram_t const& dpld
 ) -> double
 {
-    int32 const indexFrom  = 0;
-    int32 const indexTo    = this->get_var_count();
-    int64 const domainSize = this->nodes_.domain_product(indexFrom, indexTo);
-    return static_cast<double>(this->satisfy_count_old(1, dpld))
-         / static_cast<double>(domainSize);
+    return this->state_frequency(dpld, 1);
 }
 
 template<class Degree, class Domain>

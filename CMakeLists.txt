@@ -93,11 +93,6 @@ if(LIBTEDDY_ARBITRARY_PRECISION)
     target_link_libraries(
         teddy INTERFACE ${GMP_C_LIBRARIES} ${GMP_CXX_LIBRARIES}
     )
-
-    # string(
-    #     JOIN ";" LIBTEDDY_LINK_OPTIONS
-    #         "-lgmp"
-    # )
 endif()
 
 if(LIBTEDDY_VERBOSE)

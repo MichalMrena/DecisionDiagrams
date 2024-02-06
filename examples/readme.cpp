@@ -43,7 +43,7 @@ auto example_basic_usage () -> void
     // Now that we have diagram for the funtion f, we can test its properties
     // e.g., evaluate it for give variable assignment.
     const int val = manager.evaluate(f, std::array {1, 1, 0, 1});
-    assert(val == 1);
+    std::cout << "evaluate([1,1,0,1]) = " << val << "\n";
 
     // We can see how the diagram looks like by printing its dot representation
     // into a file or console and visualizing it using e.g. graphviz.
@@ -53,7 +53,8 @@ auto example_basic_usage () -> void
 
     // To calculate number of different variable assignments for which the
     // function evaluates to 1 we can use .satisfy_count.
-    long long sc = manager.satisfy_count_old(1, f);
+    const auto sc = manager.satisfy_count(1, f);
+    std::cout << "Satisfy-count(1) = " << sc << "\n";
 
     // We can also enumerate all variable assignments for which the
     // the function evaluates to 1.
