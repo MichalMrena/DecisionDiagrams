@@ -234,12 +234,9 @@ public:
     ~node()
     requires(degrees::is_mixed<Degree>::value)
     {
-        if constexpr (degrees::is_mixed<Degree>::value)
+        if (this->is_or_was_internal())
         {
-            if (this->is_or_was_internal())
-            {
-                internal_.sons_.~son_container();
-            }
+            internal_.sons_.~son_container();
         }
     }
 
