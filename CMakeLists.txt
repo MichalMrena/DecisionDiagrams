@@ -1,5 +1,3 @@
-# Project
-
 cmake_minimum_required(
     VERSION 3.19
 )
@@ -10,13 +8,17 @@ set(
 
 if(NOT EXISTS ${LIBTEDDY_VERSION_FILE})
     message(
-        FATAL_ERROR "Missing project version file: ${LIBTEDDY_VERSION_FILE}"
+        WARNING "Missing project version file: ${LIBTEDDY_VERSION_FILE}"
+    )
+    message(
+        WARNING "Using dummy version 0.0.1"
+    )
+    set(LIBTEDDY_VERSION 0.0.1)
+else()
+    file(
+        READ ${LIBTEDDY_VERSION_FILE} LIBTEDDY_VERSION
     )
 endif()
-
-file(
-    READ ${LIBTEDDY_VERSION_FILE} LIBTEDDY_VERSION
-)
 
 project(
     TeDDy
@@ -33,14 +35,9 @@ set(
 
 # TeDDy library target
 
-### Requires CLN and GiNaC, see README
 option(LIBTEDDY_SYMBOLIC_RELIABILITY "Enable symbolic expressions" OFF)
-
-### Requires GMP, see README
 option(LIBTEDDY_ARBITRARY_PRECISION  "Enable GMP library"          OFF)
-
 option(LIBTEDDY_VERBOSE              "Enable verbose output"       OFF)
-
 option(LIBTEDDY_COLLECT_STATS        "Enable stat collection"      OFF)
 
 add_library(
@@ -70,14 +67,24 @@ set_target_properties(
 )
 
 if(LIBTEDDY_SYMBOLIC_RELIABILITY)
+    find_package(
+        CLN REQUIRED
+    )
+
+    find_package(
+        GINAC REQUIRED
+    )
+
     target_compile_definitions(
         teddy INTERFACE LIBTEDDY_SYMBOLIC_RELIABILITY
     )
 
-    string(
-        JOIN ";" LIBTEDDY_LINK_OPTIONS
-            "-lginac"
-            "-lcln"
+    target_link_libraries(
+        teddy INTERFACE GINAC::GINAC
+    )
+
+    target_link_libraries(
+        teddy INTERFACE CLN::CLN
     )
 endif()
 
@@ -86,12 +93,16 @@ if(LIBTEDDY_ARBITRARY_PRECISION)
         GMP REQUIRED
     )
 
+    find_package(
+        GMPXX REQUIRED
+    )
+
     target_compile_definitions(
         teddy INTERFACE LIBTEDDY_ARBITRARY_PRECISION
     )
 
     target_link_libraries(
-        teddy INTERFACE ${GMP_C_LIBRARIES} ${GMP_CXX_LIBRARIES}
+        teddy INTERFACE GMP::GMP GMP::GMPXX
     )
 endif()
 
