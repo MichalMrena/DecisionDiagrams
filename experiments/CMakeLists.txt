@@ -62,3 +62,20 @@ if(LIBTEDDY_SYMBOLIC_RELIABILITY)
         time-probs PRIVATE ${LIBTEDDY_LINK_OPTIONS}
     )
 endif()
+
+# Dependent probabilities
+add_executable(
+    dep-prob dep_prob.cpp
+)
+
+target_link_libraries(
+    dep-prob PRIVATE teddy
+)
+
+target_compile_options(
+    dep-prob PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
+)
+
+target_link_options(
+    dep-prob PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+)

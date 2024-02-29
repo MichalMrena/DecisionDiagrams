@@ -736,6 +736,114 @@ private:
     template<class I, class S>
     auto from_vector (I first, S last) -> diagram_t;
 
+    struct UnpackKey
+    {
+        node_t* node_;
+        int32 depVal_;
+    };
+
+    struct UnpackKeyHash
+    {
+        auto operator()(UnpackKey const& k) const -> std::size_t
+        {
+            return static_cast<std::uintptr_t>(k.node_)
+                 ^ static_cast<std::uint64_t>(k.depVal_);
+        }
+    };
+
+    struct UnpackKeyEquals
+    {
+        auto operator()(UnpackKey const& l, UnpackKey const& r) const -> bool
+        {
+            return l.node_ == r.node_ && l.depVal_ == r.depVal_;
+        }
+    };
+
+    using UnpackMemo = std::unordered_map<
+        UnpackKey,
+        node_t*,
+        UnpackKeyHash,
+        UnpackKeyEquals
+    >;
+
+    struct DepPair
+    {
+        int32 var_;
+        int32 depVar_;
+    };
+
+    struct NodeKey
+    {
+        int32 index_;
+        std::vector<node_t*> sons_;
+    };
+
+    struct NodeKeyHash
+    {
+        auto operator() (NodeKey const& k) const -> std::size_t
+        {
+            std::size_t result = 0;
+            for (node_t* const son : k.sons_)
+            {
+                utils::add_hash(result, son);
+            }
+            return result;
+        }
+    };
+
+    struct NodeKeyEquals
+    {
+        auto operator() (NodeKey const& l, NodeKey const& r) const -> bool
+        {
+            if (l.index_ != r.index_)
+            {
+                return false;
+            }
+
+            for (std::size_t k = 0; k < l.sons_.size(); ++k)
+            {
+                if (l.sons_[k] != r.sons_[k])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    };
+
+    using UniqueTable = std::unordered_map<
+        NodeKey,
+        node_t*,
+        NodeKeyHash,
+        NodeKeyEquals
+    >;
+
+public:
+    /**
+     *  \brief TODO
+     */
+    auto dp_unpack (
+        std::vector<DepPair> const& depVars,
+        diagram_t const& diagram
+    ) -> diagram_t;
+
+private:
+    auto dp_unpack_impl (
+        UnpackMemo& memo,
+        std::vector<UniqueTable>& uniqueTables,
+        std::vector<DepPair> const& depVars,
+        std::vector<int32>& varValues,
+        node_t* node
+    ) -> node_t*;
+
+    static auto dp_is_dependent (
+        std::vector<DepPair> const& depVars,
+        int32 level
+    ) -> bool;
+    // check if level lies between dependent vars
+
+
 protected:
     template<class ValueType>
     auto make_node_memo (node_t* const root) -> node_memo<ValueType>;
@@ -1879,6 +1987,95 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
 
     assert(ssize(stack) == 1);
     return diagram_t(stack.back().node);
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::dp_unpack(
+    std::vector<DepPair> const& depVars,
+    diagram_t const& diagram
+) -> diagram_t
+{
+    UnpackMemo memo;
+    std::vector<int32> varValues(this->get_var_count(), 0);
+    std::vector<UniqueTable> uniqueTables(this->get_var_count());
+    node_t* root = diagram.unsafe_get_root();
+    node_t* newRoot = this->dp_unpack_impl(
+        memo,
+        uniqueTables,
+        depVars,
+        varValues,
+        root
+    );
+    return diagram_t(newRoot);
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::dp_unpack_impl(
+    UnpackMemo& memo,
+    std::vector<UniqueTable>& uniqueTables,
+    std::vector<DepPair> const& depVars,
+    std::vector<int32>& varValues,
+    node_t* node
+) -> node_t*
+{
+    if (node->is_terminal())
+    {
+        return node;
+    }
+
+    int32 const level = nodes_.get_level(node);
+    UnpackKey const key
+    {
+        .node_ = node,
+        .depVal_ = dp_is_dependent(depVars, level)
+            ? varValues[depVars[0].var_]
+            : -1
+    };
+
+    auto const memoized = memo.find(key);
+    if (memoized != memo.end())
+    {
+        return memoized->second;
+    }
+
+    int32 const domain = nodes_.get_domain(node);
+    int32 const index = node->get_index();
+    son_container sons = node_t::make_son_container(domain);
+    for (int32 k = 0; k < domain; ++k)
+    {
+        varValues[as_uindex(index)] = k;
+        node_t* const son = node->get_son(k);
+        sons[k] = this->dp_unpack_impl(memo, depVars, varValues, son);
+    }
+
+    node_t* result = nullptr;
+    if (dp_is_dependent(depVars, level))
+    {
+        UniqueTable& table = uniqueTables[depVars[0].depVar_];
+        NodeKey nodeKey
+        {
+            .index_ = index,
+            .sons_ = {}
+        };
+        for (std::size_t k = 0; k < domain; ++k)
+        {
+            nodeKey.sons_[k] = sons[k];
+        }
+        auto const tableIt = table.find(nodeKey);
+        if (tableIt != table.end())
+        {
+            result = tableIt->second;
+        }
+        else
+        {
+            // redundant node should not occur here
+            result = nodes_.make_new_node(index, TEDDY_MOVE(sons));
+        }
+    }
+    else
+    {
+        result = nodes_.make_internal_node(index, TEDDY_MOVE(sons));
+    }
 }
 
 template<class Data, class Degree, class Domain>
