@@ -202,7 +202,7 @@ public:
 
     auto sift_variables () -> void;
 
-private:
+public:
     template<class NodeOp>
     auto traverse_pre_impl (node_t* node, NodeOp operation) const -> void;
 

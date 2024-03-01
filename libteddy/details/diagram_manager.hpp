@@ -746,7 +746,7 @@ private:
     {
         auto operator()(UnpackKey const& k) const -> std::size_t
         {
-            return static_cast<std::uintptr_t>(k.node_)
+            return reinterpret_cast<std::uintptr_t>(k.node_)
                  ^ static_cast<std::uint64_t>(k.depVal_);
         }
     };
@@ -1996,8 +1996,8 @@ auto diagram_manager<Data, Degree, Domain>::dp_unpack(
 ) -> diagram_t
 {
     UnpackMemo memo;
-    std::vector<int32> varValues(this->get_var_count(), 0);
-    std::vector<UniqueTable> uniqueTables(this->get_var_count());
+    std::vector<int32> varValues(as_usize(this->get_var_count()), 0);
+    std::vector<UniqueTable> uniqueTables(as_usize(this->get_var_count()));
     node_t* root = diagram.unsafe_get_root();
     node_t* newRoot = this->dp_unpack_impl(
         memo,
@@ -2028,7 +2028,7 @@ auto diagram_manager<Data, Degree, Domain>::dp_unpack_impl(
     {
         .node_ = node,
         .depVal_ = dp_is_dependent(depVars, level)
-            ? varValues[depVars[0].var_]
+            ? varValues[as_uindex(depVars[0].var_)]
             : -1
     };
 
@@ -2045,21 +2045,27 @@ auto diagram_manager<Data, Degree, Domain>::dp_unpack_impl(
     {
         varValues[as_uindex(index)] = k;
         node_t* const son = node->get_son(k);
-        sons[k] = this->dp_unpack_impl(memo, depVars, varValues, son);
+        sons[k] = this->dp_unpack_impl(
+            memo,
+            uniqueTables,
+            depVars,
+            varValues,
+            son
+        );
     }
 
     node_t* result = nullptr;
     if (dp_is_dependent(depVars, level))
     {
-        UniqueTable& table = uniqueTables[depVars[0].depVar_];
+        UniqueTable& table = uniqueTables[as_uindex(depVars[0].depVar_)];
         NodeKey nodeKey
         {
             .index_ = index,
             .sons_ = {}
         };
-        for (std::size_t k = 0; k < domain; ++k)
+        for (int32 k = 0; k < domain; ++k)
         {
-            nodeKey.sons_[k] = sons[k];
+            nodeKey.sons_[as_uindex(k)] = sons[k];
         }
         auto const tableIt = table.find(nodeKey);
         if (tableIt != table.end())
@@ -2076,6 +2082,19 @@ auto diagram_manager<Data, Degree, Domain>::dp_unpack_impl(
     {
         result = nodes_.make_internal_node(index, TEDDY_MOVE(sons));
     }
+
+    memo.emplace(key, result);
+
+    return result;
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::dp_is_dependent(
+    std::vector<DepPair> const& depVars,
+    int32 level
+) -> bool
+{
+    return level > depVars[0].var_ && level <= depVars[0].depVar_;
 }
 
 template<class Data, class Degree, class Domain>
