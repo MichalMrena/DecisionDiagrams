@@ -1804,6 +1804,7 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
 
     int32 const lastLevel = this->get_var_count() - 1;
     int32 const lastIndex = nodes_.get_index(lastLevel);
+    int32 const secondToLastIndex = nodes_.get_index(lastLevel - 1);
 
     if constexpr (std::random_access_iterator<I>)
     {
@@ -1861,19 +1862,23 @@ auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
         }
     };
 
+    int32 const lastDomain = nodes_.get_domain(lastIndex);
+    int32 const secondTolastDomain = nodes_.get_domain(secondToLastIndex);
     while (first != last)
     {
-        int32 const lastDomain = nodes_.get_domain(lastIndex);
-        son_container sons     = node_t::make_son_container(lastDomain);
-        for (int32 k = 0; k < lastDomain; ++k)
+        for (int32 o = 0; o < secondTolastDomain; ++o)
         {
-            sons[k] = nodes_.make_terminal_node(*first++);
+            son_container sons = node_t::make_son_container(lastDomain);
+            for (int32 k = 0; k < lastDomain; ++k)
+            {
+                sons[k] = nodes_.make_terminal_node(*first++);
+            }
+            node_t* const node = nodes_.make_internal_node(
+                lastIndex,
+                TEDDY_MOVE(sons)
+            );
+            stack.push_back(stack_frame {node, lastLevel});
         }
-        node_t* const node = nodes_.make_internal_node(
-            lastIndex,
-            TEDDY_MOVE(sons)
-        );
-        stack.push_back(stack_frame {node, lastLevel});
         shrink_stack();
     }
 
