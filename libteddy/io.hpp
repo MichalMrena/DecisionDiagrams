@@ -1,7 +1,9 @@
 #ifndef LIBTEDDY_CORE_IO_HPP
 #define  LIBTEDDY_CORE_IO_HPP
 
+#include <initializer_list>
 #include <libteddy/details/pla_file.hpp>
+#include <libteddy/details/io_impl.hpp>
 #include <libteddy/core.hpp>
 
 #include <iterator>
@@ -54,11 +56,11 @@ struct io
      *  diagram_t f = manager.from_vector(vec);
      *  \endcode
      *
-     *  \tparam I Iterator type for the input range.
+     *  \tparam I Iterator type for the input range
      *  \tparam S Sentinel type for \p I (end iterator)
      *  \param manager Diagram manager
-     *  \param first iterator to the first element of the truth vector
-     *  \param last sentinel for \p first (end iterator)
+     *  \param first Iterator to the first element of the truth vector
+     *  \param last Sentinel for \p first (end iterator)
      *  \return Diagram representing function given by the truth vector
      */
     template<
@@ -93,6 +95,25 @@ struct io
     static auto from_vector (
         diagram_manager<Data, Degree, Domain>& manager,
         R const& vector
+    ) -> diagram_manager<Data, Degree, Domain>::diagram_t;
+
+    /**
+     *  \brief Creates diagram from a truth vector of a function
+     *
+     *  See the other overload for details.
+     *
+     *  \param vector Range representing the truth vector
+     *  Elements of the range must be convertible to int
+     *  \return Diagram representing function given by the truth vector
+     */
+    template<
+        class Data,
+        class Degree,
+        class Domain
+    >
+    static auto from_vector (
+        diagram_manager<Data, Degree, Domain>& manager,
+        std::initializer_list<int> vector
     ) -> diagram_manager<Data, Degree, Domain>::diagram_t;
 
     /**
@@ -195,7 +216,7 @@ inline auto io::from_pla(
         return manager.left_fold<ops::AND>(variables);
     };
 
-    auto const orFold = [&manager, foldType] (auto& diagrams)
+    auto const sum = [&manager, foldType] (auto& diagrams)
     {
         switch (foldType)
         {
@@ -207,12 +228,13 @@ inline auto io::from_pla(
 
         default:
             assert(false);
+            // TODO std::exit? better than potential invalid value...
             return manager.constant(0);
         }
     };
 
-    auto const& plaLines      = file.get_lines();
-    int64 const lineCount     = file.get_line_count();
+    std::vector<pla_file::pla_line>const& plaLines = file.get_lines();
+    int64 const lineCount = file.get_line_count();
     int64 const functionCount = file.get_function_count();
 
     // Create a diagram for each function.
@@ -242,14 +264,15 @@ inline auto io::from_pla(
         }
 
         // Then merge products using OR.
-        functionDiagrams.push_back(orFold(products));
+        functionDiagrams.push_back(sum(products));
     }
 
     return functionDiagrams;
 }
 
 template<
-    class Data, class Degree,
+    class Data,
+    class Degree,
     class Domain,
     std::input_iterator I,
     std::sentinel_for<I> S
@@ -260,13 +283,114 @@ auto io::from_vector (
     S last
 ) -> diagram_manager<Data, Degree, Domain>::diagram_t
 {
-    return manager.from_vector(first, last);
+    using manager_t = diagram_manager<Data, Degree, Domain>;
+    using diagram_t = typename manager_t::diagram_t;
+    using son_container = typename manager_t::son_container;
+    using node_t = typename manager_t::node_t;
+    using stack_frame = struct
+    {
+        node_t* node;
+        int32 level;
+    };
+
+    if (0 == manager.get_var_count())
+    {
+        assert(first != last && std::next(first) == last);
+        return manager.constant(*first);
+    }
+
+    int32 const lastLevel = manager.get_var_count() - 1;
+    int32 const lastIndex = manager.nodes_.get_index(lastLevel);
+    int32 const preLastIndex = manager.nodes_.get_index(lastLevel - 1);
+
+    if constexpr (std::random_access_iterator<I>)
+    {
+        [[maybe_unused]] int64 const count
+            = manager.nodes_.domain_product(0, lastLevel + 1);
+        [[maybe_unused]] auto const dist = std::distance(first, last);
+        assert(dist > 0 && dist == count);
+    }
+
+    std::vector<stack_frame> stack;
+    auto const shrink_stack = [&manager, &stack] ()
+    {
+        for (;;)
+        {
+            int32 const currentLevel = stack.back().level;
+            if (0 == currentLevel)
+            {
+                break;
+            }
+
+            auto const endId = rend(stack);
+            auto stackIt     = rbegin(stack);
+            int64 count      = 0;
+            while (stackIt != endId && stackIt->level == currentLevel)
+            {
+                ++stackIt;
+                ++count;
+            }
+            int32 const newIndex  = manager.nodes_.get_index(currentLevel - 1);
+            int32 const newDomain = manager.nodes_.get_domain(newIndex);
+
+            // TODO simplify
+            if (count < newDomain)
+            {
+                break;
+            }
+
+            son_container newSons = node_t::make_son_container(newDomain);
+            for (int32 k = 0; k < newDomain; ++k)
+            {
+                newSons[k]
+                    = stack[as_uindex(ssize(stack) - newDomain + k)].node;
+            }
+            node_t* const newNode = manager.nodes_.make_internal_node(
+                newIndex,
+                TEDDY_MOVE(newSons)
+            );
+            stack.erase(end(stack) - newDomain, end(stack));
+            stack.push_back(stack_frame {newNode, currentLevel - 1});
+        }
+    };
+
+    int32 const lastDomain = manager.nodes_.get_domain(lastIndex);
+    int32 const preLastDomain = manager.nodes_.get_domain(preLastIndex);
+    while (first != last)
+    {
+        for (int32 o = 0; o < preLastDomain; ++o)
+        {
+            son_container sons = node_t::make_son_container(lastDomain);
+            for (int32 k = 0; k < lastDomain; ++k)
+            {
+                sons[k] = manager.nodes_.make_terminal_node(*first++);
+            }
+            node_t* const node = manager.nodes_.make_internal_node(
+                lastIndex,
+                TEDDY_MOVE(sons)
+            );
+            stack.push_back(stack_frame {node, lastLevel});
+        }
+        shrink_stack();
+    }
+
+    assert(ssize(stack) == 1);
+    return diagram_t(stack.back().node);
 }
 
 template<class Data, class Degree, class Domain, std::ranges::input_range R>
 auto io::from_vector(
     diagram_manager<Data, Degree, Domain>& manager,
     R const& vector
+) -> diagram_manager<Data, Degree, Domain>::diagram_t
+{
+    return io::from_vector(manager, begin(vector), end(vector));
+}
+
+template<class Data, class Degree, class Domain>
+auto io::from_vector(
+    diagram_manager<Data, Degree, Domain>& manager,
+    std::initializer_list<int> const vector
 ) -> diagram_manager<Data, Degree, Domain>::diagram_t
 {
     return io::from_vector(manager, begin(vector), end(vector));
@@ -298,6 +422,7 @@ auto io::to_vector_g (
     O out
 ) -> void
 {
+    // TODO move for-each-in-domain to tools
     if (manager.get_var_count() == 0)
     {
         assert(diagram.unsafe_get_root()->is_terminal());
@@ -327,6 +452,32 @@ auto io::to_vector_g (
             wasLast = overflow && 0 == level;
         }
     } while (not wasLast);
+}
+
+template<class Data, class Degree, class Domain>
+auto io::to_dot (
+    diagram_manager<Data, Degree, Domain> const& manager,
+    std::ostream& out
+) -> void
+{
+    details::to_dot_graph_common(manager, out, [&manager](auto const& f)
+    {
+        manager.nodes_.for_each_node(f);
+    });
+}
+
+template<class Data, class Degree, class Domain>
+auto io::to_dot (
+    std::ostream& out,
+    diagram_manager<Data, Degree, Domain> const& manager,
+    diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
+) -> void
+{
+    details::to_dot_graph_common(manager, out,
+    [&manager, &diagram](auto const& f)
+    {
+        manager.nodes_.traverse_level(diagram.unsafe_get_root(), f);
+    });
 }
 }
 #endif

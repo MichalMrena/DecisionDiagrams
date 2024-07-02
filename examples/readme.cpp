@@ -1,5 +1,5 @@
 #include <libteddy/core.hpp>
-#include <libteddy/core_io.hpp>
+#include <libteddy/io.hpp>
 #include <libteddy/reliability.hpp>
 #include <array>
 #include <cassert>

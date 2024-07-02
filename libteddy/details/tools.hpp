@@ -162,7 +162,7 @@ auto constexpr exchange (T& var, U newVal) noexcept -> T
  *  \brief Swaps values in \p first and \p second
  *  Simplified implementation of \c std::swap
  */
-template<typename T>
+template<class T>
 auto constexpr swap (T& first, T& second) noexcept -> void
 {
     auto tmp = first;
@@ -227,18 +227,18 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
     }
 }
 
-// TODO this wont be necessary when we sort out node data and caches...
-template<class T>
-struct is_void
-{
-    static constexpr bool value = false;
-};
+    // TODO this wont be necessary when we sort out node data and caches...
+    template<class T>
+    struct is_void
+    {
+        static constexpr bool value = false;
+    };
 
-template<>
-struct is_void<void>
-{
-    static constexpr bool value = true;
-};
+    template<>
+    struct is_void<void>
+    {
+        static constexpr bool value = true;
+    };
 
 /**
  *  \brief Checks if T and U are the same type
