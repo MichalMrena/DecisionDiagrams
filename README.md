@@ -162,7 +162,7 @@ int main()
 
     // To calculate number of different variable assignments for which the
     // function evaluates to 1 we can use .satisfy_count.
-    long long sc = manager.satisfy_count(1, f);
+    const long long sc = manager.satisfy_count(1, f);
 
     // We can also enumerate all variable assignments for which the
     // the function evaluates to 1.
@@ -266,7 +266,20 @@ By default, the library contains runtime assertions that perform various checks 
 The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke the reordering heuristic by using the `force_reorder` function. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
 # Publications and citation
-*A paper describing TeDDy itself is in preparation.*  
+If you want to mention teddy, you can use link to this repository or you can cite the following paper:
+```TeX
+@article{Mrena_SWX_2024,
+  title        = {TeDDy: Templated decision diagram library},
+  author       = {Michal Mrena and Miroslav Kvassay and Elena Zaitseva},
+  year         = 2024,
+  journal      = {SoftwareX},
+  volume       = 26,
+  pages        = 101715,
+  doi          = {https://doi.org/10.1016/j.softx.2024.101715},
+  issn         = {2352-7110}
+}
+```
+
 Also, we have published several papers on decision diagrams and reliability analysis. The following papers had an experimental section where we examined various properties of decision diagrams using TeDDy:
 
 Mrena, M., &#38; Kvassay, M. (2021). **Comparison of Left Fold and Tree Fold Strategies in Creation of Binary Decision Diagrams**. *2021 International Conference on Information and Digital Technologies (IDT)*, 341–352. https://doi.org/10.1109/IDT52577.2021.9497593
