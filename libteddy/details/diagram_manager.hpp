@@ -80,23 +80,29 @@ struct var_cofactor
     int32 value_;
 };
 
+/**
+ *  \brief Struct containing interface of the io module
+ *  Forward-declared here so that it can be made friend of diagram_manager
+ */
 struct io;
 
 /**
  *  \class diagram_manager
  *  \brief Base class for all diagram managers that generically
- *  implements all of the algorithms.
+ *  implements all of the algorithms
  */
 template<class Data, class Degree, class Domain>
 class diagram_manager
 {
 public:
     /**
-     *  \brief Alias for the diagram type used in the
-     *  functions of this manager.
+     *  \brief Alias for the diagram type
      */
     using diagram_t = diagram<Data, Degree>;
 
+    /**
+     *  \brief IO module is our friend
+     */
     friend struct io;
 
 public:
@@ -144,10 +150,10 @@ public:
      *  of single variables
      *
      *  \tparam I iterator type for the input range.
-     *  \tparam S sentinel type for \p I . (end iterator)
+     *  \tparam S sentinel type for \p I (end iterator)
      *  \param first iterator to the first element of range of indices
-     *  represented by integral type convertible to unsgined int.
-     *  \param last sentinel for \p first (end iterator).
+     *  represented by integral type convertible to unsgined int
+     *  \param last sentinel for \p first (end iterator)
      *  \return Vector of diagrams.
      */
     template<std::input_iterator I, std::sentinel_for<I> S>
@@ -471,9 +477,7 @@ public:
     /**
      *  \brief Negates Boolean function
      *  \param diagram Diagram representing the function
-     *  \param transformer Transformation function that is applied
-     *  to values of the function.
-     *  \return Diagram representing transformed function
+     *  \return Diagram representing negated function
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
@@ -733,9 +737,6 @@ private:
         ExprNode const& exprNode
     ) -> node_t*;
 
-    template<class I, class S>
-    auto from_vector (I first, S last) -> diagram_t;
-
 protected:
     template<class ValueType>
     auto make_node_memo (node_t* const root) -> node_memo<ValueType>;
@@ -815,7 +816,7 @@ auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index)
     son_container sons = node_t::make_son_container(2);
     sons[0]            = nodes_.make_terminal_node(1);
     sons[1]            = nodes_.make_terminal_node(0);
-    return diagram_t(nodes_.make_internal_node(index, sons));
+    return diagram_t(nodes_.make_internal_node(index, TEDDY_MOVE(sons)));
 }
 
 template<class Data, class Degree, class Domain>
@@ -1166,20 +1167,21 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
     diagram_t const& diagram
 ) -> longint
 {
-    node_t* const root = diagram.unsafe_get_root();
-    longint stepResult = 0;
+    node_t* const root    = diagram.unsafe_get_root();
+    int32 const rootLevel = nodes_.get_level(root);
+    longint stepResult    = 0;
     if (this->get_var_count() < 63)
     {
         node_memo<int64> memo = this->make_node_memo<int64>(root);
         stepResult = this->satisfy_count_impl<int64>(memo, value, root);
+        return stepResult * nodes_.template domain_product<int64>(0, rootLevel);
     }
     else
     {
         node_memo<longint> memo = this->make_node_memo<longint>(root);
         stepResult = this->satisfy_count_impl<longint>(memo, value, root);
+        return stepResult * nodes_.template domain_product<longint>(0, rootLevel);
     }
-    int32 const rootLevel = nodes_.get_level(root);
-    return stepResult * nodes_.template domain_product<longint>(0, rootLevel);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1789,101 +1791,6 @@ template<class Data, class Degree, class Domain>
 auto diagram_manager<Data, Degree, Domain>::clear_cache() -> void
 {
     nodes_.cache_clear();
-}
-
-template<class Data, class Degree, class Domain>
-template<class I, class S>
-auto diagram_manager<Data, Degree, Domain>::from_vector(I first, S last)
-    -> diagram_t
-{
-    if (0 == this->get_var_count())
-    {
-        assert(first != last && ++I(first) == last);
-        return diagram_t(nodes_.make_terminal_node(*first));
-    }
-
-    int32 const lastLevel = this->get_var_count() - 1;
-    int32 const lastIndex = nodes_.get_index(lastLevel);
-    int32 const secondToLastIndex = nodes_.get_index(lastLevel - 1);
-
-    if constexpr (std::random_access_iterator<I>)
-    {
-        [[maybe_unused]] int64 const count
-            = nodes_.domain_product(0, lastLevel + 1);
-        [[maybe_unused]] auto const dist = static_cast<int64>(last - first);
-        assert(dist > 0 && dist == count);
-    }
-
-    using stack_frame = struct
-    {
-        node_t* node;
-        int32 level;
-    };
-
-    std::vector<stack_frame> stack;
-    auto const shrink_stack = [this, &stack] ()
-    {
-        for (;;)
-        {
-            int32 const currentLevel = stack.back().level;
-            if (0 == currentLevel)
-            {
-                break;
-            }
-
-            auto const endId = rend(stack);
-            auto stackIt     = rbegin(stack);
-            int64 count      = 0;
-            while (stackIt != endId and stackIt->level == currentLevel)
-            {
-                ++stackIt;
-                ++count;
-            }
-            int32 const newIndex  = nodes_.get_index(currentLevel - 1);
-            int32 const newDomain = nodes_.get_domain(newIndex);
-
-            if (count < newDomain)
-            {
-                break;
-            }
-
-            son_container newSons = node_t::make_son_container(newDomain);
-            for (int32 k = 0; k < newDomain; ++k)
-            {
-                newSons[k]
-                    = stack[as_uindex(ssize(stack) - newDomain + k)].node;
-            }
-            node_t* const newNode = nodes_.make_internal_node(
-                newIndex,
-                TEDDY_MOVE(newSons)
-            );
-            stack.erase(end(stack) - newDomain, end(stack));
-            stack.push_back(stack_frame {newNode, currentLevel - 1});
-        }
-    };
-
-    int32 const lastDomain = nodes_.get_domain(lastIndex);
-    int32 const secondTolastDomain = nodes_.get_domain(secondToLastIndex);
-    while (first != last)
-    {
-        for (int32 o = 0; o < secondTolastDomain; ++o)
-        {
-            son_container sons = node_t::make_son_container(lastDomain);
-            for (int32 k = 0; k < lastDomain; ++k)
-            {
-                sons[k] = nodes_.make_terminal_node(*first++);
-            }
-            node_t* const node = nodes_.make_internal_node(
-                lastIndex,
-                TEDDY_MOVE(sons)
-            );
-            stack.push_back(stack_frame {node, lastLevel});
-        }
-        shrink_stack();
-    }
-
-    assert(ssize(stack) == 1);
-    return diagram_t(stack.back().node);
 }
 
 template<class Data, class Degree, class Domain>
