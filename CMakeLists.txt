@@ -118,10 +118,6 @@ if(LIBTEDDY_COLLECT_STATS)
     )
 endif()
 
-target_link_options(
-    teddy INTERFACE ${LIBTEDDY_LINK_OPTIONS}
-)
-
 # TeDDy library install
 
 include(
