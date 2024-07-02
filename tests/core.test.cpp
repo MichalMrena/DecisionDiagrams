@@ -1,6 +1,6 @@
 #include <boost/test/unit_test_suite.hpp>
 #include <libteddy/core.hpp>
-#include <libteddy/core_io.hpp>
+#include <libteddy/io.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
@@ -29,7 +29,8 @@ struct fixture_base
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
     std::ranlux48 rng_;
-    int32 maxValue_ {};
+    int32 maxValue_ {}; // TODO rename to codomainSize_
+    // TODO move members to to child classes, remove this class
 };
 
 /**
@@ -776,6 +777,31 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture)
     test_compare_eval(evalit, manager, diagram);
 }
 
+// TODO add transform test
+
+BOOST_AUTO_TEST_SUITE_END()
+
+BOOST_AUTO_TEST_SUITE(core_io)
+
+BOOST_AUTO_TEST_CASE(from_pla)
+{
+    // TODO cmon... ENV var<
+    auto const path = "/home/michal/data/IWLS93/pla/xor5.pla";
+    if (not std::filesystem::exists(path))
+    {
+        BOOST_TEST_MESSAGE(
+            fmt::format("Missing input file '{}', test is skipped.", path)
+        );
+        return;
+    }
+    std::optional<pla_file> file = pla_file::load_file(path, true);
+    BOOST_REQUIRE_MESSAGE(file.has_value(), "Load simple PLA.");
+    bdd_manager manager(file->get_variable_count(), 1'000);
+    using bdd_t = bdd_manager::diagram_t;
+    std::vector<bdd_t> diagrams = io::from_pla(manager, *file);
+    BOOST_REQUIRE_EQUAL(file->get_function_count(), diagrams.size());
+}
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
 {
     auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
@@ -789,12 +815,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
     auto evalit   = teddy::tsl::evaluating_iterator(domainit, *exprtree);
     test_compare_eval(evalit, manager, diagram);
 }
-
-// TODO add transform test
-
-BOOST_AUTO_TEST_SUITE_END()
-
-BOOST_AUTO_TEST_SUITE(core_io)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
 {
@@ -828,28 +848,6 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(to_vector, Fixture, Fixtures, Fixture)
         diagram.equals(vectord),
         "From-vector from to-vectored vector created the same diagram"
     );
-}
-
-BOOST_AUTO_TEST_SUITE_END()
-
-BOOST_AUTO_TEST_SUITE(core_io_bdd)
-
-BOOST_AUTO_TEST_CASE(from_pla)
-{
-    auto const path = "/home/michal/data/IWLS93/pla/xor5.pla";
-    if (not std::filesystem::exists(path))
-    {
-        BOOST_TEST_MESSAGE(
-            fmt::format("Missing input file '{}', test is skipped.", path)
-        );
-        return;
-    }
-    std::optional<pla_file> file = pla_file::load_file(path, true);
-    BOOST_REQUIRE_MESSAGE(file.has_value(), "Load simple PLA.");
-    bdd_manager manager(file->get_variable_count(), 1'000);
-    using bdd_t = bdd_manager::diagram_t;
-    std::vector<bdd_t> diagrams = io::from_pla(manager, *file);
-    BOOST_REQUIRE_EQUAL(file->get_function_count(), diagrams.size());
 }
 
 BOOST_AUTO_TEST_SUITE_END()

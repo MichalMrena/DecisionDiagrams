@@ -1,5 +1,6 @@
+#include <gmpxx.h>
 #include <libteddy/core.hpp>
-#include <libteddy/core_io.hpp>
+#include <libteddy/io.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
@@ -22,12 +23,24 @@
 #include <array>
 #include <vector>
 
+#include "libteddy/details/types.hpp"
 #include "setup.hpp"
 
-auto format_as (mpz_class const x)
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+// auto format_as (mpz_class const x)
+// {
+//     return x.get_str();
+// }
+template<>
+struct fmt::formatter<mpz_class> : formatter<std::string_view>
 {
-    return x.get_str();
-}
+    auto format(mpz_class c, format_context& ctx) const -> format_context::iterator
+    {
+        return formatter<string_view>::format(c.get_str(), ctx);
+    }
+};
+#endif
+
 
 namespace teddy::tests
 {
@@ -565,7 +578,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture)
                 );
                 auto const diagramDpldExtended
                     = manager.to_dpld_e(varChange.from, varIndex, diagramDpld);
-                auto const oneCount = manager.satisfy_count(1, diagramDpld);
+                longint const oneCount = manager.satisfy_count(1, diagramDpld);
 
                 BOOST_TEST_MESSAGE(fmt::format(
                     "Basic dpld f({} -> {}) / x{}({} -> {})",

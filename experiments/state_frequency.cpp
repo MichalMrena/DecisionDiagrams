@@ -5,7 +5,6 @@
 #include <nanobench/nanobench.h>
 #include <iomanip>
 #include <iostream>
-#include "libteddy/details/types.hpp"
 #include "utils.hpp"
 
 
