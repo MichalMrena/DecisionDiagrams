@@ -15,214 +15,214 @@ namespace teddy::probs
 {
 namespace details
 {
-/**
- *  \brief Helper for vector wrap
- *
- *  Returns probability that the component is in state 1 `p_{i,1}` from \p vec
- *  or in case we need the probability that it is in state 0 it calculates
- *  it as `1 - p_{i,1}`.
- */
-template<class Vector>
-class vector_to_matrix_proxy
-{
-public:
-    vector_to_matrix_proxy(Vector const& vec, std::size_t const index) :
-        index_(index),
-        vec_(&vec)
+    /**
+     *  \brief Helper for vector wrap
+     *
+     *  Returns probability that the component is in state 1 `p_{i,1}` from \p
+     * vec or in case we need the probability that it is in state 0 it
+     * calculates it as `1 - p_{i,1}`.
+     */
+    template<class Vector>
+    class vector_to_matrix_proxy
     {
-    }
+    public:
+        vector_to_matrix_proxy(Vector const& vec, std::size_t const index) :
+            index_(index),
+            vec_(&vec)
+        {
+        }
 
-    auto operator[] (std::size_t const value) const -> double
-    {
-        assert(value == 1 || value == 0);
-        double const prob = (*vec_)[index_];
-        return value == 1 ? prob : 1 - prob;
-    }
+        auto operator[] (std::size_t const value) const -> double
+        {
+            assert(value == 1 || value == 0);
+            double const prob = (*vec_)[index_];
+            return value == 1 ? prob : 1 - prob;
+        }
 
-private:
-    std::size_t index_;
-    Vector const* vec_;
-};
-
-/**
- *  \brief Wraps prob. vector so that it can be used as matrix
- *
- *  Algorithms working with probability require matrix \c ps such that
- *  \c ps[i][s] returns probability that \c i th component is in state \c s
- *  Since for BSS we only need to know probabilities that the component
- *  is in state 1 (p1) we can "fake" the matrix by wrapping the vector and
- *  calculating p0 as 1-p1
- */
-template<class Vector>
-class vector_to_matrix_wrap
-{
-public:
-    explicit vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
-    {
-    }
-
-    auto operator[] (std::size_t const index) const
-    {
-        return vector_to_matrix_proxy<Vector>(*vec_, index);
-    }
-
-private:
-    Vector const* vec_;
-};
-
-/**
- *  \brief Mixin that adds "memory" to any \c ProbDist
- *
- *  If asked (by calling \c cache_eval_at ), remembers computed value
- */
-template<class ProbDist>
-class make_cached
-{
-public:
-    auto cache_eval_at (double const t) -> void
-    {
-        value_ = (*static_cast<ProbDist*>(this))(t);
-    }
-
-    auto get_cached_value () const -> double
-    {
-        return value_;
-    }
-
-private:
-    double value_;
-};
-
-/**
- *  \brief Exponential distribution
- */
-class exponential : public make_cached<exponential>
-{
-public:
-    explicit exponential(double const rate) : rate_(rate)
-    {
-    }
+    private:
+        std::size_t index_;
+        Vector const* vec_;
+    };
 
     /**
-     *  \brief Calculates CDF of the distribution at time \p t
+     *  \brief Wraps prob. vector so that it can be used as matrix
+     *
+     *  Algorithms working with probability require matrix \c ps such that
+     *  \c ps[i][s] returns probability that \c i th component is in state \c s
+     *  Since for BSS we only need to know probabilities that the component
+     *  is in state 1 (p1) we can "fake" the matrix by wrapping the vector and
+     *  calculating p0 as 1-p1
      */
-    [[nodiscard]] auto operator() (double const t) const -> double
+    template<class Vector>
+    class vector_to_matrix_wrap
     {
-        return 1 - std::exp(-rate_ * t);
-    }
+    public:
+        explicit vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
+        {
+        }
 
-private:
-    double rate_;
-};
+        auto operator[] (std::size_t const index) const
+        {
+            return vector_to_matrix_proxy<Vector>(*vec_, index);
+        }
 
-// TODO nope
-/**
- *  \brief Exponential distribution
- */
-class complemented_exponential : public make_cached<exponential>
-{
-public:
-    explicit complemented_exponential(double const rate) : rate_(rate)
-    {
-    }
-
-    [[nodiscard]] auto operator() (double const t) const -> double
-    {
-        return std::exp(-rate_ * t);
-    }
-
-private:
-    double rate_;
-};
-
-/**
- *  \brief Weibull distribution
- */
-class weibull : public make_cached<weibull>
-{
-public:
-    weibull(double const scale, double const shape) :
-        scale_(scale),
-        shape_(shape)
-    {
-    }
+    private:
+        Vector const* vec_;
+    };
 
     /**
-     *  \brief Calculates CDF of the distribution at time \p t
+     *  \brief Mixin that adds "memory" to any \c ProbDist
+     *
+     *  If asked (by calling \c cache_eval_at ), remembers computed value
      */
-    [[nodiscard]] auto operator() (double const t) const -> double
+    template<class ProbDist>
+    class make_cached
     {
-        return 1 - std::exp(-std::pow(t / scale_, shape_));
-    }
+    public:
+        auto cache_eval_at (double const t) -> void
+        {
+            value_ = (*static_cast<ProbDist*>(this))(t);
+        }
 
-private:
-    double scale_;
-    double shape_;
-};
+        auto get_cached_value () const -> double
+        {
+            return value_;
+        }
 
-/**
- *  \brief Probability independent of time
- */
-class constant : public make_cached<constant>
-{
-public:
-    explicit constant(double const value) : value_(value)
-    {
-    }
+    private:
+        double value_;
+    };
 
     /**
-     *  \brief Calculates CDF of the distribution at time \p t
+     *  \brief Exponential distribution
      */
-    [[nodiscard]] auto operator() (double const) const -> double
+    class exponential : public make_cached<exponential>
     {
-        return value_;
-    }
+    public:
+        explicit exponential(double const rate) : rate_(rate)
+        {
+        }
 
-private:
-    double value_;
-};
+        /**
+         *  \brief Calculates CDF of the distribution at time \p t
+         */
+        [[nodiscard]] auto operator() (double const t) const -> double
+        {
+            return 1 - std::exp(-rate_ * t);
+        }
 
-/**
- *  \brief Continuous uniform distribution
- */
-class uniform : public make_cached<uniform>
-{
-public:
-    uniform(double const a, double const b) : a_(a), b_(b)
+    private:
+        double rate_;
+    };
+
+    // TODO nope
+    /**
+     *  \brief Exponential distribution
+     */
+    class complemented_exponential : public make_cached<exponential>
     {
-    }
+    public:
+        explicit complemented_exponential(double const rate) : rate_(rate)
+        {
+        }
+
+        [[nodiscard]] auto operator() (double const t) const -> double
+        {
+            return std::exp(-rate_ * t);
+        }
+
+    private:
+        double rate_;
+    };
 
     /**
-     *  \brief Calculates CDF of the distribution at time \p t
+     *  \brief Weibull distribution
      */
-    [[nodiscard]] auto operator() (double const t) const -> double
+    class weibull : public make_cached<weibull>
     {
-        return t < a_ ? 0.0 : t > b_ ? 1.0 : (t - a_) / (b_ - a_);
-    }
+    public:
+        weibull(double const scale, double const shape) :
+            scale_(scale),
+            shape_(shape)
+        {
+        }
 
-private:
-    double a_;
-    double b_;
-};
+        /**
+         *  \brief Calculates CDF of the distribution at time \p t
+         */
+        [[nodiscard]] auto operator() (double const t) const -> double
+        {
+            return 1 - std::exp(-std::pow(t / scale_, shape_));
+        }
 
-/**
- *  \brief User-defined distribution
- */
-class custom_dist : public make_cached<custom_dist>
-{
-public:
-    custom_dist(std::function<double(double)> dist) : dist_(std::move(dist))
+    private:
+        double scale_;
+        double shape_;
+    };
+
+    /**
+     *  \brief Probability independent of time
+     */
+    class constant : public make_cached<constant>
     {
-    }
+    public:
+        explicit constant(double const value) : value_(value)
+        {
+        }
 
-    [[nodiscard]] auto operator() (double const t) const -> double
+        /**
+         *  \brief Calculates CDF of the distribution at time \p t
+         */
+        [[nodiscard]] auto operator() (double const) const -> double
+        {
+            return value_;
+        }
+
+    private:
+        double value_;
+    };
+
+    /**
+     *  \brief Continuous uniform distribution
+     */
+    class uniform : public make_cached<uniform>
     {
-        return dist_(t);
-    }
+    public:
+        uniform(double const a, double const b) : a_(a), b_(b)
+        {
+        }
 
-private:
-    std::function<double(double)> dist_;
-};
+        /**
+         *  \brief Calculates CDF of the distribution at time \p t
+         */
+        [[nodiscard]] auto operator() (double const t) const -> double
+        {
+            return t < a_ ? 0.0 : t > b_ ? 1.0 : (t - a_) / (b_ - a_);
+        }
+
+    private:
+        double a_;
+        double b_;
+    };
+
+    /**
+     *  \brief User-defined distribution
+     */
+    class custom_dist : public make_cached<custom_dist>
+    {
+    public:
+        custom_dist(std::function<double(double)> dist) : dist_(std::move(dist))
+        {
+        }
+
+        [[nodiscard]] auto operator() (double const t) const -> double
+        {
+            return dist_(t);
+        }
+
+    private:
+        std::function<double(double)> dist_;
+    };
 } // namespace details
 
 using dist_variant = std::variant<

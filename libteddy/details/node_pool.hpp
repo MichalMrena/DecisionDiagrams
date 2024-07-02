@@ -151,7 +151,7 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
     node_t* nodePtr = nullptr;
     if (freeNodes_)
     {
-        nodePtr       = freeNodes_;
+        nodePtr    = freeNodes_;
         freeNodes_ = freeNodes_->get_next();
         nodePtr->~node_t();
     }
@@ -161,9 +161,7 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
         ++nextPoolNode_;
     }
 
-    return static_cast<node_t*>(
-        ::new (nodePtr) node_t(TEDDY_FORWARD(args)...)
-    );
+    return static_cast<node_t*>(::new (nodePtr) node_t(TEDDY_FORWARD(args)...));
 }
 
 template<class Data, class Degree>
@@ -198,7 +196,8 @@ auto node_pool<Data, Degree>::allocate_pool(
 {
     return new pool_item {
         static_cast<node_t*>(std::malloc(as_usize(size) * sizeof(node_t))),
-        next};
+        next
+    };
 }
 
 template<class Data, class Degree>

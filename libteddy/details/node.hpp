@@ -412,7 +412,8 @@ private:
     };
 
     [[no_unique_address]]
-    utils::optional_member<Data> data_;
+    utils::optional_member<Data>
+        data_;
 
     node* next_;
 

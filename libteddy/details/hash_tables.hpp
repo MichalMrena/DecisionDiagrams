@@ -21,12 +21,13 @@ public:
     static auto get_gte_capacity (int64 capacity) -> int64;
 
 private:
-    static constexpr int64 Capacities[] {
+    static int64 constexpr Capacities[] {
         307,         617,         1'237,         2'477,        4'957,
         9'923,       19'853,      39'709,        79'423,       158'849,
         317'701,     635'413,     1'270'849,     2'541'701,    5'083'423,
         10'166'857,  20'333'759,  40'667'527,    81'335'063,   162'670'129,
-        325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289};
+        325'340'273, 650'680'571, 1'301'361'143, 2'602'722'289
+    };
 };
 
 /**
@@ -214,8 +215,8 @@ private:
      *  \param sons Sons of the node
      *  \return Hash value of the node
      */
-    [[nodiscard]] auto node_hash (son_container const& sons) const
-        -> std::size_t;
+    [[nodiscard]] auto node_hash (son_container const& sons
+    ) const -> std::size_t;
 
     /**
      *  \brief Compares two nodes for equality
@@ -238,7 +239,7 @@ private:
     [[nodiscard]] auto mallocate_buckets (int64 count) -> node_t**;
 
 private:
-    static constexpr double LOAD_THRESHOLD = 0.75;
+    static double constexpr LOAD_THRESHOLD = 0.75;
 
 private:
     int32 domain_;
@@ -388,8 +389,8 @@ auto unique_table_iterator<Data, Degree>::operator++ ()
 }
 
 template<class Data, class Degree>
-auto unique_table_iterator<Data, Degree>::operator++ (int)
-    -> unique_table_iterator
+auto unique_table_iterator<Data, Degree>::operator++ (int
+) -> unique_table_iterator
 {
     auto const tmp = *this;
     ++(*this);
@@ -478,8 +479,8 @@ unique_table<Data, Degree>::~unique_table()
 }
 
 template<class Data, class Degree>
-auto unique_table<Data, Degree>::find(son_container const& sons) const
-    -> result_of_find
+auto unique_table<Data, Degree>::find(son_container const& sons
+) const -> result_of_find
 {
     std::size_t const hash = this->node_hash(sons);
     int64 const index
@@ -679,8 +680,8 @@ auto unique_table<Data, Degree>::erase_impl(
 }
 
 template<class Data, class Degree>
-auto unique_table<Data, Degree>::node_hash(son_container const& sons) const
-    -> std::size_t
+auto unique_table<Data, Degree>::node_hash(son_container const& sons
+) const -> std::size_t
 {
     std::size_t result = 0;
     for (int32 k = 0; k < domain_; ++k)
@@ -707,8 +708,8 @@ auto unique_table<Data, Degree>::node_equals(
 }
 
 template<class Data, class Degree>
-auto unique_table<Data, Degree>::callocate_buckets(int64 const count)
-    -> node_t**
+auto unique_table<Data, Degree>::callocate_buckets(int64 const count
+) -> node_t**
 {
     return static_cast<node_t**>(
         std::calloc(static_cast<std::size_t>(count), sizeof(node_t*))
@@ -716,8 +717,8 @@ auto unique_table<Data, Degree>::callocate_buckets(int64 const count)
 }
 
 template<class Data, class Degree>
-auto unique_table<Data, Degree>::mallocate_buckets(int64 const count)
-    -> node_t**
+auto unique_table<Data, Degree>::mallocate_buckets(int64 const count
+) -> node_t**
 {
     return static_cast<node_t**>(
         std::malloc(static_cast<std::size_t>(count) * sizeof(node_t*))
@@ -864,8 +865,8 @@ auto apply_cache<Data, Degree>::rehash(int64 const newCapacity) -> void
 }
 
 template<class Data, class Degree>
-auto apply_cache<Data, Degree>::callocate_entries(int64 const count)
-    -> cache_entry*
+auto apply_cache<Data, Degree>::callocate_entries(int64 const count
+) -> cache_entry*
 {
     return static_cast<cache_entry*>(
         std::calloc(static_cast<std::size_t>(count), sizeof(cache_entry))

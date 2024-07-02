@@ -77,7 +77,7 @@ auto pack_hash (Ts const&... args) -> std::size_t
  *  \brief The min function
  */
 template<class T>
-auto constexpr min (T lhs, T rhs) -> T
+auto constexpr min(T lhs, T rhs) -> T
 {
     return lhs < rhs ? lhs : rhs;
 }
@@ -86,7 +86,7 @@ auto constexpr min (T lhs, T rhs) -> T
  *  \brief The max function
  */
 template<class T>
-auto constexpr max (T lhs, T rhs) -> T
+auto constexpr max(T lhs, T rhs) -> T
 {
     return lhs > rhs ? lhs : rhs;
 }
@@ -95,7 +95,7 @@ auto constexpr max (T lhs, T rhs) -> T
  *  \brief The min function for parameter packs
  */
 template<class X>
-auto constexpr pack_min (X x) -> X
+auto constexpr pack_min(X x) -> X
 {
     return x;
 }
@@ -104,7 +104,7 @@ auto constexpr pack_min (X x) -> X
  *  \brief The min function for parameter packs
  */
 template<class X, class... Xs>
-auto constexpr pack_min (X x, Xs... xs) -> X
+auto constexpr pack_min(X x, Xs... xs) -> X
 {
     return min(x, pack_min(xs...));
 }
@@ -113,7 +113,7 @@ auto constexpr pack_min (X x, Xs... xs) -> X
  *  \brief The max function for parameter packs
  */
 template<class X>
-auto constexpr pack_max (X x) -> X
+auto constexpr pack_max(X x) -> X
 {
     return x;
 }
@@ -122,7 +122,7 @@ auto constexpr pack_max (X x) -> X
  *  \brief The max function for parameter packs
  */
 template<class X, class... Xs>
-auto constexpr pack_max (X x, Xs... xs) -> X
+auto constexpr pack_max(X x, Xs... xs) -> X
 {
     return max(x, pack_max(xs...));
 }
@@ -132,7 +132,7 @@ auto constexpr pack_max (X x, Xs... xs) -> X
  *  Implementation of \c std::max_element
  */
 template<class It>
-auto constexpr max_elem (It first, It const last) -> It
+auto constexpr max_elem(It first, It const last) -> It
 {
     It maxIt = first;
     while (first != last)
@@ -151,7 +151,7 @@ auto constexpr max_elem (It first, It const last) -> It
  *  Simplified implementation of \c std::exchange
  */
 template<class T, class U = T>
-auto constexpr exchange (T& var, U newVal) noexcept -> T
+auto constexpr exchange(T& var, U newVal) noexcept -> T
 {
     auto oldVal = var;
     var         = newVal;
@@ -163,7 +163,7 @@ auto constexpr exchange (T& var, U newVal) noexcept -> T
  *  Simplified implementation of \c std::swap
  */
 template<class T>
-auto constexpr swap (T& first, T& second) noexcept -> void
+auto constexpr swap(T& first, T& second) noexcept -> void
 {
     auto tmp = first;
     first    = second;
@@ -227,18 +227,18 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
     }
 }
 
-    // TODO this wont be necessary when we sort out node data and caches...
-    template<class T>
-    struct is_void
-    {
-        static constexpr bool value = false;
-    };
+// TODO this wont be necessary when we sort out node data and caches...
+template<class T>
+struct is_void
+{
+    static bool constexpr value = false;
+};
 
-    template<>
-    struct is_void<void>
-    {
-        static constexpr bool value = true;
-    };
+template<>
+struct is_void<void>
+{
+    static bool constexpr value = true;
+};
 
 /**
  *  \brief Checks if T and U are the same type
@@ -246,7 +246,7 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
 template<class T, class U>
 struct is_same
 {
-    static constexpr bool value = false;
+    static bool constexpr value = false;
 };
 
 /**
@@ -255,7 +255,7 @@ struct is_same
 template<class T>
 struct is_same<T, T>
 {
-    static constexpr bool value = true;
+    static bool constexpr value = true;
 };
 
 /**
@@ -270,8 +270,7 @@ concept same_as = is_same<T, U>::value;
 template<class T>
 concept is_std_vector = same_as<
     T,
-    std::vector<typename T::value_type, typename T::allocator_type>
->;
+    std::vector<typename T::value_type, typename T::allocator_type>>;
 
 /**
  *  \brief Provides member typedef based on the value of \p B
@@ -331,17 +330,17 @@ struct remove_reference<T&&>
     using type = T;
 };
 
-    // TODO asi nebude treba
-    template<class T>
-    struct optional_member
-    {
-        T member_;
-    };
+// TODO asi nebude treba
+template<class T>
+struct optional_member
+{
+    T member_;
+};
 
-    template<>
-    struct optional_member<void>
-    {
-    };
+template<>
+struct optional_member<void>
+{
+};
 
 /**
  *  \brief List of types, provides basic queries
@@ -350,26 +349,27 @@ template<class... Types>
 struct type_list
 {
     template<class T>
-    static constexpr bool Contains = (is_same<T, Types>::value || ...);
+    static bool constexpr Contains         = (is_same<T, Types>::value || ...);
 
-    static constexpr std::size_t MaxSizeof = utils::pack_max(sizeof(Types)...);
+    static std::size_t constexpr MaxSizeof = utils::pack_max(sizeof(Types)...);
 
-    static constexpr std::size_t MaxAlignof = utils::pack_max(alignof(Types)...);
+    static std::size_t constexpr MaxAlignof
+        = utils::pack_max(alignof(Types)...);
 };
 
 /**
  *  \brief Implementation of \c std::move
  */
-#define TEDDY_MOVE(...) \
-  static_cast<::teddy::utils::remove_reference<decltype(__VA_ARGS__)>::type&&>(\
-    __VA_ARGS__ \
-  )
+#define TEDDY_MOVE(...)                                                        \
+    static_cast<                                                               \
+        ::teddy::utils::remove_reference<decltype(__VA_ARGS__)>::type&&>(      \
+        __VA_ARGS__                                                            \
+    )
 
 /**
  *  \brief Implementation of \c std::forward
  */
-#define TEDDY_FORWARD(...) \
-  static_cast<decltype(__VA_ARGS__)&&>(__VA_ARGS__)
+#define TEDDY_FORWARD(...) static_cast<decltype(__VA_ARGS__)&&>(__VA_ARGS__)
 } // namespace teddy::utils
 
 #endif

@@ -58,22 +58,17 @@ namespace teddy
 inline auto dump_stats () -> void
 {
     auto& stats = stats::get_stats();
-    std::cout << "Unique table"
-              << "\n"
+    std::cout << "Unique table" << "\n"
               << "  hit   = " << stats.uniqueTableQueries_.hitCount_ << "\n"
               << "  total = " << stats.uniqueTableQueries_.totalCount_ << "\n"
-              << "Apply cache"
-              << "\n"
+              << "Apply cache" << "\n"
               << "  hit   = " << stats.applyCacheQueries_.hitCount_ << "\n"
               << "  total = " << stats.applyCacheQueries_.totalCount_ << "\n"
-              << "Collect garbage"
-              << "\n"
+              << "Collect garbage" << "\n"
               << "  total = " << stats.collectGarbage_.total_.count() << "ns\n"
-              << "Make node"
-              << "\n"
+              << "Make node" << "\n"
               << "  total = " << stats.makeNode_.total_.count() << "ns\n"
-              << "Apply step"
-              << "\n"
+              << "Apply step" << "\n"
               << "  calls = " << stats.applyStepCalls_ << "\n";
 }
 } // namespace teddy

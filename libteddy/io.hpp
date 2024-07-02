@@ -1,11 +1,11 @@
 #ifndef LIBTEDDY_CORE_IO_HPP
-#define  LIBTEDDY_CORE_IO_HPP
+#define LIBTEDDY_CORE_IO_HPP
+
+#include <libteddy/core.hpp>
+#include <libteddy/details/io_impl.hpp>
+#include <libteddy/details/pla_file.hpp>
 
 #include <initializer_list>
-#include <libteddy/details/pla_file.hpp>
-#include <libteddy/details/io_impl.hpp>
-#include <libteddy/core.hpp>
-
 #include <iterator>
 
 namespace teddy
@@ -20,7 +20,7 @@ struct io
      *  \param foldType fold type used in diagram creation
      *  \return Vector of diagrams
      */
-    static auto from_pla(
+    static auto from_pla (
         bdd_manager& manager,
         pla_file const& file,
         fold_type const foldType = fold_type::Tree
@@ -68,8 +68,7 @@ struct io
         class Degree,
         class Domain,
         std::input_iterator I,
-        std::sentinel_for<I> S
-    >
+        std::sentinel_for<I> S>
     static auto from_vector (
         diagram_manager<Data, Degree, Domain>& manager,
         I first,
@@ -86,12 +85,7 @@ struct io
      *  Elements of the range must be convertible to int
      *  \return Diagram representing function given by the truth vector
      */
-    template<
-        class Data,
-        class Degree,
-        class Domain,
-        std::ranges::input_range R
-    >
+    template<class Data, class Degree, class Domain, std::ranges::input_range R>
     static auto from_vector (
         diagram_manager<Data, Degree, Domain>& manager,
         R const& vector
@@ -106,11 +100,7 @@ struct io
      *  Elements of the range must be convertible to int
      *  \return Diagram representing function given by the truth vector
      */
-    template<
-        class Data,
-        class Degree,
-        class Domain
-    >
+    template<class Data, class Degree, class Domain>
     static auto from_vector (
         diagram_manager<Data, Degree, Domain>& manager,
         std::initializer_list<int> vector
@@ -147,8 +137,7 @@ struct io
         class Data,
         class Degree,
         class Domain,
-        std::output_iterator<teddy::int32> O
-    >
+        std::output_iterator<teddy::int32> O>
     static auto to_vector_g (
         diagram_manager<Data, Degree, Domain> const& manager,
         diagram_manager<Data, Degree, Domain>::diagram_t const& diagram,
@@ -186,7 +175,6 @@ struct io
         std::ostream& out,
         diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
     ) -> void;
-
 };
 
 // definitions:
@@ -197,7 +185,7 @@ inline auto io::from_pla(
     fold_type const foldType
 ) -> std::vector<bdd_manager::diagram_t>
 {
-    using bdd_t = bdd_manager::diagram_t;
+    using bdd_t        = bdd_manager::diagram_t;
     auto const product = [&manager] (auto const& cube)
     {
         std::vector<bdd_t> variables;
@@ -233,9 +221,9 @@ inline auto io::from_pla(
         }
     };
 
-    std::vector<pla_file::pla_line>const& plaLines = file.get_lines();
-    int64 const lineCount = file.get_line_count();
-    int64 const functionCount = file.get_function_count();
+    std::vector<pla_file::pla_line> const& plaLines = file.get_lines();
+    int64 const lineCount                           = file.get_line_count();
+    int64 const functionCount                       = file.get_function_count();
 
     // Create a diagram for each function.
     std::vector<bdd_t> functionDiagrams;
@@ -251,9 +239,7 @@ inline auto io::from_pla(
             // in functions with value 1.
             if (plaLines[as_usize(li)].fVals_.get(fi) == 1)
             {
-                products.push_back(
-                    product(plaLines[as_uindex(li)].cube_)
-                );
+                products.push_back(product(plaLines[as_uindex(li)].cube_));
             }
         }
 
@@ -275,19 +261,19 @@ template<
     class Degree,
     class Domain,
     std::input_iterator I,
-    std::sentinel_for<I> S
->
-auto io::from_vector (
+    std::sentinel_for<I> S>
+auto io::from_vector(
     diagram_manager<Data, Degree, Domain>& manager,
     I first,
     S last
 ) -> diagram_manager<Data, Degree, Domain>::diagram_t
 {
-    using manager_t = diagram_manager<Data, Degree, Domain>;
-    using diagram_t = typename manager_t::diagram_t;
+    using manager_t     = diagram_manager<Data, Degree, Domain>;
+    using diagram_t     = typename manager_t::diagram_t;
     using son_container = typename manager_t::son_container;
-    using node_t = typename manager_t::node_t;
-    using stack_frame = struct
+    using node_t        = typename manager_t::node_t;
+
+    using stack_frame   = struct
     {
         node_t* node;
         int32 level;
@@ -299,8 +285,8 @@ auto io::from_vector (
         return manager.constant(*first);
     }
 
-    int32 const lastLevel = manager.get_var_count() - 1;
-    int32 const lastIndex = manager.nodes_.get_index(lastLevel);
+    int32 const lastLevel    = manager.get_var_count() - 1;
+    int32 const lastIndex    = manager.nodes_.get_index(lastLevel);
     int32 const preLastIndex = manager.nodes_.get_index(lastLevel - 1);
 
     if constexpr (std::random_access_iterator<I>)
@@ -354,7 +340,7 @@ auto io::from_vector (
         }
     };
 
-    int32 const lastDomain = manager.nodes_.get_domain(lastIndex);
+    int32 const lastDomain    = manager.nodes_.get_domain(lastIndex);
     int32 const preLastDomain = manager.nodes_.get_domain(preLastIndex);
     while (first != last)
     {
@@ -397,7 +383,7 @@ auto io::from_vector(
 }
 
 template<class Data, class Degree, class Domain>
-auto io::to_vector (
+auto io::to_vector(
     diagram_manager<Data, Degree, Domain> const& manager,
     diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
 ) -> std::vector<int32>
@@ -414,9 +400,8 @@ template<
     class Data,
     class Degree,
     class Domain,
-    std::output_iterator<teddy::int32> O
->
-auto io::to_vector_g (
+    std::output_iterator<teddy::int32> O>
+auto io::to_vector_g(
     diagram_manager<Data, Degree, Domain> const& manager,
     diagram_manager<Data, Degree, Domain>::diagram_t const& diagram,
     O out
@@ -455,29 +440,31 @@ auto io::to_vector_g (
 }
 
 template<class Data, class Degree, class Domain>
-auto io::to_dot (
+auto io::to_dot(
     diagram_manager<Data, Degree, Domain> const& manager,
     std::ostream& out
 ) -> void
 {
-    details::io_impl::to_dot_graph_common(manager, out, [&manager](auto const& f)
-    {
-        manager.nodes_.for_each_node(f);
-    });
+    details::io_impl::to_dot_graph_common(
+        manager,
+        out,
+        [&manager] (auto const& f) { manager.nodes_.for_each_node(f); }
+    );
 }
 
 template<class Data, class Degree, class Domain>
-auto io::to_dot (
+auto io::to_dot(
     diagram_manager<Data, Degree, Domain> const& manager,
     std::ostream& out,
     diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
 ) -> void
 {
-    details::io_impl::to_dot_graph_common(manager, out,
-    [&manager, &diagram](auto const& f)
-    {
-        manager.nodes_.traverse_level(diagram.unsafe_get_root(), f);
-    });
+    details::io_impl::to_dot_graph_common(
+        manager,
+        out,
+        [&manager, &diagram] (auto const& f)
+        { manager.nodes_.traverse_level(diagram.unsafe_get_root(), f); }
+    );
 }
-}
+} // namespace teddy
 #endif

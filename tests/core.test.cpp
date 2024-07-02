@@ -1,4 +1,3 @@
-#include <boost/test/unit_test_suite.hpp>
 #include <libteddy/core.hpp>
 #include <libteddy/io.hpp>
 
@@ -11,6 +10,7 @@
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/test/unit_test_log.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <fmt/core.h>
 
@@ -49,10 +49,13 @@ private:
 public:
     bdd_fixture() :
         fixture_base<bdd_manager_settings, minmax_expression_settings> {
-            .managerSettings_ = bdd_manager_settings {VarCount, NodeCount, random_order_tag()},
-            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
-            .rng_ = std::ranlux48(Seed),
-            .maxValue_ = 2}
+            .managerSettings_
+            = bdd_manager_settings {VarCount, NodeCount, random_order_tag()},
+            .expressionSettings_
+            = minmax_expression_settings {VarCount, TermCount, TermSize          },
+            .rng_      = std::ranlux48(Seed),
+            .maxValue_ = 2
+    }
     {
     }
 };
@@ -73,10 +76,13 @@ private:
 public:
     mdd_fixture() :
         fixture_base<mdd_manager_settings<3>, minmax_expression_settings> {
-            .managerSettings_ = mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()},
-            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
-            .rng_ = std::ranlux48(Seed),
-            .maxValue_ = 3}
+            .managerSettings_
+            = mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()},
+            .expressionSettings_
+            = minmax_expression_settings {VarCount, TermCount, TermSize          },
+            .rng_      = std::ranlux48(Seed),
+            .maxValue_ = 3
+    }
     {
     }
 };
@@ -97,10 +103,14 @@ private:
 public:
     imdd_fixture() :
         fixture_base<imdd_manager_settings<3>, minmax_expression_settings> {
-            .managerSettings_ = imdd_manager_settings<3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}},
-            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
-            .rng_ = std::ranlux48(Seed),
-            .maxValue_ = 3}
+            .managerSettings_ = imdd_manager_settings<
+                3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}
+            },
+            .expressionSettings_
+            = minmax_expression_settings {VarCount, TermCount, TermSize},
+            .rng_      = std::ranlux48(Seed),
+            .maxValue_ = 3
+    }
     {
     }
 };
@@ -121,10 +131,14 @@ private:
 public:
     ifmdd_fixture() :
         fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings> {
-            .managerSettings_ = ifmdd_manager_settings<3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}},
-            .expressionSettings_ = minmax_expression_settings {VarCount, TermCount, TermSize},
-            .rng_ = std::ranlux48(Seed),
-            .maxValue_ = 3}
+            .managerSettings_ = ifmdd_manager_settings<
+                3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}
+            },
+            .expressionSettings_
+            = minmax_expression_settings {VarCount, TermCount, TermSize},
+            .rng_      = std::ranlux48(Seed),
+            .maxValue_ = 3
+    }
     {
     }
 };
@@ -728,8 +742,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
         = manager.get_cofactor(diagram, index1, value1);
     auto const cofactoredDiagram1
         = manager.get_cofactor(intermediateDiagram, index2, value2);
-    auto const cofactoredDiagram2
-        = manager.get_cofactor(diagram, {{index1, value1}, {index2, value2}});
+    auto const cofactoredDiagram2 = manager.get_cofactor(
+        diagram,
+        {
+            {index1, value1},
+            {index2, value2}
+    }
+    );
 
     auto domainIt = tsl::domain_iterator(
         manager.get_domains(),
@@ -797,7 +816,7 @@ BOOST_AUTO_TEST_CASE(from_pla)
     std::optional<pla_file> file = pla_file::load_file(path, true);
     BOOST_REQUIRE_MESSAGE(file.has_value(), "Load simple PLA.");
     bdd_manager manager(file->get_variable_count(), 1'000);
-    using bdd_t = bdd_manager::diagram_t;
+    using bdd_t                 = bdd_manager::diagram_t;
     std::vector<bdd_t> diagrams = io::from_pla(manager, *file);
     BOOST_REQUIRE_EQUAL(file->get_function_count(), diagrams.size());
 }

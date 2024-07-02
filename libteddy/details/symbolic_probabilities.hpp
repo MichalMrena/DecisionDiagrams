@@ -3,24 +3,25 @@
 
 #include <libteddy/details/config.hpp>
 #include <libteddy/details/types.hpp>
+
 #include <cassert>
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
-#include <ginac/ginac.h>
+#    include <ginac/ginac.h>
 
 namespace teddy::symprobs
 {
 namespace details
 {
-/**
- *  \brief All expressions need to share a single instance of the symbol
- */
-inline GiNaC::symbol& time_symbol ()
-{
-    static GiNaC::realsymbol t("t");
-    return t;
-}
-} // details
+    /**
+     *  \brief All expressions need to share a single instance of the symbol
+     */
+    inline GiNaC::symbol& time_symbol ()
+    {
+        static GiNaC::realsymbol t("t");
+        return t;
+    }
+} // namespace details
 
 /**
  *  \brief Wrapper around third-party-library-specific expression type
@@ -28,18 +29,15 @@ inline GiNaC::symbol& time_symbol ()
 class expression
 {
 public:
-    explicit expression(int32 const val) :
-        ex_(val)
+    explicit expression(int32 const val) : ex_(val)
     {
     }
 
-    explicit expression(int64 const val) :
-        ex_(val)
+    explicit expression(int64 const val) : ex_(val)
     {
     }
 
-    explicit expression(double const val) :
-        ex_(val)
+    explicit expression(double const val) : ex_(val)
     {
     }
 
@@ -80,37 +78,29 @@ private:
 
 namespace details
 {
-    inline auto operator+ (
-        expression const& lhs,
-        expression const& rhs
-    ) -> expression
+    inline auto operator+ (expression const& lhs, expression const& rhs)
+        -> expression
     {
         auto result = lhs.as_underlying_unsafe() + rhs.as_underlying_unsafe();
         return expression(result);
     }
 
-    inline auto operator* (
-        expression const& lhs,
-        expression const& rhs
-    ) -> expression
+    inline auto operator* (expression const& lhs, expression const& rhs)
+        -> expression
     {
         auto result = lhs.as_underlying_unsafe() * rhs.as_underlying_unsafe();
         return expression(result);
     }
 
-    inline auto operator+= (
-        expression& lhs,
-        expression const& rhs
-    ) -> expression&
+    inline auto operator+= (expression& lhs, expression const& rhs)
+        -> expression&
     {
         lhs.as_underlying_unsafe() += rhs.as_underlying_unsafe();
         return lhs;
     }
 
-    inline auto operator*= (
-        expression& lhs,
-        expression const& rhs
-    ) -> expression&
+    inline auto operator*= (expression& lhs, expression const& rhs)
+        -> expression&
     {
         lhs.as_underlying_unsafe() *= rhs.as_underlying_unsafe();
         return lhs;
@@ -123,9 +113,7 @@ namespace details
 inline auto exponential (double const rate) -> expression
 {
     auto& t = details::time_symbol();
-    return expression(
-        GiNaC::ex(1) - GiNaC::exp(-rate * t)
-    );
+    return expression(GiNaC::ex(1) - GiNaC::exp(-rate * t));
 }
 
 /**
@@ -134,15 +122,14 @@ inline auto exponential (double const rate) -> expression
 inline auto weibull (double const scale, double const shape) -> expression
 {
     auto& t = details::time_symbol();
-    return expression(
-        GiNaC::ex(1) - GiNaC::exp(-GiNaC::pow(t / scale, shape))
-    );
+    return expression(GiNaC::ex(1) - GiNaC::exp(-GiNaC::pow(t / scale, shape)));
 }
 
 /**
  *  \brief Creates CDF expression of Normal distribution
  */
-inline auto normal ([[maybe_unused]] double mean, [[maybe_unused]] double var) -> expression
+inline auto normal ([[maybe_unused]] double mean, [[maybe_unused]] double var)
+    -> expression
 {
     // TODO
     return expression(-1);
@@ -153,9 +140,7 @@ inline auto normal ([[maybe_unused]] double mean, [[maybe_unused]] double var) -
  */
 inline auto constant (double prob) -> expression
 {
-    return expression(
-        GiNaC::ex(prob)
-    );
+    return expression(GiNaC::ex(prob));
 }
 
 /**
@@ -163,9 +148,7 @@ inline auto constant (double prob) -> expression
  */
 inline auto complement (expression const& other) -> expression
 {
-    return expression(
-        GiNaC::ex(1) - other.as_underlying_unsafe()
-    );
+    return expression(GiNaC::ex(1) - other.as_underlying_unsafe());
 }
 
 /**
@@ -173,77 +156,74 @@ inline auto complement (expression const& other) -> expression
  */
 template<class Probabilities>
 concept symprob_vector = requires(Probabilities probs, int32 index) {
-                          {
-                              probs[index]
-                          } -> std::convertible_to<expression>;
-                      };
+    { probs[index] } -> std::convertible_to<expression>;
+};
 
 /**
  *  \brief Matrix of time-independent probabilities
  */
 template<class Probabilities>
-concept symprob_matrix = requires(Probabilities probs, int32 index, int32 value) {
-                          {
-                              probs[index][value]
-                          } -> std::convertible_to<expression>;
-                      };
+concept symprob_matrix
+    = requires(Probabilities probs, int32 index, int32 value) {
+          { probs[index][value] } -> std::convertible_to<expression>;
+      };
 
 namespace details
 {
-/**
- *  \brief Helper for vector wrap
- *
- *  Returns expression of probability that the component is in state 1 `p_{i,1}`
- *  from \p vec or in case we need the probability that it is in state 0
- *  it calculates it as `1 - p_{i,1}`.
- */
-template<class Vector>
-class vector_to_matrix_proxy
-{
-public:
-    vector_to_matrix_proxy(Vector const& vec, std::size_t const index) :
-        index_(index),
-        vec_(&vec)
+    /**
+     *  \brief Helper for vector wrap
+     *
+     *  Returns expression of probability that the component is in state 1
+     * `p_{i,1}` from \p vec or in case we need the probability that it is in
+     * state 0 it calculates it as `1 - p_{i,1}`.
+     */
+    template<class Vector>
+    class vector_to_matrix_proxy
     {
-    }
+    public:
+        vector_to_matrix_proxy(Vector const& vec, std::size_t const index) :
+            index_(index),
+            vec_(&vec)
+        {
+        }
 
-    auto operator[] (std::size_t const value) const
+        auto operator[] (std::size_t const value) const
+        {
+            assert(value == 1 || value == 0);
+            expression expr = (*vec_)[index_];
+            return value == 1 ? expr : complement(expr);
+        }
+
+    private:
+        std::size_t index_;
+        Vector const* vec_;
+    };
+
+    /**
+     *  \brief Wraps prob. vector so that it can be used as matrix
+     *
+     *  Algorithms working with probability require matrix \c ps such that
+     *  \c ps[i][s] expression of probability that component \c i is in state \c
+     * s Since for BSS we only need to know probabilities that the component is
+     * in state 1 (p1) we can "fake" the matrix by wrapping the vector and
+     *  calculating p0 as 1-p1
+     */
+    template<class Vector>
+    class vector_to_matrix_wrap
     {
-        assert(value == 1 || value == 0);
-        expression expr = (*vec_)[index_];
-        return value == 1 ? expr : complement(expr);
-    }
+    public:
+        vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
+        {
+        }
 
-private:
-    std::size_t index_;
-    Vector const* vec_;
-};
+        auto operator[] (std::size_t const index) const
+        {
+            return vector_to_matrix_proxy<Vector>(*vec_, index);
+        }
 
-/**
- *  \brief Wraps prob. vector so that it can be used as matrix
- *
- *  Algorithms working with probability require matrix \c ps such that
- *  \c ps[i][s] expression of probability that component \c i is in state \c s
- *  Since for BSS we only need to know probabilities that the component
- *  is in state 1 (p1) we can "fake" the matrix by wrapping the vector and
- *  calculating p0 as 1-p1
- */
-template<class Vector>
-class vector_to_matrix_wrap
-{
-public:
-    vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
-    {
-    }
-
-    auto operator[] (std::size_t const index) const
-    {
-        return vector_to_matrix_proxy<Vector>(*vec_, index);
-    }
-
-private:
-    Vector const* vec_;
-};
+    private:
+        Vector const* vec_;
+    };
 } // namespace details
 
 /**

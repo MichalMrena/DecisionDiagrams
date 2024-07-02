@@ -1,11 +1,11 @@
 #include "iterators.hpp"
-#include "expressions.hpp"
-#include "utilities.hpp"
 
 #include <libteddy/details/tools.hpp>
 
 #include <algorithm>
 
+#include "expressions.hpp"
+#include "utilities.hpp"
 
 namespace teddy::tsl
 {

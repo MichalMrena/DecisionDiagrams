@@ -10,7 +10,7 @@ using int64                      = std::int64_t;
 using uint32                     = std::uint32_t;
 using uint64                     = std::uint64_t;
 
-inline constexpr int32 Undefined = ~(1 << (8 * sizeof(int32) - 1));
+inline int32 constexpr Undefined = ~(1 << (8 * sizeof(int32) - 1));
 
 // TODO add rng type
 

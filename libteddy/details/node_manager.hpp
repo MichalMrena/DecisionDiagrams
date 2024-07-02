@@ -21,60 +21,59 @@ namespace teddy
 {
 namespace domains
 {
-struct mixed
-{
-    /*
-     * Just a dummy value to simplify ifs, this one should be never used
-     */
-    static constexpr int32 value = 1;
-
-    std::vector<int32> domains_;
-
-    mixed(std::vector<int32> domains) :
-        domains_(TEDDY_MOVE(domains)) {};
-
-    auto operator[] (int32 const index) const
+    struct mixed
     {
-        return domains_[as_uindex(index)];
-    }
-};
+        /*
+         * Just a dummy value to simplify ifs, this one should be never used
+         */
+        static int32 constexpr value = 1;
 
-template<int32 N>
-struct fixed
-{
-    static_assert(N > 1);
+        std::vector<int32> domains_;
 
-    static constexpr int32 value = N;
+        mixed(std::vector<int32> domains) : domains_(TEDDY_MOVE(domains)) {};
 
-    constexpr auto operator[] ([[maybe_unused]] int32 const index) const
+        auto operator[] (int32 const index) const
+        {
+            return domains_[as_uindex(index)];
+        }
+    };
+
+    template<int32 N>
+    struct fixed
     {
-        return N;
-    }
-};
+        static_assert(N > 1);
 
-template<class T>
-struct is_fixed
-{
-    static constexpr bool value = false;
-};
+        static int32 constexpr value = N;
 
-template<int32 N>
-struct is_fixed<fixed<N>>
-{
-    static constexpr bool value = true;
-};
+        auto constexpr operator[] ([[maybe_unused]] int32 const index) const
+        {
+            return N;
+        }
+    };
 
-template<class T>
-struct is_mixed
-{
-    static constexpr bool value = false;
-};
+    template<class T>
+    struct is_fixed
+    {
+        static bool constexpr value = false;
+    };
 
-template<>
-struct is_mixed<mixed>
-{
-    static constexpr bool value = true;
-};
+    template<int32 N>
+    struct is_fixed<fixed<N>>
+    {
+        static bool constexpr value = true;
+    };
+
+    template<class T>
+    struct is_mixed
+    {
+        static bool constexpr value = false;
+    };
+
+    template<>
+    struct is_mixed<mixed>
+    {
+        static bool constexpr value = true;
+    };
 } // namespace domains
 
 template<class Data, class Degree, class Domain>
@@ -129,10 +128,8 @@ private:
 public:
     [[nodiscard]] auto get_terminal_node (int32 value) const -> node_t*;
     [[nodiscard]] auto make_terminal_node (int32 value) -> node_t*;
-    [[nodiscard]] auto make_internal_node (
-        int32 index,
-        son_container sons
-    ) -> node_t*;
+    [[nodiscard]] auto make_internal_node (int32 index, son_container sons)
+        -> node_t*;
     [[nodiscard]] auto get_level (int32 index) const -> int32;
     [[nodiscard]] auto get_level (node_t* node) const -> int32;
     [[nodiscard]] auto get_leaf_level () const -> int32;
@@ -151,10 +148,9 @@ public:
      *  \param levelFrom inclusive
      *  \param levelTo exclusive
      */
-     template<class Int = int64>
+    template<class Int = int64>
     [[nodiscard]]
-    auto domain_product (int32 levelFrom, int32 levelTo) const
-        -> Int;
+    auto domain_product (int32 levelFrom, int32 levelTo) const -> Int;
 
     template<class NodeOp>
     auto for_each_son (node_t* node, NodeOp&& operation) const -> void;
@@ -226,15 +222,15 @@ private:
 
     auto collect_garbage () -> void;
 
-    [[nodiscard]] static auto check_distinct (std::vector<int32> const& ints)
-        -> bool;
+    [[nodiscard]] static auto check_distinct (std::vector<int32> const& ints
+    ) -> bool;
 
     [[nodiscard]] static auto can_be_gced (node_t* node) -> bool;
 
 private:
-    static constexpr int32 DEFAULT_FIRST_TABLE_ADJUSTMENT = 230;
-    static constexpr double DEFAULT_CACHE_RATIO           = 1.0;
-    static constexpr double DEFAULT_GC_RATIO              = 0.20;
+    static int32 constexpr DEFAULT_FIRST_TABLE_ADJUSTMENT = 230;
+    static double constexpr DEFAULT_CACHE_RATIO           = 1.0;
+    static double constexpr DEFAULT_GC_RATIO              = 0.20;
 
 private:
     apply_cache<Data, Degree> opCache_;
@@ -255,24 +251,24 @@ private:
 };
 
 template<class Data, class Degree>
-auto id_inc_ref_count (node<Data, Degree>* const node)
-    -> ::teddy::node<Data, Degree>*
+auto id_inc_ref_count (node<Data, Degree>* const node
+) -> ::teddy::node<Data, Degree>*
 {
     node->inc_ref_count();
     return node;
 }
 
 template<class Data, class Degree>
-auto id_set_marked (node<Data, Degree>* const node)
-    -> ::teddy::node<Data, Degree>*
+auto id_set_marked (node<Data, Degree>* const node
+) -> ::teddy::node<Data, Degree>*
 {
     node->set_marked();
     return node;
 }
 
 template<class Data, class Degree>
-auto id_set_notmarked (node<Data, Degree>* const node)
-    -> ::teddy::node<Data, Degree>*
+auto id_set_notmarked (node<Data, Degree>* const node
+) -> ::teddy::node<Data, Degree>*
 {
     node->set_notmarked();
     return node;
@@ -402,24 +398,24 @@ node_manager<Data, Degree, Domain>::node_manager(
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::set_cache_ratio(double const ratio)
-    -> void
+auto node_manager<Data, Degree, Domain>::set_cache_ratio(double const ratio
+) -> void
 {
     assert(ratio > 0);
     cacheRatio_ = ratio;
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::set_gc_ratio(double const ratio)
-    -> void
+auto node_manager<Data, Degree, Domain>::set_gc_ratio(double const ratio
+) -> void
 {
     assert(ratio >= 0.0 && ratio <= 1.0);
     gcRatio_ = ratio;
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::set_auto_reorder(bool const doReorder)
-    -> void
+auto node_manager<Data, Degree, Domain>::set_auto_reorder(bool const doReorder
+) -> void
 {
     autoReorderEnabled_ = doReorder;
 }
@@ -432,8 +428,8 @@ auto node_manager<Data, Degree, Domain>::get_terminal_node(int32 const value
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::make_terminal_node(int32 const value)
-    -> node_t*
+auto node_manager<Data, Degree, Domain>::make_terminal_node(int32 const value
+) -> node_t*
 {
     if constexpr (domains::is_fixed<Domain>::value)
     {
@@ -510,15 +506,15 @@ auto node_manager<Data, Degree, Domain>::make_internal_node(
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::get_level(int32 const index) const
-    -> int32
+auto node_manager<Data, Degree, Domain>::get_level(int32 const index
+) const -> int32
 {
     return indexToLevel_[as_uindex(index)];
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::get_level(node_t* const node) const
-    -> int32
+auto node_manager<Data, Degree, Domain>::get_level(node_t* const node
+) const -> int32
 {
     return node->is_terminal() ? this->get_leaf_level()
                                : this->get_level(node->get_index());
@@ -531,31 +527,31 @@ auto node_manager<Data, Degree, Domain>::get_leaf_level() const -> int32
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::get_index(int32 const level) const
-    -> int32
+auto node_manager<Data, Degree, Domain>::get_index(int32 const level
+) const -> int32
 {
     assert(level < ssize(levelToIndex_));
     return levelToIndex_[as_uindex(level)];
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::get_domain(int32 const index) const
-    -> int32
+auto node_manager<Data, Degree, Domain>::get_domain(int32 const index
+) const -> int32
 {
     assert(index < this->get_var_count());
     return domains_[index];
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::get_domain(node_t* const node) const
-    -> int32
+auto node_manager<Data, Degree, Domain>::get_domain(node_t* const node
+) const -> int32
 {
     return this->get_domain(node->get_index());
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::get_node_count(int32 const index) const
-    -> int64
+auto node_manager<Data, Degree, Domain>::get_node_count(int32 const index
+) const -> int64
 {
     assert(index < this->get_var_count());
     return uniqueTables_[as_uindex(index)].get_size();
@@ -725,8 +721,8 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
 
 template<class Data, class Degree, class Domain>
 template<class NodeOp>
-auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation) const
-    -> void
+auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation
+) const -> void
 {
     for (unique_table<Data, Degree> const& table : uniqueTables_)
     {
@@ -933,8 +929,8 @@ auto node_manager<Data, Degree, Domain>::traverse_level(
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::dec_ref_count(node_t* const node)
-    -> void
+auto node_manager<Data, Degree, Domain>::dec_ref_count(node_t* const node
+) -> void
 {
     node->dec_ref_count();
 }
@@ -982,8 +978,8 @@ auto node_manager<Data, Degree, Domain>::adjust_caches() -> void
 
 template<class Data, class Degree, class Domain>
 template<class... Args>
-auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args)
-    -> node_t*
+auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args
+) -> node_t*
 {
     if (autoReorderEnabled_)
     {
@@ -1077,8 +1073,8 @@ auto node_manager<Data, Degree, Domain>::can_be_gced(node_t* const node) -> bool
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
-    -> void
+auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node
+) -> void
 {
     using node_matrix = utils::type_if<
         degrees::is_fixed<Degree>::value,
@@ -1125,10 +1121,8 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
             innerSons[innerK]
                 = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
         }
-        outerSons[outerK] = this->make_internal_node(
-            nodeIndex,
-            TEDDY_MOVE(innerSons)
-        );
+        outerSons[outerK]
+            = this->make_internal_node(nodeIndex, TEDDY_MOVE(innerSons));
     }
 
     node->set_index(nextIndex);
@@ -1147,8 +1141,8 @@ auto node_manager<Data, Degree, Domain>::swap_node_with_next(node_t* const node)
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const node)
-    -> void
+auto node_manager<Data, Degree, Domain>::dec_ref_try_gc(node_t* const node
+) -> void
 {
     node->dec_ref_count();
 
@@ -1196,9 +1190,7 @@ auto node_manager<Data, Degree, Domain>::swap_variable_with_next(
         this->swap_node_with_next(node);
     }
     uniqueTables_[as_uindex(index)].adjust_capacity();
-    uniqueTables_[as_uindex(nextIndex)].merge(
-        TEDDY_MOVE(tmpTable)
-    );
+    uniqueTables_[as_uindex(nextIndex)].merge(TEDDY_MOVE(tmpTable));
 
     utils::swap(
         levelToIndex_[as_uindex(level)],

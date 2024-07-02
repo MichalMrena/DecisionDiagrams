@@ -1,4 +1,3 @@
-#include <gmpxx.h>
 #include <libteddy/core.hpp>
 #include <libteddy/io.hpp>
 
@@ -21,6 +20,7 @@
 
 #include <algorithm>
 #include <array>
+#include <gmpxx.h>
 #include <vector>
 
 #include "libteddy/details/types.hpp"
@@ -34,53 +34,53 @@
 template<>
 struct fmt::formatter<mpz_class> : formatter<std::string_view>
 {
-    auto format(mpz_class c, format_context& ctx) const -> format_context::iterator
+    auto format (mpz_class c, format_context& ctx) const
+        -> format_context::iterator
     {
         return formatter<string_view>::format(c.get_str(), ctx);
     }
 };
 #endif
 
-
 namespace teddy::tests
 {
 namespace details
 {
-auto compare_dplds (auto& manager, auto const& tableDpld, auto diagramDpld)
-{
-    auto result = true;
-    domain_for_each(
-        tableDpld,
-        [&manager, &result, &diagramDpld] (auto const val, auto const& elem)
-        {
-            if (manager.evaluate(diagramDpld, elem) != val)
-            {
-                result = false;
-            }
-        }
-    );
-    return result;
-};
-
-using Change = struct
-{
-    int32 from;
-    int32 to;
-};
-
-auto switch_direction (Change change) -> Change
-{
-    return {change.to, change.from};
-}
-
-auto add_opposite_directions (std::vector<Change>& changes)
-{
-    auto const changeCount = ssize(changes);
-    for (auto i = 0; i < changeCount; ++i)
+    auto compare_dplds (auto& manager, auto const& tableDpld, auto diagramDpld)
     {
-        changes.push_back(switch_direction(changes[as_uindex(i)]));
+        auto result = true;
+        domain_for_each(
+            tableDpld,
+            [&manager, &result, &diagramDpld] (auto const val, auto const& elem)
+            {
+                if (manager.evaluate(diagramDpld, elem) != val)
+                {
+                    result = false;
+                }
+            }
+        );
+        return result;
     }
-}
+
+    using Change = struct
+    {
+        int32 from;
+        int32 to;
+    };
+
+    auto switch_direction (Change change) -> Change
+    {
+        return {change.to, change.from};
+    }
+
+    auto add_opposite_directions (std::vector<Change>& changes)
+    {
+        auto const changeCount = ssize(changes);
+        for (auto i = 0; i < changeCount; ++i)
+        {
+            changes.push_back(switch_direction(changes[as_uindex(i)]));
+        }
+    }
 } // namespace details
 
 /**
@@ -112,7 +112,8 @@ public:
             {bss_manager_settings {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
             {std::ranlux48(Seed)},
-            2}
+            2
+        }
     {
     }
 };
@@ -135,7 +136,8 @@ public:
             {mss_manager_settings<M> {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
             {std::ranlux48(Seed)},
-            M}
+            M
+        }
     {
     }
 };
@@ -156,11 +158,13 @@ public:
     imss_fixture() :
         fixture_base<imss_manager_settings<M>, expression_tree_settings> {
             {imss_manager_settings<M> {
-                {{VarCount, NodeCount, random_order_tag()},
-                 random_domains_tag()}}},
+                {{VarCount, NodeCount, random_order_tag()}, random_domains_tag()
+                }
+            }},
             {expression_tree_settings {VarCount}},
             {std::ranlux48(Seed)},
-            M}
+            M
+        }
     {
     }
 };
@@ -181,22 +185,24 @@ public:
     ifmss_fixture() :
         fixture_base<ifmss_manager_settings<M>, expression_tree_settings> {
             {ifmss_manager_settings<M> {
-                {{VarCount, NodeCount, random_order_tag()},
-                 random_domains_tag()}}},
+                {{VarCount, NodeCount, random_order_tag()}, random_domains_tag()
+                }
+            }},
             {expression_tree_settings {VarCount}},
             {std::ranlux48(Seed)},
-            M}
+            M
+        }
     {
     }
 };
 
-constexpr auto FloatingTolerance = 0.00000001;
+auto constexpr FloatingTolerance = 0.00000001;
 
 using Fixtures                   = boost::mpl::vector<
-    teddy::tests::bss_fixture,
-    teddy::tests::mss_fixture<3>,
-    teddy::tests::imss_fixture<3>,
-    teddy::tests::ifmss_fixture<3>>;
+                      teddy::tests::bss_fixture,
+                      teddy::tests::mss_fixture<3>,
+                      teddy::tests::imss_fixture<3>,
+                      teddy::tests::ifmss_fixture<3>>;
 
 BOOST_AUTO_TEST_SUITE(reliability)
 

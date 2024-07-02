@@ -200,7 +200,8 @@ inline auto make_order (manager_settings const& settings, std::ranlux48& rng)
                 );
                 return indices;
             },
-            [] (given_order_tag const& indices) { return indices.order_; }},
+            [] (given_order_tag const& indices) { return indices.order_; }
+        },
         settings.order_
     );
 }
@@ -224,7 +225,8 @@ auto make_domains (
                     [&rng, &dist] (auto) { return dist(rng); }
                 );
             },
-            [] (given_domains_tag const& tag) { return tag.domains_; }},
+            [] (given_domains_tag const& tag) { return tag.domains_; }
+        },
         settings.domains_
     );
 }
@@ -244,10 +246,8 @@ inline auto make_manager (
  *  \brief Makes MDD manager.
  */
 template<int32 M>
-auto make_manager (
-    mdd_manager_settings<M> const& settings,
-    std::ranlux48& rng
-) -> mdd_manager<M>
+auto make_manager (mdd_manager_settings<M> const& settings, std::ranlux48& rng)
+    -> mdd_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -256,16 +256,15 @@ auto make_manager (
  *  \brief Makes iMDD manager.
  */
 template<int32 M>
-auto make_manager (
-    imdd_manager_settings<M> const& settings,
-    std::ranlux48& rng
-) -> imdd_manager
+auto make_manager (imdd_manager_settings<M> const& settings, std::ranlux48& rng)
+    -> imdd_manager
 {
     return {
         settings.varcount_,
         settings.nodecount_,
         make_domains(settings, rng),
-        make_order(settings, rng)};
+        make_order(settings, rng)
+    };
 }
 
 /**
@@ -281,7 +280,8 @@ auto make_manager (
         settings.varcount_,
         settings.nodecount_,
         make_domains(settings, rng),
-        make_order(settings, rng)};
+        make_order(settings, rng)
+    };
 }
 
 /**
@@ -299,10 +299,8 @@ inline auto make_manager (
  *  \brief Makes mss_manager.
  */
 template<int32 M>
-auto make_manager (
-    mss_manager_settings<M> const& settings,
-    std::ranlux48& rng
-) -> mss_manager<M>
+auto make_manager (mss_manager_settings<M> const& settings, std::ranlux48& rng)
+    -> mss_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -311,10 +309,8 @@ auto make_manager (
  *  \brief Makes imss_manager.
  */
 template<int32 M>
-auto make_manager (
-    imss_manager_settings<M> const& settings,
-    std::ranlux48& rng
-) -> imss_manager
+auto make_manager (imss_manager_settings<M> const& settings, std::ranlux48& rng)
+    -> imss_manager
 {
     return imss_manager(
         settings.varcount_,
@@ -345,10 +341,7 @@ auto make_manager (
  *  \brief Makes manager for a test.
  */
 template<class Man, class Expr>
-auto make_manager (
-    test_settings<Man, Expr> const& settings,
-    std::ranlux48& rng
-)
+auto make_manager (test_settings<Man, Expr> const& settings, std::ranlux48& rng)
 {
     return make_manager(settings.manager_, rng);
 }

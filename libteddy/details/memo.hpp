@@ -128,6 +128,6 @@ public:
 private:
     std::unordered_map<node_t*, ValueType> map_;
 };
-}
+} // namespace teddy::details
 
 #endif

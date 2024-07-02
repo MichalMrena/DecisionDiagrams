@@ -187,12 +187,7 @@ inline bdd_manager::bdd_manager(
     int64 const nodePoolSize,
     std::vector<int32> order
 ) :
-    bdd_manager(
-        varCount,
-        nodePoolSize,
-        nodePoolSize / 2,
-        TEDDY_MOVE(order)
-    )
+    bdd_manager(varCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order))
 {
 }
 
@@ -217,12 +212,7 @@ mdd_manager<M>::mdd_manager(
     int64 const nodePoolSize,
     std::vector<int32> order
 ) :
-    mdd_manager(
-        varCount,
-        nodePoolSize,
-        nodePoolSize / 2,
-        TEDDY_MOVE(order)
-    )
+    mdd_manager(varCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order))
 {
 }
 

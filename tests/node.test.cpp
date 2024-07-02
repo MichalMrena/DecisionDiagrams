@@ -1,8 +1,9 @@
+#include <libteddy/details/node_manager.hpp>
+
 #include <boost/mpl/vector.hpp>
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/test/unit_test_suite.hpp>
-#include <libteddy/details/node_manager.hpp>
 
 #include <vector>
 
@@ -12,9 +13,9 @@ struct bdd_nodes_fixture
 {
     using manager_t = node_manager<void, degrees::fixed<2>, domains::fixed<2>>;
     using node_t    = manager_t::node_t;
-    int32 varCount_             = 10;
-    std::vector<int32> order_   = {0,1,2,3,4,5,6,7,8,9};
-    std::vector<int32> domains_ = {2,2,2,2,2,2,2,2,2,2};
+    int32 varCount_ = 10;
+    std::vector<int32> order_   = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int32> domains_ = {2, 2, 2, 2, 2, 2, 2, 2, 2, 2};
     int64 nodePoolSize_         = 10'000;
     int64 extraNodePoolSize_    = 2'000;
 };
@@ -23,9 +24,9 @@ struct mdd_nodes_fixture
 {
     using manager_t = node_manager<void, degrees::fixed<3>, domains::fixed<3>>;
     using node_t    = manager_t::node_t;
-    int32 varCount_             = 10;
-    std::vector<int32> order_   = {0,1,2,3,4,5,6,7,8,9};
-    std::vector<int32> domains_ = {3,3,3,3,3,3,3,3,3,3};
+    int32 varCount_ = 10;
+    std::vector<int32> order_   = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    std::vector<int32> domains_ = {3, 3, 3, 3, 3, 3, 3, 3, 3, 3};
     int64 nodePoolSize_         = 10'000;
     int64 extraNodePoolSize_    = 2'000;
 };
@@ -34,9 +35,9 @@ struct imdd_nodes_fixture
 {
     using manager_t = node_manager<void, degrees::mixed, domains::mixed>;
     using node_t    = manager_t::node_t;
-    int32 varCount_             = 10;
-    std::vector<int32> order_   = {8,4,5,3,6,7,9,0,1,2};
-    std::vector<int32> domains_ = {2,3,4,3,3,3,4,4,2,2};
+    int32 varCount_ = 10;
+    std::vector<int32> order_   = {8, 4, 5, 3, 6, 7, 9, 0, 1, 2};
+    std::vector<int32> domains_ = {2, 3, 4, 3, 3, 3, 4, 4, 2, 2};
     int64 nodePoolSize_         = 10'000;
     int64 extraNodePoolSize_    = 2'000;
 };
@@ -45,9 +46,9 @@ struct ifmdd_nodes_fixture
 {
     using manager_t = node_manager<void, degrees::fixed<4>, domains::mixed>;
     using node_t    = manager_t::node_t;
-    int32 varCount_             = 10;
-    std::vector<int32> order_   = {8,4,5,3,6,7,9,0,1,2};
-    std::vector<int32> domains_ = {2,3,4,3,3,3,4,4,2,2};
+    int32 varCount_ = 10;
+    std::vector<int32> order_   = {8, 4, 5, 3, 6, 7, 9, 0, 1, 2};
+    std::vector<int32> domains_ = {2, 3, 4, 3, 3, 3, 4, 4, 2, 2};
     int64 nodePoolSize_         = 10'000;
     int64 extraNodePoolSize_    = 2'000;
 };
@@ -181,20 +182,23 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(getters, Fixture, nodes_fixtures, Fixture)
     }
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(domain_product, Fixture, nodes_fixtures, Fixture)
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+    domain_product,
+    Fixture,
+    nodes_fixtures,
+    Fixture
+)
 {
     typename Fixture::manager_t manager = make_manager(*this);
-    int64 expectedProduct = 1;
+    int64 expectedProduct               = 1;
     for (int32 const mi : Fixture::domains_)
     {
         expectedProduct *= mi;
     }
-    int64 const actualProduct = manager.domain_product(
-        0,
-        manager.get_var_count()
-    );
+    int64 const actualProduct
+        = manager.domain_product(0, manager.get_var_count());
     BOOST_REQUIRE_EQUAL(expectedProduct, actualProduct);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-}
+} // namespace teddy::test

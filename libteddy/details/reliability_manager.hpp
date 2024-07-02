@@ -16,8 +16,8 @@ namespace teddy
 {
 namespace details
 {
-template<class Degree>
-concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
+    template<class Degree>
+    concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
 }
 
 /**
@@ -453,16 +453,18 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
         result.resize(Degree::value);
     }
 
-    this->nodes_.for_each_terminal_node([&memo, &result](node_t* const node)
-    {
-        int32 const value = node->get_value();
-        if (value >= ssize(result))
+    this->nodes_.for_each_terminal_node(
+        [&memo, &result] (node_t* const node)
         {
-            result.resize(as_usize(value) + 1);
+            int32 const value = node->get_value();
+            if (value >= ssize(result))
+            {
+                result.resize(as_usize(value) + 1);
+            }
+            double const* const terminalProb = memo.find(node);
+            result[as_uindex(value)] = terminalProb ? *terminalProb : 0.0;
         }
-        double const* const terminalProb = memo.find(node);
-        result[as_uindex(value)] = terminalProb ? *terminalProb : 0.0;
-    });
+    );
 
     return result;
 }
@@ -592,8 +594,8 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
                 );
                 assert(isIn);
                 symprobs::expression& expr = it->second;
-                int32 const nodeIndex = node->get_index();
-                int32 const domain    = this->nodes_.get_domain(nodeIndex);
+                int32 const nodeIndex      = node->get_index();
+                int32 const domain         = this->nodes_.get_domain(nodeIndex);
                 for (int32 k = 0; k < domain; ++k)
                 {
                     node_t* const son = node->get_son(k);
@@ -616,7 +618,7 @@ auto reliability_manager<Degree, Domain>::state_frequency(
 ) -> double
 {
     node_t* const root     = diagram.unsafe_get_root();
-    node_memo<double> memo = this->template make_node_memo<double>(root) ;
+    node_memo<double> memo = this->template make_node_memo<double>(root);
     double const result    = this->state_frequency_impl(memo, root, state);
     return result;
 }
@@ -639,17 +641,13 @@ auto reliability_manager<Degree, Domain>::state_frequency_impl(
         return *memoized;
     }
 
-    double freq = 0.0;
+    double freq           = 0.0;
     int32 const nodeIndex = node->get_index();
-    int32 const domain = this->nodes_.get_domain(nodeIndex);
+    int32 const domain    = this->nodes_.get_domain(nodeIndex);
     for (int32 k = 0; k < domain; ++k)
     {
-        node_t* const son = node->get_son(k);
-        double const sonFreq = this->state_frequency_impl(
-            memo,
-            son,
-            state
-        );
+        node_t* const son    = node->get_son(k);
+        double const sonFreq = this->state_frequency_impl(memo, son, state);
         freq += sonFreq * (1 / static_cast<double>(domain));
     }
 
@@ -691,7 +689,7 @@ auto reliability_manager<Degree, Domain>::dpld_impl(
     node_t* const rhs
 ) -> node_t*
 {
-    constexpr auto get_son = [] (node_t* const node,
+    auto constexpr get_son = [] (node_t* const node,
                                  int32 const k,
                                  int32 const varIndex,
                                  int32 const varValue)
@@ -738,10 +736,7 @@ auto reliability_manager<Degree, Domain>::dpld_impl(
             sons[k] = this->dpld_impl(cache, varChange, fChange, fst, snd);
         }
 
-        result = this->nodes_.make_internal_node(
-            topIndex,
-            TEDDY_MOVE(sons)
-        );
+        result = this->nodes_.make_internal_node(topIndex, TEDDY_MOVE(sons));
     }
 
     cache.emplace(dpld_cache_entry(lhs, rhs), result);
@@ -770,10 +765,7 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
             sons[k] = k == varFrom ? root
                                    : this->nodes_.make_terminal_node(Undefined);
         }
-        newRoot = this->nodes_.make_internal_node(
-            varIndex,
-            TEDDY_MOVE(sons)
-        );
+        newRoot = this->nodes_.make_internal_node(varIndex, TEDDY_MOVE(sons));
         return diagram_t(newRoot);
     }
     else
@@ -839,10 +831,8 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
             sons[k] = this->to_dpld_e_impl(memo, varFrom, varIndex, son);
         }
     }
-    node_t* const newNode = this->nodes_.make_internal_node(
-        nodeIndex,
-        TEDDY_MOVE(sons)
-    );
+    node_t* const newNode
+        = this->nodes_.make_internal_node(nodeIndex, TEDDY_MOVE(sons));
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1010,7 +1000,7 @@ auto reliability_manager<Degree, Domain>::ntps_post_impl(
     int32 const domain = this->nodes_.get_domain(index);
     for (int32 k = 0; k < domain; ++k)
     {
-        node_t* const son = node->get_son(k);
+        node_t* const son    = node->get_son(k);
         double const sonProb = this->ntps_post_impl(memo, values, probs, son);
         result += sonProb * probs[as_uindex(index)][as_uindex(k)];
     }
@@ -1064,7 +1054,7 @@ auto reliability_manager<Degree, Domain>::ntps_level_impl(
                 double* sonProb   = memo.find(son);
                 if (not sonProb)
                 {
-                    sonProb = memo.put(son, 0.0);
+                    sonProb              = memo.put(son, 0.0);
                     int32 const sonLevel = this->nodes_.get_level(son);
                     buckets[as_uindex(sonLevel)].push_back(son);
                 }
@@ -1081,8 +1071,8 @@ auto reliability_manager<Degree, Domain>::ntps_level_impl(
 }
 
 template<class Degree, class Domain>
-auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram)
-    -> diagram_t
+auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram
+) -> diagram_t
 {
     std::unordered_map<node_t*, node_t*> memo;
     node_t* const newRoot = this->to_mnf_impl(memo, diagram.unsafe_get_root());
@@ -1138,10 +1128,8 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
         }
     }
 
-    node_t* const newNode = this->nodes_.make_internal_node(
-        nodeIndex,
-        TEDDY_MOVE(sons)
-    );
+    node_t* const newNode
+        = this->nodes_.make_internal_node(nodeIndex, TEDDY_MOVE(sons));
     memo.emplace(node, newNode);
     return newNode;
 }

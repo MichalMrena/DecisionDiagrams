@@ -1,8 +1,8 @@
 #ifndef LIBTEDDY_DETAILS_DIAGRAM_MANAGER_HPP
 #define LIBTEDDY_DETAILS_DIAGRAM_MANAGER_HPP
 
-#include <libteddy/details/memo.hpp>
 #include <libteddy/details/diagram.hpp>
+#include <libteddy/details/memo.hpp>
 #include <libteddy/details/node_manager.hpp>
 #include <libteddy/details/operators.hpp>
 #include <libteddy/details/pla_file.hpp>
@@ -20,53 +20,33 @@ namespace teddy
 {
 template<class Vars>
 concept in_var_values = requires(Vars values, int32 index) {
-                            {
-                                values[index]
-                            } -> std::convertible_to<int32>;
-                        };
+    { values[index] } -> std::convertible_to<int32>;
+};
 
 template<class Vars>
 concept out_var_values = requires(Vars values, int32 index, int32 value) {
-                             values[index] = value;
-                         };
+    values[index] = value;
+};
 
 template<class Node>
 concept expression_node = requires(Node node, int32 value) {
-                              {
-                                  node.is_variable()
-                              } -> std::same_as<bool>;
-                              {
-                                  node.is_constant()
-                              } -> std::same_as<bool>;
-                              {
-                                  node.is_operation()
-                              } -> std::same_as<bool>;
-                              {
-                                  node.get_index()
-                              } -> std::same_as<int32>;
-                              {
-                                  node.get_value()
-                              } -> std::same_as<int32>;
-                              {
-                                  node.evaluate(value, value)
-                              } -> std::same_as<int32>;
-                              {
-                                  node.get_left()
-                              } -> std::same_as<Node const&>;
-                              {
-                                  node.get_right()
-                              } -> std::same_as<Node const&>;
-                          };
+    { node.is_variable() } -> std::same_as<bool>;
+    { node.is_constant() } -> std::same_as<bool>;
+    { node.is_operation() } -> std::same_as<bool>;
+    { node.get_index() } -> std::same_as<int32>;
+    { node.get_value() } -> std::same_as<int32>;
+    { node.evaluate(value, value) } -> std::same_as<int32>;
+    { node.get_left() } -> std::same_as<Node const&>;
+    { node.get_right() } -> std::same_as<Node const&>;
+};
 
 template<class Degree>
 concept is_bdd = std::same_as<degrees::fixed<2>, Degree>;
 
 template<class F>
 concept int_to_int = requires(F function, int32 value) {
-                         {
-                             function(value)
-                         } -> std::convertible_to<int32>;
-                     };
+    { function(value) } -> std::convertible_to<int32>;
+};
 
 enum class fold_type
 {
@@ -88,12 +68,12 @@ struct io;
 
 namespace details
 {
-/**
- *  \brief Struct containing implementation of the io module
- *  Forward-declared here so that it can be made friend of diagram_manager
- */
-struct io_impl;
-}
+    /**
+     *  \brief Struct containing implementation of the io module
+     *  Forward-declared here so that it can be made friend of diagram_manager
+     */
+    struct io_impl;
+} // namespace details
 
 /**
  *  \class diagram_manager
@@ -382,8 +362,7 @@ public:
      */
     template<class Foo = void>
     requires(is_bdd<Degree>)
-    auto satisfy_count_ln (
-        diagram_t const& diagram
+    auto satisfy_count_ln (diagram_t const& diagram
     ) -> utils::second_t<Foo, double>;
 
     /**
@@ -457,11 +436,8 @@ public:
      *  \param varValue Value to which the \p i th varibale should be fixed
      *  \return Diagram representing cofactor of the function
      */
-    auto get_cofactor (
-        diagram_t const& diagram,
-        int32 varIndex,
-        int32 varValue
-    ) -> diagram_t;
+    auto get_cofactor (diagram_t const& diagram, int32 varIndex, int32 varValue)
+        -> diagram_t;
 
     auto get_cofactor (
         diagram_t const& diagram,
@@ -502,8 +478,8 @@ public:
      *  \param diagram Diagram representing the function
      *  \return Vector of indices
      */
-    auto get_dependency_set (diagram_t const& diagram) const
-        -> std::vector<int32>;
+    auto get_dependency_set (diagram_t const& diagram
+    ) const -> std::vector<int32>;
 
     /**
      *  \brief Enumerates indices of variables that the function depends on
@@ -665,7 +641,6 @@ private:
     }
 
 private:
-
     auto variable_impl (int32 index) -> node_t*;
 
     template<class Op>
@@ -679,16 +654,11 @@ private:
     ) -> node_t*;
 
     template<class Int>
-    auto satisfy_count_impl (
-        node_memo<Int>& memo,
-        int32 value,
-        node_t* node
-    ) -> Int;
+    auto satisfy_count_impl (node_memo<Int>& memo, int32 value, node_t* node)
+        -> Int;
 
-    auto satisfy_count_ln_impl (
-        node_memo<double>& memo,
-        node_t* node
-    ) -> double;
+    auto satisfy_count_ln_impl (node_memo<double>& memo, node_t* node)
+        -> double;
 
     template<class Vars>
     auto satisfy_one_impl (int32 value, Vars& vars, node_t* node) -> bool;
@@ -717,11 +687,8 @@ private:
     ) -> node_t*;
 
     template<class F>
-    auto transform_impl (
-        node_memo<node_t*>& memo,
-        F transformer,
-        node_t* node
-    ) -> node_t*;
+    auto transform_impl (node_memo<node_t*>& memo, F transformer, node_t* node)
+        -> node_t*;
 
     template<class ExprNode>
     auto from_expression_tree_impl (
@@ -786,15 +753,15 @@ protected:
 };
 
 template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::constant(int32 const val)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::constant(int32 const val
+) -> diagram_t
 {
     return diagram_t(nodes_.make_terminal_node(val));
 }
 
 template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::variable(int32 const index)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::variable(int32 const index
+) -> diagram_t
 {
     return diagram_t(this->variable_impl(index));
 }
@@ -802,8 +769,8 @@ auto diagram_manager<Data, Degree, Domain>::variable(int32 const index)
 template<class Data, class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index)
-    -> utils::second_t<Foo, diagram_t>
+auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index
+) -> utils::second_t<Foo, diagram_t>
 {
     son_container sons = node_t::make_son_container(2);
     sons[0]            = nodes_.make_terminal_node(1);
@@ -812,16 +779,16 @@ auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index)
 }
 
 template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::operator() (int32 const index)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::operator() (int32 const index
+) -> diagram_t
 {
     return this->variable(index);
 }
 
 template<class Data, class Degree, class Domain>
 template<std::ranges::input_range Is>
-auto diagram_manager<Data, Degree, Domain>::variables(Is const& indices)
-    -> std::vector<diagram_t>
+auto diagram_manager<Data, Degree, Domain>::variables(Is const& indices
+) -> std::vector<diagram_t>
 {
     return this->variables(begin(indices), end(indices));
 }
@@ -903,8 +870,8 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree_impl(
 }
 
 template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index)
-    -> node_t*
+auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index
+) -> node_t*
 {
     int32 const varDomain = nodes_.get_domain(index);
     son_container sons    = node_t::make_son_container(varDomain);
@@ -912,10 +879,7 @@ auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index)
     {
         sons[val] = nodes_.make_terminal_node(val);
     }
-    return nodes_.make_internal_node(
-        index,
-        TEDDY_MOVE(sons)
-    );
+    return nodes_.make_internal_node(index, TEDDY_MOVE(sons));
 }
 
 template<class Data, class Degree, class Domain>
@@ -987,18 +951,16 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
         );
     }
 
-    node_t* const result = nodes_.make_internal_node(
-        topIndex,
-        TEDDY_MOVE(sons)
-    );
+    node_t* const result
+        = nodes_.make_internal_node(topIndex, TEDDY_MOVE(sons));
     nodes_.template cache_put<Op>(result, lhs, rhs);
     return result;
 }
 
 template<class Data, class Degree, class Domain>
 template<teddy_bin_op Op, class... Diagram>
-auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram
+) -> diagram_t
 {
     /*
      * Use bounded MAX if the max value is known.
@@ -1057,10 +1019,7 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
                 )...
             );
         }
-        result = nodes_.make_internal_node(
-            topIndex,
-            TEDDY_MOVE(sons)
-        );
+        result = nodes_.make_internal_node(topIndex, TEDDY_MOVE(sons));
     }
 
     cachePack = {{nodes...}, result};
@@ -1069,8 +1028,8 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
 
 template<class Data, class Degree, class Domain>
 template<teddy_bin_op Op, std::ranges::input_range R>
-auto diagram_manager<Data, Degree, Domain>::left_fold(R const& diagrams)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::left_fold(R const& diagrams
+) -> diagram_t
 {
     return this->left_fold<Op>(begin(diagrams), end(diagrams));
 }
@@ -1172,7 +1131,8 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
     {
         node_memo<longint> memo = this->make_node_memo<longint>(root);
         stepResult = this->satisfy_count_impl<longint>(memo, value, root);
-        return stepResult * nodes_.template domain_product<longint>(0, rootLevel);
+        return stepResult
+             * nodes_.template domain_product<longint>(0, rootLevel);
     }
 }
 
@@ -1200,12 +1160,11 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
     int32 const nodeDomain = nodes_.get_domain(node);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
-        node_t* const son     = node->get_son(k);
-        int32 const sonLevel  = nodes_.get_level(son);
-        Int const diff        = nodes_.template domain_product<Int>(
-            nodeLevel + 1, sonLevel
-        );
-        Int const sonResult   = this->satisfy_count_impl(memo, value, son);
+        node_t* const son    = node->get_son(k);
+        int32 const sonLevel = nodes_.get_level(son);
+        Int const diff
+            = nodes_.template domain_product<Int>(nodeLevel + 1, sonLevel);
+        Int const sonResult = this->satisfy_count_impl(memo, value, son);
         result += sonResult * diff;
     }
 
@@ -1216,7 +1175,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
 template<class Data, class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln (
+auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln(
     diagram_t const& diagram
 ) -> utils::second_t<Foo, double>
 {
@@ -1231,7 +1190,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln (
 }
 
 template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl (
+auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl(
     node_memo<double>& memo,
     node_t* const node
 ) -> double
@@ -1257,7 +1216,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl (
     int32 const level0 = nodes_.get_level(son0);
     int32 const level1 = nodes_.get_level(son1);
 
-    double s1 = this->satisfy_count_ln_impl(memo, son0);
+    double s1          = this->satisfy_count_ln_impl(memo, son0);
     if (s1 >= 0)
     {
         s1 += level0 - level - 1;
@@ -1458,11 +1417,11 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor(
         return diagram;
     }
 
-    auto const it = utils::find_if(vars.begin(), vars.end(),
-        [root](var_cofactor var)
-    {
-        return var.index_ == root->get_index();
-    });
+    auto const it = utils::find_if(
+        vars.begin(),
+        vars.end(),
+        [root] (var_cofactor var) { return var.index_ == root->get_index(); }
+    );
 
     int32 toCofactor = static_cast<int32>(vars.size());
     if (it != vars.end())
@@ -1472,12 +1431,8 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor(
     }
 
     std::unordered_map<node_t*, node_t*> memo;
-    diagram_t result = diagram_t(this->get_cofactor_impl(
-        memo,
-        vars,
-        root,
-        toCofactor
-    ));
+    diagram_t result
+        = diagram_t(this->get_cofactor_impl(memo, vars, root, toCofactor));
     nodes_.run_deferred();
     return result;
 }
@@ -1522,10 +1477,8 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
         sons[k] = this->get_cofactor_impl(memo, varIndex, varValue, oldSon);
     }
 
-    node_t* const newNode = nodes_.make_internal_node(
-        nodeIndex,
-        TEDDY_MOVE(sons)
-    );
+    node_t* const newNode
+        = nodes_.make_internal_node(nodeIndex, TEDDY_MOVE(sons));
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -1555,11 +1508,11 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
     }
 
     int32 const nodeIndex = node->get_index();
-    auto const it = utils::find_if(vars.begin(), vars.end(),
-        [nodeIndex](var_cofactor var)
-    {
-        return var.index_ == nodeIndex;
-    });
+    auto const it         = utils::find_if(
+        vars.begin(),
+        vars.end(),
+        [nodeIndex] (var_cofactor var) { return var.index_ == nodeIndex; }
+    );
 
     node_t* newNode = nullptr;
     if (it != vars.end())
@@ -1580,10 +1533,7 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
             node_t* const oldSon = node->get_son(k);
             sons[k] = this->get_cofactor_impl(memo, vars, oldSon, toCofactor);
         }
-        newNode = nodes_.make_internal_node(
-            nodeIndex,
-            TEDDY_MOVE(sons)
-        );
+        newNode = nodes_.make_internal_node(nodeIndex, TEDDY_MOVE(sons));
     }
 
     memo.emplace(node, newNode);
@@ -1632,10 +1582,7 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
         node_t* const son = node->get_son(k);
         sons[k]           = this->transform_impl(memo, transformer, son);
     }
-    node_t* const newNode = nodes_.make_internal_node(
-        index,
-        TEDDY_MOVE(sons)
-    );
+    node_t* const newNode = nodes_.make_internal_node(index, TEDDY_MOVE(sons));
     memo.put(node, newNode);
     return newNode;
 }
@@ -1643,8 +1590,8 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
 template<class Data, class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::negate(diagram_t const& diagram)
-    -> utils::second_t<Foo, diagram_t>
+auto diagram_manager<Data, Degree, Domain>::negate(diagram_t const& diagram
+) -> utils::second_t<Foo, diagram_t>
 {
     return this->transform(
         diagram,
@@ -1690,8 +1637,8 @@ auto diagram_manager<Data, Degree, Domain>::get_dependency_set_g(
 }
 
 template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::reduce(diagram_t const& diagram)
-    -> diagram_t
+auto diagram_manager<Data, Degree, Domain>::reduce(diagram_t const& diagram
+) -> diagram_t
 {
     return this->transform(diagram, [] (int32 const val) { return val; });
 }
@@ -1731,8 +1678,8 @@ auto diagram_manager<Data, Degree, Domain>::get_domains() const
 }
 
 template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::set_cache_ratio(double ratio)
-    -> void
+auto diagram_manager<Data, Degree, Domain>::set_cache_ratio(double ratio
+) -> void
 {
     nodes_.set_cache_ratio(ratio);
 }
@@ -1771,8 +1718,7 @@ auto diagram_manager<Data, Degree, Domain>::clear_cache() -> void
 
 template<class Data, class Degree, class Domain>
 template<class ValueType>
-auto diagram_manager<Data, Degree, Domain>::make_node_memo(
-    node_t* const
+auto diagram_manager<Data, Degree, Domain>::make_node_memo(node_t* const
 ) -> node_memo<ValueType>
 {
     // just map memo for now
@@ -1781,23 +1727,26 @@ auto diagram_manager<Data, Degree, Domain>::make_node_memo(
 
 namespace detail
 {
-inline auto default_or_fwd (int32 const varCount, std::vector<int32>& indices)
-{
-    if (indices.empty())
+    inline auto default_or_fwd (
+        int32 const varCount,
+        std::vector<int32>& indices
+    )
     {
-        std::vector<int32> defaultIndices;
-        defaultIndices.reserve(as_usize(varCount));
-        for (int32 index = 0; index < varCount; ++index)
+        if (indices.empty())
         {
-            defaultIndices.push_back(index);
+            std::vector<int32> defaultIndices;
+            defaultIndices.reserve(as_usize(varCount));
+            for (int32 index = 0; index < varCount; ++index)
+            {
+                defaultIndices.push_back(index);
+            }
+            return defaultIndices;
         }
-        return defaultIndices;
+        else
+        {
+            return std::vector<int32>(TEDDY_MOVE(indices));
+        }
     }
-    else
-    {
-        return std::vector<int32>(TEDDY_MOVE(indices));
-    }
-}
 } // namespace detail
 
 template<class Data, class Degree, class Domain>
