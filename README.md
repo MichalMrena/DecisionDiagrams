@@ -91,6 +91,7 @@ cmake --build build -t test
 TeDDy consists of two modules. The first module `teddy-core` contains algorithms for general manipulation and the creation of decision diagrams. The second module `teddy-reliability` contains algorithms aimed at reliability analysis utilizing decision diagrams.
 
 ## Core
+### Managers
 All library functions are accessible via an instance of a diagram manager. TeDDy offers four diagram managers for different kinds of decision diagrams.  
 1. `bdd_manager` for Binary Decision Diagrams (BDDs).  
 
@@ -107,6 +108,21 @@ Typical usage of the library can be summarized in 3 steps:
 2. Create a decision diagram representing desired function(s).
 3. Examine the properties of the function(s).  
 
+### Types
+TODO
+```C++
+using int32   = std::int32_t;
+using int64   = std::int64_t;
+using uint32  = std::uint32_t;
+using uint64  = std::uint64_t;
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+using longint = mpz_class;
+#else
+using longint = std::int64_t;
+#endif
+```
+
+### Example
 The following example shows the above steps for the `bdd_manager` and Boolean function `f(x) = (x0 and x1) or (x2 and x3)`:
 
 ```C++
@@ -152,17 +168,18 @@ int main()
     // Now that we have diagram for the funtion f, we can test its properties
     // e.g., evaluate it for give variable assignment.
     const int val = manager.evaluate(f, std::array {1, 1, 0, 1});
-    assert(val == 1);
+    std::cout << "evaluate([1,1,0,1]) = " << val << "\n";
 
     // We can see how the diagram looks like by printing its dot representation
     // into a file or console and visualizing it using e.g. graphviz.
-    manager.to_dot_graph(std::cout, f);
+    teddy::io::to_dot(manager, std::cout, f);
     std::ofstream ofst("f.dot");
-    manager.to_dot_graph(ofst, f);
+    teddy::io::to_dot(manager, ofst, f);
 
     // To calculate number of different variable assignments for which the
     // function evaluates to 1 we can use .satisfy_count.
-    const long long sc = manager.satisfy_count(1, f);
+    const teddy::longint sc = manager.satisfy_count(1, f);
+    std::cout << "Satisfy-count(1) = " << sc << "\n";
 
     // We can also enumerate all variable assignments for which the
     // the function evaluates to 1.
@@ -170,6 +187,8 @@ int main()
         = manager.satisfy_all<std::array<int, 4>>(1, f);
 }
 ```
+
+### Full Documentation
 All diagram managers have the same API. **Full documentation** is available [here](https://michalmrena.github.io/teddy.html). For more examples see the [examples](./examples/) directory.
 
 ## Reliability
