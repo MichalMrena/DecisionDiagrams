@@ -34,11 +34,16 @@ target_link_options(
 )
 
 add_test(
+    NAME    teddy-test-node
+    COMMAND libteddy-test --run_test=node
+)
+
+add_test(
     NAME    teddy-test-core
-    COMMAND libteddy-test --run_test=core_test
+    COMMAND libteddy-test --run_test=core
 )
 
 add_test(
     NAME    teddy-test-reliability
-    COMMAND libteddy-test --run_test=reliability_test
+    COMMAND libteddy-test --run_test=reliability
 )
