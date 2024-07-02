@@ -13,7 +13,6 @@ int main()
     teddy::bss_manager manager(3, 1'000);
     auto& x = manager;
     bdd f = manager.apply<AND>(x(0), manager.apply<OR>(x(1), x(2)));
-    // manager.to_dot_graph(std::cout, f);
     std::vector<tp::prob_dist> ps(
     {
         {tp::weibull(1, 1)},

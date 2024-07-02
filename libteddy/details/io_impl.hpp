@@ -9,9 +9,11 @@
 
 namespace teddy::details
 {
+struct io_impl
+{
 template<class Data, class Degree, class Domain, class ForEachNode>
-auto to_dot_graph_common(
-    diagram_manager<Data, Degree, Domain>& manager,
+static auto to_dot_graph_common(
+    diagram_manager<Data, Degree, Domain> const& manager,
     std::ostream& ost,
     ForEachNode&& forEach
 ) -> void
@@ -128,6 +130,7 @@ auto to_dot_graph_common(
     ost << '\n';
     ost << "}" << '\n';
 }
+};
 }
 
 #endif

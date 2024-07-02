@@ -1,5 +1,6 @@
 #include <libteddy/details/pla_file.hpp>
 #include <libteddy/reliability.hpp>
+#include <libteddy/io.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
 #include <libtsl/utilities.hpp>
@@ -10,8 +11,6 @@
 #include <filesystem>
 #include <random>
 
-#include "libteddy/core.hpp"
-#include "libteddy/details/diagram_manager.hpp"
 #include "utils.hpp"
 
 // CVS parameters
@@ -302,7 +301,7 @@ auto analyze_fixed (
     {
         // Structure function BDD
         std::cout << "DOT:" << "\n";
-        manager.to_dot_graph(std::cout, sf);
+        io::to_dot(manager, std::cout, sf);
         std::cout << "\n";
 
         // Reliability expression

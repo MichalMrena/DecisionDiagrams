@@ -47,13 +47,13 @@ auto example_basic_usage () -> void
 
     // We can see how the diagram looks like by printing its dot representation
     // into a file or console and visualizing it using e.g. graphviz.
-    manager.to_dot_graph(std::cout, f);
+    teddy::io::to_dot(manager, std::cout, f);
     std::ofstream ofst("f.dot");
-    manager.to_dot_graph(ofst, f);
+    teddy::io::to_dot(manager, ofst, f);
 
     // To calculate number of different variable assignments for which the
     // function evaluates to 1 we can use .satisfy_count.
-    const auto sc = manager.satisfy_count(1, f);
+    const teddy::longint sc = manager.satisfy_count(1, f);
     std::cout << "Satisfy-count(1) = " << sc << "\n";
 
     // We can also enumerate all variable assignments for which the

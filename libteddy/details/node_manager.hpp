@@ -147,9 +147,6 @@ public:
     [[nodiscard]] auto get_domains () const -> std::vector<int32>;
     auto force_gc () -> void;
 
-    auto to_dot_graph (std::ostream& ost) const -> void;
-    auto to_dot_graph (std::ostream& ost, node_t* node) const -> void;
-
     /**
      *  \param levelFrom inclusive
      *  \param levelTo exclusive
@@ -224,10 +221,6 @@ private:
     template<class... Args>
     [[nodiscard]] auto make_new_node (Args&&... args) -> node_t*;
     auto delete_node (node_t* node) -> void;
-
-    template<class ForEachNode>
-    auto to_dot_graph_common (std::ostream& ost, ForEachNode&& forEach) const
-        -> void;
 
     auto deferr_gc_reorder () -> void;
 
@@ -677,29 +670,6 @@ auto node_manager<Data, Degree, Domain>::collect_garbage() -> void
 }
 
 template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& ost) const
-    -> void
-{
-    this->to_dot_graph_common(
-        ost,
-        [this] (auto const& operation) { this->for_each_node(operation); }
-    );
-}
-
-template<class Data, class Degree, class Domain>
-auto node_manager<Data, Degree, Domain>::to_dot_graph(
-    std::ostream& ost,
-    node_t* const node
-) const -> void
-{
-    this->to_dot_graph_common(
-        ost,
-        [this, node] (auto const& operation)
-        { this->traverse_pre(node, operation); }
-    );
-}
-
-template<class Data, class Degree, class Domain>
 template<class Int>
 auto node_manager<Data, Degree, Domain>::domain_product(
     int32 const levelFrom,
@@ -1069,124 +1039,6 @@ auto node_manager<Data, Degree, Domain>::delete_node(node_t* const n) -> void
     --nodeCount_;
     n->set_unused();
     pool_.destroy(n);
-}
-
-template<class Data, class Degree, class Domain>
-template<class ForEachNode>
-auto node_manager<Data, Degree, Domain>::to_dot_graph_common(
-    std::ostream& ost,
-    ForEachNode&& forEach
-) const -> void
-{
-    auto const make_label = [] (node_t* const node)
-    {
-        if (node->is_terminal())
-        {
-            using namespace std::literals::string_literals;
-            int32 const val = node->get_value();
-            return val == Undefined ? "*"s : std::to_string(val);
-        }
-
-        return "x" + std::to_string(node->get_index());
-    };
-
-    auto const get_id_str = [] (node_t* const n)
-    { return std::to_string(reinterpret_cast<uint64>(n)); };
-
-    auto const output_range = [] (auto& ostr, auto const& range, auto const sep)
-    {
-        auto const endIt = end(range);
-        auto rangeIt     = begin(range);
-        while (rangeIt != endIt)
-        {
-            ostr << *rangeIt;
-            ++rangeIt;
-            if (rangeIt != endIt)
-            {
-                ostr << sep;
-            }
-        }
-    };
-
-    auto const levelCount = as_usize(1 + this->get_var_count());
-    std::vector<std::string> labels;
-    std::vector<std::vector<std::string>> rankGroups(levelCount);
-    std::vector<std::string> arcs;
-    std::vector<std::string> squareShapes;
-
-    forEach(
-        [&, this] (node_t* const node)
-        {
-            // Create label.
-            int32 const level = this->get_level(node);
-            labels.emplace_back(
-                get_id_str(node) + R"( [label = ")" + make_label(node)
-                + R"(", tooltip = ")" + std::to_string(node->get_ref_count())
-                + R"("];)"
-            );
-
-            if (node->is_terminal())
-            {
-                squareShapes.emplace_back(get_id_str(node));
-                rankGroups.back().emplace_back(get_id_str(node) + ";");
-                return;
-            }
-
-            // Add to same level.
-            rankGroups[as_uindex(level)].emplace_back(get_id_str(node) + ";");
-
-            // Add arcs.
-            this->for_each_son(
-                node,
-                [&, sonOrder = 0] (node_t* const son) mutable
-                {
-                    if constexpr (std::is_same_v<Degree, degrees::fixed<2>>)
-                    {
-                        arcs.emplace_back(
-                            get_id_str(node) + " -> " + get_id_str(son)
-                            + " [style = "
-                            + (0 == sonOrder ? "dashed" : "solid") + "];"
-                        );
-                    }
-                    else
-                    {
-                        arcs.emplace_back(
-                            get_id_str(node) + " -> " + get_id_str(son)
-                            + R"( [label = )" + std::to_string(sonOrder) + "];"
-                        );
-                    }
-                    ++sonOrder;
-                }
-            );
-        }
-    );
-
-    // Finally, output everything into the output stream.
-    ost << "digraph DD {" << '\n';
-    ost << "    node [shape = square] ";
-    output_range(ost, squareShapes, " ");
-    ost << ";\n";
-    ost << "    node [shape = circle];"
-        << "\n\n";
-
-    ost << "    ";
-    output_range(ost, labels, "\n    ");
-    ost << "\n\n";
-    ost << "    ";
-    output_range(ost, arcs, "\n    ");
-    ost << "\n\n";
-
-    for (std::vector<std::string> const& ranks : rankGroups)
-    {
-        if (not ranks.empty())
-        {
-            ost << "    { rank = same; ";
-            output_range(ost, ranks, " ");
-            ost << " }" << '\n';
-        }
-    }
-    ost << '\n';
-    ost << "}" << '\n';
 }
 
 template<class Data, class Degree, class Domain>

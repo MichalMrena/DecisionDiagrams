@@ -86,6 +86,15 @@ struct var_cofactor
  */
 struct io;
 
+namespace details
+{
+/**
+ *  \brief Struct containing implementation of the io module
+ *  Forward-declared here so that it can be made friend of diagram_manager
+ */
+struct io_impl;
+}
+
 /**
  *  \class diagram_manager
  *  \brief Base class for all diagram managers that generically
@@ -104,6 +113,11 @@ public:
      *  \brief IO module is our friend
      */
     friend struct io;
+
+    /**
+     *  \brief IO module is our friend
+     */
+    friend struct details::io_impl;
 
 public:
     /**
@@ -530,28 +544,6 @@ public:
      *  \return Number of node
      */
     auto get_node_count (diagram_t const& diagram) const -> int64;
-
-    /**
-     *  \brief Prints dot representation of the graph
-     *
-     *  Prints dot representation of the entire multi rooted graph to
-     *  the output stream.
-     *
-     *  \param out Output stream (e.g. \c std::cout or \c std::ofstream )
-     */
-    auto to_dot_graph (std::ostream& out) const -> void;
-
-    /**
-     *  \brief Prints dot representation of the diagram
-     *
-     *  Prints dot representation of the diagram to
-     *  the output stream.
-     *
-     *  \param out Output stream (e.g. \c std::cout or \c std::ofstream )
-     *  \param diagram Diagram
-     */
-    auto to_dot_graph (std::ostream& out, diagram_t const& diagram) const
-        -> void;
 
     /**
      *  \brief Runs garbage collection.
@@ -1716,22 +1708,6 @@ auto diagram_manager<Data, Degree, Domain>::get_node_count(
 ) const -> int64
 {
     return nodes_.get_node_count(diagram.unsafe_get_root());
-}
-
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::to_dot_graph(std::ostream& out
-) const -> void
-{
-    nodes_.to_dot_graph(out);
-}
-
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::to_dot_graph(
-    std::ostream& out,
-    diagram_t const& diagram
-) const -> void
-{
-    nodes_.to_dot_graph(out, diagram.unsafe_get_root());
 }
 
 template<class Data, class Degree, class Domain>
