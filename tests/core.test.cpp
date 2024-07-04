@@ -28,7 +28,7 @@ struct fixture_base
 {
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
-    std::ranlux48 rng_;
+    tsl::rng_t rng_;
     int32 maxValue_ {}; // TODO rename to codomainSize_
     // TODO move members to to child classes, remove this class
 };
@@ -53,7 +53,7 @@ public:
             = bdd_manager_settings {VarCount, NodeCount, random_order_tag()},
             .expressionSettings_
             = minmax_expression_settings {VarCount, TermCount, TermSize          },
-            .rng_      = std::ranlux48(Seed),
+            .rng_      = tsl::rng_t(Seed),
             .maxValue_ = 2
     }
     {
@@ -80,7 +80,7 @@ public:
             = mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()},
             .expressionSettings_
             = minmax_expression_settings {VarCount, TermCount, TermSize          },
-            .rng_      = std::ranlux48(Seed),
+            .rng_      = tsl::rng_t(Seed),
             .maxValue_ = 3
     }
     {
@@ -108,7 +108,7 @@ public:
             },
             .expressionSettings_
             = minmax_expression_settings {VarCount, TermCount, TermSize},
-            .rng_      = std::ranlux48(Seed),
+            .rng_      = tsl::rng_t(Seed),
             .maxValue_ = 3
     }
     {
@@ -136,7 +136,7 @@ public:
             },
             .expressionSettings_
             = minmax_expression_settings {VarCount, TermCount, TermSize},
-            .rng_      = std::ranlux48(Seed),
+            .rng_      = tsl::rng_t(Seed),
             .maxValue_ = 3
     }
     {

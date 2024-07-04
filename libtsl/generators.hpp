@@ -62,7 +62,7 @@ auto make_diagram (
     return manager.from_expression_tree(expr);
 }
 
-inline auto make_probability_vector (int32 const varCount, std::ranlux48& rng)
+inline auto make_probability_vector (int32 const varCount, rng_t& rng)
     -> std::vector<double>
 {
     std::vector<double> probs(as_usize(varCount));
@@ -77,7 +77,7 @@ inline auto make_probability_vector (int32 const varCount, std::ranlux48& rng)
 template<std::size_t M>
 auto make_probability_matrix (
     std::vector<int32> const& domains,
-    std::ranlux48& rng
+    rng_t& rng
 ) -> std::vector<std::array<double, M>>
 {
     std::vector<std::array<double, M>> probs(domains.size());
@@ -104,12 +104,12 @@ auto make_probability_matrix (
 
 inline auto make_time_probability_vector (
     int32 const varCount,
-    std::ranlux48& rng
+    rng_t& rng
 ) -> std::vector<probs::prob_dist>
 {
     std::vector<probs::prob_dist> probs;
 
-    auto const mkExponential = [] (std::ranlux48& gen) -> probs::prob_dist
+    auto const mkExponential = [] (rng_t& gen) -> probs::prob_dist
     {
         double const from = 0.2;
         double const to   = 1.0;
@@ -117,19 +117,19 @@ inline auto make_time_probability_vector (
         return probs::exponential(distRate(gen));
     };
 
-    // auto const mkWeibull = [] (std::ranlux48& gen) -> probs::prob_dist
+    // auto const mkWeibull = [] (rng_t& gen) -> probs::prob_dist
     // {
     //     std::uniform_real_distribution<double> distShape(0.5, 1.0);
     //     return probs::weibull(1.0, distShape(gen));
     // };
 
-    // auto const mkConstant = [] (std::ranlux48& gen) -> probs::prob_dist
+    // auto const mkConstant = [] (rng_t& gen) -> probs::prob_dist
     // {
     //     std::uniform_real_distribution<double> distProb(0.2, 1.0);
     //     return probs::constant(distProb(gen));
     // };
 
-    std::vector<probs::prob_dist (*)(std::ranlux48&)> distGenerators(
+    std::vector<probs::prob_dist (*)(rng_t&)> distGenerators(
         // {+mkExponential, +mkWeibull, +mkConstant}
         {+mkExponential}
     );
@@ -151,30 +151,30 @@ inline auto make_time_probability_vector (
 
 inline auto make_time_symprobability_vector (
     int32 const varCount,
-    std::ranlux48& rng
+    rng_t& rng
 ) -> std::vector<symprobs::expression>
 {
     std::vector<symprobs::expression> probs;
 
-    auto const mkExponential = [] (std::ranlux48& gen) -> symprobs::expression
+    auto const mkExponential = [] (rng_t& gen) -> symprobs::expression
     {
         std::uniform_real_distribution<double> distRate(0.2, 1.0);
         return symprobs::exponential(distRate(gen));
     };
 
-    // auto const mkWeibull = [] (std::ranlux48& gen) -> symprobs::expression
+    // auto const mkWeibull = [] (rng_t& gen) -> symprobs::expression
     // {
     //     std::uniform_real_distribution<double> distShape(0.5, 1.0);
     //     return symprobs::weibull(1.0, distShape(gen));
     // };
 
-    // auto const mkConstant = [] (std::ranlux48& gen) -> symprobs::expression
+    // auto const mkConstant = [] (rng_t& gen) -> symprobs::expression
     // {
     //     std::uniform_real_distribution<double> distProb(0.2, 1.0);
     //     return symprobs::constant(distProb(gen));
     // };
 
-    std::vector<symprobs::expression (*)(std::ranlux48&)> distGenerators(
+    std::vector<symprobs::expression (*)(rng_t&)> distGenerators(
         // {+mkExponential, +mkWeibull, +mkConstant}
         {+mkExponential}
     );

@@ -9,7 +9,7 @@ namespace teddy::tsl
 // minmax_expr:
 
 auto make_minmax_expression (
-    std::ranlux48& indexRng,
+    rng_t& indexRng,
     int32 const varCount,
     int32 const termCount,
     int32 const termSize
@@ -143,8 +143,8 @@ auto expr_node::get_right() const -> expr_node const&
 
 auto make_expression_tree (
     int32 varcount,
-    std::ranlux48& rngtype,
-    std::ranlux48& rngbranch
+    rng_t& rngtype,
+    rng_t& rngbranch
 ) -> std::unique_ptr<expr_node>
 {
     auto go = [&, i = 0u] (auto& self, auto const n) mutable

@@ -91,7 +91,7 @@ struct fixture_base
 {
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
-    std::ranlux48 rng_;
+    tsl::rng_t rng_;
     int32 stateCount_ {};
 };
 
@@ -111,7 +111,7 @@ public:
         fixture_base<bss_manager_settings, expression_tree_settings> {
             {bss_manager_settings {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::ranlux48(Seed)},
+            {tsl::rng_t(Seed)},
             2
         }
     {
@@ -135,7 +135,7 @@ public:
         fixture_base<mss_manager_settings<M>, expression_tree_settings> {
             {mss_manager_settings<M> {VarCount, NodeCount, random_order_tag()}},
             {expression_tree_settings {VarCount}},
-            {std::ranlux48(Seed)},
+            {tsl::rng_t(Seed)},
             M
         }
     {
@@ -162,7 +162,7 @@ public:
                 }
             }},
             {expression_tree_settings {VarCount}},
-            {std::ranlux48(Seed)},
+            {tsl::rng_t(Seed)},
             M
         }
     {
@@ -189,7 +189,7 @@ public:
                 }
             }},
             {expression_tree_settings {VarCount}},
-            {std::ranlux48(Seed)},
+            {tsl::rng_t(Seed)},
             M
         }
     {

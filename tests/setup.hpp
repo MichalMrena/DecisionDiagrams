@@ -178,7 +178,7 @@ struct match : Ts...
 template<class... Ts>
 match(Ts...) -> match<Ts...>;
 
-inline auto make_order (manager_settings const& settings, std::ranlux48& rng)
+inline auto make_order (manager_settings const& settings, tsl::rng_t& rng)
     -> std::vector<int32>
 {
     return std::visit(
@@ -212,7 +212,7 @@ inline auto make_order (manager_settings const& settings, std::ranlux48& rng)
 template<int32 M>
 auto make_domains (
     nonhomogeneous_manager_settings<M> const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> std::vector<int32>
 {
     return std::visit(
@@ -236,7 +236,7 @@ auto make_domains (
  */
 inline auto make_manager (
     bdd_manager_settings const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> bdd_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -246,7 +246,7 @@ inline auto make_manager (
  *  \brief Makes MDD manager.
  */
 template<int32 M>
-auto make_manager (mdd_manager_settings<M> const& settings, std::ranlux48& rng)
+auto make_manager (mdd_manager_settings<M> const& settings, tsl::rng_t& rng)
     -> mdd_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -256,7 +256,7 @@ auto make_manager (mdd_manager_settings<M> const& settings, std::ranlux48& rng)
  *  \brief Makes iMDD manager.
  */
 template<int32 M>
-auto make_manager (imdd_manager_settings<M> const& settings, std::ranlux48& rng)
+auto make_manager (imdd_manager_settings<M> const& settings, tsl::rng_t& rng)
     -> imdd_manager
 {
     return {
@@ -273,7 +273,7 @@ auto make_manager (imdd_manager_settings<M> const& settings, std::ranlux48& rng)
 template<int32 M>
 auto make_manager (
     ifmdd_manager_settings<M> const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> ifmdd_manager<M>
 {
     return {
@@ -289,7 +289,7 @@ auto make_manager (
  */
 inline auto make_manager (
     bss_manager_settings const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> bss_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -299,7 +299,7 @@ inline auto make_manager (
  *  \brief Makes mss_manager.
  */
 template<int32 M>
-auto make_manager (mss_manager_settings<M> const& settings, std::ranlux48& rng)
+auto make_manager (mss_manager_settings<M> const& settings, tsl::rng_t& rng)
     -> mss_manager<M>
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
@@ -309,7 +309,7 @@ auto make_manager (mss_manager_settings<M> const& settings, std::ranlux48& rng)
  *  \brief Makes imss_manager.
  */
 template<int32 M>
-auto make_manager (imss_manager_settings<M> const& settings, std::ranlux48& rng)
+auto make_manager (imss_manager_settings<M> const& settings, tsl::rng_t& rng)
     -> imss_manager
 {
     return imss_manager(
@@ -326,7 +326,7 @@ auto make_manager (imss_manager_settings<M> const& settings, std::ranlux48& rng)
 template<int32 M>
 auto make_manager (
     ifmss_manager_settings<M> const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> ifmss_manager<M>
 {
     return ifmss_manager<M>(
@@ -341,7 +341,7 @@ auto make_manager (
  *  \brief Makes manager for a test.
  */
 template<class Man, class Expr>
-auto make_manager (test_settings<Man, Expr> const& settings, std::ranlux48& rng)
+auto make_manager (test_settings<Man, Expr> const& settings, tsl::rng_t& rng)
 {
     return make_manager(settings.manager_, rng);
 }
@@ -397,7 +397,7 @@ auto make_diagram (
  */
 inline auto make_expression (
     minmax_expression_settings const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> tsl::minmax_expr
 {
     return tsl::make_minmax_expression(
@@ -413,7 +413,7 @@ inline auto make_expression (
  */
 inline auto make_expression (
     expression_tree_settings const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> std::unique_ptr<tsl::expr_node>
 {
     return tsl::make_expression_tree(settings.varcount_, rng, rng);
@@ -425,7 +425,7 @@ inline auto make_expression (
 template<class Man, class Expr>
 auto make_expression (
     test_settings<Man, Expr> const& settings,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 )
 {
     return make_expression(
@@ -442,7 +442,7 @@ auto make_expression (
 template<class Dat, class Deg, class Dom>
 auto make_prob_vector (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> std::vector<double>
 {
     auto const domains = manager.get_domains();
@@ -462,7 +462,7 @@ auto make_prob_vector (
 template<class Dat, class Deg, class Dom>
 auto make_prob_matrix (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> std::vector<std::vector<double>>
 {
     auto const domains = manager.get_domains();
@@ -493,7 +493,7 @@ auto make_prob_matrix (
 template<class Dat, class Deg, class Dom>
 auto make_probabilities (
     diagram_manager<Dat, Deg, Dom> const& manager,
-    std::ranlux48& rng
+    tsl::rng_t& rng
 ) -> std::vector<std::vector<double>>
 {
     return make_prob_matrix(manager, rng);
