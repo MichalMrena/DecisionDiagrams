@@ -5,6 +5,8 @@
 #include <libteddy/details/io_impl.hpp>
 #include <libteddy/details/pla_file.hpp>
 
+#include <cstdio>
+#include <cstdlib>
 #include <initializer_list>
 #include <iterator>
 
@@ -215,9 +217,8 @@ inline auto io::from_pla(
             return manager.tree_fold<ops::OR>(diagrams);
 
         default:
-            assert(false);
-            // TODO(michal): std::exit? better than potential invalid value...
-            return manager.constant(0);
+            std::puts("Invalid fold type. This should not have happened!");
+            std::exit(1);
         }
     };
 
