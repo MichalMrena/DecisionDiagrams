@@ -253,7 +253,7 @@ inline imss_manager::imss_manager(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,
-        TEDDY_MOVE(domains),
+        domains::mixed(TEDDY_MOVE(domains)),
         TEDDY_MOVE(order)
     )
 {
@@ -288,7 +288,7 @@ ifmss_manager<M>::ifmss_manager(
         componentCount,
         nodePoolSize,
         overflowNodePoolSize,
-        TEDDY_MOVE(domains),
+        domains::mixed(TEDDY_MOVE(domains)),
         TEDDY_MOVE(order)
     )
 {

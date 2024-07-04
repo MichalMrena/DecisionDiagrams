@@ -4,6 +4,8 @@
 #include <libteddy/details/diagram_manager.hpp>
 #include <libteddy/details/pla_file.hpp>
 
+#include "libteddy/details/node_manager.hpp"
+
 namespace teddy
 {
 using default_oder = std::vector<int32>;
@@ -259,7 +261,7 @@ inline imdd_manager::imdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        TEDDY_MOVE(domains),
+        domains::mixed(TEDDY_MOVE(domains)),
         TEDDY_MOVE(order)
     )
 {
@@ -294,7 +296,7 @@ ifmdd_manager<PMax>::ifmdd_manager(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
-        TEDDY_MOVE(domains),
+        domains::mixed(TEDDY_MOVE(domains)),
         TEDDY_MOVE(order)
     )
 {

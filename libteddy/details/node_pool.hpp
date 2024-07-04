@@ -18,7 +18,7 @@ public:
     using node_t = node<Data, Degree>;
 
 public:
-    node_pool(int64 mainPoolSize, int64 extraPoolSize);
+    node_pool(int64 mainPoolSize, int64 overflowPoolSize);
     node_pool(node_pool&& other) noexcept;
     ~node_pool();
 
@@ -143,7 +143,7 @@ auto node_pool<Data, Degree>::get_main_pool_size() const -> int64
 
 template<class Data, class Degree>
 template<class... Args>
-auto node_pool<Data, Degree>::create(Args&&... args) -> node_t*
+auto node_pool<Data, Degree>::create(Args&&... args) -> node_t* // NOLINT
 {
     assert(availableNodeCount_ > 0);
     --availableNodeCount_;

@@ -38,7 +38,7 @@ public:
      *  doing.
      *  \param root root node of the diagram
      */
-    diagram(node_t* root);
+    explicit diagram(node_t* root);
 
     /**
      *  \brief Cheap copy constructor.
@@ -59,17 +59,24 @@ public:
     ~diagram();
 
     /**
-     *  \brief Assigns pointer from the other diagram.
+     *  \brief Assigns the pointer from the other diagram.
      *  \param other Diagram to be assigned into this one.
      *  \return Reference to this diagram.
      */
-    auto operator= (diagram other) -> diagram&;
+    auto operator= (diagram const& other) -> diagram&;
+
+    /**
+     *  \brief Move-assigns the pointer from the other diagram.
+     *  \param other Diagram to be assigned into this one.
+     *  \return Reference to this diagram.
+     */
+    auto operator= (diagram&& other) noexcept -> diagram&;
 
     /**
      *  \brief Swaps pointers in this and other diagram.
      *  \param other Diagram to be swapped with this one.
      */
-    auto swap (diagram& other) -> void;
+    auto swap (diagram& other) noexcept -> void;
 
     /**
      *  \brief Compares node pointers in this and other diagram.
@@ -96,7 +103,8 @@ private:
  *  \param rhs Second diagram.
  */
 template<class Data, class Degree>
-auto swap (diagram<Data, Degree>& lhs, diagram<Data, Degree>& rhs) -> void
+auto swap (diagram<Data, Degree>& lhs, diagram<Data, Degree>& rhs) noexcept
+    -> void
 {
     lhs.swap(rhs);
 }
@@ -156,14 +164,30 @@ diagram<Data, Degree>::~diagram()
 }
 
 template<class Data, class Degree>
-auto diagram<Data, Degree>::operator= (diagram other) -> diagram&
+auto diagram<Data, Degree>::operator= (diagram const& other) -> diagram&
 {
-    other.swap(*this);
+    if (this != &other)
+    {
+        root_->dec_ref_count();
+        other.root_->inc_ref_count();
+        root_ = other.root_;
+    }
     return *this;
 }
 
 template<class Data, class Degree>
-auto diagram<Data, Degree>::swap(diagram& other) -> void
+auto diagram<Data, Degree>::operator= (diagram&& other) noexcept -> diagram&
+{
+    if (this != &other)
+    {
+        root_->dec_ref_count();
+        root_ = utils::exchange(other.root_, nullptr);
+    }
+    return *this;
+}
+
+template<class Data, class Degree>
+auto diagram<Data, Degree>::swap(diagram& other) noexcept -> void
 {
     utils::swap(root_, other.root_);
 }
@@ -184,7 +208,7 @@ auto diagram<Data, Degree>::unsafe_get_root() const -> node_t*
 namespace std
 {
 template<class Data, class Degree>
-struct hash<teddy::diagram<Data, Degree>>
+struct hash<teddy::diagram<Data, Degree>> // NOLINT
 {
     [[nodiscard]] auto operator() (teddy::diagram<Data, Degree> const& diagram
     ) const noexcept -> std::size_t
@@ -194,7 +218,7 @@ struct hash<teddy::diagram<Data, Degree>>
 };
 
 template<class Data, class Degree>
-struct equal_to<teddy::diagram<Data, Degree>>
+struct equal_to<teddy::diagram<Data, Degree>> // NOLINT
 {
     [[nodiscard]] auto operator() (
         teddy::diagram<Data, Degree> const& lhs,
@@ -205,5 +229,4 @@ struct equal_to<teddy::diagram<Data, Degree>>
     }
 };
 } // namespace std
-
 #endif

@@ -6,10 +6,8 @@
 #include <libteddy/details/probabilities.hpp>
 #include <libteddy/details/symbolic_probabilities.hpp>
 
-#include <concepts>
 #include <iterator>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace teddy
@@ -151,7 +149,7 @@ public:
     ) -> double;
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
-    // TODO cmp post a level verzie
+    // TODO(michal): cmp post a level verzie
 
     /**
      *  \brief TODO
@@ -349,7 +347,7 @@ private:
     template<class ValueType>
     using node_memo = details::map_memo<ValueType, double, Degree>;
 
-    // TODO not nice
+    // TODO(michal): not nice
     // same problem as n-ary apply, we will see...
 
     struct dpld_cache_entry
@@ -413,7 +411,7 @@ private:
 
     template<class Ps>
     auto ntps_post (
-        std::vector<int32> const& selected,
+        std::vector<int32> const& values,
         Ps const& probs,
         node_t* root
     ) -> double;
@@ -421,7 +419,7 @@ private:
     template<class Ps>
     auto ntps_post_impl (
         node_memo<double>& memo,
-        std::vector<int32> const& selected,
+        std::vector<int32> const& values,
         Ps const& probs,
         node_t* node
     ) -> double;
@@ -453,7 +451,7 @@ auto reliability_manager<Degree, Domain>::calculate_probabilities(
         result.resize(Degree::value);
     }
 
-    this->nodes_.for_each_terminal_node(
+    this->get_node_manager().for_each_terminal_node(
         [&memo, &result] (node_t* const node)
         {
             int32 const value = node->get_value();
@@ -504,7 +502,7 @@ auto reliability_manager<Degree, Domain>::calculate_availability(
 ) -> double
 {
     std::vector<int32> states;
-    this->nodes_.for_each_terminal_node(
+    this->get_node_manager().for_each_terminal_node(
         [state, &states] (node_t* const node)
         {
             if (node->get_value() >= state)
@@ -540,7 +538,7 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
 ) -> double
 {
     std::vector<int32> states;
-    this->nodes_.for_each_terminal_node(
+    this->get_node_manager().for_each_terminal_node(
         [state, &states] (node_t* const node)
         {
             if (node->get_value() < state)
@@ -569,10 +567,10 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
     using symprobs::details::operator+=;
     using symprobs::details::operator*;
 
-    // TODO store it in the nodes
+    // TODO(michal): store it in the nodes
     std::unordered_map<node_t*, symprobs::expression> exprMap;
 
-    this->nodes_.for_each_terminal_node(
+    this->get_node_manager().for_each_terminal_node(
         [&exprMap, state] (node_t* const node)
         {
             symprobs::expression val(
@@ -583,7 +581,7 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
     );
 
     node_t* const root = diagram.unsafe_get_root();
-    this->nodes_.traverse_post(
+    this->get_node_manager().traverse_post(
         root,
         [this, &probs, &exprMap] (node_t* const node) mutable
         {
@@ -595,7 +593,8 @@ auto reliability_manager<Degree, Domain>::symbolic_availability(
                 assert(isIn);
                 symprobs::expression& expr = it->second;
                 int32 const nodeIndex      = node->get_index();
-                int32 const domain         = this->nodes_.get_domain(nodeIndex);
+                int32 const domain
+                    = this->get_node_manager().get_domain(nodeIndex);
                 for (int32 k = 0; k < domain; ++k)
                 {
                     node_t* const son = node->get_son(k);
@@ -636,14 +635,14 @@ auto reliability_manager<Degree, Domain>::state_frequency_impl(
     }
 
     double* const memoized = memo.find(node);
-    if (memoized)
+    if (memoized != nullptr)
     {
         return *memoized;
     }
 
     double freq           = 0.0;
     int32 const nodeIndex = node->get_index();
-    int32 const domain    = this->nodes_.get_domain(nodeIndex);
+    int32 const domain    = this->get_domain(nodeIndex);
     for (int32 k = 0; k < domain; ++k)
     {
         node_t* const son    = node->get_son(k);
@@ -663,7 +662,7 @@ auto reliability_manager<Degree, Domain>::dpld(
     diagram_t const& diagram
 ) -> diagram_t
 {
-    // TODO vector cache?
+    // TODO(michal): vector cache?
     dpld_cache cache;
     node_t* const oldRoot = diagram.unsafe_get_root();
     node_t* lhsRoot       = oldRoot;
@@ -675,7 +674,7 @@ auto reliability_manager<Degree, Domain>::dpld(
     }
     node_t* const newRoot
         = this->dpld_impl(cache, varChange, fChange, lhsRoot, rhsRoot);
-    this->nodes_.run_deferred();
+    this->get_node_manager().run_deferred();
     return diagram_t(newRoot);
 }
 
@@ -710,17 +709,17 @@ auto reliability_manager<Degree, Domain>::dpld_impl(
 
     if (lhs->is_terminal() && rhs->is_terminal())
     {
-        result = this->nodes_.make_terminal_node(
+        result = this->get_node_manager().make_terminal_node(
             static_cast<int32>(fChange(lhs->get_value(), rhs->get_value()))
         );
     }
     else
     {
-        int32 const lhsLevel = this->nodes_.get_level(lhs);
-        int32 const rhsLevel = this->nodes_.get_level(rhs);
+        int32 const lhsLevel = this->get_node_manager().get_level(lhs);
+        int32 const rhsLevel = this->get_node_manager().get_level(rhs);
         int32 const topLevel = utils::min(lhsLevel, rhsLevel);
-        int32 const topIndex = this->nodes_.get_index(topLevel);
-        int32 const domain   = this->nodes_.get_domain(topIndex);
+        int32 const topIndex = this->get_node_manager().get_index(topLevel);
+        int32 const domain   = this->get_node_manager().get_domain(topIndex);
         son_conainer sons    = node_t::make_son_container(domain);
         for (int32 k = 0; k < domain; ++k)
         {
@@ -736,7 +735,10 @@ auto reliability_manager<Degree, Domain>::dpld_impl(
             sons[k] = this->dpld_impl(cache, varChange, fChange, fst, snd);
         }
 
-        result = this->nodes_.make_internal_node(topIndex, TEDDY_MOVE(sons));
+        result = this->get_node_manager().make_internal_node(
+            topIndex,
+            TEDDY_MOVE(sons)
+        );
     }
 
     cache.emplace(dpld_cache_entry(lhs, rhs), result);
@@ -752,31 +754,34 @@ auto reliability_manager<Degree, Domain>::to_dpld_e(
 ) -> diagram_t
 {
     node_t* const root    = dpld.unsafe_get_root();
-    int32 const rootLevel = this->nodes_.get_level(root);
-    int32 const varLevel  = this->nodes_.get_level(varIndex);
+    int32 const rootLevel = this->get_node_manager().get_level(root);
+    int32 const varLevel  = this->get_node_manager().get_level(varIndex);
     node_t* newRoot       = nullptr;
 
     if (varLevel < rootLevel)
     {
-        int32 const varDomain = this->nodes_.get_domain(varIndex);
+        int32 const varDomain = this->get_domain(varIndex);
         son_conainer sons     = node_t::make_son_container(varDomain);
         for (int32 k = 0; k < varDomain; ++k)
         {
-            sons[k] = k == varFrom ? root
-                                   : this->nodes_.make_terminal_node(Undefined);
+            sons[k]
+                = k == varFrom
+                    ? root
+                    : this->get_node_manager().make_terminal_node(Undefined);
         }
-        newRoot = this->nodes_.make_internal_node(varIndex, TEDDY_MOVE(sons));
+        newRoot = this->get_node_manager().make_internal_node(
+            varIndex,
+            TEDDY_MOVE(sons)
+        );
         return diagram_t(newRoot);
     }
-    else
-    {
-        std::unordered_map<node_t*, node_t*> memo;
-        newRoot = this->to_dpld_e_impl(memo, varFrom, varIndex, root);
-    }
 
-    // TODO run at other places too
-    // TODO add perf to benchmark scripts
-    this->nodes_.run_deferred();
+    std::unordered_map<node_t*, node_t*> memo;
+    newRoot = this->to_dpld_e_impl(memo, varFrom, varIndex, root);
+
+    // TODO(michal): run at other places too
+    // TODO(michal): add perf to benchmark scripts
+    this->get_node_manager().run_deferred();
     return diagram_t(newRoot);
 }
 
@@ -799,16 +804,16 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
         return memoIt->second;
     }
 
-    int32 const varDomain  = this->nodes_.get_domain(varIndex);
-    int32 const varLevel   = this->nodes_.get_level(varIndex);
-    int32 const nodeLevel  = this->nodes_.get_level(node);
-    int32 const nodeIndex  = this->nodes_.get_index(nodeLevel);
-    int32 const nodeDomain = this->nodes_.get_domain(nodeIndex);
+    int32 const varDomain  = this->get_node_manager().get_domain(varIndex);
+    int32 const varLevel   = this->get_node_manager().get_level(varIndex);
+    int32 const nodeLevel  = this->get_node_manager().get_level(node);
+    int32 const nodeIndex  = this->get_node_manager().get_index(nodeLevel);
+    int32 const nodeDomain = this->get_node_manager().get_domain(nodeIndex);
     son_conainer sons      = node_t::make_son_container(nodeDomain);
     for (int32 k = 0; k < nodeDomain; ++k)
     {
         node_t* const son    = node->get_son(k);
-        int32 const sonLevel = this->nodes_.get_level(son);
+        int32 const sonLevel = this->get_node_manager().get_level(son);
         if (varLevel > nodeLevel && varLevel < sonLevel)
         {
             // A new node goes in between the current node and its k-th son.
@@ -816,11 +821,13 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
             son_conainer newSons = node_t::make_son_container(varDomain);
             for (int32 l = 0; l < varDomain; ++l)
             {
-                newSons[l] = l == varFrom
-                               ? son
-                               : this->nodes_.make_terminal_node(Undefined);
+                newSons[l]
+                    = l == varFrom
+                        ? son
+                        : this->get_node_manager().make_terminal_node(Undefined
+                          );
             }
-            sons[k] = this->nodes_.make_internal_node(
+            sons[k] = this->get_node_manager().make_internal_node(
                 varIndex,
                 TEDDY_MOVE(newSons)
             );
@@ -831,8 +838,10 @@ auto reliability_manager<Degree, Domain>::to_dpld_e_impl(
             sons[k] = this->to_dpld_e_impl(memo, varFrom, varIndex, son);
         }
     }
-    node_t* const newNode
-        = this->nodes_.make_internal_node(nodeIndex, TEDDY_MOVE(sons));
+    node_t* const newNode = this->get_node_manager().make_internal_node(
+        nodeIndex,
+        TEDDY_MOVE(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }
@@ -913,7 +922,7 @@ auto reliability_manager<Degree, Domain>::mcvs_g(
 
     for (int32 varIndex = 0; varIndex < varCount; ++varIndex)
     {
-        int32 const varDomain = this->nodes_.get_domain(varIndex);
+        int32 const varDomain = this->get_domain(varIndex);
         for (int32 varFrom = 0; varFrom < varDomain - 1; ++varFrom)
         {
             var_change varChange {varIndex, varFrom, varFrom + 1};
@@ -940,7 +949,7 @@ auto reliability_manager<Degree, Domain>::mpvs_g(
 
     for (int32 varIndex = 0; varIndex < varCount; ++varIndex)
     {
-        int32 const varDomain = this->nodes_.get_domain(varIndex);
+        int32 const varDomain = this->get_node_manager().get_domain(varIndex);
         for (int32 varFrom = 1; varFrom < varDomain; ++varFrom)
         {
             var_change varChange {varIndex, varFrom, varFrom - 1};
@@ -997,7 +1006,7 @@ auto reliability_manager<Degree, Domain>::ntps_post_impl(
 
     double result      = 0.0;
     int32 const index  = node->get_index();
-    int32 const domain = this->nodes_.get_domain(index);
+    int32 const domain = this->get_domain(index);
     for (int32 k = 0; k < domain; ++k)
     {
         node_t* const son    = node->get_son(k);
@@ -1032,7 +1041,7 @@ auto reliability_manager<Degree, Domain>::ntps_level_impl(
     int32 const bucketCount = this->get_var_count() + 1;
     std::vector<std::vector<node_t*>> buckets(as_usize(bucketCount));
     auto const endBucket = buckets.end();
-    auto bucket          = buckets.begin() + this->nodes_.get_level(root);
+    auto bucket = buckets.begin() + this->get_node_manager().get_level(root);
     bucket->push_back(root);
     memo.put(root, 1.0);
 
@@ -1047,15 +1056,16 @@ auto reliability_manager<Degree, Domain>::ntps_level_impl(
 
             double const nodeProb = *memo.find(node);
             int32 const index     = node->get_index();
-            int32 const domain    = this->nodes_.get_domain(node);
+            int32 const domain    = this->get_domain(node->get_index());
             for (int32 k = 0; k < domain; ++k)
             {
                 node_t* const son = node->get_son(k);
                 double* sonProb   = memo.find(son);
                 if (not sonProb)
                 {
-                    sonProb              = memo.put(son, 0.0);
-                    int32 const sonLevel = this->nodes_.get_level(son);
+                    sonProb = memo.put(son, 0.0);
+                    int32 const sonLevel
+                        = this->get_node_manager().get_level(son);
                     buckets[as_uindex(sonLevel)].push_back(son);
                 }
 
@@ -1076,7 +1086,7 @@ auto reliability_manager<Degree, Domain>::to_mnf(diagram_t const& diagram
 {
     std::unordered_map<node_t*, node_t*> memo;
     node_t* const newRoot = this->to_mnf_impl(memo, diagram.unsafe_get_root());
-    this->nodes_.run_deferred();
+    this->get_node_manager().run_deferred();
     return diagram_t(newRoot);
 }
 
@@ -1098,7 +1108,7 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
     }
 
     int32 const nodeIndex = node->get_index();
-    int32 const domain    = this->nodes_.get_domain(nodeIndex);
+    int32 const domain    = this->get_domain(nodeIndex);
     son_conainer sons     = node_t::make_son_container(domain);
     for (int32 k = 0; k < domain; ++k)
     {
@@ -1128,8 +1138,10 @@ auto reliability_manager<Degree, Domain>::to_mnf_impl(
         }
     }
 
-    node_t* const newNode
-        = this->nodes_.make_internal_node(nodeIndex, TEDDY_MOVE(sons));
+    node_t* const newNode = this->get_node_manager().make_internal_node(
+        nodeIndex,
+        TEDDY_MOVE(sons)
+    );
     memo.emplace(node, newNode);
     return newNode;
 }

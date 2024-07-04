@@ -80,7 +80,7 @@ auto make_manager (imdd_nodes_fixture const& fix)
         fix.nodePoolSize_,
         fix.extraNodePoolSize_,
         fix.order_,
-        fix.domains_
+        domains::mixed(fix.domains_)
     );
 }
 
@@ -91,7 +91,7 @@ auto make_manager (ifmdd_nodes_fixture const& fix)
         fix.nodePoolSize_,
         fix.extraNodePoolSize_,
         fix.order_,
-        fix.domains_
+        domains::mixed(fix.domains_)
     );
 }
 

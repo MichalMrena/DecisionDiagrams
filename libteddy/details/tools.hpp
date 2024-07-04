@@ -12,18 +12,18 @@ namespace teddy::utils
  *  \brief Exponentiation by squaring
  */
 template<class Base>
-auto constexpr int_pow(Base base, int32 exponent) -> Base
+auto constexpr int_pow(Base base, uint32 exponent) -> Base
 {
     Base result = 1;
 
     for (;;)
     {
-        if (exponent & 1)
+        if (exponent & 1U)
         {
             result *= base;
         }
 
-        exponent >>= 1;
+        exponent >>= 1U;
 
         if (0 == exponent)
         {
@@ -41,7 +41,7 @@ auto constexpr int_pow(Base base, int32 exponent) -> Base
  */
 inline auto do_hash (void* const p) -> std::size_t
 {
-    return reinterpret_cast<std::size_t>(p) >> 4;
+    return reinterpret_cast<std::size_t>(p) >> 4U;
 }
 
 /**
@@ -59,7 +59,7 @@ template<class T>
 auto add_hash (std::size_t& hash, T const& elem) -> void
 {
     // see boost::hash_combine
-    hash ^= do_hash(elem) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    hash ^= do_hash(elem) + 0x9e3779b9 + (hash << 6U) + (hash >> 2U);
 }
 
 /**
@@ -210,7 +210,7 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
         }
     };
 
-    uint32 const size = static_cast<uint32>(xs.size());
+    auto const size = static_cast<uint32>(xs.size());
 
     // make-heap
     for (uint32 i = size / 2 + 1; i > 0;)
@@ -227,7 +227,7 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
     }
 }
 
-// TODO this wont be necessary when we sort out node data and caches...
+// TODO(michal): this wont be necessary when we sort out node data and caches...
 template<class T>
 struct is_void
 {
@@ -330,7 +330,7 @@ struct remove_reference<T&&>
     using type = T;
 };
 
-// TODO asi nebude treba
+// TODO(michal): asi nebude treba
 template<class T>
 struct optional_member
 {

@@ -3,6 +3,7 @@
 
 #include <libteddy/details/diagram_manager.hpp>
 
+#include <cstdint>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -15,7 +16,7 @@ struct io_impl
     static auto to_dot_graph_common (
         diagram_manager<Data, Degree, Domain> const& manager,
         std::ostream& ost,
-        ForEachNode&& forEach
+        ForEachNode forEach
     ) -> void
     {
         using manager_t       = diagram_manager<Data, Degree, Domain>;
@@ -33,8 +34,9 @@ struct io_impl
             return "x" + std::to_string(node->get_index());
         };
 
-        auto const get_id_str = [] (node_t* const n)
-        { return std::to_string(reinterpret_cast<uint64>(n)); };
+        auto const get_id_str = [] (node_t* const n) {
+            return std::to_string(reinterpret_cast<std::intptr_t>(n));
+        }; // NOLINT
 
         auto const output_range
             = [] (auto& ostr, auto const& range, auto const sep)

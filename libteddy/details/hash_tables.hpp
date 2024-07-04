@@ -267,7 +267,7 @@ public:
     };
 
 public:
-    apply_cache(int64 capacity);
+    explicit apply_cache(int64 capacity);
     apply_cache(apply_cache&& other) noexcept;
     ~apply_cache();
 
@@ -483,7 +483,7 @@ auto unique_table<Data, Degree>::find(son_container const& sons
 ) const -> result_of_find
 {
     std::size_t const hash = this->node_hash(sons);
-    int64 const index
+    auto const index
         = static_cast<int64>(hash % static_cast<std::size_t>(capacity_));
     node_t* current = buckets_[index];
     while (current)
@@ -536,7 +536,7 @@ template<class Data, class Degree>
 auto unique_table<Data, Degree>::erase(node_t* const node) -> iterator
 {
     std::size_t const hash = this->node_hash(node->get_sons());
-    int64 const index
+    auto const index
         = static_cast<int64>(hash % static_cast<std::size_t>(capacity_));
     return this->erase_impl(buckets_ + index, node);
 }
@@ -544,7 +544,7 @@ auto unique_table<Data, Degree>::erase(node_t* const node) -> iterator
 template<class Data, class Degree>
 auto unique_table<Data, Degree>::adjust_capacity() -> void
 {
-    int64 const aproxCapacity
+    auto const aproxCapacity
         = static_cast<int64>(static_cast<double>(size_) / LOAD_THRESHOLD);
     int64 const newCapacity = table_base::get_gte_capacity(aproxCapacity);
     if (newCapacity > capacity_)

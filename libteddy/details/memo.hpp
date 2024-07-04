@@ -9,6 +9,8 @@
 
 namespace teddy::details
 {
+// TODO(michal): out-of-line definition
+
 /**
  *  \brief TODO
  */
@@ -28,7 +30,7 @@ public:
     {
     }
 
-    in_node_memo(in_node_memo&& other) :
+    in_node_memo(in_node_memo&& other) noexcept :
         root_(utils::exchange(other.root_, nullptr)),
         manager_(utils::exchange(other.manager_, nullptr))
     {
@@ -42,9 +44,18 @@ public:
         }
     }
 
-    auto find (node_t* const key) const -> ValueType*
+    auto operator= (in_node_memo&& other) noexcept -> in_node_memo&
     {
-        // TODO if not marked then nullptr
+        root_    = utils::exchange(other.root_, nullptr);
+        manager_ = utils::exchange(other.manager_, nullptr);
+    }
+
+    in_node_memo(in_node_memo const&)                     = delete;
+    auto operator= (in_node_memo const&) -> in_node_memo& = delete;
+
+    auto find (node_t* const /*key*/) const -> ValueType*
+    {
+        // TODO(michal): if not marked then nullptr
         return nullptr;
     }
 
@@ -55,9 +66,9 @@ public:
      *  \return Pointer to the place where \p value is stored
      *          Guaranteed to be valid until next call to \c put
      */
-    auto put (node_t* const key, ValueType const& value) -> void
+    auto put (node_t* const /*key*/, ValueType const& /*value*/) -> void
     {
-        // TODO
+        // TODO(michal):
     }
 
 private:
@@ -95,9 +106,9 @@ public:
     using node_t = node<Data, Degree>;
 
 public:
-    map_memo(int64 const /*nodeCount*/)
+    explicit map_memo(int64 const /*nodeCount*/)
     {
-        // TODO this one could reserve buckets
+        // TODO(michal): this one could reserve buckets
     }
 
     auto find (node_t* const key) -> ValueType*

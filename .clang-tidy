@@ -1,9 +1,31 @@
 ---
-Checks:          'clang-analyzer-*,modernize-,performance-'
+Checks: >
+  *,
+  -altera-*,
+  -bugprone-easily-swappable-parameters,
+  -concurrency-mt-unsafe,
+  -cppcoreguidelines-avoid-c-arrays,
+  -cppcoreguidelines-avoid-do-while,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-macro-usage,
+  -cppcoreguidelines-no-malloc,
+  -cppcoreguidelines-owning-memory,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-use-default-member-init,
+  -fuchsia-*,
+  -llvm-*,
+  -llvmlibc-*,
+  -hicpp-avoid-c-arrays,
+  -hicpp-named-parameter,
+  -hicpp-no-malloc,
+  -modernize-avoid-c-arrays,
+  -readability-identifier-length,
+  -readability-magic-numbers,
+  -readability-named-parameter,
+  -readability-redundant-access-specifiers
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
-AnalyzeTemporaryDtors: false
-FormatStyle:     none
-User:            michal
+FormatStyle: none
+User: michal
 ...
-

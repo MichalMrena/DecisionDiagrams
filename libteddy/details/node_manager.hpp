@@ -11,9 +11,6 @@
 #include <libteddy/details/types.hpp>
 
 #include <cassert>
-#include <concepts>
-#include <cstdint>
-#include <ostream>
 #include <string>
 #include <vector>
 
@@ -21,21 +18,24 @@ namespace teddy
 {
 namespace domains
 {
-    struct mixed
+    class mixed
     {
+    public:
         /*
          * Just a dummy value to simplify ifs, this one should be never used
          */
         static int32 constexpr value = 1;
 
-        std::vector<int32> domains_;
+        explicit mixed(std::vector<int32> domains) :
+            domains_(TEDDY_MOVE(domains)) {};
 
-        mixed(std::vector<int32> domains) : domains_(TEDDY_MOVE(domains)) {};
-
-        auto operator[] (int32 const index) const
+        auto operator[] (int32 const index) const -> int32
         {
             return domains_[as_uindex(index)];
         }
+
+    private:
+        std::vector<int32> domains_;
     };
 
     template<int32 N>
@@ -153,20 +153,17 @@ public:
     auto domain_product (int32 levelFrom, int32 levelTo) const -> Int;
 
     template<class NodeOp>
-    auto for_each_son (node_t* node, NodeOp&& operation) const -> void;
+    auto for_each_son (node_t* node, NodeOp operation) const -> void;
 
     template<class NodeOp>
-    auto for_each_son (
-        int32 index,
-        son_container const& sons,
-        NodeOp&& operation
-    ) const -> void;
+    auto for_each_son (int32 index, son_container const& sons, NodeOp operation)
+        const -> void;
 
     template<class NodeOp>
-    auto for_each_node (NodeOp&& operation) const -> void;
+    auto for_each_node (NodeOp operation) const -> void;
 
     template<class NodeOp>
-    auto for_each_terminal_node (NodeOp&& operation) const -> void;
+    auto for_each_terminal_node (NodeOp operation) const -> void;
 
     template<teddy_bin_op O>
     [[nodiscard]] auto cache_find (node_t* lhs, node_t* rhs) -> node_t*;
@@ -182,7 +179,7 @@ public:
     template<class NodeOp>
     auto traverse_post (node_t* rootNode, NodeOp operation) const -> void;
 
-    // TODO bude toto este treba?
+    // TODO(michal): bude toto este treba?
     template<class NodeOp>
     auto traverse_level (node_t* rootNode, NodeOp operation) const -> void;
 
@@ -274,7 +271,7 @@ auto id_set_notmarked (node<Data, Degree>* const node
     return node;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Data, class Degree, class Domain> // NOLINT
 node_manager<Data, Degree, Domain>::node_manager(
     int32 const varCount,
     int64 const nodePoolSize,
@@ -294,7 +291,7 @@ requires(domains::is_fixed<Domain>::value)
 {
 }
 
-template<class Data, class Degree, class Domain>
+template<class Data, class Degree, class Domain> // NOLINT
 node_manager<Data, Degree, Domain>::node_manager(
     int32 const varCount,
     int64 const nodePoolSize,
@@ -350,9 +347,9 @@ node_manager<Data, Degree, Domain>::node_manager(
         assert(ssize(domains_.domains_) == varCount_);
         if constexpr (degrees::is_fixed<Degree>::value)
         {
-            for ([[maybe_unused]] int32 const domain : domains_.domains_)
+            for ([[maybe_unused]] int32 i = 0; i < varCount_; ++i)
             {
-                assert(domain <= Degree::value);
+                assert(domains_[i] <= Degree::value);
             }
         }
     }
@@ -678,7 +675,10 @@ auto node_manager<Data, Degree, Domain>::domain_product(
     }
     else if constexpr (domains::is_fixed<Domain>::value)
     {
-        return utils::int_pow(Int(Domain::value), levelTo - levelFrom);
+        return utils::int_pow(
+            Int(Domain::value),
+            static_cast<uint32>(levelTo - levelFrom)
+        );
     }
     else
     {
@@ -695,7 +695,7 @@ template<class Data, class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
     node_t* const node,
-    NodeOp&& operation
+    NodeOp operation
 ) const -> void
 {
     int32 const index = node->get_index();
@@ -710,7 +710,7 @@ template<class NodeOp>
 auto node_manager<Data, Degree, Domain>::for_each_son(
     int32 const index,
     son_container const& sons,
-    NodeOp&& operation
+    NodeOp operation
 ) const -> void
 {
     for (int32 k = 0; k < domains_[index]; ++k)
@@ -721,7 +721,7 @@ auto node_manager<Data, Degree, Domain>::for_each_son(
 
 template<class Data, class Degree, class Domain>
 template<class NodeOp>
-auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation
+auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp operation
 ) const -> void
 {
     for (unique_table<Data, Degree> const& table : uniqueTables_)
@@ -737,8 +737,7 @@ auto node_manager<Data, Degree, Domain>::for_each_node(NodeOp&& operation
 
 template<class Data, class Degree, class Domain>
 template<class NodeOp>
-auto node_manager<Data, Degree, Domain>::for_each_terminal_node(
-    NodeOp&& operation
+auto node_manager<Data, Degree, Domain>::for_each_terminal_node(NodeOp operation
 ) const -> void
 {
     for (node_t* const node : terminals_)
@@ -978,7 +977,7 @@ auto node_manager<Data, Degree, Domain>::adjust_caches() -> void
 
 template<class Data, class Degree, class Domain>
 template<class... Args>
-auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args
+auto node_manager<Data, Degree, Domain>::make_new_node(Args&&... args // NOLINT
 ) -> node_t*
 {
     if (autoReorderEnabled_)

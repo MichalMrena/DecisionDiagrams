@@ -22,7 +22,7 @@ using longint = mpz_class;
 using longint = std::int64_t;
 #endif
 
-inline int32 constexpr Undefined     = ~(1 << (8 * sizeof(int32) - 1));
+inline int32 constexpr Undefined     = ~(1U << (8 * sizeof(int32) - 1));
 inline int32 constexpr Nondetermined = Undefined - 1;
 
 [[nodiscard]] inline auto constexpr as_uindex(int32 const index)

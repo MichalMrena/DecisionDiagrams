@@ -288,7 +288,9 @@ namespace ops
             const -> int32
         {
             int32 const ma = utils::max(l, r);
-            int32 const im = static_cast<int32>(not l || r);
+            int32 const im = static_cast<int32>(
+                not static_cast<bool>(l) || static_cast<bool>(r)
+            );
             return l == 0 ? 1 : ma == Nondetermined ? Nondetermined : im;
         }
     };

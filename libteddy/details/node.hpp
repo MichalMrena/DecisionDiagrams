@@ -7,6 +7,8 @@
 #include <cassert>
 #include <cstdlib>
 
+// TODO(michal): out-of-line definition
+
 namespace teddy
 {
 namespace degrees
@@ -122,16 +124,18 @@ namespace sons
     public:
         using node_t = node<Data, Degree>;
 
-        mixed(int32 const domain) :
+        explicit mixed(int32 const domain) :
             sons_(static_cast<node_t**>(
                 std::malloc(as_usize(domain) * sizeof(node_t*))
             ))
         {
         }
 
-        mixed(mixed const&) = delete;
+        mixed(mixed const&)                           = delete;
+        auto operator= (mixed const& other) -> mixed& = delete;
 
-        mixed(mixed&& other) : sons_(utils::exchange(other.sons_, nullptr))
+        mixed(mixed&& other) noexcept :
+            sons_(utils::exchange(other.sons_, nullptr))
         {
         }
 
@@ -140,13 +144,13 @@ namespace sons
             std::free(sons_);
         }
 
-        auto operator= (mixed&& other) -> mixed&
+        auto operator= (mixed&& other) noexcept -> mixed&
         {
             if (this != &other) [[likely]]
             {
                 std::free(sons_);
+                sons_ = utils::exchange(other.sons_, nullptr);
             }
-            sons_ = utils::exchange(other.sons_, nullptr);
             return *this;
         }
 
@@ -246,7 +250,7 @@ public:
     auto operator= (node const&) = delete;
     auto operator= (node&&)      = delete;
 
-    // TODO get_data_as<double>() -> double&
+    // TODO(michal): get_data_as<double>() -> double&
     //      get_data_as<expr>() -> expr&
     // asi uz nebude treba Foo
     template<class Foo = void>

@@ -563,6 +563,14 @@ public:
     [[nodiscard]] auto get_order () const -> std::vector<int32> const&;
 
     /**
+     * \brief Returns the size of the domain of \p index variable
+     *
+     * \param index Index of the variables
+     * \return int32 Size of the domain of the variable
+     */
+    [[nodiscard]] auto get_domain (int32 index) const -> int32;
+
+    /**
      *  \brief Return domains of variables.
      *
      *  In case of \c bdd_manager and \c mdd_manager domains of each
@@ -625,7 +633,7 @@ private:
         node_t* result_ {nullptr};
     };
 
-    // TODO tmp
+    // TODO(michal): tmp
     template<int32 Size, class... Node>
     static auto pack_equals (node_pack<Size> const& pack, Node... nodes)
     {
@@ -698,7 +706,11 @@ private:
 
 protected:
     template<class ValueType>
-    auto make_node_memo (node_t* const root) -> node_memo<ValueType>;
+    auto make_node_memo (node_t* root) -> node_memo<ValueType>;
+
+    auto get_node_manager () -> node_manager<Data, Degree, Domain>&;
+
+    auto get_node_manager () const -> node_manager<Data, Degree, Domain> const&;
 
 protected:
     /**
@@ -748,7 +760,7 @@ public:
     diagram_manager(diagram_manager const&)                         = delete;
     auto operator= (diagram_manager const&) -> diagram_manager&     = delete;
 
-protected:
+private:
     node_manager<Data, Degree, Domain> nodes_;
 };
 
@@ -971,8 +983,9 @@ auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram
         ops::MAXB<Domain::value>,
         Op>::type;
 
-    // TODO capacity
-    std::vector<node_pack<sizeof...(Diagram)>> cache(100'000);
+    // TODO(michal): capacity, this is temporary
+    int32 const cacheSize = 100'000;
+    std::vector<node_pack<sizeof...(Diagram)>> cache(cacheSize);
     node_t* const newRoot
         = this->apply_n_impl(cache, OpType(), diagram.unsafe_get_root()...);
     nodes_.run_deferred();
@@ -1073,9 +1086,10 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
 
     for (auto step = 0; step < numOfSteps; ++step)
     {
-        auto const justMoveLast = static_cast<bool>(currentCount & 1);
-        currentCount            = (currentCount / 2) + justMoveLast;
-        int64 const pairCount   = currentCount - justMoveLast;
+        auto const justMoveLast
+            = static_cast<bool>(static_cast<uint64>(currentCount) & 1U);
+        currentCount          = (currentCount / 2) + justMoveLast;
+        int64 const pairCount = currentCount - justMoveLast;
 
         for (int64 i = 0; i < pairCount; ++i)
         {
@@ -1118,22 +1132,20 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
     diagram_t const& diagram
 ) -> longint
 {
-    node_t* const root    = diagram.unsafe_get_root();
-    int32 const rootLevel = nodes_.get_level(root);
-    longint stepResult    = 0;
-    if (this->get_var_count() < 63)
+    node_t* const root          = diagram.unsafe_get_root();
+    int32 const rootLevel       = nodes_.get_level(root);
+    longint stepResult          = 0;
+    int32 const nativeThreshold = 63;
+    if (this->get_var_count() < nativeThreshold)
     {
         node_memo<int64> memo = this->make_node_memo<int64>(root);
         stepResult = this->satisfy_count_impl<int64>(memo, value, root);
         return stepResult * nodes_.template domain_product<int64>(0, rootLevel);
     }
-    else
-    {
-        node_memo<longint> memo = this->make_node_memo<longint>(root);
-        stepResult = this->satisfy_count_impl<longint>(memo, value, root);
-        return stepResult
-             * nodes_.template domain_product<longint>(0, rootLevel);
-    }
+
+    node_memo<longint> memo = this->make_node_memo<longint>(root);
+    stepResult = this->satisfy_count_impl<longint>(memo, value, root);
+    return stepResult * nodes_.template domain_product<longint>(0, rootLevel);
 }
 
 template<class Data, class Degree, class Domain>
@@ -1205,7 +1217,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl(
     }
 
     double* const memoized = memo.find(node);
-    if (memoized)
+    if (memoized != nullptr)
     {
         return *memoized;
     }
@@ -1228,7 +1240,7 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl(
         s2 += level1 - level - 1;
     }
 
-    double result;
+    double result = -1;
     if (s1 < 0.0)
     {
         result = s2;
@@ -1423,7 +1435,7 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor(
         [root] (var_cofactor var) { return var.index_ == root->get_index(); }
     );
 
-    int32 toCofactor = static_cast<int32>(vars.size());
+    auto toCofactor = static_cast<int32>(vars.size());
     if (it != vars.end())
     {
         root = root->get_son(it->value_);
@@ -1564,7 +1576,7 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
 {
     if (node->is_terminal())
     {
-        int32 const newVal = static_cast<int32>(transformer(node->get_value()));
+        auto const newVal = static_cast<int32>(transformer(node->get_value()));
         return nodes_.make_terminal_node(newVal);
     }
 
@@ -1664,6 +1676,13 @@ auto diagram_manager<Data, Degree, Domain>::get_var_count() const -> int32
 }
 
 template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::get_domain(int32 const index
+) const -> int32
+{
+    return nodes_.get_domain(index);
+}
+
+template<class Data, class Degree, class Domain>
 auto diagram_manager<Data, Degree, Domain>::get_order() const
     -> std::vector<int32> const&
 {
@@ -1725,28 +1744,42 @@ auto diagram_manager<Data, Degree, Domain>::make_node_memo(node_t* const
     return node_memo<ValueType>(this->get_node_count());
 }
 
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::get_node_manager()
+    -> node_manager<Data, Degree, Domain>&
+{
+    return nodes_;
+}
+
+template<class Data, class Degree, class Domain>
+auto diagram_manager<Data, Degree, Domain>::get_node_manager() const
+    -> node_manager<Data, Degree, Domain> const&
+{
+    return nodes_;
+}
+
 namespace detail
 {
     inline auto default_or_fwd (
         int32 const varCount,
-        std::vector<int32>& indices
-    )
+        std::vector<int32> indices
+    ) -> std::vector<int32>
     {
-        if (indices.empty())
+        if (not indices.empty())
         {
-            std::vector<int32> defaultIndices;
-            defaultIndices.reserve(as_usize(varCount));
-            for (int32 index = 0; index < varCount; ++index)
-            {
-                defaultIndices.push_back(index);
-            }
-            return defaultIndices;
+            return {TEDDY_MOVE(indices)};
         }
-        else
+
+        std::vector<int32> defaultIndices;
+        defaultIndices.reserve(as_usize(varCount));
+        for (int32 index = 0; index < varCount; ++index)
         {
-            return std::vector<int32>(TEDDY_MOVE(indices));
+            defaultIndices.push_back(index);
         }
+
+        return defaultIndices;
     }
+
 } // namespace detail
 
 template<class Data, class Degree, class Domain>
@@ -1762,7 +1795,7 @@ requires(domains::is_fixed<Domain>::value)
         varCount,
         nodePoolSize,
         extraNodePoolSize,
-        detail::default_or_fwd(varCount, order)
+        detail::default_or_fwd(varCount, TEDDY_MOVE(order))
     )
 {
 }
@@ -1781,7 +1814,7 @@ requires(domains::is_mixed<Domain>::value)
         varCount,
         nodePoolSize,
         extraNodePoolSize,
-        detail::default_or_fwd(varCount, order),
+        detail::default_or_fwd(varCount, TEDDY_MOVE(order)),
         TEDDY_MOVE(domain)
     )
 {

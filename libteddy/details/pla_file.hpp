@@ -9,6 +9,7 @@
 #include <cctype>
 #include <charconv>
 #include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -66,9 +67,9 @@ namespace utils
     auto parse (std::string_view const input) -> std::optional<Num>
     {
         Num ret;
-        auto const first  = input.data();
-        auto const last   = input.data() + input.size();
-        auto const result = std::from_chars(first, last, ret);
+        char const* const first             = input.data();
+        char const* const last              = input.data() + input.size();
+        std::from_chars_result const result = std::from_chars(first, last, ret);
         return std::errc {} == result.ec && result.ptr == last
                  ? std::optional<Num>(ret)
                  : std::nullopt;
@@ -84,17 +85,19 @@ public:
     static std::uint8_t constexpr DontCare = 0b11;
 
 public:
-    bool_cube(int32 size) :
+    explicit bool_cube(int32 size) :
         size_(size),
         values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0})
     {
     }
 
+    [[nodiscard]]
     auto size () const -> int32
     {
         return size_;
     }
 
+    [[nodiscard]]
     auto get (int32 index) const -> int32
     {
         int32 const byteIndex = index / 4;
@@ -111,31 +114,37 @@ public:
             return values_[as_uindex(byteIndex)].b2;
         case 3:
             return values_[as_uindex(byteIndex)].b3;
+        default:
+            return -1;
         }
-        return -1;
     }
 
-    auto set (int32 index, int32 value) -> void
+    auto set (int32 const index, int32 const value) -> void
     {
         int32 const byteIndex = index / 4;
 
         assert((byteIndex >= 0 && byteIndex < ssize(values_)));
         assert(value == 0 || value == 1 || value == DontCare);
 
+        auto const uValue = static_cast<uint32>(value);
+
         switch (index % 4)
         {
         case 0:
-            values_[as_uindex(byteIndex)].b0 = value & 0b11;
+            values_[as_uindex(byteIndex)].b0 = uValue & 0b11U;
             break;
         case 1:
-            values_[as_uindex(byteIndex)].b1 = value & 0b11;
+            values_[as_uindex(byteIndex)].b1 = uValue & 0b11U;
             break;
         case 2:
-            values_[as_uindex(byteIndex)].b2 = value & 0b11;
+            values_[as_uindex(byteIndex)].b2 = uValue & 0b11U;
             break;
         case 3:
-            values_[as_uindex(byteIndex)].b3 = value & 0b11;
+            values_[as_uindex(byteIndex)].b3 = uValue & 0b11U;
             break;
+
+        default:
+            std::exit(1);
         }
     }
 
@@ -166,7 +175,7 @@ public:
      *  \return Optional holding instance of \c pla_file or
      *  \c std::nullopt if the loading failed
      */
-    static auto load_file (std::string const& path, bool const verbose = false)
+    static auto load_file (std::string const& path, bool verbose = false)
         -> std::optional<pla_file>;
 
 public:
@@ -292,9 +301,14 @@ private:
 
 // pla_file definitions:
 
-inline auto pla_file::load_file(std::string const& path, bool const verbose)
+inline auto pla_file::load_file(
+    std::string const& path,
+    bool const verbose
+) // NOLINT
     -> std::optional<pla_file>
 {
+    using namespace std::string_view_literals;
+
     auto const to_words
         = [] (std::string const& str) -> std::vector<std::string>
     {
@@ -328,7 +342,7 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
     std::ifstream ifst(path);
     if (not ifst.is_open())
     {
-        verbose_out("Failed to open: ", path, "\n");
+        verbose_out("Failed to open: "sv, path, "\n"sv);
         return std::nullopt;
     }
 
@@ -371,7 +385,8 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
         {
             // Option with argument
             auto valLast = last;
-            while (valLast != valFirst && ::isspace(*(valLast - 1)))
+            while (valLast != valFirst
+                   && static_cast<bool>(::isspace(*(valLast - 1))))
             {
                 --valLast;
             }
@@ -391,19 +406,19 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
     auto const lineCountIt = options.find(".p");
     if (varCountIt == options.end())
     {
-        verbose_out("Missing input count option .i\n");
+        verbose_out("Missing input count option .i\n"sv);
         return std::nullopt;
     }
 
     if (fCountIt == options.end())
     {
-        verbose_out("Missing function count option .o\n");
+        verbose_out("Missing function count option .o\n"sv);
         return std::nullopt;
     }
 
     if (lineCountIt == options.end() && verbose)
     {
-        verbose_out("Missing line count option .p\n");
+        verbose_out("Missing line count option .p\n"sv);
     }
 
     std::optional<int32> varCount  = utils::parse<int32>(varCountIt->second);
@@ -412,13 +427,21 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
 
     if (not varCount)
     {
-        verbose_out("Failed to parse input count: ", varCountIt->second, "\n");
+        verbose_out(
+            "Failed to parse input count: "sv,
+            varCountIt->second,
+            "\n"sv
+        );
         return std::nullopt;
     }
 
     if (not fCount)
     {
-        verbose_out("Failed to parse output count: ", fCountIt->second, "\n");
+        verbose_out(
+            "Failed to parse output count: "sv,
+            fCountIt->second,
+            "\n"sv
+        );
         return std::nullopt;
     }
 
@@ -428,9 +451,9 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
         if (not lineCount)
         {
             verbose_out(
-                "Failed to parse line count: ",
+                "Failed to parse line count: "sv,
                 lineCountIt->second,
-                "\n"
+                "\n"sv
             );
         }
     }
@@ -470,7 +493,11 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
         auto const varsLast = utils::find_if(first, last, ::isspace);
         if (varsLast == last)
         {
-            verbose_out("Missing output values on line ", lineNum - 1, "\n");
+            verbose_out(
+                "Missing output values on line "sv,
+                lineNum - 1,
+                "\n"sv
+            );
             return std::nullopt;
         }
         auto const fsFirst = utils::find_if_not(varsLast + 1, last, ::isspace);
@@ -480,13 +507,13 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
 
         if (ssize(varsStr) != *varCount)
         {
-            verbose_out("Invalid input count on line ", lineNum - 1, "\n");
+            verbose_out("Invalid input count on line "sv, lineNum - 1, "\n"sv);
             return std::nullopt;
         }
 
         if (ssize(fStr) != *fCount)
         {
-            verbose_out("Invalid output count on line ", lineNum - 1, "\n");
+            verbose_out("Invalid output count on line "sv, lineNum - 1, "\n"sv);
             return std::nullopt;
         }
 
@@ -508,11 +535,11 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
                 break;
             default:
                 verbose_out(
-                    "Invalid cube character '",
+                    "Invalid cube character '"sv,
                     varsStr[as_uindex(i)],
-                    "' on line ",
+                    "' on line "sv,
                     lineNum - 1,
-                    "\n"
+                    "\n"sv
                 );
                 return std::nullopt;
             }
@@ -536,11 +563,11 @@ inline auto pla_file::load_file(std::string const& path, bool const verbose)
                 break;
             default:
                 verbose_out(
-                    "Invalid cube character '",
+                    "Invalid cube character '"sv,
                     varsStr[as_uindex(i)],
-                    "' on line ",
+                    "' on line "sv,
                     lineNum - 1,
-                    "\n"
+                    "\n"sv
                 );
                 return std::nullopt;
             }

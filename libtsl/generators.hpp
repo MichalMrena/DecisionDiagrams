@@ -111,7 +111,9 @@ inline auto make_time_probability_vector (
 
     auto const mkExponential = [] (std::ranlux48& gen) -> probs::prob_dist
     {
-        std::uniform_real_distribution<double> distRate(0.2, 1.0);
+        double const from = 0.2;
+        double const to   = 1.0;
+        std::uniform_real_distribution<double> distRate(from, to);
         return probs::exponential(distRate(gen));
     };
 

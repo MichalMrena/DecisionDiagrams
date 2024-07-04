@@ -23,7 +23,7 @@ struct io
     static auto from_pla (
         bdd_manager& manager,
         pla_file const& file,
-        fold_type const foldType = fold_type::Tree
+        fold_type foldType = fold_type::Tree
     ) -> std::vector<bdd_manager::diagram_t>;
 
     /**
@@ -216,7 +216,7 @@ inline auto io::from_pla(
 
         default:
             assert(false);
-            // TODO std::exit? better than potential invalid value...
+            // TODO(michal): std::exit? better than potential invalid value...
             return manager.constant(0);
         }
     };
@@ -262,7 +262,7 @@ template<
     class Domain,
     std::input_iterator I,
     std::sentinel_for<I> S>
-auto io::from_vector(
+auto io::from_vector( // NOLINT
     diagram_manager<Data, Degree, Domain>& manager,
     I first,
     S last
@@ -319,7 +319,7 @@ auto io::from_vector(
             int32 const newIndex  = manager.nodes_.get_index(currentLevel - 1);
             int32 const newDomain = manager.nodes_.get_domain(newIndex);
 
-            // TODO simplify
+            // TODO(michal): simplify
             if (count < newDomain)
             {
                 break;
@@ -407,7 +407,7 @@ auto io::to_vector_g(
     O out
 ) -> void
 {
-    // TODO move for-each-in-domain to tools
+    // TODO(michal): move for-each-in-domain to tools
     if (manager.get_var_count() == 0)
     {
         assert(diagram.unsafe_get_root()->is_terminal());

@@ -2,6 +2,7 @@
 #define LIBTEDDY_PROBABILITIES_HPP
 
 #include <libteddy/details/config.hpp>
+#include <libteddy/details/tools.hpp>
 #include <libteddy/details/types.hpp>
 
 #include <array>
@@ -99,7 +100,7 @@ namespace details
     class exponential : public make_cached<exponential>
     {
     public:
-        explicit exponential(double const rate) : rate_(rate)
+        explicit exponential(double const rate) : make_cached(), rate_(rate)
         {
         }
 
@@ -115,14 +116,16 @@ namespace details
         double rate_;
     };
 
-    // TODO nope
+    // TODO(michal): nope
     /**
      *  \brief Exponential distribution
      */
     class complemented_exponential : public make_cached<exponential>
     {
     public:
-        explicit complemented_exponential(double const rate) : rate_(rate)
+        explicit complemented_exponential(double const rate) :
+            make_cached(),
+            rate_(rate)
         {
         }
 
@@ -142,6 +145,7 @@ namespace details
     {
     public:
         weibull(double const scale, double const shape) :
+            make_cached(),
             scale_(scale),
             shape_(shape)
         {
@@ -166,7 +170,7 @@ namespace details
     class constant : public make_cached<constant>
     {
     public:
-        explicit constant(double const value) : value_(value)
+        explicit constant(double const value) : make_cached(), value_(value)
         {
         }
 
@@ -188,7 +192,7 @@ namespace details
     class uniform : public make_cached<uniform>
     {
     public:
-        uniform(double const a, double const b) : a_(a), b_(b)
+        uniform(double const a, double const b) : make_cached(), a_(a), b_(b)
         {
         }
 
@@ -211,7 +215,9 @@ namespace details
     class custom_dist : public make_cached<custom_dist>
     {
     public:
-        custom_dist(std::function<double(double)> dist) : dist_(std::move(dist))
+        explicit custom_dist(std::function<double(double)> dist) :
+            make_cached(),
+            dist_(std::move(dist))
         {
         }
 
@@ -242,7 +248,7 @@ using dist_variant = std::variant<
 class prob_dist
 {
 public:
-    explicit prob_dist(dist_variant dist) : dist_(dist)
+    explicit prob_dist(dist_variant dist) : dist_(TEDDY_MOVE(dist))
     {
     }
 
@@ -257,7 +263,7 @@ public:
     /**
      *  \brief Returns value stored by the last call of \c cache_eval_at
      */
-    auto get_cached_value () const -> double
+    [[nodiscard]] auto get_cached_value () const -> double
     {
         return std::visit(
             [] (auto& d) -> double { return d.get_cached_value(); },
@@ -268,7 +274,7 @@ public:
     /**
      *  \brief Conversion to double -- the same value as \c get_cached_value
      */
-    [[nodiscard]] operator double () const
+    [[nodiscard]] operator double () const // NOLINT
     {
         return std::visit(
             [] (auto const& dist) -> double { return dist.get_cached_value(); },
@@ -416,8 +422,8 @@ auto eval_at (Ps& distVector, double const t) -> Ps&
 template<dist_matrix Ps>
 auto eval_at (Ps& distMatrix, double const t) -> Ps&
 {
-    // TODO if constexpr RowIterable (in case it is compact matrix)
-    // TODO if constexpr MatrixIterable
+    // TODO(michal): if constexpr RowIterable (in case it is compact matrix)
+    // TODO(michal): if constexpr MatrixIterable
 
     for (auto& dists : distMatrix)
     {
