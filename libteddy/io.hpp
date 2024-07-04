@@ -5,8 +5,6 @@
 #include <libteddy/details/io_impl.hpp>
 #include <libteddy/details/pla_file.hpp>
 
-#include <cstdio>
-#include <cstdlib>
 #include <initializer_list>
 #include <iterator>
 
@@ -217,8 +215,7 @@ inline auto io::from_pla(
             return manager.tree_fold<ops::OR>(diagrams);
 
         default:
-            std::puts("Invalid fold type. This should not have happened!");
-            std::exit(1);
+            assert(false && "Invalid fold type -- should not have happened!");
         }
     };
 
@@ -290,13 +287,14 @@ auto io::from_vector( // NOLINT
     int32 const lastIndex    = manager.nodes_.get_index(lastLevel);
     int32 const preLastIndex = manager.nodes_.get_index(lastLevel - 1);
 
+#ifndef NDEBUG
     if constexpr (std::random_access_iterator<I>)
     {
-        [[maybe_unused]] int64 const count
-            = manager.nodes_.domain_product(0, lastLevel + 1);
-        [[maybe_unused]] auto const dist = std::distance(first, last);
+        int64 const count = manager.nodes_.domain_product(0, lastLevel + 1);
+        int64 const dist  = std::distance(first, last);
         assert(dist > 0 && dist == count);
     }
+#endif
 
     std::vector<stack_frame> stack;
     auto const shrink_stack = [&manager, &stack] ()
