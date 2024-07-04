@@ -5,6 +5,7 @@
 #include <libteddy/details/io_impl.hpp>
 #include <libteddy/details/pla_file.hpp>
 
+#include <cstdlib>
 #include <initializer_list>
 #include <iterator>
 
@@ -216,6 +217,7 @@ inline auto io::from_pla(
 
         default:
             assert(false && "Invalid fold type -- should not have happened!");
+            std::exit(7);
         }
     };
 
@@ -270,7 +272,6 @@ auto io::from_vector( // NOLINT
     using diagram_t     = typename manager_t::diagram_t;
     using son_container = typename manager_t::son_container;
     using node_t        = typename manager_t::node_t;
-
     using stack_frame   = struct
     {
         node_t* node;
@@ -283,22 +284,23 @@ auto io::from_vector( // NOLINT
         return manager.constant(*first);
     }
 
-    int32 const lastLevel    = manager.get_var_count() - 1;
-    int32 const lastIndex    = manager.nodes_.get_index(lastLevel);
-    int32 const preLastIndex = manager.nodes_.get_index(lastLevel - 1);
+    int32 const terminalLevel = manager.get_var_count();
 
 #ifndef NDEBUG
     if constexpr (std::random_access_iterator<I>)
     {
-        int64 const count = manager.nodes_.domain_product(0, lastLevel + 1);
+        int64 const count = manager.nodes_.domain_product(0, terminalLevel + 1);
         int64 const dist  = std::distance(first, last);
         assert(dist > 0 && dist == count);
     }
 #endif
 
     std::vector<stack_frame> stack;
-    auto const shrink_stack = [&manager, &stack] ()
+    while (first != last)
     {
+        node_t* const node = manager.nodes_.make_terminal_node(*first++);
+        stack.push_back(stack_frame {node, terminalLevel});
+
         for (;;)
         {
             int32 const currentLevel = stack.back().level;
@@ -318,45 +320,23 @@ auto io::from_vector( // NOLINT
             int32 const newIndex  = manager.nodes_.get_index(currentLevel - 1);
             int32 const newDomain = manager.nodes_.get_domain(newIndex);
 
-            // TODO(michal): simplify
             if (count < newDomain)
             {
                 break;
             }
 
-            son_container newSons = node_t::make_son_container(newDomain);
+            son_container sons = node_t::make_son_container(newDomain);
             for (int32 k = 0; k < newDomain; ++k)
             {
-                newSons[k]
-                    = stack[as_uindex(ssize(stack) - newDomain + k)].node;
+                sons[k] = stack[as_uindex(ssize(stack) - newDomain + k)].node;
             }
             node_t* const newNode = manager.nodes_.make_internal_node(
                 newIndex,
-                TEDDY_MOVE(newSons)
+                TEDDY_MOVE(sons)
             );
             stack.erase(end(stack) - newDomain, end(stack));
             stack.push_back(stack_frame {newNode, currentLevel - 1});
         }
-    };
-
-    int32 const lastDomain    = manager.nodes_.get_domain(lastIndex);
-    int32 const preLastDomain = manager.nodes_.get_domain(preLastIndex);
-    while (first != last)
-    {
-        for (int32 o = 0; o < preLastDomain; ++o)
-        {
-            son_container sons = node_t::make_son_container(lastDomain);
-            for (int32 k = 0; k < lastDomain; ++k)
-            {
-                sons[k] = manager.nodes_.make_terminal_node(*first++);
-            }
-            node_t* const node = manager.nodes_.make_internal_node(
-                lastIndex,
-                TEDDY_MOVE(sons)
-            );
-            stack.push_back(stack_frame {node, lastLevel});
-        }
-        shrink_stack();
     }
 
     assert(ssize(stack) == 1);
