@@ -260,6 +260,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture)
     }
 }
 
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count_long, Fixture, Fixtures, Fixture)
+{
+    // TODO(michal): gmp test
+}
+#endif
+
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture)
 {
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
