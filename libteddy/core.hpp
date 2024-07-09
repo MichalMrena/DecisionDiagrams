@@ -184,6 +184,20 @@ struct ifmdd_manager :
     );
 };
 
+// TODO(michal): use these in examples
+
+using bdd_t = bdd_manager::diagram_t;
+
+template<int32 M>
+using mdd_t = typename mdd_manager<M>::diagram_t;
+
+using imdd_t = typename imdd_manager::diagram_t;
+
+template<int32 M>
+using ifmdd_t = typename ifmdd_manager<M>::diagram_t;
+
+// definitions:
+
 inline bdd_manager::bdd_manager(
     int32 const varCount,
     int64 const nodePoolSize,
