@@ -45,7 +45,7 @@ BraceWrapping:
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
-BreakAfterAttributes: Leave
+BreakAfterAttributes: Always
 BreakBeforeBinaryOperators: All
 BreakBeforeConceptDeclarations: Always
 BreakBeforeBraces: Allman

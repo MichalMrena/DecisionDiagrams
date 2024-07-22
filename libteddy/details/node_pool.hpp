@@ -11,11 +11,11 @@
 
 namespace teddy
 {
-template<class Data, class Degree>
+template<class Degree>
 class node_pool
 {
 public:
-    using node_t = node<Data, Degree>;
+    using node_t = node<Degree>;
 
 public:
     node_pool(int64 mainPoolSize, int64 overflowPoolSize);
@@ -26,12 +26,15 @@ public:
     auto operator= (node_pool const&) = delete;
     auto operator= (node_pool&&)      = delete;
 
-    [[nodiscard]] auto get_available_node_count () const -> int64;
+    [[nodiscard]]
+    auto get_available_node_count () const -> int64;
 
-    [[nodiscard]] auto get_main_pool_size () const -> int64;
+    [[nodiscard]]
+    auto get_main_pool_size () const -> int64;
 
     template<class... Args>
-    [[nodiscard]] auto create (Args&&... args) -> node_t*;
+    [[nodiscard]]
+    auto create (Args&&... args) -> node_t*;
 
     auto destroy (node_t* node) -> void;
 
@@ -51,8 +54,8 @@ private:
      *  \param next Next pool in the linked list
      *  \return New pool
      */
-    [[nodiscard]] static auto allocate_pool (int64 size, pool_item* next)
-        -> pool_item*;
+    [[nodiscard]]
+    static auto allocate_pool (int64 size, pool_item* next) -> pool_item*;
 
     /**
      *  \brief Destroys all nodes up to last node and deallocates the pool
@@ -70,8 +73,8 @@ private:
     int64 availableNodeCount_;
 };
 
-template<class Data, class Degree>
-node_pool<Data, Degree>::node_pool(
+template<class Degree>
+node_pool<Degree>::node_pool(
     int64 const mainPoolSize,
     int64 const overflowPoolSize
 ) :
@@ -91,8 +94,8 @@ node_pool<Data, Degree>::node_pool(
 #endif
 }
 
-template<class Data, class Degree>
-node_pool<Data, Degree>::node_pool(node_pool&& other) noexcept :
+template<class Degree>
+node_pool<Degree>::node_pool(node_pool&& other) noexcept :
     pools_(utils::exchange(other.mainPool_, nullptr)),
     nextPoolNode_(utils::exchange(other.nextPoolNode_, nullptr)),
     freeNodes_(utils::exchange(other.freeNodes_, nullptr)),
@@ -102,8 +105,8 @@ node_pool<Data, Degree>::node_pool(node_pool&& other) noexcept :
 {
 }
 
-template<class Data, class Degree>
-node_pool<Data, Degree>::~node_pool()
+template<class Degree>
+node_pool<Degree>::~node_pool()
 {
     /*
      *  This is the currently used pool.
@@ -129,21 +132,21 @@ node_pool<Data, Degree>::~node_pool()
     }
 }
 
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::get_available_node_count() const -> int64
+template<class Degree>
+auto node_pool<Degree>::get_available_node_count() const -> int64
 {
     return availableNodeCount_;
 }
 
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::get_main_pool_size() const -> int64
+template<class Degree>
+auto node_pool<Degree>::get_main_pool_size() const -> int64
 {
     return mainPoolSize_;
 }
 
-template<class Data, class Degree>
+template<class Degree>
 template<class... Args>
-auto node_pool<Data, Degree>::create(Args&&... args) -> node_t* // NOLINT
+auto node_pool<Degree>::create(Args&&... args) -> node_t* // NOLINT
 {
     assert(availableNodeCount_ > 0);
     --availableNodeCount_;
@@ -164,16 +167,16 @@ auto node_pool<Data, Degree>::create(Args&&... args) -> node_t* // NOLINT
     return static_cast<node_t*>(::new (nodePtr) node_t(TEDDY_FORWARD(args)...));
 }
 
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::destroy(node_t* const node) -> void
+template<class Degree>
+auto node_pool<Degree>::destroy(node_t* const node) -> void
 {
     ++availableNodeCount_;
     node->set_next(freeNodes_);
     freeNodes_ = node;
 }
 
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::grow() -> void
+template<class Degree>
+auto node_pool<Degree>::grow() -> void
 {
 #ifdef LIBTEDDY_VERBOSE
     debug::out(
@@ -188,8 +191,8 @@ auto node_pool<Data, Degree>::grow() -> void
     availableNodeCount_ += extraPoolSize_;
 }
 
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::allocate_pool(
+template<class Degree>
+auto node_pool<Degree>::allocate_pool(
     int64 const size,
     pool_item* const next
 ) -> pool_item*
@@ -200,8 +203,8 @@ auto node_pool<Data, Degree>::allocate_pool(
     };
 }
 
-template<class Data, class Degree>
-auto node_pool<Data, Degree>::deallocate_pool(
+template<class Degree>
+auto node_pool<Degree>::deallocate_pool(
     pool_item* const pool,
     node_t* const lastNode
 ) -> pool_item*

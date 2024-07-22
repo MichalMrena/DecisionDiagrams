@@ -11,7 +11,7 @@ namespace teddy::test
 {
 struct bdd_nodes_fixture
 {
-    using manager_t = node_manager<void, degrees::fixed<2>, domains::fixed<2>>;
+    using manager_t = node_manager<degrees::fixed<2>, domains::fixed<2>>;
     using node_t    = manager_t::node_t;
     int32 varCount_ = 10;
     std::vector<int32> order_   = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -22,7 +22,7 @@ struct bdd_nodes_fixture
 
 struct mdd_nodes_fixture
 {
-    using manager_t = node_manager<void, degrees::fixed<3>, domains::fixed<3>>;
+    using manager_t = node_manager<degrees::fixed<3>, domains::fixed<3>>;
     using node_t    = manager_t::node_t;
     int32 varCount_ = 10;
     std::vector<int32> order_   = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -33,7 +33,7 @@ struct mdd_nodes_fixture
 
 struct imdd_nodes_fixture
 {
-    using manager_t = node_manager<void, degrees::mixed, domains::mixed>;
+    using manager_t = node_manager<degrees::mixed, domains::mixed>;
     using node_t    = manager_t::node_t;
     int32 varCount_ = 10;
     std::vector<int32> order_   = {8, 4, 5, 3, 6, 7, 9, 0, 1, 2};
@@ -44,7 +44,7 @@ struct imdd_nodes_fixture
 
 struct ifmdd_nodes_fixture
 {
-    using manager_t = node_manager<void, degrees::fixed<4>, domains::mixed>;
+    using manager_t = node_manager<degrees::fixed<4>, domains::mixed>;
     using node_t    = manager_t::node_t;
     int32 varCount_ = 10;
     std::vector<int32> order_   = {8, 4, 5, 3, 6, 7, 9, 0, 1, 2};

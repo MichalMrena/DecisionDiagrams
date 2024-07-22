@@ -12,8 +12,8 @@
 
 #include <cmath>
 #include <initializer_list>
-#include <iterator>
-#include <optional>
+    #include <iterator>
+    #include <optional>
 #include <vector>
 
 namespace teddy
@@ -28,6 +28,7 @@ concept out_var_values = requires(Vars values, int32 index, int32 value) {
     values[index] = value;
 };
 
+// TODO(michal): move to io
 template<class Node>
 concept expression_node = requires(Node node, int32 value) {
     { node.is_variable() } -> std::same_as<bool>;
@@ -80,14 +81,14 @@ namespace details
  *  \brief Base class for all diagram managers that generically
  *  implements all of the algorithms
  */
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 class diagram_manager
 {
 public:
     /**
      *  \brief Alias for the diagram type
      */
-    using diagram_t = diagram<Data, Degree>;
+    using diagram_t = diagram<Degree>;
 
     /**
      *  \brief IO module is our friend
@@ -511,7 +512,8 @@ public:
      *
      *  \return Number of nodes
      */
-    [[nodiscard]] auto get_node_count () const -> int64;
+    [[nodiscard]]
+    auto get_node_count () const -> int64;
 
     /**
      *  \brief Returns number of nodes in the diagram including
@@ -548,7 +550,8 @@ public:
      *  set in the constructor.
      *  \return Number of variables.
      */
-    [[nodiscard]] auto get_var_count () const -> int32;
+    [[nodiscard]]
+    auto get_var_count () const -> int32;
 
     /**
      *  \brief Returns current order of variables.
@@ -560,7 +563,8 @@ public:
      *  \return Vector of indices. Index at l-th position is the
      *  index of variable at l-th level of the diagram.
      */
-    [[nodiscard]] auto get_order () const -> std::vector<int32> const&;
+    [[nodiscard]]
+    auto get_order () const -> std::vector<int32> const&;
 
     /**
      * \brief Returns the size of the domain of \p index variable
@@ -568,7 +572,8 @@ public:
      * \param index Index of the variables
      * \return int32 Size of the domain of the variable
      */
-    [[nodiscard]] auto get_domain (int32 index) const -> int32;
+    [[nodiscard]]
+    auto get_domain (int32 index) const -> int32;
 
     /**
      *  \brief Return domains of variables.
@@ -580,7 +585,8 @@ public:
      *
      *  \return Vector of domains.
      */
-    [[nodiscard]] auto get_domains () const -> std::vector<int32>;
+    [[nodiscard]]
+    auto get_domains () const -> std::vector<int32>;
 
     /**
      *  \brief Sets the relative cache size w.r.t the number of nodes
@@ -620,10 +626,11 @@ public:
     auto set_auto_reorder (bool doReorder) -> void;
 
 protected:
-    using node_t        = typename diagram<Data, Degree>::node_t;
+    using node_t        = typename diagram_t::node_t;
     using son_container = typename node_t::son_container;
     template<class ValueType>
-    using node_memo = details::map_memo<ValueType, Data, Degree>;
+    using node_memo = details::map_memo<ValueType, Degree>;
+    // TODO(michal): clanok s porovnanim
 
 private:
     template<int32 Size>
@@ -708,9 +715,9 @@ protected:
     template<class ValueType>
     auto make_node_memo (node_t* root) -> node_memo<ValueType>;
 
-    auto get_node_manager () -> node_manager<Data, Degree, Domain>&;
+    auto get_node_manager () -> node_manager<Degree, Domain>&;
 
-    auto get_node_manager () const -> node_manager<Data, Degree, Domain> const&;
+    auto get_node_manager () const -> node_manager<Degree, Domain> const&;
 
 protected:
     /**
@@ -761,27 +768,27 @@ public:
     auto operator= (diagram_manager const&) -> diagram_manager&     = delete;
 
 private:
-    node_manager<Data, Degree, Domain> nodes_;
+    node_manager<Degree, Domain> nodes_;
 };
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::constant(int32 const val
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::constant(int32 const val
 ) -> diagram_t
 {
     return diagram_t(nodes_.make_terminal_node(val));
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::variable(int32 const index
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::variable(int32 const index
 ) -> diagram_t
 {
     return diagram_t(this->variable_impl(index));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index
+auto diagram_manager<Degree, Domain>::variable_not(int32 const index
 ) -> utils::second_t<Foo, diagram_t>
 {
     son_container sons = node_t::make_son_container(2);
@@ -790,33 +797,33 @@ auto diagram_manager<Data, Degree, Domain>::variable_not(int32 const index
     return diagram_t(nodes_.make_internal_node(index, TEDDY_MOVE(sons)));
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::operator() (int32 const index
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::operator() (int32 const index
 ) -> diagram_t
 {
     return this->variable(index);
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<std::ranges::input_range Is>
-auto diagram_manager<Data, Degree, Domain>::variables(Is const& indices
+auto diagram_manager<Degree, Domain>::variables(Is const& indices
 ) -> std::vector<diagram_t>
 {
     return this->variables(begin(indices), end(indices));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<std::convertible_to<int32> T>
-auto diagram_manager<Data, Degree, Domain>::variables(
+auto diagram_manager<Degree, Domain>::variables(
     std::initializer_list<T> const indices
 ) -> std::vector<diagram_t>
 {
     return this->variables(begin(indices), end(indices));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<std::input_iterator I, std::sentinel_for<I> S>
-auto diagram_manager<Data, Degree, Domain>::variables(I first, S const last)
+auto diagram_manager<Degree, Domain>::variables(I first, S const last)
     -> std::vector<diagram_t>
 {
     static_assert(std::convertible_to<std::iter_value_t<I>, int32>);
@@ -829,9 +836,9 @@ auto diagram_manager<Data, Degree, Domain>::variables(I first, S const last)
     return result;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<expression_node Node>
-auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
+auto diagram_manager<Degree, Domain>::from_expression_tree(
     Node const& root
 ) -> diagram_t
 {
@@ -842,9 +849,9 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree(
     return diagram_t(newRoot);
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class ExprNode>
-auto diagram_manager<Data, Degree, Domain>::from_expression_tree_impl(
+auto diagram_manager<Degree, Domain>::from_expression_tree_impl(
     std::vector<node_pack<2>>& cache,
     ExprNode const& exprNode
 ) -> node_t*
@@ -881,8 +888,8 @@ auto diagram_manager<Data, Degree, Domain>::from_expression_tree_impl(
     return newRoot;
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::variable_impl(int32 const index
 ) -> node_t*
 {
     int32 const varDomain = nodes_.get_domain(index);
@@ -894,9 +901,9 @@ auto diagram_manager<Data, Degree, Domain>::variable_impl(int32 const index
     return nodes_.make_internal_node(index, TEDDY_MOVE(sons));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<teddy_bin_op Op>
-auto diagram_manager<Data, Degree, Domain>::apply(
+auto diagram_manager<Degree, Domain>::apply(
     diagram_t const& lhs,
     diagram_t const& rhs
 ) -> diagram_t
@@ -919,9 +926,9 @@ auto diagram_manager<Data, Degree, Domain>::apply(
     return diagram_t(newRoot);
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Op>
-auto diagram_manager<Data, Degree, Domain>::apply_impl(
+auto diagram_manager<Degree, Domain>::apply_impl(
     Op operation,
     node_t* const lhs,
     node_t* const rhs
@@ -969,9 +976,9 @@ auto diagram_manager<Data, Degree, Domain>::apply_impl(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<teddy_bin_op Op, class... Diagram>
-auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram
+auto diagram_manager<Degree, Domain>::apply_n(Diagram const&... diagram
 ) -> diagram_t
 {
     /*
@@ -992,9 +999,9 @@ auto diagram_manager<Data, Degree, Domain>::apply_n(Diagram const&... diagram
     return diagram_t(newRoot);
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Op, class... Node>
-auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
+auto diagram_manager<Degree, Domain>::apply_n_impl(
     std::vector<node_pack<sizeof...(Node)>>& cache,
     Op operation,
     Node... nodes
@@ -1039,17 +1046,17 @@ auto diagram_manager<Data, Degree, Domain>::apply_n_impl(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<teddy_bin_op Op, std::ranges::input_range R>
-auto diagram_manager<Data, Degree, Domain>::left_fold(R const& diagrams
+auto diagram_manager<Degree, Domain>::left_fold(R const& diagrams
 ) -> diagram_t
 {
     return this->left_fold<Op>(begin(diagrams), end(diagrams));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<teddy_bin_op Op, std::input_iterator I, std::sentinel_for<I> S>
-auto diagram_manager<Data, Degree, Domain>::left_fold(I first, S const last)
+auto diagram_manager<Degree, Domain>::left_fold(I first, S const last)
     -> diagram_t
 {
     static_assert(std::same_as<std::iter_value_t<I>, diagram_t>);
@@ -1066,16 +1073,16 @@ auto diagram_manager<Data, Degree, Domain>::left_fold(I first, S const last)
     return result;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<teddy_bin_op Op, std::ranges::random_access_range R>
-auto diagram_manager<Data, Degree, Domain>::tree_fold(R& diagrams) -> diagram_t
+auto diagram_manager<Degree, Domain>::tree_fold(R& diagrams) -> diagram_t
 {
     return this->tree_fold<Op>(begin(diagrams), end(diagrams));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<teddy_bin_op Op, std::random_access_iterator I, std::sentinel_for<I> S>
-auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
+auto diagram_manager<Degree, Domain>::tree_fold(I first, S const last)
     -> diagram_t
 {
     static_assert(std::same_as<std::iter_value_t<I>, diagram_t>);
@@ -1107,9 +1114,9 @@ auto diagram_manager<Data, Degree, Domain>::tree_fold(I first, S const last)
     return diagram_t(TEDDY_MOVE(*first));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<in_var_values Vars>
-auto diagram_manager<Data, Degree, Domain>::evaluate(
+auto diagram_manager<Degree, Domain>::evaluate(
     diagram_t const& diagram,
     Vars const& values
 ) const -> int32
@@ -1126,8 +1133,8 @@ auto diagram_manager<Data, Degree, Domain>::evaluate(
     return node->get_value();
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::satisfy_count(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::satisfy_count(
     int32 const value,
     diagram_t const& diagram
 ) -> longint
@@ -1142,15 +1149,17 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count(
         stepResult = this->satisfy_count_impl<int64>(memo, value, root);
         return stepResult * nodes_.template domain_product<int64>(0, rootLevel);
     }
-
-    node_memo<longint> memo = this->make_node_memo<longint>(root);
-    stepResult = this->satisfy_count_impl<longint>(memo, value, root);
-    return stepResult * nodes_.template domain_product<longint>(0, rootLevel);
+    else
+    {
+        node_memo<longint> memo = this->make_node_memo<longint>(root);
+        stepResult = this->satisfy_count_impl<longint>(memo, value, root);
+        return stepResult * nodes_.template domain_product<longint>(0, rootLevel);
+    }
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Int>
-auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
+auto diagram_manager<Degree, Domain>::satisfy_count_impl(
     node_memo<Int>& memo,
     int32 const value,
     node_t* const node
@@ -1184,10 +1193,10 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_impl(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln(
+auto diagram_manager<Degree, Domain>::satisfy_count_ln(
     diagram_t const& diagram
 ) -> utils::second_t<Foo, double>
 {
@@ -1201,8 +1210,8 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::satisfy_count_ln_impl(
     node_memo<double>& memo,
     node_t* const node
 ) -> double
@@ -1262,9 +1271,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_count_ln_impl(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<out_var_values Vars>
-auto diagram_manager<Data, Degree, Domain>::satisfy_one(
+auto diagram_manager<Degree, Domain>::satisfy_one(
     int32 const value,
     diagram_t const& diagram
 ) -> std::optional<Vars>
@@ -1285,9 +1294,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_one(
                                                      : std::nullopt;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Vars>
-auto diagram_manager<Data, Degree, Domain>::satisfy_one_impl(
+auto diagram_manager<Degree, Domain>::satisfy_one_impl(
     int32 const value,
     Vars& vars,
     node_t* const node
@@ -1313,9 +1322,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_one_impl(
     return false;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<out_var_values Vars>
-auto diagram_manager<Data, Degree, Domain>::satisfy_all(
+auto diagram_manager<Degree, Domain>::satisfy_all(
     int32 const value,
     diagram_t const& diagram
 ) const -> std::vector<Vars>
@@ -1325,9 +1334,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<out_var_values Vars, std::output_iterator<Vars> OutputIt>
-auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
+auto diagram_manager<Degree, Domain>::satisfy_all_g(
     int32 const value,
     diagram_t const& diagram,
     OutputIt out
@@ -1348,9 +1357,9 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_g(
     this->satisfy_all_impl(value, vars, out, root, 0);
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Vars, class OutputIt>
-auto diagram_manager<Data, Degree, Domain>::satisfy_all_impl(
+auto diagram_manager<Degree, Domain>::satisfy_all_impl(
     int32 const value,
     Vars& vars,
     OutputIt out,
@@ -1392,8 +1401,8 @@ auto diagram_manager<Data, Degree, Domain>::satisfy_all_impl(
     }
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_cofactor(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_cofactor(
     diagram_t const& diagram,
     int32 const varIndex,
     int32 const varValue
@@ -1417,8 +1426,8 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_cofactor(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_cofactor(
     diagram_t const& diagram,
     std::vector<var_cofactor> const& vars
 ) -> diagram_t
@@ -1449,8 +1458,8 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor(
     return result;
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_cofactor_impl(
     std::unordered_map<node_t*, node_t*>& memo,
     int32 const varIndex,
     int32 const varValue,
@@ -1495,8 +1504,8 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
     return newNode;
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_cofactor_impl(
     std::unordered_map<node_t*, node_t*>& memo,
     std::vector<var_cofactor> const& vars,
     node_t* const node,
@@ -1552,9 +1561,9 @@ auto diagram_manager<Data, Degree, Domain>::get_cofactor_impl(
     return newNode;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<int_to_int F>
-auto diagram_manager<Data, Degree, Domain>::transform(
+auto diagram_manager<Degree, Domain>::transform(
     diagram_t const& diagram,
     F transformer
 ) -> diagram_t
@@ -1566,9 +1575,9 @@ auto diagram_manager<Data, Degree, Domain>::transform(
     return diagram_t(newRoot);
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class F>
-auto diagram_manager<Data, Degree, Domain>::transform_impl(
+auto diagram_manager<Degree, Domain>::transform_impl(
     node_memo<node_t*>& memo,
     F transformer,
     node_t* node
@@ -1599,10 +1608,10 @@ auto diagram_manager<Data, Degree, Domain>::transform_impl(
     return newNode;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
-auto diagram_manager<Data, Degree, Domain>::negate(diagram_t const& diagram
+auto diagram_manager<Degree, Domain>::negate(diagram_t const& diagram
 ) -> utils::second_t<Foo, diagram_t>
 {
     return this->transform(
@@ -1611,8 +1620,8 @@ auto diagram_manager<Data, Degree, Domain>::negate(diagram_t const& diagram
     );
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_dependency_set(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_dependency_set(
     diagram_t const& diagram
 ) const -> std::vector<int32>
 {
@@ -1623,9 +1632,9 @@ auto diagram_manager<Data, Degree, Domain>::get_dependency_set(
     return indices;
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<std::output_iterator<int32> O>
-auto diagram_manager<Data, Degree, Domain>::get_dependency_set_g(
+auto diagram_manager<Degree, Domain>::get_dependency_set_g(
     diagram_t const& diagram,
     O out
 ) const -> void
@@ -1648,112 +1657,112 @@ auto diagram_manager<Data, Degree, Domain>::get_dependency_set_g(
     );
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::reduce(diagram_t const& diagram
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::reduce(diagram_t const& diagram
 ) -> diagram_t
 {
     return this->transform(diagram, [] (int32 const val) { return val; });
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_node_count() const -> int64
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_node_count() const -> int64
 {
     return nodes_.get_node_count();
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_node_count(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_node_count(
     diagram_t const& diagram
 ) const -> int64
 {
     return nodes_.get_node_count(diagram.unsafe_get_root());
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_var_count() const -> int32
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_var_count() const -> int32
 {
     return nodes_.get_var_count();
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_domain(int32 const index
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_domain(int32 const index
 ) const -> int32
 {
     return nodes_.get_domain(index);
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_order() const
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_order() const
     -> std::vector<int32> const&
 {
     return nodes_.get_order();
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_domains() const
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_domains() const
     -> std::vector<int32>
 {
     return nodes_.get_domains();
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::set_cache_ratio(double ratio
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::set_cache_ratio(double ratio
 ) -> void
 {
     nodes_.set_cache_ratio(ratio);
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::set_gc_ratio(double ratio) -> void
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::set_gc_ratio(double ratio) -> void
 {
     nodes_.set_gc_ratio(ratio);
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::set_auto_reorder(
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::set_auto_reorder(
     bool const doReorder
 ) -> void
 {
     nodes_.set_auto_reorder(doReorder);
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::force_gc() -> void
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::force_gc() -> void
 {
     nodes_.force_gc();
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::force_reorder() -> void
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::force_reorder() -> void
 {
     nodes_.sift_variables();
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::clear_cache() -> void
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::clear_cache() -> void
 {
     nodes_.cache_clear();
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 template<class ValueType>
-auto diagram_manager<Data, Degree, Domain>::make_node_memo(node_t* const
+auto diagram_manager<Degree, Domain>::make_node_memo(node_t* const
 ) -> node_memo<ValueType>
 {
     // just map memo for now
     return node_memo<ValueType>(this->get_node_count());
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_node_manager()
-    -> node_manager<Data, Degree, Domain>&
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_node_manager()
+    -> node_manager<Degree, Domain>&
 {
     return nodes_;
 }
 
-template<class Data, class Degree, class Domain>
-auto diagram_manager<Data, Degree, Domain>::get_node_manager() const
-    -> node_manager<Data, Degree, Domain> const&
+template<class Degree, class Domain>
+auto diagram_manager<Degree, Domain>::get_node_manager() const
+    -> node_manager<Degree, Domain> const&
 {
     return nodes_;
 }
@@ -1782,8 +1791,8 @@ namespace detail
 
 } // namespace detail
 
-template<class Data, class Degree, class Domain>
-diagram_manager<Data, Degree, Domain>::diagram_manager(
+template<class Degree, class Domain>
+diagram_manager<Degree, Domain>::diagram_manager(
     int32 const varCount,
     int64 const nodePoolSize,
     int64 const extraNodePoolSize,
@@ -1800,8 +1809,8 @@ requires(domains::is_fixed<Domain>::value)
 {
 }
 
-template<class Data, class Degree, class Domain>
-diagram_manager<Data, Degree, Domain>::diagram_manager(
+template<class Degree, class Domain>
+diagram_manager<Degree, Domain>::diagram_manager(
     int32 const varCount,
     int64 const nodePoolSize,
     int64 const extraNodePoolSize,

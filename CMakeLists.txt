@@ -227,7 +227,7 @@ endif()
 ## Enable asan and ubsan if requested
 if(LIBTEDDY_USE_SANITIZERS AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     message(
-        "=== Asan a Ubsan enabled"
+        "=== Asan and Ubsan enabled"
     )
 
     string(

@@ -107,7 +107,8 @@ namespace details
         /**
          *  \brief Calculates CDF of the distribution at time \p t
          */
-        [[nodiscard]] auto operator() (double const t) const -> double
+        [[nodiscard]]
+        auto operator() (double const t) const -> double
         {
             return 1 - std::exp(-rate_ * t);
         }
@@ -129,7 +130,8 @@ namespace details
         {
         }
 
-        [[nodiscard]] auto operator() (double const t) const -> double
+        [[nodiscard]]
+        auto operator() (double const t) const -> double
         {
             return std::exp(-rate_ * t);
         }
@@ -154,7 +156,8 @@ namespace details
         /**
          *  \brief Calculates CDF of the distribution at time \p t
          */
-        [[nodiscard]] auto operator() (double const t) const -> double
+        [[nodiscard]]
+        auto operator() (double const t) const -> double
         {
             return 1 - std::exp(-std::pow(t / scale_, shape_));
         }
@@ -177,7 +180,8 @@ namespace details
         /**
          *  \brief Calculates CDF of the distribution at time \p t
          */
-        [[nodiscard]] auto operator() (double const) const -> double
+        [[nodiscard]]
+        auto operator() (double const) const -> double
         {
             return value_;
         }
@@ -199,7 +203,8 @@ namespace details
         /**
          *  \brief Calculates CDF of the distribution at time \p t
          */
-        [[nodiscard]] auto operator() (double const t) const -> double
+        [[nodiscard]]
+        auto operator() (double const t) const -> double
         {
             return t < a_ ? 0.0 : t > b_ ? 1.0 : (t - a_) / (b_ - a_);
         }
@@ -221,7 +226,8 @@ namespace details
         {
         }
 
-        [[nodiscard]] auto operator() (double const t) const -> double
+        [[nodiscard]]
+        auto operator() (double const t) const -> double
         {
             return dist_(t);
         }
@@ -263,7 +269,8 @@ public:
     /**
      *  \brief Returns value stored by the last call of \c cache_eval_at
      */
-    [[nodiscard]] auto get_cached_value () const -> double
+    [[nodiscard]]
+    auto get_cached_value () const -> double
     {
         return std::visit(
             [] (auto& d) -> double { return d.get_cached_value(); },
@@ -285,7 +292,8 @@ public:
     /**
      *  \brief Evaluates distribution at time \p t
      */
-    [[nodiscard]] auto operator() (double const t) const -> double
+    [[nodiscard]]
+    auto operator() (double const t) const -> double
     {
         return std::visit(
             [t] (auto const& dist) -> double { return dist(t); },

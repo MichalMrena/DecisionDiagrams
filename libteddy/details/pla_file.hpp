@@ -226,7 +226,8 @@ public:
      *  \brief Returns reference to the vector holding lines
      *  \return Reference to the vector
      */
-    [[nodiscard]] auto get_lines () const& -> std::vector<pla_line> const&
+    [[nodiscard]]
+    auto get_lines () const& -> std::vector<pla_line> const&
     {
         return lines_;
     }
@@ -301,10 +302,10 @@ private:
 
 // pla_file definitions:
 
-inline auto pla_file::load_file(
+inline auto pla_file::load_file( // NOLINT
     std::string const& path,
     bool const verbose
-) // NOLINT
+)
     -> std::optional<pla_file>
 {
     using namespace std::string_view_literals;

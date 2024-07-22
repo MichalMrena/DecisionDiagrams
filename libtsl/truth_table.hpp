@@ -17,11 +17,16 @@ struct truth_table
 {
     truth_table(std::vector<int32> vector, std::vector<int32> domains);
 
-    [[nodiscard]] auto get_var_count () const -> int32;
-    [[nodiscard]] auto get_vector () const -> std::vector<int32> const&;
-    [[nodiscard]] auto get_domains () const -> std::vector<int32> const&;
-    [[nodiscard]] auto get_offsets () const -> std::vector<int32> const&;
-    [[nodiscard]] auto get_max_val () const -> int32;
+    [[nodiscard]]
+    auto get_var_count () const -> int32;
+    [[nodiscard]]
+    auto get_vector () const -> std::vector<int32> const&;
+    [[nodiscard]]
+    auto get_domains () const -> std::vector<int32> const&;
+    [[nodiscard]]
+    auto get_offsets () const -> std::vector<int32> const&;
+    [[nodiscard]]
+    auto get_max_val () const -> int32;
 
     std::vector<int32> vector_;
     std::vector<int32> domain_;

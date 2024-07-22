@@ -65,16 +65,15 @@ struct io
      *  \return Diagram representing function given by the truth vector
      */
     template<
-        class Data,
         class Degree,
         class Domain,
         std::input_iterator I,
         std::sentinel_for<I> S>
     static auto from_vector (
-        diagram_manager<Data, Degree, Domain>& manager,
+        diagram_manager<Degree, Domain>& manager,
         I first,
         S last
-    ) -> diagram_manager<Data, Degree, Domain>::diagram_t;
+    ) -> diagram_manager<Degree, Domain>::diagram_t;
 
     /**
      *  \brief Creates diagram from a truth vector of a function
@@ -86,11 +85,11 @@ struct io
      *  Elements of the range must be convertible to int
      *  \return Diagram representing function given by the truth vector
      */
-    template<class Data, class Degree, class Domain, std::ranges::input_range R>
+    template<class Degree, class Domain, std::ranges::input_range R>
     static auto from_vector (
-        diagram_manager<Data, Degree, Domain>& manager,
+        diagram_manager<Degree, Domain>& manager,
         R const& vector
-    ) -> diagram_manager<Data, Degree, Domain>::diagram_t;
+    ) -> diagram_manager<Degree, Domain>::diagram_t;
 
     /**
      *  \brief Creates diagram from a truth vector of a function
@@ -101,11 +100,11 @@ struct io
      *  Elements of the range must be convertible to int
      *  \return Diagram representing function given by the truth vector
      */
-    template<class Data, class Degree, class Domain>
+    template<class Degree, class Domain>
     static auto from_vector (
-        diagram_manager<Data, Degree, Domain>& manager,
+        diagram_manager<Degree, Domain>& manager,
         std::initializer_list<int> vector
-    ) -> diagram_manager<Data, Degree, Domain>::diagram_t;
+    ) -> diagram_manager<Degree, Domain>::diagram_t;
 
     /**
      *  \brief Creates truth vector from the diagram
@@ -121,10 +120,10 @@ struct io
      *  \param diagram Diagram
      *  \return Vector of ints representing the truth vector
      */
-    template<class Data, class Degree, class Domain>
+    template<class Degree, class Domain>
     static auto to_vector (
-        diagram_manager<Data, Degree, Domain> const& manager,
-        diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
+        diagram_manager<Degree, Domain> const& manager,
+        diagram_manager<Degree, Domain>::diagram_t const& diagram
     ) -> std::vector<int32>;
 
     /**
@@ -135,13 +134,12 @@ struct io
      *  \param out Output iterator that is used to output the truth vector
      */
     template<
-        class Data,
         class Degree,
         class Domain,
         std::output_iterator<teddy::int32> O>
     static auto to_vector_g (
-        diagram_manager<Data, Degree, Domain> const& manager,
-        diagram_manager<Data, Degree, Domain>::diagram_t const& diagram,
+        diagram_manager<Degree, Domain> const& manager,
+        diagram_manager<Degree, Domain>::diagram_t const& diagram,
         O out
     ) -> void;
 
@@ -154,9 +152,9 @@ struct io
      *  \param manager Diagram manager
      *  \param out Output stream (e.g. \c std::cout or \c std::ofstream )
      */
-    template<class Data, class Degree, class Domain>
+    template<class Degree, class Domain>
     static auto to_dot (
-        diagram_manager<Data, Degree, Domain> const& manager,
+        diagram_manager<Degree, Domain> const& manager,
         std::ostream& out
     ) -> void;
 
@@ -170,11 +168,11 @@ struct io
      *  \param out Output stream (e.g. \c std::cout or \c std::ofstream )
      *  \param diagram Diagram
      */
-    template<class Data, class Degree, class Domain>
+    template<class Degree, class Domain>
     static auto to_dot (
-        diagram_manager<Data, Degree, Domain> const& manager,
+        diagram_manager<Degree, Domain> const& manager,
         std::ostream& out,
-        diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
+        diagram_manager<Degree, Domain>::diagram_t const& diagram
     ) -> void;
 };
 
@@ -257,21 +255,21 @@ inline auto io::from_pla(
 }
 
 template<
-    class Data,
     class Degree,
     class Domain,
     std::input_iterator I,
     std::sentinel_for<I> S>
 auto io::from_vector( // NOLINT
-    diagram_manager<Data, Degree, Domain>& manager,
+    diagram_manager<Degree, Domain>& manager,
     I first,
     S last
-) -> diagram_manager<Data, Degree, Domain>::diagram_t
+) -> diagram_manager<Degree, Domain>::diagram_t
 {
-    using manager_t     = diagram_manager<Data, Degree, Domain>;
+    using manager_t     = diagram_manager<Degree, Domain>;
     using diagram_t     = typename manager_t::diagram_t;
     using son_container = typename manager_t::son_container;
     using node_t        = typename manager_t::node_t;
+
     using stack_frame   = struct
     {
         node_t* node;
@@ -330,10 +328,8 @@ auto io::from_vector( // NOLINT
             {
                 sons[k] = stack[as_uindex(ssize(stack) - newDomain + k)].node;
             }
-            node_t* const newNode = manager.nodes_.make_internal_node(
-                newIndex,
-                TEDDY_MOVE(sons)
-            );
+            node_t* const newNode
+                = manager.nodes_.make_internal_node(newIndex, TEDDY_MOVE(sons));
             stack.erase(end(stack) - newDomain, end(stack));
             stack.push_back(stack_frame {newNode, currentLevel - 1});
         }
@@ -343,28 +339,28 @@ auto io::from_vector( // NOLINT
     return diagram_t(stack.back().node);
 }
 
-template<class Data, class Degree, class Domain, std::ranges::input_range R>
+template<class Degree, class Domain, std::ranges::input_range R>
 auto io::from_vector(
-    diagram_manager<Data, Degree, Domain>& manager,
+    diagram_manager<Degree, Domain>& manager,
     R const& vector
-) -> diagram_manager<Data, Degree, Domain>::diagram_t
+) -> diagram_manager<Degree, Domain>::diagram_t
 {
     return io::from_vector(manager, begin(vector), end(vector));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 auto io::from_vector(
-    diagram_manager<Data, Degree, Domain>& manager,
+    diagram_manager<Degree, Domain>& manager,
     std::initializer_list<int> const vector
-) -> diagram_manager<Data, Degree, Domain>::diagram_t
+) -> diagram_manager<Degree, Domain>::diagram_t
 {
     return io::from_vector(manager, begin(vector), end(vector));
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 auto io::to_vector(
-    diagram_manager<Data, Degree, Domain> const& manager,
-    diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
+    diagram_manager<Degree, Domain> const& manager,
+    diagram_manager<Degree, Domain>::diagram_t const& diagram
 ) -> std::vector<int32>
 {
     std::vector<int32> vector;
@@ -376,13 +372,12 @@ auto io::to_vector(
 }
 
 template<
-    class Data,
     class Degree,
     class Domain,
     std::output_iterator<teddy::int32> O>
 auto io::to_vector_g(
-    diagram_manager<Data, Degree, Domain> const& manager,
-    diagram_manager<Data, Degree, Domain>::diagram_t const& diagram,
+    diagram_manager<Degree, Domain> const& manager,
+    diagram_manager<Degree, Domain>::diagram_t const& diagram,
     O out
 ) -> void
 {
@@ -418,9 +413,9 @@ auto io::to_vector_g(
     } while (not wasLast);
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 auto io::to_dot(
-    diagram_manager<Data, Degree, Domain> const& manager,
+    diagram_manager<Degree, Domain> const& manager,
     std::ostream& out
 ) -> void
 {
@@ -431,11 +426,11 @@ auto io::to_dot(
     );
 }
 
-template<class Data, class Degree, class Domain>
+template<class Degree, class Domain>
 auto io::to_dot(
-    diagram_manager<Data, Degree, Domain> const& manager,
+    diagram_manager<Degree, Domain> const& manager,
     std::ostream& out,
-    diagram_manager<Data, Degree, Domain>::diagram_t const& diagram
+    diagram_manager<Degree, Domain>::diagram_t const& diagram
 ) -> void
 {
     details::io_impl::to_dot_graph_common(

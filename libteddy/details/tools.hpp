@@ -41,7 +41,7 @@ auto constexpr int_pow(Base base, uint32 exponent) -> Base
  */
 inline auto do_hash (void* const p) -> std::size_t
 {
-    return reinterpret_cast<std::size_t>(p) >> 4U;
+    return reinterpret_cast<std::size_t>(p) >> 4U; // NOLINT
 }
 
 /**

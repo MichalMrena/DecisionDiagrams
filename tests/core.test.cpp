@@ -29,8 +29,8 @@ struct fixture_base
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
     tsl::rng_t rng_;
-    int32 maxValue_ {}; // TODO rename to codomainSize_
-    // TODO move members to to child classes, remove this class
+    int32 maxValue_ {}; // TODO(michal): rename to codomainSize_
+    // TODO(michal): move members to to child classes, remove this class
 };
 
 /**
@@ -146,9 +146,9 @@ public:
 /**
  *  \brief Calculates frequency table for each possible value of \p expr .
  */
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto expected_counts (
-    diagram_manager<Dat, Deg, Dom>& manager,
+    diagram_manager<Degree, Domain>& manager,
     tsl::minmax_expr const& expr
 )
 {
@@ -172,10 +172,10 @@ auto expected_counts (
 /**
  *  \brief Compares diagram output with \p evalIt for each possible input
  */
-template<class Expression, class Dat, class Deg, class Dom>
+template<class Expression, class Degree, class Domain>
 auto test_compare_eval (
     tsl::evaluating_iterator<Expression> evalIt,
-    diagram_manager<Dat, Deg, Dom>& manager,
+    diagram_manager<Degree, Domain>& manager,
     auto& diagram
 ) -> void
 {

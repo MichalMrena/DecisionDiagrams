@@ -4,8 +4,6 @@
 #include <libteddy/details/diagram_manager.hpp>
 #include <libteddy/details/pla_file.hpp>
 
-#include "libteddy/details/node_manager.hpp"
-
 namespace teddy
 {
 using default_oder = std::vector<int32>;
@@ -15,7 +13,7 @@ using default_oder = std::vector<int32>;
  *  \brief Diagram manager for Binary Decision Diagrams
  */
 struct bdd_manager :
-    public diagram_manager<void, degrees::fixed<2>, domains::fixed<2>>
+    public diagram_manager<degrees::fixed<2>, domains::fixed<2>>
 {
     /**
      *  \brief Initializes BDD manager.
@@ -55,7 +53,7 @@ struct bdd_manager :
  */
 template<int32 M>
 struct mdd_manager :
-    public diagram_manager<void, degrees::fixed<M>, domains::fixed<M>>
+    public diagram_manager<degrees::fixed<M>, domains::fixed<M>>
 {
     /**
      *  \brief Initializes MDD manager
@@ -96,7 +94,7 @@ struct mdd_manager :
  *  at compile time.
  */
 struct imdd_manager :
-    public diagram_manager<void, degrees::mixed, domains::mixed>
+    public diagram_manager<degrees::mixed, domains::mixed>
 {
     /**
      *  \brief Initializes iMDD manager
@@ -147,7 +145,7 @@ struct imdd_manager :
  */
 template<int32 M>
 struct ifmdd_manager :
-    public diagram_manager<void, degrees::fixed<M>, domains::mixed>
+    public diagram_manager<degrees::fixed<M>, domains::mixed>
 {
     /**
      *  \brief Initializes ifMDD manager
@@ -199,7 +197,7 @@ inline bdd_manager::bdd_manager(
     int64 const overflowNodePoolSize,
     std::vector<int32> order
 ) :
-    diagram_manager<void, degrees::fixed<2>, domains::fixed<2>>(
+    diagram_manager<degrees::fixed<2>, domains::fixed<2>>(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
@@ -225,7 +223,7 @@ mdd_manager<M>::mdd_manager(
     int64 const overflowNodePoolSize,
     std::vector<int32> order
 ) :
-    diagram_manager<void, degrees::fixed<M>, domains::fixed<M>>(
+    diagram_manager<degrees::fixed<M>, domains::fixed<M>>(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
@@ -257,7 +255,7 @@ inline imdd_manager::imdd_manager(
     std::vector<int32> domains,
     std::vector<int32> order
 ) :
-    diagram_manager<void, degrees::mixed, domains::mixed>(
+    diagram_manager<degrees::mixed, domains::mixed>(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
@@ -292,7 +290,7 @@ ifmdd_manager<PMax>::ifmdd_manager(
     std::vector<int32> domains,
     std::vector<int32> order
 ) :
-    diagram_manager<void, degrees::fixed<PMax>, domains::mixed>(
+    diagram_manager<degrees::fixed<PMax>, domains::mixed>(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
