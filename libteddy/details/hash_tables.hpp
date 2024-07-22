@@ -635,6 +635,7 @@ auto unique_table<Degree>::rehash(int64 const newCapacity) -> void
             node = next;
         }
     };
+    std::free(oldBuckets);
 
 #ifdef LIBTEDDY_VERBOSE
     debug::out(", load after ", this->get_load_factor(), "\n");
