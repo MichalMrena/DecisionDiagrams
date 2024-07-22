@@ -1,2 +1,0 @@
-Aspon kondicionalne pridat pretazene operatory.
-Diagramy by si v tom pripade pametali svojho manazera.
