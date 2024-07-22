@@ -287,7 +287,7 @@ auto io::from_vector( // NOLINT
 #ifndef NDEBUG
     if constexpr (std::random_access_iterator<I>)
     {
-        int64 const count = manager.nodes_.domain_product(0, terminalLevel + 1);
+        int64 const count = manager.nodes_.domain_product(0, terminalLevel);
         int64 const dist  = std::distance(first, last);
         assert(dist > 0 && dist == count);
     }
