@@ -184,7 +184,6 @@ inline auto io::from_pla(
     fold_type const foldType
 ) -> std::vector<bdd_manager::diagram_t>
 {
-    using bdd_t        = bdd_manager::diagram_t;
     auto const product = [&manager] (auto const& cube)
     {
         std::vector<bdd_t> variables;
