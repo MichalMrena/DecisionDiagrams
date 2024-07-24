@@ -322,7 +322,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture)
 {
-    using namespace teddy::ops;
+    using namespace teddy::ops; // NOLINT
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = tsl::make_diagram(expr, manager);
@@ -716,7 +716,7 @@ BOOST_AUTO_TEST_CASE(operators_2)
     BOOST_REQUIRE_EQUAL(IMPLIES()(1, 1), 1);
     BOOST_REQUIRE_EQUAL(IMPLIES()(1, N), N);
     BOOST_REQUIRE_EQUAL(IMPLIES()(N, 0), N);
-    BOOST_REQUIRE_EQUAL(IMPLIES()(N, 1), N); // TODO could be 1
+    BOOST_REQUIRE_EQUAL(IMPLIES()(N, 1), 1);
     BOOST_REQUIRE_EQUAL(IMPLIES()(N, N), N);
 }
 

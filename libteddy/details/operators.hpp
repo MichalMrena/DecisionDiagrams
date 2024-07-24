@@ -307,11 +307,28 @@ namespace ops
         auto constexpr
             operator() (int32 const l, int32 const r) const -> int32
         {
-            int32 const ma = utils::max(l, r);
-            int32 const im = static_cast<int32>(
-                not static_cast<bool>(l) || static_cast<bool>(r)
-            );
-            return l == 0 ? 1 : ma == Nondetermined ? Nondetermined : im;
+            // +---+---+--------+
+            // | l | r | l => r |
+            // +-------+--------+
+            // | 0 | 0 |   1    |
+            // | 0 | 1 |   1    |  if l == 0 return 1
+            // | 0 | N |   1    |
+            // +-------+--------+
+            // | 1 | 0 |   0    |
+            // | 1 | 1 |   1    |  elsif l == 1 return r
+            // | 1 | N |   N    |
+            // +-------+--------+
+            // | N | 0 |   N    |
+            // | N | 1 |   1    |  elsif r == 1 return 1
+            // | N | N |   N    |  else  return Nondetermined
+            // +-------+--------+
+
+            bool const l0     = l == 0;
+            bool const l1     = l == 1;
+            bool const r1     = r == 1;
+            int32 const r1res = r1 ? 1 : Nondetermined;
+            int32 const l1res = l1 ? r : r1res;
+            return l0 ? 1 : l1res;
         }
     };
 } // namespace ops
