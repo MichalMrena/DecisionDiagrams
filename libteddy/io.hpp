@@ -2,6 +2,7 @@
 #define LIBTEDDY_CORE_IO_HPP
 
 #include <libteddy/core.hpp>
+#include <libteddy/reliability.hpp>
 #include <libteddy/details/io_impl.hpp>
 #include <libteddy/details/pla_file.hpp>
 
@@ -22,10 +23,10 @@ struct io
      *  \return Vector of diagrams
      */
     static auto from_pla (
-        bdd_manager& manager,
+        bss_manager& manager,
         pla_file const& file,
         fold_type foldType = fold_type::Tree
-    ) -> std::vector<bdd_manager::diagram_t>;
+    ) -> std::vector<bss_manager::diagram_t>;
 
     /**
      *  \brief Creates diagram from a truth vector of a function
@@ -181,12 +182,12 @@ struct io
 // definitions:
 
 inline auto io::from_pla(
-    bdd_manager& manager,
+    bss_manager& manager, // TODO diagram manager
     pla_file const& file,
     fold_type const foldType
-) -> std::vector<bdd_manager::diagram_t>
+) -> std::vector<bss_manager::diagram_t>
 {
-    using bdd_t        = bdd_manager::diagram_t;
+    using bdd_t        = bss_manager::diagram_t;
     auto const product = [&manager] (auto const& cube)
     {
         std::vector<bdd_t> variables;

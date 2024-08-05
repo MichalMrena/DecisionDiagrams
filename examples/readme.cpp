@@ -54,7 +54,7 @@ auto example_basic_usage () -> void
     // To calculate number of different variable assignments for which the
     // function evaluates to 1 we can use .satisfy_count.
     const teddy::longint sc = manager.satisfy_count(1, f);
-    std::cout << "Satisfy-count(1) = " << sc << "\n";
+    // std::cout << "Satisfy-count(1) = " << sc << "\n"; //TODO operator<< pre mpz
 
     // We can also enumerate all variable assignments for which the
     // the function evaluates to 1.
