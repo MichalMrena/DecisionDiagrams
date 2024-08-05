@@ -141,11 +141,8 @@ auto expr_node::get_right() const -> expr_node const&
     return *std::get<operation_t>(data_).r_;
 }
 
-auto make_expression_tree (
-    int32 varcount,
-    rng_t& rngtype,
-    rng_t& rngbranch
-) -> std::unique_ptr<expr_node>
+auto make_expression_tree (int32 varcount, rng_t& rngtype, rng_t& rngbranch)
+    -> std::unique_ptr<expr_node>
 {
     auto go = [&, i = 0u] (auto& self, auto const n) mutable
     {

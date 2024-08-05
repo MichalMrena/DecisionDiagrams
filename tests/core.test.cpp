@@ -29,8 +29,8 @@ struct fixture_base
     ManagerSettings managerSettings_;
     ExpressionSettings expressionSettings_;
     tsl::rng_t rng_;
-    int32 maxValue_ {}; // TODO rename to codomainSize_
-    // TODO move members to to child classes, remove this class
+    int32 maxValue_ {}; // TODO(michal): rename to codomainSize_
+    // TODO(michal): move members to to child classes, remove this class
 };
 
 /**
@@ -146,9 +146,9 @@ public:
 /**
  *  \brief Calculates frequency table for each possible value of \p expr .
  */
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto expected_counts (
-    diagram_manager<Dat, Deg, Dom>& manager,
+    diagram_manager<Degree, Domain>& manager,
     tsl::minmax_expr const& expr
 )
 {
@@ -172,10 +172,10 @@ auto expected_counts (
 /**
  *  \brief Compares diagram output with \p evalIt for each possible input
  */
-template<class Expression, class Dat, class Deg, class Dom>
+template<class Expression, class Degree, class Domain>
 auto test_compare_eval (
     tsl::evaluating_iterator<Expression> evalIt,
-    diagram_manager<Dat, Deg, Dom>& manager,
+    diagram_manager<Degree, Domain>& manager,
     auto& diagram
 ) -> void
 {
@@ -322,7 +322,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture)
 {
-    using namespace teddy::ops;
+    using namespace teddy::ops; // NOLINT
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = tsl::make_diagram(expr, manager);
@@ -716,7 +716,7 @@ BOOST_AUTO_TEST_CASE(operators_2)
     BOOST_REQUIRE_EQUAL(IMPLIES()(1, 1), 1);
     BOOST_REQUIRE_EQUAL(IMPLIES()(1, N), N);
     BOOST_REQUIRE_EQUAL(IMPLIES()(N, 0), N);
-    BOOST_REQUIRE_EQUAL(IMPLIES()(N, 1), N); // TODO could be 1
+    BOOST_REQUIRE_EQUAL(IMPLIES()(N, 1), 1);
     BOOST_REQUIRE_EQUAL(IMPLIES()(N, N), N);
 }
 

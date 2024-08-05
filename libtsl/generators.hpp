@@ -13,10 +13,10 @@
 
 namespace teddy::tsl
 {
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto make_diagram (
     minmax_expr const& expr,
-    diagram_manager<Dat, Deg, Dom>& manager,
+    diagram_manager<Degree, Domain>& manager,
     fold_type const foldtype = fold_type::Left
 )
 {
@@ -34,7 +34,7 @@ auto make_diagram (
                  : manager.template tree_fold<ops::MAX>(diagrams);
     };
 
-    using diagram_t = typename diagram_manager<Dat, Deg, Dom>::diagram_t;
+    using diagram_t = typename diagram_manager<Degree, Domain>::diagram_t;
     std::vector<diagram_t> termDs;
     for (auto const& eTerm : expr.terms_)
     {
@@ -44,19 +44,19 @@ auto make_diagram (
     return max_fold(termDs);
 }
 
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto make_diagram (
     std::unique_ptr<tsl::expr_node> const& expr,
-    diagram_manager<Dat, Deg, Dom>& manager
+    diagram_manager<Degree, Domain>& manager
 )
 {
     return manager.from_expression_tree(*expr);
 }
 
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto make_diagram (
     tsl::expr_node const& expr,
-    diagram_manager<Dat, Deg, Dom>& manager
+    diagram_manager<Degree, Domain>& manager
 )
 {
     return manager.from_expression_tree(expr);
@@ -75,10 +75,8 @@ inline auto make_probability_vector (int32 const varCount, rng_t& rng)
 }
 
 template<std::size_t M>
-auto make_probability_matrix (
-    std::vector<int32> const& domains,
-    rng_t& rng
-) -> std::vector<std::array<double, M>>
+auto make_probability_matrix (std::vector<int32> const& domains, rng_t& rng)
+    -> std::vector<std::array<double, M>>
 {
     std::vector<std::array<double, M>> probs(domains.size());
     for (int32 i = 0; i < ssize(probs); ++i)
@@ -102,10 +100,8 @@ auto make_probability_matrix (
     return probs;
 }
 
-inline auto make_time_probability_vector (
-    int32 const varCount,
-    rng_t& rng
-) -> std::vector<probs::prob_dist>
+inline auto make_time_probability_vector (int32 const varCount, rng_t& rng)
+    -> std::vector<probs::prob_dist>
 {
     std::vector<probs::prob_dist> probs;
 
@@ -149,10 +145,8 @@ inline auto make_time_probability_vector (
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
 
-inline auto make_time_symprobability_vector (
-    int32 const varCount,
-    rng_t& rng
-) -> std::vector<symprobs::expression>
+inline auto make_time_symprobability_vector (int32 const varCount, rng_t& rng)
+    -> std::vector<symprobs::expression>
 {
     std::vector<symprobs::expression> probs;
 

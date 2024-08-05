@@ -41,7 +41,7 @@ auto constexpr int_pow(Base base, uint32 exponent) -> Base
  */
 inline auto do_hash (void* const p) -> std::size_t
 {
-    return reinterpret_cast<std::size_t>(p) >> 4U;
+    return reinterpret_cast<std::size_t>(p) >> 4U; // NOLINT
 }
 
 /**
@@ -227,19 +227,6 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
     }
 }
 
-// TODO(michal): this wont be necessary when we sort out node data and caches...
-template<class T>
-struct is_void
-{
-    static bool constexpr value = false;
-};
-
-template<>
-struct is_void<void>
-{
-    static bool constexpr value = true;
-};
-
 /**
  *  \brief Checks if T and U are the same type
  */
@@ -328,18 +315,6 @@ template<class T>
 struct remove_reference<T&&>
 {
     using type = T;
-};
-
-// TODO(michal): asi nebude treba
-template<class T>
-struct optional_member
-{
-    T member_;
-};
-
-template<>
-struct optional_member<void>
-{
 };
 
 /**

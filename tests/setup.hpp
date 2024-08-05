@@ -234,10 +234,8 @@ auto make_domains (
 /**
  *  \brief Makes BDD manager.
  */
-inline auto make_manager (
-    bdd_manager_settings const& settings,
-    tsl::rng_t& rng
-) -> bdd_manager
+inline auto make_manager (bdd_manager_settings const& settings, tsl::rng_t& rng)
+    -> bdd_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -271,10 +269,8 @@ auto make_manager (imdd_manager_settings<M> const& settings, tsl::rng_t& rng)
  *  \brief Makes ifMDD manager.
  */
 template<int32 M>
-auto make_manager (
-    ifmdd_manager_settings<M> const& settings,
-    tsl::rng_t& rng
-) -> ifmdd_manager<M>
+auto make_manager (ifmdd_manager_settings<M> const& settings, tsl::rng_t& rng)
+    -> ifmdd_manager<M>
 {
     return {
         settings.varcount_,
@@ -287,10 +283,8 @@ auto make_manager (
 /**
  *  \brief Makes bss_manager.
  */
-inline auto make_manager (
-    bss_manager_settings const& settings,
-    tsl::rng_t& rng
-) -> bss_manager
+inline auto make_manager (bss_manager_settings const& settings, tsl::rng_t& rng)
+    -> bss_manager
 {
     return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
@@ -324,10 +318,8 @@ auto make_manager (imss_manager_settings<M> const& settings, tsl::rng_t& rng)
  *  \brief Makes ifmss_manager.
  */
 template<int32 M>
-auto make_manager (
-    ifmss_manager_settings<M> const& settings,
-    tsl::rng_t& rng
-) -> ifmss_manager<M>
+auto make_manager (ifmss_manager_settings<M> const& settings, tsl::rng_t& rng)
+    -> ifmss_manager<M>
 {
     return ifmss_manager<M>(
         settings.varcount_,
@@ -347,12 +339,12 @@ auto make_manager (test_settings<Man, Expr> const& settings, tsl::rng_t& rng)
 }
 
 /**
- *  \brief Makes diagram representing \p expr .
+ *  \brief Makes diagram representing \p expr
  */
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto make_diagram (
     tsl::minmax_expr const& expr,
-    diagram_manager<Dat, Deg, Dom>& manager,
+    diagram_manager<Degree, Domain>& manager,
     fold_type const foldtype = fold_type::Left
 )
 {
@@ -370,7 +362,7 @@ auto make_diagram (
                  : manager.template tree_fold<ops::MAX>(diagrams);
     };
 
-    using diagram_t = typename diagram_manager<Dat, Deg, Dom>::diagram_t;
+    using diagram_t = typename diagram_manager<Degree, Domain>::diagram_t;
     auto termDs     = std::vector<diagram_t>();
     for (auto const& eTerm : expr.terms_)
     {
@@ -383,10 +375,10 @@ auto make_diagram (
 // /**
 //  *  \brief Makes diagram representing \p expr .
 //  */
-// template<class Dat, class Deg, class Dom>
+// template<class Degree, class Domain>
 // auto make_diagram (
 //     std::unique_ptr<tsl::expr_node> const& expr,
-//     diagram_manager<Dat, Deg, Dom>& manager
+//     diagram_manager<Degree, Domain>& manager
 // )
 // {
 //     return manager.from_expression_tree(*expr);
@@ -423,10 +415,7 @@ inline auto make_expression (
  *  \brief Makes expression for a test.
  */
 template<class Man, class Expr>
-auto make_expression (
-    test_settings<Man, Expr> const& settings,
-    tsl::rng_t& rng
-)
+auto make_expression (test_settings<Man, Expr> const& settings, tsl::rng_t& rng)
 {
     return make_expression(
         settings.manager_.varcount_,
@@ -435,13 +424,13 @@ auto make_expression (
     );
 }
 
-// TODO moved to libtsl
+// TODO(michal): move to libtsl
 /**
  *  \brief Makes random component state probabilities vector
  */
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto make_prob_vector (
-    diagram_manager<Dat, Deg, Dom> const& manager,
+    diagram_manager<Degree, Domain> const& manager,
     tsl::rng_t& rng
 ) -> std::vector<double>
 {
@@ -455,13 +444,13 @@ auto make_prob_vector (
     return probs;
 }
 
-// TODO moved to libtsl
+// TODO(michal): move to libtsl
 /**
  *  \brief Makes random component state probabilities matrix
  */
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto make_prob_matrix (
-    diagram_manager<Dat, Deg, Dom> const& manager,
+    diagram_manager<Degree, Domain> const& manager,
     tsl::rng_t& rng
 ) -> std::vector<std::vector<double>>
 {
@@ -490,9 +479,9 @@ auto make_prob_matrix (
     return probs;
 }
 
-template<class Dat, class Deg, class Dom>
+template<class Degree, class Domain>
 auto make_probabilities (
-    diagram_manager<Dat, Deg, Dom> const& manager,
+    diagram_manager<Degree, Domain> const& manager,
     tsl::rng_t& rng
 ) -> std::vector<std::vector<double>>
 {
@@ -519,8 +508,8 @@ inline auto make_vector (
     return vector;
 }
 
-template<class Dat, class Deg, class Dom>
-auto make_domain_iterator (diagram_manager<Dat, Deg, Dom> const& manager)
+template<class Degree, class Domain>
+auto make_domain_iterator (diagram_manager<Degree, Domain> const& manager)
 {
     return tsl::domain_iterator(manager.get_domains(), manager.get_order());
 }

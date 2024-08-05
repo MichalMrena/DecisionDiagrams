@@ -129,11 +129,8 @@ private:
 /**
  *  \brief Makes random minmax expression tree.
  */
-auto make_expression_tree (
-    int32 varcount,
-    rng_t& rngtype,
-    rng_t& rngbranch
-) -> std::unique_ptr<expr_node>;
+auto make_expression_tree (int32 varcount, rng_t& rngtype, rng_t& rngbranch)
+    -> std::unique_ptr<expr_node>;
 
 /**
  *  \brief Evaluates \p expr using values of variables in \p vs .

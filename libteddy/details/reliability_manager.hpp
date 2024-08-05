@@ -37,11 +37,11 @@ struct var_change
  *  reliability analysis.
  */
 template<class Degree, class Domain>
-class reliability_manager : public diagram_manager<double, Degree, Domain>
+class reliability_manager : public diagram_manager<Degree, Domain>
 {
 public:
     using diagram_t =
-        typename diagram_manager<double, Degree, Domain>::diagram_t;
+        typename diagram_manager<Degree, Domain>::diagram_t;
 
 public:
     /**
@@ -342,10 +342,10 @@ protected:
     requires(domains::is_mixed<Domain>::value);
 
 private:
-    using node_t = typename diagram_manager<double, Degree, Domain>::node_t;
+    using node_t = typename diagram_manager<Degree, Domain>::node_t;
     using son_conainer = typename node_t::son_container;
     template<class ValueType>
-    using node_memo = details::map_memo<ValueType, double, Degree>;
+    using node_memo = details::map_memo<ValueType, Degree>;
 
     // TODO(michal): not nice
     // same problem as n-ary apply, we will see...
@@ -1155,7 +1155,7 @@ reliability_manager<Degree, Domain>::reliability_manager(
 )
 requires(domains::is_fixed<Domain>::value)
     :
-    diagram_manager<double, Degree, Domain>(
+    diagram_manager<Degree, Domain>(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,
@@ -1174,7 +1174,7 @@ reliability_manager<Degree, Domain>::reliability_manager(
 )
 requires(domains::is_mixed<Domain>::value)
     :
-    diagram_manager<double, Degree, Domain>(
+    diagram_manager<Degree, Domain>(
         varCount,
         nodePoolSize,
         overflowNodePoolSize,

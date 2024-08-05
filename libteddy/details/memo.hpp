@@ -14,16 +14,16 @@ namespace teddy::details
 /**
  *  \brief TODO
  */
-template<class ValueType, class Data, class Degree, class Domain>
+template<class ValueType, class Degree, class Domain>
 class in_node_memo
 {
 public:
-    using node_t = node<Data, Degree>;
+    using node_t = node<Degree>;
 
 public:
     in_node_memo(
         node_t* const root,
-        node_manager<Data, Degree, Domain> const& manager
+        node_manager<Degree, Domain> const& manager
     ) :
         root_(root),
         manager_(&manager)
@@ -53,10 +53,16 @@ public:
     in_node_memo(in_node_memo const&)                     = delete;
     auto operator= (in_node_memo const&) -> in_node_memo& = delete;
 
-    auto find (node_t* const /*key*/) const -> ValueType*
+    auto find (node_t* const key) -> ValueType*
     {
-        // TODO(michal): if not marked then nullptr
-        return nullptr;
+        return key->is_marked() ? &key->template get_data<ValueType>()
+                                : nullptr;
+    }
+
+    auto find (node_t* const key) const -> ValueType const*
+    {
+        return key->is_marked() ? &key->template get_data<ValueType>()
+                                : nullptr;
     }
 
     /**
@@ -66,9 +72,10 @@ public:
      *  \return Pointer to the place where \p value is stored
      *          Guaranteed to be valid until next call to \c put
      */
-    auto put (node_t* const /*key*/, ValueType const& /*value*/) -> void
+    auto put (node_t* const key, ValueType const& value) -> void
     {
-        // TODO(michal):
+        key->set_marked();
+        key->template get_data<ValueType>() = value;
     }
 
 private:
@@ -93,17 +100,17 @@ private:
 
 private:
     node_t* root_;
-    node_manager<Data, Degree, Domain> const* manager_;
+    node_manager<Degree, Domain> const* manager_;
 };
 
 /**
  *  \brief TODO
  */
-template<class ValueType, class Data, class Degree>
+template<class ValueType, class Degree>
 class map_memo
 {
 public:
-    using node_t = node<Data, Degree>;
+    using node_t = node<Degree>;
 
 public:
     explicit map_memo(int64 const /*nodeCount*/)
@@ -117,6 +124,7 @@ public:
         return it != map_.end() ? &(it->second) : nullptr;
     }
 
+    // TODO(michal): doc
     auto find (node_t* const key) const -> ValueType const*
     {
         auto const it = map_.find(key);
@@ -128,7 +136,6 @@ public:
      *  \param key key
      *  \param value value
      *  \return Pointer to the place where \p value is stored
-     *          Guaranteed to be valid until next call to \c put
      */
     auto put (node_t* const key, ValueType const& value) -> ValueType*
     {
@@ -137,6 +144,10 @@ public:
     }
 
 private:
+    /**
+     *  No that this has to be node-based map implementation.
+     *  Ponters to data pairs must stay valid even after rehashing.
+     */
     std::unordered_map<node_t*, ValueType> map_;
 };
 } // namespace teddy::details

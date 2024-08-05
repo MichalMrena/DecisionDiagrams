@@ -25,11 +25,11 @@ namespace degrees
     /**
      *  \brief Marks that all nodes have the same number of sons
      */
-    template<int32 N>
+    template<int32 M>
     struct fixed
     {
-        static_assert(N > 1);
-        static int32 constexpr value = N;
+        static_assert(M > 1);
+        static int32 constexpr value = M;
     };
 
     /**
@@ -46,8 +46,8 @@ namespace degrees
         static bool constexpr value = false;
     };
 
-    template<int32 N>
-    struct is_fixed<fixed<N>>
+    template<int32 M>
+    struct is_fixed<fixed<M>>
     {
         static bool constexpr value = true;
     };
@@ -60,8 +60,8 @@ namespace degrees
     {
     };
 
-    template<int32 N>
-    struct is_mixed<fixed<N>>
+    template<int32 M>
+    struct is_mixed<fixed<M>>
     {
         static bool constexpr value = false;
     };
@@ -75,19 +75,19 @@ namespace degrees
 
 namespace details
 {
-    template<std::size_t Count>
+    template<std::size_t Count, std::size_t Alignment>
     struct bytes
     {
-        char bytes_[Count];
+        alignas(Alignment) char bytes_[Count];
     };
 
     template<>
-    struct bytes<0>
+    struct bytes<0, 1>
     {
     };
 } // namespace details
 
-template<class Data, class Degree>
+template<class Degree>
 class node;
 
 namespace sons
@@ -95,11 +95,11 @@ namespace sons
     /**
      *  \brief Wrapper around statically allocated array of node pointers
      */
-    template<class Data, class Degree>
+    template<int32 M>
     class fixed
     {
     public:
-        using node_t = node<Data, Degree>;
+        using node_t = node<degrees::fixed<M>>;
 
         auto operator[] (int64 const index) -> node_t*&
         {
@@ -112,17 +112,16 @@ namespace sons
         }
 
     private:
-        node_t* sons_[Degree::value];
+        node_t* sons_[as_usize(M)];
     };
 
     /**
      *  \brief RAII wrapper around dynamically allocated array of node pointers
      */
-    template<class Data, class Degree>
     class mixed
     {
     public:
-        using node_t = node<Data, Degree>;
+        using node_t = node<degrees::mixed>;
 
         explicit mixed(int32 const domain) :
             sons_(static_cast<node_t**>(
@@ -171,31 +170,32 @@ namespace sons
     /**
      *  \brief Factory function for fixed son container
      */
-    template<class Data, int32 N>
-    auto make_son_container (int32, degrees::fixed<N>)
+    template<int32 M>
+    auto make_son_container (int32, degrees::fixed<M>)
     {
-        return fixed<Data, degrees::fixed<N>>();
+        return fixed<M>();
     }
 
     /**
      *  \brief Factory function for mixed son container
      */
-    template<class Data>
-    auto make_son_container (int32 const domain, degrees::mixed)
+    inline auto make_son_container (int32 const domain, degrees::mixed)
     {
-        return mixed<Data, degrees::mixed>(domain);
+        return mixed(domain);
     }
 } // namespace sons
 
 /**
  *  \brief TODO
  */
-template<class Data, class Degree>
+template<class Degree>
 class node
 {
 public:
-    using son_container
-        = decltype(sons::make_son_container<Data>(int32(), Degree()));
+    using son_container = decltype(sons::make_son_container(int32(), Degree()));
+
+    // TODO(michal): expression
+    using allowed_types = utils::type_list<double, int64, longint>;
 
 public:
     /**
@@ -203,7 +203,7 @@ public:
      */
     static auto make_son_container (int32 const domain) -> son_container
     {
-        return sons::make_son_container<Data>(domain, Degree());
+        return sons::make_son_container(domain, Degree());
     }
 
 public:
@@ -212,6 +212,7 @@ public:
      */
     explicit node(int32 value) :
         terminal_ {value},
+        data_ {},
         next_ {nullptr},
         bits_ {LeafM | UsedM}
     {
@@ -222,6 +223,7 @@ public:
      */
     node(int32 index, son_container sons) :
         internal_ {TEDDY_MOVE(sons), index},
+        data_ {},
         next_ {nullptr},
         bits_ {UsedM}
     {
@@ -250,23 +252,23 @@ public:
     auto operator= (node const&) = delete;
     auto operator= (node&&)      = delete;
 
-    // TODO(michal): get_data_as<double>() -> double&
-    //      get_data_as<expr>() -> expr&
-    // asi uz nebude treba Foo
-    template<class Foo = void>
-    requires(not utils::is_void<Data>::value)
-    auto get_data () -> utils::second_t<Foo, Data>&
+    template<class Type>
+    [[nodiscard]]
+    auto get_data () -> Type&
     {
+        // TODO(michal): possibly start_lifetime_as?
+        static_assert(allowed_types::Contains<Type>);
         assert(this->is_used());
-        return data_.member_;
+        return *static_cast<Type*>(data_.bytes_);
     }
 
-    template<class Foo = void>
-    requires(not utils::is_void<Data>::value)
-    auto get_data () const -> utils::second_t<Foo, Data> const&
+    template<class Type>
+    [[nodiscard]]
+    auto get_data () const -> Type const&
     {
+        static_assert(allowed_types::Contains<Type>);
         assert(this->is_used());
-        return data_.member_;
+        return *static_cast<Type*>(data_.bytes_);
     }
 
     [[nodiscard]]
@@ -416,7 +418,7 @@ private:
     };
 
     [[no_unique_address]]
-    utils::optional_member<Data>
+    details::bytes<allowed_types::MaxSizeof, allowed_types::MaxAlignof>
         data_;
 
     node* next_;

@@ -11,14 +11,16 @@
  */
 void solve(int const n)
 {
+    using teddy::bdd_t;
+    using teddy::ops::AND;
+    using teddy::ops::OR;
+
     teddy::bdd_manager manager(n*n, 1'000'000);
     manager.set_cache_ratio(2);
     manager.set_gc_ratio(0.30);
-    using bdd_t = teddy::bdd_manager::diagram_t;
-    using namespace teddy::ops;
 
     std::vector<bdd_t> board;
-    board.reserve(static_cast<std::size_t>(n * n));
+    board.reserve(n * n);
     for (int i = 0; i < n * n; ++i)
     {
         board.push_back(manager.variable(i));
@@ -37,13 +39,13 @@ void solve(int const n)
                 {
                     tmp = manager.apply<AND>(
                         tmp,
-                        manager.negate(board[static_cast<std::size_t>(i*n + k)])
+                        manager.negate(board[i*n + k])
                     );
                 }
             }
             tmp = manager.apply<OR>(
                 tmp,
-                manager.negate(board[static_cast<std::size_t>(i*n + j)])
+                manager.negate(board[i*n + j])
             );
             result = manager.apply<AND>(result, tmp);
         }
@@ -61,13 +63,13 @@ void solve(int const n)
                 {
                     tmp = manager.apply<AND>(
                         tmp,
-                        manager.negate(board[static_cast<std::size_t>(k*n + j)])
+                        manager.negate(board[k*n + j])
                     );
                 }
             }
             tmp = manager.apply<OR>(
                 tmp,
-                manager.negate(board[static_cast<std::size_t>(i*n + j)])
+                manager.negate(board[i*n + j])
             );
             result = manager.apply<AND>(result, tmp);
         }
@@ -86,14 +88,14 @@ void solve(int const n)
                     tmp = manager.apply<AND>(
                         tmp,
                         manager.negate(
-                            board[static_cast<std::size_t>(k*n + (j+k-i))]
+                            board[k*n + (j+k-i)]
                         )
                     );
                 }
             }
             tmp = manager.apply<OR>(
                 tmp,
-                manager.negate(board[static_cast<std::size_t>(i*n + j)])
+                manager.negate(board[i*n + j])
             );
             result = manager.apply<AND>(result, tmp);
         }
@@ -112,14 +114,14 @@ void solve(int const n)
                     tmp = manager.apply<AND>(
                         tmp,
                         manager.negate(
-                            board[static_cast<std::size_t>(k*n + (j+i-k))]
+                            board[k*n + (j+i-k)]
                         )
                     );
                 }
             }
             tmp = manager.apply<OR>(
                 tmp,
-                manager.negate(board[static_cast<std::size_t>(i*n + j)])
+                manager.negate(board[i*n + j])
             );
             result = manager.apply<AND>(result, tmp);
         }
@@ -131,7 +133,7 @@ void solve(int const n)
         for (int j = 0; j < n; ++j) {
             tmp = manager.apply<OR>(
                 tmp,
-                board[static_cast<std::size_t>(i*n + j)]
+                board[i*n + j]
             );
         }
         result = manager.apply<AND>(result, tmp);
@@ -170,9 +172,14 @@ int main(int argc, char** argv)
     const auto before = std::chrono::high_resolution_clock::now();
     solve(n);
     const auto after = std::chrono::high_resolution_clock::now();
-    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+    const auto elapsed = std::chrono::duration_cast<std::chrono::nanoseconds>(
         after - before
     );
-    std::cout << "elapsed time:        " << elapsed.count() << "ms" << "\n";
-
+    std::cout << "elapsed time:        " << elapsed.count() << "ns" << "\n";
 }
+
+/*
+    Note on the sign coversions: we use -Wsign-conversion to compile and test
+    libteddy. In its codebase, we try to properly use static casts. However,
+    in this example, we kept the implicit conversions for better readability.
+*/

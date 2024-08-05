@@ -12,14 +12,14 @@ namespace teddy::details
 {
 struct io_impl
 {
-    template<class Data, class Degree, class Domain, class ForEachNode>
+    template<class Degree, class Domain, class ForEachNode>
     static auto to_dot_graph_common (
-        diagram_manager<Data, Degree, Domain> const& manager,
+        diagram_manager<Degree, Domain> const& manager,
         std::ostream& ost,
         ForEachNode forEach
     ) -> void
     {
-        using manager_t       = diagram_manager<Data, Degree, Domain>;
+        using manager_t       = diagram_manager<Degree, Domain>;
         using node_t          = typename manager_t::node_t;
 
         auto const make_label = [] (node_t* const node)
@@ -35,8 +35,8 @@ struct io_impl
         };
 
         auto const get_id_str = [] (node_t* const n) {
-            return std::to_string(reinterpret_cast<std::intptr_t>(n));
-        }; // NOLINT
+            return std::to_string(reinterpret_cast<std::intptr_t>(n)); // NOLINT
+        };
 
         auto const output_range
             = [] (auto& ostr, auto const& range, auto const sep)

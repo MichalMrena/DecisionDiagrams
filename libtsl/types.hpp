@@ -14,23 +14,26 @@ using rng_t                      = std::ranlux48;
 
 inline int32 constexpr Undefined = ~(1U << (8 * sizeof(int32) - 1U));
 
-
-[[nodiscard]] inline auto constexpr as_uindex(int32 const index)
+[[nodiscard]]
+inline auto constexpr as_uindex(int32 const index)
 {
     return static_cast<std::size_t>(index);
 }
 
-[[nodiscard]] inline auto constexpr as_uindex(int64 const index)
+[[nodiscard]]
+inline auto constexpr as_uindex(int64 const index)
 {
     return static_cast<std::size_t>(index);
 }
 
-[[nodiscard]] inline auto constexpr as_usize(int32 const size)
+[[nodiscard]]
+inline auto constexpr as_usize(int32 const size)
 {
     return static_cast<std::size_t>(size);
 }
 
-[[nodiscard]] inline auto constexpr as_usize(int64 const size)
+[[nodiscard]]
+inline auto constexpr as_usize(int64 const size)
 {
     return static_cast<std::size_t>(size);
 }
