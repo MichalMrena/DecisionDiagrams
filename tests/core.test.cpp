@@ -844,6 +844,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
 {
+    // TODO(michal): test na corner-case konstantna funcia, 0 premennych a podobne...
+
     auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
     auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
     auto diagram = tsl::make_diagram(expr, manager);

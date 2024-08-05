@@ -22,6 +22,7 @@ cmake -DCMAKE_CXX_COMPILER=$COMPILER     \
       -DLIBTEDDY_ARBITRARY_PRECISION=ON  \
       -DLIBTEDDY_VERBOSE=OFF             \
       -DLIBTEDDY_COLLECT_STATS=OFF       \
+      -DLIBTEDDY_USE_LIBCXX=OFF          \
       ../..
 
 # Generate debug Makefile
@@ -37,6 +38,7 @@ cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
       -DLIBTEDDY_ARBITRARY_PRECISION=ON  \
       -DLIBTEDDY_VERBOSE=OFF             \
       -DLIBTEDDY_COLLECT_STATS=OFF       \
+      -DLIBTEDDY_USE_LIBCXX=OFF          \
       ../..
 
 # Move compile commnads out of the build directory
