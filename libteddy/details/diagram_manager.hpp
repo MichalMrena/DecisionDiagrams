@@ -771,6 +771,8 @@ private:
     node_manager<Degree, Domain> nodes_;
 };
 
+using binary_manager = diagram_manager<degrees::fixed<2>, domains::fixed<2>>;
+
 template<class Degree, class Domain>
 auto diagram_manager<Degree, Domain>::constant(int32 const val
 ) -> diagram_t

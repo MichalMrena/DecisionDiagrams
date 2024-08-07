@@ -23,10 +23,10 @@ struct io
      *  \return Vector of diagrams
      */
     static auto from_pla (
-        bss_manager& manager,
+        binary_manager& manager,
         pla_file const& file,
         fold_type foldType = fold_type::Tree
-    ) -> std::vector<bss_manager::diagram_t>;
+    ) -> std::vector<binary_manager::diagram_t>;
 
     /**
      *  \brief Creates diagram from a truth vector of a function
@@ -180,7 +180,7 @@ struct io
 // definitions:
 
 inline auto io::from_pla(
-    bss_manager& manager, // TODO(michal): diagram manager
+    binary_manager& manager,
     pla_file const& file,
     fold_type const foldType
 ) -> std::vector<bss_manager::diagram_t>

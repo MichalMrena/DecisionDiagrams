@@ -15,7 +15,7 @@ namespace teddy
 namespace details
 {
     template<class Degree>
-    concept is_bss = std::same_as<degrees::fixed<2>, Degree>;
+    concept is_bss = utils::is_same<degrees::fixed<2>, Degree>::value;
 }
 
 /**
