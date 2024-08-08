@@ -1,11 +1,6 @@
-find_package(
-    Boost
-    COMPONENTS unit_test_framework REQUIRED
-)
+find_package(Boost COMPONENTS unit_test_framework REQUIRED)
 
-find_package(
-    fmt REQUIRED
-)
+find_package(fmt REQUIRED)
 
 add_executable(
     libteddy-test
@@ -19,18 +14,9 @@ target_link_libraries(
     libteddy-test
     PRIVATE teddy
     PRIVATE tsl
-    PRIVATE fmt::fmt
     PRIVATE ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
-)
-
-target_compile_options(
-    libteddy-test
-    PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
-)
-
-target_link_options(
-    libteddy-test
-    PRIVATE ${LIBTEDDY_LINK_OPTIONS}
+    PRIVATE subproject-interface
+    PRIVATE fmt::fmt
 )
 
 add_test(

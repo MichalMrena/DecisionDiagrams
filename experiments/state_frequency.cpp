@@ -3,7 +3,7 @@
 #include <libteddy/io.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
-#include <nanobench/nanobench.h>
+#include <lib/nanobench/nanobench.h>
 #include <iomanip>
 #include <iostream>
 #include "utils.hpp"
@@ -21,7 +21,6 @@ auto compare (
 ) -> void
 {
     using namespace teddy;
-    using bdd_t = bss_manager::diagram_t;
     using duration_t = std::chrono::nanoseconds;
 
     if (printHeader)
@@ -133,7 +132,6 @@ auto compare_pla(
 )
 {
     using namespace teddy;
-    using bdd_t = bss_manager::diagram_t;
     using duration_t = std::chrono::nanoseconds;
 
     std::optional<pla_file> fileOpt = pla_file::load_file(path, false);

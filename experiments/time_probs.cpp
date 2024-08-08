@@ -4,7 +4,7 @@
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
 #include <libtsl/utilities.hpp>
-#include <nanobench/nanobench.h>
+#include <lib/nanobench/nanobench.h>
 #include <bitset>
 #include <iomanip>
 #include <iostream>

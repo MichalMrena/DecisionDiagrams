@@ -12,24 +12,4 @@ target_include_directories(
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_compile_options(
-    tsl
-    PRIVATE ${LIBTEDDY_COMPILE_OPTIONS}
-)
-
-target_link_options(
-    tsl
-    PRIVATE ${LIBTEDDY_LINK_OPTIONS}
-)
-
-target_compile_features(
-    tsl
-    PRIVATE cxx_std_20
-)
-
-set_target_properties(
-    tsl
-    PROPERTIES
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS        NO
-)
+target_link_libraries(tsl PRIVATE subproject-interface)

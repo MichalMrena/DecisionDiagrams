@@ -4,7 +4,7 @@
 #include <libtsl/utilities.hpp>
 #include <algorithm>
 #include <chrono>
-#include <nanobench/nanobench.h>
+#include <lib/nanobench/nanobench.h>
 #include <iostream>
 #include <random>
 

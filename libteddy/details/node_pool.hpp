@@ -181,7 +181,7 @@ auto node_pool<Degree>::grow() -> void
 #ifdef LIBTEDDY_VERBOSE
     debug::out(
         "node_pool::grow\tallocating overflow pool with size ",
-        overflowPoolSize_,
+        extraPoolSize_,
         "\n"
     );
 #endif
