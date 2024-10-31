@@ -12,9 +12,9 @@ namespace teddy::tsl
 {
 struct var_change
 {
-    int32 index;
-    int32 from;
-    int32 to;
+  int32 index;
+  int32 from;
+  int32 to;
 };
 
 /**
@@ -24,8 +24,8 @@ struct var_change
  *  \return system state probability
  */
 auto probability (
-    truth_table const& table,
-    std::vector<double> const& probabilities
+  truth_table const& table,
+  std::vector<double> const& probabilities
 ) -> double;
 
 /**
@@ -36,9 +36,9 @@ auto probability (
  *  \return system state probability
  */
 auto probability (
-    truth_table const& table,
-    std::vector<std::vector<double>> const& probabilities,
-    int32 systemState
+  truth_table const& table,
+  std::vector<std::vector<double>> const& probabilities,
+  int32 systemState
 ) -> double;
 
 /**
@@ -49,9 +49,9 @@ auto probability (
  *  \return system availability
  */
 auto availability (
-    truth_table const& table,
-    std::vector<std::vector<double>> const& probabilities,
-    int32 systemState
+  truth_table const& table,
+  std::vector<std::vector<double>> const& probabilities,
+  int32 systemState
 ) -> double;
 
 /**
@@ -61,9 +61,9 @@ auto availability (
  *  \param val system state
  */
 auto unavailability (
-    truth_table const& table,
-    std::vector<std::vector<double>> const& probabilities,
-    int32 systemState
+  truth_table const& table,
+  std::vector<std::vector<double>> const& probabilities,
+  int32 systemState
 ) -> double;
 
 /**
@@ -81,7 +81,7 @@ auto state_frequency (truth_table const& table, int32 systemState) -> double;
  *  \return structural importance
  */
 auto structural_importance (truth_table const& dpld, int32 componentIndex)
-    -> double;
+  -> double;
 
 /**
  *  \brief Calculcates birnbaum importance using \p dpld
@@ -90,8 +90,8 @@ auto structural_importance (truth_table const& dpld, int32 componentIndex)
  *  \return birnbaum importance
  */
 auto birnbaum_importance (
-    truth_table const& dpld,
-    std::vector<std::vector<double>> const& probabilities
+  truth_table const& dpld,
+  std::vector<std::vector<double>> const& probabilities
 ) -> double;
 
 /**
@@ -104,11 +104,11 @@ auto birnbaum_importance (
  *  \return fussel-vesely importance
  */
 auto fussell_vesely_importance (
-    truth_table const& structureFunction,
-    std::vector<std::vector<double>> const& probabilities,
-    int32 componentIndex,
-    int32 componetnState,
-    int32 systemState
+  truth_table const& structureFunction,
+  std::vector<std::vector<double>> const& probabilities,
+  int32 componentIndex,
+  int32 componetnState,
+  int32 systemState
 ) -> double;
 
 /**
@@ -116,8 +116,8 @@ auto fussell_vesely_importance (
  */
 inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
 {
-    return [=] (auto const lhs, auto const rhs)
-    { return lhs == ffrom && rhs == fto; };
+  return [=] (auto const lhs, auto const rhs)
+  { return lhs == ffrom && rhs == fto; };
 };
 
 /**
@@ -125,8 +125,8 @@ inline static auto constexpr dpld_basic = [] (auto const ffrom, auto const fto)
  */
 inline static auto constexpr type_1_decrease = [] (auto const val)
 {
-    return [val] (auto const lhs, auto const rhs)
-    { return lhs == val && rhs < val; };
+  return [val] (auto const lhs, auto const rhs)
+  { return lhs == val && rhs < val; };
 };
 
 /**
@@ -134,29 +134,29 @@ inline static auto constexpr type_1_decrease = [] (auto const val)
  */
 inline static auto constexpr type_1_increase = [] (auto const val)
 {
-    return [val] (auto const lhs, auto const rhs)
-    { return lhs == val && rhs > val; };
+  return [val] (auto const lhs, auto const rhs)
+  { return lhs == val && rhs > val; };
 };
 
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 2
  */
-inline static auto constexpr type_2_decrease = [] ()
-{ return [] (auto const lhs, auto const rhs) { return lhs > rhs; }; };
+inline static auto constexpr type_2_decrease
+  = [] () { return [] (auto const lhs, auto const rhs) { return lhs > rhs; }; };
 
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 2
  */
-inline static auto constexpr type_2_increase = [] ()
-{ return [] (auto const lhs, auto const rhs) { return lhs < rhs; }; };
+inline static auto constexpr type_2_increase
+  = [] () { return [] (auto const lhs, auto const rhs) { return lhs < rhs; }; };
 
 /**
  *  \brief Returns lambda that can be used in \c dpld of type 3
  */
 inline static auto constexpr type_3_decrease = [] (auto const val)
 {
-    return [val] (auto const lhs, auto const rhs)
-    { return lhs >= val && rhs < val; };
+  return [val] (auto const lhs, auto const rhs)
+  { return lhs >= val && rhs < val; };
 };
 
 /**
@@ -164,8 +164,8 @@ inline static auto constexpr type_3_decrease = [] (auto const val)
  */
 inline static auto constexpr type_3_increase = [] (auto const val)
 {
-    return [val] (auto const lhs, auto const rhs)
-    { return lhs < val && rhs >= val; };
+  return [val] (auto const lhs, auto const rhs)
+  { return lhs < val && rhs >= val; };
 };
 
 /**
@@ -177,35 +177,35 @@ inline static auto constexpr type_3_increase = [] (auto const val)
  */
 template<class F>
 auto dpld (truth_table const& table, var_change const var, F change)
-    -> truth_table
+  -> truth_table
 {
-    auto result = std::vector<int32>(table.get_vector().size());
+  auto result = std::vector<int32>(table.get_vector().size());
 
-    domain_for_each(
-        table,
-        [&,
-         tmpElem
-         = std::vector<int32>()] (auto const fFrom, auto const& elem) mutable
+  domain_for_each(
+    table,
+    [&,
+     tmpElem
+     = std::vector<int32>()] (auto const fFrom, auto const& elem) mutable
+    {
+      if (elem[as_uindex(var.index)] == var.from)
+      {
+        auto const varIndex  = as_uindex(var.index);
+        tmpElem              = elem;
+        tmpElem[varIndex]    = var.to;
+        auto const fTo       = evaluate(table, tmpElem);
+        auto const derValue  = change(fFrom, fTo) ? 1 : 0;
+        auto const varDomain = table.get_domains()[varIndex];
+        for (auto varValue = 0; varValue < varDomain; ++varValue)
         {
-            if (elem[as_uindex(var.index)] == var.from)
-            {
-                auto const varIndex  = as_uindex(var.index);
-                tmpElem              = elem;
-                tmpElem[varIndex]    = var.to;
-                auto const fTo       = evaluate(table, tmpElem);
-                auto const derValue  = change(fFrom, fTo) ? 1 : 0;
-                auto const varDomain = table.get_domains()[varIndex];
-                for (auto varValue = 0; varValue < varDomain; ++varValue)
-                {
-                    tmpElem[varIndex]   = varValue;
-                    auto const derIndex = as_uindex(to_index(table, tmpElem));
-                    result[derIndex]    = derValue;
-                }
-            }
+          tmpElem[varIndex]   = varValue;
+          auto const derIndex = as_uindex(to_index(table, tmpElem));
+          result[derIndex]    = derValue;
         }
-    );
+      }
+    }
+  );
 
-    return {std::move(result), table.get_domains()};
+  return {std::move(result), table.get_domains()};
 }
 
 /**
@@ -217,46 +217,46 @@ auto dpld (truth_table const& table, var_change const var, F change)
  */
 template<class F>
 auto dpld_e (truth_table const& table, var_change const var, F change)
-    -> truth_table
+  -> truth_table
 {
-    auto result = std::vector<int32>(table.get_vector().size());
+  auto result = std::vector<int32>(table.get_vector().size());
 
-    domain_for_each(
-        table,
-        [&,
-         index = 0U,
-         tmpelem
-         = std::vector<int32>()] (auto const ffrom, auto const& elem) mutable
-        {
-            if (elem[as_uindex(var.index)] != var.from)
-            {
-                result[index] = Undefined;
-            }
-            else
-            {
-                tmpelem                       = elem;
-                tmpelem[as_uindex(var.index)] = var.to;
-                auto const fto                = evaluate(table, tmpelem);
-                result[index]                 = change(ffrom, fto) ? 1 : 0;
-            }
-            ++index;
-        }
-    );
+  domain_for_each(
+    table,
+    [&,
+     index = 0U,
+     tmpelem
+     = std::vector<int32>()] (auto const ffrom, auto const& elem) mutable
+    {
+      if (elem[as_uindex(var.index)] != var.from)
+      {
+        result[index] = Undefined;
+      }
+      else
+      {
+        tmpelem                       = elem;
+        tmpelem[as_uindex(var.index)] = var.to;
+        auto const fto                = evaluate(table, tmpelem);
+        result[index]                 = change(ffrom, fto) ? 1 : 0;
+      }
+      ++index;
+    }
+  );
 
-    return {std::move(result), table.get_domains()};
+  return {std::move(result), table.get_domains()};
 }
 
 /**
  *  \brief Calculates all MCVs for system \p state
  */
 auto calculate_mcvs (truth_table const& table, int32 state)
-    -> std::vector<std::vector<int32>>;
+  -> std::vector<std::vector<int32>>;
 
 /**
  *  \brief Calculates all MPVs for system \p state
  */
 auto calculate_mpvs (truth_table const& table, int32 state)
-    -> std::vector<std::vector<int32>>;
+  -> std::vector<std::vector<int32>>;
 
 /**
  *  \brief Calculates probability of the \p vector
@@ -265,8 +265,8 @@ auto calculate_mpvs (truth_table const& table, int32 state)
  *  \return state vector probability
  */
 auto vector_probability (
-    std::vector<int32> const& vector,
-    std::vector<std::vector<double>> const& probabilities
+  std::vector<int32> const& vector,
+  std::vector<std::vector<double>> const& probabilities
 ) -> double;
 
 } // namespace teddy::tsl

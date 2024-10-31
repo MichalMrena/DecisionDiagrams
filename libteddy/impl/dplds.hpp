@@ -10,8 +10,8 @@ namespace teddy::dpld
  */
 inline static auto constexpr basic = [] (int32 const fFrom, int32 const fTo)
 {
-    return [=] (int32 const lhs, int32 const rhs)
-    { return lhs == fFrom && rhs == fTo; };
+  return [=] (int32 const lhs, int32 const rhs)
+  { return lhs == fFrom && rhs == fTo; };
 };
 
 /**
@@ -19,8 +19,8 @@ inline static auto constexpr basic = [] (int32 const fFrom, int32 const fTo)
  */
 inline static auto constexpr type_1_decrease = [] (int32 const state)
 {
-    return [state] (int32 const lhs, int32 const rhs)
-    { return lhs == state && rhs < state; };
+  return [state] (int32 const lhs, int32 const rhs)
+  { return lhs == state && rhs < state; };
 };
 
 /**
@@ -28,8 +28,8 @@ inline static auto constexpr type_1_decrease = [] (int32 const state)
  */
 inline static auto constexpr type_1_increase = [] (int32 const state)
 {
-    return [state] (int32 const lhs, int32 const rhs)
-    { return lhs == state && rhs > state; };
+  return [state] (int32 const lhs, int32 const rhs)
+  { return lhs == state && rhs > state; };
 };
 
 /**
@@ -49,8 +49,8 @@ inline static auto constexpr type_2_increase = [] ()
  */
 inline static auto constexpr type_3_decrease = [] (int32 const state)
 {
-    return [state] (int32 const lhs, int32 const rhs)
-    { return lhs >= state && rhs < state; };
+  return [state] (int32 const lhs, int32 const rhs)
+  { return lhs >= state && rhs < state; };
 };
 
 /**
@@ -58,8 +58,8 @@ inline static auto constexpr type_3_decrease = [] (int32 const state)
  */
 inline static auto constexpr type_3_increase = [] (int32 const state)
 {
-    return [state] (int32 const lhs, int32 const rhs)
-    { return lhs < state && rhs >= state; };
+  return [state] (int32 const lhs, int32 const rhs)
+  { return lhs < state && rhs >= state; };
 };
 } // namespace teddy::dpld
 

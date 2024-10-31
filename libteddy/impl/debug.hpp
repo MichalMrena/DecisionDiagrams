@@ -3,16 +3,16 @@
 
 #include <libteddy/impl/config.hpp>
 #ifdef LIBTEDDY_VERBOSE
-#    include <libteddy/details/types.hpp>
+#  include <libteddy/impl/types.hpp>
 
-#    include <iostream>
+#  include <iostream>
 
 namespace teddy::debug
 {
 template<class... Ts>
 auto out ([[maybe_unused]] Ts... str)
 {
-    ((std::cout << str), ...);
+  ((std::cout << str), ...);
 }
 } // namespace teddy::debug
 

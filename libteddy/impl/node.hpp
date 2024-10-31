@@ -13,78 +13,78 @@ namespace teddy
 {
 namespace degrees
 {
-    /**
-     *  \brief Marks that different nodes can have different number of sons
-     */
-    struct mixed
-    {
-        // Just a dummy value to simplify ifs, this one should be never used
-        static int32 constexpr value = 1;
-    };
+  /**
+   *  \brief Marks that different nodes can have different number of sons
+   */
+  struct mixed
+  {
+    // Just a dummy value to simplify ifs, this one should be never used
+    static int32 constexpr value = 1;
+  };
 
-    /**
-     *  \brief Marks that all nodes have the same number of sons
-     */
-    template<int32 M>
-    struct fixed
-    {
-        static_assert(M > 1);
-        static int32 constexpr value = M;
-    };
+  /**
+   *  \brief Marks that all nodes have the same number of sons
+   */
+  template<int32 M>
+  struct fixed
+  {
+    static_assert(M > 1);
+    static int32 constexpr value = M;
+  };
 
-    /**
-     *  \brief Trait that checks if a degree (T) is fixed
-     */
-    template<class T>
-    struct is_fixed
-    {
-    };
+  /**
+   *  \brief Trait that checks if a degree (T) is fixed
+   */
+  template<class T>
+  struct is_fixed
+  {
+  };
 
-    template<>
-    struct is_fixed<mixed>
-    {
-        static bool constexpr value = false;
-    };
+  template<>
+  struct is_fixed<mixed>
+  {
+    static bool constexpr value = false;
+  };
 
-    template<int32 M>
-    struct is_fixed<fixed<M>>
-    {
-        static bool constexpr value = true;
-    };
+  template<int32 M>
+  struct is_fixed<fixed<M>>
+  {
+    static bool constexpr value = true;
+  };
 
-    /**
-     *  \brief Trait that checks if a degree (T) is mixed
-     */
-    template<class T>
-    struct is_mixed
-    {
-    };
+  /**
+   *  \brief Trait that checks if a degree (T) is mixed
+   */
+  template<class T>
+  struct is_mixed
+  {
+  };
 
-    template<int32 M>
-    struct is_mixed<fixed<M>>
-    {
-        static bool constexpr value = false;
-    };
+  template<int32 M>
+  struct is_mixed<fixed<M>>
+  {
+    static bool constexpr value = false;
+  };
 
-    template<>
-    struct is_mixed<mixed>
-    {
-        static bool constexpr value = true;
-    };
+  template<>
+  struct is_mixed<mixed>
+  {
+    static bool constexpr value = true;
+  };
 } // namespace degrees
 
 namespace details
 {
-    template<std::size_t Count, std::size_t Alignment>
-    struct bytes
-    {
-        alignas(Alignment) char bytes_[Count];
-    };
+  template<std::size_t Count, std::size_t Alignment>
+  struct bytes
+  {
+    alignas(Alignment) char bytes_[Count];
+  };
 
-    template<>
-    struct bytes<0, 1>
-    {
-    };
+  template<>
+  struct bytes<0, 1>
+  {
+  };
 } // namespace details
 
 template<class Degree>
@@ -92,97 +92,96 @@ class node;
 
 namespace sons
 {
-    /**
-     *  \brief Wrapper around statically allocated array of node pointers
-     */
-    template<int32 M>
-    class fixed
+  /**
+   *  \brief Wrapper around statically allocated array of node pointers
+   */
+  template<int32 M>
+  class fixed
+  {
+  public:
+    using node_t = node<degrees::fixed<M>>;
+
+    auto operator[] (int64 const index) -> node_t*&
     {
-    public:
-        using node_t = node<degrees::fixed<M>>;
-
-        auto operator[] (int64 const index) -> node_t*&
-        {
-            return sons_[index];
-        }
-
-        auto operator[] (int64 const index) const -> node_t* const&
-        {
-            return sons_[index];
-        }
-
-    private:
-        node_t* sons_[as_usize(M)];
-    };
-
-    /**
-     *  \brief RAII wrapper around dynamically allocated array of node pointers
-     */
-    class mixed
-    {
-    public:
-        using node_t = node<degrees::mixed>;
-
-        explicit mixed(int32 const domain) :
-            sons_(static_cast<node_t**>(
-                std::malloc(as_usize(domain) * sizeof(node_t*))
-            ))
-        {
-        }
-
-        mixed(mixed const&)                           = delete;
-        auto operator= (mixed const& other) -> mixed& = delete;
-
-        mixed(mixed&& other) noexcept :
-            sons_(utils::exchange(other.sons_, nullptr))
-        {
-        }
-
-        ~mixed()
-        {
-            std::free(sons_);
-        }
-
-        auto operator= (mixed&& other) noexcept -> mixed&
-        {
-            if (this != &other) [[likely]]
-            {
-                std::free(sons_);
-                sons_ = utils::exchange(other.sons_, nullptr);
-            }
-            return *this;
-        }
-
-        auto operator[] (int64 const index) -> node_t*&
-        {
-            return sons_[index];
-        }
-
-        auto operator[] (int64 const index) const -> node_t* const&
-        {
-            return sons_[index];
-        }
-
-    private:
-        node_t** sons_;
-    };
-
-    /**
-     *  \brief Factory function for fixed son container
-     */
-    template<int32 M>
-    auto make_son_container (int32, degrees::fixed<M>)
-    {
-        return fixed<M>();
+      return sons_[index];
     }
 
-    /**
-     *  \brief Factory function for mixed son container
-     */
-    inline auto make_son_container (int32 const domain, degrees::mixed)
+    auto operator[] (int64 const index) const -> node_t* const&
     {
-        return mixed(domain);
+      return sons_[index];
     }
+
+  private:
+    node_t* sons_[as_usize(M)];
+  };
+
+  /**
+   *  \brief RAII wrapper around dynamically allocated array of node pointers
+   */
+  class mixed
+  {
+  public:
+    using node_t = node<degrees::mixed>;
+
+    explicit mixed(int32 const domain) :
+      sons_(
+        static_cast<node_t**>(std::malloc(as_usize(domain) * sizeof(node_t*)))
+      )
+    {
+    }
+
+    mixed(mixed const&)                           = delete;
+    auto operator= (mixed const& other) -> mixed& = delete;
+
+    mixed(mixed&& other) noexcept : sons_(utils::exchange(other.sons_, nullptr))
+    {
+    }
+
+    ~mixed()
+    {
+      std::free(sons_);
+    }
+
+    auto operator= (mixed&& other) noexcept -> mixed&
+    {
+      if (this != &other) [[likely]]
+      {
+        std::free(sons_);
+        sons_ = utils::exchange(other.sons_, nullptr);
+      }
+      return *this;
+    }
+
+    auto operator[] (int64 const index) -> node_t*&
+    {
+      return sons_[index];
+    }
+
+    auto operator[] (int64 const index) const -> node_t* const&
+    {
+      return sons_[index];
+    }
+
+  private:
+    node_t** sons_;
+  };
+
+  /**
+   *  \brief Factory function for fixed son container
+   */
+  template<int32 M>
+  auto make_son_container (int32, degrees::fixed<M>)
+  {
+    return fixed<M>();
+  }
+
+  /**
+   *  \brief Factory function for mixed son container
+   */
+  inline auto make_son_container (int32 const domain, degrees::mixed)
+  {
+    return mixed(domain);
+  }
 } // namespace sons
 
 /**
@@ -192,244 +191,244 @@ template<class Degree>
 class node
 {
 public:
-    using son_container = decltype(sons::make_son_container(int32(), Degree()));
+  using son_container = decltype(sons::make_son_container(int32(), Degree()));
 
-    // TODO(michal): expression
-    using allowed_types = utils::type_list<double, int64, longint>;
-
-public:
-    /**
-     *  \brief Factory function for son_container
-     */
-    static auto make_son_container (int32 const domain) -> son_container
-    {
-        return sons::make_son_container(domain, Degree());
-    }
+  // TODO(michal): expression
+  using allowed_types = utils::type_list<double, int64, longint>;
 
 public:
-    /**
-     *  \brief Constructs node as terminal
-     */
-    explicit node(int32 value) :
-        terminal_ {value},
-        data_ {},
-        next_ {nullptr},
-        bits_ {LeafM | UsedM}
+  /**
+   *  \brief Factory function for son_container
+   */
+  static auto make_son_container (int32 const domain) -> son_container
+  {
+    return sons::make_son_container(domain, Degree());
+  }
+
+public:
+  /**
+   *  \brief Constructs node as terminal
+   */
+  explicit node(int32 value) :
+    terminal_ {value},
+    data_ {},
+    next_ {nullptr},
+    bits_ {LeafM | UsedM}
+  {
+  }
+
+  /**
+   *  \brief Constructs node as internal
+   */
+  node(int32 index, son_container sons) :
+    internal_ {TEDDY_MOVE(sons), index},
+    data_ {},
+    next_ {nullptr},
+    bits_ {UsedM}
+  {
+  }
+
+  /**
+   *  \brief Trivial destructor if sons are fixed
+   */
+  ~node() = default;
+
+  /**
+   *  \brief Non-Trivial destructor if sons are mixed
+   */
+  ~node()
+  requires(degrees::is_mixed<Degree>::value)
+  {
+    if (this->is_or_was_internal())
     {
+      internal_.sons_.~son_container();
     }
+  }
 
-    /**
-     *  \brief Constructs node as internal
-     */
-    node(int32 index, son_container sons) :
-        internal_ {TEDDY_MOVE(sons), index},
-        data_ {},
-        next_ {nullptr},
-        bits_ {UsedM}
-    {
-    }
+  node()                       = delete;
+  node(node const&)            = delete;
+  node(node&&)                 = delete;
+  auto operator= (node const&) = delete;
+  auto operator= (node&&)      = delete;
 
-    /**
-     *  \brief Trivial destructor if sons are fixed
-     */
-    ~node() = default;
+  template<class Type>
+  [[nodiscard]]
+  auto get_data () -> Type&
+  {
+    // TODO(michal): possibly start_lifetime_as?
+    static_assert(allowed_types::Contains<Type>);
+    assert(this->is_used());
+    return *static_cast<Type*>(data_.bytes_);
+  }
 
-    /**
-     *  \brief Non-Trivial destructor if sons are mixed
-     */
-    ~node()
-    requires(degrees::is_mixed<Degree>::value)
-    {
-        if (this->is_or_was_internal())
-        {
-            internal_.sons_.~son_container();
-        }
-    }
+  template<class Type>
+  [[nodiscard]]
+  auto get_data () const -> Type const&
+  {
+    static_assert(allowed_types::Contains<Type>);
+    assert(this->is_used());
+    return *static_cast<Type*>(data_.bytes_);
+  }
 
-    node()                       = delete;
-    node(node const&)            = delete;
-    node(node&&)                 = delete;
-    auto operator= (node const&) = delete;
-    auto operator= (node&&)      = delete;
+  [[nodiscard]]
+  auto is_internal () const -> bool
+  {
+    return this->is_used() && not this->is_terminal();
+  }
 
-    template<class Type>
-    [[nodiscard]]
-    auto get_data () -> Type&
-    {
-        // TODO(michal): possibly start_lifetime_as?
-        static_assert(allowed_types::Contains<Type>);
-        assert(this->is_used());
-        return *static_cast<Type*>(data_.bytes_);
-    }
+  [[nodiscard]]
+  auto is_terminal () const -> bool
+  {
+    return this->is_used() && (bits_ & LeafM);
+  }
 
-    template<class Type>
-    [[nodiscard]]
-    auto get_data () const -> Type const&
-    {
-        static_assert(allowed_types::Contains<Type>);
-        assert(this->is_used());
-        return *static_cast<Type*>(data_.bytes_);
-    }
+  [[nodiscard]]
+  auto is_used () const -> bool
+  {
+    return static_cast<bool>(bits_ & UsedM);
+  }
 
-    [[nodiscard]]
-    auto is_internal () const -> bool
-    {
-        return this->is_used() && not this->is_terminal();
-    }
+  [[nodiscard]]
+  auto is_marked () const -> bool
+  {
+    return static_cast<bool>(bits_ & MarkM);
+  }
 
-    [[nodiscard]]
-    auto is_terminal () const -> bool
-    {
-        return this->is_used() && (bits_ & LeafM);
-    }
+  [[nodiscard]]
+  auto get_next () const -> node*
+  {
+    return next_;
+  }
 
-    [[nodiscard]]
-    auto is_used () const -> bool
-    {
-        return static_cast<bool>(bits_ & UsedM);
-    }
+  [[nodiscard]]
+  auto get_ref_count () const -> int32
+  {
+    return static_cast<int32>(bits_ & RefsM);
+  }
 
-    [[nodiscard]]
-    auto is_marked () const -> bool
-    {
-        return static_cast<bool>(bits_ & MarkM);
-    }
+  [[nodiscard]]
+  auto get_index () const -> int32
+  {
+    assert(this->is_internal());
+    return internal_.index_;
+  }
 
-    [[nodiscard]]
-    auto get_next () const -> node*
-    {
-        return next_;
-    }
+  [[nodiscard]]
+  auto get_sons () const -> son_container const&
+  {
+    assert(this->is_internal());
+    return internal_.sons_;
+  }
 
-    [[nodiscard]]
-    auto get_ref_count () const -> int32
-    {
-        return static_cast<int32>(bits_ & RefsM);
-    }
+  [[nodiscard]]
+  auto get_son (int32 sonOrder) const -> node*
+  {
+    assert(this->is_internal());
+    return internal_.sons_[sonOrder];
+  }
 
-    [[nodiscard]]
-    auto get_index () const -> int32
-    {
-        assert(this->is_internal());
-        return internal_.index_;
-    }
+  [[nodiscard]]
+  auto get_value () const -> int32
+  {
+    assert(this->is_terminal());
+    return terminal_.value_;
+  }
 
-    [[nodiscard]]
-    auto get_sons () const -> son_container const&
-    {
-        assert(this->is_internal());
-        return internal_.sons_;
-    }
+  auto set_next (node* next) -> void
+  {
+    next_ = next;
+  }
 
-    [[nodiscard]]
-    auto get_son (int32 sonOrder) const -> node*
-    {
-        assert(this->is_internal());
-        return internal_.sons_[sonOrder];
-    }
+  auto set_unused () -> void
+  {
+    bits_ &= ~UsedM;
+  }
 
-    [[nodiscard]]
-    auto get_value () const -> int32
-    {
-        assert(this->is_terminal());
-        return terminal_.value_;
-    }
+  auto set_marked () -> void
+  {
+    bits_ |= MarkM;
+  }
 
-    auto set_next (node* next) -> void
-    {
-        next_ = next;
-    }
+  auto set_notmarked () -> void
+  {
+    bits_ &= ~MarkM;
+  }
 
-    auto set_unused () -> void
-    {
-        bits_ &= ~UsedM;
-    }
+  auto set_index (int32 index) -> void
+  {
+    assert(this->is_internal());
+    internal_.index_ = index;
+  }
 
-    auto set_marked () -> void
-    {
-        bits_ |= MarkM;
-    }
+  auto set_sons (son_container sons) -> void
+  {
+    assert(this->is_internal());
+    internal_.sons_ = TEDDY_MOVE(sons);
+  }
 
-    auto set_notmarked () -> void
-    {
-        bits_ &= ~MarkM;
-    }
+  auto toggle_marked () -> void
+  {
+    bits_ ^= MarkM;
+  }
 
-    auto set_index (int32 index) -> void
-    {
-        assert(this->is_internal());
-        internal_.index_ = index;
-    }
+  auto inc_ref_count () -> void
+  {
+    assert(this->get_ref_count() < static_cast<int32>(RefsMax));
+    ++bits_;
+  }
 
-    auto set_sons (son_container sons) -> void
-    {
-        assert(this->is_internal());
-        internal_.sons_ = TEDDY_MOVE(sons);
-    }
-
-    auto toggle_marked () -> void
-    {
-        bits_ ^= MarkM;
-    }
-
-    auto inc_ref_count () -> void
-    {
-        assert(this->get_ref_count() < static_cast<int32>(RefsMax));
-        ++bits_;
-    }
-
-    auto dec_ref_count () -> void
-    {
-        assert(this->get_ref_count() > 0);
-        --bits_;
-    }
+  auto dec_ref_count () -> void
+  {
+    assert(this->get_ref_count() > 0);
+    --bits_;
+  }
 
 private:
-    struct internal
-    {
-        son_container sons_;
-        int32 index_;
-    };
+  struct internal
+  {
+    son_container sons_;
+    int32 index_;
+  };
 
-    struct terminal
-    {
-        int32 value_;
-    };
-
-private:
-    [[nodiscard]]
-    auto is_or_was_internal () const -> bool
-    {
-        return not static_cast<bool>(bits_ & LeafM);
-    }
+  struct terminal
+  {
+    int32 value_;
+  };
 
 private:
-    static uint32 constexpr MarkM   = 1U << (8 * sizeof(uint32) - 1);
-    static uint32 constexpr UsedM   = 1U << (8 * sizeof(uint32) - 2);
-    static uint32 constexpr LeafM   = 1U << (8 * sizeof(uint32) - 3);
-    static uint32 constexpr RefsM   = ~(MarkM | UsedM | LeafM);
-    static uint32 constexpr RefsMax = RefsM + 1;
+  [[nodiscard]]
+  auto is_or_was_internal () const -> bool
+  {
+    return not static_cast<bool>(bits_ & LeafM);
+  }
 
 private:
-    union
-    {
-        internal internal_;
-        terminal terminal_;
-    };
+  static uint32 constexpr MarkM   = 1U << (8 * sizeof(uint32) - 1);
+  static uint32 constexpr UsedM   = 1U << (8 * sizeof(uint32) - 2);
+  static uint32 constexpr LeafM   = 1U << (8 * sizeof(uint32) - 3);
+  static uint32 constexpr RefsM   = ~(MarkM | UsedM | LeafM);
+  static uint32 constexpr RefsMax = RefsM + 1;
 
-    [[no_unique_address]]
-    details::bytes<allowed_types::MaxSizeof, allowed_types::MaxAlignof>
-        data_;
+private:
+  union
+  {
+    internal internal_;
+    terminal terminal_;
+  };
 
-    node* next_;
+  [[no_unique_address]]
+  details::bytes<allowed_types::MaxSizeof, allowed_types::MaxAlignof>
+    data_;
 
-    /*
-     *  1b  -> is marked flag   (highest bit)
-     *  1b  -> is used flag
-     *  1b  -> is leaf flag
-     *  29b -> reference count  (lowest bits)
-     */
-    uint32 bits_;
+  node* next_;
+
+  /*
+   *  1b  -> is marked flag   (highest bit)
+   *  1b  -> is used flag
+   *  1b  -> is leaf flag
+   *  29b -> reference count  (lowest bits)
+   */
+  uint32 bits_;
 };
 } // namespace teddy
 

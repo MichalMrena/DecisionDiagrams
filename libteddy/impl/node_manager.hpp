@@ -17,766 +17,756 @@ namespace teddy
 {
 namespace domains
 {
-    class mixed
+  class mixed
+  {
+  public:
+    /*
+     * Just a dummy value to simplify ifs, this one should be never used
+     */
+    static int32 constexpr value = 1;
+
+    explicit mixed(std::vector<int32> domains) :
+      domains_(TEDDY_MOVE(domains)) {};
+
+    [[nodiscard]]
+    auto
+      operator[] (int32 const index) const -> int32
     {
-    public:
-        /*
-         * Just a dummy value to simplify ifs, this one should be never used
-         */
-        static int32 constexpr value = 1;
+      return domains_[as_uindex(index)];
+    }
 
-        explicit mixed(std::vector<int32> domains) :
-            domains_(TEDDY_MOVE(domains)) {};
-
-        [[nodiscard]]
-        auto operator[] (int32 const index) const -> int32
-        {
-            return domains_[as_uindex(index)];
-        }
-
-        [[nodiscard]]
-        auto get_domains () const -> std::vector<int32> const&
-        {
-            return domains_;
-        }
-
-    private:
-        std::vector<int32> domains_;
-    };
-
-    template<int32 M>
-    struct fixed
+    [[nodiscard]]
+    auto get_domains () const -> std::vector<int32> const&
     {
-        static_assert(M > 1);
+      return domains_;
+    }
 
-        static int32 constexpr value = M;
+  private:
+    std::vector<int32> domains_;
+  };
 
-        [[nodiscard]]
-        auto constexpr operator[] (int32 const /*index*/) const
-        {
-            return M;
-        }
-    };
+  template<int32 M>
+  struct fixed
+  {
+    static_assert(M > 1);
 
-    template<class T>
-    struct is_fixed
+    static int32 constexpr value = M;
+
+    [[nodiscard]]
+    auto constexpr
+      operator[] (int32 const /*index*/) const
     {
-        static bool constexpr value = false;
-    };
+      return M;
+    }
+  };
 
-    template<int32 M>
-    struct is_fixed<fixed<M>>
-    {
-        static bool constexpr value = true;
-    };
+  template<class T>
+  struct is_fixed
+  {
+    static bool constexpr value = false;
+  };
 
-    template<class T>
-    struct is_mixed
-    {
-        static bool constexpr value = false;
-    };
+  template<int32 M>
+  struct is_fixed<fixed<M>>
+  {
+    static bool constexpr value = true;
+  };
 
-    template<>
-    struct is_mixed<mixed>
-    {
-        static bool constexpr value = true;
-    };
+  template<class T>
+  struct is_mixed
+  {
+    static bool constexpr value = false;
+  };
+
+  template<>
+  struct is_mixed<mixed>
+  {
+    static bool constexpr value = true;
+  };
 } // namespace domains
 
 template<class Degree, class Domain>
 class node_manager
 {
 public:
-    using node_t        = node<Degree>;
-    using son_container = typename node_t::son_container;
+  using node_t        = node<Degree>;
+  using son_container = typename node_t::son_container;
 
-    struct common_init_tag
-    {
-    };
-
-public:
-    node_manager(
-        int32 varCount,
-        int64 nodePoolSize,
-        int64 extraNodePoolSize,
-        std::vector<int32> order
-    )
-    requires(domains::is_fixed<Domain>::value);
-
-    node_manager(
-        int32 varCount,
-        int64 nodePoolSize,
-        int64 extraNodePoolSize,
-        std::vector<int32> order,
-        domains::mixed domains
-    )
-    requires(domains::is_mixed<Domain>::value);
-
-    node_manager(node_manager&&) noexcept = default;
-    ~node_manager()                       = default;
-    node_manager(node_manager const&)     = delete;
-    auto operator= (node_manager const&)  = delete;
-    auto operator= (node_manager&&)       = delete;
-
-    auto set_cache_ratio (double ratio) -> void;
-    auto set_gc_ratio (double ratio) -> void;
-    auto set_auto_reorder (bool doReorder) -> void;
-
-private:
-    node_manager(
-        common_init_tag initTag,
-        int32 varCount,
-        int64 nodePoolSize,
-        int64 extraNodePoolSize,
-        std::vector<int32> order,
-        Domain domains
-    );
+  struct common_init_tag
+  {
+  };
 
 public:
-    [[nodiscard]]
-    auto get_terminal_node (int32 value) const -> node_t*;
+  node_manager(
+    int32 varCount,
+    int64 nodePoolSize,
+    int64 extraNodePoolSize,
+    std::vector<int32> order
+  )
+  requires(domains::is_fixed<Domain>::value);
 
-    [[nodiscard]]
-    auto make_terminal_node (int32 value) -> node_t*;
+  node_manager(
+    int32 varCount,
+    int64 nodePoolSize,
+    int64 extraNodePoolSize,
+    std::vector<int32> order,
+    domains::mixed domains
+  )
+  requires(domains::is_mixed<Domain>::value);
 
-    [[nodiscard]]
-    auto make_internal_node (int32 index, son_container sons) -> node_t*;
+  node_manager(node_manager&&) noexcept = default;
+  ~node_manager()                       = default;
+  node_manager(node_manager const&)     = delete;
+  auto operator= (node_manager const&)  = delete;
+  auto operator= (node_manager&&)       = delete;
 
-    [[nodiscard]]
-    auto get_level (int32 index) const -> int32;
-
-    [[nodiscard]]
-    auto get_level (node_t* node) const -> int32;
-
-    [[nodiscard]]
-    auto get_leaf_level () const -> int32;
-
-    [[nodiscard]]
-    auto get_index (int32 level) const -> int32;
-
-    [[nodiscard]]
-    auto get_domain (int32 index) const -> int32;
-
-    [[nodiscard]]
-    auto get_domain (node_t* node) const -> int32;
-
-    [[nodiscard]]
-    auto get_node_count (int32 index) const -> int64;
-
-    [[nodiscard]]
-    auto get_node_count (node_t* node) const -> int64;
-
-    [[nodiscard]]
-    auto get_node_count () const -> int64;
-
-    [[nodiscard]]
-    auto get_var_count () const -> int32;
-
-    [[nodiscard]]
-    auto get_order () const -> std::vector<int32> const&;
-
-    [[nodiscard]]
-    auto get_domains () const -> std::vector<int32>;
-
-    auto force_gc () -> void;
-
-    /**
-     *  \param levelFrom inclusive
-     *  \param levelTo exclusive
-     */
-    template<class Int = int64>
-    [[nodiscard]]
-    auto domain_product (int32 levelFrom, int32 levelTo) const -> Int;
-
-    template<class NodeOp>
-    auto for_each_son (node_t* node, NodeOp operation) const -> void;
-
-    template<class NodeOp>
-    auto for_each_son (int32 index, son_container const& sons, NodeOp operation)
-        const -> void;
-
-    template<class NodeOp>
-    auto for_each_node (NodeOp operation) const -> void;
-
-    template<class NodeOp>
-    auto for_each_terminal_node (NodeOp operation) const -> void;
-
-    template<teddy_bin_op O>
-    [[nodiscard]]
-    auto cache_find (node_t* lhs, node_t* rhs) -> node_t*;
-
-    template<teddy_bin_op O>
-    auto cache_put (node_t* result, node_t* lhs, node_t* rhs) -> void;
-
-    auto cache_clear () -> void;
-
-    template<class NodeOp>
-    auto traverse_pre (node_t* rootNode, NodeOp operation) const -> void;
-
-    template<class NodeOp>
-    auto traverse_post (node_t* rootNode, NodeOp operation) const -> void;
-
-    // TODO(michal): bude toto este treba?
-    template<class NodeOp>
-    auto traverse_level (node_t* rootNode, NodeOp operation) const -> void;
-
-    [[nodiscard]]
-    auto is_valid_var_value (int32 index, int32 value) const -> bool;
-
-    auto run_deferred () -> void;
-
-    static auto dec_ref_count (node_t* node) -> void;
-
-    auto sift_variables () -> void;
+  auto set_cache_ratio (double ratio) -> void;
+  auto set_gc_ratio (double ratio) -> void;
+  auto set_auto_reorder (bool doReorder) -> void;
 
 private:
-    template<class NodeOp>
-    auto traverse_pre_impl (node_t* node, NodeOp operation) const -> void;
+  node_manager(
+    common_init_tag initTag,
+    int32 varCount,
+    int64 nodePoolSize,
+    int64 extraNodePoolSize,
+    std::vector<int32> order,
+    Domain domains
+  );
 
-    template<class NodeOp>
-    auto traverse_post_impl (node_t* node, NodeOp operation) const -> void;
+public:
+  [[nodiscard]]
+  auto get_terminal_node (int32 value) const -> node_t*;
 
-    [[nodiscard]]
-    auto is_redundant (int32 index, son_container const& sons) const -> bool;
+  [[nodiscard]]
+  auto make_terminal_node (int32 value) -> node_t*;
 
-    auto adjust_tables () -> void;
-    auto adjust_caches () -> void;
+  [[nodiscard]]
+  auto make_internal_node (int32 index, son_container sons) -> node_t*;
 
-    auto swap_variable_with_next (int32 index) -> void;
-    auto swap_node_with_next (node_t* node) -> void;
-    auto dec_ref_try_gc (node_t* node) -> void;
+  [[nodiscard]]
+  auto get_level (int32 index) const -> int32;
 
-    [[nodiscard]]
-    auto make_special_node (int32 value) -> node_t*;
+  [[nodiscard]]
+  auto get_level (node_t* node) const -> int32;
 
-    template<class... Args>
-    [[nodiscard]]
-    auto make_new_node (Args&&... args) -> node_t*;
-    auto delete_node (node_t* node) -> void;
+  [[nodiscard]]
+  auto get_leaf_level () const -> int32;
 
-    auto deferr_gc_reorder () -> void;
+  [[nodiscard]]
+  auto get_index (int32 level) const -> int32;
 
-    auto collect_garbage () -> void;
+  [[nodiscard]]
+  auto get_domain (int32 index) const -> int32;
 
-    [[nodiscard]]
-    static auto check_distinct (std::vector<int32> const& ints) -> bool;
+  [[nodiscard]]
+  auto get_domain (node_t* node) const -> int32;
 
-    [[nodiscard]]
-    static auto can_be_gced (node_t* node) -> bool;
+  [[nodiscard]]
+  auto get_node_count (int32 index) const -> int64;
+
+  [[nodiscard]]
+  auto get_node_count (node_t* node) const -> int64;
+
+  [[nodiscard]]
+  auto get_node_count () const -> int64;
+
+  [[nodiscard]]
+  auto get_var_count () const -> int32;
+
+  [[nodiscard]]
+  auto get_order () const -> std::vector<int32> const&;
+
+  [[nodiscard]]
+  auto get_domains () const -> std::vector<int32>;
+
+  auto force_gc () -> void;
+
+  /**
+   *  \param levelFrom inclusive
+   *  \param levelTo exclusive
+   */
+  template<class Int = int64>
+  [[nodiscard]]
+  auto domain_product (int32 levelFrom, int32 levelTo) const -> Int;
+
+  template<class NodeOp>
+  auto for_each_son (node_t* node, NodeOp operation) const -> void;
+
+  template<class NodeOp>
+  auto for_each_son (int32 index, son_container const& sons, NodeOp operation)
+    const -> void;
+
+  template<class NodeOp>
+  auto for_each_node (NodeOp operation) const -> void;
+
+  template<class NodeOp>
+  auto for_each_terminal_node (NodeOp operation) const -> void;
+
+  template<teddy_bin_op O>
+  [[nodiscard]]
+  auto cache_find (node_t* lhs, node_t* rhs) -> node_t*;
+
+  template<teddy_bin_op O>
+  auto cache_put (node_t* result, node_t* lhs, node_t* rhs) -> void;
+
+  auto cache_clear () -> void;
+
+  template<class NodeOp>
+  auto traverse_pre (node_t* rootNode, NodeOp operation) const -> void;
+
+  template<class NodeOp>
+  auto traverse_post (node_t* rootNode, NodeOp operation) const -> void;
+
+  // TODO(michal): bude toto este treba?
+  template<class NodeOp>
+  auto traverse_level (node_t* rootNode, NodeOp operation) const -> void;
+
+  [[nodiscard]]
+  auto is_valid_var_value (int32 index, int32 value) const -> bool;
+
+  auto run_deferred () -> void;
+
+  static auto dec_ref_count (node_t* node) -> void;
+
+  auto sift_variables () -> void;
 
 private:
-    static int32 constexpr DEFAULT_FIRST_TABLE_ADJUSTMENT = 230;
-    static double constexpr DEFAULT_CACHE_RATIO           = 1.0;
-    static double constexpr DEFAULT_GC_RATIO              = 0.20;
+  template<class NodeOp>
+  auto traverse_pre_impl (node_t* node, NodeOp operation) const -> void;
+
+  template<class NodeOp>
+  auto traverse_post_impl (node_t* node, NodeOp operation) const -> void;
+
+  [[nodiscard]]
+  auto is_redundant (int32 index, son_container const& sons) const -> bool;
+
+  auto adjust_tables () -> void;
+  auto adjust_caches () -> void;
+
+  auto swap_variable_with_next (int32 index) -> void;
+  auto swap_node_with_next (node_t* node) -> void;
+  auto dec_ref_try_gc (node_t* node) -> void;
+
+  [[nodiscard]]
+  auto make_special_node (int32 value) -> node_t*;
+
+  template<class... Args>
+  [[nodiscard]]
+  auto make_new_node (Args&&... args) -> node_t*;
+  auto delete_node (node_t* node) -> void;
+
+  auto deferr_gc_reorder () -> void;
+
+  auto collect_garbage () -> void;
+
+  [[nodiscard]]
+  static auto check_distinct (std::vector<int32> const& ints) -> bool;
+
+  [[nodiscard]]
+  static auto can_be_gced (node_t* node) -> bool;
 
 private:
-    apply_cache<Degree> opCache_;
-    node_pool<Degree> pool_;
-    std::vector<unique_table<Degree>> uniqueTables_;
-    std::vector<node_t*> terminals_;
-    std::vector<node_t*> specials_;
-    std::vector<int32> indexToLevel_;
-    std::vector<int32> levelToIndex_;
-    [[no_unique_address]]
-    Domain domains_;
-    int32 varCount_;
-    int64 nodeCount_;
-    int64 adjustmentNodeCount_;
-    double cacheRatio_;
-    double gcRatio_;
-    bool autoReorderEnabled_;
-    bool gcReorderDeferred_;
+  static int32 constexpr DEFAULT_FIRST_TABLE_ADJUSTMENT = 230;
+  static double constexpr DEFAULT_CACHE_RATIO           = 1.0;
+  static double constexpr DEFAULT_GC_RATIO              = 0.20;
+
+private:
+  apply_cache<Degree> opCache_;
+  node_pool<Degree> pool_;
+  std::vector<unique_table<Degree>> uniqueTables_;
+  std::vector<node_t*> terminals_;
+  std::vector<node_t*> specials_;
+  std::vector<int32> indexToLevel_;
+  std::vector<int32> levelToIndex_;
+  [[no_unique_address]]
+  Domain domains_;
+  int32 varCount_;
+  int64 nodeCount_;
+  int64 adjustmentNodeCount_;
+  double cacheRatio_;
+  double gcRatio_;
+  bool autoReorderEnabled_;
+  bool gcReorderDeferred_;
 };
 
 template<class Degree>
-auto id_inc_ref_count (node<Degree>* const node
-) -> ::teddy::node<Degree>*
+auto id_inc_ref_count (node<Degree>* const node) -> ::teddy::node<Degree>*
 {
-    node->inc_ref_count();
-    return node;
+  node->inc_ref_count();
+  return node;
 }
 
 template<class Degree>
-auto id_set_marked (node<Degree>* const node
-) -> ::teddy::node<Degree>*
+auto id_set_marked (node<Degree>* const node) -> ::teddy::node<Degree>*
 {
-    node->set_marked();
-    return node;
+  node->set_marked();
+  return node;
 }
 
 template<class Degree>
-auto id_set_notmarked (node<Degree>* const node
-) -> ::teddy::node<Degree>*
+auto id_set_notmarked (node<Degree>* const node) -> ::teddy::node<Degree>*
 {
-    node->set_notmarked();
-    return node;
+  node->set_notmarked();
+  return node;
 }
 
 template<class Degree, class Domain> // NOLINT
 node_manager<Degree, Domain>::node_manager(
-    int32 const varCount,
-    int64 const nodePoolSize,
-    int64 const extraNodePoolSize,
-    std::vector<int32> order
+  int32 const varCount,
+  int64 const nodePoolSize,
+  int64 const extraNodePoolSize,
+  std::vector<int32> order
 )
 requires(domains::is_fixed<Domain>::value)
-    :
-    node_manager(
-        common_init_tag(),
-        varCount,
-        nodePoolSize,
-        extraNodePoolSize,
-        TEDDY_MOVE(order),
-        {}
-    )
+  :
+  node_manager(
+    common_init_tag(),
+    varCount,
+    nodePoolSize,
+    extraNodePoolSize,
+    TEDDY_MOVE(order),
+    {}
+  )
 {
 }
 
 template<class Degree, class Domain> // NOLINT
 node_manager<Degree, Domain>::node_manager(
-    int32 const varCount,
-    int64 const nodePoolSize,
-    int64 const extraNodePoolSize,
-    std::vector<int32> order,
-    domains::mixed domains
+  int32 const varCount,
+  int64 const nodePoolSize,
+  int64 const extraNodePoolSize,
+  std::vector<int32> order,
+  domains::mixed domains
 )
 requires(domains::is_mixed<Domain>::value)
-    :
-    node_manager(
-        common_init_tag(),
-        varCount,
-        nodePoolSize,
-        extraNodePoolSize,
-        TEDDY_MOVE(order),
-        TEDDY_MOVE(domains)
-    )
+  :
+  node_manager(
+    common_init_tag(),
+    varCount,
+    nodePoolSize,
+    extraNodePoolSize,
+    TEDDY_MOVE(order),
+    TEDDY_MOVE(domains)
+  )
 {
 }
 
 template<class Degree, class Domain>
 node_manager<Degree, Domain>::node_manager(
-    [[maybe_unused]]
-    common_init_tag initTag,
-    int32 const varCount,
-    int64 const nodePoolSize,
-    int64 const extraNodePoolSize,
-    std::vector<int32> order,
-    Domain domains
+  [[maybe_unused]]
+  common_init_tag initTag,
+  int32 const varCount,
+  int64 const nodePoolSize,
+  int64 const extraNodePoolSize,
+  std::vector<int32> order,
+  Domain domains
 ) :
-    opCache_(static_cast<int64>(
-        DEFAULT_CACHE_RATIO * static_cast<double>(nodePoolSize)
-    )),
-    pool_(nodePoolSize, extraNodePoolSize),
-    uniqueTables_(),
-    terminals_(),
-    specials_(),
-    indexToLevel_(as_usize(varCount)),
-    levelToIndex_(TEDDY_MOVE(order)),
-    domains_(TEDDY_MOVE(domains)),
-    varCount_(varCount),
-    nodeCount_(0),
-    adjustmentNodeCount_(DEFAULT_FIRST_TABLE_ADJUSTMENT),
-    cacheRatio_(DEFAULT_CACHE_RATIO),
-    gcRatio_(DEFAULT_GC_RATIO),
-    autoReorderEnabled_(false),
-    gcReorderDeferred_(false)
+  opCache_(
+    static_cast<int64>(DEFAULT_CACHE_RATIO * static_cast<double>(nodePoolSize))
+  ),
+  pool_(nodePoolSize, extraNodePoolSize),
+  uniqueTables_(),
+  terminals_(),
+  specials_(),
+  indexToLevel_(as_usize(varCount)),
+  levelToIndex_(TEDDY_MOVE(order)),
+  domains_(TEDDY_MOVE(domains)),
+  varCount_(varCount),
+  nodeCount_(0),
+  adjustmentNodeCount_(DEFAULT_FIRST_TABLE_ADJUSTMENT),
+  cacheRatio_(DEFAULT_CACHE_RATIO),
+  gcRatio_(DEFAULT_GC_RATIO),
+  autoReorderEnabled_(false),
+  gcReorderDeferred_(false)
 {
-    assert(ssize(levelToIndex_) == varCount_);
-    assert(check_distinct(levelToIndex_));
+  assert(ssize(levelToIndex_) == varCount_);
+  assert(check_distinct(levelToIndex_));
 
 #ifndef NDEBUG
-    if constexpr (domains::is_mixed<Domain>::value)
+  if constexpr (domains::is_mixed<Domain>::value)
+  {
+    assert(ssize(domains_.get_domains()) == varCount_);
+    if constexpr (degrees::is_fixed<Degree>::value)
     {
-        assert(ssize(domains_.get_domains()) == varCount_);
-        if constexpr (degrees::is_fixed<Degree>::value)
-        {
-            for (int32 i = 0; i < varCount_; ++i)
-            {
-                assert(domains_[i] <= Degree::value);
-            }
-        }
+      for (int32 i = 0; i < varCount_; ++i)
+      {
+        assert(domains_[i] <= Degree::value);
+      }
     }
+  }
 #endif
 
-    // Create reverse mapping from (level -> index) to (index -> level)
-    int32 level = 0;
-    for (int32 const index : levelToIndex_)
-    {
-        indexToLevel_[as_uindex(index)] = level++;
-    }
+  // Create reverse mapping from (level -> index) to (index -> level)
+  int32 level = 0;
+  for (int32 const index : levelToIndex_)
+  {
+    indexToLevel_[as_uindex(index)] = level++;
+  }
 
-    // Initialize unique tables with pre-allocated sizes
-    // The sizes follow triangular distribution with
-    // a = 0
-    // c = RelPeakPosition * varCount
-    // b = varCount
-    // f(c) = RelPeakNodeCount * nodePoolSize
+  // Initialize unique tables with pre-allocated sizes
+  // The sizes follow triangular distribution with
+  // a = 0
+  // c = RelPeakPosition * varCount
+  // b = varCount
+  // f(c) = RelPeakNodeCount * nodePoolSize
 
-    // These two magic numbers are empirically obtained
-    double constexpr RelPeakPosition  = 0.71;
-    double constexpr RelPeakNodeCount = 0.05;
-    double const c  = RelPeakPosition * (static_cast<double>(varCount) - 1);
-    double const fc = RelPeakNodeCount * static_cast<double>(nodePoolSize);
+  // These two magic numbers are empirically obtained
+  double constexpr RelPeakPosition  = 0.71;
+  double constexpr RelPeakNodeCount = 0.05;
+  double const c  = RelPeakPosition * (static_cast<double>(varCount) - 1);
+  double const fc = RelPeakNodeCount * static_cast<double>(nodePoolSize);
 
-    for (int32 i = 0; i <= static_cast<int32>(c); ++i)
-    {
-        auto const x = static_cast<double>(i);
-        uniqueTables_.emplace_back(
-            static_cast<int64>(fc * x / c),
-            this->get_domain(i)
-        );
-    }
+  for (int32 i = 0; i <= static_cast<int32>(c); ++i)
+  {
+    auto const x = static_cast<double>(i);
+    uniqueTables_.emplace_back(
+      static_cast<int64>(fc * x / c),
+      this->get_domain(i)
+    );
+  }
 
-    for (auto i = static_cast<int32>(c) + 1; i < varCount_; ++i)
-    {
-        auto const n = static_cast<double>(varCount) - 1;
-        auto const x = static_cast<double>(i);
-        uniqueTables_.emplace_back(
-            static_cast<int64>((fc * x) / (c - n) - (fc * n) / (c - n)),
-            this->get_domain(i)
-        );
-    }
+  for (auto i = static_cast<int32>(c) + 1; i < varCount_; ++i)
+  {
+    auto const n = static_cast<double>(varCount) - 1;
+    auto const x = static_cast<double>(i);
+    uniqueTables_.emplace_back(
+      static_cast<int64>((fc * x) / (c - n) - (fc * n) / (c - n)),
+      this->get_domain(i)
+    );
+  }
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::set_cache_ratio(double const ratio
-) -> void
+auto node_manager<Degree, Domain>::set_cache_ratio(double const ratio) -> void
 {
-    assert(ratio > 0);
-    cacheRatio_ = ratio;
+  assert(ratio > 0);
+  cacheRatio_ = ratio;
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::set_gc_ratio(double const ratio
-) -> void
+auto node_manager<Degree, Domain>::set_gc_ratio(double const ratio) -> void
 {
-    assert(ratio >= 0.0 && ratio <= 1.0);
-    gcRatio_ = ratio;
+  assert(ratio >= 0.0 && ratio <= 1.0);
+  gcRatio_ = ratio;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::set_auto_reorder(bool const doReorder
 ) -> void
 {
-    autoReorderEnabled_ = doReorder;
+  autoReorderEnabled_ = doReorder;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::get_terminal_node(int32 const value
 ) const -> node_t*
 {
-    return value < ssize(terminals_) ? terminals_[as_uindex(value)] : nullptr;
+  return value < ssize(terminals_) ? terminals_[as_uindex(value)] : nullptr;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::make_terminal_node(int32 const value
 ) -> node_t*
 {
-    if constexpr (domains::is_fixed<Domain>::value)
-    {
-        assert(value < Domain::value);
-    }
+  if constexpr (domains::is_fixed<Domain>::value)
+  {
+    assert(value < Domain::value);
+  }
 
-    if (is_special(value))
-    {
-        return this->make_special_node(value);
-    }
+  if (is_special(value))
+  {
+    return this->make_special_node(value);
+  }
 
-    if (value >= ssize(terminals_))
-    {
-        terminals_.resize(as_usize(value + 1), nullptr);
-    }
+  if (value >= ssize(terminals_))
+  {
+    terminals_.resize(as_usize(value + 1), nullptr);
+  }
 
-    if (not terminals_[as_uindex(value)])
-    {
-        terminals_[as_uindex(value)] = this->make_new_node(value);
-    }
+  if (not terminals_[as_uindex(value)])
+  {
+    terminals_[as_uindex(value)] = this->make_new_node(value);
+  }
 
-    return id_set_marked(terminals_[as_uindex(value)]);
+  return id_set_marked(terminals_[as_uindex(value)]);
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::make_special_node(
-    [[maybe_unused]] int32 const value
+  [[maybe_unused]] int32 const value
 ) -> node_t*
 {
-    assert(value == Undefined);
+  assert(value == Undefined);
 
-    if (specials_.empty())
-    {
-        specials_.resize(1, nullptr);
-    }
+  if (specials_.empty())
+  {
+    specials_.resize(1, nullptr);
+  }
 
-    if (not specials_[0])
-    {
-        specials_[0] = this->make_new_node(Undefined);
-    }
+  if (not specials_[0])
+  {
+    specials_[0] = this->make_new_node(Undefined);
+  }
 
-    return id_set_marked(specials_[0]);
+  return id_set_marked(specials_[0]);
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::make_internal_node(
-    int32 const index,
-    son_container sons
+  int32 const index,
+  son_container sons
 ) -> node_t*
 {
-    // redundant node:
-    if (this->is_redundant(index, sons))
-    {
-        node_t* const son = sons[0];
-        return son;
-    }
+  // redundant node:
+  if (this->is_redundant(index, sons))
+  {
+    node_t* const son = sons[0];
+    return son;
+  }
 
-    // duplicate node:
-    unique_table<Degree>& table = uniqueTables_[as_uindex(index)];
-    auto const [existing, hash]       = table.find(sons);
-    if (existing)
-    {
-        this->for_each_son(existing, id_set_notmarked<Degree>);
-        return id_set_marked(existing);
-    }
+  // duplicate node:
+  unique_table<Degree>& table = uniqueTables_[as_uindex(index)];
+  auto const [existing, hash] = table.find(sons);
+  if (existing)
+  {
+    this->for_each_son(existing, id_set_notmarked<Degree>);
+    return id_set_marked(existing);
+  }
 
-    // new unique node:
-    node_t* const newNode = this->make_new_node(index, TEDDY_MOVE(sons));
-    table.insert(newNode, hash);
-    this->for_each_son(newNode, id_inc_ref_count<Degree>);
-    this->for_each_son(newNode, id_set_notmarked<Degree>);
+  // new unique node:
+  node_t* const newNode = this->make_new_node(index, TEDDY_MOVE(sons));
+  table.insert(newNode, hash);
+  this->for_each_son(newNode, id_inc_ref_count<Degree>);
+  this->for_each_son(newNode, id_set_notmarked<Degree>);
 
-    return id_set_marked(newNode);
+  return id_set_marked(newNode);
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::get_level(int32 const index
-) const -> int32
+auto node_manager<Degree, Domain>::get_level(int32 const index) const -> int32
 {
-    return indexToLevel_[as_uindex(index)];
+  return indexToLevel_[as_uindex(index)];
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::get_level(node_t* const node
-) const -> int32
+auto node_manager<Degree, Domain>::get_level(node_t* const node) const -> int32
 {
-    return node->is_terminal() ? this->get_leaf_level()
-                               : this->get_level(node->get_index());
+  return node->is_terminal() ? this->get_leaf_level()
+                             : this->get_level(node->get_index());
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::get_leaf_level() const -> int32
 {
-    return this->get_var_count();
+  return this->get_var_count();
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::get_index(int32 const level
-) const -> int32
+auto node_manager<Degree, Domain>::get_index(int32 const level) const -> int32
 {
-    assert(level < ssize(levelToIndex_));
-    return levelToIndex_[as_uindex(level)];
+  assert(level < ssize(levelToIndex_));
+  return levelToIndex_[as_uindex(level)];
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::get_domain(int32 const index
-) const -> int32
+auto node_manager<Degree, Domain>::get_domain(int32 const index) const -> int32
 {
-    assert(index < this->get_var_count());
-    return domains_[index];
+  assert(index < this->get_var_count());
+  return domains_[index];
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::get_domain(node_t* const node
-) const -> int32
+auto node_manager<Degree, Domain>::get_domain(node_t* const node) const -> int32
 {
-    return this->get_domain(node->get_index());
+  return this->get_domain(node->get_index());
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::get_node_count(int32 const index
 ) const -> int64
 {
-    assert(index < this->get_var_count());
-    return uniqueTables_[as_uindex(index)].get_size();
+  assert(index < this->get_var_count());
+  return uniqueTables_[as_uindex(index)].get_size();
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::get_node_count(node_t* const node
 ) const -> int64
 {
-    int64 count = 0;
-    this->traverse_pre(node, [&count] (node_t*) { ++count; });
-    return count;
+  int64 count = 0;
+  this->traverse_pre(node, [&count] (node_t*) { ++count; });
+  return count;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::get_node_count() const -> int64
 {
-    return nodeCount_;
+  return nodeCount_;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::get_var_count() const -> int32
 {
-    return varCount_;
+  return varCount_;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::get_order() const
-    -> std::vector<int32> const&
+  -> std::vector<int32> const&
 {
-    return levelToIndex_;
+  return levelToIndex_;
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::get_domains() const
-    -> std::vector<int32>
+auto node_manager<Degree, Domain>::get_domains() const -> std::vector<int32>
 {
-    std::vector<int32> domains;
-    domains.reserve(as_usize(varCount_));
-    for (int32 k = 0; k < varCount_; ++k)
-    {
-        domains.push_back(domains_[k]);
-    }
-    return domains;
+  std::vector<int32> domains;
+  domains.reserve(as_usize(varCount_));
+  for (int32 k = 0; k < varCount_; ++k)
+  {
+    domains.push_back(domains_[k]);
+  }
+  return domains;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::force_gc() -> void
 {
-    this->collect_garbage();
-    opCache_.remove_unused();
+  this->collect_garbage();
+  opCache_.remove_unused();
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::collect_garbage() -> void
 {
 #ifdef LIBTEDDY_VERBOSE
-    debug::out("node_manager::collect_garbage, ");
-    int64 const before = nodeCount_;
+  debug::out("node_manager::collect_garbage, ");
+  int64 const before = nodeCount_;
 #endif
 
-    for (int32 level = 0; level < this->get_var_count(); ++level)
-    {
-        int32 const index = levelToIndex_[as_uindex(level)];
-        auto& table       = uniqueTables_[as_uindex(index)];
-        auto const endIt  = table.end();
-        auto tableIt      = table.begin();
+  for (int32 level = 0; level < this->get_var_count(); ++level)
+  {
+    int32 const index = levelToIndex_[as_uindex(level)];
+    auto& table       = uniqueTables_[as_uindex(index)];
+    auto const endIt  = table.end();
+    auto tableIt      = table.begin();
 
-        while (tableIt != endIt)
-        {
-            node_t* const node = *tableIt;
-            if (can_be_gced(node))
-            {
-                this->for_each_son(node, dec_ref_count);
-                tableIt = table.erase(tableIt);
-                this->delete_node(node);
-            }
-            else
-            {
-                ++tableIt;
-            }
-        }
-    }
-
-    for (node_t*& node : terminals_)
+    while (tableIt != endIt)
     {
-        if (node && can_be_gced(node))
-        {
-            this->delete_node(node);
-            node = nullptr;
-        }
+      node_t* const node = *tableIt;
+      if (can_be_gced(node))
+      {
+        this->for_each_son(node, dec_ref_count);
+        tableIt = table.erase(tableIt);
+        this->delete_node(node);
+      }
+      else
+      {
+        ++tableIt;
+      }
     }
+  }
 
-    for (node_t*& node : specials_)
+  for (node_t*& node : terminals_)
+  {
+    if (node && can_be_gced(node))
     {
-        if (node && can_be_gced(node))
-        {
-            this->delete_node(node);
-            node = nullptr;
-        }
+      this->delete_node(node);
+      node = nullptr;
     }
+  }
+
+  for (node_t*& node : specials_)
+  {
+    if (node && can_be_gced(node))
+    {
+      this->delete_node(node);
+      node = nullptr;
+    }
+  }
 
 #ifdef LIBTEDDY_VERBOSE
-    debug::out(
-        before - nodeCount_,
-        " nodes collected.",
-        " Now there are ",
-        nodeCount_,
-        " unique nodes\n"
-    );
+  debug::out(
+    before - nodeCount_,
+    " nodes collected.",
+    " Now there are ",
+    nodeCount_,
+    " unique nodes\n"
+  );
 #endif
 }
 
 template<class Degree, class Domain>
 template<class Int>
 auto node_manager<Degree, Domain>::domain_product(
-    int32 const levelFrom,
-    int32 const levelTo
+  int32 const levelFrom,
+  int32 const levelTo
 ) const -> Int
 {
-    if constexpr (domains::is_fixed<Domain>::value && Degree::value == 2)
+  if constexpr (domains::is_fixed<Domain>::value && Degree::value == 2)
+  {
+    return Int(1) << static_cast<unsigned>(levelTo - levelFrom);
+  }
+  else if constexpr (domains::is_fixed<Domain>::value)
+  {
+    return utils::int_pow(
+      Int(Domain::value),
+      static_cast<uint32>(levelTo - levelFrom)
+    );
+  }
+  else
+  {
+    Int product = 1;
+    for (int32 level = levelFrom; level < levelTo; ++level)
     {
-        return Int(1) << static_cast<unsigned>(levelTo - levelFrom);
+      product *= domains_[levelToIndex_[as_uindex(level)]];
     }
-    else if constexpr (domains::is_fixed<Domain>::value)
-    {
-        return utils::int_pow(
-            Int(Domain::value),
-            static_cast<uint32>(levelTo - levelFrom)
-        );
-    }
-    else
-    {
-        Int product = 1;
-        for (int32 level = levelFrom; level < levelTo; ++level)
-        {
-            product *= domains_[levelToIndex_[as_uindex(level)]];
-        }
-        return product;
-    }
+    return product;
+  }
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Degree, Domain>::for_each_son(
-    node_t* const node,
-    NodeOp operation
+  node_t* const node,
+  NodeOp operation
 ) const -> void
 {
-    int32 const index = node->get_index();
-    for (int32 k = 0; k < domains_[index]; ++k)
-    {
-        operation(node->get_son(k));
-    }
+  int32 const index = node->get_index();
+  for (int32 k = 0; k < domains_[index]; ++k)
+  {
+    operation(node->get_son(k));
+  }
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Degree, Domain>::for_each_son(
-    int32 const index,
-    son_container const& sons,
-    NodeOp operation
+  int32 const index,
+  son_container const& sons,
+  NodeOp operation
 ) const -> void
 {
-    for (int32 k = 0; k < domains_[index]; ++k)
-    {
-        operation(sons[as_uindex(k)]);
-    }
+  for (int32 k = 0; k < domains_[index]; ++k)
+  {
+    operation(sons[as_uindex(k)]);
+  }
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
-auto node_manager<Degree, Domain>::for_each_node(NodeOp operation
-) const -> void
+auto node_manager<Degree, Domain>::for_each_node(NodeOp operation) const -> void
 {
-    for (unique_table<Degree> const& table : uniqueTables_)
+  for (unique_table<Degree> const& table : uniqueTables_)
+  {
+    for (node_t* const node : table)
     {
-        for (node_t* const node : table)
-        {
-            operation(node);
-        }
+      operation(node);
     }
+  }
 
-    this->for_each_terminal_node(operation);
+  this->for_each_terminal_node(operation);
 }
 
 template<class Degree, class Domain>
@@ -784,239 +774,238 @@ template<class NodeOp>
 auto node_manager<Degree, Domain>::for_each_terminal_node(NodeOp operation
 ) const -> void
 {
-    for (node_t* const node : terminals_)
+  for (node_t* const node : terminals_)
+  {
+    if (node)
     {
-        if (node)
-        {
-            operation(node);
-        }
+      operation(node);
     }
+  }
 }
 
 template<class Degree, class Domain>
 template<teddy_bin_op O>
 auto node_manager<Degree, Domain>::cache_find(node_t* lhs, node_t* rhs)
-    -> node_t*
+  -> node_t*
 {
-    if constexpr (O::is_commutative())
+  if constexpr (O::is_commutative())
+  {
+    if (rhs < lhs)
     {
-        if (rhs < lhs)
-        {
-            utils::swap(lhs, rhs);
-        }
+      utils::swap(lhs, rhs);
     }
-    node_t* const node = opCache_.find(O::get_id(), lhs, rhs);
-    if (node)
-    {
-        id_set_marked(node);
-    }
-    return node;
+  }
+  node_t* const node = opCache_.find(O::get_id(), lhs, rhs);
+  if (node)
+  {
+    id_set_marked(node);
+  }
+  return node;
 }
 
 template<class Degree, class Domain>
 template<teddy_bin_op O>
 auto node_manager<Degree, Domain>::cache_put(
-    node_t* const result,
-    node_t* lhs,
-    node_t* rhs
+  node_t* const result,
+  node_t* lhs,
+  node_t* rhs
 ) -> void
 {
-    if constexpr (O::is_commutative())
+  if constexpr (O::is_commutative())
+  {
+    if (rhs < lhs)
     {
-        if (rhs < lhs)
-        {
-            utils::swap(lhs, rhs);
-        }
+      utils::swap(lhs, rhs);
     }
-    opCache_.put(O::get_id(), result, lhs, rhs);
+  }
+  opCache_.put(O::get_id(), result, lhs, rhs);
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::cache_clear() -> void
 {
-    opCache_.clear();
+  opCache_.clear();
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::is_valid_var_value(
-    int32 const index,
-    int32 const value
+  int32 const index,
+  int32 const value
 ) const -> bool
 {
-    return value < domains_[index];
+  return value < domains_[index];
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::run_deferred() -> void
 {
-    if (gcReorderDeferred_)
-    {
-        this->collect_garbage();
-        opCache_.clear();
-        this->sift_variables();
-    }
+  if (gcReorderDeferred_)
+  {
+    this->collect_garbage();
+    opCache_.clear();
+    this->sift_variables();
+  }
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Degree, Domain>::traverse_pre(
-    node_t* const rootNode,
-    NodeOp const operation
+  node_t* const rootNode,
+  NodeOp const operation
 ) const -> void
 {
-    this->traverse_pre_impl(rootNode, operation);
-    this->traverse_pre_impl(rootNode, [] (node_t*) {});
-    // Second traverse to reset marks
+  this->traverse_pre_impl(rootNode, operation);
+  this->traverse_pre_impl(rootNode, [] (node_t*) {});
+  // Second traverse to reset marks
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Degree, Domain>::traverse_pre_impl(
-    node_t* const node,
-    NodeOp const operation
+  node_t* const node,
+  NodeOp const operation
 ) const -> void
 {
-    node->toggle_marked();
-    operation(node);
-    if (node->is_internal())
+  node->toggle_marked();
+  operation(node);
+  if (node->is_internal())
+  {
+    int32 const nodeDomain = this->get_domain(node);
+    for (int32 k = 0; k < nodeDomain; ++k)
     {
-        int32 const nodeDomain = this->get_domain(node);
-        for (int32 k = 0; k < nodeDomain; ++k)
-        {
-            node_t* const son = node->get_son(k);
-            if (node->is_marked() != son->is_marked())
-            {
-                this->traverse_pre_impl(son, operation);
-            }
-        }
+      node_t* const son = node->get_son(k);
+      if (node->is_marked() != son->is_marked())
+      {
+        this->traverse_pre_impl(son, operation);
+      }
     }
+  }
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Degree, Domain>::traverse_post(
-    node_t* const rootNode,
-    NodeOp operation
+  node_t* const rootNode,
+  NodeOp operation
 ) const -> void
 {
-    this->traverse_post_impl(rootNode, operation);
-    this->traverse_post_impl(rootNode, [] (node_t*) {});
-    // Second traverse to reset marks.
+  this->traverse_post_impl(rootNode, operation);
+  this->traverse_post_impl(rootNode, [] (node_t*) {});
+  // Second traverse to reset marks.
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Degree, Domain>::traverse_post_impl(
-    node_t* const node,
-    NodeOp operation
+  node_t* const node,
+  NodeOp operation
 ) const -> void
 {
-    node->toggle_marked();
-    if (node->is_internal())
+  node->toggle_marked();
+  if (node->is_internal())
+  {
+    int32 const nodeDomain = this->get_domain(node);
+    for (int32 k = 0; k < nodeDomain; ++k)
     {
-        int32 const nodeDomain = this->get_domain(node);
-        for (int32 k = 0; k < nodeDomain; ++k)
-        {
-            node_t* const son = node->get_son(k);
-            if (node->is_marked() != son->is_marked())
-            {
-                this->traverse_post_impl(son, operation);
-            }
-        }
+      node_t* const son = node->get_son(k);
+      if (node->is_marked() != son->is_marked())
+      {
+        this->traverse_post_impl(son, operation);
+      }
     }
-    operation(node);
+  }
+  operation(node);
 }
 
 template<class Degree, class Domain>
 template<class NodeOp>
 auto node_manager<Degree, Domain>::traverse_level(
-    node_t* const rootNode,
-    NodeOp operation
+  node_t* const rootNode,
+  NodeOp operation
 ) const -> void
 {
-    std::vector<std::vector<node_t*>> buckets(as_usize(varCount_) + 1);
-    auto const endBucketIt = end(buckets);
-    auto bucketIt          = begin(buckets) + this->get_level(rootNode);
-    (*bucketIt).push_back(rootNode);
-    rootNode->toggle_marked();
+  std::vector<std::vector<node_t*>> buckets(as_usize(varCount_) + 1);
+  auto const endBucketIt = end(buckets);
+  auto bucketIt          = begin(buckets) + this->get_level(rootNode);
+  (*bucketIt).push_back(rootNode);
+  rootNode->toggle_marked();
 
-    while (bucketIt != endBucketIt)
+  while (bucketIt != endBucketIt)
+  {
+    for (node_t* const node : *bucketIt)
     {
-        for (node_t* const node : *bucketIt)
+      operation(node);
+      if (node->is_internal())
+      {
+        int32 const domain = this->get_domain(node);
+        for (int32 k = 0; k < domain; ++k)
         {
-            operation(node);
-            if (node->is_internal())
-            {
-                int32 const domain = this->get_domain(node);
-                for (int32 k = 0; k < domain; ++k)
-                {
-                    node_t* const son = node->get_son(k);
-                    if (son->is_marked() != node->is_marked())
-                    {
-                        int32 const level = this->get_level(son);
-                        buckets[as_uindex(level)].push_back(son);
-                        son->toggle_marked();
-                    }
-                }
-            }
+          node_t* const son = node->get_son(k);
+          if (son->is_marked() != node->is_marked())
+          {
+            int32 const level = this->get_level(son);
+            buckets[as_uindex(level)].push_back(son);
+            son->toggle_marked();
+          }
         }
-
-        do
-        {
-            ++bucketIt;
-        } while (bucketIt != endBucketIt && (*bucketIt).empty());
+      }
     }
 
-    // Second traverse to reset marks.
-    this->traverse_pre_impl(rootNode, [] (node_t*) {});
+    do
+    {
+      ++bucketIt;
+    } while (bucketIt != endBucketIt && (*bucketIt).empty());
+  }
+
+  // Second traverse to reset marks.
+  this->traverse_pre_impl(rootNode, [] (node_t*) {});
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::dec_ref_count(node_t* const node
-) -> void
+auto node_manager<Degree, Domain>::dec_ref_count(node_t* const node) -> void
 {
-    node->dec_ref_count();
+  node->dec_ref_count();
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::is_redundant(
-    int32 const index,
-    son_container const& sons
+  int32 const index,
+  son_container const& sons
 ) const -> bool
 {
-    for (int32 j = 1; j < domains_[index]; ++j)
+  for (int32 j = 1; j < domains_[index]; ++j)
+  {
+    if (sons[as_uindex(j - 1)] != sons[as_uindex(j)])
     {
-        if (sons[as_uindex(j - 1)] != sons[as_uindex(j)])
-        {
-            return false;
-        }
+      return false;
     }
-    return true;
+  }
+  return true;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::adjust_tables() -> void
 {
 #ifdef LIBTEDDY_VERBOSE
-    debug::out(
-        "node_manager::adjust_tables\tAdjusting unique tables.",
-        " Node count is ",
-        nodeCount_,
-        "\n"
-    );
+  debug::out(
+    "node_manager::adjust_tables\tAdjusting unique tables.",
+    " Node count is ",
+    nodeCount_,
+    "\n"
+  );
 #endif
 
-    for (int32 i = 0; i < ssize(uniqueTables_); ++i)
-    {
-        uniqueTables_[as_uindex(i)].adjust_capacity();
-    }
+  for (int32 i = 0; i < ssize(uniqueTables_); ++i)
+  {
+    uniqueTables_[as_uindex(i)].adjust_capacity();
+  }
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::adjust_caches() -> void
 {
-    auto const newCapacity = cacheRatio_ * static_cast<double>(nodeCount_);
-    opCache_.grow_capacity(static_cast<int64>(newCapacity));
+  auto const newCapacity = cacheRatio_ * static_cast<double>(nodeCount_);
+  opCache_.grow_capacity(static_cast<int64>(newCapacity));
 }
 
 template<class Degree, class Domain>
@@ -1024,327 +1013,322 @@ template<class... Args>
 auto node_manager<Degree, Domain>::make_new_node(Args&&... args // NOLINT
 ) -> node_t*
 {
-    if (autoReorderEnabled_)
+  if (autoReorderEnabled_)
+  {
+    // GC + reorder will be done after current
+    // high level operations finishes.
+    // Until then, just create a new pool.
+
+    if (pool_.get_available_node_count() == 0)
     {
-        // GC + reorder will be done after current
-        // high level operations finishes.
-        // Until then, just create a new pool.
-
-        if (pool_.get_available_node_count() == 0)
-        {
-            pool_.grow();
-            this->deferr_gc_reorder();
-        }
+      pool_.grow();
+      this->deferr_gc_reorder();
     }
-    else
+  }
+  else
+  {
+    // Run GC. If not enough nodes are collected,
+    // preventively create a new pool.
+
+    if (pool_.get_available_node_count() == 0)
     {
-        // Run GC. If not enough nodes are collected,
-        // preventively create a new pool.
+      auto const growThreshold
+        = static_cast<int64>(gcRatio_ * static_cast<double>(nodeCount_));
 
-        if (pool_.get_available_node_count() == 0)
-        {
-            auto const growThreshold = static_cast<int64>(
-                gcRatio_ * static_cast<double>(nodeCount_)
-            );
+      this->force_gc();
 
-            this->force_gc();
-
-            if (pool_.get_available_node_count() < growThreshold)
-            {
-                pool_.grow();
-            }
-        }
+      if (pool_.get_available_node_count() < growThreshold)
+      {
+        pool_.grow();
+      }
     }
+  }
 
-    if (nodeCount_ >= adjustmentNodeCount_)
-    {
-        // When the number of nodes doubles,
-        // adjust cache and table sizes.
-        this->adjust_tables();
-        this->adjust_caches();
-        adjustmentNodeCount_ = 2 * adjustmentNodeCount_ / 1;
-        //                     ^                          ^
-        // Possible optimization point here
-    }
+  if (nodeCount_ >= adjustmentNodeCount_)
+  {
+    // When the number of nodes doubles,
+    // adjust cache and table sizes.
+    this->adjust_tables();
+    this->adjust_caches();
+    adjustmentNodeCount_ = 2 * adjustmentNodeCount_ / 1;
+    //                     ^                          ^
+    // Possible optimization point here
+  }
 
-    ++nodeCount_;
-    return pool_.create(TEDDY_FORWARD(args)...);
+  ++nodeCount_;
+  return pool_.create(TEDDY_FORWARD(args)...);
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::delete_node(node_t* const n) -> void
 {
-    assert(not n->is_marked());
-    --nodeCount_;
-    n->set_unused();
-    pool_.destroy(n);
+  assert(not n->is_marked());
+  --nodeCount_;
+  n->set_unused();
+  pool_.destroy(n);
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::deferr_gc_reorder() -> void
 {
-    gcReorderDeferred_ = true;
+  gcReorderDeferred_ = true;
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::check_distinct(
-    std::vector<int32> const& ints
+auto node_manager<Degree, Domain>::check_distinct(std::vector<int32> const& ints
 ) -> bool
 {
-    if (ints.empty())
-    {
-        return true;
-    }
-
-    int32 const maxElem = *utils::max_elem(ints.begin(), ints.end());
-    std::vector<bool> bitset(as_usize(maxElem + 1), false);
-    for (int32 const checkInt : ints)
-    {
-        if (bitset[as_uindex(checkInt)])
-        {
-            return false;
-        }
-        bitset[as_uindex(checkInt)] = true;
-    }
+  if (ints.empty())
+  {
     return true;
+  }
+
+  int32 const maxElem = *utils::max_elem(ints.begin(), ints.end());
+  std::vector<bool> bitset(as_usize(maxElem + 1), false);
+  for (int32 const checkInt : ints)
+  {
+    if (bitset[as_uindex(checkInt)])
+    {
+      return false;
+    }
+    bitset[as_uindex(checkInt)] = true;
+  }
+  return true;
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::can_be_gced(node_t* const node) -> bool
 {
-    return node->get_ref_count() == 0 && not node->is_marked();
+  return node->get_ref_count() == 0 && not node->is_marked();
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::swap_node_with_next(node_t* const node
 ) -> void
 {
-    using node_matrix = utils::type_if<
-        degrees::is_fixed<Degree>::value,
-        node_t * [Degree::value][Degree::value],
-        std::vector<std::vector<node_t*>>>::type;
+  using node_matrix = utils::type_if<
+    degrees::is_fixed<Degree>::value,
+    node_t * [Degree::value][Degree::value],
+    std::vector<std::vector<node_t*>>>::type;
 
-    int32 const nodeIndex  = node->get_index();
-    int32 const nextIndex  = this->get_index(1 + this->get_level(node));
-    int32 const nodeDomain = this->get_domain(nodeIndex);
-    int32 const nextDomain = this->get_domain(nextIndex);
-    son_container oldSons  = node_t::make_son_container(nodeDomain);
-    for (int32 k = 0; k < nodeDomain; ++k)
+  int32 const nodeIndex  = node->get_index();
+  int32 const nextIndex  = this->get_index(1 + this->get_level(node));
+  int32 const nodeDomain = this->get_domain(nodeIndex);
+  int32 const nextDomain = this->get_domain(nextIndex);
+  son_container oldSons  = node_t::make_son_container(nodeDomain);
+  for (int32 k = 0; k < nodeDomain; ++k)
+  {
+    oldSons[k] = node->get_son(k);
+  }
+
+  node_matrix cofactorMatrix;
+  if constexpr (degrees::is_mixed<Degree>::value)
+  {
+    cofactorMatrix.resize(
+      as_usize(nodeDomain),
+      std::vector<node_t*>(as_usize(nextDomain))
+    );
+  }
+
+  for (auto nk = 0; nk < nodeDomain; ++nk)
+  {
+    node_t* const son = node->get_son(nk);
+    for (auto sk = 0; sk < nextDomain; ++sk)
     {
-        oldSons[k] = node->get_son(k);
+      bool const justUseSon
+        = son->is_terminal() || son->get_index() != nextIndex;
+      cofactorMatrix[as_uindex(nk)][as_uindex(sk)]
+        = justUseSon ? son : son->get_son(sk);
     }
+  }
 
-    node_matrix cofactorMatrix;
-    if constexpr (degrees::is_mixed<Degree>::value)
+  son_container outerSons = node_t::make_son_container(nextDomain);
+  for (int32 outerK = 0; outerK < nextDomain; ++outerK)
+  {
+    son_container innerSons = node_t::make_son_container(nodeDomain);
+    for (int32 innerK = 0; innerK < nodeDomain; ++innerK)
     {
-        cofactorMatrix.resize(
-            as_usize(nodeDomain),
-            std::vector<node_t*>(as_usize(nextDomain))
-        );
+      innerSons[innerK] = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
     }
+    outerSons[outerK]
+      = this->make_internal_node(nodeIndex, TEDDY_MOVE(innerSons));
+  }
 
-    for (auto nk = 0; nk < nodeDomain; ++nk)
-    {
-        node_t* const son = node->get_son(nk);
-        for (auto sk = 0; sk < nextDomain; ++sk)
-        {
-            bool const justUseSon
-                = son->is_terminal() || son->get_index() != nextIndex;
-            cofactorMatrix[as_uindex(nk)][as_uindex(sk)]
-                = justUseSon ? son : son->get_son(sk);
-        }
-    }
+  node->set_index(nextIndex);
+  node->set_sons(TEDDY_MOVE(outerSons));
 
-    son_container outerSons = node_t::make_son_container(nextDomain);
-    for (int32 outerK = 0; outerK < nextDomain; ++outerK)
-    {
-        son_container innerSons = node_t::make_son_container(nodeDomain);
-        for (int32 innerK = 0; innerK < nodeDomain; ++innerK)
-        {
-            innerSons[innerK]
-                = cofactorMatrix[as_uindex(innerK)][as_uindex(outerK)];
-        }
-        outerSons[outerK]
-            = this->make_internal_node(nodeIndex, TEDDY_MOVE(innerSons));
-    }
+  for (int32 k = 0; k < nextDomain; ++k)
+  {
+    node->get_son(k)->inc_ref_count();
+    node->get_son(k)->set_notmarked();
+  }
 
-    node->set_index(nextIndex);
-    node->set_sons(TEDDY_MOVE(outerSons));
-
-    for (int32 k = 0; k < nextDomain; ++k)
-    {
-        node->get_son(k)->inc_ref_count();
-        node->get_son(k)->set_notmarked();
-    }
-
-    for (int32 k = 0; k < nodeDomain; ++k)
-    {
-        this->dec_ref_try_gc(oldSons[k]);
-    }
+  for (int32 k = 0; k < nodeDomain; ++k)
+  {
+    this->dec_ref_try_gc(oldSons[k]);
+  }
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::dec_ref_try_gc(node_t* const node
-) -> void
+auto node_manager<Degree, Domain>::dec_ref_try_gc(node_t* const node) -> void
 {
-    node->dec_ref_count();
+  node->dec_ref_count();
 
-    if (not can_be_gced(node))
+  if (not can_be_gced(node))
+  {
+    return;
+  }
+
+  if (node->is_internal())
+  {
+    int32 const nodeDomain = this->get_domain(node);
+    for (int32 k = 0; k < nodeDomain; ++k)
     {
-        return;
+      this->dec_ref_try_gc(node->get_son(k));
     }
 
-    if (node->is_internal())
+    uniqueTables_[as_uindex(node->get_index())].erase(node);
+  }
+  else
+  {
+    if (is_special(node->get_value()))
     {
-        int32 const nodeDomain = this->get_domain(node);
-        for (int32 k = 0; k < nodeDomain; ++k)
-        {
-            this->dec_ref_try_gc(node->get_son(k));
-        }
-
-        uniqueTables_[as_uindex(node->get_index())].erase(node);
+      specials_[as_uindex(special_to_index(node->get_value()))] = nullptr;
     }
     else
     {
-        if (is_special(node->get_value()))
-        {
-            specials_[as_uindex(special_to_index(node->get_value()))] = nullptr;
-        }
-        else
-        {
-            terminals_[as_uindex(node->get_value())] = nullptr;
-        }
+      terminals_[as_uindex(node->get_value())] = nullptr;
     }
+  }
 
-    this->delete_node(node);
+  this->delete_node(node);
 }
 
 template<class Degree, class Domain>
-auto node_manager<Degree, Domain>::swap_variable_with_next(
-    int32 const index
+auto node_manager<Degree, Domain>::swap_variable_with_next(int32 const index
 ) -> void
 {
-    int32 const level     = this->get_level(index);
-    int32 const nextIndex = this->get_index(1 + level);
-    unique_table<Degree> tmpTable(uniqueTables_[as_uindex(index)]);
-    uniqueTables_[as_uindex(index)].clear();
-    for (node_t* const node : tmpTable)
-    {
-        this->swap_node_with_next(node);
-    }
-    uniqueTables_[as_uindex(index)].adjust_capacity();
-    uniqueTables_[as_uindex(nextIndex)].merge(TEDDY_MOVE(tmpTable));
+  int32 const level     = this->get_level(index);
+  int32 const nextIndex = this->get_index(1 + level);
+  unique_table<Degree> tmpTable(uniqueTables_[as_uindex(index)]);
+  uniqueTables_[as_uindex(index)].clear();
+  for (node_t* const node : tmpTable)
+  {
+    this->swap_node_with_next(node);
+  }
+  uniqueTables_[as_uindex(index)].adjust_capacity();
+  uniqueTables_[as_uindex(nextIndex)].merge(TEDDY_MOVE(tmpTable));
 
-    utils::swap(
-        levelToIndex_[as_uindex(level)],
-        levelToIndex_[as_uindex(1 + level)]
-    );
-    ++indexToLevel_[as_uindex(index)];
-    --indexToLevel_[as_uindex(nextIndex)];
+  utils::swap(
+    levelToIndex_[as_uindex(level)],
+    levelToIndex_[as_uindex(1 + level)]
+  );
+  ++indexToLevel_[as_uindex(index)];
+  --indexToLevel_[as_uindex(nextIndex)];
 }
 
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::sift_variables() -> void
 {
-    using count_pair = struct
+  using count_pair = struct
+  {
+    int32 index_;
+    int64 count_;
+  };
+
+  // Sorts indices by number of nodes with given index descending.
+  auto const determine_sift_order = [this] ()
+  {
+    std::vector<count_pair> counts;
+    counts.reserve(as_usize(varCount_));
+    for (int32 index = 0; index < varCount_; ++index)
     {
-        int32 index_;
-        int64 count_;
-    };
-
-    // Sorts indices by number of nodes with given index descending.
-    auto const determine_sift_order = [this] ()
-    {
-        std::vector<count_pair> counts;
-        counts.reserve(as_usize(varCount_));
-        for (int32 index = 0; index < varCount_; ++index)
-        {
-            counts.push_back(count_pair {index, this->get_node_count(index)});
-        }
-        utils::sort(
-            counts,
-            [] (count_pair const& lhs, count_pair const& rhs)
-            { return lhs.count_ > rhs.count_; }
-        );
-        return counts;
-    };
-
-    // Moves variable one level down.
-    auto const move_var_down
-        = [this] (auto const index) { this->swap_variable_with_next(index); };
-
-    // Moves variable one level up.
-    auto const move_var_up = [this] (auto const index)
-    {
-        int32 const level     = this->get_level(index);
-        int32 const prevIndex = this->get_index(level - 1);
-        this->swap_variable_with_next(prevIndex);
-    };
-
-    // Tries to place variable on each level.
-    // In the end, restores position with lowest total number of nodes.
-    auto const place_variable = [&, this] (auto const index)
-    {
-        int32 const lastInternalLevel = this->get_var_count() - 1;
-        int32 currentLevel            = this->get_level(index);
-        int32 optimalLevel            = currentLevel;
-        int64 optimalCount            = nodeCount_;
-
-        // Sift down.
-        while (currentLevel != lastInternalLevel)
-        {
-            move_var_down(index);
-            ++currentLevel;
-            if (nodeCount_ < optimalCount)
-            {
-                optimalCount = nodeCount_;
-                optimalLevel = currentLevel;
-            }
-        }
-
-        // Sift up.
-        while (currentLevel != 0)
-        {
-            move_var_up(index);
-            --currentLevel;
-            if (nodeCount_ < optimalCount)
-            {
-                optimalCount = nodeCount_;
-                optimalLevel = currentLevel;
-            }
-        }
-
-        // Restore optimal position.
-        while (currentLevel != optimalLevel)
-        {
-            move_var_down(index);
-            ++currentLevel;
-        }
-    };
-
-#ifdef LIBTEDDY_VERBOSE
-    debug::out(
-        "node_manager: Sifting variables. Node count before ",
-        nodeCount_,
-        ".\n"
+      counts.push_back(count_pair {index, this->get_node_count(index)});
+    }
+    utils::sort(
+      counts,
+      [] (count_pair const& lhs, count_pair const& rhs)
+      { return lhs.count_ > rhs.count_; }
     );
-#endif
+    return counts;
+  };
 
-    auto const siftOrder = determine_sift_order();
-    for (auto const pair : siftOrder)
+  // Moves variable one level down.
+  auto const move_var_down
+    = [this] (auto const index) { this->swap_variable_with_next(index); };
+
+  // Moves variable one level up.
+  auto const move_var_up = [this] (auto const index)
+  {
+    int32 const level     = this->get_level(index);
+    int32 const prevIndex = this->get_index(level - 1);
+    this->swap_variable_with_next(prevIndex);
+  };
+
+  // Tries to place variable on each level.
+  // In the end, restores position with lowest total number of nodes.
+  auto const place_variable = [&, this] (auto const index)
+  {
+    int32 const lastInternalLevel = this->get_var_count() - 1;
+    int32 currentLevel            = this->get_level(index);
+    int32 optimalLevel            = currentLevel;
+    int64 optimalCount            = nodeCount_;
+
+    // Sift down.
+    while (currentLevel != lastInternalLevel)
     {
-        place_variable(pair.index_);
+      move_var_down(index);
+      ++currentLevel;
+      if (nodeCount_ < optimalCount)
+      {
+        optimalCount = nodeCount_;
+        optimalLevel = currentLevel;
+      }
     }
 
+    // Sift up.
+    while (currentLevel != 0)
+    {
+      move_var_up(index);
+      --currentLevel;
+      if (nodeCount_ < optimalCount)
+      {
+        optimalCount = nodeCount_;
+        optimalLevel = currentLevel;
+      }
+    }
+
+    // Restore optimal position.
+    while (currentLevel != optimalLevel)
+    {
+      move_var_down(index);
+      ++currentLevel;
+    }
+  };
+
 #ifdef LIBTEDDY_VERBOSE
-    debug::out(
-        "node_manager: Done sifting. Node count after ",
-        nodeCount_,
-        ".\n"
-    );
+  debug::out(
+    "node_manager: Sifting variables. Node count before ",
+    nodeCount_,
+    ".\n"
+  );
 #endif
 
-    gcReorderDeferred_ = false;
+  auto const siftOrder = determine_sift_order();
+  for (auto const pair : siftOrder)
+  {
+    place_variable(pair.index_);
+  }
+
+#ifdef LIBTEDDY_VERBOSE
+  debug::out(
+    "node_manager: Done sifting. Node count after ",
+    nodeCount_,
+    ".\n"
+  );
+#endif
+
+  gcReorderDeferred_ = false;
 }
 } // namespace teddy
 

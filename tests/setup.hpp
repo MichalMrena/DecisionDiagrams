@@ -37,7 +37,7 @@ struct default_order_tag
  */
 struct given_order_tag
 {
-    std::vector<int32> order_;
+  std::vector<int32> order_;
 };
 
 /**
@@ -52,7 +52,7 @@ struct random_domains_tag
  */
 struct given_domains_tag
 {
-    std::vector<int32> domains_;
+  std::vector<int32> domains_;
 };
 
 /**
@@ -60,9 +60,9 @@ struct given_domains_tag
  */
 struct manager_settings
 {
-    int32 varcount_;
-    int32 nodecount_;
-    std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
+  int32 varcount_;
+  int32 nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
 };
 
 /**
@@ -71,7 +71,7 @@ struct manager_settings
 template<int32 M>
 struct nonhomogeneous_manager_settings : manager_settings
 {
-    std::variant<random_domains_tag, given_domains_tag> domains_;
+  std::variant<random_domains_tag, given_domains_tag> domains_;
 };
 
 /**
@@ -141,9 +141,9 @@ struct ifmss_manager_settings : nonhomogeneous_manager_settings<M>
  */
 struct minmax_expression_settings
 {
-    int32 varcount_;
-    int32 termcount_;
-    int32 termsize_;
+  int32 varcount_;
+  int32 termcount_;
+  int32 termsize_;
 };
 
 /**
@@ -152,7 +152,7 @@ struct minmax_expression_settings
  */
 struct expression_tree_settings
 {
-    int32 varcount_;
+  int32 varcount_;
 };
 
 /**
@@ -161,9 +161,9 @@ struct expression_tree_settings
 template<class ManagerSettings, class ExpressionSettings>
 struct test_settings
 {
-    std::size_t seed_;
-    ManagerSettings manager_;
-    ExpressionSettings expression_;
+  std::size_t seed_;
+  ManagerSettings manager_;
+  ExpressionSettings expression_;
 };
 
 /**
@@ -172,38 +172,34 @@ struct test_settings
 template<class... Ts>
 struct match : Ts...
 {
-    using Ts::operator()...;
+  using Ts::operator()...;
 };
 
 template<class... Ts>
 match(Ts...) -> match<Ts...>;
 
 inline auto make_order (manager_settings const& settings, tsl::rng_t& rng)
-    -> std::vector<int32>
+  -> std::vector<int32>
 {
-    return std::visit(
-        match {
-            [&] (random_order_tag)
-            {
-                auto indices = tsl::fill_vector(
-                    settings.varcount_,
-                    [] (int32 x) { return x; }
-                );
-                std::ranges::shuffle(indices, rng);
-                return indices;
-            },
-            [&] (default_order_tag)
-            {
-                auto indices = tsl::fill_vector(
-                    settings.varcount_,
-                    [] (int32 x) { return x; }
-                );
-                return indices;
-            },
-            [] (given_order_tag const& indices) { return indices.order_; }
-        },
-        settings.order_
-    );
+  return std::visit(
+    match {
+      [&] (random_order_tag)
+      {
+        auto indices
+          = tsl::fill_vector(settings.varcount_, [] (int32 x) { return x; });
+        std::ranges::shuffle(indices, rng);
+        return indices;
+      },
+      [&] (default_order_tag)
+      {
+        auto indices
+          = tsl::fill_vector(settings.varcount_, [] (int32 x) { return x; });
+        return indices;
+      },
+      [] (given_order_tag const& indices) { return indices.order_; }
+    },
+    settings.order_
+  );
 }
 
 /**
@@ -211,33 +207,33 @@ inline auto make_order (manager_settings const& settings, tsl::rng_t& rng)
  */
 template<int32 M>
 auto make_domains (
-    nonhomogeneous_manager_settings<M> const& settings,
-    tsl::rng_t& rng
+  nonhomogeneous_manager_settings<M> const& settings,
+  tsl::rng_t& rng
 ) -> std::vector<int32>
 {
-    return std::visit(
-        match {
-            [&] (random_domains_tag)
-            {
-                auto dist = std::uniform_int_distribution<int32>(2, M);
-                return tsl::fill_vector(
-                    settings.varcount_,
-                    [&rng, &dist] (auto) { return dist(rng); }
-                );
-            },
-            [] (given_domains_tag const& tag) { return tag.domains_; }
-        },
-        settings.domains_
-    );
+  return std::visit(
+    match {
+      [&] (random_domains_tag)
+      {
+        auto dist = std::uniform_int_distribution<int32>(2, M);
+        return tsl::fill_vector(
+          settings.varcount_,
+          [&rng, &dist] (auto) { return dist(rng); }
+        );
+      },
+      [] (given_domains_tag const& tag) { return tag.domains_; }
+    },
+    settings.domains_
+  );
 }
 
 /**
  *  \brief Makes BDD manager.
  */
 inline auto make_manager (bdd_manager_settings const& settings, tsl::rng_t& rng)
-    -> bdd_manager
+  -> bdd_manager
 {
-    return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
+  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
 
 /**
@@ -245,9 +241,9 @@ inline auto make_manager (bdd_manager_settings const& settings, tsl::rng_t& rng)
  */
 template<int32 M>
 auto make_manager (mdd_manager_settings<M> const& settings, tsl::rng_t& rng)
-    -> mdd_manager<M>
+  -> mdd_manager<M>
 {
-    return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
+  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
 
 /**
@@ -255,14 +251,14 @@ auto make_manager (mdd_manager_settings<M> const& settings, tsl::rng_t& rng)
  */
 template<int32 M>
 auto make_manager (imdd_manager_settings<M> const& settings, tsl::rng_t& rng)
-    -> imdd_manager
+  -> imdd_manager
 {
-    return {
-        settings.varcount_,
-        settings.nodecount_,
-        make_domains(settings, rng),
-        make_order(settings, rng)
-    };
+  return {
+    settings.varcount_,
+    settings.nodecount_,
+    make_domains(settings, rng),
+    make_order(settings, rng)
+  };
 }
 
 /**
@@ -270,23 +266,23 @@ auto make_manager (imdd_manager_settings<M> const& settings, tsl::rng_t& rng)
  */
 template<int32 M>
 auto make_manager (ifmdd_manager_settings<M> const& settings, tsl::rng_t& rng)
-    -> ifmdd_manager<M>
+  -> ifmdd_manager<M>
 {
-    return {
-        settings.varcount_,
-        settings.nodecount_,
-        make_domains(settings, rng),
-        make_order(settings, rng)
-    };
+  return {
+    settings.varcount_,
+    settings.nodecount_,
+    make_domains(settings, rng),
+    make_order(settings, rng)
+  };
 }
 
 /**
  *  \brief Makes bss_manager.
  */
 inline auto make_manager (bss_manager_settings const& settings, tsl::rng_t& rng)
-    -> bss_manager
+  -> bss_manager
 {
-    return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
+  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
 
 /**
@@ -294,9 +290,9 @@ inline auto make_manager (bss_manager_settings const& settings, tsl::rng_t& rng)
  */
 template<int32 M>
 auto make_manager (mss_manager_settings<M> const& settings, tsl::rng_t& rng)
-    -> mss_manager<M>
+  -> mss_manager<M>
 {
-    return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
+  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
 }
 
 /**
@@ -304,14 +300,14 @@ auto make_manager (mss_manager_settings<M> const& settings, tsl::rng_t& rng)
  */
 template<int32 M>
 auto make_manager (imss_manager_settings<M> const& settings, tsl::rng_t& rng)
-    -> imss_manager
+  -> imss_manager
 {
-    return imss_manager(
-        settings.varcount_,
-        settings.nodecount_,
-        make_domains(settings, rng),
-        make_order(settings, rng)
-    );
+  return imss_manager(
+    settings.varcount_,
+    settings.nodecount_,
+    make_domains(settings, rng),
+    make_order(settings, rng)
+  );
 }
 
 /**
@@ -319,14 +315,14 @@ auto make_manager (imss_manager_settings<M> const& settings, tsl::rng_t& rng)
  */
 template<int32 M>
 auto make_manager (ifmss_manager_settings<M> const& settings, tsl::rng_t& rng)
-    -> ifmss_manager<M>
+  -> ifmss_manager<M>
 {
-    return ifmss_manager<M>(
-        settings.varcount_,
-        settings.nodecount_,
-        make_domains(settings, rng),
-        make_order(settings, rng)
-    );
+  return ifmss_manager<M>(
+    settings.varcount_,
+    settings.nodecount_,
+    make_domains(settings, rng),
+    make_order(settings, rng)
+  );
 }
 
 /**
@@ -335,7 +331,7 @@ auto make_manager (ifmss_manager_settings<M> const& settings, tsl::rng_t& rng)
 template<class Man, class Expr>
 auto make_manager (test_settings<Man, Expr> const& settings, tsl::rng_t& rng)
 {
-    return make_manager(settings.manager_, rng);
+  return make_manager(settings.manager_, rng);
 }
 
 /**
@@ -343,33 +339,33 @@ auto make_manager (test_settings<Man, Expr> const& settings, tsl::rng_t& rng)
  */
 template<class Degree, class Domain>
 auto make_diagram (
-    tsl::minmax_expr const& expr,
-    diagram_manager<Degree, Domain>& manager,
-    fold_type const foldtype = fold_type::Left
+  tsl::minmax_expr const& expr,
+  diagram_manager<Degree, Domain>& manager,
+  fold_type const foldtype = fold_type::Left
 )
 {
-    auto const min_fold = [&manager, foldtype] (auto& diagrams)
-    {
-        return foldtype == fold_type::Left
-                 ? manager.template left_fold<ops::MIN>(diagrams)
-                 : manager.template tree_fold<ops::MIN>(diagrams);
-    };
+  auto const min_fold = [&manager, foldtype] (auto& diagrams)
+  {
+    return foldtype == fold_type::Left
+           ? manager.template left_fold<ops::MIN>(diagrams)
+           : manager.template tree_fold<ops::MIN>(diagrams);
+  };
 
-    auto const max_fold = [&manager, foldtype] (auto& diagrams)
-    {
-        return foldtype == fold_type::Left
-                 ? manager.template left_fold<ops::MAX>(diagrams)
-                 : manager.template tree_fold<ops::MAX>(diagrams);
-    };
+  auto const max_fold = [&manager, foldtype] (auto& diagrams)
+  {
+    return foldtype == fold_type::Left
+           ? manager.template left_fold<ops::MAX>(diagrams)
+           : manager.template tree_fold<ops::MAX>(diagrams);
+  };
 
-    using diagram_t = typename diagram_manager<Degree, Domain>::diagram_t;
-    auto termDs     = std::vector<diagram_t>();
-    for (auto const& eTerm : expr.terms_)
-    {
-        auto vars = manager.variables(eTerm);
-        termDs.emplace_back(min_fold(vars));
-    }
-    return max_fold(termDs);
+  using diagram_t = typename diagram_manager<Degree, Domain>::diagram_t;
+  auto termDs     = std::vector<diagram_t>();
+  for (auto const& eTerm : expr.terms_)
+  {
+    auto vars = manager.variables(eTerm);
+    termDs.emplace_back(min_fold(vars));
+  }
+  return max_fold(termDs);
 }
 
 // /**
@@ -388,27 +384,27 @@ auto make_diagram (
  *  \brief Makes minmax expression with given settings.
  */
 inline auto make_expression (
-    minmax_expression_settings const& settings,
-    tsl::rng_t& rng
+  minmax_expression_settings const& settings,
+  tsl::rng_t& rng
 ) -> tsl::minmax_expr
 {
-    return tsl::make_minmax_expression(
-        rng,
-        settings.varcount_,
-        settings.termcount_,
-        settings.termsize_
-    );
+  return tsl::make_minmax_expression(
+    rng,
+    settings.varcount_,
+    settings.termcount_,
+    settings.termsize_
+  );
 }
 
 /**
  *  \brief Makes expression tree with given settings.
  */
 inline auto make_expression (
-    expression_tree_settings const& settings,
-    tsl::rng_t& rng
+  expression_tree_settings const& settings,
+  tsl::rng_t& rng
 ) -> std::unique_ptr<tsl::expr_node>
 {
-    return tsl::make_expression_tree(settings.varcount_, rng, rng);
+  return tsl::make_expression_tree(settings.varcount_, rng, rng);
 }
 
 /**
@@ -417,11 +413,11 @@ inline auto make_expression (
 template<class Man, class Expr>
 auto make_expression (test_settings<Man, Expr> const& settings, tsl::rng_t& rng)
 {
-    return make_expression(
-        settings.manager_.varcount_,
-        settings.expression_,
-        rng
-    );
+  return make_expression(
+    settings.manager_.varcount_,
+    settings.expression_,
+    rng
+  );
 }
 
 // TODO(michal): move to libtsl
@@ -430,18 +426,18 @@ auto make_expression (test_settings<Man, Expr> const& settings, tsl::rng_t& rng)
  */
 template<class Degree, class Domain>
 auto make_prob_vector (
-    diagram_manager<Degree, Domain> const& manager,
-    tsl::rng_t& rng
+  diagram_manager<Degree, Domain> const& manager,
+  tsl::rng_t& rng
 ) -> std::vector<double>
 {
-    auto const domains = manager.get_domains();
-    auto probs         = std::vector<double>(as_usize(manager.get_var_count()));
-    for (auto i = 0; i < ssize(probs); ++i)
-    {
-        auto dist           = std::uniform_real_distribution<double>(.0, 1.0);
-        probs[as_uindex(i)] = dist(rng);
-    }
-    return probs;
+  auto const domains = manager.get_domains();
+  auto probs         = std::vector<double>(as_usize(manager.get_var_count()));
+  for (auto i = 0; i < ssize(probs); ++i)
+  {
+    auto dist           = std::uniform_real_distribution<double>(.0, 1.0);
+    probs[as_uindex(i)] = dist(rng);
+  }
+  return probs;
 }
 
 // TODO(michal): move to libtsl
@@ -450,68 +446,68 @@ auto make_prob_vector (
  */
 template<class Degree, class Domain>
 auto make_prob_matrix (
-    diagram_manager<Degree, Domain> const& manager,
-    tsl::rng_t& rng
+  diagram_manager<Degree, Domain> const& manager,
+  tsl::rng_t& rng
 ) -> std::vector<std::vector<double>>
 {
-    auto const domains = manager.get_domains();
-    auto probs
-        = std::vector<std::vector<double>>(as_usize(manager.get_var_count()));
-    for (auto i = 0; i < ssize(probs); ++i)
+  auto const domains = manager.get_domains();
+  auto probs
+    = std::vector<std::vector<double>>(as_usize(manager.get_var_count()));
+  for (auto i = 0; i < ssize(probs); ++i)
+  {
+    auto dist = std::uniform_real_distribution<double>(.0, 1.0);
+    probs[as_uindex(i)].resize(as_usize(domains[as_uindex(i)]));
+    for (auto j = 0; j < domains[as_uindex(i)]; ++j)
     {
-        auto dist = std::uniform_real_distribution<double>(.0, 1.0);
-        probs[as_uindex(i)].resize(as_usize(domains[as_uindex(i)]));
-        for (auto j = 0; j < domains[as_uindex(i)]; ++j)
-        {
-            probs[as_uindex(i)][as_uindex(j)] = dist(rng);
-        }
-        auto const sum = std::reduce(
-            begin(probs[as_uindex(i)]),
-            end(probs[as_uindex(i)]),
-            0.0,
-            std::plus<>()
-        );
-        for (auto j = 0; j < domains[as_uindex(i)]; ++j)
-        {
-            probs[as_uindex(i)][as_uindex(j)] /= sum;
-        }
+      probs[as_uindex(i)][as_uindex(j)] = dist(rng);
     }
-    return probs;
+    auto const sum = std::reduce(
+      begin(probs[as_uindex(i)]),
+      end(probs[as_uindex(i)]),
+      0.0,
+      std::plus<>()
+    );
+    for (auto j = 0; j < domains[as_uindex(i)]; ++j)
+    {
+      probs[as_uindex(i)][as_uindex(j)] /= sum;
+    }
+  }
+  return probs;
 }
 
 template<class Degree, class Domain>
 auto make_probabilities (
-    diagram_manager<Degree, Domain> const& manager,
-    tsl::rng_t& rng
+  diagram_manager<Degree, Domain> const& manager,
+  tsl::rng_t& rng
 ) -> std::vector<std::vector<double>>
 {
-    return make_prob_matrix(manager, rng);
+  return make_prob_matrix(manager, rng);
 }
 
 inline auto make_vector (
-    std::unique_ptr<tsl::expr_node> const& root,
-    std::vector<int32> const& domains
+  std::unique_ptr<tsl::expr_node> const& root,
+  std::vector<int32> const& domains
 ) -> std::vector<int32>
 {
-    auto vector = std::vector<int32>();
-    vector.reserve(as_usize(
-        std::reduce(begin(domains), end(domains), 1, std::multiplies<>())
-    ));
-    auto domainit = tsl::domain_iterator(domains);
-    auto evalit   = tsl::evaluating_iterator(domainit, *root);
-    auto evalend  = tsl::evaluating_iterator_sentinel();
-    auto output   = std::back_inserter(vector);
-    while (evalit != evalend)
-    {
-        *output++ = *evalit++;
-    }
-    return vector;
+  auto vector = std::vector<int32>();
+  vector.reserve(
+    as_usize(std::reduce(begin(domains), end(domains), 1, std::multiplies<>()))
+  );
+  auto domainit = tsl::domain_iterator(domains);
+  auto evalit   = tsl::evaluating_iterator(domainit, *root);
+  auto evalend  = tsl::evaluating_iterator_sentinel();
+  auto output   = std::back_inserter(vector);
+  while (evalit != evalend)
+  {
+    *output++ = *evalit++;
+  }
+  return vector;
 }
 
 template<class Degree, class Domain>
 auto make_domain_iterator (diagram_manager<Degree, Domain> const& manager)
 {
-    return tsl::domain_iterator(manager.get_domains(), manager.get_order());
+  return tsl::domain_iterator(manager.get_domains(), manager.get_order());
 }
 
 } // namespace teddy::tests
