@@ -6,6 +6,8 @@
 #include <libteddy/details/probabilities.hpp>
 #include <libteddy/details/symbolic_probabilities.hpp>
 
+#include <lib/mpfr/mpreal.h>
+
 #include <iterator>
 #include <unordered_map>
 #include <vector>
@@ -42,6 +44,13 @@ class reliability_manager : public diagram_manager<Degree, Domain>
 public:
     using diagram_t =
         typename diagram_manager<Degree, Domain>::diagram_t;
+
+    template<class ValueType>
+    using node_memo = details::map_memo<ValueType, Degree>;
+
+    using node_t = typename diagram_manager<Degree, Domain>::node_t;
+
+    using son_conainer = typename node_t::son_container;
 
 public:
     /**
@@ -147,6 +156,15 @@ public:
         Ps const& probs,
         diagram_t const& diagram
     ) -> double;
+
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+    template<class Ps>
+    auto precise_availability(
+        Ps const& ps,
+        diagram_t const& diagram
+    ) -> mpfr::mpreal;
+#endif
+
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
     // TODO(michal): cmp post a level verzie
@@ -342,10 +360,8 @@ protected:
     requires(domains::is_mixed<Domain>::value);
 
 private:
-    using node_t = typename diagram_manager<Degree, Domain>::node_t;
-    using son_conainer = typename node_t::son_container;
-    template<class ValueType>
-    using node_memo = details::map_memo<ValueType, Degree>;
+    
+    
 
     // TODO(michal): not nice
     // same problem as n-ary apply, we will see...
@@ -549,6 +565,54 @@ auto reliability_manager<Degree, Domain>::calculate_unavailability(
     );
     return this->ntps_post(states, probs, diagram.unsafe_get_root());
 }
+
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+
+template<class Degree, class Domain>
+template<class Ps>
+auto reliability_manager<Degree, Domain>::precise_availability(
+    Ps const& ps,
+    diagram_t const& diagram
+) -> mpfr::mpreal
+{
+    node_memo<mpfr::mpreal> memo = details::map_memo<mpfr::mpreal, Degree>(
+        this->get_node_count()
+    );
+
+    auto& nodes = this->get_node_manager();
+
+    memo.put(nodes.get_terminal_node(0), mpfr::mpreal(0.0));
+    memo.put(nodes.get_terminal_node(1), mpfr::mpreal(1.0));
+
+    node_t* const root = diagram.unsafe_get_root();
+    nodes.traverse_post(
+        root,
+        [&ps, &memo, &nodes] (node_t* const node) mutable
+        {
+            if (node->is_terminal())
+            {
+                return;
+            }
+
+            mpfr::mpreal prob(0.0);
+
+            int32 const nodeIndex = node->get_index();
+            int32 const domain    = nodes.get_domain(nodeIndex);
+            for (int32 k = 0; k < domain; ++k)
+            {
+                node_t* const son = node->get_son(k);
+                prob += *memo.find(son)
+                       * ps[as_uindex(nodeIndex)][as_uindex(k)];
+            }
+
+            memo.put(node, prob);
+        }
+    );
+
+    return *memo.find(root);
+}
+
+#endif
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
 

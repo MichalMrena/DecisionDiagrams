@@ -19,9 +19,9 @@ namespace details
     /**
      *  \brief Helper for vector wrap
      *
-     *  Returns probability that the component is in state 1 `p_{i,1}` from \p
-     * vec or in case we need the probability that it is in state 0 it
-     * calculates it as `1 - p_{i,1}`.
+     * Returns probability that the component is in state 1 p_{i,1} from
+     * \p vec or, in case we need the probability that it is in state 0, it
+     * calculates it as 1 - p_{i,1}.
      */
     template<class Vector>
     class vector_to_matrix_proxy
@@ -51,8 +51,8 @@ namespace details
      *  Algorithms working with probability require matrix \c ps such that
      *  \c ps[i][s] returns probability that \c i th component is in state \c s
      *  Since for BSS we only need to know probabilities that the component
-     *  is in state 1 (p1) we can "fake" the matrix by wrapping the vector and
-     *  calculating p0 as 1-p1
+     *  is in state 1 (p_1) we can "fake" the matrix by wrapping the vector and
+     *  calculating p_0 as 1-p_1
      */
     template<class Vector>
     class vector_to_matrix_wrap
@@ -85,7 +85,7 @@ namespace details
             value_ = (*static_cast<ProbDist*>(this))(t);
         }
 
-        auto get_cached_value () const -> double
+        [[nodiscard]] auto get_cached_value () const -> double
         {
             return value_;
         }
@@ -117,11 +117,10 @@ namespace details
         double rate_;
     };
 
-    // TODO(michal): nope
     /**
-     *  \brief Exponential distribution
+     *  \brief Complemented Exponential distribution
      */
-    class complemented_exponential : public make_cached<exponential>
+    class complemented_exponential : public make_cached<complemented_exponential>
     {
     public:
         explicit complemented_exponential(double const rate) :
@@ -248,7 +247,7 @@ using dist_variant = std::variant<
 /**
  *  \brief Interface for distributions, manages variant access
  *
- *  Wraps std::variant of above-defined distributions and uses std::visit
+ *  Wraps \c std::variant of above-defined distributions and uses \c std::visit
  *  to invoke given operation on the variant
  */
 class prob_dist

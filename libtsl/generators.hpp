@@ -177,10 +177,10 @@ inline auto make_time_symprobability_vector (int32 const varCount, rng_t& rng)
         std::size_t {0},
         distGenerators.size() - 1
     );
+    probs.reserve(as_usize(varCount));
     for (int i = 0; i < varCount; ++i)
     {
-        auto const gen = distGenerators[distGen(rng)];
-        probs.push_back(gen(rng));
+        probs.push_back(mkExponential(rng));
     }
 
     return probs;

@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_DEBUG_HPP
 #define LIBTEDDY_DETAILS_DEBUG_HPP
 
-#include <libteddy/details/config.hpp>
+#include <libteddy/impl/config.hpp>
 #ifdef LIBTEDDY_VERBOSE
 #    include <libteddy/details/types.hpp>
 

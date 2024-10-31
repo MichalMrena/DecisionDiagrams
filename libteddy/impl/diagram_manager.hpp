@@ -1,14 +1,14 @@
 #ifndef LIBTEDDY_DETAILS_DIAGRAM_MANAGER_HPP
 #define LIBTEDDY_DETAILS_DIAGRAM_MANAGER_HPP
 
-#include <libteddy/details/diagram.hpp>
-#include <libteddy/details/memo.hpp>
-#include <libteddy/details/node_manager.hpp>
-#include <libteddy/details/operators.hpp>
-#include <libteddy/details/pla_file.hpp>
-#include <libteddy/details/stats.hpp>
-#include <libteddy/details/tools.hpp>
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/diagram.hpp>
+#include <libteddy/impl/memo.hpp>
+#include <libteddy/impl/node_manager.hpp>
+#include <libteddy/impl/operators.hpp>
+#include <libteddy/impl/pla_file.hpp>
+#include <libteddy/impl/stats.hpp>
+#include <libteddy/impl/tools.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <cmath>
 #include <initializer_list>
@@ -350,6 +350,8 @@ public:
      *  the function represented by \p d evaluates to \p val
      */
     auto satisfy_count (int32 value, diagram_t const& diagram) -> longint;
+
+    // TODO(michal): radsej pridat overload co bude vracat longing a nechat henten nech vracia int64
 
     /**
      *  \brief Calculates the logarithm of the number of variable assignments

@@ -14,7 +14,7 @@
 #include "utils.hpp"
 
 // CVS parameters
-char const* const Sep = "\t";
+char const* const Sep = ";";
 char const* const Eol = "\n";
 
 // Types
@@ -300,24 +300,24 @@ auto analyze_fixed (
     if (printHeader)
     {
         // Structure function BDD
-        std::cout << "DOT:" << "\n";
-        io::to_dot(manager, std::cout, sf);
-        std::cout << "\n";
+        // std::cout << "DOT:" << "\n";
+        // io::to_dot(manager, std::cout, sf);
+        // std::cout << "\n";
 
-        // Reliability expression
-        std::cout << "Expression:" << "\n";
-        expr.to_matlab(std::cout);
-        std::cout << "\n";
+        // // Reliability expression
+        // std::cout << "Expression:" << "\n";
+        // expr.to_matlab(std::cout);
+        // std::cout << "\n";
 
         // CSV header
-        std::cout << "replication-id"   << Sep
-                  << "variable-count"   << Sep
-                  << "diagram-nodes"    << Sep
-                  << "tree-nodes"       << Sep
-                  << "time-pt-count"    << Sep
-                  << "basic-prob-eval[" << unit_str(time_unit()) << "]" << Sep
-                  << "sym-prob-init["   << unit_str(time_unit()) << "]" << Sep
-                  << "sym-prob-eval["   << unit_str(time_unit()) << "]" << Eol;
+        // std::cout << "replication_id"   << Sep
+        //           << "variable_count"   << Sep
+        //           << "diagram_nodes"    << Sep
+        //           << "tree_nodes"       << Sep
+        //           << "time_pt_count"    << Sep
+        //           << "basic_prob_eval"  << Sep
+        //           << "sym_prob_init"    << Sep
+        //           << "sym_prob_eval"    << Eol;
     }
 
     // Time parameters
@@ -329,19 +329,19 @@ auto analyze_fixed (
     for (int repl = 0; repl < replicationCount; ++repl)
     {
         // ; replication-id
-        std::cout << repl << Sep;
+        // std::cout << repl << Sep;
 
         // ; variable-count
-        std::cout << manager.get_var_count() << Sep;
+        // std::cout << manager.get_var_count() << Sep;
 
         // ; diagram-nodes
-        std::cout << diagramNodes << Sep;
+        // std::cout << diagramNodes << Sep;
 
         // ; tree-nodes
-        std::cout << treeNodes << Sep;
+        // std::cout << treeNodes << Sep;
 
         // ; time-pt-count
-        std::cout << timePointCount << Sep;
+        // std::cout << timePointCount << Sep;
 
         // Basic approach
         {
@@ -361,7 +361,7 @@ auto analyze_fixed (
             tock(timeBasic);
 
             // ; basic-prob-eval
-            std::cout << duration_as<time_unit>(timeBasic) << Sep;
+            // std::cout << duration_as<time_unit>(timeBasic) << Sep;
         }
 
         // Symbolic approach
@@ -378,7 +378,7 @@ auto analyze_fixed (
             tock(timeSymbolicInit);
 
             // ; sym-prob-init
-            std::cout << duration_as<time_unit>(timeSymbolicInit) << Sep;
+            // std::cout << duration_as<time_unit>(timeSymbolicInit) << Sep;
 
             tick(timeSymbolicEval);
             double t = TimeZero;
@@ -391,7 +391,7 @@ auto analyze_fixed (
             tock(timeSymbolicEval);
 
             // ; sym-prob-eval
-            std::cout << duration_as<time_unit>(timeSymbolicEval) << Eol;
+            // std::cout << duration_as<time_unit>(timeSymbolicEval) << Eol;
         }
     }
 
@@ -673,8 +673,9 @@ auto analyze_pla (
 
 auto run_analyze_fixed () -> void
 {
-    int const ReplicationCount = 100;
-    auto const TimePoinCounts  = {10, 100, 1'000, 10'000};
+    int const ReplicationCount = 1000;
+    // auto const TimePoinCounts  = {10, 100, 1'000, 10'000};
+    auto const TimePoinCounts  = {10'000};
     bool printHeader = true;
     for (int const timePointCount : TimePoinCounts)
     {

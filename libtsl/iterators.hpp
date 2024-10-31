@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_TSL_ITERATORS_HPP
 #define LIBTEDDY_TSL_ITERATORS_HPP
 
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <vector>
 

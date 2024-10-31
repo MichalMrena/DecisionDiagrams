@@ -14,3 +14,12 @@ if(LIBTEDDY_SYMBOLIC_RELIABILITY)
 
     target_link_libraries(time-probs PRIVATE tsl teddy subproject-interface)
 endif()
+
+# Precise-Probs
+if(LIBTEDDY_ARBITRARY_PRECISION)
+    find_package(MPFR REQUIRED)
+
+    add_executable(precise-probs precise-probs.cpp)
+
+    target_link_libraries(precise-probs PRIVATE teddy tsl subproject-interface ${MPFR_LIBRARIES})
+endif()
