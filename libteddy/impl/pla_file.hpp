@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <istream>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -172,11 +173,21 @@ public:
   /**
    *  \brief Loads PLA file from a file at given path
    *  \param path Path to the file
-   *  \param verbose Enables logging
+   *  \param verbose Enables verbose output describing failures
    *  \return Optional holding instance of \c pla_file or
    *  \c std::nullopt if the loading failed
    */
   static auto load_file (std::string const& path, bool verbose = false)
+    -> std::optional<pla_file>;
+
+  /**
+   *  \brief Loads PLA file from stream
+   *  \param ist input stream
+   *  \param verbose Enables verbose output describing failures
+   *  \return Optional holding instance of \c pla_file or
+   *  \c std::nullopt if the loading failed
+   */
+  static auto load_file (std::istream& ist, bool verbose = false)
     -> std::optional<pla_file>;
 
 public:
@@ -310,6 +321,31 @@ inline auto pla_file::load_file( // NOLINT
 {
   using namespace std::string_view_literals;
 
+  auto const verbose_out = [verbose] (auto const&... args)
+  {
+    if (verbose)
+    {
+      ((std::cout << args), ...);
+    }
+  };
+
+  std::ifstream ist(path);
+  if (not ist.is_open())
+  {
+    verbose_out("Failed to open: "sv, path, "\n"sv);
+    return std::nullopt;
+  }
+
+  return pla_file::load_file(ist, verbose);
+}
+
+inline auto pla_file::load_file( // NOLINT
+  std::istream& ist,
+  bool const verbose
+) -> std::optional<pla_file>
+{
+  using namespace std::string_view_literals;
+
   auto const to_words = [] (std::string const& str) -> std::vector<std::string>
   {
     std::vector<std::string> words;
@@ -338,18 +374,11 @@ inline auto pla_file::load_file( // NOLINT
     }
   };
 
-  int32 lineNum = 0;
-  std::ifstream ifst(path);
-  if (not ifst.is_open())
-  {
-    verbose_out("Failed to open: "sv, path, "\n"sv);
-    return std::nullopt;
-  }
-
   // Read options.
   std::unordered_map<std::string, std::string> options;
   std::string line;
-  while (std::getline(ifst, line))
+  int32 lineNum = 0;
+  while (std::getline(ist, line))
   {
     ++lineNum;
     // Skip leading spaces.
@@ -560,7 +589,7 @@ inline auto pla_file::load_file( // NOLINT
 
     lines.push_back(pla_file::pla_line {variables, functions});
 
-  } while (std::getline(ifst, line));
+  } while (std::getline(ist, line));
 
   // Read labels.
   auto const inLbIt = options.find(".ilb");

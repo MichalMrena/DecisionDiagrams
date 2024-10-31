@@ -800,25 +800,70 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture)
 
 BOOST_AUTO_TEST_SUITE_END()
 
+// TODO move to io tests file
+// TODO remove warnings...
 BOOST_AUTO_TEST_SUITE(core_io)
 
 BOOST_AUTO_TEST_CASE(from_pla)
 {
-  // TODO cmon... ENV var<
-  auto const path = "/home/michal/data/IWLS93/pla/xor5.pla";
-  if (not std::filesystem::exists(path))
-  {
-    BOOST_TEST_MESSAGE(
-      fmt::format("Missing input file '{}', test is skipped.", path)
-    );
-    return;
-  }
-  std::optional<pla_file> file = pla_file::load_file(path, true);
+  std::stringstream iost;
+  iost << ".i 5\n";
+  iost << ".o 1\n";
+  iost << ".ilb d c b a e\n";
+  iost << ".ob xor5\n";
+  iost << ".p 16\n";
+  iost << "11111 1\n";
+  iost << "01110 1\n";
+  iost << "10110 1\n";
+  iost << "00111 1\n";
+  iost << "11010 1\n";
+  iost << "01011 1\n";
+  iost << "10011 1\n";
+  iost << "00010 1\n";
+  iost << "11100 1\n";
+  iost << "01101 1\n";
+  iost << "10101 1\n";
+  iost << "00100 1\n";
+  iost << "11001 1\n";
+  iost << "01000 1\n";
+  iost << "10000 1\n";
+  iost << "00001 1\n";
+  iost << ".e";
+
+  std::optional<pla_file> file = pla_file::load_file(iost, true);
   BOOST_REQUIRE_MESSAGE(file.has_value(), "Load simple PLA.");
+
+  BOOST_REQUIRE_EQUAL(file->get_variable_count(), 5);
+  BOOST_REQUIRE_EQUAL(file->get_function_count(), 1);
+  BOOST_REQUIRE_EQUAL(file->get_line_count(), 16);
+  BOOST_REQUIRE_EQUAL(file->get_input_labels()[0], "d");
+  BOOST_REQUIRE_EQUAL(file->get_input_labels()[1], "c");
+  BOOST_REQUIRE_EQUAL(file->get_input_labels()[2], "b");
+  BOOST_REQUIRE_EQUAL(file->get_input_labels()[3], "a");
+  BOOST_REQUIRE_EQUAL(file->get_input_labels()[4], "e");
+  BOOST_REQUIRE_EQUAL(file->get_output_labels()[0], "xor5");
+
   bdd_manager manager(file->get_variable_count(), 1'000);
-  using bdd_t                 = bdd_manager::diagram_t;
-  std::vector<bdd_t> diagrams = io::from_pla(manager, *file);
-  BOOST_REQUIRE_EQUAL(file->get_function_count(), diagrams.size());
+  std::vector<bdd_manager::diagram_t> diagrams = io::from_pla(manager, *file);
+  BOOST_REQUIRE_EQUAL(diagrams.size(), 1);
+  auto const& d = diagrams.front();
+
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,1,1,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,1,1,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,1,1,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,1,1,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,0,1,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,0,1,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,0,1,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,0,1,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,1,0,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,1,0,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,1,0,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,1,0,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,0,0,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,0,0,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,0,0,0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,0,0,1}), 1);
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
