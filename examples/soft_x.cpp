@@ -1,4 +1,4 @@
-#include <libteddy/reliability.hpp>
+#include <libteddy/inc/reliability.hpp>
 #include <array>
 #include <iostream>
 #include <vector>

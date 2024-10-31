@@ -1,6 +1,6 @@
 #include <gmpxx.h>
-#include <libteddy/reliability.hpp>
-#include <libteddy/io.hpp>
+#include <libteddy/inc/reliability.hpp>
+#include <libteddy/inc/io.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
 #include <lib/nanobench/nanobench.h>

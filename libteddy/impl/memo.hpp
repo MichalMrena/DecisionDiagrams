@@ -1,9 +1,9 @@
 #ifndef LIBTEDDY_DETAILS_MEMO_HPP
 #define LIBTEDDY_DETAILS_MEMO_HPP
 
-#include <libteddy/details/node.hpp>
-#include <libteddy/details/node_manager.hpp>
-#include <libteddy/details/tools.hpp>
+#include <libteddy/impl/node.hpp>
+#include <libteddy/impl/node_manager.hpp>
+#include <libteddy/impl/tools.hpp>
 
 #include <unordered_map>
 

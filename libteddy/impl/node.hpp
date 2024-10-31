@@ -1,8 +1,8 @@
 #ifndef LIBTEDDY_DETAILS_NODE_HPP
 #define LIBTEDDY_DETAILS_NODE_HPP
 
-#include <libteddy/details/tools.hpp>
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/tools.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <cassert>
 #include <cstdlib>

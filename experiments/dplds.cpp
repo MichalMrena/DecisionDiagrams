@@ -1,4 +1,4 @@
-#include <libteddy/reliability.hpp>
+#include <libteddy/inc/reliability.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
 #include <libtsl/utilities.hpp>

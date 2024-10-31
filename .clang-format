@@ -75,20 +75,33 @@ IncludeBlocks:   Regroup
 IncludeCategories:
   - Regex:           '^<(libteddy)/'
     Priority:        1
+
   - Regex:           '^<(libtsl)/'
     Priority:        2
+
   - Regex:           '^<(boost)/'
     Priority:        3
+
   - Regex:           '^<(fmt)/'
     Priority:        4
+
   - Regex:           '^<(ginac)/'
     Priority:        5
-  - Regex:           '<.+>'
+
+  - Regex:           '<.+[.hpp]>'
     Priority:        6
-  - Regex:           '".+"'
+
+  - Regex:           '<.+[.h]>'
     Priority:        7
-  - Regex:           '.*'
+
+  - Regex:           '<.+>'
     Priority:        8
+
+  - Regex:           '".+"'
+    Priority:        9
+
+  - Regex:           '.*'
+    Priority:        10
 IncludeIsMainRegex: '(Test)?$'
 IncludeIsMainSourceRegex: ''
 IndentAccessModifiers: false

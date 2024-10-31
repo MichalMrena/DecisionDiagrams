@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_DPLDS_HPP
 #define LIBTEDDY_DETAILS_DPLDS_HPP
 
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/types.hpp>
 
 namespace teddy::dpld
 {

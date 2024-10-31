@@ -1,8 +1,8 @@
 #ifndef LIBTEDDY_SYMBOLIC_PROBABILITIES_HPP
 #define LIBTEDDY_SYMBOLIC_PROBABILITIES_HPP
 
-#include <libteddy/details/config.hpp>
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/config.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <cassert>
 

@@ -1,5 +1,5 @@
-#include <libteddy/core.hpp>
-#include <libteddy/io.hpp>
+#include <libteddy/inc/core.hpp>
+#include <libteddy/inc/io.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
@@ -23,7 +23,7 @@
 #include <gmpxx.h>
 #include <vector>
 
-#include "libteddy/details/types.hpp"
+#include <libteddy/impl/types.hpp>
 #include "setup.hpp"
 
 #ifdef LIBTEDDY_ARBITRARY_PRECISION

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Choose a compiler
-COMPILER=clang++
+COMPILER=g++
 
 # Remove old build files
 rm -rf build/release

@@ -1,10 +1,10 @@
 #ifndef LIBTEDDY_CORE_IO_HPP
 #define LIBTEDDY_CORE_IO_HPP
 
-#include <libteddy/core.hpp>
-#include <libteddy/reliability.hpp>
-#include <libteddy/details/io_impl.hpp>
-#include <libteddy/details/pla_file.hpp>
+#include <libteddy/inc/core.hpp>
+#include <libteddy/inc/reliability.hpp>
+#include <libteddy/impl/io_impl.hpp>
+#include <libteddy/impl/pla_file.hpp>
 
 #include <cstdlib>
 #include <initializer_list>

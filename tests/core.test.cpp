@@ -1,5 +1,5 @@
-#include <libteddy/core.hpp>
-#include <libteddy/io.hpp>
+#include <libteddy/inc/core.hpp>
+#include <libteddy/inc/io.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>

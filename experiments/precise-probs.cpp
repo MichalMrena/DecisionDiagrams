@@ -1,5 +1,5 @@
-#include <libteddy/io.hpp>
-#include <libteddy/reliability.hpp>
+#include <libteddy/inc/io.hpp>
+#include <libteddy/inc/reliability.hpp>
 #include <libtsl/generators.hpp>
 
 #include <array>

@@ -1,14 +1,14 @@
 #ifndef LIBTEDDY_DETAILS_NODE_MANAGER_HPP
 #define LIBTEDDY_DETAILS_NODE_MANAGER_HPP
 
-#include <libteddy/details/config.hpp>
-#include <libteddy/details/debug.hpp>
-#include <libteddy/details/hash_tables.hpp>
-#include <libteddy/details/node.hpp>
-#include <libteddy/details/node_pool.hpp>
-#include <libteddy/details/operators.hpp>
-#include <libteddy/details/tools.hpp>
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/config.hpp>
+#include <libteddy/impl/debug.hpp>
+#include <libteddy/impl/hash_tables.hpp>
+#include <libteddy/impl/node.hpp>
+#include <libteddy/impl/node_pool.hpp>
+#include <libteddy/impl/operators.hpp>
+#include <libteddy/impl/tools.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <cassert>
 #include <vector>

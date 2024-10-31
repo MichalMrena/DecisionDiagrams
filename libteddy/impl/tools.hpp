@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_UTILS_HPP
 #define LIBTEDDY_DETAILS_UTILS_HPP
 
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <cstddef>
 #include <vector>

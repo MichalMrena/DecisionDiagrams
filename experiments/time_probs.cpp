@@ -1,6 +1,6 @@
-#include <libteddy/details/pla_file.hpp>
-#include <libteddy/reliability.hpp>
-#include <libteddy/io.hpp>
+#include <libteddy/impl/pla_file.hpp>
+#include <libteddy/inc/reliability.hpp>
+#include <libteddy/inc/io.hpp>
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
 #include <libtsl/utilities.hpp>

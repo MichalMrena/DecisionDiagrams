@@ -1,4 +1,4 @@
-#include <libteddy/details/node_manager.hpp>
+#include <libteddy/impl/node_manager.hpp>
 
 #include <boost/mpl/vector.hpp>
 #include <boost/test/tools/old/interface.hpp>

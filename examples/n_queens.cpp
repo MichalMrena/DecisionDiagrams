@@ -1,5 +1,5 @@
-#include <libteddy/core.hpp>
-#include <libteddy/details/tools.hpp>
+#include <libteddy/inc/core.hpp>
+#include <libteddy/impl/tools.hpp>
 #include <chrono>
 #include <iostream>
 #include <optional>

@@ -1,8 +1,8 @@
 #ifndef LIBTEDDY_COMMON_TEST_SETUP_HPP
 #define LIBTEDDY_COMMON_TEST_SETUP_HPP
 
-#include <libteddy/core.hpp>
-#include <libteddy/reliability.hpp>
+#include <libteddy/inc/core.hpp>
+#include <libteddy/inc/reliability.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/iterators.hpp>

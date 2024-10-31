@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_TSL_TRUTH_TABLE_RELIABILITY_HPP
 #define LIBTEDDY_TSL_TRUTH_TABLE_RELIABILITY_HPP
 
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <libtsl/truth_table.hpp>
 

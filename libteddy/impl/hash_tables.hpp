@@ -1,10 +1,10 @@
 #ifndef LIBTEDDY_DETAILS_HASH_TABLES_HPP
 #define LIBTEDDY_DETAILS_HASH_TABLES_HPP
 
-#include <libteddy/details/config.hpp>
-#include <libteddy/details/debug.hpp>
-#include <libteddy/details/node.hpp>
-#include <libteddy/details/tools.hpp>
+#include <libteddy/impl/config.hpp>
+#include <libteddy/impl/debug.hpp>
+#include <libteddy/impl/node.hpp>
+#include <libteddy/impl/tools.hpp>
 
 #include <cstddef>
 #include <cstdlib>

@@ -1,9 +1,9 @@
 #ifndef LIBTEDDY_DETAILS_PLA_FILE_HPP
 #define LIBTEDDY_DETAILS_PLA_FILE_HPP
 
-#include <libteddy/details/debug.hpp>
-#include <libteddy/details/tools.hpp>
-#include <libteddy/details/types.hpp>
+#include <libteddy/impl/debug.hpp>
+#include <libteddy/impl/tools.hpp>
+#include <libteddy/impl/types.hpp>
 
 #include <cassert>
 #include <cctype>

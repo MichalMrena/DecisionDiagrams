@@ -1,4 +1,4 @@
-#include <libteddy/reliability.hpp>
+#include <libteddy/inc/reliability.hpp>
 
 #include <iomanip>
 #include <iostream>

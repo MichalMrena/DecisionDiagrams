@@ -1,8 +1,8 @@
 #ifndef LIBTEDDY_CORE_HPP
 #define LIBTEDDY_CORE_HPP
 
-#include <libteddy/details/diagram_manager.hpp>
-#include <libteddy/details/pla_file.hpp>
+#include <libteddy/impl/diagram_manager.hpp>
+#include <libteddy/impl/pla_file.hpp>
 
 namespace teddy
 {

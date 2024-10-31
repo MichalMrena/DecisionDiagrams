@@ -1,9 +1,9 @@
 #ifndef LIBTEDDY_TSL_GENERATORS_HPP
 #define LIBTEDDY_TSL_GENERATORS_HPP
 
-#include <libteddy/core.hpp>
-#include <libteddy/details/probabilities.hpp>
-#include <libteddy/details/symbolic_probabilities.hpp>
+#include <libteddy/inc/core.hpp>
+#include <libteddy/impl/probabilities.hpp>
+#include <libteddy/impl/symbolic_probabilities.hpp>
 
 #include <libtsl/expressions.hpp>
 

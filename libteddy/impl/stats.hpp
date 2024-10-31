@@ -1,10 +1,10 @@
 #ifndef LIBTEDDY_DETAILS_STATS_HPP
 #define LIBTEDDY_DETAILS_STATS_HPP
 
-#include <libteddy/details/config.hpp>
+#include <libteddy/impl/config.hpp>
 #ifdef LIBTEDDY_COLLECT_STATS
 
-#    include <libteddy/details/types.hpp>
+#    include <libteddy/impl/types.hpp>
 
 #    include <chrono>
 #    include <iostream>

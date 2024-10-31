@@ -1,10 +1,10 @@
 #ifndef LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 #define LIBTEDDY_DETAILS_RELIABILITY_MANAGER_HPP
 
-#include <libteddy/details/diagram_manager.hpp>
-#include <libteddy/details/dplds.hpp>
-#include <libteddy/details/probabilities.hpp>
-#include <libteddy/details/symbolic_probabilities.hpp>
+#include <libteddy/impl/diagram_manager.hpp>
+#include <libteddy/impl/dplds.hpp>
+#include <libteddy/impl/probabilities.hpp>
+#include <libteddy/impl/symbolic_probabilities.hpp>
 
 #include <lib/mpfr/mpreal.h>
 

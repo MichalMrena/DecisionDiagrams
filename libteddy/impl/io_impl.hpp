@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_IO_HPP
 #define LIBTEDDY_DETAILS_IO_HPP
 
-#include <libteddy/details/diagram_manager.hpp>
+#include <libteddy/impl/diagram_manager.hpp>
 
 #include <cstdint>
 #include <ostream>

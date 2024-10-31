@@ -1,6 +1,6 @@
 #include "iterators.hpp"
 
-#include <libteddy/details/tools.hpp>
+#include <libteddy/impl/tools.hpp>
 
 #include <algorithm>
 

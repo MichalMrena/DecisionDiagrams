@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_DETAILS_TYPES_HPP
 #define LIBTEDDY_DETAILS_TYPES_HPP
 
-#include <libteddy/details/config.hpp>
+#include <libteddy/impl/config.hpp>
 
 #include <cstddef>
 #include <cstdint>
