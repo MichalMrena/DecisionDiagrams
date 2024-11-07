@@ -6,7 +6,10 @@
 #include <libteddy/impl/probabilities.hpp>
 #include <libteddy/impl/symbolic_probabilities.hpp>
 
+#ifdef LIBTEDDY_ARBITRARY_PRECISION
+// TODO toto tu asi urcite nebude
 #include <lib/mpfr/mpreal.h>
+#endif
 
 #include <unordered_map>
 
