@@ -7,11 +7,9 @@
 
 #  include <iostream>
 
-namespace teddy::debug
-{
+namespace teddy::debug {
 template<class... Ts>
-auto out ([[maybe_unused]] Ts... str)
-{
+auto out ([[maybe_unused]] Ts... str) {
   ((std::cout << str), ...);
 }
 } // namespace teddy::debug

@@ -3,8 +3,7 @@
 
 #include <libteddy/impl/reliability_manager.hpp>
 
-namespace teddy
-{
+namespace teddy {
 using default_oder = std::vector<int32>;
 
 /**
@@ -12,8 +11,7 @@ using default_oder = std::vector<int32>;
  *  \brief Manager for BDDs and analysis of Binary State System
  */
 struct bss_manager :
-  public reliability_manager<degrees::fixed<2>, domains::fixed<2>>
-{
+  public reliability_manager<degrees::fixed<2>, domains::fixed<2>> {
   /**
    *  \brief Initializes BSS manager
    *  \param componentCount Number of components
@@ -50,8 +48,7 @@ struct bss_manager :
  */
 template<int32 M>
 struct mss_manager :
-  public reliability_manager<degrees::fixed<M>, domains::fixed<M>>
-{
+  public reliability_manager<degrees::fixed<M>, domains::fixed<M>> {
   /**
    *  \brief Initializes MSS manager
    *  \param componentCount Number of components
@@ -85,8 +82,8 @@ struct mss_manager :
  *  \class imss_manager
  *  \brief Manager for iMDDs and analysis of non-homogenous Multi-state Systems
  */
-struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
-{
+struct imss_manager :
+  public reliability_manager<degrees::mixed, domains::mixed> {
   /**
    *  \brief Initializes iMSS manager
    *  \param componentCount Number of components
@@ -129,8 +126,7 @@ struct imss_manager : public reliability_manager<degrees::mixed, domains::mixed>
  */
 template<int32 M>
 struct ifmss_manager :
-  public reliability_manager<degrees::fixed<M>, domains::mixed>
-{
+  public reliability_manager<degrees::fixed<M>, domains::mixed> {
   /**
    *  \brief Initializes ifMSS manager
    *  \param componentCount Number of components
@@ -171,8 +167,12 @@ inline bss_manager::bss_manager(
   int64 const nodePoolSize,
   std::vector<int32> order
 ) :
-  bss_manager(componentCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order))
-{
+  bss_manager(
+    componentCount,
+    nodePoolSize,
+    nodePoolSize / 2,
+    TEDDY_MOVE(order)
+  ) {
 }
 
 inline bss_manager::bss_manager(
@@ -186,8 +186,7 @@ inline bss_manager::bss_manager(
     nodePoolSize,
     overflowNodePoolSize,
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 template<int32 M>
@@ -196,8 +195,12 @@ mss_manager<M>::mss_manager(
   int64 const nodePoolSize,
   std::vector<int32> order
 ) :
-  mss_manager(componentCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order))
-{
+  mss_manager(
+    componentCount,
+    nodePoolSize,
+    nodePoolSize / 2,
+    TEDDY_MOVE(order)
+  ) {
 }
 
 template<int32 M>
@@ -212,8 +215,7 @@ mss_manager<M>::mss_manager(
     nodePoolSize,
     overflowNodePoolSize,
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 inline imss_manager::imss_manager(
@@ -228,8 +230,7 @@ inline imss_manager::imss_manager(
     nodePoolSize / 2,
     TEDDY_MOVE(domains),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 inline imss_manager::imss_manager(
@@ -245,8 +246,7 @@ inline imss_manager::imss_manager(
     overflowNodePoolSize,
     domains::mixed(TEDDY_MOVE(domains)),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 template<int32 M>
@@ -262,8 +262,7 @@ ifmss_manager<M>::ifmss_manager(
     nodePoolSize / 2,
     TEDDY_MOVE(domains),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 template<int32 M>
@@ -280,8 +279,7 @@ ifmss_manager<M>::ifmss_manager(
     overflowNodePoolSize,
     domains::mixed(TEDDY_MOVE(domains)),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 } // namespace teddy
 

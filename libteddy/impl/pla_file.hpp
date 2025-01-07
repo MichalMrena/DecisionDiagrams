@@ -20,21 +20,16 @@
 #include <string_view>
 #include <vector>
 
-namespace teddy
-{
-namespace utils
-{
+namespace teddy {
+namespace utils {
   /**
    *  \brief Finds the first element satisfying \p test
    *  Implementation of std::find_if
    */
   template<class It, class Predicate>
-  auto constexpr find_if(It first, It const last, Predicate test) -> It
-  {
-    while (first != last)
-    {
-      if (test(*first))
-      {
+  auto constexpr find_if(It first, It const last, Predicate test) -> It {
+    while (first != last) {
+      if (test(*first)) {
         return first;
       }
       ++first;
@@ -47,12 +42,9 @@ namespace utils
    *  Implementation of std::find_if_not
    */
   template<class It, class Predicate>
-  auto constexpr find_if_not(It first, It const last, Predicate test) -> It
-  {
-    while (first != last)
-    {
-      if (not test(*first))
-      {
+  auto constexpr find_if_not(It first, It const last, Predicate test) -> It {
+    while (first != last) {
+      if (not test(*first)) {
         return first;
       }
       ++first;
@@ -66,11 +58,10 @@ namespace utils
    *  \return optinal result
    */
   template<class Num>
-  auto parse (std::string_view const input) -> std::optional<Num>
-  {
+  auto parse (std::string_view const input) -> std::optional<Num> {
     Num ret;
-    char const* const first             = input.data();
-    char const* const last              = input.data() + input.size();
+    char const *const first             = input.data();
+    char const *const last              = input.data() + input.size();
     std::from_chars_result const result = std::from_chars(first, last, ret);
     return std::errc {} == result.ec && result.ptr == last
            ? std::optional<Num>(ret)
@@ -81,33 +72,28 @@ namespace utils
 /**
  *  \brief Bool cube
  */
-class bool_cube
-{
+class bool_cube {
 public:
   static std::uint8_t constexpr DontCare = 0b11;
 
 public:
   explicit bool_cube(int32 size) :
     size_(size),
-    values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0})
-  {
+    values_(as_usize(size / 4 + 1), byte {0, 0, 0, 0}) {
   }
 
   [[nodiscard]]
-  auto size () const -> int32
-  {
+  auto size () const -> int32 {
     return size_;
   }
 
   [[nodiscard]]
-  auto get (int32 index) const -> int32
-  {
+  auto get (int32 index) const -> int32 {
     int32 const byteIndex = index / 4;
 
     assert(byteIndex >= 0 && byteIndex < ssize(values_));
 
-    switch (index % 4)
-    {
+    switch (index % 4) {
     case 0:
       return values_[as_uindex(byteIndex)].b0;
     case 1:
@@ -121,8 +107,7 @@ public:
     }
   }
 
-  auto set (int32 const index, int32 const value) -> void
-  {
+  auto set (int32 const index, int32 const value) -> void {
     int32 const byteIndex = index / 4;
 
     assert((byteIndex >= 0 && byteIndex < ssize(values_)));
@@ -130,8 +115,7 @@ public:
 
     auto const uValue = static_cast<uint32>(value);
 
-    switch (index % 4)
-    {
+    switch (index % 4) {
     case 0:
       values_[as_uindex(byteIndex)].b0 = uValue & 0b11U;
       break;
@@ -151,8 +135,7 @@ public:
   }
 
 private:
-  struct byte
-  {
+  struct byte {
     std::uint8_t b0 : 2;
     std::uint8_t b1 : 2;
     std::uint8_t b2 : 2;
@@ -167,8 +150,7 @@ private:
 /**
  *  \brief Representation of a PLA file
  */
-class pla_file
-{
+class pla_file {
 public:
   /**
    *  \brief Loads PLA file from a file at given path
@@ -177,7 +159,7 @@ public:
    *  \return Optional holding instance of \c pla_file or
    *  \c std::nullopt if the loading failed
    */
-  static auto load_file (std::string const& path, bool verbose = false)
+  static auto load_file (std::string const &path, bool verbose = false)
     -> std::optional<pla_file>;
 
   /**
@@ -187,15 +169,14 @@ public:
    *  \return Optional holding instance of \c pla_file or
    *  \c std::nullopt if the loading failed
    */
-  static auto load_file (std::istream& ist, bool verbose = false)
+  static auto load_file (std::istream &ist, bool verbose = false)
     -> std::optional<pla_file>;
 
 public:
   /**
    *  \brief Represents one line of a PLA file.
    */
-  struct pla_line
-  {
+  struct pla_line {
     bool_cube cube_;
     bool_cube fVals_;
   };
@@ -206,8 +187,7 @@ public:
    *  \return Number of variables
    */
   [[nodiscard]]
-  auto get_variable_count () const -> int32
-  {
+  auto get_variable_count () const -> int32 {
     return lines_.front().cube_.size();
   }
 
@@ -216,8 +196,7 @@ public:
    *  \return Number of functions
    */
   [[nodiscard]]
-  auto get_function_count () const -> int32
-  {
+  auto get_function_count () const -> int32 {
     return lines_.front().fVals_.size();
   }
 
@@ -229,8 +208,7 @@ public:
    *  \return Number of lines
    */
   [[nodiscard]]
-  auto get_line_count () const -> int64
-  {
+  auto get_line_count () const -> int64 {
     return static_cast<int64>(lines_.size());
   }
 
@@ -239,8 +217,7 @@ public:
    *  \return Reference to the vector
    */
   [[nodiscard]]
-  auto get_lines () const& -> std::vector<pla_line> const&
-  {
+  auto get_lines () const & -> std::vector<pla_line> const & {
     return lines_;
   }
 
@@ -249,8 +226,7 @@ public:
    *  \return Copy of the vector
    */
   [[nodiscard]]
-  auto get_lines () && -> std::vector<pla_line>
-  {
+  auto get_lines () && -> std::vector<pla_line> {
     return lines_;
   }
 
@@ -259,8 +235,7 @@ public:
    *  \return Reference to the vector
    */
   [[nodiscard]]
-  auto get_input_labels () const& -> std::vector<std::string> const&
-  {
+  auto get_input_labels () const & -> std::vector<std::string> const & {
     return inputLabels_;
   }
 
@@ -269,8 +244,7 @@ public:
    *  \return Copy of the vector
    */
   [[nodiscard]]
-  auto get_input_labels () && -> std::vector<std::string>
-  {
+  auto get_input_labels () && -> std::vector<std::string> {
     return inputLabels_;
   }
 
@@ -279,8 +253,7 @@ public:
    *  \return Reference to the vector
    */
   [[nodiscard]]
-  auto get_output_labels () const& -> std::vector<std::string> const&
-  {
+  auto get_output_labels () const & -> std::vector<std::string> const & {
     return outputLabels_;
   }
 
@@ -289,8 +262,7 @@ public:
    *  \return Copy the vector
    */
   [[nodiscard]]
-  auto get_output_labels () && -> std::vector<std::string>
-  {
+  auto get_output_labels () && -> std::vector<std::string> {
     return outputLabels_;
   }
 
@@ -302,8 +274,7 @@ private:
   ) :
     lines_(TEDDY_MOVE(lines)),
     inputLabels_(TEDDY_MOVE(inputLabels)),
-    outputLabels_(TEDDY_MOVE(outputLabels))
-  {
+    outputLabels_(TEDDY_MOVE(outputLabels)) {
   }
 
 private:
@@ -315,23 +286,19 @@ private:
 // pla_file definitions:
 
 inline auto pla_file::load_file( // NOLINT
-  std::string const& path,
+  std::string const &path,
   bool const verbose
-) -> std::optional<pla_file>
-{
+) -> std::optional<pla_file> {
   using namespace std::string_view_literals;
 
-  auto const verbose_out = [verbose] (auto const&... args)
-  {
-    if (verbose)
-    {
+  auto const verbose_out = [verbose] (auto const &...args) {
+    if (verbose) {
       ((std::cout << args), ...);
     }
   };
 
   std::ifstream ist(path);
-  if (not ist.is_open())
-  {
+  if (not ist.is_open()) {
     verbose_out("Failed to open: "sv, path, "\n"sv);
     return std::nullopt;
   }
@@ -340,24 +307,21 @@ inline auto pla_file::load_file( // NOLINT
 }
 
 inline auto pla_file::load_file( // NOLINT
-  std::istream& ist,
+  std::istream &ist,
   bool const verbose
-) -> std::optional<pla_file>
-{
+) -> std::optional<pla_file> {
   using namespace std::string_view_literals;
 
-  auto const to_words = [] (std::string const& str) -> std::vector<std::string>
-  {
+  auto const to_words
+    = [] (std::string const &str) -> std::vector<std::string> {
     std::vector<std::string> words;
     auto strIt       = str.begin();
     auto const endIt = str.end();
 
-    while (strIt != endIt)
-    {
+    while (strIt != endIt) {
       auto const wordBegin = utils::find_if_not(strIt, endIt, ::isspace);
       auto const wordEnd   = utils::find_if(wordBegin, endIt, ::isspace);
-      if (wordBegin != wordEnd)
-      {
+      if (wordBegin != wordEnd) {
         words.emplace_back(wordBegin, wordEnd);
       }
       strIt = wordEnd;
@@ -366,10 +330,8 @@ inline auto pla_file::load_file( // NOLINT
     return words;
   };
 
-  auto const verbose_out = [verbose] (auto const&... args)
-  {
-    if (verbose)
-    {
+  auto const verbose_out = [verbose] (auto const &...args) {
+    if (verbose) {
       ((std::cout << args), ...);
     }
   };
@@ -378,26 +340,22 @@ inline auto pla_file::load_file( // NOLINT
   std::unordered_map<std::string, std::string> options;
   std::string line;
   int32 lineNum = 0;
-  while (std::getline(ist, line))
-  {
+  while (std::getline(ist, line)) {
     ++lineNum;
     // Skip leading spaces.
     auto const first = utils::find_if_not(line.begin(), line.end(), ::isspace);
     auto const last  = line.end();
-    if (first == last)
-    {
+    if (first == last) {
       // Skip empty line.
       continue;
     }
 
-    if (*first == '#')
-    {
+    if (*first == '#') {
       // Skip comment.
       continue;
     }
 
-    if (*first != '.')
-    {
+    if (*first != '.') {
       // Not an option. Start parsing cubes.
       break;
     }
@@ -408,20 +366,16 @@ inline auto pla_file::load_file( // NOLINT
                           ? last
                           : utils::find_if_not(keyLast + 1, last, ::isspace);
     std::string key(first, keyLast);
-    if (valFirst != last)
-    {
+    if (valFirst != last) {
       // Option with argument
       auto valLast = last;
       while (valLast != valFirst && static_cast<bool>(::isspace(*(valLast - 1)))
-      )
-      {
+      ) {
         --valLast;
       }
       std::string val(valFirst, valLast);
       options.emplace(TEDDY_MOVE(key), TEDDY_MOVE(val));
-    }
-    else
-    {
+    } else {
       // Option with no argument
       options.emplace(TEDDY_MOVE(key), std::string());
     }
@@ -431,20 +385,17 @@ inline auto pla_file::load_file( // NOLINT
   auto const varCountIt  = options.find(".i");
   auto const fCountIt    = options.find(".o");
   auto const lineCountIt = options.find(".p");
-  if (varCountIt == options.end())
-  {
+  if (varCountIt == options.end()) {
     verbose_out("Missing input count option .i\n"sv);
     return std::nullopt;
   }
 
-  if (fCountIt == options.end())
-  {
+  if (fCountIt == options.end()) {
     verbose_out("Missing function count option .o\n"sv);
     return std::nullopt;
   }
 
-  if (lineCountIt == options.end() && verbose)
-  {
+  if (lineCountIt == options.end() && verbose) {
     verbose_out("Missing line count option .p\n"sv);
   }
 
@@ -452,23 +403,19 @@ inline auto pla_file::load_file( // NOLINT
   std::optional<int32> fCount    = utils::parse<int32>(fCountIt->second);
   std::optional<int32> lineCount = std::nullopt;
 
-  if (not varCount)
-  {
+  if (not varCount) {
     verbose_out("Failed to parse input count: "sv, varCountIt->second, "\n"sv);
     return std::nullopt;
   }
 
-  if (not fCount)
-  {
+  if (not fCount) {
     verbose_out("Failed to parse output count: "sv, fCountIt->second, "\n"sv);
     return std::nullopt;
   }
 
-  if (lineCountIt != options.end())
-  {
+  if (lineCountIt != options.end()) {
     lineCount = utils::parse<int32>(fCountIt->second);
-    if (not lineCount)
-    {
+    if (not lineCount) {
       verbose_out(
         "Failed to parse line count: "sv,
         lineCountIt->second,
@@ -479,38 +426,32 @@ inline auto pla_file::load_file( // NOLINT
 
   // Read data.
   std::vector<pla_file::pla_line> lines;
-  if (lineCount)
-  {
+  if (lineCount) {
     lines.reserve(as_usize(*lineCount));
   }
 
-  do
-  {
+  do {
     ++lineNum;
     auto const first = utils::find_if_not(line.begin(), line.end(), ::isspace);
     auto const last  = line.end();
-    if (first == last)
-    {
+    if (first == last) {
       // Skip empty line.
       continue;
     }
 
-    if (*first == '.')
-    {
+    if (*first == '.') {
       // This can only be the .e line.
       continue;
     }
 
-    if (*first == '#')
-    {
+    if (*first == '#') {
       // Skip comment.
       continue;
     }
 
     // Split on the first space.
     auto const varsLast = utils::find_if(first, last, ::isspace);
-    if (varsLast == last)
-    {
+    if (varsLast == last) {
       verbose_out("Missing output values on line "sv, lineNum - 1, "\n"sv);
       return std::nullopt;
     }
@@ -519,24 +460,20 @@ inline auto pla_file::load_file( // NOLINT
     std::string const varsStr(first, varsLast);
     std::string const fStr(fsFirst, fsLast);
 
-    if (ssize(varsStr) != *varCount)
-    {
+    if (ssize(varsStr) != *varCount) {
       verbose_out("Invalid input count on line "sv, lineNum - 1, "\n"sv);
       return std::nullopt;
     }
 
-    if (ssize(fStr) != *fCount)
-    {
+    if (ssize(fStr) != *fCount) {
       verbose_out("Invalid output count on line "sv, lineNum - 1, "\n"sv);
       return std::nullopt;
     }
 
     // Parse variables into cube.
     bool_cube variables(*varCount);
-    for (int32 i = 0; i < *varCount; ++i)
-    {
-      switch (varsStr[as_uindex(i)])
-      {
+    for (int32 i = 0; i < *varCount; ++i) {
+      switch (varsStr[as_uindex(i)]) {
       case '0':
         variables.set(i, 0);
         break;
@@ -561,10 +498,8 @@ inline auto pla_file::load_file( // NOLINT
 
     // Parse functions into cube.
     bool_cube functions(*fCount);
-    for (auto i = 0; i < *fCount; ++i)
-    {
-      switch (fStr[as_uindex(i)])
-      {
+    for (auto i = 0; i < *fCount; ++i) {
+      switch (fStr[as_uindex(i)]) {
       case '0':
         functions.set(i, 0);
         break;
@@ -595,14 +530,12 @@ inline auto pla_file::load_file( // NOLINT
   auto const inLbIt = options.find(".ilb");
   auto const ouLbIt = options.find(".ob");
   std::vector<std::string> inputLabels;
-  if (inLbIt != options.end())
-  {
+  if (inLbIt != options.end()) {
     inputLabels = to_words(inLbIt->second);
   }
 
   std::vector<std::string> outputLabels;
-  if (ouLbIt != options.end())
-  {
+  if (ouLbIt != options.end()) {
     outputLabels = to_words(ouLbIt->second);
   }
 

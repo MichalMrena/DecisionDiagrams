@@ -18,14 +18,12 @@
 
 #include "setup.hpp"
 
-namespace teddy::tests
-{
+namespace teddy::tests {
 /**
  *  \brief Fixture base
  */
 template<class ManagerSettings, class ExpressionSettings>
-struct fixture_base
-{
+struct fixture_base {
   ManagerSettings managerSettings_;
   ExpressionSettings expressionSettings_;
   tsl::rng_t rng_;
@@ -37,8 +35,7 @@ struct fixture_base
  *  \brief BDD fixture
  */
 struct bdd_fixture :
-  fixture_base<bdd_manager_settings, minmax_expression_settings>
-{
+  fixture_base<bdd_manager_settings, minmax_expression_settings> {
 private:
   static auto constexpr VarCount  = 21;
   static auto constexpr NodeCount = 5'000;
@@ -55,8 +52,7 @@ public:
       = minmax_expression_settings {VarCount, TermCount, TermSize          },
       .rng_      = tsl::rng_t(Seed),
       .maxValue_ = 2
-  }
-  {
+  } {
   }
 };
 
@@ -64,8 +60,7 @@ public:
  *  \brief MDD fixture
  */
 struct mdd_fixture :
-  fixture_base<mdd_manager_settings<3>, minmax_expression_settings>
-{
+  fixture_base<mdd_manager_settings<3>, minmax_expression_settings> {
 private:
   static auto constexpr VarCount  = 15;
   static auto constexpr NodeCount = 5'000;
@@ -82,8 +77,7 @@ public:
       = minmax_expression_settings {VarCount, TermCount, TermSize          },
       .rng_      = tsl::rng_t(Seed),
       .maxValue_ = 3
-  }
-  {
+  } {
   }
 };
 
@@ -91,8 +85,7 @@ public:
  *  \brief iMDD fixture
  */
 struct imdd_fixture :
-  fixture_base<imdd_manager_settings<3>, minmax_expression_settings>
-{
+  fixture_base<imdd_manager_settings<3>, minmax_expression_settings> {
 private:
   static auto constexpr VarCount  = 15;
   static auto constexpr NodeCount = 5'000;
@@ -109,8 +102,7 @@ public:
       = minmax_expression_settings {VarCount, TermCount, TermSize},
       .rng_      = tsl::rng_t(Seed),
       .maxValue_ = 3
-  }
-  {
+  } {
   }
 };
 
@@ -118,8 +110,7 @@ public:
  *  \brief ifMDD fixture
  */
 struct ifmdd_fixture :
-  fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings>
-{
+  fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings> {
 private:
   static auto constexpr VarCount  = 15;
   static auto constexpr NodeCount = 5'000;
@@ -136,8 +127,7 @@ public:
       = minmax_expression_settings {VarCount, TermCount, TermSize},
       .rng_      = tsl::rng_t(Seed),
       .maxValue_ = 3
-  }
-  {
+  } {
   }
 };
 
@@ -146,19 +136,16 @@ public:
  */
 template<class Degree, class Domain>
 auto expected_counts (
-  diagram_manager<Degree, Domain>& manager,
-  tsl::minmax_expr const& expr
-)
-{
+  diagram_manager<Degree, Domain> &manager,
+  tsl::minmax_expr const &expr
+) {
   auto counts   = std::vector<int64>();
   auto domainIt = tsl::domain_iterator(manager.get_domains());
   auto evalIt   = tsl::evaluating_iterator(domainIt, expr);
   auto evalEnd  = tsl::evaluating_iterator_sentinel();
-  while (evalIt != evalEnd)
-  {
+  while (evalIt != evalEnd) {
     auto const value = *evalIt;
-    if (value >= ssize(counts))
-    {
+    if (value >= ssize(counts)) {
       counts.resize(as_usize(value + 1), 0);
     }
     ++counts[as_uindex(value)];
@@ -173,13 +160,11 @@ auto expected_counts (
 template<class Expression, class Degree, class Domain>
 auto test_compare_eval (
   tsl::evaluating_iterator<Expression> evalIt,
-  diagram_manager<Degree, Domain>& manager,
-  auto& diagram
-) -> void
-{
+  diagram_manager<Degree, Domain> &manager,
+  auto &diagram
+) -> void {
   auto evalEnd = tsl::evaluating_iterator_sentinel();
-  while (evalIt != evalEnd)
-  {
+  while (evalIt != evalEnd) {
     auto const expectedVal = *evalIt;
     auto const diagramVal  = manager.evaluate(diagram, evalIt.get_var_vals());
     BOOST_REQUIRE_EQUAL(expectedVal, diagramVal);
@@ -195,8 +180,7 @@ using Fixtures = boost::mpl::vector<
 
 BOOST_AUTO_TEST_SUITE(core)
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
@@ -208,8 +192,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture)
   test_compare_eval(evalit, manager, diagram);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(fold, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(fold, Fixture, Fixtures, Fixture) {
   auto expr     = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram1 = tsl::make_diagram(expr, manager, fold_type::Left);
@@ -220,8 +203,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(fold, Fixture, Fixtures, Fixture)
   BOOST_REQUIRE(diagram1.equals(diagram2));
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(gc, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(gc, Fixture, Fixtures, Fixture) {
   auto expr     = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram1 = tsl::make_diagram(expr, manager, fold_type::Left);
@@ -235,8 +217,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(gc, Fixture, Fixtures, Fixture)
   BOOST_REQUIRE_EQUAL(expected, actual);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
@@ -246,26 +227,27 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture)
   auto expected = expected_counts(manager, expr);
   auto actual   = std::vector<teddy::longint>(expected.size(), 0);
 
-  for (auto j = 0; j < ssize(actual); ++j)
-  {
+  for (auto j = 0; j < ssize(actual); ++j) {
     actual[as_uindex(j)] = manager.satisfy_count(j, diagram);
   }
 
-  for (auto k = 0; k < ssize(actual); ++k)
-  {
+  for (auto k = 0; k < ssize(actual); ++k) {
     BOOST_REQUIRE_EQUAL(actual[as_uindex(k)], expected[as_uindex(k)]);
   }
 }
 
 #ifdef LIBTEDDY_ARBITRARY_PRECISION
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count_long, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(
+  satisfy_count_long,
+  Fixture,
+  Fixtures,
+  Fixture
+) {
   // TODO(michal): gmp test
 }
 #endif
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
@@ -273,8 +255,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture)
     fmt::format("Node count {}", manager.get_node_count(diagram))
   );
 
-  for (auto j = 0; j < Fixture::maxValue_; ++j)
-  {
+  for (auto j = 0; j < Fixture::maxValue_; ++j) {
     auto const vars
       = manager.template satisfy_one<std::vector<int32>>(j, diagram);
     BOOST_REQUIRE(vars.has_value());
@@ -293,8 +274,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture)
   BOOST_REQUIRE_EQUAL(1, manager.evaluate(justOne, *notNullOpt));
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
@@ -303,22 +283,19 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture)
   );
   auto expected = expected_counts(manager, expr);
   auto actual   = std::vector<int64>(expected.size(), 0);
-  for (auto k = 0; k < ssize(expected); ++k)
-  {
+  for (auto k = 0; k < ssize(expected); ++k) {
     using out_var_vals = std::vector<int32>;
-    auto outf          = [&actual, k] (auto const&) { ++actual[as_uindex(k)]; };
-    auto out           = tsl::forwarding_iterator<decltype(outf)>(outf);
+    auto outf = [&actual, k] (auto const &) { ++actual[as_uindex(k)]; };
+    auto out  = tsl::forwarding_iterator<decltype(outf)>(outf);
     manager.template satisfy_all_g<out_var_vals>(k, diagram, out);
   }
 
-  for (auto k = 0; k < ssize(actual); ++k)
-  {
+  for (auto k = 0; k < ssize(actual); ++k) {
     BOOST_REQUIRE_EQUAL(actual[as_uindex(k)], expected[as_uindex(k)]);
   }
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture) {
   using namespace teddy::ops; // NOLINT
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
@@ -431,8 +408,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture)
   );
 }
 
-BOOST_AUTO_TEST_CASE(operators_2)
-{
+BOOST_AUTO_TEST_CASE(operators_2) {
   using namespace teddy::ops;
   auto const N = Nondetermined;
   auto const U = Undefined;
@@ -713,8 +689,7 @@ BOOST_AUTO_TEST_CASE(operators_2)
   BOOST_REQUIRE_EQUAL(IMPLIES()(N, N), N);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
@@ -724,14 +699,11 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
   auto const maxIndex = manager.get_var_count() - 1;
   auto indexDist      = std::uniform_int_distribution<int32>(0, maxIndex);
   auto const index1   = indexDist(Fixture::rng_);
-  auto const index2   = [this, &indexDist, index1] ()
-  {
-    for (;;)
-    {
+  auto const index2   = [this, &indexDist, index1] () {
+    for (;;) {
       // I know ... but should be ok...
       auto const randomIndex = indexDist(Fixture::rng_);
-      if (randomIndex != index1)
-      {
+      if (randomIndex != index1) {
         return randomIndex;
       }
     }
@@ -761,8 +733,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture)
   BOOST_REQUIRE(cofactoredDiagram1.equals(cofactoredDiagram2));
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
@@ -781,8 +752,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture)
   test_compare_eval(evalit, manager, diagram);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   manager.set_auto_reorder(true);
@@ -804,8 +774,7 @@ BOOST_AUTO_TEST_SUITE_END()
 // TODO remove warnings...
 BOOST_AUTO_TEST_SUITE(core_io)
 
-BOOST_AUTO_TEST_CASE(from_pla)
-{
+BOOST_AUTO_TEST_CASE(from_pla) {
   std::stringstream iost;
   iost << ".i 5\n";
   iost << ".o 1\n";
@@ -846,28 +815,27 @@ BOOST_AUTO_TEST_CASE(from_pla)
   bdd_manager manager(file->get_variable_count(), 1'000);
   std::vector<bdd_manager::diagram_t> diagrams = io::from_pla(manager, *file);
   BOOST_REQUIRE_EQUAL(diagrams.size(), 1);
-  auto const& d = diagrams.front();
+  auto const &d = diagrams.front();
 
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,1,1,1}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,1,1,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,1,1,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,1,1,1}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,0,1,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,0,1,1}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,0,1,1}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,0,1,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,1,0,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,1,0,1}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,1,0,1}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,1,0,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,1,0,0,1}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,1,0,0,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{1,0,0,0,0}), 1);
-  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array{0,0,0,0,1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 1, 1, 1, 1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 1, 1, 1, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 0, 1, 1, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 0, 1, 1, 1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 1, 0, 1, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 1, 0, 1, 1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 0, 0, 1, 1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 0, 0, 1, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 1, 1, 0, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 1, 1, 0, 1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 0, 1, 0, 1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 0, 1, 0, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 1, 0, 0, 1}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 1, 0, 0, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {1, 0, 0, 0, 0}), 1);
+  BOOST_REQUIRE_EQUAL(manager.evaluate(d, std::array {0, 0, 0, 0, 1}), 1);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture) {
   auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto exprtree = tsl::make_expression_tree(
     manager.get_var_count(),
@@ -880,8 +848,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture)
   test_compare_eval(evalit, manager, diagram);
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture) {
   // TODO(michal): test na corner-case konstantna funcia, 0 premennych a
   // podobne...
 
@@ -901,8 +868,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture)
   );
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(to_vector, Fixture, Fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(to_vector, Fixture, Fixtures, Fixture) {
   auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
   auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);

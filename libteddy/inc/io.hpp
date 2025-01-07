@@ -10,10 +10,8 @@
 #include <initializer_list>
 #include <iterator>
 
-namespace teddy
-{
-struct io
-{
+namespace teddy {
+struct io {
   /**
    *  \brief Creates BDDs defined by PLA file
    *
@@ -23,8 +21,8 @@ struct io
    *  \return Vector of diagrams
    */
   static auto from_pla (
-    binary_manager& manager,
-    pla_file const& file,
+    binary_manager &manager,
+    pla_file const &file,
     fold_type foldType = fold_type::Tree
   ) -> std::vector<binary_manager::diagram_t>;
 
@@ -71,7 +69,7 @@ struct io
     std::input_iterator I,
     std::sentinel_for<I> S>
   static auto from_vector (
-    diagram_manager<Degree, Domain>& manager,
+    diagram_manager<Degree, Domain> &manager,
     I first,
     S last
   ) -> diagram_manager<Degree, Domain>::diagram_t;
@@ -88,8 +86,8 @@ struct io
    */
   template<class Degree, class Domain, std::ranges::input_range R>
   static auto from_vector (
-    diagram_manager<Degree, Domain>& manager,
-    R const& vector
+    diagram_manager<Degree, Domain> &manager,
+    R const &vector
   ) -> diagram_manager<Degree, Domain>::diagram_t;
 
   /**
@@ -103,7 +101,7 @@ struct io
    */
   template<class Degree, class Domain>
   static auto from_vector (
-    diagram_manager<Degree, Domain>& manager,
+    diagram_manager<Degree, Domain> &manager,
     std::initializer_list<int> vector
   ) -> diagram_manager<Degree, Domain>::diagram_t;
 
@@ -123,8 +121,8 @@ struct io
    */
   template<class Degree, class Domain>
   static auto to_vector (
-    diagram_manager<Degree, Domain> const& manager,
-    diagram_manager<Degree, Domain>::diagram_t const& diagram
+    diagram_manager<Degree, Domain> const &manager,
+    diagram_manager<Degree, Domain>::diagram_t const &diagram
   ) -> std::vector<int32>;
 
   /**
@@ -136,8 +134,8 @@ struct io
    */
   template<class Degree, class Domain, std::output_iterator<teddy::int32> O>
   static auto to_vector_g (
-    diagram_manager<Degree, Domain> const& manager,
-    diagram_manager<Degree, Domain>::diagram_t const& diagram,
+    diagram_manager<Degree, Domain> const &manager,
+    diagram_manager<Degree, Domain>::diagram_t const &diagram,
     O out
   ) -> void;
 
@@ -152,8 +150,8 @@ struct io
    */
   template<class Degree, class Domain>
   static auto to_dot (
-    diagram_manager<Degree, Domain> const& manager,
-    std::ostream& out
+    diagram_manager<Degree, Domain> const &manager,
+    std::ostream &out
   ) -> void;
 
   /**
@@ -168,42 +166,34 @@ struct io
    */
   template<class Degree, class Domain>
   static auto to_dot (
-    diagram_manager<Degree, Domain> const& manager,
-    std::ostream& out,
-    diagram_manager<Degree, Domain>::diagram_t const& diagram
+    diagram_manager<Degree, Domain> const &manager,
+    std::ostream &out,
+    diagram_manager<Degree, Domain>::diagram_t const &diagram
   ) -> void;
 };
 
 // definitions:
 
 inline auto io::from_pla(
-  binary_manager& manager,
-  pla_file const& file,
+  binary_manager &manager,
+  pla_file const &file,
   fold_type const foldType
-) -> std::vector<bss_manager::diagram_t>
-{
-  auto const product = [&manager] (auto const& cube)
-  {
+) -> std::vector<bss_manager::diagram_t> {
+  auto const product = [&manager] (auto const &cube) {
     std::vector<bdd_t> variables;
     variables.reserve(as_usize(cube.size()));
-    for (int32 i = 0; i < cube.size(); ++i)
-    {
-      if (cube.get(i) == 1)
-      {
+    for (int32 i = 0; i < cube.size(); ++i) {
+      if (cube.get(i) == 1) {
         variables.push_back(manager.variable(i));
-      }
-      else if (cube.get(i) == 0)
-      {
+      } else if (cube.get(i) == 0) {
         variables.push_back(manager.variable_not(i));
       }
     }
     return manager.left_fold<ops::AND>(variables);
   };
 
-  auto const sum = [&manager, foldType] (auto& diagrams)
-  {
-    switch (foldType)
-    {
+  auto const sum = [&manager, foldType] (auto &diagrams) {
+    switch (foldType) {
     case fold_type::Left:
       return manager.left_fold<ops::OR>(diagrams);
 
@@ -216,31 +206,27 @@ inline auto io::from_pla(
     }
   };
 
-  std::vector<pla_file::pla_line> const& plaLines = file.get_lines();
+  std::vector<pla_file::pla_line> const &plaLines = file.get_lines();
   int64 const lineCount                           = file.get_line_count();
   int64 const functionCount                       = file.get_function_count();
 
   // Create a diagram for each function.
   std::vector<bdd_t> functionDiagrams;
   functionDiagrams.reserve(as_usize(functionCount));
-  for (int32 fi = 0; fi < functionCount; ++fi)
-  {
+  for (int32 fi = 0; fi < functionCount; ++fi) {
     // First create a diagram for each product.
     std::vector<bdd_t> products;
     // products.reserve(lineCount);
-    for (int32 li = 0; li < lineCount; ++li)
-    {
+    for (int32 li = 0; li < lineCount; ++li) {
       // We are doing SOP so we are only interested
       // in functions with value 1.
-      if (plaLines[as_usize(li)].fVals_.get(fi) == 1)
-      {
+      if (plaLines[as_usize(li)].fVals_.get(fi) == 1) {
         products.push_back(product(plaLines[as_uindex(li)].cube_));
       }
     }
 
     // In this case we just have a constant function.
-    if (products.empty())
-    {
+    if (products.empty()) {
       products.push_back(manager.constant(0));
     }
 
@@ -257,24 +243,21 @@ template<
   std::input_iterator I,
   std::sentinel_for<I> S>
 auto io::from_vector( // NOLINT
-  diagram_manager<Degree, Domain>& manager,
+  diagram_manager<Degree, Domain> &manager,
   I first,
   S last
-) -> diagram_manager<Degree, Domain>::diagram_t
-{
+) -> diagram_manager<Degree, Domain>::diagram_t {
   using manager_t     = diagram_manager<Degree, Domain>;
   using diagram_t     = typename manager_t::diagram_t;
   using son_container = typename manager_t::son_container;
   using node_t        = typename manager_t::node_t;
 
-  using stack_frame   = struct
-  {
-    node_t* node;
+  using stack_frame   = struct {
+    node_t *node;
     int32 level;
   };
 
-  if (0 == manager.get_var_count())
-  {
+  if (0 == manager.get_var_count()) {
     assert(first != last && std::next(first) == last);
     return manager.constant(*first);
   }
@@ -282,8 +265,7 @@ auto io::from_vector( // NOLINT
   int32 const terminalLevel = manager.get_var_count();
 
 #ifndef NDEBUG
-  if constexpr (std::random_access_iterator<I>)
-  {
+  if constexpr (std::random_access_iterator<I>) {
     int64 const count = manager.nodes_.domain_product(0, terminalLevel);
     int64 const dist  = std::distance(first, last);
     assert(dist > 0 && dist == count);
@@ -291,41 +273,35 @@ auto io::from_vector( // NOLINT
 #endif
 
   std::vector<stack_frame> stack;
-  while (first != last)
-  {
-    node_t* const node = manager.nodes_.make_terminal_node(*first++);
+  while (first != last) {
+    node_t *const node = manager.nodes_.make_terminal_node(*first++);
     stack.push_back(stack_frame {node, terminalLevel});
 
-    for (;;)
-    {
+    for (;;) {
       int32 const currentLevel = stack.back().level;
-      if (0 == currentLevel)
-      {
+      if (0 == currentLevel) {
         break;
       }
 
       auto const endId = rend(stack);
       auto stackIt     = rbegin(stack);
       int64 count      = 0;
-      while (stackIt != endId && stackIt->level == currentLevel)
-      {
+      while (stackIt != endId && stackIt->level == currentLevel) {
         ++stackIt;
         ++count;
       }
       int32 const newIndex  = manager.nodes_.get_index(currentLevel - 1);
       int32 const newDomain = manager.nodes_.get_domain(newIndex);
 
-      if (count < newDomain)
-      {
+      if (count < newDomain) {
         break;
       }
 
       son_container sons = node_t::make_son_container(newDomain);
-      for (int32 k = 0; k < newDomain; ++k)
-      {
+      for (int32 k = 0; k < newDomain; ++k) {
         sons[k] = stack[as_uindex(ssize(stack) - newDomain + k)].node;
       }
-      node_t* const newNode
+      node_t *const newNode
         = manager.nodes_.make_internal_node(newIndex, TEDDY_MOVE(sons));
       stack.erase(end(stack) - newDomain, end(stack));
       stack.push_back(stack_frame {newNode, currentLevel - 1});
@@ -337,27 +313,24 @@ auto io::from_vector( // NOLINT
 }
 
 template<class Degree, class Domain, std::ranges::input_range R>
-auto io::from_vector(diagram_manager<Degree, Domain>& manager, R const& vector)
-  -> diagram_manager<Degree, Domain>::diagram_t
-{
+auto io::from_vector(diagram_manager<Degree, Domain> &manager, R const &vector)
+  -> diagram_manager<Degree, Domain>::diagram_t {
   return io::from_vector(manager, begin(vector), end(vector));
 }
 
 template<class Degree, class Domain>
 auto io::from_vector(
-  diagram_manager<Degree, Domain>& manager,
+  diagram_manager<Degree, Domain> &manager,
   std::initializer_list<int> const vector
-) -> diagram_manager<Degree, Domain>::diagram_t
-{
+) -> diagram_manager<Degree, Domain>::diagram_t {
   return io::from_vector(manager, begin(vector), end(vector));
 }
 
 template<class Degree, class Domain>
 auto io::to_vector(
-  diagram_manager<Degree, Domain> const& manager,
-  diagram_manager<Degree, Domain>::diagram_t const& diagram
-) -> std::vector<int32>
-{
+  diagram_manager<Degree, Domain> const &manager,
+  diagram_manager<Degree, Domain>::diagram_t const &diagram
+) -> std::vector<int32> {
   std::vector<int32> vector;
   vector.reserve(
     as_usize(manager.nodes_.domain_product(0, manager.get_var_count()))
@@ -368,14 +341,12 @@ auto io::to_vector(
 
 template<class Degree, class Domain, std::output_iterator<teddy::int32> O>
 auto io::to_vector_g(
-  diagram_manager<Degree, Domain> const& manager,
-  diagram_manager<Degree, Domain>::diagram_t const& diagram,
+  diagram_manager<Degree, Domain> const &manager,
+  diagram_manager<Degree, Domain>::diagram_t const &diagram,
   O out
-) -> void
-{
+) -> void {
   // TODO(michal): move for-each-in-domain to tools
-  if (manager.get_var_count() == 0)
-  {
+  if (manager.get_var_count() == 0) {
     assert(diagram.unsafe_get_root()->is_terminal());
     *out++ = diagram.unsafe_get_root()->get_value();
     return;
@@ -383,19 +354,16 @@ auto io::to_vector_g(
 
   std::vector<int32> vars(as_usize(manager.get_var_count()));
   bool wasLast = false;
-  do
-  {
+  do {
     *out++        = manager.evaluate(diagram, vars);
     bool overflow = true;
     int32 level   = manager.nodes_.get_leaf_level();
-    while (level > 0 && overflow)
-    {
+    while (level > 0 && overflow) {
       --level;
       int32 const index = manager.nodes_.get_index(level);
       ++vars[as_uindex(index)];
       overflow = vars[as_uindex(index)] == manager.nodes_.get_domain(index);
-      if (overflow)
-      {
+      if (overflow) {
         vars[as_uindex(index)] = 0;
       }
 
@@ -406,29 +374,28 @@ auto io::to_vector_g(
 
 template<class Degree, class Domain>
 auto io::to_dot(
-  diagram_manager<Degree, Domain> const& manager,
-  std::ostream& out
-) -> void
-{
+  diagram_manager<Degree, Domain> const &manager,
+  std::ostream &out
+) -> void {
   details::io_impl::to_dot_graph_common(
     manager,
     out,
-    [&manager] (auto const& f) { manager.nodes_.for_each_node(f); }
+    [&manager] (auto const &f) { manager.nodes_.for_each_node(f); }
   );
 }
 
 template<class Degree, class Domain>
 auto io::to_dot(
-  diagram_manager<Degree, Domain> const& manager,
-  std::ostream& out,
-  diagram_manager<Degree, Domain>::diagram_t const& diagram
-) -> void
-{
+  diagram_manager<Degree, Domain> const &manager,
+  std::ostream &out,
+  diagram_manager<Degree, Domain>::diagram_t const &diagram
+) -> void {
   details::io_impl::to_dot_graph_common(
     manager,
     out,
-    [&manager, &diagram] (auto const& f)
-    { manager.nodes_.traverse_level(diagram.unsafe_get_root(), f); }
+    [&manager, &diagram] (auto const &f) {
+      manager.nodes_.traverse_level(diagram.unsafe_get_root(), f);
+    }
   );
 }
 } // namespace teddy

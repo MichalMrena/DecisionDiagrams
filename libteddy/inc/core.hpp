@@ -4,8 +4,7 @@
 #include <libteddy/impl/diagram_manager.hpp>
 #include <libteddy/impl/pla_file.hpp>
 
-namespace teddy
-{
+namespace teddy {
 using default_oder = std::vector<int32>;
 
 /**
@@ -13,8 +12,7 @@ using default_oder = std::vector<int32>;
  *  \brief Diagram manager for Binary Decision Diagrams
  */
 struct bdd_manager :
-  public diagram_manager<degrees::fixed<2>, domains::fixed<2>>
-{
+  public diagram_manager<degrees::fixed<2>, domains::fixed<2>> {
   /**
    *  \brief Initializes BDD manager.
    *
@@ -53,8 +51,7 @@ struct bdd_manager :
  */
 template<int32 M>
 struct mdd_manager :
-  public diagram_manager<degrees::fixed<M>, domains::fixed<M>>
-{
+  public diagram_manager<degrees::fixed<M>, domains::fixed<M>> {
   /**
    *  \brief Initializes MDD manager
    *  \param varCount Number of variables
@@ -93,8 +90,7 @@ struct mdd_manager :
  *  this case since the number of sons of a node is not known
  *  at compile time.
  */
-struct imdd_manager : public diagram_manager<degrees::mixed, domains::mixed>
-{
+struct imdd_manager : public diagram_manager<degrees::mixed, domains::mixed> {
   /**
    *  \brief Initializes iMDD manager
    *  \param varCount Number of variables
@@ -143,8 +139,8 @@ struct imdd_manager : public diagram_manager<degrees::mixed, domains::mixed>
  *  \tparam M maximum of the sizes of domains of variables
  */
 template<int32 M>
-struct ifmdd_manager : public diagram_manager<degrees::fixed<M>, domains::mixed>
-{
+struct ifmdd_manager :
+  public diagram_manager<degrees::fixed<M>, domains::mixed> {
   /**
    *  \brief Initializes ifMDD manager
    *  \param varCount Number of variables
@@ -199,8 +195,7 @@ inline bdd_manager::bdd_manager(
   int64 const nodePoolSize,
   std::vector<int32> order
 ) :
-  bdd_manager(varCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order))
-{
+  bdd_manager(varCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order)) {
 }
 
 inline bdd_manager::bdd_manager(
@@ -214,8 +209,7 @@ inline bdd_manager::bdd_manager(
     nodePoolSize,
     overflowNodePoolSize,
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 template<int32 M>
@@ -224,8 +218,7 @@ mdd_manager<M>::mdd_manager(
   int64 const nodePoolSize,
   std::vector<int32> order
 ) :
-  mdd_manager(varCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order))
-{
+  mdd_manager(varCount, nodePoolSize, nodePoolSize / 2, TEDDY_MOVE(order)) {
 }
 
 template<int32 M>
@@ -240,8 +233,7 @@ mdd_manager<M>::mdd_manager(
     nodePoolSize,
     overflowNodePoolSize,
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 inline imdd_manager::imdd_manager(
@@ -256,8 +248,7 @@ inline imdd_manager::imdd_manager(
     nodePoolSize / 2,
     TEDDY_MOVE(domains),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 inline imdd_manager::imdd_manager(
@@ -273,8 +264,7 @@ inline imdd_manager::imdd_manager(
     overflowNodePoolSize,
     domains::mixed(TEDDY_MOVE(domains)),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 template<int32 M>
@@ -290,8 +280,7 @@ ifmdd_manager<M>::ifmdd_manager(
     nodePoolSize / 2,
     TEDDY_MOVE(domains),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 
 template<int32 PMax>
@@ -308,8 +297,7 @@ ifmdd_manager<PMax>::ifmdd_manager(
     overflowNodePoolSize,
     domains::mixed(TEDDY_MOVE(domains)),
     TEDDY_MOVE(order)
-  )
-{
+  ) {
 }
 } // namespace teddy
 

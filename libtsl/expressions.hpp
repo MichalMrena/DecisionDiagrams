@@ -8,13 +8,11 @@
 #include <variant>
 #include <vector>
 
-namespace teddy::tsl
-{
+namespace teddy::tsl {
 /**
  *  \brief Strong type for vector of terms.
  */
-struct minmax_expr
-{
+struct minmax_expr {
   std::vector<std::vector<int32>> terms_;
 };
 
@@ -22,7 +20,7 @@ struct minmax_expr
  *  \brief Makes random minmax expression.
  */
 auto make_minmax_expression (
-  rng_t& indexRng,
+  rng_t &indexRng,
   int32 varCount,
   int32 termCount,
   int32 termSize
@@ -31,35 +29,28 @@ auto make_minmax_expression (
 /**
  *  \brief Evaluates \p expr using values of variables in \p vs .
  */
-auto evaluate_expression (minmax_expr const& expr, std::vector<int32> const& vs)
+auto evaluate_expression (minmax_expr const &expr, std::vector<int32> const &vs)
   -> int32;
 
 /**
  *  \brief Tags expression node representing variable.
  */
-struct expr_node_variable
-{
-};
+struct expr_node_variable { };
 
 /**
  *  \brief Tags expression node representing constant.
  */
-struct expr_node_constant
-{
-};
+struct expr_node_constant { };
 
 /**
  *  \brief Tags expression node representing operation.
  */
-struct expr_node_operation
-{
-};
+struct expr_node_operation { };
 
 /**
  *  \brief Specifies operation of the operation node.
  */
-enum class operation_type
-{
+enum class operation_type {
   Min,
   Max
 };
@@ -67,11 +58,9 @@ enum class operation_type
 /**
  *  \brief Node of an expression tree.
  */
-class expr_node
-{
+class expr_node {
 private:
-  struct operation_t
-  {
+  struct operation_t {
     operation_t(
       operation_type o,
       std::unique_ptr<expr_node> l,
@@ -82,14 +71,12 @@ private:
     std::unique_ptr<expr_node> r_;
   };
 
-  struct variable_t
-  {
+  struct variable_t {
     variable_t(int32 i);
     int32 i_;
   };
 
-  struct constant_t
-  {
+  struct constant_t {
     constant_t(int32 c);
     int32 c_;
   };
@@ -118,9 +105,9 @@ public:
 
   auto evaluate (int32 l, int32 r) const -> int32;
 
-  auto get_left () const -> expr_node const&;
+  auto get_left () const -> expr_node const &;
 
-  auto get_right () const -> expr_node const&;
+  auto get_right () const -> expr_node const &;
 
 private:
   std::variant<operation_t, variable_t, constant_t> data_;
@@ -129,13 +116,13 @@ private:
 /**
  *  \brief Makes random minmax expression tree.
  */
-auto make_expression_tree (int32 varcount, rng_t& rngtype, rng_t& rngbranch)
+auto make_expression_tree (int32 varcount, rng_t &rngtype, rng_t &rngbranch)
   -> std::unique_ptr<expr_node>;
 
 /**
  *  \brief Evaluates \p expr using values of variables in \p vs .
  */
-auto evaluate_expression (expr_node const& expr, std::vector<int32> const& vs)
+auto evaluate_expression (expr_node const &expr, std::vector<int32> const &vs)
   -> int32;
 } // namespace teddy::tsl
 

@@ -7,10 +7,8 @@
 
 #include <vector>
 
-namespace teddy::test
-{
-struct bdd_nodes_fixture
-{
+namespace teddy::test {
+struct bdd_nodes_fixture {
   using manager_t = node_manager<degrees::fixed<2>, domains::fixed<2>>;
   using node_t    = manager_t::node_t;
   int32 varCount_ = 10;
@@ -20,8 +18,7 @@ struct bdd_nodes_fixture
   int64 extraNodePoolSize_    = 2'000;
 };
 
-struct mdd_nodes_fixture
-{
+struct mdd_nodes_fixture {
   using manager_t = node_manager<degrees::fixed<3>, domains::fixed<3>>;
   using node_t    = manager_t::node_t;
   int32 varCount_ = 10;
@@ -31,8 +28,7 @@ struct mdd_nodes_fixture
   int64 extraNodePoolSize_    = 2'000;
 };
 
-struct imdd_nodes_fixture
-{
+struct imdd_nodes_fixture {
   using manager_t             = node_manager<degrees::mixed, domains::mixed>;
   using node_t                = manager_t::node_t;
   int32 varCount_             = 10;
@@ -42,8 +38,7 @@ struct imdd_nodes_fixture
   int64 extraNodePoolSize_    = 2'000;
 };
 
-struct ifmdd_nodes_fixture
-{
+struct ifmdd_nodes_fixture {
   using manager_t             = node_manager<degrees::fixed<4>, domains::mixed>;
   using node_t                = manager_t::node_t;
   int32 varCount_             = 10;
@@ -53,8 +48,7 @@ struct ifmdd_nodes_fixture
   int64 extraNodePoolSize_    = 2'000;
 };
 
-auto make_manager (bdd_nodes_fixture const& fix)
-{
+auto make_manager (bdd_nodes_fixture const &fix) {
   return bdd_nodes_fixture::manager_t(
     fix.varCount_,
     fix.nodePoolSize_,
@@ -63,8 +57,7 @@ auto make_manager (bdd_nodes_fixture const& fix)
   );
 }
 
-auto make_manager (mdd_nodes_fixture const& fix)
-{
+auto make_manager (mdd_nodes_fixture const &fix) {
   return mdd_nodes_fixture::manager_t(
     fix.varCount_,
     fix.nodePoolSize_,
@@ -73,8 +66,7 @@ auto make_manager (mdd_nodes_fixture const& fix)
   );
 }
 
-auto make_manager (imdd_nodes_fixture const& fix)
-{
+auto make_manager (imdd_nodes_fixture const &fix) {
   return imdd_nodes_fixture::manager_t(
     fix.varCount_,
     fix.nodePoolSize_,
@@ -84,8 +76,7 @@ auto make_manager (imdd_nodes_fixture const& fix)
   );
 }
 
-auto make_manager (ifmdd_nodes_fixture const& fix)
-{
+auto make_manager (ifmdd_nodes_fixture const &fix) {
   return ifmdd_nodes_fixture::manager_t(
     fix.varCount_,
     fix.nodePoolSize_,
@@ -103,11 +94,10 @@ using nodes_fixtures = boost::mpl::vector<
 
 BOOST_AUTO_TEST_SUITE(node)
 
-BOOST_FIXTURE_TEST_CASE(terminal_node, bdd_nodes_fixture)
-{
+BOOST_FIXTURE_TEST_CASE(terminal_node, bdd_nodes_fixture) {
   manager_t manager = make_manager(*this);
-  node_t* zero      = manager.make_terminal_node(0);
-  node_t* one       = manager.make_terminal_node(1);
+  node_t *zero      = manager.make_terminal_node(0);
+  node_t *one       = manager.make_terminal_node(1);
   BOOST_REQUIRE(zero->is_used());
   BOOST_REQUIRE(one->is_used());
   BOOST_REQUIRE(zero->is_terminal());
@@ -122,16 +112,15 @@ BOOST_FIXTURE_TEST_CASE(terminal_node, bdd_nodes_fixture)
   BOOST_REQUIRE_EQUAL(nullptr, one->get_next());
 }
 
-BOOST_FIXTURE_TEST_CASE(internal_node, bdd_nodes_fixture)
-{
+BOOST_FIXTURE_TEST_CASE(internal_node, bdd_nodes_fixture) {
   using sons_t      = node_t::son_container;
   manager_t manager = make_manager(*this);
-  node_t* zero      = manager.make_terminal_node(0);
-  node_t* one       = manager.make_terminal_node(1);
+  node_t *zero      = manager.make_terminal_node(0);
+  node_t *one       = manager.make_terminal_node(1);
   sons_t x1sons     = node_t::make_son_container(2);
   x1sons[0]         = zero;
   x1sons[1]         = one;
-  node_t* x1        = manager.make_internal_node(1, TEDDY_MOVE(x1sons));
+  node_t *x1        = manager.make_internal_node(1, TEDDY_MOVE(x1sons));
   BOOST_REQUIRE(x1->is_used());
   BOOST_REQUIRE(x1->is_internal());
   BOOST_REQUIRE(not x1->is_terminal());
@@ -146,7 +135,7 @@ BOOST_FIXTURE_TEST_CASE(internal_node, bdd_nodes_fixture)
   sons_t x0sons = node_t::make_son_container(2);
   x0sons[0]     = zero;
   x0sons[1]     = x1;
-  node_t* x0    = manager.make_internal_node(0, TEDDY_MOVE(x0sons));
+  node_t *x0    = manager.make_internal_node(0, TEDDY_MOVE(x0sons));
   x0->inc_ref_count();
   BOOST_REQUIRE_EQUAL(0, x0->get_index());
   BOOST_REQUIRE_EQUAL(1, x0->get_ref_count());
@@ -156,16 +145,14 @@ BOOST_FIXTURE_TEST_CASE(internal_node, bdd_nodes_fixture)
   BOOST_REQUIRE_EQUAL(nullptr, x1->get_next());
 }
 
-BOOST_FIXTURE_TEST_CASE_TEMPLATE(getters, Fixture, nodes_fixtures, Fixture)
-{
+BOOST_FIXTURE_TEST_CASE_TEMPLATE(getters, Fixture, nodes_fixtures, Fixture) {
   typename Fixture::manager_t manager = make_manager(*this);
 
   BOOST_REQUIRE_EQUAL(Fixture::varCount_, manager.get_var_count());
   BOOST_REQUIRE_EQUAL(Fixture::varCount_, manager.get_leaf_level());
 
-  std::vector<int32> const& actualOrder = manager.get_order();
-  for (int32 i = 0; i < manager.get_var_count(); ++i)
-  {
+  std::vector<int32> const &actualOrder = manager.get_order();
+  for (int32 i = 0; i < manager.get_var_count(); ++i) {
     BOOST_REQUIRE_EQUAL(
       Fixture::order_[as_uindex(i)],
       actualOrder[as_uindex(i)]
@@ -173,8 +160,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(getters, Fixture, nodes_fixtures, Fixture)
   }
 
   std::vector<int32> const actualDomains = manager.get_domains();
-  for (int32 i = 0; i < manager.get_var_count(); ++i)
-  {
+  for (int32 i = 0; i < manager.get_var_count(); ++i) {
     BOOST_REQUIRE_EQUAL(
       Fixture::domains_[as_uindex(i)],
       actualDomains[as_uindex(i)]
@@ -187,12 +173,10 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   Fixture,
   nodes_fixtures,
   Fixture
-)
-{
+) {
   typename Fixture::manager_t manager = make_manager(*this);
   int64 expectedProduct               = 1;
-  for (int32 const mi : Fixture::domains_)
-  {
+  for (int32 const mi : Fixture::domains_) {
     expectedProduct *= mi;
   }
   int64 const actualProduct

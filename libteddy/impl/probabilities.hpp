@@ -13,10 +13,8 @@
 #include <variant>
 #include <vector>
 
-namespace teddy::probs
-{
-namespace details
-{
+namespace teddy::probs {
+namespace details {
   /**
    *  \brief Helper for vector wrap
    *
@@ -25,17 +23,14 @@ namespace details
    * calculates it as 1 - p_{i,1}.
    */
   template<class Vector>
-  class vector_to_matrix_proxy
-  {
+  class vector_to_matrix_proxy {
   public:
-    vector_to_matrix_proxy(Vector const& vec, std::size_t const index) :
+    vector_to_matrix_proxy(Vector const &vec, std::size_t const index) :
       index_(index),
-      vec_(&vec)
-    {
+      vec_(&vec) {
     }
 
-    auto operator[] (std::size_t const value) const -> double
-    {
+    auto operator[] (std::size_t const value) const -> double {
       assert(value == 1 || value == 0);
       double const prob = (*vec_)[index_];
       return value == 1 ? prob : 1 - prob;
@@ -43,7 +38,7 @@ namespace details
 
   private:
     std::size_t index_;
-    Vector const* vec_;
+    Vector const *vec_;
   };
 
   /**
@@ -56,20 +51,17 @@ namespace details
    *  calculating p_0 as 1-p_1
    */
   template<class Vector>
-  class vector_to_matrix_wrap
-  {
+  class vector_to_matrix_wrap {
   public:
-    explicit vector_to_matrix_wrap(Vector const& vec) : vec_(&vec)
-    {
+    explicit vector_to_matrix_wrap(Vector const &vec) : vec_(&vec) {
     }
 
-    auto operator[] (std::size_t const index) const
-    {
+    auto operator[] (std::size_t const index) const {
       return vector_to_matrix_proxy<Vector>(*vec_, index);
     }
 
   private:
-    Vector const* vec_;
+    Vector const *vec_;
   };
 
   /**
@@ -78,17 +70,14 @@ namespace details
    *  If asked (by calling \c cache_eval_at ), remembers computed value
    */
   template<class ProbDist>
-  class make_cached
-  {
+  class make_cached {
   public:
-    auto cache_eval_at (double const t) -> void
-    {
-      value_ = (*static_cast<ProbDist*>(this))(t);
+    auto cache_eval_at (double const t) -> void {
+      value_ = (*static_cast<ProbDist *>(this))(t);
     }
 
     [[nodiscard]]
-    auto get_cached_value () const -> double
-    {
+    auto get_cached_value () const -> double {
       return value_;
     }
 
@@ -99,11 +88,9 @@ namespace details
   /**
    *  \brief Exponential distribution
    */
-  class exponential : public make_cached<exponential>
-  {
+  class exponential : public make_cached<exponential> {
   public:
-    explicit exponential(double const rate) : make_cached(), rate_(rate)
-    {
+    explicit exponential(double const rate) : make_cached(), rate_(rate) {
     }
 
     /**
@@ -111,8 +98,7 @@ namespace details
      */
     [[nodiscard]]
     auto
-      operator() (double const t) const -> double
-    {
+      operator() (double const t) const -> double {
       return 1 - std::exp(-rate_ * t);
     }
 
@@ -123,19 +109,17 @@ namespace details
   /**
    *  \brief Complemented Exponential distribution
    */
-  class complemented_exponential : public make_cached<complemented_exponential>
-  {
+  class complemented_exponential :
+    public make_cached<complemented_exponential> {
   public:
     explicit complemented_exponential(double const rate) :
       make_cached(),
-      rate_(rate)
-    {
+      rate_(rate) {
     }
 
     [[nodiscard]]
     auto
-      operator() (double const t) const -> double
-    {
+      operator() (double const t) const -> double {
       return std::exp(-rate_ * t);
     }
 
@@ -146,14 +130,12 @@ namespace details
   /**
    *  \brief Weibull distribution
    */
-  class weibull : public make_cached<weibull>
-  {
+  class weibull : public make_cached<weibull> {
   public:
     weibull(double const scale, double const shape) :
       make_cached(),
       scale_(scale),
-      shape_(shape)
-    {
+      shape_(shape) {
     }
 
     /**
@@ -161,8 +143,7 @@ namespace details
      */
     [[nodiscard]]
     auto
-      operator() (double const t) const -> double
-    {
+      operator() (double const t) const -> double {
       return 1 - std::exp(-std::pow(t / scale_, shape_));
     }
 
@@ -174,11 +155,9 @@ namespace details
   /**
    *  \brief Probability independent of time
    */
-  class constant : public make_cached<constant>
-  {
+  class constant : public make_cached<constant> {
   public:
-    explicit constant(double const value) : make_cached(), value_(value)
-    {
+    explicit constant(double const value) : make_cached(), value_(value) {
     }
 
     /**
@@ -186,8 +165,7 @@ namespace details
      */
     [[nodiscard]]
     auto
-      operator() (double const) const -> double
-    {
+      operator() (double const) const -> double {
       return value_;
     }
 
@@ -198,11 +176,9 @@ namespace details
   /**
    *  \brief Continuous uniform distribution
    */
-  class uniform : public make_cached<uniform>
-  {
+  class uniform : public make_cached<uniform> {
   public:
-    uniform(double const a, double const b) : make_cached(), a_(a), b_(b)
-    {
+    uniform(double const a, double const b) : make_cached(), a_(a), b_(b) {
     }
 
     /**
@@ -210,8 +186,7 @@ namespace details
      */
     [[nodiscard]]
     auto
-      operator() (double const t) const -> double
-    {
+      operator() (double const t) const -> double {
       return t < a_ ? 0.0 : t > b_ ? 1.0 : (t - a_) / (b_ - a_);
     }
 
@@ -223,19 +198,16 @@ namespace details
   /**
    *  \brief User-defined distribution
    */
-  class custom_dist : public make_cached<custom_dist>
-  {
+  class custom_dist : public make_cached<custom_dist> {
   public:
     explicit custom_dist(std::function<double(double)> dist) :
       make_cached(),
-      dist_(std::move(dist))
-    {
+      dist_(std::move(dist)) {
     }
 
     [[nodiscard]]
     auto
-      operator() (double const t) const -> double
-    {
+      operator() (double const t) const -> double {
       return dist_(t);
     }
 
@@ -258,29 +230,25 @@ using dist_variant = std::variant<
  *  Wraps \c std::variant of above-defined distributions and uses \c std::visit
  *  to invoke given operation on the variant
  */
-class prob_dist
-{
+class prob_dist {
 public:
-  explicit prob_dist(dist_variant dist) : dist_(TEDDY_MOVE(dist))
-  {
+  explicit prob_dist(dist_variant dist) : dist_(TEDDY_MOVE(dist)) {
   }
 
   /**
    *  \brief Evaluates distribution at time \p t and stores the value
    */
-  auto cache_eval_at (double const t) -> void
-  {
-    std::visit([t] (auto& d) { d.cache_eval_at(t); }, dist_);
+  auto cache_eval_at (double const t) -> void {
+    std::visit([t] (auto &d) { d.cache_eval_at(t); }, dist_);
   }
 
   /**
    *  \brief Returns value stored by the last call of \c cache_eval_at
    */
   [[nodiscard]]
-  auto get_cached_value () const -> double
-  {
+  auto get_cached_value () const -> double {
     return std::visit(
-      [] (auto& d) -> double { return d.get_cached_value(); },
+      [] (auto &d) -> double { return d.get_cached_value(); },
       dist_
     );
   }
@@ -291,7 +259,7 @@ public:
   [[nodiscard]] operator double () const // NOLINT
   {
     return std::visit(
-      [] (auto const& dist) -> double { return dist.get_cached_value(); },
+      [] (auto const &dist) -> double { return dist.get_cached_value(); },
       dist_
     );
   }
@@ -301,10 +269,9 @@ public:
    */
   [[nodiscard]]
   auto
-    operator() (double const t) const -> double
-  {
+    operator() (double const t) const -> double {
     return std::visit(
-      [t] (auto const& dist) -> double { return dist(t); },
+      [t] (auto const &dist) -> double { return dist(t); },
       dist_
     );
   }
@@ -316,48 +283,42 @@ private:
 /**
  *  \brief Creates instance of Exponential distribution
  */
-inline auto exponential (double const rate) -> prob_dist
-{
+inline auto exponential (double const rate) -> prob_dist {
   return prob_dist(details::exponential(rate));
 }
 
 /**
  *  \brief Creates instance of Complemented Exponential distribution
  */
-inline auto complemented_exponential (double const rate) -> prob_dist
-{
+inline auto complemented_exponential (double const rate) -> prob_dist {
   return prob_dist(details::complemented_exponential(rate));
 }
 
 /**
  *  \brief Creates instance of Weibull distribution
  */
-inline auto weibull (double const scale, double const shape) -> prob_dist
-{
+inline auto weibull (double const scale, double const shape) -> prob_dist {
   return prob_dist(details::weibull(scale, shape));
 }
 
 /**
  *  \brief Creates instance of Uniform disrtibution
  */
-inline auto uniform (double const a, double const b) -> prob_dist
-{
+inline auto uniform (double const a, double const b) -> prob_dist {
   return prob_dist(details::uniform(a, b));
 }
 
 /**
  *  \brief Creates instance of Constant disrtibution
  */
-inline auto constant (double prob) -> prob_dist
-{
+inline auto constant (double prob) -> prob_dist {
   return prob_dist(details::constant(prob));
 }
 
 /**
  *  \brief Creates instance of Custom disrtibution
  */
-inline auto custom (std::function<double(double)> dist) -> prob_dist
-{
+inline auto custom (std::function<double(double)> dist) -> prob_dist {
   return prob_dist(details::custom_dist(std::move(dist)));
 }
 
@@ -400,8 +361,7 @@ concept dist_matrix = requires(T mat, std::size_t i, double t) {
  */
 template<class Ps>
 requires(prob_vector<Ps> || dist_vector<Ps>)
-auto as_matrix (Ps& distVector)
-{
+auto as_matrix (Ps &distVector) {
   return details::vector_to_matrix_wrap<Ps>(distVector);
 }
 
@@ -409,11 +369,9 @@ auto as_matrix (Ps& distVector)
  *  \brief Transforms \p vector into n x 2 matrix
  */
 template<prob_vector Ps>
-auto to_matrix (Ps const& vector) -> std::vector<std::array<double, 2>>
-{
+auto to_matrix (Ps const &vector) -> std::vector<std::array<double, 2>> {
   std::vector<std::array<double, 2>> matrix;
-  for (double const p : vector)
-  {
+  for (double const p : vector) {
     matrix.push_back(std::array {1 - p, p});
   }
   return matrix;
@@ -423,10 +381,8 @@ auto to_matrix (Ps const& vector) -> std::vector<std::array<double, 2>>
  *  \brief Evaluates each dist in \p distVector at time \p t
  */
 template<dist_vector Ps>
-auto eval_at (Ps& distVector, double const t) -> Ps&
-{
-  for (auto& dist : distVector)
-  {
+auto eval_at (Ps &distVector, double const t) -> Ps & {
+  for (auto &dist : distVector) {
     dist.cache_eval_at(t);
   }
   return distVector;
@@ -436,15 +392,12 @@ auto eval_at (Ps& distVector, double const t) -> Ps&
  *  \brief Evaluates each dist in \p distMatrix at time \p t
  */
 template<dist_matrix Ps>
-auto eval_at (Ps& distMatrix, double const t) -> Ps&
-{
+auto eval_at (Ps &distMatrix, double const t) -> Ps & {
   // TODO(michal): if constexpr RowIterable (in case it is compact matrix)
   // TODO(michal): if constexpr MatrixIterable
 
-  for (auto& dists : distMatrix)
-  {
-    for (auto& dist : dists)
-    {
+  for (auto &dists : distMatrix) {
+    for (auto &dist : dists) {
       dist.cache_eval_at(t);
     }
   }

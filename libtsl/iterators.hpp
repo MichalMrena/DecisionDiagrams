@@ -5,25 +5,21 @@
 
 #include <vector>
 
-namespace teddy::tsl
-{
+namespace teddy::tsl {
 /**
  *  \brief Sentinel for domain iterator.
  */
-struct domain_iterator_sentinel
-{
-};
+struct domain_iterator_sentinel { };
 
 /**
  *  \brief Iterator for domain of a function.
  */
-class domain_iterator
-{
+class domain_iterator {
 public:
   using difference_type   = std::ptrdiff_t;
   using value_type        = std::vector<int32>;
-  using pointer           = value_type*;
-  using reference         = value_type&;
+  using pointer           = value_type *;
+  using reference         = value_type &;
   using iterator_category = std::input_iterator_tag;
 
 public:
@@ -68,15 +64,15 @@ public:
     std::vector<std::pair<int32, int32>> fixed
   );
 
-  auto operator* () const -> std::vector<int32> const&;
+  auto operator* () const -> std::vector<int32> const &;
 
-  auto operator++ () -> domain_iterator&;
+  auto operator++ () -> domain_iterator &;
 
   auto operator++ (int) -> domain_iterator;
 
-  auto operator== (domain_iterator const& rhs) const -> bool;
+  auto operator== (domain_iterator const &rhs) const -> bool;
 
-  auto operator!= (domain_iterator const& rhs) const -> bool;
+  auto operator!= (domain_iterator const &rhs) const -> bool;
 
   auto operator== (domain_iterator_sentinel) const -> bool;
 
@@ -91,31 +87,28 @@ protected:
 /**
  *  \brief Sentinel for evaluating iterator.
  */
-struct evaluating_iterator_sentinel
-{
-};
+struct evaluating_iterator_sentinel { };
 
 /**
  *  \brief Iterator that evaluates an expression over a domain.
  */
 template<class Expression>
-class evaluating_iterator
-{
+class evaluating_iterator {
 public:
   using difference_type   = std::ptrdiff_t;
   using value_type        = int32;
-  using pointer           = value_type*;
-  using reference         = value_type&;
+  using pointer           = value_type *;
+  using reference         = value_type &;
   using iterator_category = std::input_iterator_tag;
 
 public:
   evaluating_iterator();
 
-  evaluating_iterator(domain_iterator iterator, Expression const& expr);
+  evaluating_iterator(domain_iterator iterator, Expression const &expr);
 
   auto operator* () const -> int32;
 
-  auto operator++ () -> evaluating_iterator&;
+  auto operator++ () -> evaluating_iterator &;
 
   auto operator++ (int) -> evaluating_iterator;
 
@@ -123,28 +116,26 @@ public:
 
   auto operator!= (evaluating_iterator_sentinel const s) const -> bool;
 
-  auto get_var_vals () const -> std::vector<int32> const&;
+  auto get_var_vals () const -> std::vector<int32> const &;
 
 private:
   domain_iterator domainIterator_;
-  Expression const* expr_;
+  Expression const *expr_;
 };
 
 template<class Expression>
 auto operator== (
   evaluating_iterator_sentinel s,
-  evaluating_iterator<Expression> const& it
-) -> bool
-{
+  evaluating_iterator<Expression> const &it
+) -> bool {
   return it == s;
 }
 
 template<class Expression>
 auto operator!= (
   evaluating_iterator_sentinel s,
-  evaluating_iterator<Expression> const& it
-) -> bool
-{
+  evaluating_iterator<Expression> const &it
+) -> bool {
   return it != s;
 }
 
@@ -152,47 +143,39 @@ auto operator!= (
  *  \brief Output iterator that feeds outputed values into a function.
  */
 template<class OutputFunction>
-class forwarding_iterator
-{
+class forwarding_iterator {
 public:
   using difference_type   = std::ptrdiff_t;
-  using value_type        = forwarding_iterator&;
+  using value_type        = forwarding_iterator &;
   using pointer           = value_type;
   using reference         = value_type;
   using iterator_category = std::output_iterator_tag;
 
 public:
-  forwarding_iterator()
-  {
+  forwarding_iterator() {
   }
 
-  forwarding_iterator(OutputFunction f) : outputFunction_(std::move(f))
-  {
+  forwarding_iterator(OutputFunction f) : outputFunction_(std::move(f)) {
   }
 
-  auto operator++ () -> forwarding_iterator&
-  {
+  auto operator++ () -> forwarding_iterator & {
     return *this;
   }
 
-  auto operator++ (int) -> forwarding_iterator&
-  {
+  auto operator++ (int) -> forwarding_iterator & {
     return *this;
   }
 
-  auto operator* () -> forwarding_iterator&
-  {
+  auto operator* () -> forwarding_iterator & {
     return *this;
   }
 
-  auto operator= (auto&& arg) -> forwarding_iterator&
-  {
+  auto operator= (auto &&arg) -> forwarding_iterator & {
     outputFunction_(std::forward<decltype(arg)>(arg));
     return *this;
   }
 
-  auto operator= (auto&& arg) const -> forwarding_iterator const&
-  {
+  auto operator= (auto &&arg) const -> forwarding_iterator const & {
     outputFunction_(std::forward<decltype(arg)>(arg));
     return *this;
   }

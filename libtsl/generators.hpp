@@ -11,24 +11,20 @@
 #include <random>
 #include <vector>
 
-namespace teddy::tsl
-{
+namespace teddy::tsl {
 template<class Degree, class Domain>
 auto make_diagram (
-  minmax_expr const& expr,
-  diagram_manager<Degree, Domain>& manager,
+  minmax_expr const &expr,
+  diagram_manager<Degree, Domain> &manager,
   fold_type const foldtype = fold_type::Left
-)
-{
-  auto const min_fold = [&manager, foldtype] (auto& diagrams)
-  {
+) {
+  auto const min_fold = [&manager, foldtype] (auto &diagrams) {
     return foldtype == fold_type::Left
            ? manager.template left_fold<ops::MIN>(diagrams)
            : manager.template tree_fold<ops::MIN>(diagrams);
   };
 
-  auto const max_fold = [&manager, foldtype] (auto& diagrams)
-  {
+  auto const max_fold = [&manager, foldtype] (auto &diagrams) {
     return foldtype == fold_type::Left
            ? manager.template left_fold<ops::MAX>(diagrams)
            : manager.template tree_fold<ops::MAX>(diagrams);
@@ -36,8 +32,7 @@ auto make_diagram (
 
   using diagram_t = typename diagram_manager<Degree, Domain>::diagram_t;
   std::vector<diagram_t> termDs;
-  for (auto const& eTerm : expr.terms_)
-  {
+  for (auto const &eTerm : expr.terms_) {
     auto vars = manager.variables(eTerm);
     termDs.push_back(min_fold(vars));
   }
@@ -46,28 +41,24 @@ auto make_diagram (
 
 template<class Degree, class Domain>
 auto make_diagram (
-  std::unique_ptr<tsl::expr_node> const& expr,
-  diagram_manager<Degree, Domain>& manager
-)
-{
+  std::unique_ptr<tsl::expr_node> const &expr,
+  diagram_manager<Degree, Domain> &manager
+) {
   return manager.from_expression_tree(*expr);
 }
 
 template<class Degree, class Domain>
 auto make_diagram (
-  tsl::expr_node const& expr,
-  diagram_manager<Degree, Domain>& manager
-)
-{
+  tsl::expr_node const &expr,
+  diagram_manager<Degree, Domain> &manager
+) {
   return manager.from_expression_tree(expr);
 }
 
-inline auto make_probability_vector (int32 const varCount, rng_t& rng)
-  -> std::vector<double>
-{
+inline auto make_probability_vector (int32 const varCount, rng_t &rng)
+  -> std::vector<double> {
   std::vector<double> probs(as_usize(varCount));
-  for (int32 i = 0; i < ssize(probs); ++i)
-  {
+  for (int32 i = 0; i < ssize(probs); ++i) {
     std::uniform_real_distribution<double> dist(.0, 1.0);
     probs[as_uindex(i)] = dist(rng);
   }
@@ -75,15 +66,12 @@ inline auto make_probability_vector (int32 const varCount, rng_t& rng)
 }
 
 template<std::size_t M>
-auto make_probability_matrix (std::vector<int32> const& domains, rng_t& rng)
-  -> std::vector<std::array<double, M>>
-{
+auto make_probability_matrix (std::vector<int32> const &domains, rng_t &rng)
+  -> std::vector<std::array<double, M>> {
   std::vector<std::array<double, M>> probs(domains.size());
-  for (int32 i = 0; i < ssize(probs); ++i)
-  {
+  for (int32 i = 0; i < ssize(probs); ++i) {
     std::uniform_real_distribution<double> dist(.0, 1.0);
-    for (int32 j = 0; j < domains[as_uindex(i)]; ++j)
-    {
+    for (int32 j = 0; j < domains[as_uindex(i)]; ++j) {
       probs[as_uindex(i)][as_uindex(j)] = dist(rng);
     }
     double const sum = std::reduce(
@@ -92,21 +80,18 @@ auto make_probability_matrix (std::vector<int32> const& domains, rng_t& rng)
       0.0,
       std::plus<>()
     );
-    for (int32 j = 0; j < domains[as_uindex(i)]; ++j)
-    {
+    for (int32 j = 0; j < domains[as_uindex(i)]; ++j) {
       probs[as_uindex(i)][as_uindex(j)] /= sum;
     }
   }
   return probs;
 }
 
-inline auto make_time_probability_vector (int32 const varCount, rng_t& rng)
-  -> std::vector<probs::prob_dist>
-{
+inline auto make_time_probability_vector (int32 const varCount, rng_t &rng)
+  -> std::vector<probs::prob_dist> {
   std::vector<probs::prob_dist> probs;
 
-  auto const mkExponential = [] (rng_t& gen) -> probs::prob_dist
-  {
+  auto const mkExponential = [] (rng_t &gen) -> probs::prob_dist {
     double const from = 0.2;
     double const to   = 1.0;
     std::uniform_real_distribution<double> distRate(from, to);
@@ -125,7 +110,7 @@ inline auto make_time_probability_vector (int32 const varCount, rng_t& rng)
   //     return probs::constant(distProb(gen));
   // };
 
-  std::vector<probs::prob_dist (*)(rng_t&)> distGenerators(
+  std::vector<probs::prob_dist (*)(rng_t &)> distGenerators(
     // {+mkExponential, +mkWeibull, +mkConstant}
     {+mkExponential}
   );
@@ -134,8 +119,7 @@ inline auto make_time_probability_vector (int32 const varCount, rng_t& rng)
     std::size_t {0},
     distGenerators.size() - 1
   );
-  for (int i = 0; i < varCount; ++i)
-  {
+  for (int i = 0; i < varCount; ++i) {
     auto const gen = distGenerators[distGen(rng)];
     probs.push_back(gen(rng));
   }
@@ -145,13 +129,11 @@ inline auto make_time_probability_vector (int32 const varCount, rng_t& rng)
 
 #ifdef LIBTEDDY_SYMBOLIC_RELIABILITY
 
-inline auto make_time_symprobability_vector (int32 const varCount, rng_t& rng)
-  -> std::vector<symprobs::expression>
-{
+inline auto make_time_symprobability_vector (int32 const varCount, rng_t &rng)
+  -> std::vector<symprobs::expression> {
   std::vector<symprobs::expression> probs;
 
-  auto const mkExponential = [] (rng_t& gen) -> symprobs::expression
-  {
+  auto const mkExponential = [] (rng_t &gen) -> symprobs::expression {
     std::uniform_real_distribution<double> distRate(0.2, 1.0);
     return symprobs::exponential(distRate(gen));
   };
@@ -168,7 +150,7 @@ inline auto make_time_symprobability_vector (int32 const varCount, rng_t& rng)
   //     return symprobs::constant(distProb(gen));
   // };
 
-  std::vector<symprobs::expression (*)(rng_t&)> distGenerators(
+  std::vector<symprobs::expression (*)(rng_t &)> distGenerators(
     // {+mkExponential, +mkWeibull, +mkConstant}
     {+mkExponential}
   );
@@ -178,8 +160,7 @@ inline auto make_time_symprobability_vector (int32 const varCount, rng_t& rng)
     distGenerators.size() - 1
   );
   probs.reserve(as_usize(varCount));
-  for (int i = 0; i < varCount; ++i)
-  {
+  for (int i = 0; i < varCount; ++i) {
     probs.push_back(mkExponential(rng));
   }
 

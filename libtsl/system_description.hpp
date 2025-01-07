@@ -8,10 +8,8 @@
 #include <ostream>
 #include <vector>
 
-namespace teddy::tsl
-{
-struct system_description
-{
+namespace teddy::tsl {
+struct system_description {
   int32 systemId_;
   int32 stateCount_;
   int32 componentCount_;
@@ -32,9 +30,8 @@ struct system_description
   double floatingTolerance_;
 };
 
-inline auto operator<< (std::ostream& ost, system_description const& system)
-  -> std::ostream&
-{
+inline auto operator<< (std::ostream &ost, system_description const &system)
+  -> std::ostream & {
   ost << fmt::format("[system_{}]", system.systemId_);
   return ost;
 }

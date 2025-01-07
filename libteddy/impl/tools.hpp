@@ -6,27 +6,22 @@
 #include <cstddef>
 #include <vector>
 
-namespace teddy::utils
-{
+namespace teddy::utils {
 /**
  *  \brief Exponentiation by squaring
  */
 template<class Base>
-auto constexpr int_pow(Base base, uint32 exponent) -> Base
-{
+auto constexpr int_pow(Base base, uint32 exponent) -> Base {
   Base result = 1;
 
-  for (;;)
-  {
-    if (exponent & 1U)
-    {
+  for (;;) {
+    if (exponent & 1U) {
       result *= base;
     }
 
     exponent >>= 1U;
 
-    if (0 == exponent)
-    {
+    if (0 == exponent) {
       break;
     }
 
@@ -39,16 +34,14 @@ auto constexpr int_pow(Base base, uint32 exponent) -> Base
 /**
  *  \brief Hash for pointers
  */
-inline auto do_hash (void* const p) -> std::size_t
-{
+inline auto do_hash (void *const p) -> std::size_t {
   return reinterpret_cast<std::size_t>(p) >> 4U; // NOLINT
 }
 
 /**
  *  \brief Hash for int
  */
-inline auto do_hash (int32 const x) -> std::size_t
-{
+inline auto do_hash (int32 const x) -> std::size_t {
   return static_cast<std::size_t>(x);
 }
 
@@ -56,8 +49,7 @@ inline auto do_hash (int32 const x) -> std::size_t
  *  \brief Hashes \p elem and combines the result with \p hash
  */
 template<class T>
-auto add_hash (std::size_t& hash, T const& elem) -> void
-{
+auto add_hash (std::size_t &hash, T const &elem) -> void {
   // see boost::hash_combine
   hash ^= do_hash(elem) + 0x9e3779b9 + (hash << 6U) + (hash >> 2U);
 }
@@ -66,8 +58,7 @@ auto add_hash (std::size_t& hash, T const& elem) -> void
  *  \brief Computes hash of the \p args
  */
 template<class... Ts>
-auto pack_hash (Ts const&... args) -> std::size_t
-{
+auto pack_hash (Ts const &...args) -> std::size_t {
   std::size_t result = 0;
   (add_hash(result, args), ...);
   return result;
@@ -77,8 +68,7 @@ auto pack_hash (Ts const&... args) -> std::size_t
  *  \brief The min function
  */
 template<class T>
-auto constexpr min(T lhs, T rhs) -> T
-{
+auto constexpr min(T lhs, T rhs) -> T {
   return lhs < rhs ? lhs : rhs;
 }
 
@@ -86,8 +76,7 @@ auto constexpr min(T lhs, T rhs) -> T
  *  \brief The max function
  */
 template<class T>
-auto constexpr max(T lhs, T rhs) -> T
-{
+auto constexpr max(T lhs, T rhs) -> T {
   return lhs > rhs ? lhs : rhs;
 }
 
@@ -95,8 +84,7 @@ auto constexpr max(T lhs, T rhs) -> T
  *  \brief The min function for parameter packs
  */
 template<class X>
-auto constexpr pack_min(X x) -> X
-{
+auto constexpr pack_min(X x) -> X {
   return x;
 }
 
@@ -104,8 +92,7 @@ auto constexpr pack_min(X x) -> X
  *  \brief The min function for parameter packs
  */
 template<class X, class... Xs>
-auto constexpr pack_min(X x, Xs... xs) -> X
-{
+auto constexpr pack_min(X x, Xs... xs) -> X {
   return min(x, pack_min(xs...));
 }
 
@@ -113,8 +100,7 @@ auto constexpr pack_min(X x, Xs... xs) -> X
  *  \brief The max function for parameter packs
  */
 template<class X>
-auto constexpr pack_max(X x) -> X
-{
+auto constexpr pack_max(X x) -> X {
   return x;
 }
 
@@ -122,8 +108,7 @@ auto constexpr pack_max(X x) -> X
  *  \brief The max function for parameter packs
  */
 template<class X, class... Xs>
-auto constexpr pack_max(X x, Xs... xs) -> X
-{
+auto constexpr pack_max(X x, Xs... xs) -> X {
   return max(x, pack_max(xs...));
 }
 
@@ -132,13 +117,10 @@ auto constexpr pack_max(X x, Xs... xs) -> X
  *  Implementation of \c std::max_element
  */
 template<class It>
-auto constexpr max_elem(It first, It const last) -> It
-{
+auto constexpr max_elem(It first, It const last) -> It {
   It maxIt = first;
-  while (first != last)
-  {
-    if (*first > *maxIt)
-    {
+  while (first != last) {
+    if (*first > *maxIt) {
       maxIt = first;
     }
     ++first;
@@ -151,8 +133,7 @@ auto constexpr max_elem(It first, It const last) -> It
  *  Simplified implementation of \c std::exchange
  */
 template<class T, class U = T>
-auto constexpr exchange(T& var, U newVal) noexcept -> T
-{
+auto constexpr exchange(T &var, U newVal) noexcept -> T {
   auto oldVal = var;
   var         = newVal;
   return oldVal;
@@ -163,8 +144,7 @@ auto constexpr exchange(T& var, U newVal) noexcept -> T
  *  Simplified implementation of \c std::swap
  */
 template<class T>
-auto constexpr swap(T& first, T& second) noexcept -> void
-{
+auto constexpr swap(T &first, T &second) noexcept -> void {
   auto tmp = first;
   first    = second;
   second   = tmp;
@@ -174,32 +154,25 @@ auto constexpr swap(T& first, T& second) noexcept -> void
  *  \brief Simple heapsort for vectors
  */
 template<class T, class Compare>
-auto sort (std::vector<T>& xs, Compare cmp) -> void
-{
-  if (xs.empty())
-  {
+auto sort (std::vector<T> &xs, Compare cmp) -> void {
+  if (xs.empty()) {
     return;
   }
 
-  auto const sift_down = [&xs, cmp] (uint32 parent, uint32 const size)
-  {
+  auto const sift_down = [&xs, cmp] (uint32 parent, uint32 const size) {
     uint32 left  = 2 * parent + 1;
     uint32 right = left + 1;
-    while (left < size)
-    {
+    while (left < size) {
       uint32 swap = parent;
-      if (cmp(xs[swap], xs[left]))
-      {
+      if (cmp(xs[swap], xs[left])) {
         swap = left;
       }
 
-      if (right < size && cmp(xs[swap], xs[right]))
-      {
+      if (right < size && cmp(xs[swap], xs[right])) {
         swap = right;
       }
 
-      if (swap == parent)
-      {
+      if (swap == parent) {
         break;
       }
 
@@ -213,15 +186,13 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
   auto const size = static_cast<uint32>(xs.size());
 
   // make-heap
-  for (uint32 i = size / 2 + 1; i > 0;)
-  {
+  for (uint32 i = size / 2 + 1; i > 0;) {
     --i;
     sift_down(i, size);
   }
 
   // pop-heap
-  for (uint32 last = size - 1; last > 0; --last)
-  {
+  for (uint32 last = size - 1; last > 0; --last) {
     utils::swap(xs[last], xs[0]);
     sift_down(0, last);
   }
@@ -231,8 +202,7 @@ auto sort (std::vector<T>& xs, Compare cmp) -> void
  *  \brief Checks if T and U are the same type
  */
 template<class T, class U>
-struct is_same
-{
+struct is_same {
   static bool constexpr value = false;
 };
 
@@ -240,8 +210,7 @@ struct is_same
  *  \brief Checks if T and U are the same type
  */
 template<class T>
-struct is_same<T, T>
-{
+struct is_same<T, T> {
   static bool constexpr value = true;
 };
 
@@ -269,8 +238,7 @@ struct type_if;
  *  \brief Specialization for B = true
  */
 template<class T, class F>
-struct type_if<true, T, F>
-{
+struct type_if<true, T, F> {
   using type = T;
 };
 
@@ -278,8 +246,7 @@ struct type_if<true, T, F>
  *  \brief Specialization for B = false
  */
 template<class T, class F>
-struct type_if<false, T, F>
-{
+struct type_if<false, T, F> {
   using type = F;
 };
 
@@ -293,8 +260,7 @@ using second_t = type_if<false, X, T>::type;
  *  \brief Implementation of \c std::remove_reference
  */
 template<class T>
-struct remove_reference
-{
+struct remove_reference {
   using type = T;
 };
 
@@ -302,8 +268,7 @@ struct remove_reference
  *  \brief Specialization for lvalue ref
  */
 template<class T>
-struct remove_reference<T&>
-{
+struct remove_reference<T &> {
   using type = T;
 };
 
@@ -311,8 +276,7 @@ struct remove_reference<T&>
  *  \brief Specialization for rvalue ref
  */
 template<class T>
-struct remove_reference<T&&>
-{
+struct remove_reference<T &&> {
   using type = T;
 };
 
@@ -320,8 +284,7 @@ struct remove_reference<T&&>
  *  \brief List of types, provides basic queries
  */
 template<class... Types>
-struct type_list
-{
+struct type_list {
   template<class T>
   static bool constexpr Contains          = (is_same<T, Types>::value || ...);
 
@@ -334,15 +297,13 @@ struct type_list
  *  \brief Implementation of \c std::move
  */
 #define TEDDY_MOVE(...)                                                        \
-  static_cast<                                                                 \
-    ::teddy::utils::remove_reference<decltype(__VA_ARGS__)>::type&&>(          \
-    __VA_ARGS__                                                                \
-  )
+  static_cast<::teddy::utils::remove_reference<decltype(__VA_ARGS__)>::type    \
+                &&>(__VA_ARGS__)
 
 /**
  *  \brief Implementation of \c std::forward
  */
-#define TEDDY_FORWARD(...) static_cast<decltype(__VA_ARGS__)&&>(__VA_ARGS__)
+#define TEDDY_FORWARD(...) static_cast<decltype(__VA_ARGS__) &&>(__VA_ARGS__)
 } // namespace teddy::utils
 
 #endif
