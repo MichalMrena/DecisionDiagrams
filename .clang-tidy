@@ -26,7 +26,8 @@ Checks: >
   -readability-identifier-length,
   -readability-magic-numbers,
   -readability-named-parameter,
-  -readability-redundant-access-specifiers
+  -readability-redundant-access-specifiers,
+  -readability-function-cognitive-complexity
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 FormatStyle: none

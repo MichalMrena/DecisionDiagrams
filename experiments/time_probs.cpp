@@ -117,23 +117,23 @@ auto sf_from_pla (
         for (size_t li = 0; li < static_cast<size_t>(lineCount); ++li)
         {
             ++nextAndVar;
-            if (plaLines[li].fVals_.get(fi) != 1)
+            if (plaLines[li].fVals_.get_value(fi) != 1)
             {
                 continue;
             }
 
-            teddy::bool_cube const& cube = plaLines[li].cube_;
+            teddy::cube const& cube = plaLines[li].cube_;
             bdd_t product = manager.constant(1);
             for (int i = 0; i < cube.size(); ++i)
             {
-                if (cube.get(i) == 1)
+                if (cube.get_value(i) == 1)
                 {
                     product = manager.apply<AND>(
                         product,
                         inputs[static_cast<size_t>(i)]
                     );
                 }
-                else if (cube.get(i) == 0)
+                else if (cube.get_value(i) == 0)
                 {
                     product = manager.apply<AND>(
                         product,

@@ -1,44 +1,11 @@
-#ifndef LIBTEDDY_DETAILS_CONFIG_HPP
-#define LIBTEDDY_DETAILS_CONFIG_HPP
+#ifndef LIBTEDDY_IMPL_CONFIG_HPP
+#define LIBTEDDY_IMPL_CONFIG_HPP
 
-/**
- *  Enables verbose output anouncing:
- *    - garbage collection,
- *    - node pool allocations,
- *    - unique table rehashing,
- *    - apply cache rehashing,
- *    - and possibly other events.
- *
- *  This option can also be enabled in the root CMakeLists.txt
- */
-// #define LIBTEDDY_VERBOSE
-
-/**
- *  Enables collection of statistics.
- *  They can be viewed using teddy::dump_stats().
- *
- *  This option can also be enabled in the root CMakeLists.txt
- */
-// #define LIBTEDDY_COLLECT_STATS
-
-/**
- *  Enables symbolic probabilistic evaluation
- *  See the documentation for dependencies
- *
- *  This option is here just for the sake of completness, it should
- *  only be set in the root CMakeLists.txt since it adds
- *  some additional linking flags
- */
-// #define LIBTEDDY_SYMBOLIC_RELIABILITY
-
-/**
- *  Enables arbitrary precision integer arithmetic
- *  See the documentation for dependencies
- *
- *  This option is here just for the sake of completness, it should
- *  only be set in the root CMakeLists.txt since it adds
- *  some additional linking flags
- */
-// #define LIBTEDDY_ARBITRARY_PRECISION
+// Defines TEDDY_DEF_INLINE as inline in header-only mode and as empty otherwise
+#ifdef TEDDY_NO_HEADER_ONLY
+  #define TEDDY_DEF_INLINE
+#else
+  #define TEDDY_DEF_INLINE inline
+#endif
 
 #endif

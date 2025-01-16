@@ -117,7 +117,7 @@ public:
    */
   template<class Foo = void>
   requires(is_bdd<Degree>)
-  auto variable_not (int32 index) -> utils::second_t<Foo, diagram_t>;
+  auto variable_not (int32 index) -> tools::second_t<Foo, diagram_t>;
 
   /**
    *  \brief Creates diagram representing function of single variable
@@ -362,7 +362,7 @@ public:
   template<class Foo = void>
   requires(is_bdd<Degree>)
   auto satisfy_count_ln (diagram_t const &diagram
-  ) -> utils::second_t<Foo, double>;
+  ) -> tools::second_t<Foo, double>;
 
   /**
    *  \brief Finds variable assignment for which diagram evaluates to \p value
@@ -470,7 +470,7 @@ public:
    */
   template<class Foo = void>
   requires(is_bdd<Degree>)
-  auto negate (diagram_t const &diagram) -> utils::second_t<Foo, diagram_t>;
+  auto negate (diagram_t const &diagram) -> tools::second_t<Foo, diagram_t>;
 
   /**
    *  \brief Enumerates indices of variables that the function depends on
@@ -780,7 +780,7 @@ template<class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
 auto diagram_manager<Degree, Domain>::variable_not(int32 const index
-) -> utils::second_t<Foo, diagram_t> {
+) -> tools::second_t<Foo, diagram_t> {
   son_container sons = node_t::make_son_container(2);
   sons[0]            = nodes_.make_terminal_node(1);
   sons[1]            = nodes_.make_terminal_node(0);
@@ -887,8 +887,8 @@ auto diagram_manager<Degree, Domain>::apply(
    * Use bounded MAX if the max value is known.
    * This should perform better since it can short-circuit.
    */
-  using OpType = utils::type_if<
-    utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
+  using OpType = tools::type_if<
+    tools::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
     ops::MAXB<Domain::value>,
     Op>::type;
 
@@ -926,7 +926,7 @@ auto diagram_manager<Degree, Domain>::apply_impl(
 
   int32 const lhsLevel = nodes_.get_level(lhs);
   int32 const rhsLevel = nodes_.get_level(rhs);
-  int32 const topLevel = utils::min(lhsLevel, rhsLevel);
+  int32 const topLevel = tools::min(lhsLevel, rhsLevel);
   int32 const topIndex = nodes_.get_index(topLevel);
   int32 const domain   = nodes_.get_domain(topIndex);
   son_container sons   = node_t::make_son_container(domain);
@@ -951,8 +951,8 @@ auto diagram_manager<Degree, Domain>::apply_n(Diagram const &...diagram
    * Use bounded MAX if the max value is known.
    * This should perform better since it can short-circuit.
    */
-  using OpType = utils::type_if<
-    utils::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
+  using OpType = tools::type_if<
+    tools::is_same<Op, ops::MAX>::value && domains::is_fixed<Domain>::value,
     ops::MAXB<Domain::value>,
     Op>::type;
 
@@ -972,7 +972,7 @@ auto diagram_manager<Degree, Domain>::apply_n_impl(
   Op operation,
   Node... nodes
 ) -> node_t * {
-  std::size_t const hash                = utils::pack_hash(nodes...);
+  std::size_t const hash                = tools::pack_hash(nodes...);
   std::size_t const cacheIndex          = hash % cache.size();
   node_pack<sizeof...(Node)> &cachePack = cache[cacheIndex];
   if (pack_equals(cachePack, nodes...)) {
@@ -986,7 +986,7 @@ auto diagram_manager<Degree, Domain>::apply_n_impl(
   if (opVal != Nondetermined) {
     result = nodes_.make_terminal_node(opVal);
   } else {
-    int32 const minLevel = utils::pack_min(nodes_.get_level(nodes)...);
+    int32 const minLevel = tools::pack_min(nodes_.get_level(nodes)...);
     int32 const topIndex = nodes_.get_index(minLevel);
     int32 const domain   = nodes_.get_domain(topIndex);
     son_container sons   = node_t::make_son_container(domain);
@@ -1136,7 +1136,7 @@ template<class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
 auto diagram_manager<Degree, Domain>::satisfy_count_ln(diagram_t const &diagram
-) -> utils::second_t<Foo, double> {
+) -> tools::second_t<Foo, double> {
   node_t *const root     = diagram.unsafe_get_root();
   node_memo<double> memo = this->make_node_memo<double>(root);
   double result          = this->satisfy_count_ln_impl(memo, root);
@@ -1206,7 +1206,7 @@ auto diagram_manager<Degree, Domain>::satisfy_one(
   }
 
   Vars vars;
-  if constexpr (utils::is_std_vector<Vars>) {
+  if constexpr (tools::is_std_vector<Vars>) {
     vars.resize(as_usize(this->get_var_count()));
   }
 
@@ -1262,7 +1262,7 @@ auto diagram_manager<Degree, Domain>::satisfy_all_g(
   }
 
   Vars vars;
-  if constexpr (utils::is_std_vector<Vars>) {
+  if constexpr (tools::is_std_vector<Vars>) {
     vars.resize(as_usize(this->get_var_count()));
   }
 
@@ -1339,7 +1339,7 @@ auto diagram_manager<Degree, Domain>::get_cofactor(
   }
 
   auto const it
-    = utils::find_if(vars.begin(), vars.end(), [root] (var_cofactor var) {
+    = tools::find_if(vars.begin(), vars.end(), [root] (var_cofactor var) {
         return var.index_ == root->get_index();
       });
 
@@ -1418,7 +1418,7 @@ auto diagram_manager<Degree, Domain>::get_cofactor_impl(
 
   int32 const nodeIndex = node->get_index();
   auto const it
-    = utils::find_if(vars.begin(), vars.end(), [nodeIndex] (var_cofactor var) {
+    = tools::find_if(vars.begin(), vars.end(), [nodeIndex] (var_cofactor var) {
         return var.index_ == nodeIndex;
       });
 
@@ -1490,7 +1490,7 @@ template<class Degree, class Domain>
 template<class Foo>
 requires(is_bdd<Degree>)
 auto diagram_manager<Degree, Domain>::negate(diagram_t const &diagram
-) -> utils::second_t<Foo, diagram_t> {
+) -> tools::second_t<Foo, diagram_t> {
   return this->transform(diagram, [] (int32 const value) { return 1 - value; });
 }
 

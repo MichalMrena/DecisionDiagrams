@@ -6,3 +6,7 @@ InlayHints:
 
 Diagnostics:
   UnusedIncludes: Strict
+  Suppress: "pp_including_mainfile_in_preamble"
+
+CompileFlags:
+  Add: [-DTEDDY_NO_HEADER_ONLY]

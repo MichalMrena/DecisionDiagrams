@@ -644,7 +644,7 @@ auto node_manager<Degree, Domain>::domain_product(
   if constexpr (domains::is_fixed<Domain>::value && Degree::value == 2) {
     return Int(1) << static_cast<unsigned>(levelTo - levelFrom);
   } else if constexpr (domains::is_fixed<Domain>::value) {
-    return utils::int_pow(
+    return tools::int_pow(
       Int(Domain::value),
       static_cast<uint32>(levelTo - levelFrom)
     );
@@ -711,7 +711,7 @@ auto node_manager<Degree, Domain>::cache_find(node_t *lhs, node_t *rhs)
   -> node_t * {
   if constexpr (O::is_commutative()) {
     if (rhs < lhs) {
-      utils::swap(lhs, rhs);
+      tools::swap(lhs, rhs);
     }
   }
   node_t *const node = opCache_.find(O::get_id(), lhs, rhs);
@@ -730,7 +730,7 @@ auto node_manager<Degree, Domain>::cache_put(
 ) -> void {
   if constexpr (O::is_commutative()) {
     if (rhs < lhs) {
-      utils::swap(lhs, rhs);
+      tools::swap(lhs, rhs);
     }
   }
   opCache_.put(O::get_id(), result, lhs, rhs);
@@ -958,7 +958,7 @@ auto node_manager<Degree, Domain>::check_distinct(std::vector<int32> const &ints
     return true;
   }
 
-  int32 const maxElem = *utils::max_elem(ints.begin(), ints.end());
+  int32 const maxElem = *tools::max_elem(ints.begin(), ints.end());
   std::vector<bool> bitset(as_usize(maxElem + 1), false);
   for (int32 const checkInt : ints) {
     if (bitset[as_uindex(checkInt)]) {
@@ -977,7 +977,7 @@ auto node_manager<Degree, Domain>::can_be_gced(node_t *const node) -> bool {
 template<class Degree, class Domain>
 auto node_manager<Degree, Domain>::swap_node_with_next(node_t *const node
 ) -> void {
-  using node_matrix = utils::type_if<
+  using node_matrix = tools::type_if<
     degrees::is_fixed<Degree>::value,
     node_t * [Degree::value][Degree::value],
     std::vector<std::vector<node_t *>>>::type;
@@ -1071,7 +1071,7 @@ auto node_manager<Degree, Domain>::swap_variable_with_next(int32 const index
   uniqueTables_[as_uindex(index)].adjust_capacity();
   uniqueTables_[as_uindex(nextIndex)].merge(TEDDY_MOVE(tmpTable));
 
-  utils::swap(
+  tools::swap(
     levelToIndex_[as_uindex(level)],
     levelToIndex_[as_uindex(1 + level)]
   );
@@ -1093,7 +1093,7 @@ auto node_manager<Degree, Domain>::sift_variables() -> void {
     for (int32 index = 0; index < varCount_; ++index) {
       counts.push_back(count_pair {index, this->get_node_count(index)});
     }
-    utils::sort(counts, [] (count_pair const &lhs, count_pair const &rhs) {
+    tools::sort(counts, [] (count_pair const &lhs, count_pair const &rhs) {
       return lhs.count_ > rhs.count_;
     });
     return counts;

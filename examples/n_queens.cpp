@@ -161,7 +161,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    const std::optional<int> nOpt = teddy::utils::parse<int>(argv[1]);
+    const std::optional<int> nOpt = teddy::tools::parse<int>(argv[1]);
     if (not nOpt)
     {
         std::cerr << "Please specify the number of queens.\n";

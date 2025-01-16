@@ -92,12 +92,12 @@ node_pool<Degree>::node_pool(
 
 template<class Degree>
 node_pool<Degree>::node_pool(node_pool &&other) noexcept :
-  pools_(utils::exchange(other.mainPool_, nullptr)),
-  nextPoolNode_(utils::exchange(other.nextPoolNode_, nullptr)),
-  freeNodes_(utils::exchange(other.freeNodes_, nullptr)),
-  mainPoolSize_(utils::exchange(other.mainPoolSize_, -1)),
-  extraPoolSize_(utils::exchange(other.extraPoolSize_, -1)),
-  availableNodeCount_(utils::exchange(other.availableNodeCount_, -1)) {
+  pools_(tools::exchange(other.mainPool_, nullptr)),
+  nextPoolNode_(tools::exchange(other.nextPoolNode_, nullptr)),
+  freeNodes_(tools::exchange(other.freeNodes_, nullptr)),
+  mainPoolSize_(tools::exchange(other.mainPoolSize_, -1)),
+  extraPoolSize_(tools::exchange(other.extraPoolSize_, -1)),
+  availableNodeCount_(tools::exchange(other.availableNodeCount_, -1)) {
 }
 
 template<class Degree>

@@ -140,7 +140,7 @@ diagram<Degree>::diagram(diagram const &other) :
 
 template<class Degree>
 diagram<Degree>::diagram(diagram &&other) noexcept :
-  root_(utils::exchange(other.root_, nullptr)) {
+  root_(tools::exchange(other.root_, nullptr)) {
 }
 
 template<class Degree>
@@ -164,14 +164,14 @@ template<class Degree>
 auto diagram<Degree>::operator= (diagram &&other) noexcept -> diagram & {
   if (this != &other) {
     root_->dec_ref_count();
-    root_ = utils::exchange(other.root_, nullptr);
+    root_ = tools::exchange(other.root_, nullptr);
   }
   return *this;
 }
 
 template<class Degree>
 auto diagram<Degree>::swap(diagram &other) noexcept -> void {
-  utils::swap(root_, other.root_);
+  tools::swap(root_, other.root_);
 }
 
 template<class Degree>
@@ -193,7 +193,7 @@ struct hash<teddy::diagram<Degree>> // NOLINT
   auto
     operator() (teddy::diagram<Degree> const &diagram
     ) const noexcept -> std::size_t {
-    return ::teddy::utils::do_hash(diagram.unsafe_get_root());
+    return ::teddy::tools::do_hash(diagram.unsafe_get_root());
   }
 };
 

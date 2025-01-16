@@ -39,8 +39,8 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const mi = utils::min(l, r);
-      int32 const ma = utils::max(l, r);
+      int32 const mi = tools::min(l, r);
+      int32 const ma = tools::max(l, r);
       return mi == 0 ? mi : ma;
     }
 
@@ -51,8 +51,8 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int const mi = utils::min(l, r);
-      int const ma = utils::max(l, r);
+      int const mi = tools::min(l, r);
+      int const ma = tools::max(l, r);
       return mi == 0 ? ma : mi;
     }
 
@@ -64,7 +64,7 @@ namespace ops {
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
       int const xi = l ^ r;
-      int const ma = utils::max(l, r);
+      int const ma = tools::max(l, r);
       return ma == Nondetermined ? ma : xi;
     }
 
@@ -77,8 +77,8 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const mi = utils::min(l, r);
-      int32 const ma = utils::max(l, r);
+      int32 const mi = tools::min(l, r);
+      int32 const ma = tools::max(l, r);
       return mi == 0 ? mi : ma == Undefined ? mi : ma;
     }
 
@@ -89,8 +89,8 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const mi = utils::min(l, r);
-      int32 const ma = utils::max(l, r);
+      int32 const mi = tools::min(l, r);
+      int32 const ma = tools::max(l, r);
       return ma == Nondetermined ? ma : 1 - mi;
     }
 
@@ -104,9 +104,9 @@ namespace ops {
       // This assumes that l,r is from {0,1,N} where N has 0 at lowest
       // bit.
 
-      int32 const mi  = utils::min(l, r);
-      int32 const ma  = utils::max(l, r);
-      int32 const ema = utils::max(l | r, 1);
+      int32 const mi  = tools::min(l, r);
+      int32 const ma  = tools::max(l, r);
+      int32 const ema = tools::max(l | r, 1);
       return (mi & 1) | (ma & 1) ? 0 : ema;
     }
 
@@ -117,7 +117,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const ne = static_cast<int32>(l == r);
       return ma == Nondetermined ? ma : ne;
     }
@@ -131,7 +131,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const eq = static_cast<int32>(l == r);
       return ma == Nondetermined ? ma : eq;
     }
@@ -145,7 +145,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const ne = static_cast<int32>(l != r);
       return ma == Nondetermined ? ma : ne;
     }
@@ -157,7 +157,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const le = static_cast<int32>(l < r);
       return ma == Nondetermined ? ma : le;
     }
@@ -167,7 +167,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const le = static_cast<int32>(l <= r);
       return ma == Nondetermined ? ma : le;
     }
@@ -177,7 +177,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const ge = static_cast<int32>(l > r);
       return ma == Nondetermined ? ma : ge;
     }
@@ -187,7 +187,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const ge = static_cast<int32>(l >= r);
       // return l == 0 ? 1 : ma == Nondetermined ? Nondetermined : ge;
       return ma == Nondetermined ? Nondetermined : ge;
@@ -198,8 +198,8 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const mi = utils::min(l, r);
-      int32 const ma = utils::max(l, r);
+      int32 const mi = tools::min(l, r);
+      int32 const ma = tools::max(l, r);
       return mi == 0 || ma != Nondetermined ? mi : ma;
     }
 
@@ -210,7 +210,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      return utils::max(l, r);
+      return tools::max(l, r);
     }
 
     using details::make_nary<MAX>::operator();
@@ -225,7 +225,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       return l == M - 1 || r == M - 1 ? M - 1 : ma;
     }
 
@@ -237,7 +237,7 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const ma = utils::max(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const pl = (l + r) % M;
       return ma == Nondetermined ? ma : pl;
     }
@@ -250,8 +250,8 @@ namespace ops {
     [[nodiscard]]
     auto constexpr
       operator() (int32 const l, int32 const r) const -> int32 {
-      int32 const mi = utils::min(l, r);
-      int32 const ma = utils::max(l, r);
+      int32 const mi = tools::min(l, r);
+      int32 const ma = tools::max(l, r);
       int32 const ml = (l * r) % M;
       return mi == 0 ? 0 : ma == Nondetermined ? Nondetermined : ml;
     }
@@ -289,8 +289,8 @@ namespace ops {
 
 template<class Operation>
 concept teddy_bin_op = requires() {
-  { Operation::get_id() } -> utils::same_as<int32>;
-  { Operation::is_commutative() } -> utils::same_as<bool>;
+  { Operation::get_id() } -> tools::same_as<int32>;
+  { Operation::is_commutative() } -> tools::same_as<bool>;
 };
 } // namespace teddy
 

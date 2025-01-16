@@ -19,7 +19,7 @@
 namespace teddy {
 namespace details {
   template<class Degree>
-  concept is_bss = utils::is_same<degrees::fixed<2>, Degree>::value;
+  concept is_bss = tools::is_same<degrees::fixed<2>, Degree>::value;
 }
 
 /**
@@ -100,7 +100,7 @@ public:
   template<probs::prob_vector Ps, class Foo = void>
   requires(details::is_bss<Degree>)
   auto calculate_availability (Ps const &probs, diagram_t const &diagram)
-    -> utils::second_t<Foo, double>;
+    -> tools::second_t<Foo, double>;
 
   /**
    *  \brief Calculates and returns system availability with
@@ -135,7 +135,7 @@ public:
   template<probs::prob_vector Ps, class Foo = void>
   requires(details::is_bss<Degree>)
   auto calculate_unavailability (Ps const &probs, diagram_t const &diagram)
-    -> utils::second_t<Foo, double>;
+    -> tools::second_t<Foo, double>;
 
   /**
    *  \brief Calculates and returns system availability with
@@ -366,7 +366,7 @@ private:
 
   struct cache_entry_hash {
     auto operator() (dpld_cache_entry const &entry) const {
-      return utils::pack_hash(entry.lhs_, entry.rhs_);
+      return tools::pack_hash(entry.lhs_, entry.rhs_);
     }
   };
 
@@ -475,7 +475,7 @@ requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_availability(
   Ps const &probs,
   diagram_t const &diagram
-) -> utils::second_t<Foo, double> {
+) -> tools::second_t<Foo, double> {
   return this->calculate_availability(
     1,
     probs::details::vector_to_matrix_wrap(probs),
@@ -507,7 +507,7 @@ requires(details::is_bss<Degree>)
 auto reliability_manager<Degree, Domain>::calculate_unavailability(
   Ps const &probs,
   diagram_t const &diagram
-) -> utils::second_t<Foo, double> {
+) -> tools::second_t<Foo, double> {
   return this->calculate_unavailability(
     1,
     probs::details::vector_to_matrix_wrap(probs),
@@ -718,7 +718,7 @@ auto reliability_manager<Degree, Domain>::dpld_impl(
   } else {
     int32 const lhsLevel = this->get_node_manager().get_level(lhs);
     int32 const rhsLevel = this->get_node_manager().get_level(rhs);
-    int32 const topLevel = utils::min(lhsLevel, rhsLevel);
+    int32 const topLevel = tools::min(lhsLevel, rhsLevel);
     int32 const topIndex = this->get_node_manager().get_index(topLevel);
     int32 const domain   = this->get_node_manager().get_domain(topIndex);
     son_conainer sons    = node_t::make_son_container(domain);

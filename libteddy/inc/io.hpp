@@ -1,5 +1,5 @@
-#ifndef LIBTEDDY_CORE_IO_HPP
-#define LIBTEDDY_CORE_IO_HPP
+#ifndef LIBTEDDY_INC_IO_HPP
+#define LIBTEDDY_INC_IO_HPP
 
 #include <libteddy/impl/io_impl.hpp>
 #include <libteddy/impl/pla_file.hpp>
@@ -16,14 +16,12 @@ struct io {
    *  \brief Creates BDDs defined by PLA file
    *
    *  \param manager Diagram manager
-   *  \param file PLA file loaded in the instance of \c pla_file class
-   *  \param foldType fold type used in diagram creation
+   *  \param file PLA file
    *  \return Vector of diagrams
    */
   static auto from_pla (
     binary_manager &manager,
-    pla_file const &file,
-    fold_type foldType = fold_type::Tree
+    const pla_file_binary &file
   ) -> std::vector<binary_manager::diagram_t>;
 
   /**
@@ -174,75 +172,12 @@ struct io {
 
 // definitions:
 
-inline auto io::from_pla(
-  binary_manager &manager,
-  pla_file const &file,
-  fold_type const foldType
-) -> std::vector<bss_manager::diagram_t> {
-  auto const product = [&manager] (auto const &cube) {
-    std::vector<bdd_t> variables;
-    variables.reserve(as_usize(cube.size()));
-    for (int32 i = 0; i < cube.size(); ++i) {
-      if (cube.get(i) == 1) {
-        variables.push_back(manager.variable(i));
-      } else if (cube.get(i) == 0) {
-        variables.push_back(manager.variable_not(i));
-      }
-    }
-    return manager.left_fold<ops::AND>(variables);
-  };
-
-  auto const sum = [&manager, foldType] (auto &diagrams) {
-    switch (foldType) {
-    case fold_type::Left:
-      return manager.left_fold<ops::OR>(diagrams);
-
-    case fold_type::Tree:
-      return manager.tree_fold<ops::OR>(diagrams);
-
-    default:
-      assert(false && "Invalid fold type -- should not have happened!");
-      std::exit(7);
-    }
-  };
-
-  std::vector<pla_file::pla_line> const &plaLines = file.get_lines();
-  int64 const lineCount                           = file.get_line_count();
-  int64 const functionCount                       = file.get_function_count();
-
-  // Create a diagram for each function.
-  std::vector<bdd_t> functionDiagrams;
-  functionDiagrams.reserve(as_usize(functionCount));
-  for (int32 fi = 0; fi < functionCount; ++fi) {
-    // First create a diagram for each product.
-    std::vector<bdd_t> products;
-    // products.reserve(lineCount);
-    for (int32 li = 0; li < lineCount; ++li) {
-      // We are doing SOP so we are only interested
-      // in functions with value 1.
-      if (plaLines[as_usize(li)].fVals_.get(fi) == 1) {
-        products.push_back(product(plaLines[as_uindex(li)].cube_));
-      }
-    }
-
-    // In this case we just have a constant function.
-    if (products.empty()) {
-      products.push_back(manager.constant(0));
-    }
-
-    // Then merge products using OR.
-    functionDiagrams.push_back(sum(products));
-  }
-
-  return functionDiagrams;
-}
-
 template<
   class Degree,
   class Domain,
   std::input_iterator I,
   std::sentinel_for<I> S>
-auto io::from_vector( // NOLINT
+auto io::from_vector(
   diagram_manager<Degree, Domain> &manager,
   I first,
   S last
@@ -371,32 +306,14 @@ auto io::to_vector_g(
     }
   } while (not wasLast);
 }
-
-template<class Degree, class Domain>
-auto io::to_dot(
-  diagram_manager<Degree, Domain> const &manager,
-  std::ostream &out
-) -> void {
-  details::io_impl::to_dot_graph_common(
-    manager,
-    out,
-    [&manager] (auto const &f) { manager.nodes_.for_each_node(f); }
-  );
-}
-
-template<class Degree, class Domain>
-auto io::to_dot(
-  diagram_manager<Degree, Domain> const &manager,
-  std::ostream &out,
-  diagram_manager<Degree, Domain>::diagram_t const &diagram
-) -> void {
-  details::io_impl::to_dot_graph_common(
-    manager,
-    out,
-    [&manager, &diagram] (auto const &f) {
-      manager.nodes_.traverse_level(diagram.unsafe_get_root(), f);
-    }
-  );
-}
 } // namespace teddy
+
+// Include definitions in header-only mode
+#ifndef TEDDY_NO_HEADER_ONLY
+#include <libteddy/impl/io.cpp>
+#endif
+
+// Always include inline definitions
+#include <libteddy/impl/io.inl>
+
 #endif

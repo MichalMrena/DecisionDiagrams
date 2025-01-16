@@ -112,7 +112,7 @@ namespace sons {
     auto operator= (mixed const &other) -> mixed & = delete;
 
     mixed(mixed &&other) noexcept :
-      sons_(utils::exchange(other.sons_, nullptr)) {
+      sons_(tools::exchange(other.sons_, nullptr)) {
     }
 
     ~mixed() {
@@ -122,7 +122,7 @@ namespace sons {
     auto operator= (mixed &&other) noexcept -> mixed & {
       if (this != &other) [[likely]] {
         std::free(sons_);
-        sons_ = utils::exchange(other.sons_, nullptr);
+        sons_ = tools::exchange(other.sons_, nullptr);
       }
       return *this;
     }
@@ -164,7 +164,7 @@ public:
   using son_container = decltype(sons::make_son_container(int32(), Degree()));
 
   // TODO(michal): expression
-  using allowed_types = utils::type_list<double, int64, longint>;
+  using allowed_types = tools::type_list<double, int64, longint>;
 
 public:
   /**

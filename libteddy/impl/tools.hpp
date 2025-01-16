@@ -3,10 +3,19 @@
 
 #include <libteddy/impl/types.hpp>
 
+#include <cctype>
 #include <cstddef>
+#include <string_view>
 #include <vector>
 
-namespace teddy::utils {
+/**
+ * \file tools.hpp
+ * \brief Contains (simplified) implementations of (STL) algorithms
+ *
+ * Tries to minimize dependencies.
+ */
+
+namespace teddy::tools {
 /**
  *  \brief Exponentiation by squaring
  */
@@ -129,6 +138,72 @@ auto constexpr max_elem(It first, It const last) -> It {
 }
 
 /**
+  *  \brief Finds the first element satisfying \p test
+  *  Implementation of \c std::find_if
+  */
+template<class It, class Predicate>
+auto constexpr find_if(It first, It const last, Predicate test) -> It {
+  while (first != last) {
+    if (test(*first)) {
+      return first;
+    }
+    ++first;
+  }
+  return last;
+}
+
+/**
+  *  \brief Finds the first element not satisfying \p test
+  *  Implementation of \c std::find_if_not
+  */
+template<class It, class Predicate>
+auto constexpr find_if_not(It first, It const last, Predicate test) -> It {
+  while (first != last) {
+    if (not test(*first)) {
+      return first;
+    }
+    ++first;
+  }
+  return last;
+}
+
+/**
+ * \brief Trims string from both ends
+ * \param str string to trim
+ * \return trimmed view of \p str
+ */
+inline auto trim(std::string_view str) -> std::string_view {
+  const std::string_view::iterator end = str.end();
+  std::string_view::iterator front = str.begin();
+  std::string_view::iterator back = str.end() - 1;
+  while (front < end && static_cast<bool>(std::isspace(*front))) {
+    ++front;
+  }
+  while (back > front && static_cast<bool>(std::isspace(*back))) {
+    --back;
+  }
+  return {front, back + 1};
+}
+
+/**
+ * \brief Splits \p str into words delimited by space
+ */
+inline auto to_words(std::string_view str) -> std::vector<std::string_view> {
+  std::vector<std::string_view> words;
+  std::string_view::iterator in = str.begin();
+  const std::string_view::iterator end = str.end();
+  while (in != end) {
+    const std::string_view::iterator w_begin = find_if_not(in, end, ::isspace);
+    const std::string_view::iterator w_end = find_if(w_begin, end, ::isspace);
+    if (w_begin != w_end) {
+      words.emplace_back(w_begin, w_end);
+    }
+    in = w_end;
+  }
+  return words;
+}
+
+/**
  *  \brief Exchages value of \p var to \p newVal and returns the old value
  *  Simplified implementation of \c std::exchange
  */
@@ -176,7 +251,7 @@ auto sort (std::vector<T> &xs, Compare cmp) -> void {
         break;
       }
 
-      utils::swap(xs[parent], xs[swap]);
+      tools::swap(xs[parent], xs[swap]);
       parent = swap;
       left   = 2 * parent + 1;
       right  = left + 1;
@@ -193,7 +268,7 @@ auto sort (std::vector<T> &xs, Compare cmp) -> void {
 
   // pop-heap
   for (uint32 last = size - 1; last > 0; --last) {
-    utils::swap(xs[last], xs[0]);
+    tools::swap(xs[last], xs[0]);
     sift_down(0, last);
   }
 }
@@ -288,16 +363,16 @@ struct type_list {
   template<class T>
   static bool constexpr Contains          = (is_same<T, Types>::value || ...);
 
-  static std::size_t constexpr MaxSizeof  = utils::pack_max(sizeof(Types)...);
+  static std::size_t constexpr MaxSizeof  = tools::pack_max(sizeof(Types)...);
 
-  static std::size_t constexpr MaxAlignof = utils::pack_max(alignof(Types)...);
+  static std::size_t constexpr MaxAlignof = tools::pack_max(alignof(Types)...);
 };
 
 /**
  *  \brief Implementation of \c std::move
  */
 #define TEDDY_MOVE(...)                                                        \
-  static_cast<::teddy::utils::remove_reference<decltype(__VA_ARGS__)>::type    \
+  static_cast<::teddy::tools::remove_reference<decltype(__VA_ARGS__)>::type    \
                 &&>(__VA_ARGS__)
 
 /**

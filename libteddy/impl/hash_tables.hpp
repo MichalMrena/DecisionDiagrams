@@ -449,9 +449,9 @@ unique_table<Degree>::unique_table(unique_table const &other) :
 template<class Degree>
 unique_table<Degree>::unique_table(unique_table &&other) noexcept :
   domain_(other.domain_),
-  size_(utils::exchange(other.size_, 0)),
+  size_(tools::exchange(other.size_, 0)),
   capacity_(other.capacity_),
-  buckets_(utils::exchange(other.buckets_, nullptr)) {
+  buckets_(tools::exchange(other.buckets_, nullptr)) {
 }
 
 template<class Degree>
@@ -637,7 +637,7 @@ auto unique_table<Degree>::node_hash(son_container const &sons
 ) const -> std::size_t {
   std::size_t result = 0;
   for (int32 k = 0; k < domain_; ++k) {
-    utils::add_hash(result, sons[as_uindex(k)]);
+    tools::add_hash(result, sons[as_uindex(k)]);
   }
   return result;
 }
@@ -680,9 +680,9 @@ apply_cache<Degree>::apply_cache(int64 const capacity) :
 
 template<class Degree>
 apply_cache<Degree>::apply_cache(apply_cache &&other) noexcept :
-  size_(utils::exchange(other.size_, 0)),
+  size_(tools::exchange(other.size_, 0)),
   capacity_(other.capacity_),
-  entries_(utils::exchange(other.entries_, nullptr)) {
+  entries_(tools::exchange(other.entries_, nullptr)) {
 }
 
 template<class Degree>
@@ -696,7 +696,7 @@ auto apply_cache<Degree>::find(
   node_t *const lhs,
   node_t *const rhs
 ) -> node_t * {
-  std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
+  std::size_t const hash  = tools::pack_hash(opId, lhs, rhs);
   std::size_t const index = hash % static_cast<std::size_t>(capacity_);
   cache_entry &entry      = entries_[index];
   bool const matches
@@ -711,7 +711,7 @@ auto apply_cache<Degree>::put(
   node_t *const lhs,
   node_t *const rhs
 ) -> void {
-  std::size_t const hash  = utils::pack_hash(opId, lhs, rhs);
+  std::size_t const hash  = tools::pack_hash(opId, lhs, rhs);
   std::size_t const index = hash % static_cast<std::size_t>(capacity_);
   cache_entry &entry      = entries_[index];
   if (not entry.result_) {

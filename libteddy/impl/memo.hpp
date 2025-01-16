@@ -28,8 +28,8 @@ public:
   }
 
   in_node_memo(in_node_memo &&other) noexcept :
-    root_(utils::exchange(other.root_, nullptr)),
-    manager_(utils::exchange(other.manager_, nullptr)) {
+    root_(tools::exchange(other.root_, nullptr)),
+    manager_(tools::exchange(other.manager_, nullptr)) {
   }
 
   ~in_node_memo() {
@@ -39,8 +39,8 @@ public:
   }
 
   auto operator= (in_node_memo &&other) noexcept -> in_node_memo & {
-    root_    = utils::exchange(other.root_, nullptr);
-    manager_ = utils::exchange(other.manager_, nullptr);
+    root_    = tools::exchange(other.root_, nullptr);
+    manager_ = tools::exchange(other.manager_, nullptr);
   }
 
   in_node_memo(in_node_memo const &)                      = delete;
