@@ -3,6 +3,9 @@
 TeDDy is a C++ library for the creation and manipulation of decision diagrams. It is being developed at the [Faculty of Management Science and Informatics](https://www.fri.uniza.sk/en/), the [University of Žilina](https://www.uniza.sk/index.php/en/) at the [Department of Informatics](https://ki.fri.uniza.sk/).  
 This text assumes that the reader is familiar with decision diagrams to some extent. Our library supports [Binary Decision Diagrams](https://en.wikipedia.org/wiki/Binary_decision_diagram) (BDDs) and their generalization Multi-Valued Decision Diagrams (MDDs).
 
+## Acknowledgement
+Development of this library was supported by the Ministry of Education, Research, Development and Youth of the Slovak Republic, Slovak Republic under the grant VEGA 1/0858/21.  
+
 # Contents
   * [How to install](#how-to-install)
   * [How to use](#how-to-use)
@@ -304,14 +307,20 @@ Also, we have published several papers on decision diagrams and reliability anal
 Mrena, M., &#38; Kvassay, M. (2021). **Comparison of Left Fold and Tree Fold Strategies in Creation of Binary Decision Diagrams**. *2021 International Conference on Information and Digital Technologies (IDT)*, 341–352. https://doi.org/10.1109/IDT52577.2021.9497593
 &nbsp;  
 
-Mrena, M., Sedlacek, P., &#38; Kvassay, M. (2021). **Linear Fold and Tree Fold in Creation of Binary Decision Diagrams of Standard Benchmarks.** *2021 11th IEEE International Conference on Intelligent Data Acquisition and Advanced Computing Systems: Technology and Applications (IDAACS)*, *2*, 1120–1125. https://doi.org/10.1109/IDAACS53288.2021.9660940
+Mrena, M., Sedlacek, P., &#38; Kvassay, M. (2021). **Linear Fold and Tree Fold in Creation of Binary Decision Diagrams of Standard Benchmarks**. *2021 11th IEEE International Conference on Intelligent Data Acquisition and Advanced Computing Systems: Technology and Applications (IDAACS)*, *2*, 1120–1125. https://doi.org/10.1109/IDAACS53288.2021.9660940
 &nbsp;  
 
-Mrena, M., Kvassay, M., &#38; Czapp, S. (2022). **Single and Series of Multi-valued Decision Diagrams in Representation of Structure Function.** *Lecture Notes in Networks and Systems*, *484 LNNS*, 176–185. https://doi.org/10.1007/978-3-031-06746-4_17
+Mrena, M., Kvassay, M., &#38; Czapp, S. (2022). **Single and Series of Multi-valued Decision Diagrams in Representation of Structure Function.**. *Lecture Notes in Networks and Systems*, *484 LNNS*, 176–185. https://doi.org/10.1007/978-3-031-06746-4_17
 &nbsp;  
 
-Mrena, M., &#38; Kvassay, M. (2022). **Comparison of Single MDD and Series of MDDs in the Representation of Structure Function of Series-Parallel MSS.** *2022 IEEE 16th International Scientific Conference on Informatics (Informatics)*, 225–230. https://doi.org/10.1109/INFORMATICS57926.2022.10083458
+Mrena, M., &#38; Kvassay, M. (2022). **Comparison of Single MDD and Series of MDDs in the Representation of Structure Function of Series-Parallel MSS**. *2022 IEEE 16th International Scientific Conference on Informatics (Informatics)*, 225–230. https://doi.org/10.1109/INFORMATICS57926.2022.10083458
 &nbsp;  
 
-Mrena, M., &#38; Kvassay, M. (2023). **Experimental Survey of Algorithms for the Calculation of Node Traversal Probabilities in Multi-valued Decision Diagrams.** *In: van Gulijk, C., Zaitseva, E., Kvassay, M. (eds) Reliability Engineering and Computational Intelligence for Complex Systems. Studies in Systems, Decision and Control, vol 496. Springer, Cham.* https://doi.org/10.1007/978-3-031-40997-4_1
+Mrena, M., &#38; Kvassay, M. (2023). **Experimental Survey of Algorithms for the Calculation of Node Traversal Probabilities in Multi-valued Decision Diagrams**. *In: van Gulijk, C., Zaitseva, E., Kvassay, M. (eds) Reliability Engineering and Computational Intelligence for Complex Systems. Studies in Systems, Decision and Control, vol 496. Springer, Cham.* https://doi.org/10.1007/978-3-031-40997-4_1
 &nbsp;  
+
+Mrena, M., Kvassay, M. &#38; Stankevich, S. (2023). **Dynamic Binary Decision Diagram Creation Using an Extended Apply Algorithm**. *2023 IEEE 12th International Conference on Intelligent Data Acquisition and Advanced Computing Systems: Technology and Applications (IDAACS)*, 513-518 https://doi.org/10.1109/IDAACS58523.2023.10348726&nbsp;  
+
+Mrena, M., &#38; Kvassay, M. (2024). **Efficient Computation of Logic Derivatives Using Multi-valued Decision Diagrams**. *ISMVL 2024 IEEE International Symposium on Multiple-Valued Logic*, 143--148. https://doi.org/10.1109/ismvl60454.2024.00036&nbsp;  
+
+Mrena, M., &#38; Kvassay, M. (2024). **Application of Binary Decision Diagrams in Time-Dependent Reliability Analysis**. In *International Journal of Computing*, 23(3), 360-370. https://doi.org/10.47839/ijc.23.3.3654&nbsp;
