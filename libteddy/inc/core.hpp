@@ -2,7 +2,6 @@
 #define LIBTEDDY_CORE_HPP
 
 #include <libteddy/impl/diagram_manager.hpp>
-#include <libteddy/impl/pla_file.hpp>
 
 namespace teddy {
 using default_oder = std::vector<int32>;

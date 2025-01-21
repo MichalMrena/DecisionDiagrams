@@ -16,6 +16,7 @@
  */
 
 namespace teddy::tools {
+
 /**
  *  \brief Exponentiation by squaring
  */
@@ -303,6 +304,12 @@ concept is_std_vector
   = same_as<T, std::vector<typename T::value_type, typename T::allocator_type>>;
 
 /**
+ * \brief Simplified implementation of \c std::is_scalar
+ */
+template<class T>
+concept is_scalar = same_as<int, T>;
+
+/**
  *  \brief Provides member typedef based on the value of \p B
  *  Implementation of \c std::conditional
  */
@@ -379,6 +386,7 @@ struct type_list {
  *  \brief Implementation of \c std::forward
  */
 #define TEDDY_FORWARD(...) static_cast<decltype(__VA_ARGS__) &&>(__VA_ARGS__)
-} // namespace teddy::utils
+
+}  // namespace teddy::tools
 
 #endif

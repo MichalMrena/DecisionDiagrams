@@ -5,7 +5,6 @@
 #include <libteddy/impl/memo.hpp>
 #include <libteddy/impl/node_manager.hpp>
 #include <libteddy/impl/operators.hpp>
-#include <libteddy/impl/pla_file.hpp>
 #include <libteddy/impl/stats.hpp>
 #include <libteddy/impl/tools.hpp>
 #include <libteddy/impl/types.hpp>

@@ -6,7 +6,7 @@
 
 namespace teddy {
 
-TEDDY_DEF_INLINE auto io::from_pla(
+TEDDY_DEF_INL auto io::from_pla(
   binary_manager &manager,
   const pla_file_binary &file
 ) -> std::vector<binary_manager::diagram_t> {
@@ -19,7 +19,7 @@ TEDDY_DEF_INLINE auto io::from_pla(
 
   // For each output
   for (int32 oi = 0; oi < file.output_count_; ++oi) {
-    // BDD that will represent the output, initial zero as the neutral element
+    // Zero as neutral element for OR
     bdd_t output = manager.constant(0);
 
     // For each input line (cube pair)
@@ -29,7 +29,7 @@ TEDDY_DEF_INLINE auto io::from_pla(
         continue;
       }
 
-      // Cratea BDD for the product
+      // One as neural element for AND
       bdd_t product = manager.constant(1);
       for (int32 i = 0; i < file.input_count_; ++i) {
         if (file.inputs_[as_uindex(li)].get_value(i) == 1) {
@@ -39,7 +39,6 @@ TEDDY_DEF_INLINE auto io::from_pla(
         }
       }
 
-      // Merge it with the output using OR
       output = manager.apply<OR>(output, product);
     }
 

@@ -1,6 +1,8 @@
-#ifndef LIBTEDDY_DETAILS_PLA_FILE_HPP
-#define LIBTEDDY_DETAILS_PLA_FILE_HPP
+#ifndef LIBTEDDY_IMPL_PLA_FILE_HPP
+#define LIBTEDDY_IMPL_PLA_FILE_HPP
 
+#include <libteddy/impl/config.hpp>
+#include <libteddy/impl/containers.hpp>
 #include <libteddy/impl/cube.hpp>
 #include <libteddy/impl/debug.hpp>
 #include <libteddy/impl/tools.hpp>
@@ -11,12 +13,10 @@
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <istream>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 namespace teddy {
@@ -47,7 +47,7 @@ struct pla_file_binary {
   * and the following optional options:
   *   .p, .ilb, .ob
   */
-inline auto load_binary_pla(
+TEDDY_DEF auto load_binary_pla(
   const std::filesystem::path &path,
   std::ostream *errst = nullptr
 ) -> std::optional<pla_file_binary>;
@@ -66,7 +66,7 @@ inline auto load_binary_pla(
   * and the following optional options:
   *   .p, .ilb, .ob
   */
-inline auto load_binary_pla(
+TEDDY_DEF auto load_binary_pla(
   std::istream &ist,
   std::ostream *errst = nullptr
 ) -> std::optional<pla_file_binary>;
@@ -76,24 +76,27 @@ inline auto load_binary_pla(
  * \brief TODO
  */
 struct pla_file_mvl {
+  int32 input_count_;
   std::vector<int32> domains_;
+  std::vector<details::array<int32>> inputs_;
+  std::vector<int32> output_;
 };
 
 /**
  * \brief TODO
  */
-inline auto load_mvl_pla(
+TEDDY_DEF auto load_mvl_pla(
   const std::filesystem::path &path,
   std::ostream *errst = nullptr
-) -> std::optional<pla_file_binary>;
+) -> std::optional<pla_file_mvl>;
 
 /**
  * \brief TODO
  */
-inline auto load_mvl_pla(
-  const std::istream &ist,
+TEDDY_DEF auto load_mvl_pla(
+  std::istream &ist,
   std::ostream *errst = nullptr
-) -> std::optional<pla_file_binary>;
+) -> std::optional<pla_file_mvl>;
 
 } // namespace teddy
 
