@@ -77,6 +77,7 @@ TEDDY_DEF auto load_binary_pla(
  */
 struct pla_file_mvl {
   int32 input_count_;
+  int32 codomain_;
   std::vector<int32> domains_;
   std::vector<details::array<int32>> inputs_;
   std::vector<int32> output_;

@@ -1,8 +1,104 @@
 #include <libteddy/impl/pla.hpp>
 
 #include <fstream>
+#include <span>
 
 namespace teddy {
+
+namespace details {
+
+TEDDY_ANON_NAMESPACE_BEGIN
+
+template<class... Args>
+auto err_out(std::ostream *errst, int32 line_num, Args&&... args) -> void {
+  if (errst != nullptr) {
+    *errst << "Line " << line_num << ": ";
+    ((*errst << args), ...); // NOLINT
+    *errst << "\n";
+  }
+}
+
+TEDDY_DEF auto read_int_option(
+  const std::span<const std::string_view> tokens,
+  const std::string_view key,
+  const int32 line_num,
+  std::ostream *errst,
+  int32 &out
+) -> bool {
+  if (out != Undefined) {
+    details::err_out(errst, line_num, "Multiple definitions of ", key);
+    return false;
+  }
+  if (tokens.size() != 1) {
+    err_out(errst, line_num, key, " option requires single argument");
+    return false;
+  }
+  const std::optional<int32> in_count_opt = tools::parse<int32>(tokens[1]);
+  if (not in_count_opt.has_value()) {
+    err_out(
+        errst,
+        line_num,
+        key,
+        " option requires integer argument. Got ",
+        tokens[1],
+        " instead");
+    return false;
+  }
+  out = *in_count_opt;
+  return true;
+}
+
+TEDDY_DEF auto read_labels(
+  const std::span<const std::string_view> tokens,
+  const std::string_view key,
+  const int32 count,
+  const int32 line_num,
+  std::ostream *errst,
+  std::vector<std::string> &out
+) -> bool {
+  if (not out.empty()) {
+    details::err_out(errst, line_num, "Multiple definitions of ", key);
+    return false;
+  }
+  if (tokens.empty()) {
+    details::err_out(errst, line_num, "No labels provided for ", key);
+    return false;
+  }
+  if (count != Undefined && tokens.size() != as_usize(count)) {
+    details::err_out(errst, line_num, key, " invalid label count.");
+    return false;
+  }
+  for (const std::string_view token : tokens) {
+    out.emplace_back(token);
+  }
+  return true;
+}
+
+TEDDY_DEF auto decode_mvl_value(
+  const std::string_view str,
+  const int domain,
+  const int line_num,
+  std::ostream *errst,
+  int &out
+) -> bool {
+  if (ssize(str) != domain) {
+    details::err_out(
+      errst,
+      line_num,
+      "Invalid token size. Expected ",
+      domain,
+      " found ",
+      ssize(str)
+      );
+    return false;
+  }
+  out = Undefined; // TODO(michal): 18
+  return true;
+}
+
+TEDDY_ANON_NAMESPACE_END
+
+}  // namespace details
 
 TEDDY_DEF auto load_binary_pla(
   const std::filesystem::path &path,
@@ -21,22 +117,13 @@ TEDDY_DEF auto load_binary_pla(
   std::istream &ist,
   std::ostream *errst
 ) -> std::optional<pla_file_binary> {
-  // Outputs error message for given line when error stream is provided
-  auto const err_out = [errst] (const int32 line_num, auto const &...args) {
-    if (errst != nullptr) {
-      *errst << "Line " << line_num << ": ";
-      ((*errst << args), ...); // NOLINT
-      *errst << "\n";
-    }
-  };
-
   // Initialize an empty file
   pla_file_binary result;
-  result.input_count_ = -1;
-  result.output_count_ = -1;
+  result.input_count_ = Undefined;
+  result.output_count_ = Undefined;
 
   // Optional option, if provided, we can pre-allocate space for lines
-  int32 product_count = -1;
+  int32 product_count = Undefined;
 
   std::string raw_line;
   int32 line_num = 0;
@@ -64,122 +151,94 @@ TEDDY_DEF auto load_binary_pla(
     }
 
     // Tokenize the line
-    const std::vector<std::string_view> tokens = tools::to_words(line);
+    const std::vector<std::string_view> tokens = tools::to_words(line, " ");
     const std::string_view key = tokens[0];
 
     // Number of inputs
     if (key == ".i") {
-      if (result.input_count_ != 1) {
-        err_out(line_num, "Multiple definitions of .i");
+      if (not details::read_int_option(
+        tokens, ".i", line_num, errst, result.input_count_)
+      ) {
         return std::nullopt;
       }
-      if (tokens.size() < 2) {
-        err_out(line_num, ".i option requires argument");
-        return std::nullopt;
-      }
-      const std::optional<int32> in_count_opt = tools::parse<int32>(tokens[1]);
-      if (not in_count_opt.has_value()) {
-        err_out(
-          line_num,
-          ".i option requires positive integer argument. Got ",
-          tokens[1],
-          " instead");
-        return std::nullopt;
-      }
-      result.input_count_ = *in_count_opt;
     }
 
     // Number of outputs
     if (key == ".o") {
-      if (result.output_count_ != 1) {
-        err_out(line_num, "Multiple definitions of .o");
+      if (not details::read_int_option(
+        tokens, ".o", line_num, errst, result.output_count_)
+      ) {
         return std::nullopt;
       }
-      if (tokens.size() < 2) {
-        err_out(line_num, ".o option requires argument");
+    }
+
+    // Optional number of products
+    if (key == ".p") {
+      if (not details::read_int_option(
+        tokens, ".p", line_num, errst, product_count)
+      ) {
         return std::nullopt;
       }
-      const std::optional<int32> out_count_opt = tools::parse<int32>(tokens[1]);
-      if (not out_count_opt.has_value()) {
-        err_out(
-          line_num,
-          ".o option requires positive integer argument. Got ",
-          tokens[1],
-          " instead");
-        return std::nullopt;
-      }
-      result.output_count_ = *out_count_opt;
     }
 
     // Input labels
     if (key == ".ilb") {
-      if (not result.input_labels_.empty()) {
-        err_out(line_num, "Multiple definitions of .ilb");
+      if (not details::read_labels(
+        std::span(tokens).subspan(1),
+        ".ilb",
+        result.input_count_,
+        line_num,
+        errst,
+        result.input_labels_)
+      ) {
         return std::nullopt;
-      }
-      if (tokens.size() != as_usize(result.input_count_)) {
-        err_out(
-          line_num,
-          "Invalid input label count. Expected ",
-          result.input_count_,
-          " got ",
-          tokens.size() - 1);
-        return std::nullopt;
-      }
-      for (size_t i = 1; i < tokens.size(); ++i) {
-        result.input_labels_.emplace_back(tokens[i]);
-      }
+      };
     }
 
     // Output labels
     if (key == ".ob") {
-      if (not result.output_labels_.empty()) {
-        err_out(line_num, "Multiple definitions of .ob");
+      if (not details::read_labels(
+        std::span(tokens).subspan(1),
+        ".ob",
+        result.output_count_,
+        line_num,
+        errst,
+        result.output_labels_)
+      ) {
         return std::nullopt;
-      }
-      if (tokens.size() != as_usize(result.output_count_)) {
-        err_out(
-          line_num,
-          "Invalid output label count. Expected ",
-          result.output_count_,
-          " got ",
-          tokens.size() - 1);
-        return std::nullopt;
-      }
-      for (size_t i = 1; i < tokens.size(); ++i) {
-        result.output_labels_.emplace_back(tokens[i]);
-      }
+      };
     }
 
     // Multiple-valued variables
     if (key == ".mv") {
-      err_out(
+      details::err_out(
+        errst,
         line_num,
-        ".mv option is invalid for binary PLA, use load_mvl_pla instead.");
+        ".mv option is invalid for binary PLA, use load_mvl_pla instead");
       return std::nullopt;
     }
   }
 
   // No cubes
   if (not has_next_line) {
-    err_out(line_num, "Expected products, found nothing.");
+    details::err_out(errst, line_num, "Expected products, found nothing");
     return std::nullopt;
   }
 
   // Verify that we have input count
-  if (result.input_count_ == -1) {
-    err_out(line_num, "Required option .i not provided.");
+  if (result.input_count_ == Undefined) {
+    details::err_out(errst, line_num, "Required option .i not provided");
     return std::nullopt;
   }
 
   // Verify that we have output count
-  if (result.input_count_ == -1) {
-    err_out(line_num, "Required option .o not provided.");
+  if (result.input_count_ == Undefined) {
+    details::err_out(errst, line_num, "Required option .o not provided");
     return std::nullopt;
   }
 
   // Reserve data for products if the product count is provided
-  if (product_count != -1) {
+  if (product_count != Undefined) {
     result.inputs_.reserve(as_usize(product_count));
     result.outputs_.reserve(as_usize(product_count));
   }
@@ -208,7 +267,7 @@ TEDDY_DEF auto load_binary_pla(
     int32 i = 0;
     result.inputs_.emplace_back(result.input_count_);
     cube &in_cube = result.inputs_.back();
-    while (as_usize(i) < line.length() && inputs_read < result.input_count_) {
+    while (i < ssize(line) && inputs_read < result.input_count_) {
       const char c = line[as_uindex(i)];
 
       // Allways move to the next char.
@@ -235,7 +294,8 @@ TEDDY_DEF auto load_binary_pla(
           in_cube.set_value(index, cube::DC);
           break;
         default:
-          err_out(line_num, "Unexpected end of line, expected more inputs.");
+          details::err_out(
+            errst, line_num, "Unexpected end of line, expected more inputs.");
           return std::nullopt;
       }
 
@@ -244,7 +304,7 @@ TEDDY_DEF auto load_binary_pla(
 
     // Verify that we read enough inputs
     if (inputs_read != result.input_count_) {
-      err_out(line_num, "Not enough inputs.");
+      details::err_out(errst, line_num, "Not enough inputs.");
       return std::nullopt;
     }
 
@@ -280,7 +340,8 @@ TEDDY_DEF auto load_binary_pla(
           out_cube.set_value(index, cube::DC);
           break;
         default:
-          err_out(line_num, "Unexpected end of line, expected more outputs.");
+          details::err_out(
+            errst, line_num, "Unexpected end of line, expected more outputs.");
           return std::nullopt;
       }
 
@@ -289,7 +350,7 @@ TEDDY_DEF auto load_binary_pla(
 
     // Verify that we read enough outputs
     if (outputs_read != result.output_count_) {
-      err_out(line_num, "Not enough outputs.");
+      details::err_out(errst, line_num, "Not enough outputs.");
       return std::nullopt;
     }
 
@@ -297,8 +358,13 @@ TEDDY_DEF auto load_binary_pla(
   } while(std::getline(ist, raw_line));
 
   // Check for product count consistency if possible
-  if (product_count != -1 && result.inputs_.size() != as_usize(product_count)) {
-    err_out(line_num, "Product count not consistend with actual line count.");
+  if (product_count != Undefined &&
+       result.inputs_.size() != as_usize(product_count)
+  ) {
+    details::err_out(
+      errst,
+      line_num,
+      "Product count not consistent with the actual line count.");
     return std::nullopt;
   }
 
@@ -323,24 +389,19 @@ TEDDY_DEF auto load_mvl_pla(
   std::istream &ist,
   std::ostream *errst
 ) -> std::optional<pla_file_mvl> {
-  // Outputs error message for given line when error stream is provided
-  auto const err_out = [errst] (const int32 line_num, auto const &...args) {
-    if (errst != nullptr) {
-      *errst << "Line " << line_num << ": ";
-      ((*errst << args), ...); // NOLINT
-      *errst << "\n";
-    }
-  };
-
   // Initialize an empty file
   pla_file_mvl result;
-  result.input_count_ = -1;
+  result.input_count_ = Undefined;
+  result.codomain_ = Undefined;
 
   // Optional option, if provided, we can pre-allocate space for lines
-  int32 product_count = -1;
+  int32 product_count = Undefined;
 
   // Number of binary inputs
-  int32 bin_input_count = -1;
+  int32 bin_input_count = Undefined;
+
+  // Number of mvl variables
+  int32 mvl_var_count = Undefined;
 
   std::string raw_line;
   int32 line_num = 0;
@@ -368,73 +429,196 @@ TEDDY_DEF auto load_mvl_pla(
     }
 
     // Tokenize the line
-    const std::vector<std::string_view> tokens = tools::to_words(line);
+    const std::vector<std::string_view> tokens = tools::to_words(line, " ");
     const std::string_view key = tokens[0];
 
     // Definition of mvl variables
     if (key == ".mv") {
       if (not result.domains_.empty()) {
-        err_out(line_num, "Multiple definitions of .mv");
+        details::err_out(errst, line_num, "Multiple definitions of .mv");
         return std::nullopt;
       }
 
       if (tokens.size() < 3) {
-        err_out(line_num, ".mb option requires at least 2 arguments");
+        details::err_out(
+          errst, line_num, ".mb option requires at least 2 arguments");
         return std::nullopt;
       }
 
       // Total number of variables (including output)
-      const std::optional<int32> var_count_opt = tools::parse<int32>(tokens[1]);
-      if (not var_count_opt.has_value()) {
-        err_out(
-          line_num,
-          "first .mv argument must be positive integer argument. Got ",
-          tokens[1],
-          " instead");
+      int32 var_count = Undefined;
+      if (not details::read_int_option(
+        std::span(tokens).subspan(1, 1),
+        "[num_var]",
+        line_num,
+        errst,
+        var_count)
+      ) {
         return std::nullopt;
       }
-      if (*var_count_opt < 2) {
-        err_out(line_num, ".mv variable count must be at least 2");
+      result.input_count_ = var_count - 1;
+
+      // Verify variable count
+      if (var_count < 2) {
+        details::err_out(errst, line_num, ".mv requires at least 2 variables");
         return std::nullopt;
       }
-      result.input_count_ = *var_count_opt - 1;
 
       // Number of binary variables
-      const std::optional<int32> bin_count_opt = tools::parse<int32>(tokens[2]);
-      if (not bin_count_opt.has_value()) {
-        err_out(
-          line_num,
-          "second .mv argument must be positive integer argument. Got ",
-          tokens[1],
-          " instead");
-        return std::nullopt;
-      }
-      if (*bin_count_opt < 0 || *bin_count_opt > *var_count_opt) {
-        err_out(line_num, ".mv invalid number of binary variables");
+      if (not details::read_int_option(
+        std::span(tokens).subspan(2, 1),
+        "[num_binary_var]",
+        line_num,
+        errst,
+        bin_input_count)
+      ) {
         return std::nullopt;
       }
 
       // Number of MVL variables
-      const int32 mvl_var_count = *var_count_opt - *bin_count_opt;
+      mvl_var_count = var_count - bin_input_count;
       if (static_cast<int32>(tokens.size()) - 3 != mvl_var_count) {
-        err_out(line_num, ".mv invalid number of arguments");
+        details::err_out(errst, line_num, ".mv invalid number of arguments");
         return std::nullopt;
       }
 
-      // Now we can populate the domains
-      for (int32 i = 0; i < *bin_count_opt; ++i) {
+      // Populate the domains of binary variables
+      for (int32 i = 0; i < bin_input_count; ++i) {
         result.domains_.push_back(2);
       }
+
+      // Parse and populate domains of MVL variables
+      for (int32 i = 0; i < mvl_var_count; ++i) {
+        int32 domain = Undefined;
+        if (not details::read_int_option(
+          std::span(tokens).subspan(as_uindex(i + 3), 1),
+          "[di]",
+          line_num,
+          errst,
+          domain)
+        ) {
+          return std::nullopt;
+        }
+        result.domains_.push_back(domain);
+      }
+
+      // Initialize codomain as the domain of the last (output) variable
+      result.codomain_ = result.domains_.back();
+      result.domains_.pop_back();
     }
+  }
+
+  // Check if .mv was defined
+  if (result.domains_.empty() || result.input_count_ == Undefined) {
+    details::err_out(errst, line_num, "Missing required .mv option");
+    return std::nullopt;
   }
 
   // No cubes
   if (not has_next_line) {
-    err_out(line_num, "Expected products, found nothing.");
+    details::err_out(errst, line_num, "Expected products, found nothing.");
     return std::nullopt;
   }
 
-  return std::nullopt;
+  // Reserve data for products if the product count is provided
+  if (product_count != Undefined) {
+    result.inputs_.reserve(as_usize(product_count));
+    result.output_.reserve(as_usize(product_count));
+  }
+
+  // Parse cubes
+  do {
+    const std::string_view line = tools::trim(raw_line);
+
+    // Skip empty line
+    if (line.empty()) {
+      continue;
+    }
+
+    // Skip comment
+    if (line[0] == '#') {
+      continue;
+    }
+
+    // Explicit end of file, rest is ignored
+    if (line == ".e" || line == ".end") {
+      break;
+    }
+
+    details::array<int32> inputs(result.input_count_);
+    int32 output = Undefined;
+
+    // Read leading binary inputs
+    int bin_inputs_read = 0;
+    int i = 0;
+    while (i < ssize(line) && bin_inputs_read < bin_input_count) {
+      const char c = line[as_uindex(i)];
+
+      // Allways move to the next char.
+      ++i;
+
+      // Skip delimiter
+      if (c == ' ' || c == '|') {
+        continue;
+      }
+
+      const int32 index = bin_inputs_read;
+      switch (c) {
+        case '0':
+          inputs[index] = 0;
+          break;
+        case '1':
+        case '4':
+          inputs[index] = 1;
+          break;
+        case '-':
+        case '~':
+        case '2':
+        case '3':
+          inputs[index] = Undefined;
+          break;
+        default:
+          details::err_out(
+            errst, line_num, "Unexpected end of line, expected more inputs.");
+          return std::nullopt;
+      }
+
+      ++bin_inputs_read;
+    }
+
+    // Verify that we read enough inputs
+    if (bin_inputs_read != bin_input_count) {
+      details::err_out(errst, line_num, "Not enough binary inputs.");
+      return std::nullopt;
+    }
+
+    // Move to the next char -- this should be a delimiter of mvl variables
+    ++i;
+
+    // Split rest of the lines on delimiters
+    const std::vector<std::string_view> tokens =
+      tools::to_words(line.substr(as_uindex(i)), " |");
+
+    // Verify that we have correct count of mvl variables
+    if (ssize(tokens) != mvl_var_count) {
+      details::err_out(
+        errst,
+        line_num,
+        "Invalid count of mvl variables. Expected ",
+        mvl_var_count,
+        " found ",
+        ssize(tokens));
+      return std::nullopt;
+    }
+
+    for (int index = 0; index < mvl_var_count - 1; ++index) {
+      const std::string_view token = tokens[as_uindex(index)];
+    }
+
+    ++line_num;
+  } while(std::getline(ist, raw_line));
+
+  return result;
 }
 
 } // namespace teddy

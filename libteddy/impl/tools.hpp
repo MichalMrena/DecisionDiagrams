@@ -44,14 +44,14 @@ auto constexpr int_pow(Base base, uint32 exponent) -> Base {
 /**
  *  \brief Hash for pointers
  */
-inline auto do_hash (void *const p) -> std::size_t {
+TEDDY_DEF_INL auto do_hash (void *const p) -> std::size_t {
   return reinterpret_cast<std::size_t>(p) >> 4U; // NOLINT
 }
 
 /**
  *  \brief Hash for int
  */
-inline auto do_hash (int32 const x) -> std::size_t {
+TEDDY_DEF_INL auto do_hash (int32 const x) -> std::size_t {
   return static_cast<std::size_t>(x);
 }
 
@@ -173,36 +173,15 @@ auto constexpr find_if_not(It first, It const last, Predicate test) -> It {
  * \param str string to trim
  * \return trimmed view of \p str
  */
-inline auto trim(std::string_view str) -> std::string_view {
-  const std::string_view::iterator end = str.end();
-  std::string_view::iterator front = str.begin();
-  std::string_view::iterator back = str.end() - 1;
-  while (front < end && static_cast<bool>(std::isspace(*front))) {
-    ++front;
-  }
-  while (back > front && static_cast<bool>(std::isspace(*back))) {
-    --back;
-  }
-  return {front, back + 1};
-}
+TEDDY_DEF auto trim(std::string_view str) -> std::string_view;
 
 /**
- * \brief Splits \p str into words delimited by space
+ * \brief Splits \p str into words delimited by one of \p delimiters
  */
-inline auto to_words(std::string_view str) -> std::vector<std::string_view> {
-  std::vector<std::string_view> words;
-  std::string_view::iterator in = str.begin();
-  const std::string_view::iterator end = str.end();
-  while (in != end) {
-    const std::string_view::iterator w_begin = find_if_not(in, end, ::isspace);
-    const std::string_view::iterator w_end = find_if(w_begin, end, ::isspace);
-    if (w_begin != w_end) {
-      words.emplace_back(w_begin, w_end);
-    }
-    in = w_end;
-  }
-  return words;
-}
+TEDDY_DEF auto to_words(
+  std::string_view str,
+  std::string_view delimiters
+) -> std::vector<std::string_view>;
 
 /**
  *  \brief Exchages value of \p var to \p newVal and returns the old value
@@ -388,5 +367,13 @@ struct type_list {
 #define TEDDY_FORWARD(...) static_cast<decltype(__VA_ARGS__) &&>(__VA_ARGS__)
 
 }  // namespace teddy::tools
+
+// Include definitions in header-only mode
+#ifndef TEDDY_NO_HEADER_ONLY
+#include <libteddy/impl/tools.cpp>
+#endif
+
+// Always include inline definitions
+#include <libteddy/impl/tools.inl>
 
 #endif

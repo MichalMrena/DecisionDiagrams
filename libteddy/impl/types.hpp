@@ -16,9 +16,9 @@ using int64  = std::int64_t;
 using uint32 = std::uint32_t;
 using uint64 = std::uint64_t;
 #ifdef LIBTEDDY_ARBITRARY_PRECISION
-using longint = mpz_class;
+  using longint = mpz_class;
 #else
-using longint = std::int64_t;
+  using longint = std::int64_t;
 #endif
 
 inline int32 constexpr Undefined     = ~(1U << (8 * sizeof(int32) - 1));
