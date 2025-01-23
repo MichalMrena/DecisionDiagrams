@@ -13,7 +13,7 @@ template<class... Args>
 auto err_out(std::ostream *errst, int32 line_num, Args&&... args) -> void {
   if (errst != nullptr) {
     *errst << "Line " << line_num << ": ";
-    ((*errst << args), ...); // NOLINT
+    ((*errst << TEDDY_FORWARD(args)), ...); // NOLINT
     *errst << "\n";
   }
 }

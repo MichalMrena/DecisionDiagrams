@@ -3,7 +3,7 @@
 namespace teddy {
 
 template<class Degree, class Domain>
-static auto from_pla(
+auto from_pla(
   diagram_manager<Degree, Domain> &manager,
   const pla_file_mvl &file
 ) -> diagram_manager<Degree, Domain> {
@@ -18,30 +18,20 @@ static auto from_pla(
     mdd_t product = manager.constant(1);
 
     for (int i = 0; i < file.input_count_; ++i) {
-      // Value of the variable
       const int var_val = file.inputs_[as_uindex(li)][i];
-
-      // Basic single variable diagram
       mdd_t var = manager.variable(i);
-
-      // Transform it so that it is 1 for var_val and 0 otherwise
       var = manager.transform(var, [var_val](const int val){
         return static_cast<int>(val == var_val);
       });
-
-      // Add it to the product just like in binary pla
       product = manager.template apply<ops::AND>(product, var);
     }
 
-    // Output of given product
-    const int output = file.output_[as_uindex(li)];
-
     // Transform product from {0,1} to [0,1,...,output-1]
+    const int output = file.output_[as_uindex(li)];
     product = manager.transform(product, [output](const int val){
       return static_cast<int>(val == output);
     });
 
-    // Add product to the result
     result = manager.template apply<ops::MAX>(result, product);
   }
 
