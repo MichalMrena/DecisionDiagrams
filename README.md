@@ -287,7 +287,7 @@ By default, the library contains runtime assertions that perform various checks 
 ## Variable ordering
 The user can specify the order of variables in the constructor of the manager. After that, the order stays the same. The user can explicitly invoke the reordering heuristic by using the `force_reorder` function. The heuristic tries to minimize the number of nodes in all diagrams managed by the manager.
 
-# Publications and citation
+# Citation
 If you want to mention teddy, you can use link to this repository or you can cite the following paper:
 ```TeX
 @article{Mrena_SWX_2024,
@@ -302,7 +302,8 @@ If you want to mention teddy, you can use link to this repository or you can cit
 }
 ```
 
-Also, we have published several papers on decision diagrams and reliability analysis. The following papers had an experimental section where we examined various properties of decision diagrams using TeDDy:
+# Publications
+We have published several papers on decision diagrams and reliability analysis. The following papers had an experimental section where we examined various properties of decision diagrams using TeDDy:
 
 Mrena, M., &#38; Kvassay, M. (2021). **Comparison of Left Fold and Tree Fold Strategies in Creation of Binary Decision Diagrams**. *2021 International Conference on Information and Digital Technologies (IDT)*, 341–352. https://doi.org/10.1109/IDT52577.2021.9497593
 &nbsp;  
@@ -313,14 +314,23 @@ Mrena, M., Sedlacek, P., &#38; Kvassay, M. (2021). **Linear Fold and Tree Fold i
 Mrena, M., Kvassay, M., &#38; Czapp, S. (2022). **Single and Series of Multi-valued Decision Diagrams in Representation of Structure Function.**. *Lecture Notes in Networks and Systems*, *484 LNNS*, 176–185. https://doi.org/10.1007/978-3-031-06746-4_17
 &nbsp;  
 
+Mrena, M., &#38; Kvassay, M. (2022). **Experimental Analysis of Decision Diagrams Used to Represent Structure Functions of Series-Parallel Multi-State Systems**. *Book of Extended Abstracts for the 32nd European Safety and Reliability Conference*, https://doi.org/https://10.3850/978-981-18-5183-4_r29-09-653
+&nbsp;  
+
 Mrena, M., &#38; Kvassay, M. (2022). **Comparison of Single MDD and Series of MDDs in the Representation of Structure Function of Series-Parallel MSS**. *2022 IEEE 16th International Scientific Conference on Informatics (Informatics)*, 225–230. https://doi.org/10.1109/INFORMATICS57926.2022.10083458
 &nbsp;  
 
 Mrena, M., &#38; Kvassay, M. (2023). **Experimental Survey of Algorithms for the Calculation of Node Traversal Probabilities in Multi-valued Decision Diagrams**. *In: van Gulijk, C., Zaitseva, E., Kvassay, M. (eds) Reliability Engineering and Computational Intelligence for Complex Systems. Studies in Systems, Decision and Control, vol 496. Springer, Cham.* https://doi.org/10.1007/978-3-031-40997-4_1
 &nbsp;  
 
-Mrena, M., Kvassay, M. &#38; Stankevich, S. (2023). **Dynamic Binary Decision Diagram Creation Using an Extended Apply Algorithm**. *2023 IEEE 12th International Conference on Intelligent Data Acquisition and Advanced Computing Systems: Technology and Applications (IDAACS)*, 513-518 https://doi.org/10.1109/IDAACS58523.2023.10348726&nbsp;  
+Mrena, M., Kvassay, M. &#38; Stankevich, S. (2023). **Dynamic Binary Decision Diagram Creation Using an Extended Apply Algorithm**. *2023 IEEE 12th International Conference on Intelligent Data Acquisition and Advanced Computing Systems: Technology and Applications (IDAACS)*, 513-518 https://doi.org/10.1109/IDAACS58523.2023.10348726
+&nbsp;  
 
-Mrena, M., &#38; Kvassay, M. (2024). **Efficient Computation of Logic Derivatives Using Multi-valued Decision Diagrams**. *ISMVL 2024 IEEE International Symposium on Multiple-Valued Logic*, 143--148. https://doi.org/10.1109/ismvl60454.2024.00036&nbsp;  
+Mrena, M., Kvassay, M. &#38; Zaitseva, E. (2024). **TeDDy: Templated decision diagram library**. In *SoftwareX*, vol. 26, 101715. https://doi.org/10.1016/j.softx.2024.101715
+&nbsp;  
 
-Mrena, M., &#38; Kvassay, M. (2024). **Application of Binary Decision Diagrams in Time-Dependent Reliability Analysis**. In *International Journal of Computing*, 23(3), 360-370. https://doi.org/10.47839/ijc.23.3.3654&nbsp;
+Mrena, M., &#38; Kvassay, M. (2024). **Efficient Computation of Logic Derivatives Using Multi-valued Decision Diagrams**. *ISMVL 2024 IEEE International Symposium on Multiple-Valued Logic*, 143-148. https://doi.org/10.1109/ismvl60454.2024.00036
+&nbsp;  
+
+Mrena, M., &#38; Kvassay, M. (2024). **Application of Binary Decision Diagrams in Time-Dependent Reliability Analysis**. In *International Journal of Computing*, 23(3), 360-370. https://doi.org/10.47839/ijc.23.3.3654
+&nbsp;  
