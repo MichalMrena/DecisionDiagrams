@@ -1,6 +1,7 @@
 #include <libteddy/inc/core.hpp>
 #include <libteddy/impl/tools.hpp>
 #include <chrono>
+#include <libteddy/impl/tools_io.hpp>
 #include <iostream>
 #include <optional>
 #include <vector>

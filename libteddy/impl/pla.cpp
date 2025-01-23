@@ -33,7 +33,7 @@ TEDDY_DEF auto read_int_option(
     err_out(errst, line_num, key, " option requires single argument");
     return false;
   }
-  const std::optional<int32> in_count_opt = tools::parse<int32>(tokens[1]);
+  const std::optional<int32> in_count_opt = tools::parse<int32>(tokens[0]);
   if (not in_count_opt.has_value()) {
     err_out(
         errst,
@@ -88,11 +88,18 @@ TEDDY_DEF auto decode_mvl_value(
       "Invalid token size. Expected ",
       domain,
       " found ",
-      ssize(str)
-      );
+      ssize(str));
     return false;
   }
-  out = Undefined; // TODO(michal): 18
+  int val = 0;
+  while (val < ssize(str) && str[as_uindex(val)] != '1') {
+    ++val;
+  }
+  if (val == ssize(str)) {
+    details::err_out(errst, line_num, "Did not find any 1");
+    return false;
+  }
+  out = val;
   return true;
 }
 
@@ -121,6 +128,7 @@ TEDDY_DEF auto load_binary_pla(
   pla_file_binary result;
   result.input_count_ = Undefined;
   result.output_count_ = Undefined;
+  result.product_count_ = Undefined;
 
   // Optional option, if provided, we can pre-allocate space for lines
   int32 product_count = Undefined;
@@ -157,7 +165,11 @@ TEDDY_DEF auto load_binary_pla(
     // Number of inputs
     if (key == ".i") {
       if (not details::read_int_option(
-        tokens, ".i", line_num, errst, result.input_count_)
+        std::span(tokens).subspan(1),
+        ".i",
+        line_num,
+        errst,
+        result.input_count_)
       ) {
         return std::nullopt;
       }
@@ -166,7 +178,11 @@ TEDDY_DEF auto load_binary_pla(
     // Number of outputs
     if (key == ".o") {
       if (not details::read_int_option(
-        tokens, ".o", line_num, errst, result.output_count_)
+        std::span(tokens).subspan(1),
+        ".o",
+        line_num,
+        errst,
+        result.output_count_)
       ) {
         return std::nullopt;
       }
@@ -175,7 +191,7 @@ TEDDY_DEF auto load_binary_pla(
     // Optional number of products
     if (key == ".p") {
       if (not details::read_int_option(
-        tokens, ".p", line_num, errst, product_count)
+        std::span(tokens).subspan(1), ".p", line_num, errst, product_count)
       ) {
         return std::nullopt;
       }
@@ -310,7 +326,6 @@ TEDDY_DEF auto load_binary_pla(
 
     // Read outputs
     int32 outputs_read = 0;
-    i = 0;
     result.outputs_.emplace_back(result.output_count_);
     cube &out_cube = result.outputs_.back();
     while (outputs_read < result.output_count_) {
@@ -367,6 +382,8 @@ TEDDY_DEF auto load_binary_pla(
       "Product count not consistent with the actual line count.");
     return std::nullopt;
   }
+
+  result.product_count_ = static_cast<int32>(result.inputs_.size());
 
   // Finally, everything is correctly loaded, we can return the result
   return result;
@@ -611,12 +628,33 @@ TEDDY_DEF auto load_mvl_pla(
       return std::nullopt;
     }
 
-    for (int index = 0; index < mvl_var_count - 1; ++index) {
-      const std::string_view token = tokens[as_uindex(index)];
+    // Decode mvl variables
+    for (int ti = 0; ti < mvl_var_count - 1; ++ti) {
+      const int var_index = ti + bin_input_count;
+      const std::string_view token = tokens[as_uindex(ti)];
+      const int domain = result.domains_[as_uindex(var_index)];
+      int val = Undefined;
+      if (not details::decode_mvl_value(token, domain, line_num, errst, val)) {
+        return std::nullopt;
+      }
+      inputs[var_index] = val;
     }
+
+    // Decode the last -- output -- variable
+    const std::string_view token = tokens.back();
+    const int domain = result.domains_.back();
+    if (not details::decode_mvl_value(token, domain, line_num, errst, output)) {
+      return std::nullopt;
+    }
+
+    // Now that we have all inputs and output, add them to the result
+    result.inputs_.push_back(TEDDY_MOVE(inputs));
+    result.output_.push_back(output);
 
     ++line_num;
   } while(std::getline(ist, raw_line));
+
+  result.product_count_ = static_cast<int32>(result.inputs_.size());
 
   return result;
 }

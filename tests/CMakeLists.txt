@@ -6,6 +6,7 @@ add_executable(
     libteddy-test
         main.cpp
         core.test.cpp
+        io.test.cpp
         node.test.cpp
         reliability.test.cpp
 )

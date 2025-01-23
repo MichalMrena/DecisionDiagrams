@@ -3,6 +3,52 @@
 namespace teddy {
 
 template<class Degree, class Domain>
+static auto from_pla(
+  diagram_manager<Degree, Domain> &manager,
+  const pla_file_mvl &file
+) -> diagram_manager<Degree, Domain> {
+  using mdd_t = diagram_manager<Degree, Domain>::diagram_t;
+
+  // Zero as neutral element for MAX
+  mdd_t result = manager.constant(0);
+
+  // For each input line
+  for (int li = 0; li < file.product_count_; ++li) {
+    // One as neutral element for AND
+    mdd_t product = manager.constant(1);
+
+    for (int i = 0; i < file.input_count_; ++i) {
+      // Value of the variable
+      const int var_val = file.inputs_[as_uindex(li)][i];
+
+      // Basic single variable diagram
+      mdd_t var = manager.variable(i);
+
+      // Transform it so that it is 1 for var_val and 0 otherwise
+      var = manager.transform(var, [var_val](const int val){
+        return static_cast<int>(val == var_val);
+      });
+
+      // Add it to the product just like in binary pla
+      product = manager.template apply<ops::AND>(product, var);
+    }
+
+    // Output of given product
+    const int output = file.output_[as_uindex(li)];
+
+    // Transform product from {0,1} to [0,1,...,output-1]
+    product = manager.transform(product, [output](const int val){
+      return static_cast<int>(val == output);
+    });
+
+    // Add product to the result
+    result = manager.template apply<ops::MAX>(result, product);
+  }
+
+  return result;
+}
+
+template<class Degree, class Domain>
 auto io::to_dot(
   diagram_manager<Degree, Domain> const &manager,
   std::ostream &out

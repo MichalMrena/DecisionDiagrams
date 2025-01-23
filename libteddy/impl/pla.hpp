@@ -27,6 +27,7 @@ namespace teddy {
 struct pla_file_binary {
   int32 input_count_;
   int32 output_count_;
+  int32 product_count_;
   std::vector<cube> inputs_;
   std::vector<cube> outputs_;
   std::vector<std::string> input_labels_;
@@ -77,6 +78,7 @@ TEDDY_DEF auto load_binary_pla(
  */
 struct pla_file_mvl {
   int32 input_count_;
+  int32 product_count_;
   int32 codomain_;
   std::vector<int32> domains_;
   std::vector<details::array<int32>> inputs_;
@@ -103,7 +105,7 @@ TEDDY_DEF auto load_mvl_pla(
 
 // Include definitions in header-only mode
 #ifndef TEDDY_NO_HEADER_ONLY
-#include <libteddy/impl/pla_file.cpp>
+#include <libteddy/impl/pla.cpp>
 #endif
 
 #endif

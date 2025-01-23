@@ -20,10 +20,23 @@ struct io {
    *  \param file PLA file
    *  \return Vector of diagrams
    */
-  TEDDY_DEF_INL static auto from_pla (
+  TEDDY_DEF static auto from_pla (
     binary_manager &manager,
     const pla_file_binary &file
   ) -> std::vector<binary_manager::diagram_t>;
+
+  /**
+   *  \brief Creates MDDs defined by PLA file
+   *
+   *  \param manager Diagram manager
+   *  \param file PLA file
+   *  \return Diagram
+   */
+  template<class Degree, class Domain>
+  static auto from_pla(
+    diagram_manager<Degree, Domain> &manager,
+    const pla_file_mvl &file
+  ) -> diagram_manager<Degree, Domain>;
 
   /**
    *  \brief Creates diagram from a truth vector of a function
