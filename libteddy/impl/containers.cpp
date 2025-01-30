@@ -14,7 +14,7 @@ array<T>::array(const int32 size) :
 
 template<class T>
 array<T>::array(const array<T> &other) :
-  array(other.length_)
+  length_(other.length_)
 {
   std::memcpy(data_, other.data_, as_usize(length_) * sizeof(T));
 }
@@ -24,6 +24,11 @@ array<T>::array(array<T> &&other) noexcept :
   length_(tools::exchange(other.length_, 0)),
   data_(tools::exchange(other.data_, nullptr))
 {
+}
+
+template<class T>
+array<T>::~array() {
+  std::free(data_);
 }
 
 template<class T>
