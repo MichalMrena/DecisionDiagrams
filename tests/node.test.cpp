@@ -48,6 +48,8 @@ struct ifmdd_nodes_fixture {
   int64 extraNodePoolSize_    = 2'000;
 };
 
+namespace {
+
 auto make_manager (bdd_nodes_fixture const &fix) {
   return bdd_nodes_fixture::manager_t(
     fix.varCount_,
@@ -85,6 +87,8 @@ auto make_manager (ifmdd_nodes_fixture const &fix) {
     domains::mixed(fix.domains_)
   );
 }
+
+}  // namespace
 
 using nodes_fixtures = boost::mpl::vector<
   bdd_nodes_fixture,

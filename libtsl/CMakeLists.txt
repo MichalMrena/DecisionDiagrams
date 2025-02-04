@@ -4,6 +4,7 @@ add_library(
         iterators.cpp
         truth_table.cpp
         truth_table_reliability.cpp
+        pla-description.cpp
 )
 
 target_include_directories(
