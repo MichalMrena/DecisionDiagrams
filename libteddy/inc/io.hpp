@@ -36,7 +36,7 @@ struct io {
   static auto from_pla(
     diagram_manager<Degree, Domain> &manager,
     const pla_file_mvl &file
-  ) -> diagram_manager<Degree, Domain>;
+  ) -> diagram_manager<Degree, Domain>::diagram_t;
 
   /**
    *  \brief Creates diagram from a truth vector of a function

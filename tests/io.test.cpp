@@ -136,7 +136,9 @@ BOOST_DATA_TEST_CASE(from_pla_binary, binary_plas, pla_desc) {
 
   for (const auto &[in, out] : pla_desc.values_) {
     for (int i = 0; i < pla_desc.output_count_; ++i) {
-      BOOST_REQUIRE_EQUAL(manager.evaluate(ds[i], in), out[i]);
+      BOOST_REQUIRE_EQUAL(
+        manager.evaluate(ds[as_uindex(i)], in),
+        out[as_uindex(i)]);
     }
   }
 }
@@ -147,20 +149,23 @@ BOOST_DATA_TEST_CASE(from_pla_mvl, mvl_plas, pla_desc) {
   std::optional<pla_file_mvl> file = load_mvl_pla(ist, nullptr);
   if (not pla_desc.is_valid_) {
     BOOST_TEST(not file.has_value());
-    return;
-  }
+  } else {
+    BOOST_REQUIRE_MESSAGE(file.has_value(), "Load mvl PLA");
+    BOOST_REQUIRE_EQUAL(file->input_count_, pla_desc.input_count_);
+    BOOST_REQUIRE_EQUAL(file->product_count_, pla_desc.product_count_);
+    BOOST_REQUIRE_EQUAL(file->codomain_, pla_desc.codomain_);
+    for (int i = 0; i < pla_desc.input_count_; ++i) {
+      BOOST_REQUIRE_EQUAL(
+        file->domains_[as_uindex(i)],
+        pla_desc.domains_[as_uindex(i)]);
+    }
 
-  BOOST_REQUIRE_MESSAGE(file.has_value(), "Load simple mvl PLA.");
-  BOOST_REQUIRE_EQUAL(file->input_count_, pla_desc.input_count_);
-  BOOST_REQUIRE_EQUAL(file->product_count_, pla_desc.product_count_);
-  BOOST_REQUIRE_EQUAL(file->codomain_, pla_desc.codomain_);
-  for (int i = 0; i < pla_desc.input_count_; ++i) {
-    BOOST_REQUIRE_EQUAL(
-      file->domains_[as_uindex(i)],
-      pla_desc.domains_[as_uindex(i)]);
+    imdd_manager manager(file->input_count_, 10'000, file->domains_);
+    imdd_manager::diagram_t d = teddy::io::from_pla(manager, *file);
+    for (const auto &[in, out] : pla_desc.values_) {
+      BOOST_REQUIRE_EQUAL(manager.evaluate(d, in), out.front());
+    }
   }
-
-  // TODO(michal): evaluate
 }
 
 BOOST_AUTO_TEST_SUITE_END()

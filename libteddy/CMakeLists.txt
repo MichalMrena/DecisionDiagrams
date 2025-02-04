@@ -16,6 +16,12 @@ target_include_directories(
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
+target_include_directories(
+    teddy SYSTEM INTERFACE
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/libteddy/lib/>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/libteddy/lib/>
+)
+
 target_compile_features(teddy INTERFACE cxx_std_20)
 
 ########################

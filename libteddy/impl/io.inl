@@ -3,10 +3,10 @@
 namespace teddy {
 
 template<class Degree, class Domain>
-auto from_pla(
+auto io::from_pla(
   diagram_manager<Degree, Domain> &manager,
   const pla_file_mvl &file
-) -> diagram_manager<Degree, Domain> {
+) -> diagram_manager<Degree, Domain>::diagram_t {
   using mdd_t = diagram_manager<Degree, Domain>::diagram_t;
 
   // Zero as neutral element for MAX
@@ -25,6 +25,8 @@ auto from_pla(
       });
       product = manager.template apply<ops::AND>(product, var);
     }
+
+    teddy::io::to_dot(manager, std::cout, product);
 
     // Transform product from {0,1} to [0,1,...,output-1]
     const int output = file.output_[as_uindex(li)];

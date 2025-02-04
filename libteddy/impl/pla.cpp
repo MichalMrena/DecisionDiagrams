@@ -10,7 +10,7 @@ namespace details {
 TEDDY_ANON_NAMESPACE_BEGIN
 
 template<class... Args>
-auto err_out(std::ostream *errst, int32 line_num, Args&&... args) -> void {
+auto err_out(std::ostream *errst, int32 line_num, Args&&... args) -> void { // NOLINT
   if (errst != nullptr) {
     *errst << "Line " << line_num << ": ";
     ((*errst << TEDDY_FORWARD(args)), ...); // NOLINT
@@ -494,7 +494,7 @@ TEDDY_DEF auto load_mvl_pla(
 
       // Number of MVL variables
       mvl_var_count = var_count - bin_input_count;
-      if (static_cast<int32>(tokens.size()) - 3 != mvl_var_count) {
+      if (ssize(tokens) - 3 != mvl_var_count) {
         details::err_out(errst, line_num, ".mv invalid number of arguments");
         return std::nullopt;
       }
@@ -522,6 +522,15 @@ TEDDY_DEF auto load_mvl_pla(
       // Initialize codomain as the domain of the last (output) variable
       result.codomain_ = result.domains_.back();
       result.domains_.pop_back();
+    }
+
+    // Optional number of products
+    if (key == ".p") {
+      if (not details::read_int_option(
+        std::span(tokens).subspan(1), ".p", line_num, errst, product_count)
+      ) {
+        return std::nullopt;
+      }
     }
   }
 
@@ -642,7 +651,7 @@ TEDDY_DEF auto load_mvl_pla(
 
     // Decode the last -- output -- variable
     const std::string_view token = tokens.back();
-    const int domain = result.domains_.back();
+    const int domain = result.codomain_;
     if (not details::decode_mvl_value(token, domain, line_num, errst, output)) {
       return std::nullopt;
     }

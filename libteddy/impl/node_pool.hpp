@@ -92,7 +92,7 @@ node_pool<Degree>::node_pool(
 
 template<class Degree>
 node_pool<Degree>::node_pool(node_pool &&other) noexcept :
-  pools_(tools::exchange(other.mainPool_, nullptr)),
+  pools_(tools::exchange(other.pools_, nullptr)),
   nextPoolNode_(tools::exchange(other.nextPoolNode_, nullptr)),
   freeNodes_(tools::exchange(other.freeNodes_, nullptr)),
   mainPoolSize_(tools::exchange(other.mainPoolSize_, -1)),
@@ -151,7 +151,7 @@ auto node_pool<Degree>::create(Args &&...args) -> node_t * // NOLINT
     ++nextPoolNode_;
   }
 
-  return static_cast<node_t *>(::new (nodePtr) node_t(TEDDY_FORWARD(args)...));
+  return ::new (nodePtr) node_t(TEDDY_FORWARD(args)...);
 }
 
 template<class Degree>

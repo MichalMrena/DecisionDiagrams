@@ -768,11 +768,9 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture) {
 
 BOOST_AUTO_TEST_SUITE_END()
 
-// TODO move to io tests file
-// TODO remove warnings...
+// TODO(michal): move to io tests file
+// TODO(michal): remove warnings...
 BOOST_AUTO_TEST_SUITE(core_io)
-
-
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture) {
   auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
