@@ -79,7 +79,7 @@ const std::array<tsl::mvl_pla_description, 1> mvl_plas = {
       tsl::pla_line{.input_ = {0,0,1,1,1,0,2}, .output_ = {3}},
       tsl::pla_line{.input_ = {0,0,1,0,0,0,3}, .output_ = {3}},
       tsl::pla_line{.input_ = {0,0,0,0,0,0,4}, .output_ = {0}},
-      tsl::pla_line{.input_ = {0,0,0,1,0,0,5}, .output_ = {3}},
+      tsl::pla_line{.input_ = {0,0,0,1,0,0,5}, .output_ = {2}},
       tsl::pla_line{.input_ = {0,1,0,0,1,0,6}, .output_ = {8}},
       tsl::pla_line{.input_ = {0,1,0,1,0,0,7}, .output_ = {0}},
       tsl::pla_line{.input_ = {0,0,0,0,0,0,8}, .output_ = {0}},

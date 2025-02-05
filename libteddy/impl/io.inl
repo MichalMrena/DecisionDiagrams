@@ -12,13 +12,16 @@ auto io::from_pla(
   // Zero as neutral element for MAX
   mdd_t result = manager.constant(0);
 
-  // For each input line
   for (int li = 0; li < file.product_count_; ++li) {
     // One as neutral element for AND
     mdd_t product = manager.constant(1);
 
     for (int i = 0; i < file.input_count_; ++i) {
       const int var_val = file.inputs_[as_uindex(li)][i];
+      // Output does not depend on this variable, skip it
+      if (var_val == Undefined) {
+        continue;
+      }
       mdd_t var = manager.variable(i);
       var = manager.transform(var, [var_val](const int val){
         return static_cast<int>(val == var_val);
@@ -26,12 +29,10 @@ auto io::from_pla(
       product = manager.template apply<ops::AND>(product, var);
     }
 
-    teddy::io::to_dot(manager, std::cout, product);
-
-    // Transform product from {0,1} to [0,1,...,output-1]
+    // Transform product from {0,1} to [0,1,...,output]
     const int output = file.output_[as_uindex(li)];
     product = manager.transform(product, [output](const int val){
-      return static_cast<int>(val == output);
+      return val * output;
     });
 
     result = manager.template apply<ops::MAX>(result, product);
