@@ -9,6 +9,7 @@ add_executable(
         io.test.cpp
         node.test.cpp
         reliability.test.cpp
+        tools.test.cpp
 )
 
 target_link_libraries(

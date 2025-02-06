@@ -1,5 +1,5 @@
-#ifndef LIBTEDDY_COMMON_TEST_SETUP_HPP
-#define LIBTEDDY_COMMON_TEST_SETUP_HPP
+#ifndef LIBTEDDY_TESTS_SETUP_HPP
+#define LIBTEDDY_TESTS_SETUP_HPP
 
 #include <libteddy/inc/core.hpp>
 #include <libteddy/inc/reliability.hpp>
@@ -8,430 +8,236 @@
 #include <libtsl/iterators.hpp>
 #include <libtsl/utilities.hpp>
 
-#include <algorithm>
 #include <functional>
 #include <iterator>
 #include <numeric>
-#include <random>
 #include <variant>
 #include <vector>
 
 namespace teddy::tests {
+
 /**
- *  \brief Specifies that order should be randomly generated.
+ * \brief Specifies that order should be randomly generated
  */
 struct random_order_tag { };
 
 /**
- *  \brief Specifies that order should simply follow the indices.
+ * \brief Specifies that order should simply follow the indices
  */
 struct default_order_tag { };
 
 /**
- *  \brief Explicitly gives the order.
+ * \brief Explicitly gives the order
  */
 struct given_order_tag {
-  std::vector<int32> order_;
+  std::vector<int> order_;
 };
 
 /**
- *  \brief Specifies that domains should be randomly generated.
+ * \brief Specifies that domains should be randomly generated
  */
 struct random_domains_tag { };
 
 /**
- *  \brief Explicitly gives the domains.
+ * \brief Explicitly gives the domains
  */
 struct given_domains_tag {
-  std::vector<int32> domains_;
+  std::vector<int> domains_;
 };
 
 /**
- *  \brief Settings common for all managers.
+ * \brief Describes how to initialize bdd_manager
  */
-struct manager_settings {
-  int32 varcount_;
-  int32 nodecount_;
+struct bdd_manager_settings {
+  int domain_max_ {2};
+  int varcount_;
+  int nodecount_;
   std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
 };
 
 /**
- *  \brief Settings common for managers of nonhomogeneous functions / systems.
+ * \brief Describes how to initialize mdd_manager
  */
-template<int32 M>
-struct nonhomogeneous_manager_settings : manager_settings {
+template<int M>
+struct mdd_manager_settings {
+  int domain_max_ {M};
+  int varcount_;
+  int nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
+};
+
+/**
+ * \brief Describes how to initialize imdd_manager
+ */
+template<int M>
+struct imdd_manager_settings {
+  int domain_max_ {M};
+  int varcount_;
+  int nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
   std::variant<random_domains_tag, given_domains_tag> domains_;
 };
 
 /**
- *  \brief Describes how to initialize a bdd_manager.
+ * \brief Describes how to initialize ifmdd_manager
  */
-struct bdd_manager_settings : manager_settings { };
+template<int M>
+struct ifmdd_manager_settings {
+  int domain_max_ {M};
+  int varcount_;
+  int nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
+  std::variant<random_domains_tag, given_domains_tag> domains_;
+};
 
 /**
- *  \brief Describes how to initialize a mdd_manager.
+ * \brief Describes how to initialize bss_manager
  */
-template<int32 M>
-struct mdd_manager_settings : manager_settings { };
+struct bss_manager_settings {
+  int domain_max_ {2};
+  int varcount_;
+  int nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
+};
 
 /**
- *  \brief Describes how to initialize imdd_manager.
+ * \brief Describes how to initialize mss_manager
  */
-template<int32 M>
-struct imdd_manager_settings : nonhomogeneous_manager_settings<M> { };
+template<int M>
+struct mss_manager_settings {
+  int domain_max_ {M};
+  int varcount_;
+  int nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
+};
 
 /**
- *  \brief Describes how to initialize a ifmdd_manager.
+ * \brief Describes how to initialize imss_manager
  */
-template<int32 M>
-struct ifmdd_manager_settings : nonhomogeneous_manager_settings<M> { };
+template<int M>
+struct imss_manager_settings {
+  int domain_max_ {M};
+  int varcount_;
+  int nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
+  std::variant<random_domains_tag, given_domains_tag> domains_;
+};
 
 /**
- *  \brief Describes how to initialize a bss_manager.
+ * \brief Describes how to initialize ifmss_manager
  */
-struct bss_manager_settings : manager_settings { };
+template<int M>
+struct ifmss_manager_settings {
+  int domain_max_ {M};
+  int varcount_;
+  int nodecount_;
+  std::variant<random_order_tag, default_order_tag, given_order_tag> order_;
+  std::variant<random_domains_tag, given_domains_tag> domains_;
+};
 
 /**
- *  \brief Describes how to initialize a mss_manager.
- */
-template<int32 M>
-struct mss_manager_settings : manager_settings { };
-
-/**
- *  \brief Describes how to initialize imss_manager.
- */
-template<int32 M>
-struct imss_manager_settings : nonhomogeneous_manager_settings<M> { };
-
-/**
- *  \brief Describes how to initialize a ifmss_manager.
- */
-template<int32 M>
-struct ifmss_manager_settings : nonhomogeneous_manager_settings<M> { };
-
-/**
- *  \brief Settings for generation of minmax expression.
+ * \brief Settings for the generation of minmax expression
  */
 struct minmax_expression_settings {
-  int32 varcount_;
-  int32 termcount_;
-  int32 termsize_;
+  int varcount_;
+  int termcount_;
+  int termsize_;
 };
 
 /**
- *  \brief Settings for generations of expression tree.
- *  (for now, it only servses as a tag)
+ * \brief Settings for the generations of expression tree
  */
 struct expression_tree_settings {
-  int32 varcount_;
+  int varcount_;
 };
 
 /**
- *  \brief Settings used for most of the tests.
- */
-template<class ManagerSettings, class ExpressionSettings>
-struct test_settings {
-  std::size_t seed_;
-  ManagerSettings manager_;
-  ExpressionSettings expression_;
-};
-
-/**
- *  \brief Helper type to implement wannabe pattern matching.
- */
-template<class... Ts>
-struct match : Ts... {
-  using Ts::operator()...;
-};
-
-template<class... Ts>
-match(Ts...) -> match<Ts...>;
-
-inline auto make_order (manager_settings const &settings, tsl::rng_t &rng)
-  -> std::vector<int32> {
-  return std::visit(
-    match {
-      [&] (random_order_tag) {
-        auto indices
-          = tsl::fill_vector(settings.varcount_, [] (int32 x) { return x; });
-        std::ranges::shuffle(indices, rng);
-        return indices;
-      },
-      [&] (default_order_tag) {
-        auto indices
-          = tsl::fill_vector(settings.varcount_, [] (int32 x) { return x; });
-        return indices;
-      },
-      [] (given_order_tag const &indices) { return indices.order_; }
-    },
-    settings.order_
-  );
-}
-
-/**
- *  \brief Makes domains for a manager.
- */
-template<int32 M>
-auto make_domains (
-  nonhomogeneous_manager_settings<M> const &settings,
-  tsl::rng_t &rng
-) -> std::vector<int32> {
-  return std::visit(
-    match {
-      [&] (random_domains_tag) {
-        auto dist = std::uniform_int_distribution<int32>(2, M);
-        return tsl::fill_vector(settings.varcount_, [&rng, &dist] (auto) {
-          return dist(rng);
-        });
-      },
-      [] (given_domains_tag const &tag) { return tag.domains_; }
-    },
-    settings.domains_
-  );
-}
-
-/**
- *  \brief Makes BDD manager.
+ * \brief Makes BDD manager
  */
 inline auto make_manager (bdd_manager_settings const &settings, tsl::rng_t &rng)
-  -> bdd_manager {
-  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
-}
+  -> bdd_manager;
 
 /**
- *  \brief Makes MDD manager.
+ * \brief Makes MDD manager
  */
-template<int32 M>
+template<int M>
 auto make_manager (mdd_manager_settings<M> const &settings, tsl::rng_t &rng)
-  -> mdd_manager<M> {
-  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
-}
+  -> mdd_manager<M>;
 
 /**
- *  \brief Makes iMDD manager.
+ * \brief Makes iMDD manager
  */
-template<int32 M>
+template<int M>
 auto make_manager (imdd_manager_settings<M> const &settings, tsl::rng_t &rng)
-  -> imdd_manager {
-  return {
-    settings.varcount_,
-    settings.nodecount_,
-    make_domains(settings, rng),
-    make_order(settings, rng)
-  };
-}
+  -> imdd_manager;
 
 /**
- *  \brief Makes ifMDD manager.
+ * \brief Makes ifMDD manager
  */
-template<int32 M>
+template<int M>
 auto make_manager (ifmdd_manager_settings<M> const &settings, tsl::rng_t &rng)
-  -> ifmdd_manager<M> {
-  return {
-    settings.varcount_,
-    settings.nodecount_,
-    make_domains(settings, rng),
-    make_order(settings, rng)
-  };
-}
+  -> ifmdd_manager<M>;
 
 /**
- *  \brief Makes bss_manager.
+ * \brief Makes bss_manager
  */
 inline auto make_manager (bss_manager_settings const &settings, tsl::rng_t &rng)
-  -> bss_manager {
-  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
-}
+  -> bss_manager;
 
 /**
- *  \brief Makes mss_manager.
+ * \brief Makes mss_manager
  */
-template<int32 M>
+template<int M>
 auto make_manager (mss_manager_settings<M> const &settings, tsl::rng_t &rng)
-  -> mss_manager<M> {
-  return {settings.varcount_, settings.nodecount_, make_order(settings, rng)};
-}
+  -> mss_manager<M>;
 
 /**
- *  \brief Makes imss_manager.
+ * \brief Makes imss_manager
  */
-template<int32 M>
+template<int M>
 auto make_manager (imss_manager_settings<M> const &settings, tsl::rng_t &rng)
-  -> imss_manager {
-  return imss_manager(
-    settings.varcount_,
-    settings.nodecount_,
-    make_domains(settings, rng),
-    make_order(settings, rng)
-  );
-}
+  -> imss_manager;
 
 /**
- *  \brief Makes ifmss_manager.
+ * \brief Makes ifmss_manager
  */
-template<int32 M>
+template<int M>
 auto make_manager (ifmss_manager_settings<M> const &settings, tsl::rng_t &rng)
-  -> ifmss_manager<M> {
-  return ifmss_manager<M>(
-    settings.varcount_,
-    settings.nodecount_,
-    make_domains(settings, rng),
-    make_order(settings, rng)
-  );
-}
+  -> ifmss_manager<M>;
 
 /**
- *  \brief Makes manager for a test.
- */
-template<class Man, class Expr>
-auto make_manager (test_settings<Man, Expr> const &settings, tsl::rng_t &rng) {
-  return make_manager(settings.manager_, rng);
-}
-
-/**
- *  \brief Makes diagram representing \p expr
+ * \brief Makes diagram representing \p expr
  */
 template<class Degree, class Domain>
 auto make_diagram (
   tsl::minmax_expr const &expr,
   diagram_manager<Degree, Domain> &manager,
-  fold_type const foldtype = fold_type::Left
-) {
-  auto const min_fold = [&manager, foldtype] (auto &diagrams) {
-    return foldtype == fold_type::Left
-           ? manager.template left_fold<ops::MIN>(diagrams)
-           : manager.template tree_fold<ops::MIN>(diagrams);
-  };
-
-  auto const max_fold = [&manager, foldtype] (auto &diagrams) {
-    return foldtype == fold_type::Left
-           ? manager.template left_fold<ops::MAX>(diagrams)
-           : manager.template tree_fold<ops::MAX>(diagrams);
-  };
-
-  using diagram_t = typename diagram_manager<Degree, Domain>::diagram_t;
-  auto termDs     = std::vector<diagram_t>();
-  for (auto const &eTerm : expr.terms_) {
-    auto vars = manager.variables(eTerm);
-    termDs.emplace_back(min_fold(vars));
-  }
-  return max_fold(termDs);
-}
-
-// /**
-//  *  \brief Makes diagram representing \p expr .
-//  */
-// template<class Degree, class Domain>
-// auto make_diagram (
-//     std::unique_ptr<tsl::expr_node> const& expr,
-//     diagram_manager<Degree, Domain>& manager
-// )
-// {
-//     return manager.from_expression_tree(*expr);
-// }
+  fold_type foldtype = fold_type::Left
+);
 
 /**
- *  \brief Makes minmax expression with given settings.
+ * \brief Makes minmax expression with given settings
  */
 inline auto make_expression (
   minmax_expression_settings const &settings,
   tsl::rng_t &rng
-) -> tsl::minmax_expr {
-  return tsl::make_minmax_expression(
-    rng,
-    settings.varcount_,
-    settings.termcount_,
-    settings.termsize_
-  );
-}
+) -> tsl::minmax_expr;
 
 /**
- *  \brief Makes expression tree with given settings.
+ * \brief Makes expression tree with given settings
  */
 inline auto make_expression (
   expression_tree_settings const &settings,
   tsl::rng_t &rng
-) -> std::unique_ptr<tsl::expr_node> {
-  return tsl::make_expression_tree(settings.varcount_, rng, rng);
-}
+) -> std::unique_ptr<tsl::expr_node>;
 
-/**
- *  \brief Makes expression for a test.
- */
-template<class Man, class Expr>
-auto make_expression (
-  test_settings<Man, Expr> const &settings,
-  tsl::rng_t &rng
-) {
-  return make_expression(
-    settings.manager_.varcount_,
-    settings.expression_,
-    rng
-  );
-}
 
-// TODO(michal): move to libtsl
-/**
- *  \brief Makes random component state probabilities vector
- */
-template<class Degree, class Domain>
-auto make_prob_vector (
-  diagram_manager<Degree, Domain> const &manager,
-  tsl::rng_t &rng
-) -> std::vector<double> {
-  auto const domains = manager.get_domains();
-  auto probs         = std::vector<double>(as_usize(manager.get_var_count()));
-  for (auto i = 0; i < ssize(probs); ++i) {
-    auto dist           = std::uniform_real_distribution<double>(.0, 1.0);
-    probs[as_uindex(i)] = dist(rng);
-  }
-  return probs;
-}
-
-// TODO(michal): move to libtsl
-/**
- *  \brief Makes random component state probabilities matrix
- */
-template<class Degree, class Domain>
-auto make_prob_matrix (
-  diagram_manager<Degree, Domain> const &manager,
-  tsl::rng_t &rng
-) -> std::vector<std::vector<double>> {
-  auto const domains = manager.get_domains();
-  auto probs
-    = std::vector<std::vector<double>>(as_usize(manager.get_var_count()));
-  for (auto i = 0; i < ssize(probs); ++i) {
-    auto dist = std::uniform_real_distribution<double>(.0, 1.0);
-    probs[as_uindex(i)].resize(as_usize(domains[as_uindex(i)]));
-    for (auto j = 0; j < domains[as_uindex(i)]; ++j) {
-      probs[as_uindex(i)][as_uindex(j)] = dist(rng);
-    }
-    auto const sum = std::reduce(
-      begin(probs[as_uindex(i)]),
-      end(probs[as_uindex(i)]),
-      0.0,
-      std::plus<>()
-    );
-    for (auto j = 0; j < domains[as_uindex(i)]; ++j) {
-      probs[as_uindex(i)][as_uindex(j)] /= sum;
-    }
-  }
-  return probs;
-}
-
-template<class Degree, class Domain>
-auto make_probabilities (
-  diagram_manager<Degree, Domain> const &manager,
-  tsl::rng_t &rng
-) -> std::vector<std::vector<double>> {
-  return make_prob_matrix(manager, rng);
-}
-
+// TODO(michal): find place for this one
 inline auto make_vector (
   std::unique_ptr<tsl::expr_node> const &root,
-  std::vector<int32> const &domains
-) -> std::vector<int32> {
-  auto vector = std::vector<int32>();
+  std::vector<int> const &domains
+) -> std::vector<int> {
+  auto vector = std::vector<int>();
   vector.reserve(
     as_usize(std::reduce(begin(domains), end(domains), 1, std::multiplies<>()))
   );
@@ -445,11 +251,14 @@ inline auto make_vector (
   return vector;
 }
 
+// TODO(michal): find place for this one
 template<class Degree, class Domain>
 auto make_domain_iterator (diagram_manager<Degree, Domain> const &manager) {
   return tsl::domain_iterator(manager.get_domains(), manager.get_order());
 }
 
 } // namespace teddy::tests
+
+#include "setup.inl"
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef LIBTEDDY_TSL_TYPES_HPP
 #define LIBTEDDY_TSL_TYPES_HPP
 
+// TODO toto zahodit a pouzivat typy z libteddy
+
 #include <cstdint>
 #include <random>
 

@@ -17,120 +17,97 @@
 #include "setup.hpp"
 
 namespace teddy::tests {
+
+namespace {
+
 /**
- *  \brief Fixture base
+ * \brief BDD fixture
  */
-template<class ManagerSettings, class ExpressionSettings>
-struct fixture_base {
-  ManagerSettings managerSettings_;
-  ExpressionSettings expressionSettings_;
-  tsl::rng_t rng_;
-  int32 maxValue_ {}; // TODO(michal): rename to codomainSize_
-  // TODO(michal): move members to to child classes, remove this class
+struct bdd_fixture {
+  bdd_manager_settings manager_cfg_ {
+    .varcount_  = 21,
+    .nodecount_ = 5'000,
+    .order_     = random_order_tag()
+  };
+
+  minmax_expression_settings expr_cfg_ {
+    .varcount_  = 21,
+    .termcount_ = 20,
+    .termsize_  = 5
+  };
+
+  tsl::rng_t rng_ {911};
+
+  int codomain_ {2};
 };
 
 /**
- *  \brief BDD fixture
+ * \brief MDD fixture
  */
-struct bdd_fixture :
-  fixture_base<bdd_manager_settings, minmax_expression_settings> {
-private:
-  static auto constexpr VarCount  = 21;
-  static auto constexpr NodeCount = 5'000;
-  static auto constexpr TermCount = 20;
-  static auto constexpr TermSize  = 5;
-  static auto constexpr Seed      = 911;
+struct mdd_fixture {
+  mdd_manager_settings<3> manager_cfg_ {
+    .varcount_  = 15,
+    .nodecount_ = 5'000,
+    .order_     = random_order_tag()
+  };
 
-public:
-  bdd_fixture() :
-    fixture_base<bdd_manager_settings, minmax_expression_settings> {
-      .managerSettings_
-      = bdd_manager_settings {VarCount, NodeCount, random_order_tag()},
-      .expressionSettings_
-      = minmax_expression_settings {VarCount, TermCount, TermSize          },
-      .rng_      = tsl::rng_t(Seed),
-      .maxValue_ = 2
-  } {
-  }
+  minmax_expression_settings expr_cfg_ {
+    .varcount_  = 15,
+    .termcount_ = 20,
+    .termsize_  = 5
+  };
+
+  tsl::rng_t rng_ {911};
+
+  int codomain_ {3};
 };
 
 /**
- *  \brief MDD fixture
+ * \brief iMDD fixture
  */
-struct mdd_fixture :
-  fixture_base<mdd_manager_settings<3>, minmax_expression_settings> {
-private:
-  static auto constexpr VarCount  = 15;
-  static auto constexpr NodeCount = 5'000;
-  static auto constexpr TermCount = 20;
-  static auto constexpr TermSize  = 5;
-  static auto constexpr Seed      = 911;
+struct imdd_fixture {
+  imdd_manager_settings<3> manager_cfg_ {
+    .varcount_  = 15,
+    .nodecount_ = 5'000,
+    .order_     = random_order_tag(),
+    .domains_   = random_domains_tag()
+  };
 
-public:
-  mdd_fixture() :
-    fixture_base<mdd_manager_settings<3>, minmax_expression_settings> {
-      .managerSettings_
-      = mdd_manager_settings<3> {VarCount, NodeCount, random_order_tag()},
-      .expressionSettings_
-      = minmax_expression_settings {VarCount, TermCount, TermSize          },
-      .rng_      = tsl::rng_t(Seed),
-      .maxValue_ = 3
-  } {
-  }
+  minmax_expression_settings expr_cfg_ {
+    .varcount_  = 15,
+    .termcount_ = 20,
+    .termsize_  = 5
+  };
+
+  tsl::rng_t rng_ {911};
+
+  int codomain_ {3};
 };
 
 /**
- *  \brief iMDD fixture
+ * \brief ifMDD fixture
  */
-struct imdd_fixture :
-  fixture_base<imdd_manager_settings<3>, minmax_expression_settings> {
-private:
-  static auto constexpr VarCount  = 15;
-  static auto constexpr NodeCount = 5'000;
-  static auto constexpr TermCount = 20;
-  static auto constexpr TermSize  = 5;
-  static auto constexpr Seed      = 911;
+struct ifmdd_fixture {
+  ifmdd_manager_settings<3> manager_cfg_ {
+    .varcount_  = 15,
+    .nodecount_ = 5'000,
+    .order_     = random_order_tag(),
+    .domains_   = random_domains_tag()
+  };
 
-public:
-  imdd_fixture() :
-    fixture_base<imdd_manager_settings<3>, minmax_expression_settings> {
-      .managerSettings_ = imdd_manager_settings<
-        3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}},
-      .expressionSettings_
-      = minmax_expression_settings {VarCount, TermCount, TermSize},
-      .rng_      = tsl::rng_t(Seed),
-      .maxValue_ = 3
-  } {
-  }
+  minmax_expression_settings expr_cfg_ {
+    .varcount_  = 15,
+    .termcount_ = 20,
+    .termsize_  = 5
+  };
+
+  tsl::rng_t rng_ {911};
+
+  int codomain_ {3};
 };
 
 /**
- *  \brief ifMDD fixture
- */
-struct ifmdd_fixture :
-  fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings> {
-private:
-  static auto constexpr VarCount  = 15;
-  static auto constexpr NodeCount = 5'000;
-  static auto constexpr TermCount = 20;
-  static auto constexpr TermSize  = 5;
-  static auto constexpr Seed      = 911;
-
-public:
-  ifmdd_fixture() :
-    fixture_base<ifmdd_manager_settings<3>, minmax_expression_settings> {
-      .managerSettings_ = ifmdd_manager_settings<
-        3> {{{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}},
-      .expressionSettings_
-      = minmax_expression_settings {VarCount, TermCount, TermSize},
-      .rng_      = tsl::rng_t(Seed),
-      .maxValue_ = 3
-  } {
-  }
-};
-
-/**
- *  \brief Calculates frequency table for each possible value of \p expr .
+ * \brief Calculates frequency table for each possible value of \p expr
  */
 template<class Degree, class Domain>
 auto expected_counts (
@@ -153,7 +130,7 @@ auto expected_counts (
 }
 
 /**
- *  \brief Compares diagram output with \p evalIt for each possible input
+ * \brief Compares diagram output with \p evalIt for each possible input
  */
 template<class Expression, class Degree, class Domain>
 auto test_compare_eval (
@@ -170,6 +147,8 @@ auto test_compare_eval (
   }
 }
 
+}  // namespace
+
 using Fixtures = boost::mpl::vector<
   teddy::tests::bdd_fixture,
   teddy::tests::mdd_fixture,
@@ -179,8 +158,8 @@ using Fixtures = boost::mpl::vector<
 BOOST_AUTO_TEST_SUITE(core)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
@@ -191,8 +170,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(evaluate, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(fold, Fixture, Fixtures, Fixture) {
-  auto expr     = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr     = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager  = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram1 = tsl::make_diagram(expr, manager, fold_type::Left);
   auto diagram2 = tsl::make_diagram(expr, manager, fold_type::Tree);
   BOOST_TEST_MESSAGE(
@@ -202,8 +181,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(fold, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(gc, Fixture, Fixtures, Fixture) {
-  auto expr     = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr     = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager  = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram1 = tsl::make_diagram(expr, manager, fold_type::Left);
   auto diagram2 = tsl::make_diagram(expr, manager, fold_type::Tree);
   BOOST_TEST_MESSAGE(
@@ -216,8 +195,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(gc, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_count, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
@@ -246,14 +225,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
 #endif
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
   );
 
-  for (auto j = 0; j < Fixture::maxValue_; ++j) {
+  for (auto j = 0; j < Fixture::codomain_; ++j) {
     auto const vars
       = manager.template satisfy_one<std::vector<int32>>(j, diagram);
     BOOST_REQUIRE(vars.has_value());
@@ -273,8 +252,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_one, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
@@ -295,8 +274,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(satisfy_all, Fixture, Fixtures, Fixture) {
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture) {
   using namespace teddy::ops; // NOLINT
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
@@ -407,7 +386,7 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(operators_1, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_AUTO_TEST_CASE(operators_2) {
-  using namespace teddy::ops;
+  using namespace teddy::ops; // NOLINT
   auto const N = Nondetermined;
   auto const U = Undefined;
 
@@ -688,8 +667,8 @@ BOOST_AUTO_TEST_CASE(operators_2) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
@@ -732,8 +711,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(cofactor, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
@@ -751,8 +730,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(one_var_sift, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(auto_var_sift, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   manager.set_auto_reorder(true);
   auto diagram = tsl::make_diagram(expr, manager);
   manager.force_gc();
@@ -773,7 +752,7 @@ BOOST_AUTO_TEST_SUITE_END()
 BOOST_AUTO_TEST_SUITE(core_io)
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_expression, Fixture, Fixtures, Fixture) {
-  auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto manager  = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto exprtree = tsl::make_expression_tree(
     manager.get_var_count(),
     Fixture::rng_,
@@ -789,8 +768,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture) {
   // TODO(michal): test na corner-case konstantna funcia, 0 premennych a
   // podobne...
 
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))
@@ -806,8 +785,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(from_vector, Fixture, Fixtures, Fixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(to_vector, Fixture, Fixtures, Fixture) {
-  auto expr    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager = make_manager(Fixture::managerSettings_, Fixture::rng_);
+  auto expr    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram = tsl::make_diagram(expr, manager);
   BOOST_TEST_MESSAGE(
     fmt::format("Node count {}", manager.get_node_count(diagram))

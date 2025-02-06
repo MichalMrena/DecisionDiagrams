@@ -1,10 +1,10 @@
-#include <libteddy/impl/types.hpp>
 #include <libteddy/inc/core.hpp>
 #include <libteddy/inc/io.hpp>
 
 #include <libtsl/expressions.hpp>
 #include <libtsl/generators.hpp>
 #include <libtsl/iterators.hpp>
+#include <libtsl/probabilities.hpp>
 #include <libtsl/system_description.hpp>
 #include <libtsl/truth_table.hpp>
 #include <libtsl/truth_table_reliability.hpp>
@@ -28,151 +28,131 @@
 #include "setup.hpp"
 
 #ifdef LIBTEDDY_ARBITRARY_PRECISION
-// auto format_as (mpz_class const x)
-// {
-//     return x.get_str();
-// }
+
 template<>
 struct fmt::formatter<mpz_class> : formatter<std::string_view> {
-  auto format (mpz_class c, format_context &ctx) const
+  auto format (const mpz_class &c, format_context &ctx) const
     -> format_context::iterator {
     return formatter<string_view>::format(c.get_str(), ctx);
   }
 };
+
 #endif
 
 namespace teddy::tests {
-namespace details {
-  auto compare_dplds (auto &manager, auto const &tableDpld, auto diagramDpld) {
-    auto result = true;
-    domain_for_each(
-      tableDpld,
-      [&manager, &result, &diagramDpld] (auto const val, auto const &elem) {
-        if (manager.evaluate(diagramDpld, elem) != val) {
-          result = false;
-        }
-      }
-    );
-    return result;
-  }
 
-  using Change = struct {
-    int32 from;
-    int32 to;
+namespace  {
+
+auto compare_dplds (auto &manager, auto const &tableDpld, auto diagramDpld) {
+  auto result = true;
+  domain_for_each(
+    tableDpld,
+    [&manager, &result, &diagramDpld] (auto const val, auto const &elem) {
+      if (manager.evaluate(diagramDpld, elem) != val) {
+        result = false;
+      }
+    }
+  );
+  return result;
+}
+
+using Change = struct {
+  int from_;
+  int to_;
+};
+
+auto switch_direction (Change change) -> Change {
+  return {change.to_, change.from_};
+}
+
+auto add_opposite_directions (std::vector<Change> &changes) {
+  auto const changeCount = ssize(changes);
+  for (auto i = 0; i < changeCount; ++i) {
+    changes.push_back(switch_direction(changes[as_uindex(i)]));
+  }
+}
+
+}  // namespace
+
+/**
+ * \brief BSS fixture
+ */
+struct bss_fixture {
+  bss_manager_settings manager_cfg_ {
+    .varcount_  = 21,
+    .nodecount_ = 2'000'000,
+    .order_     = random_order_tag()
   };
 
-  auto switch_direction (Change change) -> Change {
-    return {change.to, change.from};
-  }
+  expression_tree_settings expr_cfg_ {
+    .varcount_ = 21
+  };
 
-  auto add_opposite_directions (std::vector<Change> &changes) {
-    auto const changeCount = ssize(changes);
-    for (auto i = 0; i < changeCount; ++i) {
-      changes.push_back(switch_direction(changes[as_uindex(i)]));
-    }
-  }
-} // namespace details
+  tsl::rng_t rng_ {911};
 
-/**
- *  \brief Fixture base
- */
-template<class ManagerSettings, class ExpressionSettings>
-struct fixture_base {
-  ManagerSettings managerSettings_;
-  ExpressionSettings expressionSettings_;
-  tsl::rng_t rng_;
-  int32 stateCount_ {};
+  int state_count_ {2};
 };
 
 /**
- *  \brief BSS fixture base
- */
-struct bss_fixture :
-  fixture_base<bss_manager_settings, expression_tree_settings> {
-private:
-  inline static auto constexpr VarCount  = 21;
-  inline static auto constexpr NodeCount = 2'000'000;
-  inline static auto constexpr Seed      = 911;
-
-public:
-  bss_fixture() :
-    fixture_base<bss_manager_settings, expression_tree_settings> {
-      {bss_manager_settings {VarCount, NodeCount, random_order_tag()}},
-      {expression_tree_settings {VarCount}},
-      {tsl::rng_t(Seed)},
-      2
-    } {
-  }
-};
-
-/**
- *  \brief MSS fixture base
+ * \brief MSS fixture
  */
 template<int32 M>
-struct mss_fixture :
-  fixture_base<mss_manager_settings<M>, expression_tree_settings> {
-private:
-  inline static auto constexpr VarCount  = 15;
-  inline static auto constexpr NodeCount = 2'000'000;
-  inline static auto constexpr Seed      = 911;
+struct mss_fixture {
+  mss_manager_settings<3> manager_cfg_ {
+    .varcount_  = 15,
+    .nodecount_ = 2'000'000,
+    .order_     = random_order_tag()
+  };
 
-public:
-  mss_fixture() :
-    fixture_base<mss_manager_settings<M>, expression_tree_settings> {
-      {mss_manager_settings<M> {VarCount, NodeCount, random_order_tag()}},
-      {expression_tree_settings {VarCount}},
-      {tsl::rng_t(Seed)},
-      M
-    } {
-  }
+  expression_tree_settings expr_cfg_ {
+    .varcount_ = 15
+  };
+
+  tsl::rng_t rng_ {911};
+
+  int state_count_ {M};
 };
 
 /**
- *  \brief iMSS fixture base
+ * \brief iMSS fixture
  */
 template<int32 M>
-struct imss_fixture :
-  fixture_base<imss_manager_settings<3>, expression_tree_settings> {
-private:
-  inline static auto constexpr VarCount  = 15;
-  inline static auto constexpr NodeCount = 2'000'000;
-  inline static auto constexpr Seed      = 911;
+struct imss_fixture {
+  imss_manager_settings<3> manager_cfg_ {
+    .varcount_  = 15,
+    .nodecount_ = 5'000,
+    .order_     = random_order_tag(),
+    .domains_   = random_domains_tag()
+  };
 
-public:
-  imss_fixture() :
-    fixture_base<imss_manager_settings<M>, expression_tree_settings> {
-      {imss_manager_settings<M> {
-        {{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}
-      }},
-      {expression_tree_settings {VarCount}},
-      {tsl::rng_t(Seed)},
-      M
-    } {
-  }
+  expression_tree_settings expr_cfg_ {
+    .varcount_ = 15
+  };
+
+  tsl::rng_t rng_ {911};
+
+  int state_count_ {M};
 };
 
 /**
- *  \brief ifMSS fixture base
+ * \brief ifMSS fixture base
  */
 template<int32 M>
-struct ifmss_fixture :
-  fixture_base<ifmss_manager_settings<3>, expression_tree_settings> {
-private:
-  inline static auto constexpr VarCount  = 15;
-  inline static auto constexpr NodeCount = 5'000;
-  inline static auto constexpr Seed      = 911;
+struct ifmss_fixture {
+  ifmss_manager_settings<3> manager_cfg_ {
+    .varcount_  = 15,
+    .nodecount_ = 5'000,
+    .order_     = random_order_tag(),
+    .domains_   = random_domains_tag()
+  };
 
-public:
-  ifmss_fixture() :
-    fixture_base<ifmss_manager_settings<M>, expression_tree_settings> {
-      {ifmss_manager_settings<M> {
-        {{VarCount, NodeCount, random_order_tag()}, random_domains_tag()}
-      }},
-      {expression_tree_settings {VarCount}},
-      {tsl::rng_t(Seed)},
-      M
-    } {
-  }
+  expression_tree_settings expr_cfg_ {
+    .varcount_ = 15
+  };
+
+  tsl::rng_t rng_ {911};
+
+  int state_count_ {M};
 };
 
 auto constexpr FloatingTolerance = 0.00000001;
@@ -186,14 +166,14 @@ using Fixtures                   = boost::mpl::vector<
 BOOST_AUTO_TEST_SUITE(reliability)
 
 BOOST_FIXTURE_TEST_CASE(probabilities_bss, teddy::tests::bss_fixture) {
-  auto const expr    = make_expression(expressionSettings_, rng_);
-  auto manager       = make_manager(managerSettings_, rng_);
+  auto const expr    = make_expression(expr_cfg_, rng_);
+  auto manager       = make_manager(manager_cfg_, rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probVec = make_prob_vector(manager, rng_);
+  auto const probVec = tsl::make_prob_vector(manager, rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-  auto expected      = std::vector<double>(as_uindex(stateCount_));
-  auto actual        = std::vector<double>(as_uindex(stateCount_));
+  auto expected      = std::vector<double>(as_uindex(state_count_));
+  auto actual        = std::vector<double>(as_uindex(state_count_));
   expected[1]        = probability(table, probVec);
   expected[0]        = 1 - expected[1];
   double const A     = manager.calculate_availability(probVec, diagram);
@@ -213,31 +193,31 @@ BOOST_FIXTURE_TEST_CASE(probabilities_bss, teddy::tests::bss_fixture) {
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = make_probabilities(manager, Fixture::rng_);
+  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-  auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
+  auto expected      = std::vector<double>(as_uindex(Fixture::state_count_));
   auto actual        = manager.calculate_probabilities(probs, diagram);
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     expected[as_uindex(j)] = probability(table, probs, j);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     BOOST_TEST(
       actual[as_uindex(j)] == expected[as_uindex(j)],
       boost::test_tools::tolerance(FloatingTolerance)
     );
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     actual[as_uindex(j)] = manager.calculate_probability(j, probs, diagram);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     BOOST_TEST(
       actual[as_uindex(j)] == expected[as_uindex(j)],
       boost::test_tools::tolerance(FloatingTolerance)
@@ -247,24 +227,24 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture) {
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager  = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager  = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram  = tsl::make_diagram(expr, manager);
-  auto probs    = make_probabilities(manager, Fixture::rng_);
+  auto probs    = tsl::make_probabilities(manager, Fixture::rng_);
   auto domains  = manager.get_domains();
   auto table    = tsl::truth_table(make_vector(expr, domains), domains);
-  auto expected = std::vector<double>(as_uindex(Fixture::stateCount_));
-  auto actual   = std::vector<double>(as_uindex(Fixture::stateCount_));
+  auto expected = std::vector<double>(as_uindex(Fixture::state_count_));
+  auto actual   = std::vector<double>(as_uindex(Fixture::state_count_));
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     expected[as_uindex(j)] = availability(table, probs, j);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     actual[as_uindex(j)] = manager.calculate_availability(j, probs, diagram);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     BOOST_TEST(
       actual[as_uindex(j)] == expected[as_uindex(j)],
       boost::test_tools::tolerance(FloatingTolerance)
@@ -274,24 +254,24 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture) {
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = make_probabilities(manager, Fixture::rng_);
+  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-  auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
-  auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
+  auto expected      = std::vector<double>(as_uindex(Fixture::state_count_));
+  auto actual        = std::vector<double>(as_uindex(Fixture::state_count_));
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     expected[as_uindex(j)] = unavailability(table, probs, j);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     actual[as_uindex(j)] = manager.calculate_unavailability(j, probs, diagram);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     BOOST_TEST(
       expected[as_uindex(j)] == actual[as_uindex(j)],
       boost::test_tools::tolerance(FloatingTolerance)
@@ -301,23 +281,23 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture) {
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(states_frequency, Fixture, Fixtures, Fixture) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
-  auto expected      = std::vector<double>(as_uindex(Fixture::stateCount_));
-  auto actual        = std::vector<double>(as_uindex(Fixture::stateCount_));
+  auto expected      = std::vector<double>(as_uindex(Fixture::state_count_));
+  auto actual        = std::vector<double>(as_uindex(Fixture::state_count_));
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     expected[as_uindex(j)] = state_frequency(table, j);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     actual[as_uindex(j)] = manager.state_frequency(diagram, j);
   }
 
-  for (auto j = 0; j < Fixture::stateCount_; ++j) {
+  for (auto j = 0; j < Fixture::state_count_; ++j) {
     BOOST_TEST(
       actual[as_uindex(j)] == expected[as_uindex(j)],
       boost::test_tools::tolerance(FloatingTolerance)
@@ -332,13 +312,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   Fixture
 ) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-  for (auto systemState = 1; systemState < Fixture::stateCount_;
+  for (auto systemState = 1; systemState < Fixture::state_count_;
        ++systemState) {
     for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex) {
       for (auto varVal = 1; varVal < domains[as_uindex(varIndex)]; ++varVal) {
@@ -370,14 +350,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   Fixture
 ) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = make_probabilities(manager, Fixture::rng_);
+  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-  for (auto systemState = 1; systemState < Fixture::stateCount_;
+  for (auto systemState = 1; systemState < Fixture::state_count_;
        ++systemState) {
     for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex) {
       for (auto varVal = 1; varVal < manager.get_domains()[as_uindex(varIndex)];
@@ -410,14 +390,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   Fixture
 ) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = make_probabilities(manager, Fixture::rng_);
+  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-  for (auto systemState = 1; systemState < Fixture::stateCount_;
+  for (auto systemState = 1; systemState < Fixture::state_count_;
        ++systemState) {
     auto const unavail = tsl::unavailability(table, probs, systemState);
     for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex) {
@@ -453,13 +433,13 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
-  for (auto state = 1; state < Fixture::stateCount_; ++state) {
+  for (auto state = 1; state < Fixture::state_count_; ++state) {
     auto const tableMcvs = tsl::calculate_mcvs(table, state);
     auto const diagramMcvs
       = manager.template mcvs<std::vector<int32>>(diagram, state);
@@ -469,8 +449,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(mcvs, Fixture, Fixtures, Fixture) {
 
 BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -478,56 +458,56 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(basic_dpld, Fixture, Fixtures, Fixture) {
   // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
   for (auto varIndex = 0; varIndex < 1; ++varIndex) {
     auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
-    auto varChanges      = std::vector<details::Change>();
-    auto fChanges        = std::vector<details::Change>();
+    auto varChanges      = std::vector<Change>();
+    auto fChanges        = std::vector<Change>();
 
     for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom) {
       for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo) {
-        varChanges.push_back(details::Change {varFrom, varTo});
+        varChanges.push_back(Change {varFrom, varTo});
       }
     }
-    details::add_opposite_directions(varChanges);
+    add_opposite_directions(varChanges);
 
-    for (auto fFrom = 0; fFrom < Fixture::stateCount_ - 1; ++fFrom) {
-      for (auto fTo = fFrom; fTo < Fixture::stateCount_; ++fTo) {
-        fChanges.push_back(details::Change {fFrom, fTo});
+    for (auto fFrom = 0; fFrom < Fixture::state_count_ - 1; ++fFrom) {
+      for (auto fTo = fFrom; fTo < Fixture::state_count_; ++fTo) {
+        fChanges.push_back(Change {fFrom, fTo});
       }
     }
-    details::add_opposite_directions(fChanges);
+    add_opposite_directions(fChanges);
 
     for (auto const &varChange : varChanges) {
       for (auto const &fChange : fChanges) {
         auto const tableDpld = tsl::dpld(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
-          tsl::dpld_basic(fChange.from, fChange.to)
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
+          tsl::dpld_basic(fChange.from_, fChange.to_)
         );
         auto const tableDpldExtended = tsl::dpld_e(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
-          tsl::dpld_basic(fChange.from, fChange.to)
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
+          tsl::dpld_basic(fChange.from_, fChange.to_)
         );
 
         auto const diagramDpld = manager.dpld(
-          {varIndex, varChange.from, varChange.to},
-          dpld::basic(fChange.from, fChange.to),
+          {varIndex, varChange.from_, varChange.to_},
+          dpld::basic(fChange.from_, fChange.to_),
           diagram
         );
         auto const diagramDpldExtended
-          = manager.to_dpld_e(varChange.from, varIndex, diagramDpld);
+          = manager.to_dpld_e(varChange.from_, varIndex, diagramDpld);
         longint const oneCount = manager.satisfy_count(1, diagramDpld);
 
         BOOST_TEST_MESSAGE(fmt::format(
           "Basic dpld f({} -> {}) / x{}({} -> {})",
-          fChange.from,
-          fChange.to,
+          fChange.from_,
+          fChange.to_,
           varIndex,
-          varChange.from,
-          varChange.to
+          varChange.from_,
+          varChange.to_
         ));
         BOOST_TEST_MESSAGE(fmt::format("One count = {}", oneCount));
-        BOOST_REQUIRE(details::compare_dplds(manager, tableDpld, diagramDpld));
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(manager, tableDpld, diagramDpld));
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldExtended,
           diagramDpldExtended
@@ -544,8 +524,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   Fixture
 ) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -553,52 +533,52 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
   for (auto varIndex = 0; varIndex < 1; ++varIndex) {
     auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
-    auto varChanges      = std::vector<details::Change>();
+    auto varChanges      = std::vector<Change>();
 
     for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom) {
       for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo) {
-        varChanges.push_back(details::Change {varFrom, varTo});
+        varChanges.push_back(Change {varFrom, varTo});
       }
     }
-    details::add_opposite_directions(varChanges);
+    add_opposite_directions(varChanges);
 
-    for (auto fValue = 0; fValue < Fixture::stateCount_ - 1; ++fValue) {
+    for (auto fValue = 0; fValue < Fixture::state_count_ - 1; ++fValue) {
       for (auto const &varChange : varChanges) {
         auto const tableDpldDecrease = tsl::dpld(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_1_decrease(fValue + 1)
         );
         auto const tableDpldDecreaseExtended = tsl::dpld_e(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_1_decrease(fValue + 1)
         );
         auto const tableDpldIncrease = tsl::dpld(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_1_increase(fValue)
         );
         auto const tableDpldIncreaseExtended = tsl::dpld_e(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_1_increase(fValue)
         );
 
         auto const diagramDpldDecrease = manager.dpld(
-          {varIndex, varChange.from, varChange.to},
+          {varIndex, varChange.from_, varChange.to_},
           dpld::type_1_decrease(fValue + 1),
           diagram
         );
         auto const diagramDpldDecreaseExtended
-          = manager.to_dpld_e(varChange.from, varIndex, diagramDpldDecrease);
+          = manager.to_dpld_e(varChange.from_, varIndex, diagramDpldDecrease);
         auto const diagramDpldIncrease = manager.dpld(
-          {varIndex, varChange.from, varChange.to},
+          {varIndex, varChange.from_, varChange.to_},
           dpld::type_1_increase(fValue),
           diagram
         );
         auto const diagramDpldIncreaseExtended
-          = manager.to_dpld_e(varChange.from, varIndex, diagramDpldIncrease);
+          = manager.to_dpld_e(varChange.from_, varIndex, diagramDpldIncrease);
         auto const oneCountDecrease
           = manager.satisfy_count(1, diagramDpldDecrease);
         auto const oneCountIncrease
@@ -609,16 +589,16 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
           fValue + 1,
           fValue + 1,
           varIndex,
-          varChange.from,
-          varChange.to
+          varChange.from_,
+          varChange.to_
         ));
         BOOST_TEST_MESSAGE(fmt::format(
           "idpld_type_1_increase f({} -> >{}) / x{}({} -> {})",
           fValue,
           fValue,
           varIndex,
-          varChange.from,
-          varChange.to
+          varChange.from_,
+          varChange.to_
         ));
         BOOST_TEST_MESSAGE(
           fmt::format("One count decrease = {}", oneCountDecrease)
@@ -626,22 +606,22 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
         BOOST_TEST_MESSAGE(
           fmt::format("One count increase = {}", oneCountIncrease)
         );
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldDecrease,
           diagramDpldDecrease
         ));
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldDecreaseExtended,
           diagramDpldDecreaseExtended
         ));
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldIncrease,
           diagramDpldIncrease
         ));
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldIncreaseExtended,
           diagramDpldIncreaseExtended
@@ -658,8 +638,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   Fixture
 ) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -667,50 +647,50 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
   for (auto varIndex = 0; varIndex < 1; ++varIndex) {
     auto const varDomain = domains[as_uindex(varIndex)];
-    auto varChanges      = std::vector<details::Change>();
+    auto varChanges      = std::vector<Change>();
 
     for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom) {
       for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo) {
-        varChanges.push_back(details::Change {varFrom, varTo});
+        varChanges.push_back(Change {varFrom, varTo});
       }
     }
-    details::add_opposite_directions(varChanges);
+    add_opposite_directions(varChanges);
 
     for (auto const &varChange : varChanges) {
       auto const tableDpldDecrease = tsl::dpld(
         table,
-        tsl::var_change {varIndex, varChange.from, varChange.to},
+        tsl::var_change {varIndex, varChange.from_, varChange.to_},
         tsl::type_2_decrease()
       );
       auto const tableDpldDecreaseExtended = tsl::dpld_e(
         table,
-        tsl::var_change {varIndex, varChange.from, varChange.to},
+        tsl::var_change {varIndex, varChange.from_, varChange.to_},
         tsl::type_2_decrease()
       );
       auto const tableDpldIncrease = tsl::dpld(
         table,
-        tsl::var_change {varIndex, varChange.from, varChange.to},
+        tsl::var_change {varIndex, varChange.from_, varChange.to_},
         tsl::type_2_increase()
       );
       auto const tableDpldIncreaseExtended = tsl::dpld_e(
         table,
-        tsl::var_change {varIndex, varChange.from, varChange.to},
+        tsl::var_change {varIndex, varChange.from_, varChange.to_},
         tsl::type_2_increase()
       );
       auto const diagramDpldDecrease = manager.dpld(
-        {varIndex, varChange.from, varChange.to},
+        {varIndex, varChange.from_, varChange.to_},
         dpld::type_2_decrease(),
         diagram
       );
       auto const diagramDpldDecreaseExtended
-        = manager.to_dpld_e(varChange.from, varIndex, diagramDpldDecrease);
+        = manager.to_dpld_e(varChange.from_, varIndex, diagramDpldDecrease);
       auto const diagramDpldIncrease = manager.dpld(
-        {varIndex, varChange.from, varChange.to},
+        {varIndex, varChange.from_, varChange.to_},
         dpld::type_2_increase(),
         diagram
       );
       auto const diagramDpldIncreaseExtended
-        = manager.to_dpld_e(varChange.from, varIndex, diagramDpldIncrease);
+        = manager.to_dpld_e(varChange.from_, varIndex, diagramDpldIncrease);
       auto const oneCountDecrease
         = manager.satisfy_count(1, diagramDpldDecrease);
       auto const oneCountIncrease
@@ -719,14 +699,14 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
       BOOST_TEST_MESSAGE(fmt::format(
         "idpld_type_2_decrease f( < ) / x{}({} -> {})",
         varIndex,
-        varChange.from,
-        varChange.to
+        varChange.from_,
+        varChange.to_
       ));
       BOOST_TEST_MESSAGE(fmt::format(
         "idpld_type_2_increase f( > ) / x{}({} -> {})",
         varIndex,
-        varChange.from,
-        varChange.to
+        varChange.from_,
+        varChange.to_
       ));
       BOOST_TEST_MESSAGE(
         fmt::format("One count decrease = {}", oneCountDecrease)
@@ -735,17 +715,17 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
         fmt::format("One count increase = {}", oneCountIncrease)
       );
       BOOST_REQUIRE(
-        details::compare_dplds(manager, tableDpldDecrease, diagramDpldDecrease)
+        compare_dplds(manager, tableDpldDecrease, diagramDpldDecrease)
       );
-      BOOST_REQUIRE(details::compare_dplds(
+      BOOST_REQUIRE(compare_dplds(
         manager,
         tableDpldDecreaseExtended,
         diagramDpldDecreaseExtended
       ));
       BOOST_REQUIRE(
-        details::compare_dplds(manager, tableDpldIncrease, diagramDpldIncrease)
+        compare_dplds(manager, tableDpldIncrease, diagramDpldIncrease)
       );
-      BOOST_REQUIRE(details::compare_dplds(
+      BOOST_REQUIRE(compare_dplds(
         manager,
         tableDpldIncreaseExtended,
         diagramDpldIncreaseExtended
@@ -761,8 +741,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   Fixture
 ) {
   auto const expr
-    = make_expression(Fixture::expressionSettings_, Fixture::rng_);
-  auto manager       = make_manager(Fixture::managerSettings_, Fixture::rng_);
+    = make_expression(Fixture::expr_cfg_, Fixture::rng_);
+  auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
@@ -770,52 +750,52 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   // for (auto varIndex = 0; varIndex < manager.get_var_count(); ++varIndex)
   for (auto varIndex = 0; varIndex < 1; ++varIndex) {
     auto const varDomain = manager.get_domains()[as_uindex(varIndex)];
-    auto varChanges      = std::vector<details::Change>();
+    auto varChanges      = std::vector<Change>();
 
     for (auto varFrom = 0; varFrom < varDomain - 1; ++varFrom) {
       for (auto varTo = varFrom + 1; varTo < varDomain; ++varTo) {
-        varChanges.push_back(details::Change {varFrom, varTo});
+        varChanges.push_back(Change {varFrom, varTo});
       }
     }
-    details::add_opposite_directions(varChanges);
+    add_opposite_directions(varChanges);
 
-    for (auto fValue = 1; fValue < Fixture::stateCount_; ++fValue) {
+    for (auto fValue = 1; fValue < Fixture::state_count_; ++fValue) {
       for (auto const &varChange : varChanges) {
         auto tableDpldDecrease = tsl::dpld(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_3_decrease(fValue)
         );
         auto tableDpldDecreaseExtended = tsl::dpld_e(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_3_decrease(fValue)
         );
         auto tableDpldIncrease = tsl::dpld(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_3_increase(fValue)
         );
         auto tableDpldIncreaseExtended = tsl::dpld_e(
           table,
-          tsl::var_change {varIndex, varChange.from, varChange.to},
+          tsl::var_change {varIndex, varChange.from_, varChange.to_},
           tsl::type_3_increase(fValue)
         );
 
         auto const diagramDpldDecrease = manager.dpld(
-          {varIndex, varChange.from, varChange.to},
+          {varIndex, varChange.from_, varChange.to_},
           dpld::type_3_decrease(fValue),
           diagram
         );
         auto const diagramDpldDecreaseExtended
-          = manager.to_dpld_e(varChange.from, varIndex, diagramDpldDecrease);
+          = manager.to_dpld_e(varChange.from_, varIndex, diagramDpldDecrease);
         auto const diagramDpldIncrease = manager.dpld(
-          {varIndex, varChange.from, varChange.to},
+          {varIndex, varChange.from_, varChange.to_},
           dpld::type_3_increase(fValue),
           diagram
         );
         auto const diagramDpldIncreaseExtended
-          = manager.to_dpld_e(varChange.from, varIndex, diagramDpldIncrease);
+          = manager.to_dpld_e(varChange.from_, varIndex, diagramDpldIncrease);
         auto const oneCountDecrease
           = manager.satisfy_count(1, diagramDpldDecrease);
         auto const oneCountIncrease
@@ -826,16 +806,16 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
           fValue,
           fValue,
           varIndex,
-          varChange.from,
-          varChange.to
+          varChange.from_,
+          varChange.to_
         ));
         BOOST_TEST_MESSAGE(fmt::format(
           "idpld_type_3_increase f(<{} -> >={}) / x{}({} -> {})",
           fValue,
           fValue,
           varIndex,
-          varChange.from,
-          varChange.to
+          varChange.from_,
+          varChange.to_
         ));
         BOOST_TEST_MESSAGE(
           fmt::format("One count decrease = {}", oneCountDecrease)
@@ -843,22 +823,22 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
         BOOST_TEST_MESSAGE(
           fmt::format("One count increase = {}", oneCountIncrease)
         );
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldDecrease,
           diagramDpldDecrease
         ));
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldDecreaseExtended,
           diagramDpldDecreaseExtended
         ));
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldIncrease,
           diagramDpldIncrease
         ));
-        BOOST_REQUIRE(details::compare_dplds(
+        BOOST_REQUIRE(compare_dplds(
           manager,
           tableDpldIncreaseExtended,
           diagramDpldIncreaseExtended
@@ -868,8 +848,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
   }
 }
 
-tsl::system_description const system1 = tsl::system_description
-{
+std::array const systems { // NOLINT
+  tsl::system_description {
     .systemId_ = 1,
     .stateCount_ = 2,
     .componentCount_ = 5,
@@ -938,9 +918,8 @@ tsl::system_description const system1 = tsl::system_description
     },
 
     .floatingTolerance_ = 0.00001
+  }
 };
-
-std::array<tsl::system_description, 1> const systems {system1};
 
 BOOST_DATA_TEST_CASE(system_test, systems, system) {
   auto const table
@@ -1039,7 +1018,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system) {
       for (auto componentState = 1; componentState < domain; ++componentState) {
         auto const tableDpld = tsl::dpld(
           table,
-          {varIndex, componentState, componentState - 1},
+          {.index=varIndex, .from=componentState, .to=componentState - 1},
           tsl::type_3_decrease(systemState)
         );
         auto const diagramDpld = manager.dpld(
@@ -1072,7 +1051,7 @@ BOOST_DATA_TEST_CASE(system_test, systems, system) {
       for (auto componentState = 1; componentState < domain; ++componentState) {
         auto const tableDpld = tsl::dpld(
           table,
-          {varIndex, componentState, componentState - 1},
+          {.index=varIndex, .from=componentState, .to=componentState - 1},
           tsl::type_3_decrease(systemState)
         );
         auto const diagramDpld = manager.dpld(

@@ -12,7 +12,7 @@
 
 namespace teddy::tests {
 
-const std::array binary_plas = {
+const std::array binary_plas = { // NOLINT
   tsl::binary_pla_description {
     .id_desc_ = 1,
     .is_valid_ = true,
@@ -65,7 +65,7 @@ const std::array binary_plas = {
   }
 };
 
-const std::array<tsl::mvl_pla_description, 1> mvl_plas = {
+const std::array<tsl::mvl_pla_description, 1> mvl_plas = { // NOLINT
   tsl::mvl_pla_description {
     .id_desc_ = 1,
     .is_valid_ = true,
