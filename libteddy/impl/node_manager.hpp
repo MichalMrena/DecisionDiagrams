@@ -131,6 +131,9 @@ public:
   auto make_internal_node (int32 index, son_container sons) -> node_t *;
 
   [[nodiscard]]
+  auto make_internal_node_zdd (int32 index, son_container sons) -> node_t *;
+
+  [[nodiscard]]
   auto get_level (int32 index) const -> int32;
 
   [[nodiscard]]
@@ -484,6 +487,34 @@ auto node_manager<Degree, Domain>::make_internal_node(
     node_t *const son = sons[0];
     return son;
   }
+
+  // duplicate node:
+  unique_table<Degree> &table = uniqueTables_[as_uindex(index)];
+  auto const [existing, hash] = table.find(sons);
+  if (existing) {
+    this->for_each_son(existing, id_set_notmarked<Degree>);
+    return id_set_marked(existing);
+  }
+
+  // new unique node:
+  node_t *const newNode = this->make_new_node(index, TEDDY_MOVE(sons));
+  table.insert(newNode, hash);
+  this->for_each_son(newNode, id_inc_ref_count<Degree>);
+  this->for_each_son(newNode, id_set_notmarked<Degree>);
+
+  return id_set_marked(newNode);
+}
+
+template<class Degree, class Domain>
+auto node_manager<Degree, Domain>::make_internal_node_zdd(
+  int32 const index,
+  son_container sons
+) -> node_t * {
+  // redundant node:
+  // if (this->is_redundant(index, sons)) {
+  //   node_t *const son = sons[0];
+  //   return son;
+  // }
 
   // duplicate node:
   unique_table<Degree> &table = uniqueTables_[as_uindex(index)];
