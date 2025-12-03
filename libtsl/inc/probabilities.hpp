@@ -27,6 +27,6 @@ auto make_prob_matrix (
 
 }  // namespace teddy::tsl
 
-#include <libtsl/inc/probabilities.hpp>
+#include <libtsl/impl/probabilities.inl>
 
 #endif

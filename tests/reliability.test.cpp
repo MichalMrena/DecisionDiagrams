@@ -196,7 +196,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(probabilities, Fixture, Fixtures, Fixture) {
     = make_expression(Fixture::expr_cfg_, Fixture::rng_);
   auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  // auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  auto probs    = tsl::make_prob_matrix(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
   auto expected      = std::vector<double>(as_uindex(Fixture::state_count_));
@@ -230,7 +231,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(availabilities, Fixture, Fixtures, Fixture) {
     = make_expression(Fixture::expr_cfg_, Fixture::rng_);
   auto manager  = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto diagram  = tsl::make_diagram(expr, manager);
-  auto probs    = tsl::make_probabilities(manager, Fixture::rng_);
+  // auto probs    = tsl::make_probabilities(manager, Fixture::rng_);
+  auto probs    = tsl::make_prob_matrix(manager, Fixture::rng_);
   auto domains  = manager.get_domains();
   auto table    = tsl::truth_table(make_vector(expr, domains), domains);
   auto expected = std::vector<double>(as_uindex(Fixture::state_count_));
@@ -257,7 +259,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(unavailabilities, Fixture, Fixtures, Fixture) {
     = make_expression(Fixture::expr_cfg_, Fixture::rng_);
   auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  // auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  auto probs    = tsl::make_prob_matrix(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
   auto expected      = std::vector<double>(as_uindex(Fixture::state_count_));
@@ -353,7 +356,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     = make_expression(Fixture::expr_cfg_, Fixture::rng_);
   auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  // auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  auto probs    = tsl::make_prob_matrix(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
@@ -393,7 +397,8 @@ BOOST_FIXTURE_TEST_CASE_TEMPLATE(
     = make_expression(Fixture::expr_cfg_, Fixture::rng_);
   auto manager       = make_manager(Fixture::manager_cfg_, Fixture::rng_);
   auto const diagram = tsl::make_diagram(expr, manager);
-  auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  // auto const probs   = tsl::make_probabilities(manager, Fixture::rng_);
+  auto probs    = tsl::make_prob_matrix(manager, Fixture::rng_);
   auto const domains = manager.get_domains();
   auto const table   = tsl::truth_table(make_vector(expr, domains), domains);
 
