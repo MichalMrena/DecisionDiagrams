@@ -44,15 +44,23 @@ add_library(subproject-interface INTERFACE)
 
 target_compile_features(subproject-interface INTERFACE cxx_std_20)
 
-target_compile_options(
-    subproject-interface INTERFACE
-        "-Wall"
-        "-Wextra"
-        "-Wpedantic"
-        "-Wconversion"
-        "-Wsign-conversion"
-        "-Wshadow"
-)
+# Compiler-specific warning flags
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(
+        subproject-interface INTERFACE
+            "-Wall"
+            "-Wextra"
+            "-Wpedantic"
+            "-Wconversion"
+            "-Wsign-conversion"
+            "-Wshadow"
+    )
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(
+        subproject-interface INTERFACE
+            "/W4"
+    )
+endif()
 
 # Mold linker
 if(LIBTEDDY_USE_MOLD)

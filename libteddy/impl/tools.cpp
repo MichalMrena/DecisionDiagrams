@@ -32,8 +32,8 @@ TEDDY_DEF auto to_words(
   std::string_view::iterator in = str.begin();
   const std::string_view::iterator end = str.end();
   while (in != end) {
-    const std::string_view::iterator w_begin = find_if_not(in, end, is_delim);
-    const std::string_view::iterator w_end = find_if(w_begin, end, is_delim);
+    const std::string_view::iterator w_begin = teddy::tools::find_if_not(in, end, is_delim);
+    const std::string_view::iterator w_end = teddy::tools::find_if(w_begin, end, is_delim);
     if (w_begin != w_end) {
       words.emplace_back(w_begin, w_end);
     }

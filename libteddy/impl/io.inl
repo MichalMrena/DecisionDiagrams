@@ -130,7 +130,7 @@ auto io::from_vector(
 
       son_container sons = node_t::make_son_container(newDomain);
       for (int32 k = 0; k < newDomain; ++k) {
-        sons[k] = stack[as_uindex(ssize(stack) - newDomain + k)].node;
+        sons[k] = stack[as_uindex(static_cast<int64>(ssize(stack)) - newDomain + k)].node;
       }
       node_t *const newNode
         = manager.nodes_.make_internal_node(newIndex, TEDDY_MOVE(sons));

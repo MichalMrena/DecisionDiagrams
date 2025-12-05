@@ -1,0 +1,88 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ "master", "main", "devel" ]
+  pull_request:
+    branches: [ "master", "main", "devel" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            compiler: gcc
+            cpp_compiler: g++
+          - os: windows-latest
+            compiler: msvc
+            cpp_compiler: cl
+          - os: macos-latest
+            compiler: clang
+            cpp_compiler: clang++
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          libboost-test-dev \
+          libfmt-dev
+
+    # - name: Install dependencies (Windows)
+    #   if: matrix.os == 'windows-latest'
+    #   run: |
+    #     # Install vcpkg dependencies
+    #     vcpkg install boost-test:x64-windows fmt:x64-windows
+
+    - name: Install dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew update
+        brew install boost fmt cmake
+
+    - name: Configure CMake (Ubuntu/macOS)
+      if: matrix.os != 'windows-latest'
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Release \
+              -DLIBTEDDY_BUILD_TESTS=OFF \
+              -DLIBTEDDY_BUILD_EXAMPLES=ON \
+              -S . -B build
+
+    - name: Configure CMake (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        cmake -DCMAKE_BUILD_TYPE=Release `
+              -DLIBTEDDY_BUILD_TESTS=OFF `
+              -DLIBTEDDY_BUILD_EXAMPLES=ON `
+              -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_INSTALLATION_ROOT}/scripts/buildsystems/vcpkg.cmake" `
+              -S . -B build
+
+    - name: Build
+      run: cmake --build build --config Release -j4
+
+    # - name: Run tests
+    #   working-directory: build
+    #   run: ctest --output-on-failure --build-config Release
+
+    - name: Run example (readme)
+      if: matrix.os != 'windows-latest'
+      run: ./build/examples/readme
+
+    - name: Run example (readme) - Windows
+      if: matrix.os == 'windows-latest'
+      run: .\build\examples\Release\readme.exe
