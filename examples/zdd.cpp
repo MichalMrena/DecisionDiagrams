@@ -5,6 +5,9 @@
 int main()
 {
     teddy::zdd_manager manager(3, 1000, 100);
+    std::vector<int> v = {};
     
+    auto* d = manager.from_vector(v);
+
     return 0;
 }

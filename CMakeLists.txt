@@ -96,9 +96,9 @@ endif()
 #########
 if(LIBTEDDY_BUILD_TESTS)
     # NOTE: will be moved to libteddy-utils in the future
-    add_subdirectory(libtsl)
+    # add_subdirectory(libtsl)
 
-    enable_testing()
+    # enable_testing()
     add_subdirectory(tests)
 endif()
 

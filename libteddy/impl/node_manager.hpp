@@ -510,11 +510,11 @@ auto node_manager<Degree, Domain>::make_internal_node_zdd(
   int32 const index,
   son_container sons
 ) -> node_t * {
-  // redundant node:
-  // if (this->is_redundant(index, sons)) {
-  //   node_t *const son = sons[0];
-  //   return son;
-  // }
+  // true edge goes to 0-terminal:
+  if (sons[1] == this->get_terminal_node(0))  {
+    node_t *const son = sons[0];
+    return son;
+  }
 
   // duplicate node:
   unique_table<Degree> &table = uniqueTables_[as_uindex(index)];

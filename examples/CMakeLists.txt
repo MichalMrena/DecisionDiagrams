@@ -25,3 +25,5 @@ target_link_libraries(soft-x PRIVATE teddy subproject-interface)
 add_executable(zdd zdd.cpp)
 
 target_link_libraries(zdd PRIVATE teddy subproject-interface)
+
+target_compile_options(zdd PRIVATE -fdiagnostics-color=always)

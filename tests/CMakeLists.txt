@@ -35,3 +35,18 @@ add_test(
     NAME    teddy-test-reliability
     COMMAND libteddy-test --run_test=reliability
 )
+
+
+add_executable(
+    libteddy-test-zdd
+        zdd.test.cpp
+)
+
+target_compile_options(libteddy-test-zdd PRIVATE -fdiagnostics-color=always)
+
+target_link_libraries(
+    libteddy-test-zdd
+    PRIVATE teddy
+    PRIVATE ${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+    PRIVATE fmt::fmt
+)

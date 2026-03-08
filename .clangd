@@ -1,13 +1,27 @@
-InlayHints:
-  DeducedTypes: No
-  Designators: No
-  Enabled: Yes
-  ParameterNames: No
-
+# For clangd to pick mingw headers, remove for Linux and macOS
+CompileFlags:
+  Add:
+    - "--target=x86_64-w64-windows-gnu"
+ 
+Completion:
+  AllScopes: No
+  ArgumentLists: Delimiters
+  HeaderInsertion: Never
+  CodePatterns: None
+ 
 Diagnostics:
   UnusedIncludes: Strict
+  MissingIncludes: None
   Suppress: "pp_including_mainfile_in_preamble"
-
-# TODO rename TEDDY_NO_HEADER_ONLY to LIBTEDDY_NO_HEADER_ONLY
-CompileFlags:
-  Add: [-DTEDDY_NO_HEADER_ONLY, -DLIBTEDDY_SYMBOLIC_RELIABILITY]
+ 
+Hover:
+  ShowAKA: true
+ 
+InlayHints:
+  BlockEnd: true
+  Designators: false
+  Enabled: false
+  ParameterNames: false
+  DeducedTypes: false
+  DefaultArguments: false
+  TypeNameLimit: 24
