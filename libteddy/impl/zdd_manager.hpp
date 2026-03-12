@@ -6,12 +6,10 @@
 #include "libteddy/impl/node.hpp"
 #include <stack>
 #include <algorithm>
-#include <stdio.h>
 
-/*
-    TODO:
-    - first zdd rule which returns terminal can break shrink
-*/
+//TODO
+// fix can_shrink doesn't work well if terminal node is on stack
+// with only two levels, shrink works but with more doesnt
 
 namespace teddy
 {
@@ -41,11 +39,9 @@ public:
             return nullptr;
         }
 
-        diagram_t result;
-
         std::stack<node_t*> s;
         int p = 2;
-        int i = static_cast<int>(std::log2(vector.size()));
+        int i = static_cast<int>(std::log2(vector.size())) - 1;
         std::vector<node_t*> terminals = {m_nodes.make_terminal_node(0), m_nodes.make_terminal_node(1)};
         size_t pos = 0;
 
@@ -70,12 +66,23 @@ public:
         return s.top();
     }
 
+    auto evaluate(diagram_t const& diagram, const std::vector<int>& values) -> int32 {
+        node_t* node = diagram.unsafe_get_root();
+
+        while (not node->is_terminal()) {
+            int32 const index = node->get_index();
+            assert(m_nodes.is_valid_var_value(index, values[static_cast<uint32>(index)]));
+            node = node->get_son(values[static_cast<uint32>(index)]);
+         }
+
+        return node->get_value();
+    }
 
 
 private:
     node_manager<degrees::fixed<2>, domains::fixed<2>> m_nodes;
 
-    void shrink(std::stack<node_t*>& s) {
+    auto shrink(std::stack<node_t*>& s) -> void {
         while(true) {
             if (s.empty()) {
                 return;
@@ -86,10 +93,10 @@ private:
             }
 
             int i = s.top()->get_index();
-            if (i == 1) {
+            if (i == 0) {
                 return;
             }
-            
+
             int d = 2;
             if (!can_shrink(s, i, d)) {
                 return;
@@ -97,9 +104,6 @@ private:
 
             std::vector<node_t*> children;
             for (int x = 0; x < d; ++x) {
-                if (s.top()->get_index() != i) {
-                    return;
-                }
                 children.push_back(s.top());
                 s.pop();
             }
@@ -121,14 +125,34 @@ private:
             return false;
         }
 
-        std::stack<node_t*> temp = s;
+        std::vector<node_t*> temp;
+        bool has_terminal = false;
+        bool has_the_level = false;
 
-        for (int x = 0; x < d; ++x) {
-            if (temp.top()->get_index() != i) {
+        for (int x = 0; x < d; ++x){
+            auto* n = s.top();
+            s.pop();
+
+            temp.push_back(n);
+
+            if (n->is_terminal()) {
+                has_terminal = true;
+            }
+            else if (n->get_index() == i) {
+                has_the_level = true;
+            }
+            else {
+                for (auto it = temp.rbegin(); it != temp.rend(); ++it) {
+                    s.push(*it);
+                }
                 return false;
             }
-            temp.pop();
         }
+
+        for (auto it = temp.rbegin(); it != temp.rend(); ++it) {
+            s.push(*it);
+        }
+
         return true;
     }
 };
