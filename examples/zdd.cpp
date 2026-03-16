@@ -9,5 +9,7 @@ int main()
     
     auto* d = manager.from_vector(v);
 
+    manager.to_dot(d);
+
     return 0;
 }

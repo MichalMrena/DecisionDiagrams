@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <iterator>
+#include "libteddy/impl/node_manager.hpp"
 
 namespace teddy {
 
@@ -162,7 +163,7 @@ struct io {
    */
   template<class Degree, class Domain>
   static auto to_dot (
-    diagram_manager<Degree, Domain> const &manager,
+    node_manager<Degree, Domain> const &manager,
     std::ostream &out
   ) -> void;
 
@@ -178,9 +179,9 @@ struct io {
    */
   template<class Degree, class Domain>
   static auto to_dot (
-    diagram_manager<Degree, Domain> const &manager,
+    node_manager<Degree, Domain> const &manager,
     std::ostream &out,
-    diagram_manager<Degree, Domain>::diagram_t const &diagram
+    diagram<Degree> const &diagram
   ) -> void;
 };
 

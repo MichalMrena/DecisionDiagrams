@@ -12,12 +12,11 @@ namespace teddy::details {
 struct io_impl {
   template<class Degree, class Domain, class ForEachNode>
   static auto to_dot_graph_common (
-    diagram_manager<Degree, Domain> const &manager,
+    node_manager<Degree, Domain> const &manager,
     std::ostream &ost,
     ForEachNode forEach
   ) -> void {
-    using manager_t       = diagram_manager<Degree, Domain>;
-    using node_t          = typename manager_t::node_t;
+    using node_t = typename node_manager<Degree, Domain>::node_t;
 
     auto const make_label = [] (node_t *const node) {
       if (node->is_terminal()) {
@@ -54,7 +53,7 @@ struct io_impl {
 
     forEach([&] (node_t *const node) {
       // Create label.
-      int32 const level = manager.nodes_.get_level(node);
+      int32 const level = manager.get_level(node);
       labels.emplace_back(
         get_id_str(node) + R"( [label = ")" + make_label(node) + R"("];)"
       );
@@ -69,7 +68,7 @@ struct io_impl {
       rankGroups[as_uindex(level)].emplace_back(get_id_str(node) + ";");
 
       // Add arcs.
-      int32 const domain = manager.nodes_.get_domain(node);
+      int32 const domain = manager.get_domain(node);
       for (int32 k = 0; k < domain; ++k) {
         node_t *const son = node->get_son(k);
         if constexpr (std::is_same_v<Degree, degrees::fixed<2>>) {

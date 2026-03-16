@@ -4,8 +4,10 @@
 #include <libteddy/impl/diagram_manager.hpp>
 #include <libteddy/impl/node_manager.hpp>
 #include "libteddy/impl/node.hpp"
+#include <libteddy/inc/io.hpp>
 #include <stack>
 #include <algorithm>
+#include <iostream>
 
 //TODO
 // fix can_shrink doesn't work well if terminal node is on stack
@@ -76,6 +78,14 @@ public:
          }
 
         return node->get_value();
+    }
+
+    auto to_dot(diagram_t const& diagram) -> void {
+        io::to_dot(m_nodes, std::cout, diagram);
+    }
+
+    auto to_dot(node_t* node) -> void {
+        io::to_dot(m_nodes, std::cout, diagram_t(node));
     }
 
 
