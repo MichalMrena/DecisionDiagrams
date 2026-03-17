@@ -3,7 +3,7 @@
 
 #include <libtsl/inc/truth-table.hpp>
 
-#include <libteddy/impl/types.hpp>
+#include <teddy/impl/types.hpp>
 
 #include <vector>
 

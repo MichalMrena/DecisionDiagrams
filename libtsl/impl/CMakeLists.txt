@@ -1,4 +1,4 @@
-add_library(tsl SHARED
+add_library(tsl STATIC
   expressions.cpp
   generators.cpp
   iterators.cpp

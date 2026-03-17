@@ -1,47 +1,29 @@
 #!/bin/sh
 
 # Choose a compiler
-COMPILER=g++
+C_COMPILER=gcc
+CXX_COMPILER=g++
+BUILD_TYPE=Debug
 
 # Remove old build files
-rm -rf build/release
-rm -rf build/debug
+rm -rf build
 
 # Create build directories
-mkdir -p build/release
-mkdir -p build/debug
-
-# Generate release Makefile
-cd build/release
-cmake -DCMAKE_CXX_COMPILER=$COMPILER     \
-      -DCMAKE_BUILD_TYPE=Release         \
-      -DLIBTEDDY_BUILD_TESTS=ON          \
-      -DLIBTEDDY_BUILD_EXAMPLES=ON       \
-      -DLIBTEDDY_BUILD_EXPERIMENTS=OFF   \
-      -DLIBTEDDY_SYMBOLIC_RELIABILITY=ON \
-      -DLIBTEDDY_ARBITRARY_PRECISION=ON  \
-      -DLIBTEDDY_VERBOSE=OFF             \
-      -DLIBTEDDY_COLLECT_STATS=OFF       \
-      -DLIBTEDDY_USE_LIBCXX=OFF          \
-      -DLIBTEDDY_USE_MOLD=ON             \
-      ../..
+mkdir -p build
 
 # Generate debug Makefile
-cd ../debug
+cd build
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      -DCMAKE_CXX_COMPILER=$COMPILER     \
-      -DCMAKE_BUILD_TYPE=Debug           \
+      -DCMAKE_C_COMPILER=$C_COMPILER     \
+      -DCMAKE_CXX_COMPILER=$CXX_COMPILER \
+      -DCMAKE_BUILD_TYPE=$BUILD_TYPE     \
       -DLIBTEDDY_USE_SANITIZERS=ON       \
       -DLIBTEDDY_BUILD_TESTS=ON          \
       -DLIBTEDDY_BUILD_EXAMPLES=ON       \
-      -DLIBTEDDY_BUILD_EXPERIMENTS=OFF   \
       -DLIBTEDDY_SYMBOLIC_RELIABILITY=ON \
       -DLIBTEDDY_ARBITRARY_PRECISION=ON  \
       -DLIBTEDDY_VERBOSE=OFF             \
       -DLIBTEDDY_COLLECT_STATS=OFF       \
       -DLIBTEDDY_USE_LIBCXX=OFF          \
-      -DLIBTEDDY_USE_MOLD=ON             \
-      ../..
-
-# Move compile commnads out of the build directory
-mv compile_commands.json ../..
+      -DLIBTEDDY_USE_MOLD=OFF            \
+      ..

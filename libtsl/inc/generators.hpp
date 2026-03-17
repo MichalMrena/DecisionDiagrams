@@ -3,9 +3,9 @@
 
 #include <libtsl/inc/expressions.hpp>
 
-#include <libteddy/impl/probabilities.hpp>
-#include <libteddy/impl/symbolic_probabilities.hpp>
-#include <libteddy/inc/core.hpp>
+#include <teddy/impl/probabilities.hpp>
+#include <teddy/impl/symbolic_probabilities.hpp>
+#include <teddy/core.hpp>
 
 #include <array>
 #include <random>

@@ -1,6 +1,6 @@
 #include <libtsl/inc/expressions.hpp>
 
-#include <libteddy/impl/tools.hpp>
+#include <teddy/impl/tools.hpp>
 
 #include <algorithm>
 #include <cassert>

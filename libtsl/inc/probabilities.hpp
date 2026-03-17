@@ -1,7 +1,7 @@
 #ifndef LIBTEDDY_LIBTSL_PROBABILITIES_HPP
 #define LIBTEDDY_LIBTSL_PROBABILITIES_HPP
 
-#include <libteddy/inc/core.hpp>
+#include <teddy/core.hpp>
 
 #include <random>
 

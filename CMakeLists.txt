@@ -17,7 +17,7 @@ project(
     TeDDy
     VERSION     ${LIBTEDDY_VERSION}
     DESCRIPTION "C++ library for creating and manipulating decision diagrams"
-    LANGUAGES   CXX
+    LANGUAGES   C CXX
 )
 
 ###########
@@ -30,6 +30,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules")
 ###############
 add_subdirectory(libteddy)
 
+################
+# Dependencies #
+################
+add_subdirectory(dependencies)
+
 ###############
 # Subprojects #
 ###############
@@ -38,20 +43,20 @@ option(LIBTEDDY_USE_SANITIZERS    "Enable asan and ubsan" OFF)
 option(LIBTEDDY_USE_MOLD          "Use Mold linker"       OFF)
 option(LIBTEDDY_BUILD_TESTS       "Build tests"           OFF)
 option(LIBTEDDY_BUILD_EXAMPLES    "Build examples"        OFF)
-option(LIBTEDDY_BUILD_EXPERIMENTS "Build experiments"     OFF)
 
+# TODO (michal): rename to common-options, maybe even discard this and set is per-(sub)project
 add_library(subproject-interface INTERFACE)
 
 target_compile_features(subproject-interface INTERFACE cxx_std_20)
 
 target_compile_options(
     subproject-interface INTERFACE
-        "-Wall"
-        "-Wextra"
-        "-Wpedantic"
-        "-Wconversion"
-        "-Wsign-conversion"
-        "-Wshadow"
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Wconversion
+        -Wsign-conversion
+        -Wshadow
 )
 
 # Mold linker
@@ -99,7 +104,7 @@ if(LIBTEDDY_BUILD_TESTS)
     add_subdirectory(libtsl)
 
     enable_testing()
-    add_subdirectory(tests)
+    add_subdirectory(libteddy.tests)
 endif()
 
 ############
@@ -107,12 +112,4 @@ endif()
 ############
 if(LIBTEDDY_BUILD_EXAMPLES)
     add_subdirectory(examples)
-endif()
-
-###############
-# Experiments #
-###############
-if(LIBTEDDY_BUILD_EXPERIMENTS)
-    # NOTE: will be moved to standalone repo
-    add_subdirectory(experiments)
 endif()

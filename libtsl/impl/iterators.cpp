@@ -1,6 +1,6 @@
 #include <libtsl/inc/iterators.hpp>
 
-#include <libteddy/impl/tools.hpp>
+#include <teddy/impl/tools.hpp>
 
 #include <libtsl/inc/utilities.hpp>
 #include <libtsl/inc/expressions.hpp>

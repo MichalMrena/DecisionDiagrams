@@ -1,6 +1,6 @@
-#include <libteddy/inc/core.hpp>
-#include <libteddy/inc/io.hpp>
-#include <libteddy/inc/reliability.hpp>
+#include <teddy/core.hpp>
+#include <teddy/io.hpp>
+#include <teddy/reliability.hpp>
 #include <array>
 #include <cassert>
 #include <fstream>
