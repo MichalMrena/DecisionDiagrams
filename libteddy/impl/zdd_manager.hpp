@@ -5,22 +5,18 @@
 #include <libteddy/impl/node_manager.hpp>
 #include "libteddy/impl/node.hpp"
 #include <libteddy/inc/io.hpp>
-#include <stack>
-#include <algorithm>
 #include <iostream>
-
-//TODO
-// fix can_shrink doesn't work well if terminal node is on stack
-// with only two levels, shrink works but with more doesnt
 
 namespace teddy
 {
 
+#define DOMAIN_SIZE 2
+
 class zdd_manager
 {
 public:
-    using node_t = node_manager<degrees::fixed<2>, domains::fixed<2>>::node_t;
-    using diagram_t = diagram<degrees::fixed<2>>;
+    using node_t = node_manager<degrees::fixed<DOMAIN_SIZE>, domains::fixed<DOMAIN_SIZE>>::node_t;
+    using diagram_t = diagram<degrees::fixed<DOMAIN_SIZE>>;
 
     zdd_manager(
         int32 varCount,
@@ -36,36 +32,22 @@ public:
     ){
     }
 
-    auto from_vector(const std::vector<int> &vector) -> node_t* {
-        if (vector.empty() || vector.size() % 2 != 0) {
+    auto from_vector(const std::vector<int>& vector) -> node_t* {
+        if (vector.empty() || (vector.size() & (vector.size() - 1)) != 0) {
             return nullptr;
         }
 
-        std::stack<node_t*> s;
-        int p = 2;
-        int i = static_cast<int>(std::log2(vector.size())) - 1;
-        std::vector<node_t*> terminals = {m_nodes.make_terminal_node(0), m_nodes.make_terminal_node(1)};
+        std::vector<stack_frame> s;
         size_t pos = 0;
+        int const terminalLevel = m_nodes.get_var_count();
 
         while (pos < vector.size()) {
-            auto sons = node_t::make_son_container(p);
-            for (int x = 0; x < p; ++x) {
-                if (vector[pos] == 1) {
-                    sons[x] = terminals[1];
-                }
-                else {
-                    sons[x] = terminals[0];
-                }
-                ++pos;
-            }
-
-            node_t* u = m_nodes.make_internal_node_zdd(i, sons);
-            s.push(u);
-
+            node_t* u = m_nodes.make_terminal_node(vector[pos++]);
+            s.push_back({u, terminalLevel});
             shrink(s);
         }
 
-        return s.top();
+        return s.back().node;
     }
 
     auto evaluate(diagram_t const& diagram, const std::vector<int>& values) -> int32 {
@@ -90,80 +72,38 @@ public:
 
 
 private:
-    node_manager<degrees::fixed<2>, domains::fixed<2>> m_nodes;
+    node_manager<degrees::fixed<DOMAIN_SIZE>, domains::fixed<DOMAIN_SIZE>> m_nodes;
 
-    auto shrink(std::stack<node_t*>& s) -> void {
+    using stack_frame   = struct {
+        node_t* node;
+        int32 level;
+    };
+
+    auto shrink(std::vector<stack_frame>& s) -> void {
         while(true) {
-            if (s.empty()) {
+            if (s.size() < DOMAIN_SIZE) {
                 return;
             }
 
-            if (s.top()->is_terminal()) {
-                return;
-            }
+            int32 const currentLevel = s.back().level;
+            auto sons = node_t::make_son_container(DOMAIN_SIZE);
 
-            int i = s.top()->get_index();
-            if (i == 0) {
-                return;
-            }
+            for (int i = 0; i < DOMAIN_SIZE; ++i) {
+                auto const& frame = s[s.size() - DOMAIN_SIZE + static_cast<size_t>(i)];
 
-            int d = 2;
-            if (!can_shrink(s, i, d)) {
-                return;
-            }
-
-            std::vector<node_t*> children;
-            for (int x = 0; x < d; ++x) {
-                children.push_back(s.top());
-                s.pop();
-            }
-
-            std::ranges::reverse(children);
-            
-            auto sons = node_t::make_son_container(d);
-            for (size_t x = 0; x < children.size(); ++x) {
-                sons[static_cast<int64>(x)] = children[x];
-            }
-
-            node_t* u = m_nodes.make_internal_node_zdd(i - 1, sons);
-            s.push(u);
-        }
-    }
-
-    auto static can_shrink(std::stack<node_t*>& s, int i, int d) -> bool {
-        if (s.size() < static_cast<size_t>(d)) {
-            return false;
-        }
-
-        std::vector<node_t*> temp;
-        bool has_terminal = false;
-        bool has_the_level = false;
-
-        for (int x = 0; x < d; ++x){
-            auto* n = s.top();
-            s.pop();
-
-            temp.push_back(n);
-
-            if (n->is_terminal()) {
-                has_terminal = true;
-            }
-            else if (n->get_index() == i) {
-                has_the_level = true;
-            }
-            else {
-                for (auto it = temp.rbegin(); it != temp.rend(); ++it) {
-                    s.push(*it);
+                if (frame.level != currentLevel) {
+                    return;
                 }
-                return false;
+
+                sons[i] = frame.node;
             }
-        }
 
-        for (auto it = temp.rbegin(); it != temp.rend(); ++it) {
-            s.push(*it);
-        }
+            s.resize(s.size() - DOMAIN_SIZE);
 
-        return true;
+            int32 newIndex = m_nodes.get_index(currentLevel - 1);
+            node_t* u = m_nodes.make_internal_node_zdd(newIndex, sons);
+            s.push_back({u, currentLevel - 1});
+        }
     }
 };
 
