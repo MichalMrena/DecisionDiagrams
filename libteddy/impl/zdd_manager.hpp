@@ -7,6 +7,9 @@
 #include <libteddy/inc/io.hpp>
 #include <iostream>
 
+//TOOD
+// add caching
+
 namespace teddy
 {
 
@@ -32,6 +35,17 @@ public:
     ){
     }
 
+    /**
+    * @brief Constructs a ZDD from a truth table vector.
+    *
+    * The input vector represents function values for all assignments
+    * (its size must be a power of two). The function builds the ZDD
+    * bottom-up by creating terminal nodes and iteratively combining them
+    * into higher-level nodes using a stack-based reduction.
+    *
+    * @param vector Truth table values (0/1) in lexicographic order.
+    * @return Root node of the constructed ZDD, or nullptr if input is invalid.
+    */
     auto from_vector(const std::vector<int>& vector) -> node_t* {
         if (vector.empty() || (vector.size() & (vector.size() - 1)) != 0) {
             return nullptr;
@@ -48,6 +62,315 @@ public:
         }
 
         return s.back().node;
+    }
+
+    /**
+    * @brief Returns subsets of the family where variable `var` is present.
+    *
+    * Removes `var` from all resulting subsets (i.e., projects on var = 1).
+    */
+    auto subset1(node_t* node, int var) -> node_t* {
+        return subset1(diagram_t(node), var);
+    }
+    
+    /**
+    * @brief Internal recursive implementation of subset1.
+    */
+    auto subset1(diagram_t const& diagram, int var) -> node_t* {
+        node_t* root = diagram.unsafe_get_root();
+        if (root->is_terminal()) {
+            return m_nodes.make_terminal_node(0);
+        }
+
+        if (root->get_index() > var) {
+            return m_nodes.make_terminal_node(0);
+        }
+
+        if (root->get_index() == var) {
+            return root->get_son(1);
+        }
+
+        auto* low = subset1(diagram_t(root->get_son(0)), var);
+        auto* high = subset1(diagram_t(root->get_son(1)), var);
+
+        return get_node(root->get_index(), low, high);
+    }
+
+    /**
+    * @brief Returns subsets of the family where variable `var` is absent.
+    *
+    * Keeps only subsets that do not contain `var`.
+    */
+    auto subset0(node_t* node, int var) -> node_t* {
+        return subset0(diagram_t(node), var);
+    }
+
+    /**
+    * @brief Internal recursive implementation of subset0.
+    */
+    auto subset0(diagram_t const& diagram, int var) -> node_t* {
+        node_t* root = diagram.unsafe_get_root();
+        if (root->is_terminal()) {
+            return root;
+        }
+
+        if (root->get_index() > var) {
+            return root;
+        }
+
+        if (root->get_index() == var) {
+            return root->get_son(0);
+        }
+
+        auto* low = subset0(diagram_t(root->get_son(0)), var);
+        auto* high = subset0(diagram_t(root->get_son(1)), var);
+
+        return get_node(root->get_index(), low, high);
+    }
+
+    /**
+    * @brief Toggles presence of variable `var` in all subsets.
+    *
+    * If `var` is present in a subset, it is removed; otherwise, it is added.
+    */
+    auto change(node_t* node, int var) -> node_t* {
+        return change(diagram_t(node), var);
+    }
+
+    /**
+    * @brief Internal recursive implementation of change.
+    */
+    auto change(diagram_t const& diagram, int var) -> node_t* {
+        node_t* root = diagram.unsafe_get_root();
+
+        if (root->is_terminal()) {
+            if (root->get_value() == 0) {
+                return root;
+            }
+            
+            return get_node(var, m_nodes.make_terminal_node(0), m_nodes.make_terminal_node(1));
+        }
+
+        if (root->get_index() > var) {
+            return get_node(var, m_nodes.make_terminal_node(0), root);
+        }
+
+        if (root->get_index() == var) {
+            return get_node(var, root->get_son(1), root->get_son(0));
+        }
+
+        auto* low  = change(diagram_t(root->get_son(0)), var);
+        auto* high = change(diagram_t(root->get_son(1)), var);
+
+        return get_node(root->get_index(), low, high);
+    }
+
+    /**
+    * @brief Computes union of two ZDDs (set of sets).
+    *
+    * Result represents all subsets that are in either P or Q.
+    */
+    auto unification(node_t* P, node_t* Q) -> node_t* {
+        return unification(diagram_t(P), diagram_t(Q));
+    }
+
+    /**
+    * @brief Internal recursive implementation of union (ZDD apply).
+    */
+    auto unification(diagram_t const& dP, diagram_t const& dQ) -> node_t* {
+        node_t* P = dP.unsafe_get_root();
+        node_t* Q = dQ.unsafe_get_root();
+
+        // ∅ ∪ Q = Q
+        if (P->is_terminal() && P->get_value() == 0) {
+            return Q;
+        }
+        
+        // P ∪ ∅ = P
+        if (Q->is_terminal() && Q->get_value() == 0) {
+            return P;
+        }
+
+        // {∅} ∪ Q
+        if (P->is_terminal() && P->get_value() == 1) {
+            // {∅} ∪ {∅} = {∅}
+            if (Q->is_terminal()) {
+                return P;
+            }
+            
+            //add empty set to Q
+            //low = 1 (∅)
+            return get_node(Q->get_index(), m_nodes.make_terminal_node(1), Q->get_son(1));
+        }
+
+        // P ∪ {∅}  
+        if (Q->is_terminal() && Q->get_value() == 1) {
+            // {∅} ∪ {∅} = {∅}
+            if (P->is_terminal()) {
+                return Q;
+            }
+
+            return get_node(P->get_index(), m_nodes.make_terminal_node(1), P->get_son(1));
+        }
+
+        if (P == Q) {
+            return P;
+        }
+
+        int pIndex = get_index_safe(P);
+        int qIndex = get_index_safe(Q);
+
+        if (pIndex > qIndex) {
+            auto* low  = unification(diagram_t(P), diagram_t(get_low(Q)));
+            auto* high = get_high(Q);
+            return get_node(qIndex, low, high);
+        }
+
+        if (pIndex < qIndex) {
+            auto* low  = unification(diagram_t(get_low(P)), diagram_t(Q));
+            auto* high = get_high(P);
+            return get_node(pIndex, low, high);
+        }
+
+        auto* low  = unification(diagram_t(get_low(P)), diagram_t(get_low(Q)));
+        auto* high = unification(diagram_t(get_high(P)), diagram_t(get_high(Q)));
+
+        return get_node(pIndex, low, high);
+    }
+
+    /**
+    * @brief Computes intersection of two ZDDs.
+    *
+    * Result contains only subsets present in both P and Q.
+    */
+    auto intersect(node_t* P, node_t* Q) -> node_t* {
+        return intersect(diagram_t(P), diagram_t(Q));
+    }
+
+    /**
+    * @brief Internal recursive implementation of intersection.
+    */
+    auto intersect(diagram_t const& dP, diagram_t const& dQ) -> node_t* {
+        node_t* P = dP.unsafe_get_root();
+        node_t* Q = dQ.unsafe_get_root();
+
+        if ((P->is_terminal() && P->get_value() == 0) ||
+            (Q->is_terminal() && Q->get_value() == 0)) {
+            return m_nodes.make_terminal_node(0);
+        }
+
+        if (P->is_terminal() && P->get_value() == 1) {
+            return contains_empty(Q) ? P : m_nodes.make_terminal_node(0);
+        }
+
+        if (Q->is_terminal() && Q->get_value() == 1) {
+            return contains_empty(P) ? Q : m_nodes.make_terminal_node(0);
+        }
+
+        if (P == Q) {
+            return P;
+        }
+
+        int pIndex = get_index_safe(P);
+        int qIndex = get_index_safe(Q);
+
+
+        if (pIndex > qIndex) {
+            return intersect(diagram_t(get_low(P)), dQ);
+        }
+
+        if (pIndex < qIndex) {
+            return intersect(dP, diagram_t(get_low(Q)));
+        }
+
+        auto* low  = intersect(diagram_t(get_low(P)), diagram_t(get_low(Q)));
+        auto* high = intersect(diagram_t(get_high(P)), diagram_t(get_high(Q)));
+
+        return get_node(pIndex, low, high);
+    }
+
+    /**
+    * @brief Computes set difference P \ Q.
+    *
+    * Removes all subsets from P that are also present in Q.
+    */
+    auto difference(node_t* P, node_t* Q) -> node_t* {
+        return difference(diagram_t(P), diagram_t(Q));
+    }
+
+    /**
+    * @brief Internal recursive implementation of difference.
+    */
+    auto difference(diagram_t const& dP, diagram_t const& dQ) -> node_t* {
+        node_t* P = dP.unsafe_get_root();
+        node_t* Q = dQ.unsafe_get_root();
+
+        if (P->is_terminal() && P->get_value() == 0) {
+            return P;
+        }
+
+        if (Q->is_terminal() && Q->get_value() == 0) {
+            return P;
+        }
+
+        if (P->is_terminal() && P->get_value() == 1) {
+            return contains_empty(Q) ? m_nodes.make_terminal_node(0) : P;
+        }
+
+        if (Q->is_terminal() && Q->get_value() == 1) {
+            return remove_empty(P);
+        }
+
+        if (P == Q) {
+            return m_nodes.make_terminal_node(0);
+        }
+
+        int pIndex = get_index_safe(P);
+        int qIndex = get_index_safe(Q);
+
+        if (pIndex > qIndex) {
+            auto* low  = difference(diagram_t(get_low(P)), dQ);
+            auto* high = get_high(P);
+            return get_node(pIndex, low, high);
+        }
+
+        if (pIndex < qIndex) {
+            return difference(dP, diagram_t(get_low(Q)));
+        }
+
+        auto* low  = difference(diagram_t(get_low(P)), diagram_t(get_low(Q)));
+        auto* high = difference(diagram_t(get_high(P)), diagram_t(get_high(Q)));
+
+        return get_node(pIndex, low, high);
+    }
+
+    /**
+    * @brief Counts number of subsets represented by the ZDD.
+    *
+    * Each path to terminal 1 corresponds to one subset.
+    */
+    auto count(node_t* node) -> int64 {
+        return count(diagram_t(node));
+    }
+
+    /**
+    * @brief Internal recursive implementation of count.
+    */
+    auto count(diagram_t const& diagram) -> int64 {
+        node_t* node = diagram.unsafe_get_root();
+        if (node->is_terminal() && node->get_value() == 0) {
+            return 0;
+        }
+
+        if (node->is_terminal() && node->get_value() == 1) {
+            return 1;
+        }
+
+        return count(node->get_son(0)) + count(node->get_son(1));
+    }
+
+    auto evaluate(node_t* const node, const std::vector<int>& values) -> int32 {
+        return evaluate(diagram_t(node), values);
     }
 
     auto evaluate(diagram_t const& diagram, const std::vector<int>& values) -> int32 {
@@ -104,6 +427,51 @@ private:
             node_t* u = m_nodes.make_internal_node_zdd(newIndex, sons);
             s.push_back({u, currentLevel - 1});
         }
+    }
+
+    auto get_node(int index, node_t* low, node_t* high) -> node_t*
+    {
+        auto sons = node_t::make_son_container(DOMAIN_SIZE);
+        sons[0] = low;
+        sons[1] = high;
+
+        return m_nodes.make_internal_node_zdd(index, sons);
+    }
+
+    auto static get_low(node_t* n) -> node_t* {
+        if (n->is_terminal()) {
+             return n;
+        }
+        return n->get_son(0);
+    }
+
+    auto get_high(node_t* n) -> node_t* {
+        if (n->is_terminal()) {
+            return m_nodes.make_terminal_node(0);
+        }
+        return n->get_son(1);
+    }
+
+    auto static get_index_safe(node_t* n) -> int {
+        return n->is_terminal() ? INT32_MAX : n->get_index();
+    }
+
+    auto static contains_empty(node_t* n) -> bool {
+        while (!n->is_terminal()) {
+            n = n->get_son(0);
+        }
+        return n->get_value() == 1;
+    }
+
+    auto remove_empty(node_t* n) -> node_t* {
+        if (n->is_terminal()) {
+            return m_nodes.make_terminal_node(0);
+        }
+
+        auto* low  = remove_empty(n->get_son(0));
+        auto* high = n->get_son(1);
+
+        return get_node(n->get_index(), low, high);
     }
 };
 
