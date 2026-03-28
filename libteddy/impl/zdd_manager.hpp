@@ -3,24 +3,35 @@
 
 #include <libteddy/impl/diagram_manager.hpp>
 #include <libteddy/impl/node_manager.hpp>
-#include "libteddy/impl/node.hpp"
+#include <libteddy/impl/node.hpp>
 #include <libteddy/inc/io.hpp>
 #include <iostream>
+#include <libteddy/impl/operators.hpp>
 
 //TOOD
-// add caching
+// add caching for subset1, subset0, change
 
 namespace teddy
 {
 
 #define DOMAIN_SIZE 2
 
+namespace ops {
+    struct ZDD_UNION : details::operation_info<101, true> {};
+    struct ZDD_INTERSECT : details::operation_info<102, true> {};
+    struct ZDD_DIFFERENCE : details::operation_info<103, false> {};
+    struct ZDD_CHANGE : details::operation_info<104, false> {};
+    struct ZDD_SUBSET1 : details::operation_info<105, false> {};
+    struct ZDD_SUBSET0 : details::operation_info<106, false> {};
+    struct ZDD_COUNT : details::operation_info<107, false> {};
+} //namespace ops
+
 class zdd_manager
 {
 public:
     using node_t = node_manager<degrees::fixed<DOMAIN_SIZE>, domains::fixed<DOMAIN_SIZE>>::node_t;
     using diagram_t = diagram<degrees::fixed<DOMAIN_SIZE>>;
-
+    
     zdd_manager(
         int32 varCount,
         int64 nodePoolSize,
@@ -181,39 +192,55 @@ public:
         node_t* P = dP.unsafe_get_root();
         node_t* Q = dQ.unsafe_get_root();
 
+        auto* cached = m_nodes.cache_find<ops::ZDD_UNION>(P, Q);
+
+        if (cached) { //NOLINT
+            return cached;
+        }
+
         // ∅ ∪ Q = Q
         if (P->is_terminal() && P->get_value() == 0) {
+            m_nodes.cache_put<ops::ZDD_UNION>(Q, P, Q);
             return Q;
         }
         
         // P ∪ ∅ = P
         if (Q->is_terminal() && Q->get_value() == 0) {
+            m_nodes.cache_put<ops::ZDD_UNION>(P, P, Q);
             return P;
         }
 
         // {∅} ∪ Q
+        //optimizaion for the common case of union with empty set - if P is {∅}, we can just add empty set to Q without recursion
         if (P->is_terminal() && P->get_value() == 1) {
             // {∅} ∪ {∅} = {∅}
             if (Q->is_terminal()) {
+                m_nodes.cache_put<ops::ZDD_UNION>(P, P, Q);
                 return P;
             }
             
             //add empty set to Q
             //low = 1 (∅)
-            return get_node(Q->get_index(), m_nodes.make_terminal_node(1), Q->get_son(1));
+            auto* result = get_node(Q->get_index(), m_nodes.make_terminal_node(1), Q->get_son(1));
+            m_nodes.cache_put<ops::ZDD_UNION>(result, P, Q);
+            return result;
         }
 
         // P ∪ {∅}  
         if (Q->is_terminal() && Q->get_value() == 1) {
             // {∅} ∪ {∅} = {∅}
             if (P->is_terminal()) {
+                m_nodes.cache_put<ops::ZDD_UNION>(Q, P, Q);
                 return Q;
             }
 
-            return get_node(P->get_index(), m_nodes.make_terminal_node(1), P->get_son(1));
+            auto* result = get_node(P->get_index(), m_nodes.make_terminal_node(1), P->get_son(1));
+            m_nodes.cache_put<ops::ZDD_UNION>(result, P, Q);
+            return result;
         }
 
         if (P == Q) {
+            m_nodes.cache_put<ops::ZDD_UNION>(P, P, Q);
             return P;
         }
 
@@ -223,19 +250,27 @@ public:
         if (pIndex > qIndex) {
             auto* low  = unification(diagram_t(P), diagram_t(get_low(Q)));
             auto* high = get_high(Q);
-            return get_node(qIndex, low, high);
+            auto* result = get_node(qIndex, low, high);
+            m_nodes.cache_put<ops::ZDD_UNION>(result, P, Q);
+
+            return result;
         }
 
         if (pIndex < qIndex) {
             auto* low  = unification(diagram_t(get_low(P)), diagram_t(Q));
             auto* high = get_high(P);
-            return get_node(pIndex, low, high);
+            auto* result = get_node(pIndex, low, high);
+            m_nodes.cache_put<ops::ZDD_UNION>(result, P, Q);
+
+            return result;
         }
 
         auto* low  = unification(diagram_t(get_low(P)), diagram_t(get_low(Q)));
         auto* high = unification(diagram_t(get_high(P)), diagram_t(get_high(Q)));
+        auto* result = get_node(pIndex, low, high);
+        m_nodes.cache_put<ops::ZDD_UNION>(result, P, Q);
 
-        return get_node(pIndex, low, high);
+        return result;
     }
 
     /**
@@ -254,39 +289,61 @@ public:
         node_t* P = dP.unsafe_get_root();
         node_t* Q = dQ.unsafe_get_root();
 
+        auto* cached = m_nodes.cache_find<ops::ZDD_INTERSECT>(P, Q);
+        if (cached) { //NOLINT
+            return cached;
+        }
+
         if ((P->is_terminal() && P->get_value() == 0) ||
             (Q->is_terminal() && Q->get_value() == 0)) {
-            return m_nodes.make_terminal_node(0);
+            auto* result = m_nodes.make_terminal_node(0);
+            m_nodes.cache_put<ops::ZDD_INTERSECT>(result, P, Q);
+
+            return result;
         }
 
         if (P->is_terminal() && P->get_value() == 1) {
-            return contains_empty(Q) ? P : m_nodes.make_terminal_node(0);
+            auto* result = contains_empty(Q) ? P : m_nodes.make_terminal_node(0);
+            m_nodes.cache_put<ops::ZDD_INTERSECT>(result, P, Q);
+
+            return result;
         }
 
         if (Q->is_terminal() && Q->get_value() == 1) {
-            return contains_empty(P) ? Q : m_nodes.make_terminal_node(0);
+            auto* result = contains_empty(P) ? Q : m_nodes.make_terminal_node(0);
+            m_nodes.cache_put<ops::ZDD_INTERSECT>(result, P, Q);
+
+            return result;
         }
 
         if (P == Q) {
+            m_nodes.cache_put<ops::ZDD_INTERSECT>(P, P, Q);
             return P;
         }
 
         int pIndex = get_index_safe(P);
         int qIndex = get_index_safe(Q);
 
-
         if (pIndex > qIndex) {
-            return intersect(diagram_t(get_low(P)), dQ);
+            auto* result = intersect(diagram_t(get_low(P)), dQ);
+            m_nodes.cache_put<ops::ZDD_INTERSECT>(result, P, Q);
+
+            return result;
         }
 
         if (pIndex < qIndex) {
-            return intersect(dP, diagram_t(get_low(Q)));
+            auto* result = intersect(dP, diagram_t(get_low(Q)));
+            m_nodes.cache_put<ops::ZDD_INTERSECT>(result, P, Q);
+
+            return result;
         }
 
         auto* low  = intersect(diagram_t(get_low(P)), diagram_t(get_low(Q)));
         auto* high = intersect(diagram_t(get_high(P)), diagram_t(get_high(Q)));
+        auto* result = get_node(pIndex, low, high);
+        m_nodes.cache_put<ops::ZDD_INTERSECT>(result, P, Q);
 
-        return get_node(pIndex, low, high);
+        return result;
     }
 
     /**
@@ -305,24 +362,39 @@ public:
         node_t* P = dP.unsafe_get_root();
         node_t* Q = dQ.unsafe_get_root();
 
+        auto* cached = m_nodes.cache_find<ops::ZDD_DIFFERENCE>(P, Q);
+        if (cached) { //NOLINT
+            return cached;
+        }
+
         if (P->is_terminal() && P->get_value() == 0) {
+            m_nodes.cache_put<ops::ZDD_DIFFERENCE>(P, P, Q);
             return P;
         }
 
         if (Q->is_terminal() && Q->get_value() == 0) {
+            m_nodes.cache_put<ops::ZDD_DIFFERENCE>(P, P, Q);
             return P;
         }
 
         if (P->is_terminal() && P->get_value() == 1) {
-            return contains_empty(Q) ? m_nodes.make_terminal_node(0) : P;
+            auto* result = contains_empty(Q) ? m_nodes.make_terminal_node(0) : P;
+            m_nodes.cache_put<ops::ZDD_DIFFERENCE>(result, P, Q);
+
+            return result;
         }
 
         if (Q->is_terminal() && Q->get_value() == 1) {
-            return remove_empty(P);
+            auto* result = remove_empty(P);
+            m_nodes.cache_put<ops::ZDD_DIFFERENCE>(result, P, Q);
+
+            return result;
         }
 
         if (P == Q) {
-            return m_nodes.make_terminal_node(0);
+            auto* result = m_nodes.make_terminal_node(0);
+            m_nodes.cache_put<ops::ZDD_DIFFERENCE>(result, P, Q);
+            return result;
         }
 
         int pIndex = get_index_safe(P);
@@ -331,17 +403,25 @@ public:
         if (pIndex > qIndex) {
             auto* low  = difference(diagram_t(get_low(P)), dQ);
             auto* high = get_high(P);
-            return get_node(pIndex, low, high);
+            auto* result = get_node(pIndex, low, high);
+            m_nodes.cache_put<ops::ZDD_DIFFERENCE>(result, P, Q);
+
+            return result;
         }
 
         if (pIndex < qIndex) {
-            return difference(dP, diagram_t(get_low(Q)));
+            auto* result = difference(dP, diagram_t(get_low(Q)));
+            m_nodes.cache_put<ops::ZDD_DIFFERENCE>(result, P, Q);
+            
+            return result;
         }
 
         auto* low  = difference(diagram_t(get_low(P)), diagram_t(get_low(Q)));
         auto* high = difference(diagram_t(get_high(P)), diagram_t(get_high(Q)));
+        auto* result = get_node(pIndex, low, high);
+        m_nodes.cache_put<ops::ZDD_DIFFERENCE>(result, P, Q);
 
-        return get_node(pIndex, low, high);
+        return result;
     }
 
     /**

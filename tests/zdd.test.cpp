@@ -162,6 +162,18 @@ BOOST_DATA_TEST_CASE(from_vector_correctness, zdd_vectors, test_desc) { //NOLINT
   }
 }
 
+// v = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v subset1 x1 = {
+//   {x2},
+//   {x0, x2}
+// }
+// v subset0 x1 = {
+//   {x0}
+// }
 BOOST_AUTO_TEST_CASE(subset_basic) {
   std::vector<int> v = {0,0,0,1,1,0,0,1};
   teddy::zdd_manager manager(3, 1000, 100);
@@ -184,6 +196,17 @@ BOOST_AUTO_TEST_CASE(subset_basic) {
   BOOST_CHECK_EQUAL(manager.evaluate(s0, {0,1,0}), 0);
 }
 
+// v = {
+//   {x1},
+//   {x0}
+// }
+// v subset1 x5 = {
+//   {}
+// }
+// v subset0 x5 = {
+//   {x1},
+//   {x0}
+// }
 BOOST_AUTO_TEST_CASE(subset_variable_not_present) {
   std::vector<int> v = {0,1,1,0};
   teddy::zdd_manager manager(2, 1000, 100);
@@ -201,6 +224,18 @@ BOOST_AUTO_TEST_CASE(subset_variable_not_present) {
   BOOST_CHECK_EQUAL(manager.evaluate(s0, {1,0}), 1);
 }
 
+// v = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v subset1 x1 = {
+//   {x2},
+//   {x0, x2}
+// }
+// v subset0 x1 = {
+//   {x0}
+// }
 BOOST_AUTO_TEST_CASE(subset_partition_property) {
   std::vector<int> v = {0,0,0,1,1,0,0,1};
   teddy::zdd_manager manager(3, 1000, 100);
@@ -230,6 +265,16 @@ BOOST_AUTO_TEST_CASE(subset_partition_property) {
   }
 }
 
+// v = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v change x2 = {
+//   {x1},
+//   {x0, x2},
+//   {x0, x1}
+// }
 BOOST_AUTO_TEST_CASE(change_basic) {
   std::vector<int> v = {0,0,0,1,1,0,0,1};
   teddy::zdd_manager manager(3, 1000, 100);
@@ -244,6 +289,21 @@ BOOST_AUTO_TEST_CASE(change_basic) {
   BOOST_CHECK_EQUAL(manager.evaluate(changed, {1,1,0}), 1); // {x0,x1}
 }
 
+// v = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v change x1 = {
+//   {x2},
+//   {x0, x1},
+//   {x0, x2}
+// }
+// c1 change x1 = {
+//   {x1,x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
 BOOST_AUTO_TEST_CASE(change_involution) {
   std::vector<int> v = {0,0,0,1,1,0,0,1};
   teddy::zdd_manager manager(3, 1000, 100);
@@ -268,6 +328,22 @@ BOOST_AUTO_TEST_CASE(change_involution) {
   }
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1}
+// }
+// v1 union v2 = {
+//   {x2},
+//   {x1},
+//   {x1,x2},
+//   {x0},
+//   {x0,x1,x2}
+// }
 BOOST_AUTO_TEST_CASE(union_basic) {
   std::vector<int> v1 = {0,0,0,1,1,0,0,1};
   std::vector<int> v2 = {0,1,1,0,0,0,0,0};
@@ -286,27 +362,46 @@ BOOST_AUTO_TEST_CASE(union_basic) {
   }
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+// }
+// v1 union v2 && v2 union v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
 BOOST_AUTO_TEST_CASE(union_with_zero) {
-  std::vector<int> v = {0,0,0,1,1,0,0,1};
-  std::vector<int> zero(8, 0);
+  std::vector<int> v1 = {0,0,0,1,1,0,0,1};
+  std::vector<int> v2(8, 0);
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* d = manager.from_vector(v);
-  auto* z = manager.from_vector(zero);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* u1 = manager.unification(d, z);
-  auto* u2 = manager.unification(z, d);
+  auto* u1 = manager.unification(d1, d2);
+  auto* u2 = manager.unification(d2, d1);
 
   for (int i = 0; i < 8; ++i) {
-    if (v[i] == 1) {
+    if (v1[i] == 1) {
       auto input = index_to_input(i, 3);
       BOOST_CHECK_EQUAL(manager.evaluate(u1, input), 1);
       BOOST_CHECK_EQUAL(manager.evaluate(u2, input), 1);
     }
   }
 }
-
+// v = {
+//   {x2},
+//   {x1}
+// }
+// v union v = {
+//   {x2},
+//   {x1}
+// }
 BOOST_AUTO_TEST_CASE(union_idempotent) {
   std::vector<int> v = {0,1,1,0,0,0,0,0};
 
@@ -323,6 +418,22 @@ BOOST_AUTO_TEST_CASE(union_idempotent) {
   }
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1}
+// }
+// v1 union v2 && v2 union v1 = {
+//   {x2},
+//   {x1},
+//   {x1,x2},
+//   {x0},
+//   {x0,x1,x2}
+// }
 BOOST_AUTO_TEST_CASE(union_commutative) {
   std::vector<int> v1 = {0,0,0,1,1,0,0,1};
   std::vector<int> v2 = {0,1,1,0,0,0,0,0};
@@ -344,48 +455,88 @@ BOOST_AUTO_TEST_CASE(union_commutative) {
   }
 }
 
+// a = {
+//   {x2},
+//   {x1, x2}
+// }
+// b = {
+//   {x1}
+// }
+// c = {
+//   {x0}
+// }
+// (a union b) union c && a union (b union c) = {
+//   {x2},
+//   {x1,x2},
+//   {x1},
+//   {x0}
+// }
 BOOST_AUTO_TEST_CASE(union_associative) {
-  std::vector<int> a = {0,1,0,1,0,0,0,0};
-  std::vector<int> b = {0,0,1,0,0,0,0,0};
-  std::vector<int> c = {0,0,0,0,1,0,0,0};
+  std::vector<int> v1 = {0,1,0,1,0,0,0,0};
+  std::vector<int> v2 = {0,0,1,0,0,0,0,0};
+  std::vector<int> v3 = {0,0,0,0,1,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
-  auto* C = manager.from_vector(c);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
+  auto* d3 = manager.from_vector(v3);
 
-  auto* left  = manager.unification(manager.unification(A,B), C);
-  auto* right = manager.unification(A, manager.unification(B,C));
+  auto* u1  = manager.unification(manager.unification(d1,d2), d3);
+  auto* u2 = manager.unification(d1, manager.unification(d2,d3));
 
   for (uint32_t i = 0; i < 8; ++i) {
-    if (a[i] == 1 || b[i] == 1 || c[i] == 1) {
+    if (v1[i] == 1 || v2[i] == 1 || v3[i] == 1) {
       auto input = index_to_input(i, 3);
-      BOOST_CHECK_EQUAL(manager.evaluate(left, input), 1);
-      BOOST_CHECK_EQUAL(manager.evaluate(right, input), 1);
+      BOOST_CHECK_EQUAL(manager.evaluate(u1, input), 1);
+      BOOST_CHECK_EQUAL(manager.evaluate(u2, input), 1);
     }
   }
 }
 
+// v1 = {
+//   0
+// }
+// v2 = {
+//   {x1, x2}
+// }
+// v1 union v2 = {
+//   0,
+//   {x1,x2}
+// }
 BOOST_AUTO_TEST_CASE(union_with_one_terminal) {
-  std::vector<int> one = {1,0,0,0,0,0,0,0};
-  std::vector<int> v   = {0,0,0,1,0,0,0,0};
+  std::vector<int> v1 = {1,0,0,0,0,0,0,0};
+  std::vector<int> v2   = {0,0,0,1,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* d1 = manager.from_vector(one);
-  auto* d2 = manager.from_vector(v);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
   auto* u = manager.unification(d1, d2);
 
   for (uint32_t i = 0; i < 8; ++i) {
-    if (one[i] == 1 || v[i] == 1) {
+    if (v1[i] == 1 || v2[i] == 1) {
       auto input = index_to_input(i, 3);
       BOOST_CHECK_EQUAL(manager.evaluate(u, input), 1);
     }
   }
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1, x2},
+//   {x0, x1, x2}
+// }
+// v1 intersect v2 = {
+//   {x1,x2},
+//   {x0,x1,x2}
+// }
 BOOST_AUTO_TEST_CASE(intersect_basic) {
   std::vector<int> v1 = {0,0,0,1,1,0,0,1};
   std::vector<int> v2 = {0,1,0,1,0,0,0,1};
@@ -405,16 +556,24 @@ BOOST_AUTO_TEST_CASE(intersect_basic) {
   }
 }
 
+// a = {
+//   {x2}
+// }
+// b = {
+//   {x1}
+// }
+// a intersect b = {
+// }
 BOOST_AUTO_TEST_CASE(intersect_disjoint) {
-  std::vector<int> a = {0,1,0,0,0,0,0,0}; // {001}
-  std::vector<int> b = {0,0,1,0,0,0,0,0}; // {010}
+  std::vector<int> v1 = {0,1,0,0,0,0,0,0};
+  std::vector<int> v2 = {0,0,1,0,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* I = manager.intersect(A, B);
+  auto* I = manager.intersect(d1, d2);
 
   for (uint32_t i = 0; i < 8; ++i) {
     auto input = index_to_input(i, 3);
@@ -422,6 +581,14 @@ BOOST_AUTO_TEST_CASE(intersect_disjoint) {
   }
 }
 
+// v = {
+//   {x2},
+//   {x1, x2}
+// }
+// v intersect v = {
+//   {x2},
+//   {x1, x2}
+// }
 BOOST_AUTO_TEST_CASE(intersect_idempotent) {
   std::vector<int> v = {0,1,0,1,0,0,0,0};
 
@@ -438,6 +605,20 @@ BOOST_AUTO_TEST_CASE(intersect_idempotent) {
   }
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1, x2},
+//   {x0, x1, x2}
+// }
+// v1 intersect v2 && v2 intersect v1 = {
+//   {x1,x2},
+//   {x0,x1,x2}
+// }
 BOOST_AUTO_TEST_CASE(intersect_commutative) {
   std::vector<int> v1 = {0,0,0,1,1,0,0,1};
   std::vector<int> v2 = {0,1,0,1,0,0,0,1};
@@ -460,41 +641,66 @@ BOOST_AUTO_TEST_CASE(intersect_commutative) {
   }
 }
 
+// v1 = {
+//   {x2},
+//   {x1, x2}
+// }
+// v2 = {
+//   {x1},
+//   {x1, x2}
+// }
+// v3 = {
+//   {x1, x2}
+// }
+// (v1 intersect v2) intersect v3 && v1 intersect (v2 intersect v3) = {
+//   {x1,x2}
+// }
 BOOST_AUTO_TEST_CASE(intersect_associative) {
-  std::vector<int> a = {0,1,0,1,0,0,0,0};
-  std::vector<int> b = {0,0,1,1,0,0,0,0};
-  std::vector<int> c = {0,0,0,1,0,0,0,0};
+  std::vector<int> v1 = {0,1,0,1,0,0,0,0};
+  std::vector<int> v2 = {0,0,1,1,0,0,0,0};
+  std::vector<int> v3 = {0,0,0,1,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
-  auto* C = manager.from_vector(c);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
+  auto* d3 = manager.from_vector(v3);
 
-  auto* left  = manager.intersect(manager.intersect(A,B), C);
-  auto* right = manager.intersect(A, manager.intersect(B,C));
+  auto* i1  = manager.intersect(manager.intersect(d1,d2), d3);
+  auto* i2 = manager.intersect(d1, manager.intersect(d2,d3));
 
   for (int i = 0; i < 8; ++i) {
     auto input = index_to_input(i, 3);
 
     BOOST_CHECK_EQUAL(
-      manager.evaluate(left, input),
-      manager.evaluate(right, input)
+      manager.evaluate(i1, input),
+      manager.evaluate(i2, input)
     );
   }
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//
+// }
+// v1 intersect v2 && v2 intersect v1 = {
+//
+// }
 BOOST_AUTO_TEST_CASE(intersect_with_zero) {
-  std::vector<int> v = {0,0,0,1,1,0,0,1};
-  std::vector<int> zero(8, 0);
+  std::vector<int> v1 = {0,0,0,1,1,0,0,1};
+  std::vector<int> v2(8, 0);
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* d = manager.from_vector(v);
-  auto* z = manager.from_vector(zero);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* i1 = manager.intersect(d, z);
-  auto* i2 = manager.intersect(z, d);
+  auto* i1 = manager.intersect(d1, d2);
+  auto* i2 = manager.intersect(d2, d1);
 
   for (int i = 0; i < 8; ++i) {
     auto input = index_to_input(i, 3);
@@ -504,144 +710,237 @@ BOOST_AUTO_TEST_CASE(intersect_with_zero) {
   }
 }
 
+// v1 = {
+//   0
+// }
+// v2 = {
+//  {x1, x2}
+// }
+// v1 intersect v2 = {
+//
+// }
 BOOST_AUTO_TEST_CASE(intersect_with_one_terminal) {
-  std::vector<int> one = {1,0,0,0,0,0,0,0};
-  std::vector<int> v   = {0,0,0,1,0,0,0,0};
+  std::vector<int> v1 = {1,0,0,0,0,0,0,0};
+  std::vector<int> v2   = {0,0,0,1,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* d1 = manager.from_vector(one);
-  auto* d2 = manager.from_vector(v);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
   auto* i = manager.intersect(d1, d2);
 
   BOOST_CHECK_EQUAL(manager.count(i), 0);
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1, x2},
+//   {x0, x1, x2}
+// }
+// v1 diff v2 = {
+//   {x0}
+// }
 BOOST_AUTO_TEST_CASE(difference_basic) {
-  std::vector<int> v1 = {0,0,0,1,1,0,0,1}; // {3,4,7}
-  std::vector<int> v2 = {0,1,0,1,0,0,0,1}; // {1,3,7}
+  std::vector<int> v1 = {0,0,0,1,1,0,0,1};
+  std::vector<int> v2 = {0,1,0,1,0,0,0,1};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
   auto* d1 = manager.from_vector(v1);
   auto* d2 = manager.from_vector(v2);
 
-  auto* d = manager.difference(d1, d2);
+  auto* diff = manager.difference(d1, d2);
 
   std::vector<int> expected_idx = {4};
 
   for (int idx : expected_idx) {
     auto input = index_to_input(idx, 3);
-    BOOST_CHECK_EQUAL(manager.evaluate(d, input), 1);
+    BOOST_CHECK_EQUAL(manager.evaluate(diff, input), 1);
   }
 }
 
+// v1 = {
+//   {x2},
+// }
+// v2 = {
+//   {x1}
+// }
+// v1 diff v2 = {
+//   {x2}
+// }
 BOOST_AUTO_TEST_CASE(difference_disjoint) {
-  std::vector<int> a = {0,1,0,0,0,0,0,0}; // {1}
-  std::vector<int> b = {0,0,1,0,0,0,0,0}; // {2}
+  std::vector<int> v1 = {0,1,0,0,0,0,0,0};
+  std::vector<int> v2 = {0,0,1,0,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* D = manager.difference(A, B);
+  auto* diff = manager.difference(d1, d2);
 
   auto input = index_to_input(1, 3);
-  BOOST_CHECK_EQUAL(manager.evaluate(D, input), 1);
+  BOOST_CHECK_EQUAL(manager.evaluate(diff, input), 1);
 }
 
+// v = {
+//   {x2},
+//   {x1, x2}
+// }
+// v diff v = {
+//
+// }
 BOOST_AUTO_TEST_CASE(difference_idempotent) {
   std::vector<int> v = {0,1,0,1,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
   auto* d = manager.from_vector(v);
-  auto* res = manager.difference(d, d);
+  auto* diff = manager.difference(d, d);
 
   for (int i = 0; i < 8; ++i) {
     auto input = index_to_input(i, 3);
-    BOOST_CHECK_EQUAL(manager.evaluate(res, input), 0);
+    BOOST_CHECK_EQUAL(manager.evaluate(diff, input), 0);
   }
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   
+// }
+// v1 diff v2 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
 BOOST_AUTO_TEST_CASE(difference_with_zero) {
-  std::vector<int> v = {0,0,0,1,1,0,0,1};
-  std::vector<int> zero(8, 0);
-
-  teddy::zdd_manager manager(3, 1000, 100);
-
-  auto* d = manager.from_vector(v);
-  auto* z = manager.from_vector(zero);
-
-  auto* res = manager.difference(d, z);
-
-  for (int i = 0; i < 8; ++i) {
-    auto input = index_to_input(i, 3);
-
-    if (v[i] == 1) {
-      BOOST_CHECK_EQUAL(manager.evaluate(res, input), 1);
-    }
-  }
-}
-
-BOOST_AUTO_TEST_CASE(difference_remove_all) {
-  std::vector<int> v1 = {0,1,0,1,0,0,0,0}; // {1,3}
-  std::vector<int> v2 = {0,1,0,1,0,0,0,0}; // {1,3}
+  std::vector<int> v1 = {0,0,0,1,1,0,0,1};
+  std::vector<int> v2(8, 0);
 
   teddy::zdd_manager manager(3, 1000, 100);
 
   auto* d1 = manager.from_vector(v1);
   auto* d2 = manager.from_vector(v2);
 
-  auto* res = manager.difference(d1, d2);
+  auto* diff = manager.difference(d1, d2);
 
   for (int i = 0; i < 8; ++i) {
     auto input = index_to_input(i, 3);
-    BOOST_CHECK_EQUAL(manager.evaluate(res, input), 0);
+
+    if (v1[i] == 1) {
+      BOOST_CHECK_EQUAL(manager.evaluate(diff, input), 1);
+    }
   }
 }
 
-BOOST_AUTO_TEST_CASE(difference_partial_overlap) {
-  std::vector<int> a = {0,1,1,1,0,0,0,0}; // {1,2,3}
-  std::vector<int> b = {0,0,1,0,0,0,0,0}; // {2}
+// v1 = {
+//   {x2},
+//   {x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1, x2}
+// }
+// v1 diff v2 = {
+//
+// }
+BOOST_AUTO_TEST_CASE(difference_remove_all) {
+  std::vector<int> v1 = {0,1,0,1,0,0,0,0};
+  std::vector<int> v2 = {0,1,0,1,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* D = manager.difference(A, B);
+  auto* diff = manager.difference(d1, d2);
+
+  for (int i = 0; i < 8; ++i) {
+    auto input = index_to_input(i, 3);
+    BOOST_CHECK_EQUAL(manager.evaluate(diff, input), 0);
+  }
+}
+
+// v1 = {
+//   {x2},
+//   {x1},
+//   {x1, x2}
+// }
+// v2 = {
+//   {x1}
+// }
+// v1 diff v2 = {
+//   {x2},
+//   {x1, x2}
+// }
+BOOST_AUTO_TEST_CASE(difference_partial_overlap) {
+  std::vector<int> v1 = {0,1,1,1,0,0,0,0};
+  std::vector<int> v2 = {0,0,1,0,0,0,0,0};
+
+  teddy::zdd_manager manager(3, 1000, 100);
+
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
+
+  auto* diff = manager.difference(d1, d2);
 
   std::vector<int> expected_idx = {1,3};
 
   for (int idx : expected_idx) {
     auto input = index_to_input(idx, 3);
-    BOOST_CHECK_EQUAL(manager.evaluate(D, input), 1);
+    BOOST_CHECK_EQUAL(manager.evaluate(diff, input), 1);
   }
 }
 
+// v1 = {
+//   {x2},
+//   {x1, x2}
+// }
+// v2 = {
+//   {x1, x2}
+// }
+// v1 diff v2 = {
+//   {x2}
+// }
+// v2 diff v1 = {
+//   
+// }
 BOOST_AUTO_TEST_CASE(difference_not_commutative) {
-  std::vector<int> a = {0,1,0,1,0,0,0,0}; // {1,3}
-  std::vector<int> b = {0,0,0,1,0,0,0,0}; // {3}
+  std::vector<int> v1 = {0,1,0,1,0,0,0,0};
+  std::vector<int> v2 = {0,0,0,1,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
+  auto* diag1 = manager.from_vector(v1);
+  auto* diag2 = manager.from_vector(v2);
 
-  auto* d1 = manager.difference(A, B); // {1}
-  auto* d2 = manager.difference(B, A); // {}
+  auto* diff1 = manager.difference(diag1, diag2);
+  auto* diff2 = manager.difference(diag2, diag1);
 
-  BOOST_CHECK_EQUAL(manager.evaluate(d1, index_to_input(1,3)), 1);
+  BOOST_CHECK_EQUAL(manager.evaluate(diff1, index_to_input(1,3)), 1);
 
   for (int i = 0; i < 8; ++i) {
     auto input = index_to_input(i, 3);
-    BOOST_CHECK_EQUAL(manager.evaluate(d2, input), 0);
+    BOOST_CHECK_EQUAL(manager.evaluate(diff2, input), 0);
   }
 }
 
+// v = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// count(v) = 3
 BOOST_AUTO_TEST_CASE(count_basic) {
   std::vector<int> v = {0,0,0,1,1,0,0,1};
 
@@ -653,6 +952,10 @@ BOOST_AUTO_TEST_CASE(count_basic) {
   BOOST_CHECK_EQUAL(manager.count(d), 3);
 }
 
+// v = {
+//
+// }
+// count(v) = 0
 BOOST_AUTO_TEST_CASE(count_zero) {
   std::vector<int> v(8, 0);
 
@@ -664,6 +967,10 @@ BOOST_AUTO_TEST_CASE(count_zero) {
   BOOST_CHECK_EQUAL(manager.count(d), 0);
 }
 
+// v = {
+//   {x0}
+// }
+// count(v) = 1
 BOOST_AUTO_TEST_CASE(count_single_set) {
   std::vector<int> v = {0,0,0,0,1,0,0,0};
 
@@ -674,6 +981,17 @@ BOOST_AUTO_TEST_CASE(count_single_set) {
   BOOST_CHECK_EQUAL(manager.count(d), 1);
 }
 
+// v = {
+//   0,
+//   {x2},
+//   {x1},
+//   {x1, x2},
+//   {x0},
+//   {x0, x2},
+//   {x0, x1},
+//   {x0, x1, x2}
+// }
+// count(v) = 8
 BOOST_AUTO_TEST_CASE(count_all_sets) {
   std::vector<int> v(8, 1);
 
@@ -684,49 +1002,89 @@ BOOST_AUTO_TEST_CASE(count_all_sets) {
   BOOST_CHECK_EQUAL(manager.count(d), 8);
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1, x2}
+// }
+// v1 union v2 = {
+//   {x2},
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// count(v1 union v2) = 4
 BOOST_AUTO_TEST_CASE(count_after_union) {
-  std::vector<int> a = {0,0,0,1,1,0,0,1}; // {3,4,7}
-  std::vector<int> b = {0,1,0,1,0,0,0,0}; // {1,3}
+  std::vector<int> v1 = {0,0,0,1,1,0,0,1};
+  std::vector<int> v2 = {0,1,0,1,0,0,0,0};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* U = manager.unification(A, B);
+  auto* result = manager.unification(d1, d2);
 
-  //{1,3,4,7}
-  BOOST_CHECK_EQUAL(manager.count(U), 4);
+  BOOST_CHECK_EQUAL(manager.count(result), 4);
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1, x2},
+//   {x0, x1, x2}
+// }
+// v1 intersection v2 = {
+//   {x1, x2},
+//   {x0, x1, x2}
+// count(v1 intersection v2) = 2
 BOOST_AUTO_TEST_CASE(count_after_intersection) {
-  std::vector<int> a = {0,0,0,1,1,0,0,1}; // {3,4,7}
-  std::vector<int> b = {0,1,0,1,0,0,0,1}; // {1,3,7}
+  std::vector<int> v1 = {0,0,0,1,1,0,0,1};
+  std::vector<int> v2 = {0,1,0,1,0,0,0,1};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* I = manager.intersect(A, B);
+  auto* result = manager.intersect(d1, d2);
 
-  // {3,7}
-  BOOST_CHECK_EQUAL(manager.count(I), 2);
+  BOOST_CHECK_EQUAL(manager.count(result), 2);
 }
 
+// v1 = {
+//   {x1, x2},
+//   {x0},
+//   {x0, x1, x2}
+// }
+// v2 = {
+//   {x2},
+//   {x1, x2},
+//   {x0, x1, x2}
+// }
+// v1 diff v2 = {
+//   {x0}
+// }
+// count(v1 diff v2) = 1
 BOOST_AUTO_TEST_CASE(count_after_difference) {
-  std::vector<int> a = {0,0,0,1,1,0,0,1}; // {3,4,7}
-  std::vector<int> b = {0,1,0,1,0,0,0,1}; // {1,3,7}
+  std::vector<int> v1 = {0,0,0,1,1,0,0,1};
+  std::vector<int> v2 = {0,1,0,1,0,0,0,1};
 
   teddy::zdd_manager manager(3, 1000, 100);
 
-  auto* A = manager.from_vector(a);
-  auto* B = manager.from_vector(b);
+  auto* d1 = manager.from_vector(v1);
+  auto* d2 = manager.from_vector(v2);
 
-  auto* D = manager.difference(A, B);
+  auto* result = manager.difference(d1, d2);
 
-  // {4}
-  BOOST_CHECK_EQUAL(manager.count(D), 1);
+  BOOST_CHECK_EQUAL(manager.count(result), 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
