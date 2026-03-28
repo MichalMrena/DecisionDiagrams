@@ -1,11 +1,24 @@
 #include <libteddy/impl/zdd_manager.hpp>
 #include <libteddy/inc/core.hpp>
 
-
 int main() { //NOLINT
     
-    std::vector<int> v = {0,0,0,1,1,0,0,1};
-    std::vector<int> v2 = {0,1,0,1,0,0,0,1};
+    std::vector<int> v = {1,0,0,1,0,0,0,0};
+    std::vector<int> v2 = {1,1,0,1,0,0,0,1};
+
+    /*std::vector<int> v = {
+    0,1,0,1,
+    1,0,1,0,
+    0,0,1,1,
+    1,0,0,1
+};
+
+std::vector<int> v2 = {
+    1,0,0,0,
+    0,1,0,0,
+    0,0,0,1,
+    0,0,1,0
+};*/
 
     //std::vector<int> v = {1,0,0,0,0,0,0,0};
     //std::vector<int> v2 = {0,0,0,1,0,0,0,0};
@@ -36,7 +49,20 @@ int main() { //NOLINT
     manager.to_dot(d);
     manager.to_dot(d2);
 
-    auto* test = manager.difference(d, d2);
+    auto* test = manager.difference(d2, d);
+
+    for (int i = 0; i < 10; ++i) {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int j = 0; j < 100000; ++j) {
+        auto sink = manager.unification(d, d2);
+    }
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    printf("Run %d: %.6f s\n", i,
+        std::chrono::duration<double>(end - start).count());
+}
 
     manager.to_dot(test);
 
