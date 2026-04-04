@@ -8,9 +8,6 @@
 #include <iostream>
 #include <libteddy/impl/operators.hpp>
 
-//TODO
-//make better tests because current ones are not very good at catching bugs
-
 namespace teddy
 {
 
@@ -222,17 +219,18 @@ public:
         }
 
         node_t* result = nullptr;
+        int32 index = get_index_safe(root);
 
-        if (root->is_terminal() || root->get_index() > var) {
+        if (index > var) {
             result = m_nodes.make_terminal_node(0);
         }
-        else if (root->get_index() == var) {
+        else if (index == var) {
             result = root->get_son(1);
         }
         else {
             auto* low = subset1(diagram_t(root->get_son(0)), var);
             auto* high = subset1(diagram_t(root->get_son(1)), var);
-            result = get_node(root->get_index(), low, high);
+            result = get_node(index, low, high);
         }
 
         m_unary_cache.put(ops::ZDD_SUBSET1::get_id(), root, var, result, 0);
@@ -260,17 +258,18 @@ public:
         }
 
         node_t* result = nullptr;
+        int32 index = get_index_safe(root);
 
-        if (root->is_terminal() || root->get_index() > var) {
+        if (index > var) {
             result = root;
         }
-        else if (root->get_index() == var) {
+        else if (index == var) {
             result = root->get_son(0);
         }
         else {
             auto* low = subset0(diagram_t(root->get_son(0)), var);
             auto* high = subset0(diagram_t(root->get_son(1)), var);
-            result = get_node(root->get_index(), low, high);
+            result = get_node(index, low, high);
         }
 
         m_unary_cache.put(ops::ZDD_SUBSET0::get_id(), root, var, result, 0);
@@ -298,26 +297,18 @@ public:
         }
 
         node_t* result = nullptr;
+        int32 index = get_index_safe(root);
 
-        if (root->is_terminal()) {
-            if (root->get_value() == 0) {
-                result = root;
-            }
-            //if zdd represents {∅}, then change should return {{var}}
-            else {
-                result = get_node(var, m_nodes.make_terminal_node(0), m_nodes.make_terminal_node(1));
-            }
-        }
-        else if (root->get_index() > var) {
+        if (index > var) {
             result = get_node(var, m_nodes.make_terminal_node(0), root);
         }
-        else if (root->get_index() == var) {
+        else if (index == var) {
             result = get_node(var, root->get_son(1), root->get_son(0));
         }
         else {
             auto* low  = change(diagram_t(root->get_son(0)), var);
             auto* high = change(diagram_t(root->get_son(1)), var);
-            result = get_node(root->get_index(), low, high);
+            result = get_node(index, low, high);
         }
         
         m_unary_cache.put(ops::ZDD_CHANGE::get_id(), root, var, result, 0);
@@ -411,12 +402,6 @@ public:
             (Q->is_terminal() && Q->get_value() == 0)) {
             result = m_nodes.make_terminal_node(0);
         }
-        else if (P->is_terminal() && P->get_value() == 1) {
-            result = contains_empty(Q) ? P : m_nodes.make_terminal_node(0);
-        }
-        else if (Q->is_terminal() && Q->get_value() == 1) {
-            result = contains_empty(P) ? Q : m_nodes.make_terminal_node(0);
-        }
         else if (P == Q) {
             result = P;
         }
@@ -470,12 +455,6 @@ public:
 
         if ((P->is_terminal() && P->get_value() == 0) || (Q->is_terminal() && Q->get_value() == 0)) {
             result = P;
-        }
-        else if (P->is_terminal() && P->get_value() == 1) {
-            result = contains_empty(Q) ? m_nodes.make_terminal_node(0) : P;
-        }
-        else if (Q->is_terminal() && Q->get_value() == 1) {
-            result = remove_empty(P);
         }
         else if (P == Q) {
             result = m_nodes.make_terminal_node(0);
@@ -543,6 +522,7 @@ public:
         return result;
     }
 
+    
     auto evaluate(node_t* const node, const std::vector<int>& values) -> int32 {
         return evaluate(diagram_t(node), values);
     }
@@ -619,33 +599,15 @@ private:
         return n->get_son(0);
     }
 
-    auto get_high(node_t* n) -> node_t* {
+    auto static get_high(node_t* n) -> node_t* {
         if (n->is_terminal()) {
-            return m_nodes.make_terminal_node(0);
+            return n;
         }
         return n->get_son(1);
     }
 
     auto static get_index_safe(node_t* n) -> int {
         return n->is_terminal() ? INT32_MAX : n->get_index();
-    }
-
-    auto static contains_empty(node_t* n) -> bool {
-        while (!n->is_terminal()) {
-            n = n->get_son(0);
-        }
-        return n->get_value() == 1;
-    }
-
-    auto remove_empty(node_t* n) -> node_t* {
-        if (n->is_terminal()) {
-            return m_nodes.make_terminal_node(0);
-        }
-
-        auto* low  = remove_empty(n->get_son(0));
-        auto* high = n->get_son(1);
-
-        return get_node(n->get_index(), low, high);
     }
 };
 
