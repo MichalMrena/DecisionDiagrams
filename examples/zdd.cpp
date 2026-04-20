@@ -1,13 +1,14 @@
+#define EVALUATE // shows which variables are skipped in evaluation (i.e., constant 0 in the ZDD)
 #include <libteddy/impl/zdd_manager.hpp>
 #include <libteddy/inc/core.hpp>
+
 void static_creation() {
     std::vector<int> v = {0,0,0,1,1,0,0,1};
-    std::vector<double> counts;
-
     teddy::zdd_manager manager(3, 1000, 100);
 
     auto diagram = manager.from_vector(v);
     manager.to_dot(diagram);
+    manager.evaluate(diagram, {1,0,0});
 }
 
 auto dynamic_creation() -> void {
@@ -35,7 +36,7 @@ auto dynamic_creation() -> void {
 }
 
 int main() { //NOLINT
-    dynamic_creation();
+    static_creation();
 
     return 0;
 }

@@ -282,20 +282,55 @@ public:
     }
 
     /**
-    * @brief Evaluates the ZDD at a given assignment of variable values.
+    * @brief Evaluates a ZDD for a given input assignment.
     *
-    * @param diagram The ZDD to evaluate.
-    * @param values The assignment of variable values.
-    * @return The result of the evaluation (0 or 1).
+    * Traverses the diagram from the root to a terminal node based on the provided
+    * variable values and returns the resulting value. Variables not encountered
+    * during traversal are treated as having value 0; optionally, they can be
+    * reported for debugging purposes.
+    *
+    * @param diagram ZDD to evaluate.
+    * @param values  Assignment of variables.
+    * @return Value of the reached terminal node.
     */
     auto evaluate(diagram_t const& diagram, const std::vector<int>& values) -> int32 {
         node_t* node = diagram.unsafe_get_root();
+        int helpIndex = 0;
+        std::vector<int> skippedVars;
+        int lastIndex = -1;
 
         while (not node->is_terminal()) {
             int32 const index = node->get_index();
+            lastIndex = index;
+            while (helpIndex < index) {
+                skippedVars.push_back(helpIndex);
+                ++helpIndex;
+            }
+
             assert(m_nodes.is_valid_var_value(index, values[static_cast<uint32>(index)]));
             node = node->get_son(values[static_cast<uint32>(index)]);
+            ++helpIndex;
          }
+
+         while(lastIndex < static_cast<int>(values.size()) - 1) {
+            skippedVars.push_back(++lastIndex);
+         }
+
+         #ifdef EVALUATE
+         if (skippedVars.size() > 0) {
+            printf("For combination: ");
+            for (int val : values) {
+                printf(" %d", val);
+            }
+            printf("\n");
+
+            printf("Variables:");
+            for (int var : skippedVars) {
+                printf(" %d", var);
+            }
+            printf(" are constant 0 in this ZDD subdiagram.\n");
+         }
+         #endif
 
         return node->get_value();
     }
